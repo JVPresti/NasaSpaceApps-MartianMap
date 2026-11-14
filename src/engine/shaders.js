@@ -3,10 +3,31 @@
 import { COST_CONSTANTS } from '../sim/costGrid.js';
 
 const SLOPE_NO_GO = COST_CONSTANTS.SLOPE_LIMIT_DEG.toFixed(1), SLOPE_CAUTION = COST_CONSTANTS.SLOPE_CAUTION_DEG.toFixed(1);   // same limits as the route planner
+// Fog extinction per metre along a view ray: the preset's haze, thickened by the storm dust in drifting curtains.
+// Shared by applyFog in COMMON and by the boot prints (bootPrints.shaders.js), so both fade with the same haze.
+export const FOG_K = /* glsl */`
+uniform float uFogK, uDust, uDustK; uniform vec2 uDustOff;
+float dh(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }
+float dn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f); return mix(mix(dh(i), dh(i + vec2(1.0, 0.0)), f.x), mix(dh(i + vec2(0.0, 1.0)), dh(i + vec2(1.0, 1.0)), f.x), f.y); }
+float dustDensity(vec2 xz){   // 0..1, curtains about 60 m across with 15 m detail
+  vec2 p = (xz + uDustOff) / 60.0;
+  return 0.65 * dn(p) + 0.35 * dn(p * 4.1 + 7.3);
+}
+float fogK(vec3 toFrag){
+  float d = length(toFrag), k = uFogK;
+  if(uDust > 0.001){
+    // density sampled near the viewer and at the surface, so close curtains also veil the ground behind them
+    vec2 nearP = cameraPosition.xz + toFrag.xz * min(1.0, 30.0 / max(d, 1.0));
+    float n = 0.5 * (dustDensity(nearP) + dustDensity(cameraPosition.xz + toFrag.xz));
+    k = mix(uFogK, max(uFogK, uDustK * (0.45 + 1.1 * n)), uDust);
+  }
+  return k;
+}
+`;
 export const COMMON = /* glsl */`
 uniform vec3 uSunDir, uSunColor, uAmbSky, uAmbGround;
 uniform vec3 uSkyZenith, uSkyHorizon, uHaloColor, uInscatter;
-uniform float uHaloPower, uHaloStrength, uSkyIntensity, uGradEnd, uFogK;
+uniform float uHaloPower, uHaloStrength, uSkyIntensity, uGradEnd;
 vec3 skyColor(vec3 d){
   float t = smoothstep(0.0, uGradEnd, d.y);
   vec3 c = mix(uSkyHorizon, uSkyZenith, t);
@@ -52,22 +73,9 @@ float castShadow(vec3 p){   // slots: 0 = player, 1 = partner (1.3 m half-size),
 }
 // Storm dust (#27): the haze thickens toward uDustK and drifts in curtains with the wind (uDustOff), so the same
 // patches pass over terrain, rocks, astronauts and the habitat. uDust = 0 gives exactly the preset fog.
-uniform float uDust, uDustK; uniform vec2 uDustOff;
-float dh(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }
-float dn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f); return mix(mix(dh(i), dh(i + vec2(1.0, 0.0)), f.x), mix(dh(i + vec2(0.0, 1.0)), dh(i + vec2(1.0, 1.0)), f.x), f.y); }
-float dustDensity(vec2 xz){   // 0..1, curtains about 60 m across with 15 m detail
-  vec2 p = (xz + uDustOff) / 60.0;
-  return 0.65 * dn(p) + 0.35 * dn(p * 4.1 + 7.3);
-}
+${FOG_K}
 vec3 applyFog(vec3 c, vec3 toFrag){
-  float d = length(toFrag), k = uFogK;
-  if(uDust > 0.001){
-    // density sampled near the viewer and at the surface, so close curtains also veil the ground behind them
-    vec2 nearP = cameraPosition.xz + toFrag.xz * min(1.0, 30.0 / max(d, 1.0));
-    float n = 0.5 * (dustDensity(nearP) + dustDensity(cameraPosition.xz + toFrag.xz));
-    k = mix(uFogK, max(uFogK, uDustK * (0.45 + 1.1 * n)), uDust);
-  }
-  return mix(c, uInscatter, 1.0 - exp(-k * d));
+  return mix(c, uInscatter, 1.0 - exp(-fogK(toFrag) * length(toFrag)));
 }
 // A window seen from either side: shows the Mars sky and ground in the viewing direction, with a glass reflection on top.
 float wvh(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }

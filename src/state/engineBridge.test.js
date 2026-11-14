@@ -5,7 +5,7 @@ import { resetStore, useMissionStore } from './store.js';
 function fakeEngine() {
   return {
     setMode: vi.fn(), setLayer: vi.fn(), setSky: vi.fn(), setSkyBlend: vi.fn(),
-    setRoute: vi.fn(), setShelter: vi.fn(), setDust: vi.fn(),
+    setRoute: vi.fn(), setShelter: vi.fn(), setDust: vi.fn(), clearPrints: vi.fn(),
     getPlayer: () => ({ x: 0, z: 0, headingDeg: 0 }),
   };
 }
@@ -28,6 +28,21 @@ describe('engine bridge sky', () => {
     expect(engine.setSkyBlend).toHaveBeenLastCalledWith('late_afternoon', 'dust_storm', 0.4);
     useMissionStore.setState((s) => ({ view: { ...s.view, skyBlend: 0 } }));
     expect(engine.setSkyBlend).toHaveBeenLastCalledWith('late_afternoon', 'dust_storm', 0);
+    disconnect();
+  });
+});
+
+describe('engine bridge boot prints', () => {
+  it('clears the prints when a new EVA starts, not on other changes', () => {
+    const engine = fakeEngine();
+    const disconnect = connectEngine(engine);
+    expect(engine.clearPrints).not.toHaveBeenCalled();
+    useMissionStore.setState((s) => ({ view: { ...s.view, layer: 2 } }));
+    expect(engine.clearPrints).not.toHaveBeenCalled();
+    useMissionStore.setState((s) => ({ mission: { ...s.mission, startedAtMs: 1000 } }));
+    expect(engine.clearPrints).toHaveBeenCalledTimes(1);
+    useMissionStore.setState((s) => ({ mission: { ...s.mission, elapsedSec: 60 } }));
+    expect(engine.clearPrints).toHaveBeenCalledTimes(1);
     disconnect();
   });
 });
