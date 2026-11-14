@@ -38,8 +38,11 @@ setMode('plan');
 | Field | Unit and meaning | Written by | Issue |
 |---|---|---|---|
 | `mode` | `'walk'` or `'plan'` | interface (mode switch) | #5 |
-| `mission.startedAtMs`, `elapsedSec`, `paused` | mission clock, from a start timestamp | mission clock | #59 |
-| `mission.sol`, `lmst` | sol number, local mean solar time `'HH:MM'` | mission clock | #59 |
+| `mission.startedAtMs`, `elapsedSec`, `paused` | mission clock. `startedAtMs` is the first start timestamp; `elapsedSec` is the current published reading, excluding pauses and including the time scale | mission clock | #59 |
+| `mission.anchorMs` | wall-clock ms of the last start, pause, resume or scale change. The matching elapsed baseline is private to the clock session; the store's current `elapsedSec` is already advanced | mission clock | #59 |
+| `mission.sol`, `lmst` | sol number, local mean solar time `'HH:MM'` at 77.3053 E | mission clock | #59 |
+| `mission.timeScale` | mission seconds per real second, above 0 (demo 1). Scales both `elapsedSec` and LMST; pause is separate | mission clock, `setMissionTimeScale()` | #59 |
+| `mission.initialSol`, `initialLmst`, `longitudeDeg`, `sky` | demo start configuration and the starting sky preset, kept for a coherent restored session | mission clock | #59 |
 | `suit.oxygenG`, `oxygenPct` | primary O2 left, grams and 0 to 100 (xEMU 771 g usable) | suit model | #19 |
 | `suit.oxygenSec` | O2 time left at the current rate (smoothed over 30 s). **The event engine reads this path.** | suit model | #19 |
 | `suit.batteryPct` | 0 to 100 (xEMU 756 Wh) | suit model | #19 |
@@ -66,7 +69,7 @@ setMode('plan');
 | `alerts.<eventId>` | `{ id, eventId, level, text, startedAtSec, active }`, or `null` when cleared. **The event engine writes these.** | event engine | #22 |
 | `crew` | `[{ id, name, color, x, z, oxygenPct, batteryPct }]` | partner, online play | #39, #52 |
 | `view.layer` | 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop | Plan mode, wrist screen | #14, #67 |
-| `view.sky` | `'clear_day'`, `'dust_storm'`, `'late_afternoon'`, `'night'` | events, later the clock | #24, #73 |
+| `view.sky` | `'clear_day'`, `'dust_storm'`, `'late_afternoon'`, `'night'`. The default is `'late_afternoon'` (#59) | events, later the clock | #24, #59, #73 |
 | `view.skyBlend` | 0 to 1, blend from `clear_day` to `dust_storm` as the storm opacity rises | events | #24 |
 | `sources['<path>']` | `{ tag: 'DATA' \| 'DERIVED' \| 'SIM', source }` for any value above | whoever writes the value | #62 |
 
@@ -117,9 +120,53 @@ await engine.ready;
 
 ## Simulation runners
 
-`startSimulation(engine)` in `src/state/simulation.js` starts the modules that write the store once the engine is ready. Today that is the suit model (`src/sim/suitModel.js`, `src/sim/suitRunner.js`, #19). It ticks 4 times per second, reads `navigation` and `route.path`, uses `engine.heightAt` for the gradient, and writes `suit`. All its constants come from `public/data/hazards.json`. The per-leg costs (`src/sim/legCosts.js`, #41) recompute `route.legs` and `route.totals` whenever `route.path` or `route.waypoints` changes, with the same `walkCost` function the walkback uses. Nothing starts with `?mock=1`, so mock values stay put.
+`startSimulation(engine)` in `src/state/simulation.js` starts the modules that write the store once the engine is ready. Today that is the mission clock below, the suit model (`src/sim/suitModel.js`, `src/sim/suitRunner.js`, #19) and the per-leg costs (`src/sim/legCosts.js`, #41). The suit runner ticks 4 times per second, reads `navigation` and `route.path`, uses `engine.heightAt` for the gradient, and writes `suit`. All its constants come from `public/data/hazards.json`. The per-leg costs recompute `route.legs` and `route.totals` whenever `route.path` or `route.waypoints` changes, with the same `walkCost` function the walkback uses. Nothing starts with `?mock=1`, so mock values stay put; the clock is not started and writes no session.
 
 In development, `window.__missionStore` is the store, for the browser console: `__missionStore.getState().suit`. Production builds do not have it.
+
+### Mission clock (#59)
+
+`src/sim/missionClock.js` is plain JavaScript with no React, no three.js and no store import. Every reading is a function of a timestamp, never a sum of frame or tick times:
+
+```text
+elapsedSec = anchorElapsedSec + (paused ? 0 : max(0, nowMs - anchorMs) / 1000) * timeScale
+```
+
+Pause, resume and a scale change move `anchorMs` to that exact instant and freeze the elapsed value there, so irregular ticks, a suspended tab or a reload cannot drift. `startedAtMs` stays at the first start. Mission time scale multiplies both elapsed time and LMST, matching section 9.5 of [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+
+The formula uses the internal/persisted session's elapsed baseline. The store's `mission.elapsedSec` is the computed result at its last publication, not that baseline; do not add the anchor delta to the store reading again. Manual browser results and limitations are in [ISSUE_59_VALIDATION.md](ISSUE_59_VALIDATION.md).
+
+| Item | Value |
+|---|---|
+| Sol length | 88,775 Earth seconds, or 86,400 Mars clock seconds. At scale 1, 88,775 elapsed seconds advance LMST by 24 h and add one sol |
+| Site | 77.3053 E. LMST advances at `86400 / 88775` Mars seconds per elapsed second |
+| Demo defaults | sol 1210, local LMST `17:45`, scale 1, sky `late_afternoon`. Tagged `SIM`: a plausible EVA, not a historical measurement or a precise ephemeris |
+| Alternate start skies | `clear_day` 14:00, `dust_storm` 14:00, `late_afternoon` 17:45, `night` 22:00. Coarse demo values; an explicit `initialLmst` overrides them |
+| Persistence | one sessionStorage key, `marswalk.missionClock.v1`. A running session includes the time the page was absent; a paused session does not. A denied, unavailable or malformed store is ignored |
+
+The configuration takes the **local** LMST at the site, so no longitude term is added to it. The exported helpers are for a caller that starts from Mars24 prime-meridian mean time, where `LMST = MT + east longitude / 15` ([Mars24 notes](https://www.giss.nasa.gov/tools/mars24/help/notes.html)):
+
+```js
+longitudeOffsetHours(77.3053);                    // +5.1537 h, east positive
+localMeanSolarTimeHours(6, 77.3053);              // 11.1537 h
+primeMeridianMeanTimeHours(11.1537, 77.3053);     // 6 h
+```
+
+API and store actions:
+
+```js
+const clock = startMissionClock({ store: useMissionStore, config: { sky: 'late_afternoon' } });
+clock.pause(); clock.resume(); clock.getSession();
+clock.setTimeScale(60);          // keeps elapsed time continuous and leaves a paused session paused
+clock.stop();
+
+pauseMission(); resumeMission(); // src/state/store.js, or a direct mission.paused write
+setMissionTimeScale(60);         // or a direct mission.timeScale write
+```
+
+The runner subscribes to `mission.paused` and `mission.timeScale`, so the suit runner's existing check of `mission.paused` and any direct `storeAdapter.set('mission.paused', true)` are honoured at the exact instant and are not overwritten by the clock. `view.sky` is set once at start from the chosen/restored preset; later time never changes the sky (#73). The clock tags `mission.startedAtMs`, the initial/preset fields and `timeScale` as `SIM` (demo epoch and configuration, not a historical measurement or precise ephemeris); `elapsedSec`, `anchorMs`, `sol` and `lmst` are `DERIVED`.
+
+**Limitations.** The suit runner still keeps its own wall clock for consumables and they do not persist across reload. Changing the mission scale affects mission time only in this issue. There are no visual clock controls yet; use the store actions or a console. No online clock offset or no-pause rule is part of #59.
 
 ## The bridge
 
