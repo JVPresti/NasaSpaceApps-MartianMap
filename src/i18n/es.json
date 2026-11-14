@@ -464,11 +464,10 @@
   "menu.nominal": "normal",
   "quality.high": "alta",
   "quality.low": "baja",
-  "menu.g.hold.2.s": "G (mantener 2 s)",
   "menu.point.at.the.ground.to.mark.a.find": "Señalar el suelo para marcar un hallazgo",
   "menu.y.n": "Y / N",
   "menu.add.the.find.to.the.route.or.dismiss.it": "Añadir el hallazgo a la ruta o descartarlo",
-  "finds.hold.on.the.spot": "Mantén G sobre el punto",
+  "finds.hold.on.the.spot": "Mantén Q sobre el punto",
   "finds.no.ground": "No hay suelo a menos de {range} m",
   "finds.decide.first": "Decide primero sobre {label}: Y lo añade, N lo descarta.",
   "finds.limit": "{max} hallazgos en el mapa. Alcanza o descarta uno primero.",
@@ -492,5 +491,6 @@
   "finds.error.no.path": "Ningún camino transitable llega a este punto.",
   "finds.error.event": "Hay una ruta de evento activa. Espera a que pase la alerta.",
   "finds.error.route.changed": "La ruta cambió durante la planificación. Inténtalo de nuevo.",
-  "finds.error.no.route": "El planificador no encontró ruta por este hallazgo."
+  "finds.error.no.route": "El planificador no encontró ruta por este hallazgo.",
+  "menu.q.hold.2.s": "Q (mantener 2 s)"
 }

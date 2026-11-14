@@ -26,7 +26,8 @@ provenance.define({
 let uid = 0;   // never reset: a pricing answer for a find from before a restart cannot land on a new M01
 
 const finite = (p) => Number.isFinite(p?.x) && Number.isFinite(p?.z);
-const eventActive = (s) => !!s.route?.shelter || Object.values(s.alerts ?? {}).some((a) => a && a.active);
+// An event re-route (dust, radiation, low O2) sets route.shelter. Other alerts, such as the partner separation, do not block a find.
+const eventActive = (s) => !!s.route?.shelter;
 /** The route a price was computed for. A different key means the detour has to be priced again. */
 const basisKey = (route) => waypointKey(route?.waypoints) + '#' + (route?.nextIndex ?? 0);
 

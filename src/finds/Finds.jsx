@@ -1,4 +1,4 @@
-// Unexpected find (#71, plan section 3.4 scenario 3). Hold G for 2 s while looking at the ground: the right arm points,
+// Unexpected find (#71, plan section 3.4 scenario 3). Hold Q for 2 s while looking at the ground: the right arm points,
 // a ring fills around the centre of the view and a marker drops where the view meets the terrain. A card then prices
 // the detour (time, O2, walkback margin before and after, go or no-go) and the crew chooses: Y adds the find to the
 // route, N or Esc dismisses it. The card closes after the choice, so nothing stays on the visor.
@@ -16,8 +16,9 @@ import { formatNumber, t, translateText } from '../i18n/index.js';
 import '../hud/hud.css';
 import './finds.css';
 
-/** Hold to point. G is free: the engine uses WASD, arrows, Shift, P, E and F, the interface M, L, 0, H, T and C. */
-export const FIND_KEY = 'KeyG';
+/** Hold to point. Q sits next to WASD and is free: the engine uses WASD, arrows, Shift, P, E and F, the interface M, L, 0, H,
+ * T, C and G (slope grid). */
+export const FIND_KEY = 'KeyQ';
 const ACCEPT_KEY = 'KeyY';
 const DISMISS_KEY = 'KeyN';
 const RING_R = 26, RING_C = 2 * Math.PI * RING_R;
@@ -27,7 +28,7 @@ const SourceTag = ({ path }) => <SharedSourceTag path={path} variant="tag" inter
 const typingTarget = (el) => !!el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName));
 const plainKey = (e) => !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !typingTarget(e.target);
 
-/** What markFind would refuse, checked when G goes down so the arm does not rise for nothing. */
+/** What markFind would refuse, checked when Q goes down so the arm does not rise for nothing. */
 function markBlocker(finds) {
   const undecided = finds.list.find((f) => f.status !== 'accepted');
   if (undecided) return t('finds.decide.first', { label: undecided.label });
@@ -54,7 +55,7 @@ function FindPointer({ engine, service }) {
 
   useEffect(() => {
     if (!engine) return undefined;
-    let hold = null;   // { t0, anchor, frame } while G is down
+    let hold = null;   // { t0, anchor, frame } while Q is down
 
     const draw = (frac, state) => {
       const el = ring.current, a = arc.current;

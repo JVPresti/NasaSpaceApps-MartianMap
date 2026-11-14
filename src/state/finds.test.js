@@ -109,6 +109,14 @@ describe('accepting', () => {
     expect(store.getState().finds.list[0].error).toMatch(/event route/);
   });
 
+  it('is not blocked by an alert that does not re-route, such as the partner separation', async () => {
+    const store = makeStore();
+    const { find } = markFind({ x: 250, z: 210 }, { store });
+    await priceFind(find.id, { store, detour: async () => priced(2), constants: {} });
+    store.setState({ alerts: { 'partner-separation': { id: 'partner-separation', level: 'warning', active: true } } });
+    expect(await acceptFind(find.id, { store, plan: async (w) => planned(w) })).toBe(true);
+  });
+
   it('prices again when the route moved on since the card opened', async () => {
     const store = makeStore();
     const { find } = markFind({ x: 250, z: 210 }, { store });
