@@ -23,6 +23,7 @@ HiRISE files are stretched 5.4 % east-west (equirectangular, lat_ts = 0); everyt
 | ortho_hi.jpg / ortho_lo.jpg | HiRISE orthomosaic, grayscale (3000 px / 1500 px). The Mars colour ramp is applied in the shader. |
 | normal_ao.jpg | R,B = world-space normal x,z from the 1 m DEM; G = baked ambient occlusion. |
 | outcrop_mask.jpg | Where light-toned outcrop is (from HiRISE brightness). Drives the slab detail and the Outcrop layer. |
+| outcrop.glb + outcrop_color.jpg, outcrop_nao.jpg (+ _lo versions) | Layered pale outcrop for the Bright Angel stop, 6.7 x 3.4 m, 1.0 m above its ground line: about 60 thin beds, a steep broken face and loose chips. Three detail levels in one file (Outcrop_LOD0 / LOD1 / LOD2: 16k, 4k and 1.8k triangles), 0.96 MB. Hand-made model, see "Layered outcrop" below. |
 | gravel_nl.jpg, slab_nl.jpg | Close-up detail, 2 m tiles. R,G = normal map (GL), B = sqrt(luminance). |
 | ring_gray.jpg | CTX mosaic for the background, brightness-matched to HiRISE. |
 | rocks.json + rock_*.jpg, namaqualand_*.jpg | 5 rock scans x 3 detail levels (500 / 120 / 28 triangles), normalised to 1 m longest side. |
@@ -52,6 +53,8 @@ Close Blender or set its viewport to Solid before measuring: a Rendered viewport
 ### How the app picks a tier
 - At load, from the GPU name (`detectTier` in `src/engine/tiers.js`). Intel and mobile GPUs and AMD integrated graphics
   ("AMD Radeon(TM) Graphics", "Radeon Vega") start on Low. Discrete cards and newer named APUs (for example "Radeon 780M") start on High.
+  Intel Arc and Iris Xe ("Intel(R) Iris(R) Xe Graphics", "Mesa Intel(R) Xe Graphics" on Linux) are the Intel exception and start on High.
+  Not measured on an Iris Xe laptop yet; the automatic switch below drops it to Low if High is too slow. Tested in `src/engine/tiers.test.js`.
 - While running, three slow seconds in a row on High (under 40 fps) switch to Low. There is no switch back up.
 - Manual override: add `?tier=high` or `?tier=low` to the URL. It forces that tier and turns off the automatic switch.
   An unknown value is ignored with a console warning.
@@ -83,9 +86,35 @@ so the GPU check now starts AMD integrated graphics on Low. On High, walking stu
   position of Cheyava Falls, slope values, sun shadows.
 - Artistic: the Mars colour (HiRISE and CTX are grayscale), sky and haze presets, night lamp.
 - Modelled / estimated: rock positions (statistical model, not individual real rocks), rock shapes and close-up
-  textures (Earth scans), the Cheyava Falls rock (hand-made after NASA PIA26401), rock-abundance layer.
+  textures (Earth scans), the Cheyava Falls rock (hand-made after NASA PIA26401), the layered outcrop at Bright Angel
+  (hand-made in the style of the Mastcam-Z images of sol 1217, not a copy of a specific rock), rock-abundance layer.
 - Real spot for the "dangerous slope" scene: about 200 m west of Cheyava Falls (x -201, z -52), 34 deg average.
 - There is no mesa overhang in this area; elevation data cannot contain overhangs.
+
+## Layered outcrop (Bright Angel stop, 2026-11-14)
+- Files: assets/outcrop.glb (meshes Outcrop_LOD0, Outcrop_LOD1, Outcrop_LOD2 with normals and UVs, no materials; y up, origin on the
+  ground line at the centre, the beds continue 0.6 m below it), outcrop_color.jpg, outcrop_nao.jpg (R,G = tangent normal, B = AO) and
+  _lo copies of the two textures for the Low tier. Written by blender/export/export_all.py (group "outcrop").
+- In the app: buildOutcrop in src/engine/rocks.js. Same shader as the Cheyava rock (ROCK_VERT / ROCK_FRAG with the HERO define,
+  uRockH = 1.0). v is flipped after loading (uv.y = 1 - uv.y): glTF stores v flipped and these textures are loaded the three.js way,
+  like the Cheyava ones. The three meshes go into one THREE.LOD: LOD1 from 30 m and LOD2 from 90 m on High, 14 m and 60 m on Low.
+- Placement: computed from the "WP3" waypoint in route.json (outcropPlacement in src/engine/rocks.js), not stored anywhere else, so
+  it follows the waypoint if the route team moves it. The ground at WP3 is a steady 30 degree slope. The outcrop is laid on that
+  slope 4.2 m uphill of the waypoint (outside the 2 m arrival circle), tilted to the ground plane, with its buried end uphill and its
+  broken face towards the walker, and sunk 20 cm so the lowest beds and the loose chips are half buried. The beds dip 24 degrees
+  inside the model, so on this slope they end up nearly level: strata cropping out of a hillside. It is placed on the drawn mesh and
+  placed again when the tier changes, so it does not float or sink on either tier. Scattered rocks keep 4.2 m clear of it.
+  It has no collision yet: the walker can pass through it.
+- Cost: at most 16k triangles, one draw call, two textures (2048 px on High, 1024 px on Low), in a scene that draws about 400k
+  triangles on Low and 800k on High. Measured in the test bench on an NVIDIA GeForce RTX 5060 Ti, High tier, standing at the outcrop:
+  60 fps, worst frame 17 ms. Not yet measured on a Low-tier machine.
+- It is a hand-made model in the style of the Bright Angel outcrops, not a scan and not a copy of a specific rock (shape reference:
+  Mastcam-Z frame ZL0_1217_0774973705_644EBY_N0560000ZCAM09262_1100LMJ, sol 1217). Its colour was checked against that frame:
+  red:green 1.61 and green:blue 1.98 on the sunlit beds, against 1.62 and 1.92 in the photo. The real beds are thinner (millimetres
+  to a couple of centimetres) and more splintered than the 3 to 5 cm beds of the model. Reference frame credit: NASA/JPL-Caltech/ASU.
+- Source: blender/marswalk_outcrop.blend (Outcrop_HI = the 60 separate beds with a procedural material; Outcrop_LOD0 = web mesh;
+  Outcrop_LOD1 and Outcrop_LOD2 = the same mesh through a Decimate modifier; the three are parked side by side so they do not
+  overlap; baked maps in blender/bake/Outcrop_*.png).
 
 ## Export from Blender
 The Blender scenes are in `blender/` (Git LFS). One command re-exports every .glb and the terrain mesh, and a second one
@@ -113,6 +142,7 @@ The export script writes exactly these names. Renaming one in Blender breaks the
 | assets_habitat/habitat_interior.glb | `HabitatInterior`, `HabitatScreens` | Any mesh with `Screens` in its name gets the wall-screen canvas. |
 | assets_habitat/furniture/*.glb | one mesh named like the file; `sample_glovebox_glass` in the glovebox | Any mesh with `glass` in its name gets the glass material. |
 | assets/terrain_tiles.glb | `Terrain_0_0` to `Terrain_4_4` | Terrain mesh tiles. |
+| assets/outcrop.glb | `Outcrop_LOD0`, `Outcrop_LOD1`, `Outcrop_LOD2` | Detail levels of the layered outcrop, nearest first. |
 
 ## Source files (not in this folder)
 - blender/marswalk_jezero_real.blend : Blender scene (terrain, Geometry Nodes rock scatter, Cheyava rock, presets). All scenes are listed in blender/README.md.

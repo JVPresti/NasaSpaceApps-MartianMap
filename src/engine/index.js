@@ -25,7 +25,7 @@ import { createUniforms } from './uniforms.js';
 import { TIERS, detectTier } from './tiers.js';
 import { createTerrain } from './terrain.js';
 import { buildSky, applyPreset, applySkyBlend } from './atmosphere.js';
-import { createRocks, buildCheyava } from './rocks.js';
+import { createRocks, buildCheyava, buildOutcrop } from './rocks.js';
 import { createRoute } from './route.js';
 import { createCast } from './cast.js';
 import { createPartner } from './partner.js';
@@ -128,6 +128,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     U.uRockR.value.set(t.radius[0] || 1, t.radius[1], t.radius[2]);
     ctx.terrain.buildTerrain(t); ctx.terrain.computeShadows(t.shadowRes); sys.rocks.reset();
     sys.habitat.reground();   // the rebuilt mesh has slightly different heights
+    if (ctx.outcrop) ctx.outcrop.userData.place(name);
     if (sys.routeGlow) sys.routeGlow.rebuild();  // re-drape the route on the new mesh
     if (sys.shelter) sys.shelter.rebuild();
     if (sys.dust) sys.dust.setTier(name);
@@ -198,9 +199,11 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
 
     status('Loading textures…');
     const tr = TIERS[ctx.tier];
-    const [nrm, mask, gravel, slab, ring, ortho, cCol, cNao, ...rockMaps] = await Promise.all([
+    const oc = ctx.tier === 'low' ? '_lo' : '';   // the layered outcrop has half-size textures for the Low tier
+    const [nrm, mask, gravel, slab, ring, ortho, cCol, cNao, oCol, oNao, ...rockMaps] = await Promise.all([
       assets.tex('normal_ao.jpg'), assets.tex('outcrop_mask.jpg'), assets.tex('gravel_nl.jpg', { repeat: true, aniso: tr.aniso }), assets.tex('slab_nl.jpg', { repeat: true, aniso: tr.aniso }),
       assets.tex('ring_gray.jpg'), assets.tex(tr.ortho, { aniso: tr.aniso }), assets.tex('cheyava_color.jpg', { srgb: true }), assets.tex('cheyava_nao.jpg'),
+      assets.tex('outcrop_color' + oc + '.jpg', { srgb: true, aniso: tr.aniso }), assets.tex('outcrop_nao' + oc + '.jpg'),
       ...ROCK_NAMES.map((n) => assets.tex(n + '.jpg', { srgb: true })),
     ]);
     if (!alive) return;
@@ -214,6 +217,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     applyPreset(ctx, 'clear_day');
     renderer.setPixelRatio(Math.min(devicePixelRatio, tr.pixelRatio)); resize(); U.uRockR.value.set(tr.radius[0] || 1, tr.radius[1], tr.radius[2]);
     ctx.terrain.buildTerrain(tr); ctx.terrain.buildRing(ring); buildSky(ctx);
+    ctx.outcrop = await buildOutcrop(ctx, [oCol, oNao]); if (!alive) return;   // before the rocks, which keep clear of it
     sys.rocks.init(rocksJ, rockMaps);
     ctx.cheyava = await buildCheyava(ctx, [cCol, cNao]); if (!alive) return;
 

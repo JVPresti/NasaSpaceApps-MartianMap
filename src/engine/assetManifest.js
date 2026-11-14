@@ -44,6 +44,7 @@ const MODELS = [
   'assets_astronaut/arm_clips.glb',
   'assets_props/sample_scoop.glb',
   'assets_props/tool_case.glb',
+  'assets/outcrop.glb',
   'assets_habitat/habitat.glb',
   'assets_habitat/habitat_interior.glb',
   ...FURNITURE_MODELS.map((name) => 'assets_habitat/furniture/' + name + '.glb'),
@@ -63,5 +64,6 @@ const OTHER = [
  */
 export function buildAssetManifest(tier) {
   const ortho = (TIERS[tier] || TIERS.high).ortho;
-  return [...CORE_JSON, ...CORE_TEXTURES, 'assets/' + ortho, ...MODELS, ...OTHER];
+  const oc = tier === 'low' ? '_lo' : '';   // the layered outcrop has half-size textures for the Low tier
+  return [...CORE_JSON, ...CORE_TEXTURES, 'assets/' + ortho, 'assets/outcrop_color' + oc + '.jpg', 'assets/outcrop_nao' + oc + '.jpg', ...MODELS, ...OTHER];
 }
