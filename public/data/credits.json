@@ -313,6 +313,38 @@
       "origin": "provenance"
     },
     {
+      "id": "rodriguez-manfredi-et-al-mars-2020",
+      "name": "Rodriguez-Manfredi et al., Mars 2020 MEDA Bundle (urn:nasa:pds:mars2020_meda), NASA Planetary Data System, Atmospheres node",
+      "kind": "weather",
+      "provider": "Mars 2020",
+      "mission": "Mars 2020",
+      "instrument": "MEDA WS",
+      "credit_line": "Rodriguez-Manfredi et al., Mars 2020 MEDA Bundle (urn:nasa:pds:mars2020_meda), NASA Planetary Data System, Atmospheres node",
+      "citation": null,
+      "license": "MEDA data in PDS are public with no restriction of use (NASA SPD-41A).",
+      "license_url": null,
+      "url": "https://doi.org/10.17189/1522849",
+      "source_urls": [
+        "https://doi.org/10.17189/1522849"
+      ],
+      "data_urls": [
+        "https://atmos.nmsu.edu/PDS/data/PDS4/Mars2020/mars2020_meda/",
+        "https://atmos.nmsu.edu/PDS/data/PDS4/Mars2020/mars2020_meda/data_calibrated_env/sol_1140_1259/sol_1187/WE__1187___________CAL_ATS_________________P01.CSV",
+        "https://atmos.nmsu.edu/PDS/data/PDS4/Mars2020/mars2020_meda/data_derived_env/sol_0300_0419/sol_0312/WE__0312___________DER_WS__________________P02.CSV",
+        "https://atmos.nmsu.edu/PDS/data/PDS4/Mars2020/mars2020_meda/data_derived_env/sol_1140_1259/sol_1187/WE__1187___________DER_PS__________________P01.CSV",
+        "https://atmos.nmsu.edu/PDS/data/PDS4/Mars2020/mars2020_meda/data_derived_env/sol_1140_1259/sol_1187/WE__1187___________DER_RHS_________________P01.CSV"
+      ],
+      "used_in": [
+        "public/data/meda_sol.json: ",
+        "public/data/meda_sol.json: series[sol_0312_wind].channels.wind_direction",
+        "public/data/meda_sol.json: series[sol_0312_wind].channels.wind_speed",
+        "public/data/meda_sol.json: series[sol_1187].channels.air_temperature",
+        "public/data/meda_sol.json: series[sol_1187].channels.pressure",
+        "public/data/meda_sol.json: series[sol_1187].channels.relative_humidity"
+      ],
+      "origin": "provenance"
+    },
+    {
       "id": "sanchez-lavega-2025-dust-storms",
       "name": "Sanchez-Lavega, A. et al. 2025, Journal of Geophysical Research: Planets 130, e2024JE008565",
       "kind": "weather",
@@ -446,7 +478,9 @@
       ],
       "used_in": [
         "public/data/hazards.json: values.radiation.background.absorbed_dose_rate",
-        "public/data/hazards.json: values.radiation.background.dose_equivalent_rate"
+        "public/data/hazards.json: values.radiation.background.dose_equivalent_rate",
+        "public/data/rad.json: values.radiation.background.absorbed_dose_rate",
+        "public/data/rad.json: values.radiation.background.dose_equivalent_rate"
       ],
       "origin": "provenance"
     },
@@ -509,7 +543,8 @@
         "https://doi.org/10.1029/2018GL077760"
       ],
       "data_urls": [
-        "https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/"
+        "https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/",
+        "https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/SOL_01773_01869/"
       ],
       "used_in": [
         "public/data/hazards.json: models.sep_2017_profile",
@@ -519,7 +554,8 @@
         "public/data/hazards.json: values.radiation.sep_2017.doubling_time",
         "public/data/hazards.json: values.radiation.sep_2017.duration",
         "public/data/hazards.json: values.radiation.sep_2017.event_dose",
-        "public/data/hazards.json: values.radiation.sep_2017.onset_at_mars"
+        "public/data/hazards.json: values.radiation.sep_2017.onset_at_mars",
+        "public/data/rad.json: event"
       ],
       "origin": "provenance"
     },
