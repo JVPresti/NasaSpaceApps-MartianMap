@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { setRouteDecision, useMissionStore } from '../state/store.js';
 import { planSummary } from './routePlan.js';
+import { toggleWaypoint } from '../stops/selection.js';
 
 function WaypointRow({ waypoint, index, onCommit }) {
   const [x, setX] = useState(String(Math.round(waypoint.x)));
@@ -31,9 +32,10 @@ function WaypointRow({ waypoint, index, onCommit }) {
   return (
     <li className="route-waypoint">
       <span className="waypoint-number">{index + 1}</span>
-      <span className="waypoint-name" title={waypoint.name}>
+      {/* Selecting a waypoint opens its science stop card, if it has one (#66). */}
+      <button type="button" className="waypoint-name waypoint-select" title={waypoint.name} onClick={() => toggleWaypoint(waypoint.name)}>
         {waypoint.name}
-      </span>
+      </button>
       <label>
         <span>x</span>
         <input
