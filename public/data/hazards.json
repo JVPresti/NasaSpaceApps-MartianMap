@@ -1,0 +1,1525 @@
+{
+  "schema_version": 1,
+  "title": "Marswalk hazard numbers",
+  "description": "Numbers for the dust storm, radiation and low-oxygen events, the helmet HUD, the suit model and the route cost. Every value has a unit, a tag and a provenance block. Field definitions are in public/data/README.md.",
+  "historical_note": "Every observation here is historical. None of it describes current conditions on Mars.",
+  "tags": {
+    "DATA": "Measured by a mission or a lab study, or stated in a NASA specification or procedure. The provenance block names the document and the page.",
+    "DERIVED": "Calculated by us from DATA values. The note gives the calculation.",
+    "SIM": "Our own assumption or game choice. The note says why and what it is based on."
+  },
+  "values": {
+    "dust.tau.clear_season": {
+      "value": 0.45,
+      "range": [0.4, 0.5],
+      "unit": "optical depth at 880 nm",
+      "tag": "DATA",
+      "label": "Mastcam-Z · Perseverance · Jezero",
+      "provenance": {
+        "mission": "Mars 2020",
+        "instrument": "Mastcam-Z",
+        "product_id": null,
+        "site": "Jezero crater",
+        "sol_or_date": "sols 0-275, Ls 20-135 (MY 36), 2021",
+        "reference": "Bell et al. 2022, Geological, multispectral, and meteorological imaging results from the Mars 2020 Perseverance rover in Jezero crater, Science Advances 8, eabo4856",
+        "url": "https://doi.org/10.1126/sciadv.abo4856",
+        "locator": "Atmosphere section, Fig. 10A: 'observed 880-nm optical depths of 0.4 to 0.5'",
+        "data_url": "https://data.mendeley.com/datasets/gktjp9jptb/2",
+        "license": "Cited fact. The Mastcam-Z optical depth record (Lemmon, Mendeley Data) is CC BY 4.0.",
+        "note": "Clear-sky baseline for the dust storm event. Value is the middle of the published range. Readings before about 10:00 local time run 0.05 to 0.10 higher because of morning ice haze."
+      }
+    },
+    "dust.tau.seasonal_minimum": {
+      "value": 0.25,
+      "unit": "optical depth at 880 nm",
+      "tag": "DATA",
+      "label": "Mastcam-Z · Perseverance · Jezero",
+      "provenance": {
+        "mission": "Mars 2020",
+        "instrument": "Mastcam-Z",
+        "product_id": null,
+        "site": "Jezero crater",
+        "sol_or_date": "early northern summer, Ls about 90-135 (MY 36), 2021",
+        "reference": "Bell et al. 2022, Science Advances 8, eabo4856",
+        "url": "https://doi.org/10.1126/sciadv.abo4856",
+        "locator": "Atmosphere section: 'The early summer decline to an optical depth (τ) of ~0.25'",
+        "data_url": "https://data.mendeley.com/datasets/gktjp9jptb/2",
+        "license": "Cited fact. Mastcam-Z optical depth record is CC BY 4.0.",
+        "note": "Clearest sky of the year at Jezero."
+      }
+    },
+    "dust.tau.storm_2022_before": {
+      "value": 0.3,
+      "unit": "optical depth, visible",
+      "tag": "DATA",
+      "label": "Mastcam-Z + MEDA · Perseverance · Jezero",
+      "provenance": {
+        "mission": "Mars 2020",
+        "instrument": "Mastcam-Z, MEDA RDS",
+        "product_id": null,
+        "site": "Jezero crater",
+        "sol_or_date": "before sol 313 (Ls 153.4), early January 2022",
+        "reference": "Lemmon et al. 2022, Dust, Sand, and Winds Within an Active Martian Storm in Jezero Crater, Geophysical Research Letters 49, e2022GL100126",
+        "url": "https://doi.org/10.1029/2022GL100126",
+        "locator": "Section 3.2: 'Prior to the storm, visible optical depth was near 0.3'",
+        "data_url": "https://atmos.nmsu.edu/data_and_services/atmospheres_data/PERSEVERANCE/meda.html",
+        "license": "Cited fact. MEDA data in PDS are public with no restriction of use (NASA SPD-41A).",
+        "note": "Start value of the storm ramp."
+      }
+    },
+    "dust.tau.storm_2022_peak": {
+      "value": 2.0,
+      "unit": "optical depth, visible",
+      "tag": "DATA",
+      "label": "Mastcam-Z + MEDA · Perseverance · Jezero",
+      "provenance": {
+        "mission": "Mars 2020",
+        "instrument": "Mastcam-Z, MEDA RDS",
+        "product_id": null,
+        "site": "Jezero crater",
+        "sol_or_date": "sols 313-318, Ls 153-156 (MY 36), 5-11 January 2022",
+        "reference": "Lemmon et al. 2022, Geophysical Research Letters 49, e2022GL100126",
+        "url": "https://doi.org/10.1029/2022GL100126",
+        "locator": "Abstract: 'Peak visible optical depth was ∼2'",
+        "data_url": "https://atmos.nmsu.edu/data_and_services/atmospheres_data/PERSEVERANCE/meda.html",
+        "license": "Cited fact. MEDA data in PDS are public with no restriction of use (NASA SPD-41A).",
+        "note": "Target value of the storm ramp. Sources differ: MEDA RDS peaked at 1.7 on sol 313 (dust.tau.storm_2022_meda_rds_peak), and Sanchez-Lavega et al. 2025 (doi 10.1029/2024JE008565, section 6.5) report about 1.4 on sols 316-317 from SkyCam and Mastcam-Z."
+      }
+    },
+    "dust.tau.storm_2022_meda_rds_peak": {
+      "value": 1.7,
+      "unit": "optical depth, visible",
+      "tag": "DATA",
+      "label": "MEDA RDS · Perseverance · Jezero",
+      "provenance": {
+        "mission": "Mars 2020",
+        "instrument": "MEDA RDS",
+        "product_id": "mars2020_meda data_calibrated_env, sol 0313, CAL_RDS",
+        "site": "Jezero crater",
+        "sol_or_date": "sol 313, Ls 153.4 (MY 36), January 2022",
+        "reference": "Lemmon et al. 2022, Geophysical Research Letters 49, e2022GL100126",
+        "url": "https://doi.org/10.1029/2022GL100126",
+        "locator": "Section 3.2: 'peak optical depths of 1.7 (visible) and 0.8 (IR)'",
+        "data_url": "https://atmos.nmsu.edu/PDS/data/PDS4/Mars2020/mars2020_meda/",
+        "license": "Cited fact. MEDA data in PDS are public with no restriction of use (NASA SPD-41A).",
+        "note": "The value the HUD can show as 'MEDA'. PDS has calibrated RDS irradiance for this sol but no optical depth column. The optical depth is the paper's retrieval."
+      }
+    },
+    "dust.tau.ir_to_visible_ratio": {
+      "value": 0.5,
+      "unit": "ratio (9 µm optical depth / visible optical depth)",
+      "tag": "DATA",
+      "label": "MEDA TIRS · Perseverance · Jezero",
+      "provenance": {
+        "mission": "Mars 2020",
+        "instrument": "MEDA TIRS",
+        "product_id": null,
+        "site": "Jezero crater",
+        "sol_or_date": "sols 313-318 (MY 36), January 2022",
+        "reference": "Lemmon et al. 2022, Geophysical Research Letters 49, e2022GL100126",
+        "url": "https://doi.org/10.1029/2022GL100126",
+        "locator": "Section 3.2: '9-μm dust optical depth was approximately half the visible optical depth'",
+        "data_url": "https://atmos.nmsu.edu/PDS/data/PDS4/Mars2020/mars2020_meda/",
+        "license": "Cited fact. MEDA data in PDS are public with no restriction of use (NASA SPD-41A).",
+        "note": "Converts between the visible values here and any infrared value from MEDA TIRS."
+      }
+    },
+    "dust.tau.storm_2022_after": {
+      "value": 0.4,
+      "unit": "optical depth, visible",
+      "tag": "DATA",
+      "label": "Mastcam-Z + MEDA · Perseverance · Jezero",
+      "provenance": {
+        "mission": "Mars 2020",
+        "instrument": "Mastcam-Z, MEDA RDS",
+        "product_id": null,
+        "site": "Jezero crater",
+        "sol_or_date": "after sol 318 (MY 36), January 2022",
+        "reference": "Lemmon et al. 2022, Geophysical Research Letters 49, e2022GL100126",
+        "url": "https://doi.org/10.1029/2022GL100126",
+        "locator": "Section 3.2: 'In the next sols, visible optical depths were near 0.4'",
+        "data_url": "https://atmos.nmsu.edu/data_and_services/atmospheres_data/PERSEVERANCE/meda.html",
+        "license": "Cited fact. MEDA data in PDS are public with no restriction of use (NASA SPD-41A).",
+        "note": "The sky does not return to the pre-storm 0.3 right away."
+      }
+    },
+    "dust.storm_2022.onset": {
+      "value": 1,
+      "unit": "sol (upper bound)",
+      "tag": "DATA",
+      "label": "Mastcam-Z + MEDA · Perseverance · Jezero",
+      "provenance": {
+        "mission": "Mars 2020",
+        "instrument": "Mastcam-Z, MEDA RDS, MEDA TIRS",
+        "product_id": null,
+        "site": "Jezero crater",
+        "sol_or_date": "sol 313 (MY 36), January 2022",
+        "reference": "Lemmon et al. 2022, Geophysical Research Letters 49, e2022GL100126",
+        "url": "https://doi.org/10.1029/2022GL100126",
+        "locator": "Section 3.1-3.2: dust lifting 'noticed around the rover on sol 313' with 'rapid excursions with factor-of-several changes and peak optical depths of 1.7'",
+        "data_url": "https://atmos.nmsu.edu/data_and_services/atmospheres_data/PERSEVERANCE/meda.html",
+        "license": "Cited fact.",
+        "note": "Optical depth went from about 0.3 to excursions of 1.7 within sol 313. The paper gives no onset time in hours, so one sol is an upper bound."
+      }
+    },
+    "dust.storm_2022.duration": {
+      "value": 6,
+      "unit": "sols",
+      "tag": "DATA",
+      "label": "Mastcam-Z + MEDA · Perseverance · Jezero",
+      "provenance": {
+        "mission": "Mars 2020",
+        "instrument": "Mastcam-Z, MEDA",
+        "product_id": null,
+        "site": "Jezero crater",
+        "sol_or_date": "sols 313-318 (MY 36), 5-11 January 2022",
+        "reference": "Lemmon et al. 2022, Geophysical Research Letters 49, e2022GL100126",
+        "url": "https://doi.org/10.1029/2022GL100126",
+        "locator": "Section 3.1: 'optical depths increased then, through sol 318'; 'the storm faded quickly on 318'",
+        "data_url": null,
+        "license": "Cited fact.",
+        "note": "Sols 313 to 318 inclusive. Visibility across the crater was low for the first three sols (313-315)."
+      }
+    },
+    "dust.event.ramp_duration": {
+      "value": 300,
+      "unit": "s",
+      "tag": "SIM",
+      "label": "SIM",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": null,
+        "site": null,
+        "sol_or_date": null,
+        "reference": "Marswalk team assumption",
+        "url": null,
+        "locator": null,
+        "data_url": null,
+        "license": "Project value",
+        "note": "Time for the in-game optical depth to go from dust.tau.clear_season to dust.tau.storm_2022_peak. The real rise took up to one sol (dust.storm_2022.onset). #24 asks for 'a few minutes' so the event fits in an EVA."
+      }
+    },
+    "dust.event.nav_fix_tau_max": {
+      "value": 1.0,
+      "unit": "optical depth, visible",
+      "tag": "SIM",
+      "label": "SIM",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": null,
+        "site": null,
+        "sol_or_date": null,
+        "reference": "Marswalk team assumption, based on Sanchez-Lavega et al. 2025, JGR Planets 130, doi 10.1029/2024JE008565",
+        "url": "https://doi.org/10.1029/2024JE008565",
+        "locator": "Section 6.6: storm A defined at Jezero by 'τ ≥ 1 between sols 417 and 472'",
+        "data_url": null,
+        "license": "Project value",
+        "note": "Above this optical depth the terrain-matching position fix is unavailable (plan section 4.2, issue #42). The 1.0 threshold is our choice. The paper uses τ ≥ 1 as its storm level at Jezero."
+      }
+    },
+    "dust.visibility.jezero_storm_2022_los_opacity": {
+      "value": 1.3,
+      "uncertainty": 0.1,
+      "unit": "line-of-sight optical depth per 10.5 km",
+      "tag": "DATA",
+      "label": "Navcam · Perseverance · Jezero",
+      "provenance": {
+        "mission": "Mars 2020",
+        "instrument": "Navcam",
+        "product_id": null,
+        "site": "Jezero crater, view of a hill 36 km east",
+        "sol_or_date": "sols 313-315 (MY 36), January 2022",
+        "reference": "Lemmon et al. 2022, Geophysical Research Letters 49, e2022GL100126",
+        "url": "https://doi.org/10.1029/2022GL100126",
+        "locator": "Section 3.2: 'LOS opacity varied with column optical depth, peaking at 1.3 ± 0.1 per 10.5 km when the hill was only faintly visible'",
+        "data_url": null,
+        "license": "Cited fact.",
+        "note": "Near-surface haze at the worst moment of the January 2022 storm at Jezero."
+      }
+    },
+    "dust.visibility.jezero_storm_2022": {
+      "value": 31,
+      "unit": "km",
+      "tag": "DERIVED",
+      "label": "DERIVED from Navcam · Perseverance · Jezero",
+      "provenance": {
+        "mission": "Mars 2020",
+        "instrument": "Navcam",
+        "product_id": null,
+        "site": "Jezero crater",
+        "sol_or_date": "sols 313-315 (MY 36), January 2022",
+        "reference": "Lemmon et al. 2022 (extinction) and Smith et al. 2019 (Koschmieder method, contrast threshold 0.02)",
+        "url": "https://doi.org/10.1029/2022GL100126",
+        "locator": "Lemmon section 3.2; Smith et al. 2019 section 2",
+        "data_url": null,
+        "license": "Cited facts, our calculation.",
+        "note": "Extinction β = 1.3 / 10.5 km = 0.124 per km. Visibility V = -ln(0.02) / β = 3.912 / 0.124 = 31.6 km, rounded down. This fits the paper's hill at 36 km being 'only faintly visible'. A regional storm at Jezero cut visibility far less than the 2018 global storm at Gale (dust.visibility.gale_global_storm_2018)."
+      }
+    },
+    "dust.visibility.gale_global_storm_2018": {
+      "value": 3,
+      "unit": "km (upper bound)",
+      "tag": "DATA",
+      "label": "Navcam · Curiosity · Gale",
+      "provenance": {
+        "mission": "MSL",
+        "instrument": "Navcam",
+        "product_id": null,
+        "site": "Gale crater, not Jezero",
+        "sol_or_date": "sols 2086-2090, June-July 2018 (MY 34 global dust storm)",
+        "reference": "Smith et al. 2019, Visibility and Line-of-Sight Extinction Estimates in Gale Crater During the 2018/MY34 Global Dust Storm, Geophysical Research Letters 46, 9414-9421",
+        "url": "https://doi.org/10.1029/2019GL083788",
+        "locator": "Plain language summary: 'At the peak of the storm, visibility was reduced to less than 3 km'",
+        "data_url": "https://pds-imaging.jpl.nasa.gov/volumes/msl.html",
+        "license": "Cited fact. MSL images in PDS are public with no restriction of use.",
+        "note": "Worst measured Mars surface visibility. Measured at Gale crater by Curiosity during a global storm, not at Jezero. Use only for a 'severe storm' scenario and say where it comes from."
+      }
+    },
+    "dust.visibility.gale_global_storm_2018_extinction": {
+      "value": 1.1,
+      "unit": "per km (lower bound)",
+      "tag": "DATA",
+      "label": "Navcam · Curiosity · Gale",
+      "provenance": {
+        "mission": "MSL",
+        "instrument": "Navcam",
+        "product_id": null,
+        "site": "Gale crater, not Jezero",
+        "sol_or_date": "sols 2086-2090, 2018 (MY 34)",
+        "reference": "Smith et al. 2019, Geophysical Research Letters 46, 9414-9421",
+        "url": "https://doi.org/10.1029/2019GL083788",
+        "locator": "Abstract: 'Peak extinction of > 1.1 km−1 was measured between sols 2086 and 2090'",
+        "data_url": "https://pds-imaging.jpl.nasa.gov/volumes/msl.html",
+        "license": "Cited fact.",
+        "note": "Pair with dust.visibility.koschmieder_constant if the fog code wants an extinction coefficient instead of a distance."
+      }
+    },
+    "dust.visibility.koschmieder_constant": {
+      "value": 3.912,
+      "unit": "dimensionless (V = constant / extinction)",
+      "tag": "DATA",
+      "label": "Method · Smith et al. 2019",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": null,
+        "site": null,
+        "sol_or_date": null,
+        "reference": "Smith et al. 2019, Geophysical Research Letters 46, 9414-9421",
+        "url": "https://doi.org/10.1029/2019GL083788",
+        "locator": "Section 2: Koschmieder's law β = -ln(C_T)/D, 'For the average human eye under typical lab conditions, CT ≈ 0.02'",
+        "data_url": null,
+        "license": "Cited fact.",
+        "note": "-ln(0.02) = 3.912. Visibility in km = 3.912 / extinction in km^-1."
+      }
+    },
+    "dust.solar.storm_2022_flux_drop": {
+      "value": 20,
+      "unit": "% below nearby sols (lower bound), total downwelling shortwave",
+      "tag": "DATA",
+      "label": "MEDA RDS · Perseverance · Jezero",
+      "provenance": {
+        "mission": "Mars 2020",
+        "instrument": "MEDA RDS",
+        "product_id": null,
+        "site": "Jezero crater",
+        "sol_or_date": "sols 316-317 (MY 36), January 2022",
+        "reference": "Lemmon et al. 2022, Geophysical Research Letters 49, e2022GL100126",
+        "url": "https://doi.org/10.1029/2022GL100126",
+        "locator": "Section 3.2: total downwelling shortwave on sols 316-317 was '>20% below nearby sols'",
+        "data_url": "https://atmos.nmsu.edu/PDS/data/PDS4/Mars2020/mars2020_meda/",
+        "license": "Cited fact.",
+        "note": "Sunlight reaching the ground during the storm. Useful for any solar power or lighting effect."
+      }
+    },
+    "dust.tau.record_opportunity_2018": {
+      "value": 10.8,
+      "unit": "optical depth",
+      "tag": "DATA",
+      "label": "Opportunity · Meridiani Planum",
+      "provenance": {
+        "mission": "MER-B Opportunity",
+        "instrument": null,
+        "product_id": null,
+        "site": "Meridiani Planum, not Jezero",
+        "sol_or_date": "2018-06-10 (MY 34 global dust storm)",
+        "reference": "NASA/JPL, Six Things to Know About NASA's Opportunity Rover Recovery Efforts, 16 August 2018",
+        "url": "https://www.jpl.nasa.gov/news/six-things-about-opportunitys-recovery-efforts/",
+        "locator": "Body text: 'the last tau measured by Opportunity was 10.8 on June 10'",
+        "data_url": null,
+        "license": "NASA web content, public domain",
+        "note": "Highest optical depth measured on the Martian surface. The same storm ended Opportunity's mission. NASA's 'On Mars, light is energy' page (13 June 2018) gives 10.5 for the same day."
+      }
+    },
+    "dust.season": {
+      "value": [180, 360],
+      "unit": "solar longitude Ls, degrees",
+      "tag": "DATA",
+      "label": "NASA/JPL · MRO MCS",
+      "provenance": {
+        "mission": "Mars orbiters",
+        "instrument": null,
+        "product_id": null,
+        "site": "Global",
+        "sol_or_date": "six Mars years of orbital records",
+        "reference": "NASA/JPL, NASA Mars Orbiters Reveal Seasonal Dust Storm Pattern, 9 June 2016 (Kass et al. 2016, GRL, doi 10.1002/2016GL068978)",
+        "url": "https://www.jpl.nasa.gov/news/nasa-mars-orbiters-reveal-seasonal-dust-storm-pattern/",
+        "locator": "Body text: 'Southern spring and summer have long been recognized as the dustiest part of the Martian year'",
+        "data_url": null,
+        "license": "NASA web content, public domain",
+        "note": "NASA gives the season in words. Ls 180-360 is the definition of southern spring and summer, not a number printed on the page. At Jezero, Sanchez-Lavega et al. 2025 put the dusty epoch at Ls 130-360."
+      }
+    },
+
+    "radiation.background.absorbed_dose_rate": {
+      "value": 0.210,
+      "uncertainty": 0.040,
+      "unit": "mGy/day",
+      "tag": "DATA",
+      "label": "RAD · Curiosity · Gale",
+      "provenance": {
+        "mission": "MSL",
+        "instrument": "RAD",
+        "product_id": "MSL-M-RAD-3-RDR-V1.0",
+        "site": "Gale crater (-4.4 km MOLA), not Jezero",
+        "sol_or_date": "2012-08-07 to 2013-06-01 (first 300 sols, near solar maximum of cycle 24)",
+        "reference": "Hassler et al. 2014, Mars' Surface Radiation Environment Measured with the Mars Science Laboratory's Curiosity Rover, Science 343, 1244797",
+        "url": "https://doi.org/10.1126/science.1244797",
+        "locator": "p. 1244797-3, text and Table 1: 'an average total GCR dose rate at Gale crater (– 4.4 km MOLA) of 0.210 ± 0.040 mGy/day'",
+        "data_url": "https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/",
+        "license": "Cited fact. RAD data in PDS are public with no restriction of use (NASA SPD-41A).",
+        "note": "Background dose rate for the HUD (8.75 µGy per hour). Measured by Curiosity in Gale crater, not in Jezero. Jezero sits at about -2.4 km MOLA (terrain.json base_elev_m), about 2 km higher than Gale, so the thinner air above it would give a somewhat higher dose. No measurement at Jezero exists."
+      }
+    },
+    "radiation.background.dose_equivalent_rate": {
+      "value": 0.64,
+      "uncertainty": 0.12,
+      "unit": "mSv/day",
+      "tag": "DATA",
+      "label": "RAD · Curiosity · Gale",
+      "provenance": {
+        "mission": "MSL",
+        "instrument": "RAD",
+        "product_id": "MSL-M-RAD-3-RDR-V1.0",
+        "site": "Gale crater (-4.4 km MOLA), not Jezero",
+        "sol_or_date": "2012-08-07 to 2013-06-01",
+        "reference": "Hassler et al. 2014, Science 343, 1244797",
+        "url": "https://doi.org/10.1126/science.1244797",
+        "locator": "p. 1244797-3: 'an average GCR dose-equivalent rate on the Mars surface of 0.64 ± 0.12 millisieverts (mSv)/day'",
+        "data_url": "https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/",
+        "license": "Cited fact.",
+        "note": "Health-weighted dose (26.7 µSv per hour). Uses the measured mean quality factor 3.05 ± 0.3. Measured in Gale crater, not Jezero."
+      }
+    },
+    "radiation.background.solar_cycle_range": {
+      "value": [0.35, 1.15],
+      "unit": "mSv/day",
+      "tag": "DERIVED",
+      "label": "RAD model · Curiosity · Gale",
+      "provenance": {
+        "mission": "MSL",
+        "instrument": "RAD",
+        "product_id": "MSL-M-RAD-3-RDR-V1.0",
+        "site": "Gale crater, not Jezero",
+        "sol_or_date": "first MSL Mars year, 2012-2014, extended by model over the solar cycle",
+        "reference": "Guo et al. 2015, Modeling the Variations of Dose Rate Measured by RAD During the First MSL Martian Year: 2012-2014, Astrophysical Journal 810, 24",
+        "url": "https://doi.org/10.1088/0004-637X/810/1/24",
+        "locator": "arXiv 1507.03473v2 p. 20: 'The estimated surface dose equivalent rate ranges from about 0.35 mSv/day to about 1.15 mSv/day'",
+        "data_url": "https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/",
+        "license": "Cited fact.",
+        "note": "Tagged DERIVED because the authors fit a model to RAD data. The rate is highest at solar minimum and lowest at solar maximum."
+      }
+    },
+    "radiation.limit.career": {
+      "value": 600,
+      "unit": "mSv effective dose, career",
+      "tag": "DATA",
+      "label": "NASA-STD-3001",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": "NASA-STD-3001 Vol. 1 Rev B, requirement V1 4030",
+        "site": null,
+        "sol_or_date": "Technical brief OCHMO-TB-020 Rev E, 2022-12-27",
+        "reference": "NASA Office of the Chief Health and Medical Officer, Design for Ionizing Radiation Protection, OCHMO-TB-020 Rev E",
+        "url": "https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf",
+        "locator": "p. 4: 'total career effective radiation dose due to space flight radiation exposure shall be less than 600 mSv'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "Context for the HUD or the EVA summary screen."
+      }
+    },
+    "radiation.limit.spe_design": {
+      "value": 250,
+      "unit": "mSv effective dose, design reference SPE",
+      "tag": "DATA",
+      "label": "NASA-STD-3001",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": "NASA-STD-3001 Vol. 1 Rev B, requirement V1 4031",
+        "site": null,
+        "sol_or_date": "OCHMO-TB-020 Rev E, 2022-12-27",
+        "reference": "NASA OCHMO, Design for Ionizing Radiation Protection, OCHMO-TB-020 Rev E",
+        "url": "https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf",
+        "locator": "p. 6: protect crew from the design reference SPE (sum of the October 1989 events) 'to less than a NASA effective dose of 250 mSv'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "Shelter design target for a worst-case solar particle event."
+      }
+    },
+    "radiation.sep_2017.flare": {
+      "value": "X8.2",
+      "unit": "GOES X-ray class",
+      "tag": "DATA",
+      "label": "DONKI · GOES-15",
+      "provenance": {
+        "mission": "GOES-15",
+        "instrument": "SEM/XRS 1.0-8.0 Å",
+        "product_id": "DONKI 2017-09-10T15:35:00-FLR-001",
+        "site": "Sun, source S08W88, active region 12673",
+        "sol_or_date": "2017-09-10, begin 15:35Z, peak 16:06Z, end 16:31Z",
+        "reference": "NASA CCMC Space Weather Database Of Notifications, Knowledge, Information (DONKI)",
+        "url": "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13098/-1",
+        "locator": "FLR record fields beginTime, peakTime, classType, sourceLocation; API https://ccmc.gsfc.nasa.gov/DONKI/WS/get/FLR?startDate=2017-09-10&endDate=2017-09-10",
+        "data_url": "https://ccmc.gsfc.nasa.gov/DONKI/WS/get/FLR?startDate=2017-09-10&endDate=2017-09-10",
+        "license": "NASA data, public",
+        "note": "The flare that started the replayed event. DONKI links it to CME 2017-09-10T16:09:00-CME-001 (2650 km/s) and to SEP records 16:25Z (GOES-13 >100 MeV), 16:45Z (GOES-13 >10 MeV) and 20:00Z (SOHO COSTEP). All DONKI SEP records are near Earth. DONKI has no Mars SEP record."
+      }
+    },
+    "radiation.sep_2017.first_alert": {
+      "value": "2017-09-10T16:07Z",
+      "unit": "UTC time",
+      "tag": "DATA",
+      "label": "DONKI",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": "DONKI notification 20170910-AL-001",
+        "site": null,
+        "sol_or_date": "2017-09-10",
+        "reference": "NASA CCMC DONKI notifications",
+        "url": "https://ccmc.gsfc.nasa.gov/DONKI/WS/get/notifications?startDate=2017-09-10&endDate=2017-09-10&type=all",
+        "locator": "messageID 20170910-AL-001, messageIssueTime 2017-09-10T16:07Z",
+        "data_url": null,
+        "license": "NASA data, public",
+        "note": "First DONKI alert, one minute after the flare peak."
+      }
+    },
+    "radiation.sep_2017.onset_at_mars": {
+      "value": "2017-09-10T19:50Z",
+      "unit": "UTC time",
+      "tag": "DATA",
+      "label": "RAD · Curiosity · Gale",
+      "provenance": {
+        "mission": "MSL",
+        "instrument": "RAD (E detector)",
+        "product_id": "MSL-M-RAD-3-RDR-V1.0",
+        "site": "Gale crater, not Jezero",
+        "sol_or_date": "2017-09-10",
+        "reference": "Zeitlin et al. 2018, Analysis of the Radiation Hazard Observed by RAD on the Surface of Mars During the September 2017 Solar Particle Event, Geophysical Research Letters 45, 5845-5851",
+        "url": "https://doi.org/10.1029/2018GL077760",
+        "locator": "Section 3.1: 'A steady, statistically-significant increase in the E dose rate started around 19:50 UTC September 10'",
+        "data_url": "https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/",
+        "license": "Cited fact.",
+        "note": "The paper does not say whether this is time at Mars or time received on Earth. The difference is light travel time, about 10 to 20 minutes."
+      }
+    },
+    "radiation.sep_2017.warning_lead_time": {
+      "value": 224,
+      "unit": "min",
+      "tag": "DERIVED",
+      "label": "DERIVED · DONKI + RAD",
+      "provenance": {
+        "mission": "GOES-15, MSL",
+        "instrument": "SEM/XRS, RAD",
+        "product_id": "DONKI 2017-09-10T15:35:00-FLR-001; MSL-M-RAD-3-RDR-V1.0",
+        "site": "Sun to Gale crater, not Jezero",
+        "sol_or_date": "2017-09-10",
+        "reference": "DONKI flare record and Zeitlin et al. 2018",
+        "url": "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13098/-1",
+        "locator": "Flare peakTime 16:06Z; Zeitlin section 3.1 onset 19:50Z",
+        "data_url": null,
+        "license": "Cited facts, our calculation.",
+        "note": "19:50Z minus 16:06Z = 3 h 44 min. That is the real warning a crew at Gale would have had from the flare to the first dose rise. Zeitlin says the event was 'unambiguously underway by about 21:00 UTC', 4 h 54 min after the flare peak."
+      }
+    },
+    "radiation.sep_2017.dose_rate_before": {
+      "value": 240,
+      "unit": "µGy/day (water)",
+      "tag": "DATA",
+      "label": "RAD · Curiosity · Gale",
+      "provenance": {
+        "mission": "MSL",
+        "instrument": "RAD (B detector, silicon converted to water)",
+        "product_id": "MSL-M-RAD-3-RDR-V1.0",
+        "site": "Gale crater, not Jezero",
+        "sol_or_date": "5 days before 2017-09-10",
+        "reference": "Zeitlin et al. 2018, Geophysical Research Letters 45, 5845-5851",
+        "url": "https://doi.org/10.1029/2018GL077760",
+        "locator": "Table 1, 'Average rates, 5 days pre-SPE', B omnidirectional",
+        "data_url": "https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/",
+        "license": "Cited fact.",
+        "note": "Background level just before the event. It is close to Hassler's long-term 210 µGy/day. The E detector, behind more shielding, read 265."
+      }
+    },
+    "radiation.sep_2017.dose_rate_peak": {
+      "value": 718,
+      "unit": "µGy/day (water)",
+      "tag": "DATA",
+      "label": "RAD · Curiosity · Gale",
+      "provenance": {
+        "mission": "MSL",
+        "instrument": "RAD (B detector)",
+        "product_id": "MSL-M-RAD-3-RDR-V1.0",
+        "site": "Gale crater, not Jezero",
+        "sol_or_date": "2017-09-11, about 04:00-14:00 UTC",
+        "reference": "Zeitlin et al. 2018, Geophysical Research Letters 45, 5845-5851",
+        "url": "https://doi.org/10.1029/2018GL077760",
+        "locator": "Table 1, 'Peak rate', B omnidirectional; section 3.1 'The event peaked on September 11, from about 4:00 to 14:00 UTC'",
+        "data_url": "https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/",
+        "license": "Cited fact.",
+        "note": "About 3 times background, or 29.9 µGy per hour. The E detector peaked at 588 µGy/day. The B dose equivalent peak was 841 µSv/day."
+      }
+    },
+    "radiation.sep_2017.dose_rate_after": {
+      "value": 208,
+      "unit": "µGy/day (water)",
+      "tag": "DATA",
+      "label": "RAD · Curiosity · Gale",
+      "provenance": {
+        "mission": "MSL",
+        "instrument": "RAD (B detector)",
+        "product_id": "MSL-M-RAD-3-RDR-V1.0",
+        "site": "Gale crater, not Jezero",
+        "sol_or_date": "5 days after the shock arrival, 2017-09-13 onward",
+        "reference": "Zeitlin et al. 2018, Geophysical Research Letters 45, 5845-5851",
+        "url": "https://doi.org/10.1029/2018GL077760",
+        "locator": "Table 1, 'Average rates, 5 days post-SPE', B omnidirectional",
+        "data_url": "https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/",
+        "license": "Cited fact.",
+        "note": "Below the pre-event level. The shock front swept away part of the galactic cosmic rays (a Forbush decrease)."
+      }
+    },
+    "radiation.sep_2017.event_dose": {
+      "value": 544,
+      "unit": "µGy (water), above background",
+      "tag": "DATA",
+      "label": "RAD · Curiosity · Gale",
+      "provenance": {
+        "mission": "MSL",
+        "instrument": "RAD (B detector)",
+        "product_id": "MSL-M-RAD-3-RDR-V1.0",
+        "site": "Gale crater, not Jezero",
+        "sol_or_date": "2017-09-10 19:50Z to 2017-09-13 05:00Z",
+        "reference": "Zeitlin et al. 2018, Geophysical Research Letters 45, 5845-5851",
+        "url": "https://doi.org/10.1029/2018GL077760",
+        "locator": "Section 3.1: 'the SPE contributed 544 µGy of dose in water as measured by the B detector, and 369 µGy of dose as measured by E'",
+        "data_url": "https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/",
+        "license": "Cited fact.",
+        "note": "Whole event, from onset to shock arrival. Zeitlin: staying outside for the whole event 'would have been comparable to adding about two days of GCR exposure'. This event is a timing hazard, not a lethal dose."
+      }
+    },
+    "radiation.sep_2017.doubling_time": {
+      "value": 7,
+      "unit": "h",
+      "tag": "DATA",
+      "label": "RAD · Curiosity · Gale",
+      "provenance": {
+        "mission": "MSL",
+        "instrument": "RAD",
+        "product_id": "MSL-M-RAD-3-RDR-V1.0",
+        "site": "Gale crater, not Jezero",
+        "sol_or_date": "2017-09-10 to 2017-09-11",
+        "reference": "Zeitlin et al. 2018, Geophysical Research Letters 45, 5845-5851",
+        "url": "https://doi.org/10.1029/2018GL077760",
+        "locator": "Section 3.1: 'unambiguously underway by about 21:00 UTC on 10 September, and dose rates doubled within about 7 hours'",
+        "data_url": null,
+        "license": "Cited fact.",
+        "note": "How fast the dose rate climbs after onset."
+      }
+    },
+    "radiation.sep_2017.duration": {
+      "value": 57,
+      "unit": "h",
+      "tag": "DERIVED",
+      "label": "DERIVED · RAD · Curiosity · Gale",
+      "provenance": {
+        "mission": "MSL",
+        "instrument": "RAD",
+        "product_id": "MSL-M-RAD-3-RDR-V1.0",
+        "site": "Gale crater, not Jezero",
+        "sol_or_date": "2017-09-10 19:50Z to 2017-09-13 05:00Z",
+        "reference": "Zeitlin et al. 2018, Geophysical Research Letters 45, 5845-5851",
+        "url": "https://doi.org/10.1029/2018GL077760",
+        "locator": "Section 3.1: onset 19:50 UTC 10 Sep; 'Dose rates then fell gradually until about 05:00 UTC September 13, at which point they fell steeply'",
+        "data_url": null,
+        "license": "Cited facts, our calculation.",
+        "note": "Onset to shock arrival is 57 h 10 min. The profile is in models.sep_2017_profile."
+      }
+    },
+    "radiation.sep_2024.event_dose": {
+      "value": 8100,
+      "unit": "µGy",
+      "tag": "DATA",
+      "label": "RAD · Curiosity · Gale",
+      "provenance": {
+        "mission": "MSL",
+        "instrument": "RAD",
+        "product_id": null,
+        "site": "Gale crater, not Jezero",
+        "sol_or_date": "2024-05-20",
+        "reference": "NASA, NASA Watches Mars Light Up During Epic Solar Storm, updated 10 June 2024",
+        "url": "https://www.nasa.gov/missions/maven/nasa-watches-mars-light-up-during-epic-solar-storm/",
+        "locator": "Body text: astronauts next to Curiosity 'would have received a radiation dose of 8,100 micrograys'",
+        "data_url": null,
+        "license": "NASA web content, public domain",
+        "note": "Reference only, not replayed. Largest event RAD had measured by 2024, after an X12 flare on the far side of the Sun. NASA gives no peak rate or duration, and particles reached Mars 'in just tens of minutes'. DONKI has no SEP or flare record for it (SEP query for 2024-05-15 to 2024-05-25 returns an empty list), which shows that Earth-side monitoring alone can miss an event at Mars."
+      }
+    },
+
+    "suit.model": {
+      "value": "xEMU",
+      "unit": null,
+      "tag": "SIM",
+      "label": "SIM",
+      "provenance": {
+        "mission": "Artemis",
+        "instrument": null,
+        "product_id": null,
+        "site": null,
+        "sol_or_date": null,
+        "reference": "Marswalk team choice",
+        "url": null,
+        "locator": null,
+        "data_url": null,
+        "license": "Project value",
+        "note": "The simulated suit uses NASA's Exploration EMU (xEMU) consumables, the only suit with every number confirmed in NASA documents. The xEMU was designed for the Moon. Ogilvie et al. 2026 (ICES-2026-127) say it 'would not be feasible to operate on the surface on Mars' (p. 1), mainly because it weighs 177 kg (p. 5). The simulator uses its consumables but not its mass (see metabolic.model_mass)."
+      }
+    },
+    "suit.o2.primary_usable": {
+      "value": 1.7,
+      "unit": "lbm",
+      "value_si": 771,
+      "unit_si": "g",
+      "tag": "DATA",
+      "label": "xEMU spec · NASA",
+      "provenance": {
+        "mission": "Artemis",
+        "instrument": "xEMU PLSS, primary oxygen vessel (POV)",
+        "product_id": "CTSD-ADV-959 Rev A",
+        "site": null,
+        "sol_or_date": "2017",
+        "reference": "NASA JSC, Schematics and Behavioral Description for the AEMU PLSS, CTSD-ADV-959 Rev A",
+        "url": "https://ntrs.nasa.gov/citations/20170009505",
+        "locator": "p. 13: 'The POV stores ~1.7 lbm of usable oxygen'; charged to 3000 psia at 60 °F",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "771 g = 1.7 x 453.592 g. At the xEMU design average of 1200 BTU/hr, an 8 h EVA uses 693 g (see suit.o2.design_eva_use), so the tank fits the spec with about 10 % margin."
+      }
+    },
+    "suit.o2.secondary_usable": {
+      "value": 1.7,
+      "unit": "lbm",
+      "value_si": 771,
+      "unit_si": "g",
+      "tag": "DATA",
+      "label": "xEMU spec · NASA",
+      "provenance": {
+        "mission": "Artemis",
+        "instrument": "xEMU PLSS, secondary oxygen vessel (SOV)",
+        "product_id": "CTSD-ADV-959 Rev A",
+        "site": null,
+        "sol_or_date": "2017",
+        "reference": "NASA JSC, CTSD-ADV-959 Rev A",
+        "url": "https://ntrs.nasa.gov/citations/20170009505",
+        "locator": "p. 13: 'The SOV stores ~1.7 lbm of usable oxygen'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "Emergency supply. It runs in open-loop purge mode, so it lasts far less time than the primary (suit.o2.secondary_abort_time)."
+      }
+    },
+    "suit.o2.secondary_abort_time": {
+      "value": 30,
+      "unit": "min",
+      "tag": "DATA",
+      "label": "xEMU spec · NASA",
+      "provenance": {
+        "mission": "Artemis",
+        "instrument": "xEMU PLSS",
+        "product_id": "CTSD-ADV-959 Rev A",
+        "site": null,
+        "sol_or_date": "2017",
+        "reference": "NASA JSC, CTSD-ADV-959 Rev A",
+        "url": "https://ntrs.nasa.gov/citations/20170009505",
+        "locator": "p. 15: 'the SPV would offer the 30 minute abort time at the higher flow rate'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "Time to get back to shelter on the secondary oxygen in high-flow purge. Lower-flow configurations last longer: the xEVA con ops (EVA-EXP-0042 Rev B, p. 36) gives 'an additional 1 hour of secondary/backup O2'."
+      }
+    },
+    "suit.eva_duration_max": {
+      "value": 8,
+      "unit": "h",
+      "tag": "DATA",
+      "label": "xEVA con ops · NASA",
+      "provenance": {
+        "mission": "Artemis",
+        "instrument": "xEVA suit",
+        "product_id": "EVA-EXP-0042 Rev B",
+        "site": null,
+        "sol_or_date": "2020-10-19",
+        "reference": "NASA, Exploration EVA System Concept of Operations, EVA-EXP-0042 Rev B",
+        "url": "https://www.nasa.gov/wp-content/uploads/2017/02/eva-exp-0042_xeva_system_con_ops_rev_b_final_dtd_10192020_ref_doc.pdf",
+        "locator": "Section 4.1.4: 'The xEVA suit will support EVAs of up to 8 hours in duration (6±2 hours)'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "Nominal EVA is 6 h, maximum 8 h."
+      }
+    },
+    "suit.pressure.nominal": {
+      "value": 4.3,
+      "unit": "psid",
+      "value_si": 29.6,
+      "unit_si": "kPa",
+      "tag": "DATA",
+      "label": "xEVA con ops · NASA",
+      "provenance": {
+        "mission": "Artemis",
+        "instrument": "xEVA suit",
+        "product_id": "EVA-EXP-0042 Rev B",
+        "site": null,
+        "sol_or_date": "2020-10-19",
+        "reference": "NASA, Exploration EVA System Concept of Operations, EVA-EXP-0042 Rev B",
+        "url": "https://www.nasa.gov/wp-content/uploads/2017/02/eva-exp-0042_xeva_system_con_ops_rev_b_final_dtd_10192020_ref_doc.pdf",
+        "locator": "p. 36: 'Suit pressures range from 0.4 psid to 8.2 psid, with a nominal EVA pressure of 4.3 psid'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "Same 4.3 psi as the mockups and the ISS EMU. 29.6 kPa = 4.3 x 6.895."
+      }
+    },
+    "suit.battery.primary_capacity": {
+      "value": 756,
+      "unit": "Wh",
+      "tag": "DATA",
+      "label": "xEMU spec · NASA",
+      "provenance": {
+        "mission": "Artemis",
+        "instrument": "xEMU PLSS battery BATT-690 (Li-ion, LG MJ1 18650 cells, 8S-8P)",
+        "product_id": "CTSD-ADV-959 Rev A",
+        "site": null,
+        "sol_or_date": "2017",
+        "reference": "NASA JSC, CTSD-ADV-959 Rev A",
+        "url": "https://ntrs.nasa.gov/citations/20170009505",
+        "locator": "p. 18, battery table: 'BATT-690 Primary PLSS Battery 29.1 ... 8S – 8P 756'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "Nominal 29.1 V. The schematic on p. 8 of the same document labels it '28V Nom/~900Wh'. We use the table value. The suit also has a 95 Wh auxiliary thermal loop battery and a 189 Wh accessory battery, not modelled."
+      }
+    },
+    "suit.battery.average_draw": {
+      "value": 94.5,
+      "unit": "W",
+      "tag": "DERIVED",
+      "label": "DERIVED · xEMU spec",
+      "provenance": {
+        "mission": "Artemis",
+        "instrument": "xEMU PLSS",
+        "product_id": "CTSD-ADV-959 Rev A; EVA-EXP-0042 Rev B",
+        "site": null,
+        "sol_or_date": null,
+        "reference": "suit.battery.primary_capacity and suit.eva_duration_max",
+        "url": "https://ntrs.nasa.gov/citations/20170009505",
+        "locator": "756 Wh (p. 18) over 8 h (con ops section 4.1.4)",
+        "data_url": null,
+        "license": "Cited facts, our calculation.",
+        "note": "756 Wh / 8 h = 94.5 W, assuming the battery is sized to last exactly the maximum EVA. No NASA document we found states the measured average draw."
+      }
+    },
+    "suit.battery.effort_share": {
+      "value": 0.3,
+      "unit": "fraction of battery draw that scales with metabolic rate",
+      "tag": "SIM",
+      "label": "SIM",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": null,
+        "site": null,
+        "sol_or_date": null,
+        "reference": "Marswalk team assumption",
+        "url": null,
+        "locator": null,
+        "data_url": null,
+        "license": "Project value",
+        "note": "#19 wants battery use to follow effort. Battery W = 94.5 x (0.7 + 0.3 x metabolic W / 352). At the design average (352 W) this gives 94.5 W. At 589 W (flat walking at 1 m/s) it gives 113 W. The idea: fans, pumps and cooling work harder with more body heat, while radio, displays and sensors do not. The 30 % split is our guess. No source gives it."
+      }
+    },
+    "suit.metabolic.design_average": {
+      "value": 1200,
+      "unit": "BTU/hr",
+      "value_si": 352,
+      "unit_si": "W",
+      "tag": "DATA",
+      "label": "xEMU spec · NASA",
+      "provenance": {
+        "mission": "Artemis",
+        "instrument": "xEMU",
+        "product_id": "CTSD-ADV-780 Rev B (xEMU PLSS specification), cited by ICES-2026-127",
+        "site": null,
+        "sol_or_date": "2026",
+        "reference": "Ogilvie et al. 2026, Mars Spacesuit Mass Requirements, ICES-2026-127",
+        "url": "https://ntrs.nasa.gov/citations/20260003038",
+        "locator": "p. 4: 'the metabolic average rate for exploration suit sizing is currently at 1200 BTU/hr (352 Watts)'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "The rate the consumables are sized for. The paper adds that Mars rates are expected to be higher because of the higher gravity."
+      }
+    },
+    "suit.metabolic.design_peak": {
+      "value": 3000,
+      "unit": "BTU/hr for 10 min",
+      "value_si": 879,
+      "unit_si": "W",
+      "tag": "DATA",
+      "label": "xEMU spec · NASA",
+      "provenance": {
+        "mission": "Artemis",
+        "instrument": "xEMU",
+        "product_id": "CTSD-ADV-780 Rev B, cited by ICES-2026-127",
+        "site": null,
+        "sol_or_date": "2026",
+        "reference": "Ogilvie et al. 2026, ICES-2026-127",
+        "url": "https://ntrs.nasa.gov/citations/20260003038",
+        "locator": "p. 4: 'The xEMU specifications require a short duration capability to manage a 3000 BTU/hr peak rate for 10 minutes'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "Suit cooling limit. A walking rate above this for more than 10 minutes is beyond the suit spec. The HUD can warn on it."
+      }
+    },
+    "suit.o2.design_eva_use": {
+      "value": 693,
+      "unit": "g",
+      "tag": "DERIVED",
+      "label": "DERIVED · xEMU spec",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": null,
+        "site": null,
+        "sol_or_date": null,
+        "reference": "suit.metabolic.design_average, metabolic.energy_per_litre_o2, metabolic.o2_density",
+        "url": "https://ntrs.nasa.gov/citations/20260003038",
+        "locator": null,
+        "data_url": null,
+        "license": "Our calculation.",
+        "note": "352 W x 8 h x 3600 s / 20900 J/L = 485 L O2 x 1.429 g/L = 693 g. Check that the model is consistent with the 771 g tank."
+      }
+    },
+    "suit.reserve.time": {
+      "value": 30,
+      "unit": "min at the current metabolic rate",
+      "tag": "DATA",
+      "label": "Apollo 17 procedures · NASA",
+      "provenance": {
+        "mission": "Apollo 17",
+        "instrument": "PLSS",
+        "product_id": "Apollo 17 Final Lunar Surface Procedures, Vol. 2 Contingency",
+        "site": "Moon, Taurus-Littrow",
+        "sol_or_date": "1972-12-01",
+        "reference": "NASA MSC, Apollo 17 Final Lunar Surface Procedures, Volume 2: Contingency",
+        "url": "https://pds-geosciences.wustl.edu/Lunar/urn-nasa-pds-apollodoc/document_a17/mission/a17_final_lunar_surface_procedures_vol2_contingency.pdf",
+        "locator": "Tables 2.4-2 and 2.4-3, printed pp. 16-17: '30 MINUTES RESERVES MAINTAINED ON ALL PLSS CONSUMABLES AT STATION METABOLIC RATE'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "The reserve for the low-oxygen rule in #26. The ISS EMU uses the same 30 minutes (Moore 2014, NTRS 20140009556, slide 11: '30 minutes for reserve')."
+      }
+    },
+    "suit.reserve.walkback_pad": {
+      "value": 20,
+      "unit": "% added to walking metabolic rate for the walkback estimate",
+      "tag": "DATA",
+      "label": "Apollo 15 planning · NASA",
+      "provenance": {
+        "mission": "Apollo 15",
+        "instrument": null,
+        "product_id": "Bellcomm B70 10028",
+        "site": "Moon",
+        "sol_or_date": "1970-10-13",
+        "reference": "Benjamin, Apollo 15 EVA Capability and Constraints Envelopes, Bellcomm memorandum B70 10028",
+        "url": "https://webarchive.library.unt.edu/eot2008/20090109180220id_/http://www.hq.nasa.gov/alsj/19790073512_1979073512.pdf",
+        "locator": "p. 1: 'A 20% pad is required for emergency walkback, making the metabolic rate 1440 BTU/hr at a speed of 3.3 km/hr'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "Walkback O2 = (walking O2 rate along the route home) x 1.2. Apollo used this pad together with the 30 min reserve."
+      }
+    },
+    "suit.alert.caution_margin": {
+      "value": 15,
+      "unit": "min",
+      "tag": "SIM",
+      "label": "SIM",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": null,
+        "site": null,
+        "sol_or_date": null,
+        "reference": "Marswalk team assumption",
+        "url": null,
+        "locator": null,
+        "data_url": null,
+        "license": "Project value",
+        "note": "Margin = O2 time left - (walkback time with the 20 % pad + 30 min reserve). Caution when the margin falls below 15 min, warning when it reaches 0 (#26). The 15 min is our choice, so the caution shows several minutes of walking before the warning."
+      }
+    },
+    "suit.alert.warning_margin": {
+      "value": 0,
+      "unit": "min",
+      "tag": "SIM",
+      "label": "SIM",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": null,
+        "site": null,
+        "sol_or_date": null,
+        "reference": "Marswalk team assumption, following the Apollo reserve rule",
+        "url": null,
+        "locator": null,
+        "data_url": null,
+        "license": "Project value",
+        "note": "Warning when the margin defined in suit.alert.caution_margin reaches zero, so the crew has only the 30 min reserve left beyond the walk home."
+      }
+    },
+
+    "metabolic.minetti_polynomial": {
+      "value": [280.5, -58.7, -76.8, 51.9, 19.6, 2.5],
+      "unit": "coefficients of i^5..i^0, Cw in J per kg body mass per m, i = gradient (rise/run), 1 g",
+      "tag": "DATA",
+      "label": "Minetti et al. 2002",
+      "provenance": {
+        "mission": null,
+        "instrument": "Treadmill, open-circuit respirometry",
+        "product_id": null,
+        "site": "Laboratory, Earth (1 g)",
+        "sol_or_date": "2002",
+        "reference": "Minetti AE, Moia C, Roi GS, Susta D, Ferretti G 2002, Energy cost of walking and running at extreme uphill and downhill slopes, J Appl Physiol 93:1039-1046",
+        "url": "https://doi.org/10.1152/japplphysiol.01177.2001",
+        "locator": "Fig. 1 legend, p. 1041: 'Cwi = 280.5i5 − 58.7i4 − 76.8i3 + 51.9i2 + 19.6i + 2.5 (R2 = 0.999)'",
+        "data_url": null,
+        "license": "Cited fact.",
+        "note": "Net cost (measured minus resting), valid for i = -0.45 to +0.45. The polynomial reads 2.5 at i = 0, but the measured level value is 1.64. That is why the suit model uses Table 2 (metabolic.minetti_table) instead. A lab study, not NASA data."
+      }
+    },
+    "metabolic.minetti_table": {
+      "value": [[-0.45, 3.46], [-0.40, 3.23], [-0.35, 2.65], [-0.30, 2.18], [-0.20, 1.30], [-0.10, 0.81], [0.0, 1.64], [0.10, 4.68], [0.20, 8.07], [0.30, 11.29], [0.35, 12.72], [0.40, 14.75], [0.45, 17.33]],
+      "unit": "[gradient i, Cw in J per kg body mass per m], net, 1 g",
+      "tag": "DATA",
+      "label": "Minetti et al. 2002",
+      "provenance": {
+        "mission": null,
+        "instrument": "Treadmill, open-circuit respirometry",
+        "product_id": null,
+        "site": "Laboratory, Earth (1 g)",
+        "sol_or_date": "2002",
+        "reference": "Minetti et al. 2002, J Appl Physiol 93:1039-1046",
+        "url": "https://doi.org/10.1152/japplphysiol.01177.2001",
+        "locator": "Table 2, minimum Cw at each gradient; abstract: 'The minimum Cw was 1.64 ± 0.50 J·kg−1·m−1 at a 1.0 ± 0.3 m/s speed on the level'",
+        "data_url": null,
+        "license": "Cited fact.",
+        "note": "Measured walking cost at each gradient. Interpolate linearly. Clamp i to [-0.45, 0.45]. A 20 deg slope is i = tan 20 deg = 0.364."
+      }
+    },
+    "metabolic.energy_per_litre_o2": {
+      "value": 20900,
+      "unit": "J per L O2",
+      "tag": "DATA",
+      "label": "Minetti et al. 2002",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": null,
+        "site": null,
+        "sol_or_date": "2002",
+        "reference": "Minetti et al. 2002, J Appl Physiol 93:1039-1046",
+        "url": "https://doi.org/10.1152/japplphysiol.01177.2001",
+        "locator": "Methods, p. 1040: 'assuming an energy equivalent of 20.9 kJ/l O2 (corresponding to a nonproteic respiratory exchange ratio of 0.96)'",
+        "data_url": null,
+        "license": "Cited fact.",
+        "note": "4.99 kcal per litre. NASA uses the same round number: Paul 2012 (NTRS 20120003917) says 'approximately 5 kcal of energy must be liberated to consume 1 liter of oxygen'."
+      }
+    },
+    "metabolic.o2_density": {
+      "value": 1.42903,
+      "unit": "g/L at 273.15 K and 101.325 kPa",
+      "tag": "DATA",
+      "label": "NIST Chemistry WebBook",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": "NIST Chemistry WebBook SRD 69, oxygen C7782447",
+        "site": null,
+        "sol_or_date": null,
+        "reference": "NIST Chemistry WebBook, Thermophysical Properties of Fluid Systems, oxygen",
+        "url": "https://webbook.nist.gov/cgi/fluid.cgi?ID=C7782447&Action=Page",
+        "locator": "Isobaric table at 0.101325 MPa: row 273.150 K, density 1.42903 kg/m3",
+        "data_url": null,
+        "license": "US government data, public",
+        "note": "Converts litres of O2 (standard conditions) to grams."
+      }
+    },
+    "metabolic.apollo_eva_average": {
+      "value": 980,
+      "unit": "kJ/h",
+      "value_si": 272,
+      "unit_si": "W",
+      "tag": "DATA",
+      "label": "Apollo EVA · NASA SP-368",
+      "provenance": {
+        "mission": "Apollo 11-17",
+        "instrument": "PLSS O2 pressure decay, LCG heat balance, heart rate",
+        "product_id": "NASA SP-368, chapter 4",
+        "site": "Moon",
+        "sol_or_date": "1969-1972, 158.74 h of lunar EVA",
+        "reference": "Waligora JM, Horrigan DJ 1975, Metabolism and Heat Dissipation During Apollo EVA Periods, in Biomedical Results of Apollo, NASA SP-368",
+        "url": "https://ntrs.nasa.gov/citations/19760005584",
+        "locator": "Table 2, 'All activities' mean: 980 (234) kJ/h (kcal/h), 158.74 h",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "234 kcal/h, 930 BTU/h, about 67 g O2 per hour. Plausibility check for the suit model. Rates by task in the same table: ALSEP deployment 1018 kJ/h, geology stations 1018, overhead 1123, rover riding 518."
+      }
+    },
+    "metabolic.apollo_rest_proxy": {
+      "value": 518,
+      "unit": "kJ/h",
+      "value_si": 144,
+      "unit_si": "W",
+      "tag": "DATA",
+      "label": "Apollo EVA · NASA SP-368",
+      "provenance": {
+        "mission": "Apollo 15-17",
+        "instrument": "PLSS O2 pressure decay, LCG heat balance",
+        "product_id": "NASA SP-368, chapter 4",
+        "site": "Moon",
+        "sol_or_date": "1971-1972, 25.28 h of rover riding",
+        "reference": "Waligora and Horrigan 1975, NASA SP-368 ch. 4",
+        "url": "https://ntrs.nasa.gov/citations/19760005584",
+        "locator": "Table 2, 'Rover riding' mean: 518 (123) kJ/h (kcal/h), 25.28 h",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "Lowest measured EVA activity. The suit model uses it as the metabolic rate of a suited astronaut standing still (the 'base' term). Using it for standing is our assumption: the number itself is measured, but it was measured while riding the rover."
+      }
+    },
+    "metabolic.apollo14_traverse": {
+      "value": {"distance_m": 3000, "duration_min": 72.8, "speed_km_h": 2.47, "net_elevation_m": 0, "cdr_kj_h": 1233, "lmp_kj_h": 1318},
+      "unit": "see keys",
+      "tag": "DATA",
+      "label": "Apollo 14 EVA-2 · NASA SP-368",
+      "provenance": {
+        "mission": "Apollo 14",
+        "instrument": "PLSS O2 pressure decay, LCG heat balance",
+        "product_id": "NASA SP-368, chapter 4",
+        "site": "Moon, Fra Mauro",
+        "sol_or_date": "1971, EVA-2",
+        "reference": "Waligora and Horrigan 1975, NASA SP-368 ch. 4",
+        "url": "https://ntrs.nasa.gov/citations/19760005584",
+        "locator": "Table 4, 'Metabolic Analyses of Apollo 14 EVA Traverses', p. 125, row 'Totals, LM to LM'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "The best walking-only data from the Moon: about 500 to 530 kJ per km at 1/6 g. Up the +5.0 % leg (1547 m) the crew slowed to 1.86 km/h, and down the -6.4 % leg they sped up to 3.82 km/h with similar metabolic rates. The authors saw 'a very poor correlation between traverse rate and metabolic rate'. The crew held a steady effort and let speed change, which is the basis of mobility.speed_rule."
+      }
+    },
+    "metabolic.hr_fit": {
+      "value": {"intercept_btu_h": 284.55, "slope_btu_h_per_bpm": 5.984, "r_squared": 0.402},
+      "unit": "MR (BTU/hr) = intercept + slope x HR (beats per minute)",
+      "tag": "DATA",
+      "label": "Shuttle/ISS EVA · NASA",
+      "provenance": {
+        "mission": "Space Shuttle and ISS",
+        "instrument": "EMU PLSS O2 decay, heart rate",
+        "product_id": "NTRS 20210024317",
+        "site": "Low Earth orbit",
+        "sol_or_date": "132 EVAs",
+        "reference": "Hoffmann B 2021, Extravehicular Activity Metabolic Rate Model: Metabolic Rate Estimated from Heart Rate (chapter 5)",
+        "url": "https://ntrs.nasa.gov/citations/20210024317",
+        "locator": "Table 5.1, coefficient tests: 'Intercept 284.55 ... Slope 5.984'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "For a HUD heart-rate readout. It turns a simulated metabolic rate into a heart rate: HR = (MR - 284.55) / 5.984. R2 is only 0.402 across crew members, so treat the heart rate shown as illustrative. Fitted to microgravity EVAs, not walking."
+      }
+    },
+    "metabolic.mars_suited_transport_cost": {
+      "value": [[1.07, 340], [1.52, 450]],
+      "unit": "[speed m/s, mL O2 per kg body mass per km], gross, 3/8 g, suited",
+      "tag": "DATA",
+      "label": "EVA Walkback Test · NASA JSC",
+      "provenance": {
+        "mission": null,
+        "instrument": "Mark III suit (121 kg total suit weight as listed), partial gravity simulator, treadmill",
+        "product_id": "NTRS 20080014853",
+        "site": "NASA JSC, simulated Mars gravity (3/8 g)",
+        "sol_or_date": "2007-2008",
+        "reference": "Norcross J et al. 2008, Feasibility of Suited 10 km Walkback on the Moon, AsMA presentation",
+        "url": "https://ntrs.nasa.gov/citations/20080014853",
+        "locator": "Slide 12, 'Energy-Velocity Series Results - Mars', Transport Cost chart, 'Mars, suited' fit line at 2.4 mph and 3.4 mph",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "The only suited walking data at Mars gravity we found. Values were read from a chart (about ±5 %). They match the metabolic cost chart on the same slide (about 22 mL/kg/min at 2.4 mph and 41 at 3.4 mph). Unsuited Mars walking at the same speeds costs about 130 to 150 mL/kg/km. The slides conclude the Mark III 'was extremely limited on Mars'. Subjects averaged 81.4 ± 7.8 kg (slide 4)."
+      }
+    },
+    "metabolic.ist2_grade_gravity_delta": {
+      "value": [[0.0, 1.9], [0.10, 3.5], [0.20, 8.7], [0.30, 17.0]],
+      "unit": "[grade, rise in VO2 in mL per kg body mass per min going from 0.12 g to 0.32 g], suited",
+      "tag": "DATA",
+      "label": "NASA IST-2 · Mark III suit",
+      "provenance": {
+        "mission": null,
+        "instrument": "Mark III suit at 29.6 kPa, treadmill, partial gravity offload",
+        "product_id": "NASA/TP-2010-216125",
+        "site": "NASA JSC",
+        "sol_or_date": "2010",
+        "reference": "Norcross JR et al. 2010, Metabolic Costs and Biomechanics of Inclined Ambulation and Exploration Tasks in a Planetary Suit, NASA/TP-2010-216125",
+        "url": "https://ntrs.nasa.gov/citations/20110003409",
+        "locator": "Results, text with Fig. 36: 'as the grade increased to 20% and 30%, this difference increased to 8.7 and 17.0 mL•kg-1•min-1'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "Gravity barely matters on the flat but matters a lot uphill. Used to calibrate metabolic.grade_factor. Speeds were 0.56 to 0.97 m/s."
+      }
+    },
+    "metabolic.farley_reduced_gravity_walking": {
+      "value": 33,
+      "unit": "% drop in walking metabolic rate when gravity is reduced by 75 %",
+      "tag": "DATA",
+      "label": "Farley and McMahon 1992",
+      "provenance": {
+        "mission": null,
+        "instrument": "Body weight suspension, treadmill",
+        "product_id": null,
+        "site": "Laboratory, simulated 0.25 g",
+        "sol_or_date": "1992",
+        "reference": "Farley CT, McMahon TA 1992, Energetics of walking and running: insights from simulated reduced-gravity experiments, J Appl Physiol 73:2709-2712",
+        "url": "https://doi.org/10.1152/jappl.1992.73.6.2709",
+        "locator": "Abstract: 'When gravity is reduced by 75%, the rate of energy consumption is reduced by 72% during running but only by 33% during walking'",
+        "data_url": null,
+        "license": "Cited fact.",
+        "note": "Why the model does not scale the level walking cost by g. Only the abstract was available. The values at 0.5 g and 0.75 g are in the paywalled full text."
+      }
+    },
+    "metabolic.grade_factor": {
+      "value": 1.3,
+      "range": [1.06, 1.6],
+      "unit": "multiplier on the gravity-scaled grade term",
+      "tag": "DERIVED",
+      "label": "DERIVED · NASA IST-2",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": "NASA/TP-2010-216125",
+        "site": null,
+        "sol_or_date": null,
+        "reference": "Calibration of Minetti Table 2 against metabolic.ist2_grade_gravity_delta",
+        "url": "https://ntrs.nasa.gov/citations/20110003409",
+        "locator": "Fig. 36 and text",
+        "data_url": null,
+        "license": "Our calculation.",
+        "note": "With a factor of 1.0, Minetti's grade cost scaled by g predicts a 7.8 to 13.5 mL/kg/min rise at 30 % grade for 0.12 to 0.32 g. IST-2 measured 17.0. 1.3 matches the middle of the IST-2 speed range. The per-subject speeds are not published, so anything from 1.06 to 1.6 fits. The suit makes climbing costlier than unsuited walking."
+      }
+    },
+    "metabolic.model_mass": {
+      "value": {"body_kg": 81.4, "suit_kg": 121.0, "total_kg": 202.4},
+      "unit": "kg",
+      "tag": "DATA",
+      "label": "EVA Walkback Test · NASA JSC",
+      "provenance": {
+        "mission": null,
+        "instrument": "Mark III suit as tested",
+        "product_id": "NTRS 20080014853",
+        "site": "NASA JSC",
+        "sol_or_date": "2007",
+        "reference": "Norcross J et al. 2008, Feasibility of Suited 10 km Walkback on the Moon, AsMA presentation",
+        "url": "https://ntrs.nasa.gov/citations/20080014853",
+        "locator": "Slide 4, subjects: 'Body Mass (kg) 81.4 ± 7.8'; slide 5, hardware: '121 kg total suit weight'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "Default astronaut plus suit mass. It is the configuration the level cost was measured with, so the model stays inside its data. The xEMU weighs 177 kg (391 lbm, Ogilvie et al. 2026, p. 5). Putting it in M raises every cost by 27 %. Ogilvie et al. say a Mars suit must be lighter than that."
+      }
+    },
+    "mobility.speed.mars_suited_tested": {
+      "value": [1.07, 1.52],
+      "unit": "m/s",
+      "tag": "DATA",
+      "label": "EVA Walkback Test · NASA JSC",
+      "provenance": {
+        "mission": null,
+        "instrument": "Mark III suit, treadmill at 3/8 g",
+        "product_id": "NTRS 20080014853",
+        "site": "NASA JSC, simulated Mars gravity",
+        "sol_or_date": "2007-2008",
+        "reference": "Norcross J et al. 2008, Feasibility of Suited 10 km Walkback on the Moon, AsMA presentation",
+        "url": "https://ntrs.nasa.gov/citations/20080014853",
+        "locator": "Slide 12, 'Mars, suited' data range, 2.4 to 3.4 mph",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "The speeds suited subjects actually walked at Mars gravity. Faster than this was not tested."
+      }
+    },
+    "mobility.speed.artemis_planning": {
+      "value": 2,
+      "unit": "km/h",
+      "value_si": 0.56,
+      "unit_si": "m/s",
+      "tag": "DATA",
+      "label": "xEVA con ops · NASA",
+      "provenance": {
+        "mission": "Artemis",
+        "instrument": null,
+        "product_id": "EVA-EXP-0042 Rev B",
+        "site": "Moon",
+        "sol_or_date": "2020-10-19",
+        "reference": "NASA, Exploration EVA System Concept of Operations, EVA-EXP-0042 Rev B",
+        "url": "https://www.nasa.gov/wp-content/uploads/2017/02/eva-exp-0042_xeva_system_con_ops_rev_b_final_dtd_10192020_ref_doc.pdf",
+        "locator": "p. 40: 'Traverses assume an ~2 km/hr walking pace over relatively level regolith'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "NASA's conservative planning pace. It is used to set the 2 km walking radius around the lander. It does not account for slope or obstacles."
+      }
+    },
+    "mobility.speed.apollo15_walkback": {
+      "value": 3.3,
+      "unit": "km/h",
+      "value_si": 0.92,
+      "unit_si": "m/s",
+      "tag": "DATA",
+      "label": "Apollo 15 planning · NASA",
+      "provenance": {
+        "mission": "Apollo 15",
+        "instrument": null,
+        "product_id": "Bellcomm B70 10028",
+        "site": "Moon",
+        "sol_or_date": "1970-10-13",
+        "reference": "Benjamin, Apollo 15 EVA Capability and Constraints Envelopes, Bellcomm B70 10028",
+        "url": "https://webarchive.library.unt.edu/eot2008/20090109180220id_/http://www.hq.nasa.gov/alsj/19790073512_1979073512.pdf",
+        "locator": "p. 1: 'The metabolic rate for planned walking traverses is 1200 BTU/hr at a speed of 3.3 km/hr'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "Apollo's planning speed for walking and the emergency walkback. It gave a maximum walking radius of 3.1 km."
+      }
+    },
+    "mobility.speed.lunar_walkback_test": {
+      "value": 1.74,
+      "unit": "m/s",
+      "tag": "DATA",
+      "label": "EVA Walkback Test · NASA",
+      "provenance": {
+        "mission": null,
+        "instrument": "Mark III suit, treadmill at 1/6 g",
+        "product_id": "NASA/TP-2009-214796",
+        "site": "NASA JSC, simulated lunar gravity",
+        "sol_or_date": "2009",
+        "reference": "Norcross J et al. 2009, Feasibility of Performing a Suited 10-km Ambulation on the Moon, NASA/TP-2009-214796",
+        "url": "https://www.lpi.usra.edu/lunar/artemis/NorcrossEtAl_NASA-TP-2009-214796_EVA%20Walkback%20Test.pdf",
+        "locator": "p. 28: 'The mean time to complete the 10 km was 96 minutes, at an average velocity of 1.74 ms-1 (3.9 mph)'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "Fastest sustained suited walk. Lunar gravity on a level treadmill, so it is an upper bound and too fast for Mars."
+      }
+    },
+    "mobility.speed.flat": {
+      "value": 1.0,
+      "unit": "m/s",
+      "tag": "SIM",
+      "label": "SIM",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": null,
+        "site": null,
+        "sol_or_date": null,
+        "reference": "Marswalk team assumption",
+        "url": null,
+        "locator": null,
+        "data_url": null,
+        "license": "Project value",
+        "note": "Default walking speed on flat ground, the value the engine already uses. It lies between Apollo's planning walkback speed (0.92 m/s) and the slowest suited speed tested at Mars gravity (1.07 m/s). Flat walking at this speed costs 589 W in the suit model, already 1.7 times the xEMU design average."
+      }
+    },
+    "mobility.speed.jog": {
+      "value": 1.5,
+      "unit": "m/s",
+      "tag": "SIM",
+      "label": "SIM",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": null,
+        "site": null,
+        "sol_or_date": null,
+        "reference": "Marswalk team assumption, capped by mobility.speed.mars_suited_tested",
+        "url": "https://ntrs.nasa.gov/citations/20080014853",
+        "locator": null,
+        "data_url": null,
+        "license": "Project value",
+        "note": "Top speed when the player hurries. Close to the fastest suited speed tested at Mars gravity (1.52 m/s). The suit model is valid up to there. Flat at 1.5 m/s costs 1138 W (3884 BTU/hr), above the suit's 10 min cooling peak (suit.metabolic.design_peak)."
+      }
+    },
+    "mobility.speed.min": {
+      "value": 0.3,
+      "unit": "m/s",
+      "tag": "SIM",
+      "label": "SIM",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": null,
+        "site": null,
+        "sol_or_date": null,
+        "reference": "Marswalk team assumption",
+        "url": null,
+        "locator": null,
+        "data_url": null,
+        "license": "Project value",
+        "note": "Floor for mobility.speed_rule on steep climbs, so a 20 deg slope stays walkable instead of stalling. 0.3 m/s is our choice."
+      }
+    },
+    "mobility.speed_rule": {
+      "value": "constant_effort",
+      "unit": null,
+      "tag": "SIM",
+      "label": "SIM",
+      "provenance": {
+        "mission": "Apollo 14",
+        "instrument": null,
+        "product_id": "NASA SP-368, chapter 4, Table 4",
+        "site": null,
+        "sol_or_date": null,
+        "reference": "Marswalk team assumption, based on Waligora and Horrigan 1975 (metabolic.apollo14_traverse)",
+        "url": "https://ntrs.nasa.gov/citations/19760005584",
+        "locator": "Table 4 and text: crews 'maintained a comfortable walking effort'",
+        "data_url": null,
+        "license": "Project value",
+        "note": "On a slope, the walker keeps the metabolic power of flat walking at mobility.speed.flat (589 W) and the speed changes to match. Solve models.walking_metabolic for v, then clamp to [mobility.speed.min, mobility.speed.jog]. Results with the default mass: +5 deg 0.63 m/s, +10 deg 0.44, +15 deg 0.34, +20 deg 0.30 (at the floor), -5 deg 1.12, -10 deg 1.09, -20 deg 0.79. Apollo 14 crews did the same: 1.86 km/h up 5 % and 3.82 km/h down 6.4 %. No NASA source gives suited speed as a function of slope."
+      }
+    },
+
+    "slope.no_go": {
+      "value": 20,
+      "unit": "deg",
+      "tag": "DATA",
+      "label": "xEVA con ops · NASA",
+      "provenance": {
+        "mission": "Artemis",
+        "instrument": "xEVA suit",
+        "product_id": "EVA-EXP-0042 Rev B",
+        "site": "Moon",
+        "sol_or_date": "2020-10-19",
+        "reference": "NASA, Exploration EVA System Concept of Operations, EVA-EXP-0042 Rev B",
+        "url": "https://www.nasa.gov/wp-content/uploads/2017/02/eva-exp-0042_xeva_system_con_ops_rev_b_final_dtd_10192020_ref_doc.pdf",
+        "locator": "p. 38: 'Walking up/down/across a slope of up to 20° [Note: Apollo 15 traversed on slopes of ~17°]'",
+        "data_url": null,
+        "license": "NASA document, public domain",
+        "note": "NASA's suited walking limit. The 2025 Artemis overview (NTRS 20250009323, p. 21) gives the same 'Surface slope limit for EVA (2km): <20 deg'. The engine still uses 25 deg (docs/marswalk-assets/testbench-reference). 25 deg only matches the Apollo Lunar Roving Vehicle's climbing spec (NASA TM X-64623, p. 6: 'Climbing a 25-deg slope fully loaded'), a vehicle limit. A route issue should move the engine to 20."
+      }
+    },
+    "slope.caution": {
+      "value": 15,
+      "unit": "deg",
+      "tag": "SIM",
+      "label": "SIM",
+      "provenance": {
+        "mission": null,
+        "instrument": null,
+        "product_id": null,
+        "site": null,
+        "sol_or_date": null,
+        "reference": "Marswalk team assumption, between Norcross et al. 2010 and the xEVA 20 deg limit",
+        "url": "https://ntrs.nasa.gov/citations/20110003409",
+        "locator": "NASA/TP-2010-216125 p. 98: 'metabolic rate differences became most significant at steeper grades (≥ 20%)'",
+        "data_url": null,
+        "license": "Project value",
+        "note": "The engine's current caution threshold. No NASA source states 15 deg. It sits between 11.3 deg (20 % grade, where Norcross saw the cost of climbing in a suit become significant) and the 20 deg suited limit. Apollo 15 walked slopes of about 17 deg."
+      }
+    }
+  },
+
+  "models": {
+    "walking_metabolic": {
+      "tag": "DERIVED",
+      "label": "DERIVED · Minetti 2002 + NASA suited data",
+      "description": "Metabolic power and O2 use of a suited astronaut walking at speed v on gradient i at Mars gravity. For #19 (suit model) and #41 (per-leg O2).",
+      "inputs": {
+        "v": "walking speed along the ground, m/s",
+        "i": "gradient, rise over run (tan of slope angle). Positive uphill",
+        "M": "astronaut plus suit mass, kg. Default metabolic.model_mass.total_kg = 202.4"
+      },
+      "constants": {
+        "g": {"value": 3.71, "unit": "m/s2", "tag": "DATA", "note": "Mars surface gravity (plan section 4.3)"},
+        "g_earth": {"value": 9.81, "unit": "m/s2", "tag": "DATA", "note": "gravity of the Minetti measurements"},
+        "P_base": {"value": 144, "unit": "W", "tag": "SIM", "ref": "metabolic.apollo_rest_proxy"},
+        "C_L0": {"value": 2.20, "unit": "J per kg total mass per m", "tag": "DERIVED", "ref": "metabolic.mars_suited_transport_cost"},
+        "C_Lv": {"value": 2.50, "unit": "J per kg per m, per m/s above v0", "tag": "DERIVED", "ref": "metabolic.mars_suited_transport_cost"},
+        "v0": {"value": 1.07, "unit": "m/s", "tag": "DATA", "ref": "metabolic.mars_suited_transport_cost"},
+        "K_grade": {"value": 1.3, "unit": "dimensionless", "tag": "DERIVED", "ref": "metabolic.grade_factor"},
+        "Cw_level": {"value": 1.64, "unit": "J/kg/m", "tag": "DATA", "ref": "metabolic.minetti_table"},
+        "J_per_L": {"value": 20900, "unit": "J per L O2", "tag": "DATA", "ref": "metabolic.energy_per_litre_o2"},
+        "rho_O2": {"value": 1.42903, "unit": "g/L", "tag": "DATA", "ref": "metabolic.o2_density"}
+      },
+      "formula": [
+        "Cw(i) = linear interpolation of metabolic.minetti_table at clamp(i, -0.45, 0.45)",
+        "C_level(v) = C_L0 + C_Lv * max(0, v - v0)",
+        "C_grade(i) = K_grade * (g / g_earth) * (Cw(i) - Cw_level)",
+        "P_walk = max(0, M * v * (C_level(v) + C_grade(i)))",
+        "P = P_base + P_walk                      (W, metabolic power)",
+        "VO2 = P / J_per_L * 60                    (L O2 per min)",
+        "O2_rate = VO2 * rho_O2                    (g O2 per min)",
+        "O2 for a leg = sum over segments of P * (segment length / v) / J_per_L * rho_O2   (g)"
+      ],
+      "assumptions": [
+        "DERIVED: C_L0 and C_Lv make the formula reproduce the EVA Walkback Test transport costs for suited walking at 3/8 g: 340 mL/kg_body/km at 1.07 m/s and 450 at 1.52 m/s. For each speed, C = cost x 20.9 J/mL x 81.4 kg / 202.4 kg - P_base / (M v). Below 1.07 m/s the level cost is held at C_L0. No suited Mars data exist there.",
+        "SIM: the level term does not scale with g. Farley and McMahon found walking cost falls only 33 % for a 75 % drop in gravity, and the Walkback Test level cost was already measured at 3/8 g.",
+        "DERIVED: the grade term is Minetti's 1 g cost above level, scaled linearly by g / g_earth, because climbing work is m g h. Minetti's 24 % efficiency above +15 % gradient supports that. K_grade = 1.3 calibrates it to suited IST-2 data.",
+        "SIM: downhill uses Minetti's negative grade cost scaled the same way. No suited downhill data were found. P_walk never goes below zero.",
+        "SIM: P_base (144 W) is the Apollo rover-riding rate, used for a suited astronaut standing still.",
+        "SIM: valid for 0.3 to 1.52 m/s and slopes up to 20 deg (i = 0.364). Outside that it extrapolates."
+      ],
+      "checks": {
+        "flat_1km_at_1.0_m_s": {"power_w": 589, "btu_h": 2010, "vo2_l_min": 1.69, "time_min": 16.7, "energy_kj": 589, "o2_l": 28.2, "o2_g": 40},
+        "climb_1km_along_20deg_at_0.5_m_s": {"rise_m": 342, "power_w": 946, "btu_h": 3228, "vo2_l_min": 2.72, "time_min": 33.3, "energy_kj": 1892, "o2_l": 90.5, "o2_g": 129},
+        "climb_1km_along_20deg_constant_effort": {"speed_m_s": 0.30, "power_w": 625, "time_min": 55.6, "energy_kj": 2084, "o2_g": 142},
+        "ratio_climb_to_flat_o2": 3.2,
+        "versus_apollo": "Apollo lunar EVAs averaged 272 W (67 g O2 per hour). Flat walking here is 589 W (144 g per hour). The 2.2x difference matches the Walkback Test finding that suited walking at 3/8 g costs far more than at 1/6 g. On the Moon, Apollo 14 walking cost about 500 to 530 kJ per km. Here it is 589 kJ per km at more than twice the gravity.",
+        "versus_tank": "One flat km uses 40 g, 5 % of the 771 g xEMU primary O2. The 20 deg climb uses 129 to 142 g, 17 to 18 %. Walking nonstop on flat ground would empty the tank in about 19 km, or 5.3 h."
+      }
+    },
+    "sep_2017_profile": {
+      "tag": "DATA",
+      "label": "RAD · Curiosity · Gale",
+      "description": "Dose rate keypoints of the 10-13 September 2017 solar particle event, measured by RAD in Gale crater (B detector, water), for #25. Times are hours after the flare peak (2017-09-10T16:06Z). #25 compresses the timeline to fit an EVA, and the compression factor is a game choice (SIM).",
+      "unit": "t_h: hours after flare peak; rate: µGy/day (water)",
+      "points": [
+        {"t_h": 0.0, "rate": 240, "tag": "DATA", "note": "Flare peak. Background, 5-day mean before the event (Zeitlin Table 1)"},
+        {"t_h": 3.73, "rate": 240, "tag": "DATA", "note": "Onset at Mars, 19:50Z (Zeitlin section 3.1)"},
+        {"t_h": 10.9, "rate": 646, "tag": "DERIVED", "note": "03:00Z 11 Sep: 'about 90% of the eventual peak' (Zeitlin section 3.1), 0.9 x 718"},
+        {"t_h": 11.9, "rate": 718, "tag": "DATA", "note": "Peak plateau starts, about 04:00Z 11 Sep"},
+        {"t_h": 21.9, "rate": 718, "tag": "DATA", "note": "Peak plateau ends, about 14:00Z 11 Sep"},
+        {"t_h": 60.9, "rate": 245, "tag": "SIM", "note": "05:00Z 13 Sep, just before the shock. The paper says rates 'fell gradually' to here, with no value. 245 = 208 / 0.85, so the 15 % drop lands on the measured post-event mean"},
+        {"t_h": 61.0, "rate": 208, "tag": "DATA", "note": "Shock arrival: 'a sudden drop of about 15%', then the 5-day post-event mean of 208 (Zeitlin Table 1)"}
+      ],
+      "provenance": {
+        "mission": "MSL",
+        "instrument": "RAD (B detector)",
+        "product_id": "MSL-M-RAD-3-RDR-V1.0",
+        "site": "Gale crater, not Jezero",
+        "sol_or_date": "2017-09-10 to 2017-09-13",
+        "reference": "Zeitlin et al. 2018, Geophysical Research Letters 45, 5845-5851; flare time from DONKI 2017-09-10T15:35:00-FLR-001",
+        "url": "https://doi.org/10.1029/2018GL077760",
+        "locator": "Section 3.1 and Table 1",
+        "data_url": "https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/",
+        "license": "Cited facts. RAD data in PDS are public with no restriction of use (NASA SPD-41A).",
+        "note": "Interpolate linearly between points. The full-resolution curve is in the RAD PDS archive (directory SOL_01773_01869). Extracting it belongs to #31."
+      }
+    }
+  }
+}
