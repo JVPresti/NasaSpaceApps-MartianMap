@@ -1,0 +1,248 @@
+{
+ "note": "Furniture for the habitat main room. Positions are in the habitat's own three.js space (x toward the airlock, y up, z sideways), metres; add each model as a child of the habitat. 'blocks' is the floor circle (or a list of circles, for wide pieces) a walker cannot enter (habitat space x / v, same convention as walk_zones in habitat.json). Optional 'scale' is a uniform scale for that copy. Meshes whose name contains 'glass' are see-through panes (give them a transparent glass material).",
+ "models": {
+  "planning_table": {
+   "file": "planning_table.glb",
+   "made_by": "Marswalk",
+   "what": "round map table at standing height: lit rim ring, three small edge consoles with buttons, strutted pedestal. The flat top (radius 0.54 m, 0.96 m above the floor) is where the Plan-mode map is drawn"
+  },
+  "suit_rack": {
+   "file": "suit_rack.glb",
+   "made_by": "Marswalk",
+   "what": "wall rack with two helmets, hanger bars and a boot tray (1.94 m tall, clears the ceiling)"
+  },
+  "sample_glovebox": {
+   "file": "sample_glovebox.glb",
+   "made_by": "Marswalk",
+   "what": "sealed sample cabinet where the sample case is delivered: base cupboard, worktop, lit chamber with glove ports and black gloves reaching in, sloped window, sample tubes, rock chips and a scale inside, small pass-through hatch with hand wheel on the right, filters and gauges on top. Two meshes: 'sample_glovebox' and 'sample_glovebox_glass' (the window pane, see-through)"
+  },
+  "stool": {
+   "file": "stool.glb",
+   "made_by": "Poly Haven 'Metal Stool 02' (CC0), reduced to 2.2k triangles, 512 px colour texture only"
+  },
+  "shelves": {
+   "file": "shelves.glb",
+   "made_by": "Poly Haven 'Steel Frame Shelves 01' (CC0), reduced to 2.2k triangles, 512 px colour texture only"
+  },
+  "crate": {
+   "file": "crate.glb",
+   "made_by": "Poly Haven 'Plastic Crate 02' (CC0), reduced to 2.2k triangles, 512 px colour texture only"
+  },
+  "sample_canister": {
+   "file": "sample_canister.glb",
+   "made_by": "Marswalk",
+   "what": "sealed sample canister with carry handle, 0.45 m tall - a loose piece a player could pick up"
+  },
+  "tablet": {
+   "file": "tablet.glb",
+   "made_by": "Marswalk",
+   "what": "hand tablet lying flat, screen glows (vertex alpha 0.2)"
+  }
+ },
+ "items": [
+  {
+   "model": "planning_table",
+   "position": [
+    0,
+    1.1,
+    0
+   ],
+   "rotation_y_deg": 0,
+   "blocks": {
+    "x": 0,
+    "v": 0,
+    "radius": 0.7
+   }
+  },
+  {
+   "model": "stool",
+   "position": [
+    0.0,
+    1.1,
+    0.74
+   ],
+   "rotation_y_deg": 20,
+   "blocks": {
+    "x": 0.0,
+    "v": 0.74,
+    "radius": 0.2
+   }
+  },
+  {
+   "model": "stool",
+   "position": [
+    -0.647,
+    1.1,
+    -0.359
+   ],
+   "rotation_y_deg": 200,
+   "blocks": {
+    "x": -0.647,
+    "v": -0.359,
+    "radius": 0.2
+   }
+  },
+  {
+   "model": "suit_rack",
+   "position": [
+    1.662,
+    1.1,
+    -1.662
+   ],
+   "rotation_y_deg": -45,
+   "blocks": [
+    {
+     "x": 1.224,
+     "v": -1.818,
+     "radius": 0.27
+    },
+    {
+     "x": 1.521,
+     "v": -1.521,
+     "radius": 0.27
+    },
+    {
+     "x": 1.818,
+     "v": -1.224,
+     "radius": 0.27
+    }
+   ]
+  },
+  {
+   "model": "sample_glovebox",
+   "position": [
+    -1.662,
+    1.1,
+    -1.662
+   ],
+   "rotation_y_deg": 45,
+   "blocks": [
+    {
+     "x": -1.711,
+     "v": -1.146,
+     "radius": 0.36
+    },
+    {
+     "x": -1.429,
+     "v": -1.429,
+     "radius": 0.36
+    },
+    {
+     "x": -1.146,
+     "v": -1.711,
+     "radius": 0.36
+    }
+   ]
+  },
+  {
+   "model": "shelves",
+   "position": [
+    -1.485,
+    1.1,
+    1.485
+   ],
+   "rotation_y_deg": 135,
+   "blocks": [
+    {
+     "x": -1.252,
+     "v": 1.718,
+     "radius": 0.27
+    },
+    {
+     "x": -1.485,
+     "v": 1.485,
+     "radius": 0.27
+    },
+    {
+     "x": -1.718,
+     "v": 1.252,
+     "radius": 0.27
+    }
+   ],
+   "scale": 0.92
+  },
+  {
+   "model": "crate",
+   "position": [
+    1.01,
+    1.1,
+    1.749
+   ],
+   "rotation_y_deg": 30,
+   "blocks": {
+    "x": 1.01,
+    "v": 1.749,
+    "radius": 0.36
+   }
+  },
+  {
+   "model": "crate",
+   "position": [
+    1.01,
+    1.35,
+    1.749
+   ],
+   "rotation_y_deg": 30
+  },
+  {
+   "model": "sample_canister",
+   "position": [
+    -2.004,
+    1.1,
+    0.69
+   ],
+   "rotation_y_deg": 289,
+   "blocks": {
+    "x": -2.004,
+    "v": 0.69,
+    "radius": 0.12
+   }
+  },
+  {
+   "model": "sample_canister",
+   "position": [
+    1.01,
+    1.37,
+    1.749
+   ],
+   "rotation_y_deg": 52
+  },
+  {
+   "model": "tablet",
+   "position": [
+    -0.19,
+    2.068,
+    -0.329
+   ],
+   "rotation_y_deg": 34
+  },
+  {
+   "model": "crate",
+   "position": [
+    -1.315,
+    1.689,
+    1.655
+   ],
+   "rotation_y_deg": 135
+  },
+  {
+   "model": "crate",
+   "position": [
+    -1.626,
+    1.226,
+    1.344
+   ],
+   "rotation_y_deg": 135
+  },
+  {
+   "model": "tablet",
+   "position": [
+    -1.626,
+    2.158,
+    1.344
+   ],
+   "rotation_y_deg": 155
+  }
+ ],
+ "free_floor": "the stools are tucked under the table rim, so a ring about 0.45 m wide (walker centre between 0.95 m and 1.4 m from the middle) stays free all the way round: one astronaut walks it, a second can follow or wait in the airlock. Checked in Blender: no piece touches another piece or the fixed wall equipment (screens, the shelves under them, ceiling conduit)."
+}

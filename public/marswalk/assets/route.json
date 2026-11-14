@@ -1,0 +1,30 @@
+{
+ "note": "Placeholder waypoints. x = east, z = south, metres from Cheyava Falls. Add \"path\": [[x,z],...] to draw the routing team's own route instead of the built-in planner.",
+ "waypoints": [
+  {
+   "name": "HAB",
+   "x": 520,
+   "z": 600
+  },
+  {
+   "name": "WP1 \u00b7 channel floor",
+   "x": 330,
+   "z": 300
+  },
+  {
+   "name": "WP2 \u00b7 dune field edge",
+   "x": 150,
+   "z": 120
+  },
+  {
+   "name": "WP3 \u00b7 Bright Angel outcrop",
+   "x": -40,
+   "z": -60
+  },
+  {
+   "name": "Cheyava Falls",
+   "x": 0,
+   "z": 0
+  }
+ ]
+}

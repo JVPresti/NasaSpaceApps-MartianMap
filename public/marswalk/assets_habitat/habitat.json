@@ -1,0 +1,234 @@
+{
+ "file": "habitat.glb",
+ "units": "metres, glTF Y-up, ground at y = 0",
+ "size_m": {
+  "length": 12.6,
+  "width": 6.0,
+  "height": 7.0
+ },
+ "triangles": 23600,
+ "parts": {
+  "HabitatCore": "NASA Habitat Demonstration Unit shell: 5 m cylinder with loft dome, airlock tunnel on +X, hygiene module on -X. 2.3k triangles, one 1024 px texture (WebP) inside the file.",
+  "HabitatBase": "legs and footpads, airlock porch with five steps and handrails, hatch light bar, comms mast with dish. 2.4k triangles, vertex colours, no texture.",
+  "HabitatHatch": "outer airlock pressure hatch: rounded corners, hand wheel on both sides, latch dogs, round window, warning stripes. 0.94 x 1.43 m. Origin on the hinge. rotation.y: 0 closed, 1.65 rad swung inward. 2.0k triangles.",
+  "HabitatInterior": "airlock room and round main room, 6.4k triangles: two-tone walls with an orange band, studded floor, ceiling light panels, cable tray, control strips with indicator lights, lockers, fire extinguisher, first-aid box, conduit, ladder standing off the wall into a round loft hatch with a hand wheel (closed), airlock bench with lockers, suit hooks, handrail, floor lights, both rounded hatch tunnels, two 3D portholes (bezel ring with bolts, recessed pane). Vertex alpha: 0.2 = glowing panel or indicator light, 0.62 = window glass, 1 = normal. Shader: INTERIOR_VERT / INTERIOR_FRAG.",
+  "HabitatScreens": "the five wall screens as one mesh inside habitat_interior.glb (7 flat faces, no vertex colours). Its only UV set points into a 1024 x 1024 canvas, see 'screens'.",
+  "HabitatExterior": "exterior detail made for Marswalk, 3.9k triangles, vertex colours, no texture: bellows collar between the core and the airlock tunnel, four hoop ribs, two yellow handrails and two service pipes on the tunnel, top cable, front flange, bolted flange band where the loft sits on the core, 3D portholes over the painted ones on the loft and the core wall (vertex alpha 0.58 = dark glass that mirrors sky and ground), loft seam ribs, top vent and whip antenna, handrails at each side hatch, nine floodlight fixtures, air unit with louvres, cowl and pipes, two gas bottles with lines, hoops, top vent and stowage locker on the rear module.",
+  "HabitatHatchSideA / HabitatHatchSideB / HabitatHatchRear": "the same pressure hatch as HabitatHatch (shared mesh, so no extra file size) fixed shut on the two side doors of the core and on the rear module door. They do not open: nothing is modelled behind them."
+ },
+ "airlock": "outer hatch faces +X; sill 1.02 m above the ground at x = 7.23; the steps reach the ground at about x = 9.9",
+ "shaders": "HabitatCore: HAB_VERT / HAB_FRAG (texture + shared lighting + dust skirt). HabitatBase, HabitatHatch, HabitatHatchFrames, HabitatExterior: PROP_VERT / PROP_FRAG (vertex alpha 0.62 = window you look through, 0.58 = porthole seen from outside).",
+ "placement_reference": "habitat.init in src/main.js: flattest spot within 30 m of the HAB waypoint (0.25 m of relief under the 11 m footprint), airlock turned toward the first waypoint, rocks cleared within 10 m",
+ "shadow": "High tier: third slot of the cast-shadow mask (8 m half-size), redrawn only when the sun moves. Low tier: none.",
+ "night": {
+  "sprites": "reference glow sprites at the porch light (model position [7.33, 2.95, 0]), a red beacon on the mast ([-1.9, 4.35, 3.4]) and the nine floodlights of HabitatExterior: [1.966, 3.128, -1.966], [-1.966, 3.128, -1.966], [-1.966, 3.128, 1.966], [1.966, 3.128, 1.966], [4.85, 2.327, -1.454], [4.85, 2.327, 1.474], [0, 2.88, -2.66], [0, 2.88, 2.66], [-3.45, 2.838, 1.121]",
+  "pool": "in presets with a lamp, lamp() in COMMON adds a warm pool of light on the ground, rocks and the shell within about 6 m of the habitat (uniforms uHabP0, uHabP1 = rear and porch ends in world space, uHabGlow = colour, zero by day)"
+ },
+ "credits": "Shell: NASA Habitat Demonstration Unit, low-res model (NASA 3D Resources), scaled so the shell is 5 m across. The Earth test-site parts of the NASA model (ramps, yellow railings, air-conditioning unit) are not used. NASA's 1024 px texture is edited for Marswalk: the small repeated NASA logos and flags, the two mission patches, the X-Hab logos, one of the two large flags and NASA logos, and the 'AIRLOCK' lettering on the rear module are painted out because they were too blurry up close (original kept in ..\\bake\\hdu_texture_original.png, edited copy hdu_texture_marswalk.png). Legs, steps, mast, HabitatExterior and the side and rear hatches are our own additions, not NASA hardware.",
+ "not_included": "an inner door leaf, a usable loft, a cable from the comms mast to the habitat, interiors behind the side and rear hatches",
+ "files": {
+  "habitat.glb": "outside: HabitatCore (NASA shell, opened at the airlock hatch), HabitatBase (legs, porch, steps, mast), HabitatHatch (pressure hatch, hinged), HabitatHatchFrames (rounded frames of both hatch openings, floor warning bands), HabitatExterior (added exterior detail), HabitatHatchSideA/B and HabitatHatchRear (fixed copies of the hatch)",
+  "habitat_interior.glb": "inside: HabitatInterior (airlock room and main room with fixed fittings) and HabitatScreens (the wall screens); load it as a child of the habitat, same origin",
+  "furniture/": "one .glb per piece plus layout.json (where each piece stands and the floor circle it blocks)",
+  "interior_lightmap.jpg": "1024 px baked light for HabitatInterior (lamp light, bounce light, soft shadows incl. the furniture's shadows on floor and walls). Uses HabitatInterior's only UV set; load with flipY = false as plain data. Decode: light = pow(texel, 2.2) * 2.0; surface = vertex colour * light.",
+  "interior_lightvolume.png": "1040 x 198 px light volume for everything that stands in the cabin (furniture, loose objects, later astronauts). Grid: 65 x 33 x 16 points, 0.15 m apart, first point at habitat-space Blender coordinates (-2.4, -2.4, 1.10) (x toward the airlock, z up). Six rows of 33 px = light arriving on a surface facing +x, -x, +y, -y, +z, -z; sixteen tiles of 65 px across = height slices. Decode like the lightmap: light = pow(texel, 2.2) * 2.0. Load with flipY = false, no mipmaps, linear filter. Shader: volLight() in src/shaders.js; needs uHabInv (world to habitat matrix)."
+ },
+ "floor_height_m": 1.1,
+ "doors": {
+  "size_m": [
+   0.94,
+   1.43
+  ],
+  "sill_m": 0.15,
+  "note": "real HDU hatch size: a suited astronaut (1.94 m) has to stoop. Lower the first-person camera by up to 0.42 m BEFORE the frame: full stoop within 0.55 m of the hatch plane (x = 7.05 and x = 2.45), easing in from 1.4 m away, same on the way out (habitat.duck in src/main.js)."
+ },
+ "walk_zones": {
+  "space": "habitat space: x toward the airlock end, v sideways, metres from the habitat origin; world = origin + rotate(heading)",
+  "zones": [
+   {
+    "name": "stairs",
+    "x": [
+     8.23,
+     9.95
+    ],
+    "v": [
+     -0.5,
+     0.5
+    ],
+    "floor": "1.02 * (9.95 - x) / 1.72"
+   },
+   {
+    "name": "porch",
+    "x": [
+     7.25,
+     8.23
+    ],
+    "v": [
+     -0.6,
+     0.6
+    ],
+    "floor": 1.02
+   },
+   {
+    "name": "hatch",
+    "x": [
+     6.85,
+     7.25
+    ],
+    "v": [
+     -0.36,
+     0.36
+    ],
+    "floor": "1.10, rising to 1.25 over the sill (x > 6.98)",
+    "needs_door_open": true,
+    "duck_m": 0.42
+   },
+   {
+    "name": "airlock",
+    "x": [
+     2.8,
+     6.85
+    ],
+    "v": [
+     -0.5,
+     0.8
+    ],
+    "floor": 1.1,
+    "note": "the bench takes the strip v < -0.5"
+   },
+   {
+    "name": "inner",
+    "x": [
+     2.15,
+     2.8
+    ],
+    "v": [
+     -0.36,
+     0.36
+    ],
+    "floor": "1.10, rising to 1.25 over the sill (x 2.22 to 2.60)",
+    "duck_m": 0.42
+   },
+   {
+    "name": "main",
+    "radius": 2.2,
+    "floor": 1.1
+   }
+  ],
+  "solids": [
+   {
+    "radius": 2.75
+   },
+   {
+    "x": [
+     2.5,
+     7.25
+    ],
+    "v": [
+     -1.45,
+     1.45
+    ]
+   },
+   {
+    "x": [
+     -4.45,
+     -2.4
+    ],
+    "v": [
+     -1.05,
+     1.05
+    ]
+   },
+   {
+    "x": [
+     7.25,
+     9.95
+    ],
+    "v": [
+     -0.78,
+     0.78
+    ]
+   }
+  ],
+  "rule": "a walker may stand where it is inside a zone, or outside every solid. Reference: habitat.canStand / ground / duck in src/main.js",
+  "two_players": "astronaut footprint is about 0.8 m wide and 1.05 m deep with the backpack. Stairs, porch and both hatches are single file (0.94 m doors). The airlock is 1.3 m wide beside the bench: two can stand side by side but not pass with cases. In the main room the free ring between table and wall furniture is about 0.45 m wide for a walker's centre: single file, the second astronaut follows or waits.",
+  "furniture": "the main room zone excludes the 'blocks' circles in furniture/layout.json (plus 0.25 m walker radius); wide pieces list several circles"
+ },
+ "interior_shading": "baked lightmap for the rooms (interior_lightmap.jpg, includes the furniture's shadows); furniture and loose objects read the cabin's real light from a baked light volume (interior_lightvolume.png, volLight in INTERIOR_COMMON) by position and facing; portholes show the plain, crater rim and sky in the viewing direction (windowView in COMMON) through a pane with dark rim, dust and reflection; see-through panes on furniture use GLASS_FRAG (glassSheen); cabin brightness is held constant across weather presets (uInterior); indicator lights blink (uTime); the planning table top is a canvas texture with the terrain photo, route and waypoints (reference in habitat.init).",
+ "re_bake": "if furniture moves or the interior mesh changes, re-bake both in marswalk_habitat.blend. IMPORTANT: collection BakeCasters (furniture copies placed like layout.json) must be visible to renders while baking, otherwise the furniture casts no shadows. Room: unwrap the 'LM' UV set (Smart UV Project, 66 degrees, margin 0.004), bake Diffuse, direct + indirect, no colour, 128 samples (about 40 s on the RTX 5060 Ti), encode pow(light * 0.5, 1/2.2), save as JPG. Light volume: un-hide object LightProbes (206k tiny probe faces, UV set 'P', image 'Probe'), bake the same way with margin 0 and 192 samples (about 20 s), then points outside the cabin or inside furniture are filled from their neighbours and the image is encoded the same way (script steps are in the README).",
+ "screens": {
+  "how": "give HabitatScreens an unlit material whose map is a 1024 x 1024 canvas texture with flipY = false; draw each screen's content into its cell (pixels, origin top-left: x, y, width, height). Reference: habitat.screens in src/main.js, redrawn 4 times a second while the camera is within 14 m.",
+  "cells": {
+   "life": {
+    "cell": [
+     0,
+     0,
+     512,
+     341
+    ],
+    "where": "main room, blue screen at 110 degrees, right of the sample glovebox",
+    "size_m": [
+     0.56,
+     0.36
+    ],
+    "placeholder": "life support: O2, CO2, pressure, cabin temperature"
+   },
+   "eva": {
+    "cell": [
+     512,
+     0,
+     512,
+     341
+    ],
+    "where": "main room, blue screen at 250 degrees, by the shelves",
+    "size_m": [
+     0.56,
+     0.36
+    ],
+    "placeholder": "EVA team: suit O2, battery and heart trace for EV1 and EV2, mission clock"
+   },
+   "weather": {
+    "cell": [
+     0,
+     341,
+     512,
+     341
+    ],
+    "where": "main room, amber screen at 160 degrees, by the ladder",
+    "size_m": [
+     0.56,
+     0.36
+    ],
+    "placeholder": "weather: dust, wind, temperature, radiation, radar sweep; storm warning in the dust_storm preset"
+   },
+   "airlock": {
+    "cell": [
+     512,
+     341,
+     512,
+     282
+    ],
+    "where": "airlock side wall",
+    "size_m": [
+     0.4,
+     0.22
+    ],
+    "placeholder": "chamber pressure and hatch states (follows the outer hatch)"
+   },
+   "door": {
+    "cell": [
+     0,
+     682,
+     512,
+     341
+    ],
+    "where": "airlock, beside the inner hatch",
+    "size_m": [
+     0.4,
+     0.28
+    ],
+    "placeholder": "hatch control panel: status lamp, CYCLE / OPEN / LOCK"
+   }
+  }
+ }
+}

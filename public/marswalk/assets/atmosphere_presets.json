@@ -1,0 +1,239 @@
+{
+ "colors": "linear RGB 0-1",
+ "sky_shader": "color = mix(horizon, zenith, smoothstep(0, gradient_end_elev, dir.y)) + halo_color * halo_strength * pow(max(dot(dir, sunDir),0), halo_power); times intensity",
+ "terrain_detail_fade_m": {
+  "start": 35,
+  "end": 110,
+  "note": "gravel/slab detail textures fade to the baked HiRISE colour between these camera distances"
+ },
+ "presets": {
+  "clear_day": {
+   "sky": {
+    "zenith": [
+     0.53,
+     0.41,
+     0.215
+    ],
+    "horizon": [
+     0.97,
+     0.8,
+     0.455
+    ],
+    "gradient_end_elev": 0.6,
+    "halo_color": [
+     0.9,
+     0.78,
+     0.56
+    ],
+    "halo_power": 8,
+    "halo_strength": 0.25,
+    "intensity": 0.75
+   },
+   "sun": {
+    "direction_threejs": [
+     -0.3687,
+     0.8192,
+     -0.4394
+    ],
+    "elevation_deg": 55,
+    "color": [
+     1.0,
+     0.95,
+     0.88
+    ],
+    "intensity": 5.0,
+    "angular_diameter_deg": 0.35
+   },
+   "fog": {
+    "color": [
+     0.87,
+     0.72,
+     0.43
+    ],
+    "blender_extinction_per_m": 0.0001,
+    "threejs_FogExp2_density": 0.000224
+   },
+   "exposure_stops": 0.15,
+   "lamp": {
+    "intensity": 0.0,
+    "half_distance_m": 4,
+    "range_m": 30,
+    "note": "helmet lamp: spot along the view direction; inverse-square from half_distance_m, fades to nothing at range_m (EVA helmet lights are work lights, useful to roughly 15-20 m)"
+   }
+  },
+  "dust_storm": {
+   "sky": {
+    "zenith": [
+     0.55,
+     0.36,
+     0.22
+    ],
+    "horizon": [
+     0.72,
+     0.48,
+     0.3
+    ],
+    "gradient_end_elev": 0.6,
+    "halo_color": [
+     0.9,
+     0.62,
+     0.38
+    ],
+    "halo_power": 3,
+    "halo_strength": 0.45,
+    "intensity": 0.9
+   },
+   "sun": {
+    "direction_threejs": [
+     -0.4132,
+     0.766,
+     -0.4924
+    ],
+    "elevation_deg": 50,
+    "color": [
+     1.0,
+     0.78,
+     0.55
+    ],
+    "intensity": 1.1,
+    "angular_diameter_deg": 6.0
+   },
+   "fog": {
+    "color": [
+     0.8,
+     0.52,
+     0.32
+    ],
+    "blender_extinction_per_m": 0.0045,
+    "threejs_FogExp2_density": 0.0015
+   },
+   "exposure_stops": 0.55,
+   "lamp": {
+    "intensity": 0.0,
+    "half_distance_m": 4,
+    "range_m": 30,
+    "note": "helmet lamp: spot along the view direction; inverse-square from half_distance_m, fades to nothing at range_m (EVA helmet lights are work lights, useful to roughly 15-20 m)"
+   }
+  },
+  "late_afternoon": {
+   "sky": {
+    "zenith": [
+     0.16,
+     0.13,
+     0.13
+    ],
+    "horizon": [
+     0.58,
+     0.42,
+     0.32
+    ],
+    "gradient_end_elev": 0.6,
+    "halo_color": [
+     0.4,
+     0.58,
+     0.82
+    ],
+    "halo_power": 12,
+    "halo_strength": 1.4,
+    "intensity": 0.65
+   },
+   "sun": {
+    "direction_threejs": [
+     -0.9327,
+     0.1219,
+     -0.3395
+    ],
+    "elevation_deg": 7,
+    "color": [
+     1.0,
+     0.8,
+     0.62
+    ],
+    "intensity": 3.2,
+    "angular_diameter_deg": 0.35,
+    "azimuth_note": "sun in the west-north-west (physically possible at 18.5N); previous value put it due north"
+   },
+   "fog": {
+    "color": [
+     0.7,
+     0.52,
+     0.42
+    ],
+    "blender_extinction_per_m": 0.00018,
+    "threejs_FogExp2_density": 0.0003
+   },
+   "exposure_stops": 0.45,
+   "lamp": {
+    "intensity": 0.0,
+    "half_distance_m": 4,
+    "range_m": 30,
+    "note": "helmet lamp: spot along the view direction; inverse-square from half_distance_m, fades to nothing at range_m (EVA helmet lights are work lights, useful to roughly 15-20 m)"
+   }
+  },
+  "night": {
+   "sky": {
+    "zenith": [
+     0.004,
+     0.005,
+     0.009
+    ],
+    "horizon": [
+     0.016,
+     0.013,
+     0.012
+    ],
+    "gradient_end_elev": 0.6,
+    "halo_color": [
+     0,
+     0,
+     0
+    ],
+    "halo_power": 8,
+    "halo_strength": 0.0,
+    "intensity": 1.0,
+    "stars": 1.0
+   },
+   "sun": {
+    "direction_threejs": [
+     0.35,
+     0.55,
+     -0.76
+    ],
+    "elevation_deg": 33,
+    "color": [
+     0.75,
+     0.82,
+     1.0
+    ],
+    "intensity": 0.012,
+    "angular_diameter_deg": 0.3,
+    "note": "faint sky glow stand-in; there is no moonlight to speak of on Mars"
+   },
+   "fog": {
+    "color": [
+     0.6,
+     0.45,
+     0.35
+    ],
+    "blender_extinction_per_m": 0.0001,
+    "threejs_FogExp2_density": 0.000224
+   },
+   "exposure_stops": 2.2,
+   "lamp": {
+    "intensity": 9.0,
+    "color": [
+     1.0,
+     0.96,
+     0.88
+    ],
+    "cone_cos_inner": 0.93,
+    "cone_cos_outer": 0.74,
+    "note": "helmet lamp: spot along the view direction; inverse-square from half_distance_m, fades to nothing at range_m (EVA helmet lights are work lights, useful to roughly 15-20 m)",
+    "half_distance_m": 4,
+    "range_m": 30
+   }
+  }
+ },
+ "rock_fade_note": "rocks shrink to zero between 80% and 100% of their class draw radius",
+ "color_reference": "clear_day sky and haze hues, and the terrain colour ramp in the shaders, are matched to Perseverance Mastcam-Z colour frames (sols 1211-1217, Bright Angel / Cheyava Falls), kept in ..\\ref\\perseverance_sol1217\\. Raw frames are auto-stretched, so only the hue (red:green:blue balance) was taken from them, not the brightness."
+}
