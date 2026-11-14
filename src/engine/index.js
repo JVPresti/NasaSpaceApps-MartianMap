@@ -16,6 +16,7 @@ import { createAssets, b64u16, b64u8 } from './assets.js';
 import { buildAssetManifest, ROCK_NAMES } from './assetManifest.js';
 import { decodeTerrainJson, decodeRingJson } from './queries.js';
 import { createRouteGlow, validPath } from './routeGlow.js';
+import { createBootPrints } from './bootPrints.js';
 import { createDust, clampDust } from './dust.js';
 import { createShelterHighlight } from './shelterHighlight.js';
 import { validShelter } from './shelterRules.js';
@@ -132,6 +133,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     if (ctx.outcrop) ctx.outcrop.userData.place(name);
     if (sys.routeGlow) sys.routeGlow.rebuild();  // re-drape the route on the new mesh
     if (sys.shelter) sys.shelter.rebuild();
+    if (sys.prints) sys.prints.setTier(name);
     if (sys.dust) sys.dust.setTier(name);
   }
 
@@ -156,6 +158,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     sys.sampling.update(dt);   // after props: follows the clip and the scoop content (#36)
     sys.routeGlow.update(dt, eyeMode ? ctx.view.eye : null);
     sys.shelter.update(dt, ctx.view.eye, camera);
+    sys.prints.update(dt);
     sys.dust.update(dt);
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
@@ -241,6 +244,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     sys.routeGlow.setPath(pending.route);
     sys.shelter = createShelterHighlight(ctx);
     sys.shelter.set(pending.shelter);
+    sys.prints = createBootPrints(ctx); sys.prints.setTier(ctx.tier);
     sys.dust = createDust(ctx); sys.dust.setTier(ctx.tier); sys.dust.set(pending.dust);
     if (pending.skyBlend) applySkyBlend(ctx, pending.skyBlend.from, pending.skyBlend.to, pending.skyBlend.t);
     waypoints.set(pending.waypoints);
