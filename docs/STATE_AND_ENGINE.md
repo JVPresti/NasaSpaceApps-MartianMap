@@ -40,11 +40,14 @@ setMode('plan');
 | `mode` | `'walk'` or `'plan'` | interface (mode switch) | #5 |
 | `mission.startedAtMs`, `elapsedSec`, `paused` | mission clock, from a start timestamp | mission clock | #59 |
 | `mission.sol`, `lmst` | sol number, local mean solar time `'HH:MM'` | mission clock | #59 |
-| `suit.oxygenSec` | oxygen left, seconds. **The event engine reads this path.** | suit model | #19 |
-| `suit.oxygenPct`, `batteryPct` | 0 to 100 | suit model | #19 |
-| `suit.pressurePsi` | suit pressure | suit model | #19 |
-| `suit.walkbackSec` | time to walk back to the habitat | suit model | #19 |
-| `suit.effort` | 0 to 1, from speed and slope | suit model | #19 |
+| `suit.oxygenG`, `oxygenPct` | primary O2 left, grams and 0 to 100 (xEMU 771 g usable) | suit model | #19 |
+| `suit.oxygenSec` | O2 time left at the current rate (smoothed over 30 s). **The event engine reads this path.** | suit model | #19 |
+| `suit.batteryPct` | 0 to 100 (xEMU 756 Wh) | suit model | #19 |
+| `suit.pressurePsi` | suit pressure, 4.3 psid nominal | suit model | #19 |
+| `suit.metabolicW`, `effort` | metabolic power in W; effort 0 at rest, 1 at the design peak (879 W) | suit model | #19 |
+| `suit.walkbackSec`, `walkbackO2G` | time and O2 (with the 20 % pad) to walk back to the habitat along the route | suit model | #19 |
+| `suit.marginSec` | O2 time left minus walkback minus the 30 min reserve | suit model | #19 |
+| `suit.status` | `'nominal'`, `'caution'` (margin under 15 min) or `'warning'` (margin at or under 0) | suit model | #19, used by #26 |
 | `navigation.x`, `z`, `headingDeg` | position estimate; heading clockwise from north | engine bridge now; navigation model later | #6, #21, #42 |
 | `navigation.errorM`, `fixMode`, `lastFixSec` | uncertainty radius, `'terrain fix'` or `'dead reckoning'`, mission time of last fix | navigation model | #21, #42 |
 | `route.waypoints` | `[{ name, x, z }]` | Plan mode, planner | #17 |
@@ -100,6 +103,12 @@ await engine.ready;
 
 - **When they work:** the terrain queries throw before `ready`; `setSky` and `setRoute` before `ready` are stored and applied when ready.
 - **Same numbers as the simulation:** the queries are plain functions in `src/engine/queries.js`, with no three.js, and they agree with `src/sim/costGrid.js` to within 1 cm. Tests are in `src/engine/queries.test.js`.
+
+## Simulation runners
+
+`startSimulation(engine)` in `src/state/simulation.js` starts the modules that write the store once the engine is ready. Today that is the suit model (`src/sim/suitModel.js`, `src/sim/suitRunner.js`, #19). It ticks 4 times per second, reads `navigation` and `route.path`, uses `engine.heightAt` for the gradient, and writes `suit`. All its constants come from `public/data/hazards.json`. Nothing starts with `?mock=1`, so mock values stay put.
+
+In development, `window.__missionStore` is the store, for the browser console: `__missionStore.getState().suit`. Production builds do not have it.
 
 ## The bridge
 

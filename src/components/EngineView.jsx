@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { createEngine } from '../engine/index.js';
 import { useMissionStore } from '../state/store.js';
 import { connectEngine } from '../state/engineBridge.js';
+import { startSimulation } from '../state/simulation.js';
 
 const ASSET_BASE = import.meta.env.BASE_URL + 'marswalk/';
 
@@ -25,7 +26,7 @@ export default function EngineView({ onStatus, onReady, onError }) {
   });
 
   useEffect(() => {
-    let disconnect = null, disposed = false;
+    let disconnect = null, stopSimulation = null, disposed = false;
     const engine = createEngine(containerRef.current, {
       assetBase: ASSET_BASE,
       mode: useMissionStore.getState().mode,
@@ -37,10 +38,12 @@ export default function EngineView({ onStatus, onReady, onError }) {
     engine.ready.then(() => {
       if (disposed) return;
       disconnect = connectEngine(engine);
+      stopSimulation = startSimulation(engine, { mock: new URLSearchParams(window.location.search).get('mock') === '1' });
       callbacks.current.onReady?.();
     }, () => {});
     return () => {
       disposed = true;
+      if (stopSimulation) stopSimulation();
       if (disconnect) disconnect();
       engine.dispose();
     };
