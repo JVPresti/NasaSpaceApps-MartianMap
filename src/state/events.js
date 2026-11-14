@@ -49,16 +49,18 @@ function loadPlanner() {
       constants: suitConstantsFromHazards(hazards),
       shelters: sheltersJson.shelters
         .filter((shelter) => Number.isFinite(shelter.x) && Number.isFinite(shelter.z))
-        .map((shelter) => ({ id: shelter.id, name: shelter.name, x: shelter.x, z: shelter.z })),
+        .map((shelter) => ({ id: shelter.id, name: shelter.name, type: shelter.type, protection: shelter.protection, x: shelter.x, z: shelter.z })),
     };
   });
 }
 
-function writeRoute(result, reason) {
+// `shelter` is the shelters.json entry the planner chose. The waypoint runner, the HUD and the engine highlight all
+// target it while it is set; the event's end clears it (clearShelter below).
+function writeRoute(result, reason, shelter = null) {
   useMissionStore.setState((state) => {
     if (!result.ok) {
       return {
-        route: { ...state.route, path: null, reason: result.detail ?? reason, decision: 'pending', skipped: [] },
+        route: { ...state.route, path: null, reason: result.detail ?? reason, decision: 'pending', skipped: [], shelter: null },
       };
     }
     const targetName = result.target?.name;
@@ -76,6 +78,7 @@ function writeRoute(result, reason) {
         reason: reason ?? result.reason,
         decision: 'pending',
         skipped,
+        shelter,
       },
       sources: { ...state.sources, ...ROUTE_SOURCES },
     };
@@ -124,7 +127,10 @@ export function startEventRunner({ store = useMissionStore, now = () => Date.now
           return;
         }
         const walk = walkCost(result.path, planner.heightAt, planner.constants);
-        writeRoute({ ...result, etaSec: walk.timeSec }, `${reason} (${eventId})`);
+        // The planner answers asynchronously: an event that ended meanwhile gets its route but no shelter target.
+        const stillActive = engine.getActive().some((active) => active.id === eventId);
+        const shelter = stillActive ? planner.shelters.find((entry) => entry.id === result.target?.id) ?? result.target : null;
+        writeRoute({ ...result, etaSec: walk.timeSec }, `${reason} (${eventId})`, shelter);
       })
       .catch((error) => {
         // A failed planner must not leave a stale route looking safe.
@@ -132,11 +138,20 @@ export function startEventRunner({ store = useMissionStore, now = () => Date.now
       });
   };
 
+  // Once no event with a planner block is active, nothing needs the shelter: the runner goes back to the waypoints,
+  // still leaving out the ones in route.skipped.
+  const clearShelter = ({ type }) => {
+    if (type !== 'end') return;
+    const sheltered = engine.getActive().some((active) => EVENT_DEFINITIONS.find((event) => event.id === active.id)?.planner);
+    if (!sheltered && store.getState().route.shelter) store.setState((state) => ({ route: { ...state.route, shelter: null } }));
+  };
+
   const engine = createEventEngine({
     events: EVENT_DEFINITIONS,
     store: storeAdapter,
     getMissionTime: missionTime,
     requestReplan,
+    log: clearShelter,
   });
 
   const tick = () => {
