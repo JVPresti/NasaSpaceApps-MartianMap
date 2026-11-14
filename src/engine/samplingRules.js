@@ -11,6 +11,7 @@ export const GROUND_STAND_M = 0.47;   // the scoop meets the soil 0.47 m ahead o
 export const CASE_STAND_M = 0.85;     // 0.85 m from the case, on the side away from the partner
 
 export const CHEYAVA_FALLS = 'Cheyava Falls';
+export const BRIGHT_ANGEL = 'Bright Angel';   // the layered outcrop at WP3 (rocks.js buildOutcrop)
 
 /** Horizontal distance between two { x, z } points. */
 export const horizontalDistance = (a, b) => Math.hypot(b.x - a.x, b.z - a.z);

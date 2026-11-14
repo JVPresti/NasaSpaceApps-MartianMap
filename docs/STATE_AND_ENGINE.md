@@ -71,7 +71,7 @@ setMode('plan');
 | `environment.doseRateUgyH`, `doseUgy` | radiation dose rate (µGy/h) and dose received (µGy) | RAD curve, events | #25, #31 |
 | `alerts.<eventId>` | `{ id, eventId, level, text, startedAtSec, active }`, or `null` when cleared. **The event engine writes these.** | event engine | #22 |
 | `crew` | `[{ id, name, color, x, z, oxygenPct, batteryPct }]` | partner, online play | #39, #52 |
-| `sampling.count`, `samples` | samples secured in a container this EVA, and `[{ id, kind: 'rock' \| 'ground', site, x, z, into: 'pouch' \| 'case', photo, texture, sealed, atSec }]` (`site` is `'Cheyava Falls'` or `null`) | sampling bridge | #36 |
+| `sampling.count`, `samples` | samples secured in a container this EVA, and `[{ id, kind: 'rock' \| 'ground', site, x, z, into: 'pouch' \| 'case', photo, texture, sealed, atSec }]` (`site` is `'Cheyava Falls'`, `'Bright Angel'` or `null`) | sampling bridge | #36 |
 | `sampling.checklist` | `{ photo, texture, sample, seal }` of the sample in progress, plus `photoAt`, `siteAt` and `sampleId` for the rules in [Sampling](#sampling-36) | sampling bridge | #36 |
 | `sampling.photos` | helmet camera photos taken this EVA | sampling bridge | #36 |
 | `sampling.status` | the engine's `getSampling()`: `{ phase, holding, target, caseState, caseInReach, actions }`, or `null` before the engine reports | sampling bridge, 5 times per second when it changes | #36 |
@@ -185,7 +185,7 @@ The runner subscribes to `mission.paused` and `mission.timeScale`, so the suit r
 
 | Input | When | What happens |
 |---|---|---|
-| Click | a rock or the ground under the crosshair is within `SAMPLE_REACH_M` (1.5 m from the feet) and the scoop is free | `collect_rock` for Cheyava Falls or a loose rock of at least 0.35 m (the scoop shows chips), `collect_ground` otherwise (soil). The player steps to the clip's stand point (0.70 m from the rock face, 0.47 m short of the soil) and is held there until the clip ends. Ignored while a clip plays |
+| Click | a rock or the ground under the crosshair is within `SAMPLE_REACH_M` (1.5 m from the feet) and the scoop is free | `collect_rock` for Cheyava Falls, the Bright Angel outcrop or a loose rock of at least 0.35 m (the scoop shows chips), `collect_ground` otherwise (soil). The player steps to the clip's stand point (0.70 m from the rock face, 0.47 m short of the soil) and is held there until the clip ends. Ignored while a clip plays |
 | P | a rock or the ground is in view within 8 m | a helmet camera photo |
 | E | holding a sample | `stow_sample`: into the sample bag; the scoop goes back on the belt |
 | F | holding a sample, or with the scoop free | the hand-over of `props.json`: asks the partner to set the case down; once it is down within 2 m, `pour_sample` from 0.85 m on the side away from the partner; then the partner closes the lid and takes the case back by itself |

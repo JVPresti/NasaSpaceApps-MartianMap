@@ -1,5 +1,5 @@
 // Sampling (#36): connects the ready arm clips, the scoop and the partner's case to the player's input in Walk mode.
-//   Click   take a sample of what the crosshair is on, within reach: Cheyava Falls or a loose rock (collect_rock, chips)
+//   Click   take a sample of what the crosshair is on, within reach: Cheyava Falls, the Bright Angel outcrop or a loose rock (collect_rock, chips)
 //           or the ground (collect_ground, soil). Ignored while a clip plays or while the scoop is full.
 //   P       photograph the target with the helmet camera (the checklist's photo step)
 //   E       stow the sample in the sample bag (stow_sample)
@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { CELL } from './rocks.js';
 import { JOG_SPEED } from './view.js';
 import {
-  CASE_REACH_M, CASE_STAND_M, CHEYAVA_FALLS, GROUND_STAND_M, MIN_ROCK_D_M, PHOTO_RANGE_M, ROCK_STAND_M,
+  BRIGHT_ANGEL, CASE_REACH_M, CASE_STAND_M, CHEYAVA_FALLS, GROUND_STAND_M, MIN_ROCK_D_M, PHOTO_RANGE_M, ROCK_STAND_M,
   angleDelta, caseState, classifyTarget, horizontalDistance, inputActions, marchGround, pickRock, pourStand, rayCylinder, raySphere, standPoint,
 } from './samplingRules.js';
 
@@ -62,10 +62,10 @@ export function createSampling(ctx, canvas, signal) {
     if (!walk() || onHabitat(view.eye.x, view.eye.z)) return null;
     camera.updateMatrixWorld(); camera.getWorldPosition(o); camera.getWorldDirection(d);
     const hits = [];
-    if (ctx.cheyava) {
-      ray.set(o, d); ray.far = PHOTO_RANGE_M;
-      const hit = ray.intersectObject(ctx.cheyava, false)[0];
-      if (hit) hits.push({ kind: 'rock', site: CHEYAVA_FALLS, distance: hit.distance, point: { x: hit.point.x, y: hit.point.y, z: hit.point.z } });
+    ray.set(o, d); ray.far = PHOTO_RANGE_M;
+    for (const [mesh, site] of [[ctx.cheyava, CHEYAVA_FALLS], [ctx.outcrop, BRIGHT_ANGEL]]) {   // the named rocks: their real meshes
+      const hit = mesh ? ray.intersectObject(mesh, false)[0] : null;
+      if (hit) hits.push({ kind: 'rock', site, distance: hit.distance, point: { x: hit.point.x, y: hit.point.y, z: hit.point.z } });
     }
     const rock = pickRock(o, d, nearbyRocks(o.x, o.z), PHOTO_RANGE_M);
     if (rock) hits.push({ kind: 'rock', site: null, distance: rock.distance, point: rock.point, rock: rock.rock });
@@ -90,9 +90,10 @@ export function createSampling(ctx, canvas, signal) {
   }
 
   // feet 0.70 m from the rock face, facing it. Cheyava Falls: find the face as the bench does, with level rays 0.30, 0.20
-  // and 0.12 m above its base toward the clicked point; a loose rock: its sphere
+  // and 0.12 m above its base toward the clicked point; a loose rock: its sphere; the Bright Angel outcrop: the clicked point
   function rockStand(t) {
-    if (t.site !== CHEYAVA_FALLS) return standPoint(view.eye, t.rock, t.rock.r + ROCK_STAND_M);
+    if (t.rock) return standPoint(view.eye, t.rock, t.rock.r + ROCK_STAND_M);
+    if (t.site !== CHEYAVA_FALLS) return standPoint(view.eye, t.point, ROCK_STAND_M);
     const dx = t.point.x - view.eye.x, dz = t.point.z - view.eye.z, len = Math.hypot(dx, dz) || 1, base = ctx.cheyava.position.y + 0.06;
     d.set(dx / len, 0, dz / len); ctx.cheyava.updateMatrixWorld(true);
     for (const up of [0.30, 0.20, 0.12]) {
