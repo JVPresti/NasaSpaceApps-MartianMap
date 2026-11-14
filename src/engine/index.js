@@ -24,6 +24,8 @@ import { createRocks, buildCheyava } from './rocks.js';
 import { createRoute } from './route.js';
 import { createCast } from './cast.js';
 import { createPartner } from './partner.js';
+import { createScriptedPartner } from './partnerSource.js';
+import { CREW } from './crew.js';
 import { createLegs } from './legs.js';
 import { createArms } from './arms.js';
 import { createProps } from './props.js';
@@ -180,7 +182,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     // subsystems: created now (terrain data is known), loaded below in the bench's order
     ctx.terrain = createTerrain(ctx);
     sys.rocks = createRocks(ctx); sys.route = createRoute(ctx); sys.cast = createCast(ctx);
-    sys.partner = createPartner(ctx); sys.arms = createArms(ctx); sys.legs = createLegs(ctx); sys.props = createProps(ctx); sys.habitat = createHabitat(ctx);
+    sys.partner = createPartner(ctx); sys.partner.setSource(createScriptedPartner({ id: CREW[1].id, color: CREW[1].color })); sys.arms = createArms(ctx); sys.legs = createLegs(ctx); sys.props = createProps(ctx); sys.habitat = createHabitat(ctx);
     viewCtl = createView(ctx, canvas, signal);
 
     status('Loading textures…');
@@ -250,6 +252,9 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       groundUnderHabitat: () => ctx.terrain.meshH(sys.habitat.pos.x, sys.habitat.pos.z),
       setTier: (name) => { ctx.tierAuto = false; return setTier(name); },
       walking: (on) => { ctx.view.keys.KeyW = !!on; },
+      partnerCommand: (name) => sys.partner.command(name),
+      setPartnerSource: (source) => sys.partner.setSource(source),
+      partnerState: () => sys.partner.state,
     };
   }
 
@@ -290,6 +295,17 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     /** Line of sight between two { x, y?, z } points (no y = eye height above ground). Available once ready. */
     lineOfSight(a, b, options) { return terrainQueries().lineOfSight(a, b, options); },
     /** Player position and heading (degrees clockwise from north), and the current mode. */
+    /**
+     * Who drives the partner astronaut: a partner source (src/engine/partnerSource.js, docs/PARTNER.md).
+     * The scripted partner is the default; null hides the partner. Available once ready.
+     */
+    setPartnerSource(source) {
+      if (source !== null && !(source && typeof source.update === 'function')) throw new Error('setPartnerSource: expected a partner source with update(dt, world), or null');
+      if (!sys.partner) throw new Error('engine is not ready: wait for engine.ready');
+      sys.partner.setSource(source);
+    },
+    /** Scripted actions of the current source: 'toggleCase', 'visitHabitat'. Returns false if the source ignores it. */
+    partnerCommand(name) { return sys.partner ? sys.partner.command(name) : false; },
     getPlayer() {
       const v = ctx.view, deg = ((v.yaw * 180 / Math.PI) % 360 + 360) % 360;
       return { x: v.eye.x, z: v.eye.z, headingDeg: deg, mode: v.mode === 'eye' ? 'walk' : 'plan' };
