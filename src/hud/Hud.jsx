@@ -6,6 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useMissionStore } from '../state/store.js';
 import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, pickAlert, wrapDeg } from './format.js';
 import ElevationProfile from './ElevationProfile.jsx';
+import SlopeAhead from './SlopeAhead.jsx';
 import * as I from './icons.jsx';
 import './hud.css';
 
@@ -243,6 +244,7 @@ export default function Hud({ engine }) {
     <div className="hud" aria-label="Helmet display">
       <HeadingTape />
       <WaypointMarker engine={engine} />
+      <SlopeAhead engine={engine} />
       <AlertBanner />
       <Clocks />
       <SuitPanel />
