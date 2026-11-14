@@ -25,6 +25,13 @@ const terrainJson = JSON.parse(
   ),
 );
 
+const hazards = JSON.parse(
+  readFileSync(
+    fileURLToPath(new URL('../../public/data/hazards.json', import.meta.url)),
+    'utf8',
+  ),
+);
+
 /** Build a tiny terrain object that does not need the real data file. */
 function syntheticTerrain() {
   const u16 = new Uint16Array([0, 65535, 32768, 65535]);
@@ -98,6 +105,24 @@ describe('slope and blocking', () => {
   it('blocks the 34 degree spot named in the assets README', () => {
     expect(isBlockedAt(grid, -201, -52)).toBe(true);
     expect(slopeAt(grid, -201, -52)).toBeGreaterThan(COST_CONSTANTS.SLOPE_LIMIT_DEG);
+  });
+
+  it('uses the same slope limits as hazards.json', () => {
+    expect(hazards.values['slope.no_go'].unit).toBe('deg');
+    expect(COST_CONSTANTS.SLOPE_LIMIT_DEG).toBe(hazards.values['slope.no_go'].value);
+    expect(COST_CONSTANTS.SLOPE_CAUTION_DEG).toBe(hazards.values['slope.caution'].value);
+  });
+
+  it('blocks ground just over the limit and keeps Cheyava Falls open', () => {
+    const { i, j } = nearestCell(grid, -201, -52);
+    expect(grid.slopes[j * grid.n + i]).toBeGreaterThan(COST_CONSTANTS.SLOPE_LIMIT_DEG);
+    expect(isBlockedAt(grid, 0, 0)).toBe(false);
+    let over = 0, blocked = 0;
+    for (let k = 0; k < grid.slopes.length; k += 1) {
+      if (grid.slopes[k] > COST_CONSTANTS.SLOPE_LIMIT_DEG) over += 1;
+      blocked += grid.blocked[k];
+    }
+    expect(blocked).toBe(over);
   });
 
   it('builds the full grid in well under a second', () => {

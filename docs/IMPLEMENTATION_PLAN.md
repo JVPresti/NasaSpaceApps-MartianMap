@@ -41,7 +41,7 @@ Four things exist: a working 3D engine (the Marswalk artifact you shared, with i
 | **Terrain** | Tile of about 1.4 × 1.5 km centred on Cheyava Falls, from the USGS Mars 2020 TRN HiRISE elevation model (source 1 m; the artifact's mesh is about 2 m) and 25 cm orthomosaic. A 12 km CTX ring gives the horizon. | None for the MVP. The tile origin is recorded in `docs/marswalk-assets/README.md` (Cheyava Falls, 18.4975 N, 77.3053 E), so real coordinates, local time and Sun position can be computed. |
 | **Rocks** | Density map following the Golombek rock model, five rock meshes with three levels of detail, instanced. | None for the MVP. |
 | **Sky** | Four presets: clear day, dust storm, late afternoon with the blue sunset glow, night with helmet lamp. | Drive from mission time and dust opacity instead of buttons. |
-| **Data layers** | Slope hazard (limits at 15° and 25°), elevation, rock abundance, outcrop. | Legends and units. New layers: no-go zones, radio shadow. |
+| **Data layers** | Slope hazard (limits at 15° and 20°), elevation, rock abundance, outcrop. | Legends and units. New layers: no-go zones, radio shadow. |
 | **Astronaut** | NASA Z-2 suit with walk, idle and stoop. First-person arms with five hand poses, first-person legs, and sampling clips: rock, ground, stow, pour. | The wrist screen shows only a layer menu. It needs the full wrist app. |
 | **Partner** | Scripted second astronaut who carries the tool case, hands it over and enters the habitat. Four player colours are already defined. | A partner driven by a remote player (stretch). |
 | **Habitat** | NASA Habitat Demonstration Unit shell with airlock and interior: planning table, tablet, sample glovebox, suit rack. Five wall screens show placeholder content. | Real screen content: planner, EVA status, weather. |
@@ -182,8 +182,8 @@ Implementation is small. The simulation knows the true position. A navigation mo
 | **Sky** | Tan daytime sky, blue glow around the setting Sun, dust opacity (tau) | The four existing presets, blended by time and tau | SIM |
 | **Weather** | MEDA on Perseverance: pressure of roughly 650 to 800 Pa, air temperature, wind | Replay of one real sol, labelled with its sol number | DATA |
 | **Radiation** | RAD on Curiosity: about 0.2 mGy per sol on the surface in Gale crater | Background dose counter; scripted particle event scaled from RAD records | DATA + SIM |
-| **Terrain hazard** | Slope from the HiRISE elevation model; Golombek rock abundance | Under 15° normal, 15 to 25° caution, over 25° no-go. These are the limits the slope layer already uses; tune in playtests. | DERIVED |
-| **Mobility** | Suited walking near 1 m/s on flat ground | Speed and effort scale with slope and rock cover | SIM |
+| **Terrain hazard** | Slope from the HiRISE elevation model; Golombek rock abundance | Under 15° normal, 15 to 20° caution, over 20° no-go. 20° is NASA's suited walking limit (xEVA concept of operations, EVA-EXP-0042 Rev B). The slope layer and the route planner both read these limits from `src/sim/costGrid.js`, which matches `public/data/hazards.json`. | DERIVED |
+| **Mobility** | Suited walking at 1.0 m/s on flat ground, jogging at 1.5 m/s, just under the fastest suited pace tested at Mars gravity (1.52 m/s) | Speed and effort scale with slope and rock cover | SIM |
 | **Suit** | Oxygen, battery, suit pressure of 4.3 psi as in the mockups | Consumption follows effort; walkback time comes from the route home | SIM |
 | **Light** | A helmet work lamp reaches 15 to 20 m | Existing night preset | SIM |
 | **Sound** | Thin CO2 air at under 1 % of Earth's pressure | Mostly suit sounds: breathing, fans, radio. Outside sound is faint and dull. | SIM |

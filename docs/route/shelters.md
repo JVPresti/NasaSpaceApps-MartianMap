@@ -7,7 +7,7 @@ The route planner sends the crew to a shelter when an event starts. `public/data
 | Id | Type | Events | Protection | Why |
 |---|---|---|---|---|
 | `HAB` | habitat | radiation, dust storm, low oxygen | full | Pressurised, with air, power and walls. The only place that ends every event. |
-| `SP1` to `SP4` | natural | radiation | partial | Terrain hides 16 to 17 % of the sky, so a solar particle event gives that much less dose. No help in a dust storm or with low oxygen. |
+| `SP1` to `SP4` | natural | radiation | partial | Terrain hides 15 to 16 % of the sky, so a solar particle event gives that much less dose. No help in a dust storm or with low oxygen. |
 
 The `HAB` entry is the foot of the airlock steps, not the `HAB` waypoint. The engine places the habitat on the flattest spot within 30 m of the waypoint and turns the airlock toward the first waypoint (`src/engine/habitat.js`). The script repeats that rule on the same height grid and adds the 9.9 m from the habitat origin to the foot of the steps (`habitat.json`, `airlock`). The result is (535.1, 574.1), 30 m from the waypoint at (520, 600).
 
@@ -27,14 +27,14 @@ Open flat ground gives 1. A 20 m deep pit with a 10 m radius gives 0.12 at its c
 - Secondary particles from the ground and the rock (albedo neutrons) are not counted.
 - The galactic background comes from the same sky, so the same fraction applies to it, but over an event of hours it is small.
 - Rays stop at the tile edge, so points near the edge get a sky view that is too high. That errs on the safe side.
-- 17 % is the most this tile offers on walkable ground under the rules below. The tile median is 0.927 and the lowest 1 % of nodes sit at 0.848 or below. Steeper spots score lower but are no-go for the suit. For the September 2017 event (544 µGy measured by RAD in Gale crater) a 16 % cut saves about 90 µGy.
+- 16 % is the most this tile offers on walkable ground under the rules below (best sky view 0.845). The tile median is 0.927 and the lowest 1 % of nodes sit at 0.848 or below. Steeper spots score lower but are no-go for the suit, whose limit is 20 deg. For the September 2017 event (544 µGy measured by RAD in Gale crater) a 15.5 % cut saves about 84 µGy.
 
 ## How the points are chosen
 
 1. Walkable patch: every node within 4 m is under the planner's slope limit (`COST_CONSTANTS.SLOPE_LIMIT_DEG`, read through the existing API) and not blocked in the cost grid.
 2. At least 60 m inside the tile edge, because rays are cut off there.
 3. Sky view 0.88 or lower, that is a dose cut of at least 12 %.
-4. The first point is the lowest sky view within 80 m of the route line HAB, WP1, WP2, WP3, Cheyava Falls. It lands 97 m of walking from Cheyava Falls, the far end of the route, where the habitat is 792 m away.
+4. The first point is the lowest sky view within 80 m of the route line HAB, WP1, WP2, WP3, Cheyava Falls. It lands 108 m of walking from Cheyava Falls, the far end of the route, where the habitat is 824 m away.
 5. The rest are the lowest sky view on the tile, at least 300 m from every point already chosen, up to four in total.
 6. Each point must be reachable from the HAB entry with the A* planner.
 
@@ -43,6 +43,6 @@ Open flat ground gives 1. A 20 m deep pit with a 10 m radius gives 0.12 at its c
 `src/sim/shelters.js` reads the file:
 
 - `sheltersForEvent(data, eventId)` returns the `{id, name, x, z}` list that `replanToNearestShelter` takes, HAB first.
-- `replanForEvent(grid, from, data, eventId)` tries the full shelters first and falls back to the partial ones only when the habitat cannot be reached. Without that rule the cheapest route would often win, and the crew would sit in a hollow that cuts 16 % of the dose instead of walking to a habitat that cuts most of it.
+- `replanForEvent(grid, from, data, eventId)` tries the full shelters first and falls back to the partial ones only when the habitat cannot be reached. Without that rule the cheapest route would often win, and the crew would sit in a hollow that cuts 15 % of the dose instead of walking to a habitat that cuts most of it.
 
 Choosing between shelters by dose, time and distance is issue #23.
