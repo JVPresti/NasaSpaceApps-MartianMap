@@ -5,12 +5,17 @@
 //   const engine = createEngine(container, { assetBase, mode, onStatus, onProgress, onError });
 //   await engine.ready;          // resolves after the first frame is actually rendered, rejects on failure
 //   engine.setMode('plan' | 'walk');
+//   engine.setLayer(0..4); engine.setSky('clear_day'); engine.setRoute([[x, z], ...]);
+//   engine.heightAt(x, z); engine.slopeAt(x, z); engine.lineOfSight(a, b); engine.getPlayer();
 //   engine.dispose();
+// The full contract is in docs/STATE_AND_ENGINE.md.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as SH from './shaders.js';
 import { createAssets, b64u16, b64u8 } from './assets.js';
 import { buildAssetManifest, ROCK_NAMES } from './assetManifest.js';
+import { decodeTerrainJson, decodeRingJson } from './queries.js';
+import { createRouteLine } from './routeLine.js';
 import { createUniforms } from './uniforms.js';
 import { TIERS, detectTier } from './tiers.js';
 import { createTerrain } from './terrain.js';
@@ -28,15 +33,22 @@ import { createLoadLifecycle } from './lifecycle.js';
 import { createProgressTracker } from './progress.js';
 import { assertWebGL2, rendererFailure } from './webgl.js';
 
+export const LAYERS = ['none', 'slope hazard', 'elevation', 'rock abundance', 'outcrop'];
+export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
+
 /**
  * @param {HTMLElement} container element the canvas fills; its size drives the render size
- * @param {{ assetBase: string, mode?: 'plan' | 'walk', onStatus?: (text: string) => void, onProgress?: (progress: { loaded: number, failed: number, total: number, ratio: number }) => void, onError?: (err: Error) => void }} options
+ * @param {{ assetBase: string, mode?: 'plan' | 'walk', tier?: 'high' | 'low' | null, debug?: boolean,
+ *   onStatus?: (text: string) => void, onProgress?: (progress: { loaded: number, failed: number, total: number, ratio: number }) => void, onError?: (err: Error) => void }} options
+ *   tier: force a quality tier and turn off the automatic choice (the app passes ?tier=high|low).
+ *   debug: expose window.__marswalk for measuring (development builds only).
  */
-export function createEngine(container, { assetBase, mode = 'walk', onStatus = () => {}, onProgress = () => {}, onError = () => {} } = {}) {
+export function createEngine(container, { assetBase, mode = 'walk', tier = null, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {} } = {}) {
   if (!assetBase) throw new Error('createEngine: assetBase is required');
   assertWebGL2();
 
-  let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null;
+  let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null, routeLine = null;
+  const pending = { sky: null, route: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -74,8 +86,11 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
   // The quality tier decides which ortho texture belongs in the initial manifest, so detect it before
   // registering the total. Everything else is the same for both tiers.
   const detected = detectTier(renderer);
+  if (tier && !TIERS[tier]) console.warn('createEngine: unknown tier "' + tier + '", using automatic choice');
+  const forcedTier = tier && TIERS[tier] ? tier : null;   // a forced tier also stops the automatic downgrade
+  const initialTier = forcedTier || detected.tier;
   const tracker = createProgressTracker({
-    expected: buildAssetManifest(detected.tier),
+    expected: buildAssetManifest(initialTier),
     onChange: (progress) => lifecycle.progress(progress),
   });
 
@@ -85,7 +100,7 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
     U: createUniforms(), assets: createAssets(assetBase, { tracker, signal }),
     view: createViewState(), sys: {},
     T: null, RING: null, PRESETS: null, terrain: null,
-    tier: detected.tier, tierAuto: true, orthoCache: {}, presetName: 'clear_day', gpu: detected.gpu,
+    tier: initialTier, tierAuto: !forcedTier, orthoCache: {}, presetName: 'clear_day', gpu: detected.gpu,
   };
   const { U, assets, sys } = ctx;
 
@@ -105,10 +120,12 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
     renderer.setPixelRatio(Math.min(devicePixelRatio, t.pixelRatio)); resize();
     U.uRockR.value.set(t.radius[0] || 1, t.radius[1], t.radius[2]);
     ctx.terrain.buildTerrain(t); ctx.terrain.computeShadows(t.shadowRes); sys.rocks.reset();
+    sys.habitat.reground();   // the rebuilt mesh has slightly different heights
   }
 
   // ---------------------------------------------------------------- frame loop (bench lines 826-868)
   let frames = 0, acc = 0, last = 0, worst = 0, slowWindows = 0, booted = 0;
+  let lastStats = { fps: 0, worstMs: 0 };
   function tick() {
     try {
       renderFrame();
@@ -137,6 +154,7 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
     frames++; acc += ft; worst = Math.max(worst, ft);
     if (acc > 1000) {
       const fps = Math.round(frames * 1000 / acc);
+      lastStats = { fps, worstMs: Math.round(worst) };
       // auto tier: three slow seconds in a row on High -> Low
       if (ctx.tierAuto && ctx.tier === 'high' && now - booted > 3000) {
         slowWindows = (fps < 40 && worst < 250 && !document.hidden) ? slowWindows + 1 : 0;
@@ -155,10 +173,8 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
     status('Loading terrain data…');
     const [tj, rj, pj, rocksJ] = await Promise.all([assets.json('terrain.json'), assets.json('ring.json'), assets.json('atmosphere_presets.json'), assets.json('rocks.json')]);
     if (!alive) return;
-    const u = b64u16(tj.heights_u16_b64), h = new Float32Array(u.length); for (let i = 0; i < u.length; i++) h[i] = u[i] / 65535 * tj.range_m;
-    ctx.T = { n: tj.n, W: tj.width_m, H: tj.depth_m, h, dens: b64u8(tj.density_u8_b64), dn: tj.density_n, base: tj.base_elev_m };
-    const ru = b64u16(rj.heights_u16_b64), rh = new Float32Array(ru.length); for (let i = 0; i < ru.length; i++) rh[i] = rj.min_m + ru[i] / 65535 * rj.range_m;
-    ctx.RING = { n: rj.n, size: rj.size_m, h: rh }; U.uSize.value.set(ctx.T.W, ctx.T.H); U.uRingSize.value = ctx.RING.size;
+    ctx.T = decodeTerrainJson(tj, b64u16, b64u8);
+    ctx.RING = decodeRingJson(rj, b64u16); U.uSize.value.set(ctx.T.W, ctx.T.H); U.uRingSize.value = ctx.RING.size;
     ctx.PRESETS = pj.presets; U.uFadeStart.value = pj.terrain_detail_fade_m.start; U.uFadeEnd.value = pj.terrain_detail_fade_m.end;
 
     // subsystems: created now (terrain data is known), loaded below in the bench's order
@@ -199,6 +215,9 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
     await sys.habitat.init(); if (!alive) return;
 
     if (!alive) return;
+    routeLine = createRouteLine(ctx);
+    if (pending.sky) applyPreset(ctx, pending.sky);
+    routeLine.set(pending.route);
     viewCtl.setMode(requestedMode); started = true;
     booted = last = performance.now();
     renderer.setAnimationLoop(tick);
@@ -209,18 +228,77 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
     fail(cause);
   });
 
+  /** Last one-second measurement. Plain data, safe to poll; the engine never calls back from its frame loop. */
+  function stats() {
+    const r = renderer.info.render;
+    return { ...lastStats, tier: ctx.tier, auto: ctx.tierAuto, gpu: ctx.gpu, triangles: r.triangles, drawCalls: r.calls };
+  }
+
+  // Development hook for scripts/measure-fps.mjs: put the camera at a known spot and read stats().
+  if (debug) {
+    const place = (x, z, yaw, pitch = 0) => { viewCtl.setMode('walk'); requestedMode = 'walk'; ctx.view.eye.set(x, 0, z); ctx.view.yaw = yaw; ctx.view.pitch = pitch; };
+    window.__marswalk = {
+      stats, place,
+      setMode: (m) => { requestedMode = m; viewCtl.setMode(m); },
+      // the bench's 'habin' and 'hab' views (testbench main.js lines 802-803)
+      insideHabitat() { const h = sys.habitat; place(h.pos.x + h.dir.x * 1.45, h.pos.z + h.dir.z * 1.45, Math.atan2(-h.dir.x, h.dir.z), 0.12); },
+      outsideHabitat() {
+        const h = sys.habitat, d = h.dir, x = h.pos.x + d.x * 17 - d.z * 7, z = h.pos.z + d.z * 17 + d.x * 7;
+        place(x, z, Math.atan2(h.pos.x + d.x * 2 - x, -(h.pos.z + d.z * 2 - z)), -0.05);
+      },
+      habitatY: () => sys.habitat.pos.y,
+      groundUnderHabitat: () => ctx.terrain.meshH(sys.habitat.pos.x, sys.habitat.pos.z),
+      setTier: (name) => { ctx.tierAuto = false; return setTier(name); },
+      walking: (on) => { ctx.view.keys.KeyW = !!on; },
+    };
+  }
+
+  function terrainQueries() {
+    if (!ctx.terrain) throw new Error('engine is not ready: wait for engine.ready before querying the terrain');
+    return ctx.terrain.queries;
+  }
+
   return {
     ready,
+    stats,
     /** @param {'plan' | 'walk'} m */
     setMode(m) {
       if (m !== 'plan' && m !== 'walk') throw new Error('setMode: expected "plan" or "walk", got ' + m);
       requestedMode = m;
       if (started) viewCtl.setMode(m);   // before boot ends, the mode is applied when ready
     },
+    /** Data layer drawn on the terrain: 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop. */
+    setLayer(n) {
+      if (!Number.isInteger(n) || n < 0 || n >= LAYERS.length) throw new Error('setLayer: expected 0-' + (LAYERS.length - 1) + ', got ' + n);
+      U.uLayer.value = n;
+      if (sys.arms && sys.arms.L) { sys.arms.draw(); sys.arms.tap = 0.35; }   // the wrist screen shows the active layer
+    },
+    /** Atmosphere preset: 'clear_day' | 'dust_storm' | 'late_afternoon' | 'night'. */
+    setSky(name) {
+      if (!SKIES.includes(name)) throw new Error('setSky: expected one of ' + SKIES.join(', ') + ', got ' + name);
+      if (started) applyPreset(ctx, name); else pending.sky = name;
+    },
+    /** Route drawn on the ground, [[x, z], ...] in metres. null clears it. */
+    setRoute(path) {
+      if (path !== null && !(Array.isArray(path) && path.every((p) => Array.isArray(p) && p.length >= 2 && Number.isFinite(p[0]) && Number.isFinite(p[1])))) throw new Error('setRoute: expected [[x, z], ...] or null');
+      if (started) routeLine.set(path); else pending.route = path;
+    },
+    /** Terrain height (m) at x, z. Available once ready. */
+    heightAt(x, z) { return terrainQueries().heightAt(x, z); },
+    /** Slope (degrees) at x, z. Available once ready. */
+    slopeAt(x, z) { return terrainQueries().slopeAt(x, z); },
+    /** Line of sight between two { x, y?, z } points (no y = eye height above ground). Available once ready. */
+    lineOfSight(a, b, options) { return terrainQueries().lineOfSight(a, b, options); },
+    /** Player position and heading (degrees clockwise from north), and the current mode. */
+    getPlayer() {
+      const v = ctx.view, deg = ((v.yaw * 180 / Math.PI) % 360 + 360) % 360;
+      return { x: v.eye.x, z: v.eye.z, headingDeg: deg, mode: v.mode === 'eye' ? 'walk' : 'plan' };
+    },
     dispose() {
       if (!alive) return;
       alive = false;
       lifecycle.close();
+      if (debug && window.__marswalk && window.__marswalk.stats === stats) delete window.__marswalk;
       renderer.setAnimationLoop(null);
       ac.abort(); ro.disconnect(); controls.dispose();
       const textures = new Set(), materials = new Set();

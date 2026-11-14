@@ -1,7 +1,8 @@
-import { useCallback, useReducer, useState } from 'react';
+import { useCallback, useReducer } from 'react';
 import EngineView from './components/EngineView.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
 import ModeSwitch from './components/ModeSwitch.jsx';
+import { useMissionStore, setMode } from './state/store.js';
 import './App.css';
 
 const HINTS = {
@@ -52,7 +53,7 @@ function loadReducer(state, action) {
 }
 
 export default function App() {
-  const [mode, setMode] = useState('walk');
+  const mode = useMissionStore((s) => s.mode);
   const [load, dispatch] = useReducer(loadReducer, undefined, () => INITIAL_LOAD);
 
   const handleStatus = useCallback((text) => dispatch({ type: 'status', text }), []);
@@ -65,7 +66,6 @@ export default function App() {
     <div className="app">
       <EngineView
         key={`engine-${load.attempt}`}
-        mode={mode}
         onStatus={handleStatus}
         onProgress={handleProgress}
         onReady={handleReady}

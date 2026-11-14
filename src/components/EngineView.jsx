@@ -1,17 +1,26 @@
 import { useEffect, useRef } from 'react';
 import { createEngine } from '../engine/index.js';
+import { useMissionStore } from '../state/store.js';
+import { connectEngine } from '../state/engineBridge.js';
+import { startSimulation } from '../state/simulation.js';
 
 const ASSET_BASE = import.meta.env.BASE_URL + 'marswalk/';
 
+// Manual quality override: ?tier=high or ?tier=low forces a tier and turns off the automatic choice.
+function tierFromUrl() {
+  const t = new URLSearchParams(window.location.search).get('tier');
+  return t || null;   // the engine checks the value and warns about an unknown one
+}
+
 /**
- * Mounts the Marswalk engine once and forwards the mode to it.
- * The engine runs its own render loop; this component renders only when its props change, never per frame.
+ * Mounts the Marswalk engine once and connects it to the mission store (src/state/engineBridge.js):
+ * mode, layer, sky and route flow from the store to the engine; the player's position flows back 5 times per second.
+ * The engine runs its own render loop; this component never renders per frame.
  * Retrying remounts it with a new key, which disposes the previous engine before a new one boots.
  */
-export default function EngineView({ mode, onStatus, onProgress, onReady, onError }) {
+export default function EngineView({ onStatus, onProgress, onReady, onError }) {
   const containerRef = useRef(null);
   const engineRef = useRef(null);
-  const modeRef = useRef(mode);
   const callbacks = useRef({ onStatus, onProgress, onReady, onError });
 
   useEffect(() => {
@@ -24,11 +33,14 @@ export default function EngineView({ mode, onStatus, onProgress, onReady, onErro
 
     let engine;
     let live = true;
+    let disconnect = null, stopSimulation = null;
     const current = () => live && (engine === undefined || engineRef.current === engine);
     try {
       engine = createEngine(container, {
         assetBase: ASSET_BASE,
-        mode: modeRef.current,
+        mode: useMissionStore.getState().mode,
+        tier: tierFromUrl(),
+        debug: import.meta.env.DEV,
         // Identity checks keep a disposed StrictMode/retry engine from writing stale progress into React.
         onStatus: (text) => { if (current()) callbacks.current.onStatus?.(text); },
         onProgress: (progress) => { if (current()) callbacks.current.onProgress?.(progress); },
@@ -43,19 +55,19 @@ export default function EngineView({ mode, onStatus, onProgress, onReady, onErro
 
     engineRef.current = engine;
     engine.ready.then(() => {
-      if (current()) callbacks.current.onReady?.();
+      if (!current()) return;
+      disconnect = connectEngine(engine);
+      stopSimulation = startSimulation(engine, { mock: new URLSearchParams(window.location.search).get('mock') === '1' });
+      callbacks.current.onReady?.();
     }, () => {});
     return () => {
       live = false;
       if (engineRef.current === engine) engineRef.current = null;
+      if (stopSimulation) stopSimulation();
+      if (disconnect) disconnect();
       engine.dispose();
     };
   }, []);
-
-  useEffect(() => {
-    modeRef.current = mode;
-    engineRef.current?.setMode(mode);
-  }, [mode]);
 
   return <div ref={containerRef} className="engine-view" />;
 }
