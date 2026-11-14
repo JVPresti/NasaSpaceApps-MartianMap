@@ -5,6 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useMissionStore } from '../state/store.js';
 import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, pickAlert, wrapDeg } from './format.js';
 import * as I from './icons.jsx';
+import NavLine from './NavLine.jsx';
 import './hud.css';
 
 /** Source tag for a store path (DATA, DERIVED or SIM), with the full source on hover. Replaced by #62's component later. */
@@ -155,6 +156,7 @@ export default function Hud() {
       <Clocks />
       <SuitPanel />
       <EnvStrip />
+      <NavLine><SourceTag path="navigation.errorM" /></NavLine>
       <WaypointPanel />
     </div>
   );

@@ -123,6 +123,18 @@
 @keyframes hud-blink { 50% { border-color: rgba(255, 106, 77, 0.35); } }
 @media (prefers-reduced-motion: reduce) { .hud-alert-warning { animation: none; } }
 
+/* navigation line under the environment strip: how the position was estimated, its error and age (#21) */
+.hud-nav {
+  position: absolute; right: 7.8vw; top: calc(54vh + var(--u) * 3.7);
+  display: flex; flex-direction: column; align-items: flex-end; gap: 0.3em;
+  padding: 0.4em 0.9em; border-radius: 0.5em; max-width: 40vw;
+}
+.hud-nav-line { display: flex; align-items: baseline; font-size: 0.85em; letter-spacing: 0.06em; white-space: nowrap; }
+.hud-nav.hud-caution { border-color: var(--caution); }
+.hud-nav.hud-caution .hud-nav-line { color: var(--caution); }
+.hud-nav-prompt { font: 700 0.68em/1.3 system-ui, 'Segoe UI', sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--caution); }
+@media (max-width: 900px) { .hud-nav { right: 3vw; } }   /* follows the environment strip */
+
 /* small windows: drop to the essentials */
 @media (max-width: 900px) {
   .hud-env { gap: 0.9em; right: 3vw; }
