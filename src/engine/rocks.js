@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import * as SH from './shaders.js';
 import { ROCK_NAMES } from './assetManifest.js';
+import { rockBlocks, footprint, addFootprint } from './collide.js';
 
 // rock classes: counts per m2 from the Golombek Mars rock model at ~5 % cover (x1.6 max, thinned by HiRISE brightness)
 const CLASSES = [
@@ -18,11 +19,11 @@ export function createRocks(ctx) {
   const { scene, U, sys, T } = ctx;
   const { meshH, density } = ctx.terrain;
   const rocks = {
-    meshes: [], heights: [], blob: null, cache: new Map(), large: null, last: new THREE.Vector3(1e9, 0, 0), enabled: true, total: 0,
+    meshes: [], heights: [], feet: [], hero: null, blob: null, cache: new Map(), large: null, last: new THREE.Vector3(1e9, 0, 0), enabled: true, total: 0,
     init(data, maps) {
       ROCK_NAMES.forEach((name, ti) => {
         const mat = new THREE.ShaderMaterial({ uniforms: { ...U, tMap: { value: maps[ti] }, uRockH: f1(data[name].lods[0].height) }, vertexShader: SH.ROCK_VERT, fragmentShader: SH.ROCK_FRAG });
-        this.heights[ti] = data[name].lods[0].height;
+        this.heights[ti] = data[name].lods[0].height; this.feet[ti] = footprint(data[name].lods[0].p);   // outline from above, for collisions
         data[name].lods.forEach((l, li) => {
           const g = new THREE.BufferGeometry();
           g.setAttribute('position', new THREE.Float32BufferAttribute(l.p, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(l.n, 3));
@@ -70,14 +71,18 @@ export function createRocks(ctx) {
       if (!c) { c = this.gen(ci, cx * CELL, cz * CELL, CELL, CELL, (cx * 73856093) ^ (cz * 19349663) ^ ((ci + 1) * 83492791)); this.cache.set(key, c); }
       return c;
     },
-    // reference collision: pushes a walker (radius pr) out of rocks 0.35 m and larger; same deterministic rocks as the ones drawn
-    collide(p, pr) {
-      const hit = (x, z, rad) => { const dx = p.x - x, dz = p.z - z, d = Math.hypot(dx, dz), m = rad + pr; if (d < m && d > 1e-4) { p.x = x + dx / d * m; p.z = z + dz / d * m; } };
-      const scan = c => { for (let i = 0; i < c.n; i++) { const D = c.meta[i * 4 + 2]; if (D >= 0.35) hit(c.meta[i * 4], c.meta[i * 4 + 1], D * 0.40); } };
+    // walker collision (#38): adds every rock of 0.35 m and larger whose edge is within reach of p to an obstacle list (collide.js),
+    // as a capsule fitted to that rock type's outline and turned like the drawn rock (the meshes are about twice as long as wide;
+    // the reference used one circle of 0.4 x size). Same deterministic rocks as the ones drawn, plus the Cheyava Falls rock.
+    obstacles(p, out, reach = 1) {
+      const add = c => { for (let i = 0; i < c.n; i++) { const D = c.meta[i * 4 + 2]; if (!rockBlocks(D)) continue;
+        const x = c.meta[i * 4], z = c.meta[i * 4 + 1], f = this.feet[c.meta[i * 4 + 3]], R = f.ext * D + reach; if ((p.x - x) ** 2 + (p.z - z) ** 2 > R * R) continue;
+        addFootprint(out, f, x, z, D, c.mat[i * 16], c.mat[i * 16 + 2]); } };   // instance matrix elements 0 and 2: where the rock's local x points
       if (this.enabled) { const cx = Math.floor(p.x / CELL), cz = Math.floor(p.z / CELL);
-        for (let ci = 1; ci < 3; ci++) for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) scan(this.cell(ci, cx + i, cz + j));
-        if (this.large) scan(this.large); }
-      hit(0, 0, 0.75);   // Cheyava Falls rock
+        for (let ci = 0; ci < 3; ci++) if (rockBlocks(CLASSES[ci].D[1])) for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) add(this.cell(ci, cx + i, cz + j));   // classes that never reach 0.35 m are skipped
+        if (this.large) add(this.large); }
+      const h = this.hero; if (h) addFootprint(out, h.f, h.x, h.z, 1, h.ax, h.az);
+      return out;
     },
     update(cam, tier, force) {
       if (!force && Math.hypot(cam.x - this.last.x, cam.z - this.last.z) < 4) return;
@@ -121,6 +126,7 @@ export async function buildCheyava(ctx, maps) {
   g.setAttribute('uv', new THREE.Float32BufferAttribute(d.uv, 2)); g.setIndex(d.i);
   const m = new THREE.Mesh(g, new THREE.ShaderMaterial({ defines: { HERO: 1 }, uniforms: { ...U, tMap: { value: maps[0] }, tNao: { value: maps[1] }, uRockH: f1(0.3) }, vertexShader: SH.ROCK_VERT, fragmentShader: SH.ROCK_FRAG }));
   m.position.set(0, tileH(0, 0) - 0.06, 0); m.rotation.y = d.rot_z_blender || 0; scene.add(m);
+  ctx.sys.rocks.hero = { f: footprint(d.p), x: 0, z: 0, ax: Math.cos(m.rotation.y), az: -Math.sin(m.rotation.y) };   // walker collision (#38): its outline, turned like the mesh
   return m;
 }
 
