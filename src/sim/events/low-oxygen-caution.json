@@ -1,0 +1,12 @@
+{
+  "id": "low-oxygen-caution",
+  "label": "Low oxygen · caution",
+  "trigger": { "type": "threshold", "path": "suit.marginSec", "op": "lt", "value": 900 },
+  "timeline": [],
+  "alert": {
+    "level": "caution",
+    "text": "Low oxygen margin: turn back before the reserve is needed."
+  },
+  "end": { "type": "duration", "afterSec": 300 },
+  "notes": "suit.marginSec is computed by the suit model as oxygen time left minus walkback minus the 30 min reserve (suit.reserve.time in hazards.json). The 900 s caution threshold is 15 min, the caution limit in docs/STATE_AND_ENGINE.md. The 5 min duration keeps a manual demo alert visible; it does not replace the warning event."
+}
