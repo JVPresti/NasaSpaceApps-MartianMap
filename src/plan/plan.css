@@ -1,0 +1,372 @@
+/* Plan mode overlay. The canvas stays interactive everywhere the overlay is
+   transparent; only the panels capture pointer events. */
+
+.plan-ui {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  animation: plan-in 260ms ease both;
+}
+
+@keyframes plan-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.plan-panel {
+  position: absolute;
+  top: 78px;
+  left: 14px;
+  width: 318px;
+  max-height: calc(100% - 168px);
+  overflow-y: auto;
+  padding: 18px 18px 14px;
+  color: var(--ink);
+  background: linear-gradient(180deg, rgba(24, 14, 10, 0.9), rgba(20, 12, 9, 0.82));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(12px);
+  pointer-events: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 214, 170, 0.25) transparent;
+}
+
+.plan-panel-head {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.plan-kicker {
+  margin: 0 0 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.plan-panel h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.plan-section {
+  padding-top: 15px;
+}
+
+.plan-section h3 {
+  margin: 0 0 9px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.layer-list {
+  display: grid;
+  gap: 5px;
+}
+
+.layer-list button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid transparent;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.layer-list button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.layer-list button.on {
+  color: #1a100c;
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.layer-list button:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.layer-index {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  background: rgba(224, 104, 58, 0.14);
+  border-radius: 999px;
+}
+
+.layer-list button.on .layer-index {
+  color: var(--bg);
+  background: rgba(26, 16, 12, 0.16);
+}
+
+.layer-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer-legend {
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+
+.legend-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 9px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.legend-unit {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.legend-gradient {
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.legend-range {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+}
+
+.legend-swatches {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend-swatches li {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.legend-label {
+  font-variant-numeric: tabular-nums;
+}
+
+.legend-detail {
+  font-size: 10px;
+  color: var(--dim);
+}
+
+.legend-summary {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--dim);
+}
+
+.legend-source {
+  margin: 7px 0 0;
+  font-size: 9.5px;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  color: rgba(143, 211, 238, 0.78);
+}
+
+.waypoint-list {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.waypoint-list li {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.waypoint-number {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--bg);
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.waypoint-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.waypoint-coords {
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.plan-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.plan-panel-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 15px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  color: var(--dim);
+}
+
+.plan-chrome {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.north-arrow,
+.scale-bar {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  backdrop-filter: blur(8px);
+}
+
+.north-arrow {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 64px;
+  padding: 7px 0 5px;
+}
+
+.north-arrow svg {
+  width: 20px;
+  height: 30px;
+  fill: var(--ink);
+}
+
+.north-arrow span {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--dim);
+}
+
+.scale-bar {
+  display: grid;
+  gap: 5px;
+  min-width: 92px;
+  padding: 9px 12px 7px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+}
+
+.scale-bar-line {
+  max-width: 160px;
+  height: 3px;
+  background: var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px rgba(26, 16, 12, 0.3);
+}
+
+.plan-readout {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  max-width: 360px;
+  margin: 0;
+  padding: 7px 12px;
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  color: var(--dim);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+}
+
+@media (max-width: 760px) {
+  .plan-panel {
+    top: 70px;
+    right: 14px;
+    width: auto;
+    max-height: 46%;
+  }
+
+  .plan-readout {
+    display: none;
+  }
+
+  .plan-chrome {
+    bottom: 54px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-ui {
+    animation: none;
+  }
+}

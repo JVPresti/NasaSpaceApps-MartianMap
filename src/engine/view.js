@@ -1,12 +1,12 @@
 // Camera modes and input. Ported from docs/marswalk-assets/testbench-reference/main.js (lines 785-808, 829-850).
 //   walk: first person at eye height (the bench's 'eye' mode). Click to lock the mouse and look around, Esc to release;
 //         WASD / arrows to walk, Shift to jog. Drag to look still works while the mouse is not locked (fallback).
-//   plan: the site from above (OrbitControls): drag to orbit, scroll to zoom, right-drag to pan.
+//   plan: the site from above (OrbitControls): right-drag to pan and scroll to zoom; rotation is disabled.
 // Internally view.mode keeps the bench's values ('eye' | 'orbit') because the arms, legs and habitat check them.
 import * as THREE from 'three';
 
 export const START = new THREE.Vector3(8, 0, 70);   // 70 m south of Cheyava Falls, in Neretva Vallis
-const PLAN_HEIGHT = 1450, PLAN_SOUTH = 520;          // fits the 1422 x 1500 m tile, tilted slightly so the relief reads
+const PLAN_MIN_HEIGHT = 1200;                         // enough to read the whole tile on a laptop screen
 const NEAR = { eye: 0.15, orbit: 5 };
 // Suited walking speeds from public/data/hazards.json: mobility.speed.flat and mobility.speed.jog (both SIM).
 // The test bench used 1.4 and 4.5 m/s, faster than a suited astronaut and outside the suit model's range (#13, #19).
@@ -58,13 +58,32 @@ export function createView(ctx, canvas, signal, { onLockChange = () => {} } = {}
   /** @param {'plan' | 'walk'} m */
   function setMode(m) {
     if (m === 'plan') {
-      if (locked()) document.exitPointerLock();   // Plan uses the mouse for orbiting
-      view.mode = 'orbit'; controls.enabled = true; setNear(NEAR.orbit);
+      if (locked()) document.exitPointerLock();   // Plan uses the mouse for panning
+      view.mode = 'orbit';
+      controls.enabled = true;
+      controls.enableRotate = false;      // Plan is a map: pan and zoom only
+      controls.zoomToCursor = true;
+      setNear(NEAR.orbit);
+      // Look straight down with north up. A tiny south offset keeps the
+      // camera basis well-defined; camera.up carries north so panning stays
+      // aligned with the map. The height fits the whole tile for this aspect.
+      camera.up.set(0, 0, -1);
+      const halfFov = Math.tan((camera.fov * Math.PI) / 360);
+      const fitDepth = T.H / 2 / halfFov;
+      const fitWidth = T.W / 2 / (halfFov * Math.max(0.2, camera.aspect));
+      const planHeight = Math.max(PLAN_MIN_HEIGHT, fitDepth, fitWidth) * 1.12;
       const h0 = tileH(0, 0);
-      camera.position.set(0, h0 + PLAN_HEIGHT, PLAN_SOUTH); controls.target.set(0, h0, 0); controls.update();
+      camera.position.set(0, h0 + planHeight, 0.001);
+      controls.target.set(0, h0, 0);
+      controls.update();
     } else {
       // walk keeps the position and heading the player had when they left it
-      view.mode = 'eye'; controls.enabled = false; setNear(NEAR.eye);
+      view.mode = 'eye';
+      controls.enabled = false;
+      controls.enableRotate = true;
+      controls.zoomToCursor = false;
+      camera.up.set(0, 1, 0);
+      setNear(NEAR.eye);
     }
   }
 
