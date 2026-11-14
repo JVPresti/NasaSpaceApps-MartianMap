@@ -2,6 +2,7 @@ import { useCallback, useReducer, useState } from 'react';
 import EngineView from './components/EngineView.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
 import ModeSwitch from './components/ModeSwitch.jsx';
+import { useShortcuts } from './components/useShortcuts.js';
 import EventBanner from './events/EventBanner.jsx';
 import EventDebug from './events/EventDebug.jsx';
 import MissionClock from './plan/MissionClock.jsx';
@@ -70,6 +71,7 @@ export default function App() {
   const [engine, setEngine] = useState(null);
   const [load, dispatch] = useReducer(loadReducer, undefined, () => INITIAL_LOAD);
   const [mouseLocked, setMouseLocked] = useState(false);   // changes only when the pointer lock does, never per frame
+  useShortcuts(load.status === 'ready');
   // The minimap route tracker belongs to the app, not to the minimap: App unmounts the HUD in Plan mode,
   // so a tracker created inside the Minimap effect would lose the walked distance on every mode switch.
   // It resets only when the route content changes (Minimap calls setPath on mount and on route updates).
