@@ -34,9 +34,12 @@ export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
 
 /**
  * @param {HTMLElement} container element the canvas fills; its size drives the render size
- * @param {{ assetBase: string, mode?: 'plan' | 'walk', onStatus?: (text: string) => void, onError?: (err: Error) => void }} options
+ * @param {{ assetBase: string, mode?: 'plan' | 'walk', tier?: 'high' | 'low' | null, debug?: boolean,
+ *   onStatus?: (text: string) => void, onError?: (err: Error) => void }} options
+ *   tier: force a quality tier and turn off the automatic choice (the app passes ?tier=high|low).
+ *   debug: expose window.__marswalk for measuring (development builds only).
  */
-export function createEngine(container, { assetBase, mode = 'walk', onStatus = () => {}, onError = () => {} } = {}) {
+export function createEngine(container, { assetBase, mode = 'walk', tier = null, debug = false, onStatus = () => {}, onError = () => {} } = {}) {
   if (!assetBase) throw new Error('createEngine: assetBase is required');
   let alive = true, started = false, requestedMode = mode, viewCtl = null, routeLine = null;
   const pending = { sky: null, route: null };   // set before boot ends, applied when ready
@@ -82,10 +85,12 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
     renderer.setPixelRatio(Math.min(devicePixelRatio, t.pixelRatio)); resize();
     U.uRockR.value.set(t.radius[0] || 1, t.radius[1], t.radius[2]);
     ctx.terrain.buildTerrain(t); ctx.terrain.computeShadows(t.shadowRes); sys.rocks.reset();
+    sys.habitat.reground();   // the rebuilt mesh has slightly different heights
   }
 
   // ---------------------------------------------------------------- frame loop (bench lines 826-868)
   let frames = 0, acc = 0, last = 0, worst = 0, slowWindows = 0, booted = 0;
+  let lastStats = { fps: 0, worstMs: 0 };
   function tick() {
     const now = performance.now(), ft = now - last; last = now;
     const dt = Math.min(ft / 1000, 0.1);
@@ -100,6 +105,7 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
     frames++; acc += ft; worst = Math.max(worst, ft);
     if (acc > 1000) {
       const fps = Math.round(frames * 1000 / acc);
+      lastStats = { fps, worstMs: Math.round(worst) };
       // auto tier: three slow seconds in a row on High -> Low
       if (ctx.tierAuto && ctx.tier === 'high' && now - booted > 3000) {
         slowWindows = (fps < 40 && worst < 250 && !document.hidden) ? slowWindows + 1 : 0;
@@ -124,7 +130,9 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
     sys.partner = createPartner(ctx); sys.arms = createArms(ctx); sys.legs = createLegs(ctx); sys.props = createProps(ctx); sys.habitat = createHabitat(ctx);
     viewCtl = createView(ctx, canvas, signal);
 
-    const detected = detectTier(renderer); ctx.tier = detected.tier; ctx.gpu = detected.gpu;
+    const detected = detectTier(renderer); ctx.gpu = detected.gpu;
+    if (tier && !TIERS[tier]) console.warn('createEngine: unknown tier "' + tier + '", using automatic choice');
+    if (tier && TIERS[tier]) { ctx.tier = tier; ctx.tierAuto = false; } else ctx.tier = detected.tier;   // a forced tier also stops the automatic downgrade
 
     status('Loading textures…');
     const tr = TIERS[ctx.tier];
@@ -167,6 +175,31 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
   })();
   ready.catch((e) => { console.error(e); fail(e); });
 
+  /** Last one-second measurement. Plain data, safe to poll; the engine never calls back from its frame loop. */
+  function stats() {
+    const r = renderer.info.render;
+    return { ...lastStats, tier: ctx.tier, auto: ctx.tierAuto, gpu: ctx.gpu, triangles: r.triangles, drawCalls: r.calls };
+  }
+
+  // Development hook for scripts/measure-fps.mjs: put the camera at a known spot and read stats().
+  if (debug) {
+    const place = (x, z, yaw, pitch = 0) => { viewCtl.setMode('walk'); requestedMode = 'walk'; ctx.view.eye.set(x, 0, z); ctx.view.yaw = yaw; ctx.view.pitch = pitch; };
+    window.__marswalk = {
+      stats, place,
+      setMode: (m) => { requestedMode = m; viewCtl.setMode(m); },
+      // the bench's 'habin' and 'hab' views (testbench main.js lines 802-803)
+      insideHabitat() { const h = sys.habitat; place(h.pos.x + h.dir.x * 1.45, h.pos.z + h.dir.z * 1.45, Math.atan2(-h.dir.x, h.dir.z), 0.12); },
+      outsideHabitat() {
+        const h = sys.habitat, d = h.dir, x = h.pos.x + d.x * 17 - d.z * 7, z = h.pos.z + d.z * 17 + d.x * 7;
+        place(x, z, Math.atan2(h.pos.x + d.x * 2 - x, -(h.pos.z + d.z * 2 - z)), -0.05);
+      },
+      habitatY: () => sys.habitat.pos.y,
+      groundUnderHabitat: () => ctx.terrain.meshH(sys.habitat.pos.x, sys.habitat.pos.z),
+      setTier: (name) => { ctx.tierAuto = false; return setTier(name); },
+      walking: (on) => { ctx.view.keys.KeyW = !!on; },
+    };
+  }
+
   function terrainQueries() {
     if (!ctx.terrain) throw new Error('engine is not ready: wait for engine.ready before querying the terrain');
     return ctx.terrain.queries;
@@ -174,6 +207,7 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
 
   return {
     ready,
+    stats,
     /** @param {'plan' | 'walk'} m */
     setMode(m) {
       if (m !== 'plan' && m !== 'walk') throw new Error('setMode: expected "plan" or "walk", got ' + m);
@@ -210,6 +244,7 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
     dispose() {
       if (!alive) return;
       alive = false;
+      if (debug && window.__marswalk && window.__marswalk.stats === stats) delete window.__marswalk;
       renderer.setAnimationLoop(null);
       ac.abort(); ro.disconnect(); controls.dispose();
       const textures = new Set(), materials = new Set();

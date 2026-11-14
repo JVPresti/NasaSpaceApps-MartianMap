@@ -10,7 +10,7 @@ NASA Space Apps Challenge 2026  ·  Version 1.0  ·  14 November 2026  ·  Produ
 > - **Starting point.** The Marswalk engine already renders the site, the sky, two astronauts, the habitat and the sampling animations. The team's task list (Marswalk - Pendientes) names the remaining work. This plan orders that list, sizes it, adds acceptance tests and fills the gaps.
 > - **MVP.** Plan mode and Walk mode, a route planner on the real height map, and three events (dust storm, radiation, low oxygen) that raise an alert and re-plan to the nearest shelter. At least four kinds of NASA data from three missions, with a source on every number. About 15 person-days.
 > - **Stack.** Vite and React for the app and HUD, and three.js for the 3D scene, with the map and every model exported from Blender. A small state store sits between them. Static data files, no backend for the MVP.
-> - **Stretch.** Two to four players online on Supabase Realtime, started only when the MVP demo runs end to end.
+> - **Stretch.** Two to four players online, one Cloudflare Durable Object per room on the Worker that already serves the app, started only when the MVP demo runs end to end.
 > - **No GPS.** Mars has no satellite navigation and no usable compass. The map shows an estimated position with an error ring, fixed by matching what the helmet cameras see to the orbital map, the method Perseverance uses.
 
 ## Contents
@@ -225,7 +225,7 @@ Handling rules:
 | **In-world screens** | Canvas 2D drawn into textures | The wrist quad and the five habitat wall screens already accept a texture. |
 | **Route planner** | A* search in a Web Worker | Re-plans without dropping frames. |
 | **Data** | Static JSON and images under `/public`; models as binary `.glb` | A provenance block in every data file. |
-| **Hosting** | GitHub Pages, Netlify or Vercel | Plus a local build on the demo laptop. |
+| **Hosting** | Cloudflare Workers static assets, deployed by Workers Builds with a preview per pull request | See `docs/deploy.md`. Plus a local build on the demo laptop. |
 
 ### 6.2 Modules
 
@@ -303,7 +303,7 @@ Effort is in person-days and is an estimate. I do not know the event dates or th
 | **1 · Plan and Walk** | Plan a route, then walk it | Plan mode map with layers; Walk mode; helmet HUD; planner on the height map; suit model and walkback; position marker; hazard numbers with sources | A new player plans a route and reaches Cheyava Falls following only the visor | 6 |
 | **2 · Events** | The heart of the challenge | Event engine; dust storm, radiation, low oxygen; re-plan to the nearest shelter; main effects; data files; credits | Each event raises an alert and draws a new route within a second | 4.5 |
 | **3 · Science and depth** | The “Importante” list | Sampling, science stops, collisions, shelters, per-leg numbers, navigation drift, boot prints, layered outcrop, layer check against Mars Trek, debrief | A judge uses it unaided for three minutes | 6 |
-| **4 · If time** | The “Si da tiempo” list, then players online | Habitat screens, geology layer, extra effects, layer previews; section 9 | Two laptops share one EVA | 3 + 2.5 |
+| **4 · If time** | The “Si da tiempo” list, then players online | Habitat screens, geology layer, extra effects, layer previews; section 9 | Two laptops share one EVA | 3 + 3.5 |
 | **S · Submission** | Package and send | End-to-end test, demo video, presentation, Space Apps form | Submitted, with a recorded backup of the demo | 1.5 |
 
 > **Cut line**
@@ -427,9 +427,9 @@ Sizes are for one person: S is two to three hours, M is most of a day, L is one 
 
 | ID | Task | Pri | Size | Done when |
 | --- | --- | :--: | :--: | --- |
-| M1* | Join a room by code; crew list | **P3** | S | Two browsers see each other in the list |
+| M1* | Room on a Durable Object: join by code, crew list, shared mission clock | **P3** | M | Two browsers see each other in the list and show the same mission clock |
 | M2* | Pose broadcast and remote astronaut with interpolation | **P3** | M | The remote suit walks smoothly at 5 updates per second |
-| M3* | Shared markers and sample log through the database | **P3** | M | A marker placed by one player appears for all and survives a reload |
+| M3* | Shared markers and sample log in the room's storage | **P3** | S | A marker placed by one player appears for all and survives a reload |
 | M4* | Plan-mode seat for a player in the habitat | **P3** | M | That player follows the EVA on the map and sends a new route |
 
 ## 8. Demo script
@@ -459,82 +459,257 @@ The task list asks whether the partner should be an automatic character or a rea
 
 Build the surface crew first. The habitat seat is cheap once rooms exist.
 
-### 9.2 Recommended stack: Supabase Realtime
+### 9.2 Recommended stack: one Durable Object per room
 
-You proposed Supabase Realtime. I checked its documentation and it fits this game. The game is cooperative, movement is slow (about 1 m/s) and rooms are small, so we do not need a game server that simulates physics or settles conflicts. We need three things, and Supabase has a feature for each.
+The app already deploys as a Cloudflare Worker named `martian-map` on the team's paid Workers account (#83, `docs/deploy.md`). The team chose to put online play on the same account. I checked the current Cloudflare documentation against this game and it fits. The game is cooperative, walking is slow (about 1 m/s) and a room holds at most six people, so the server simulates nothing and settles one kind of conflict: who took a sample first. A Durable Object covers that. It is one instance per room that handles one message at a time, has its own SQLite database, and keeps WebSockets open while it sleeps.
 
-| Need | Supabase feature | How we use it |
+| Need | Cloudflare feature | How we use it |
 | --- | --- | --- |
-| **Fast, disposable updates** | Broadcast | Player pose on one channel per room: position, heading, pitch, animation, hand pose |
-| **Who is in the room** | Presence | Crew list: player ID, name, colour, role, time joined. It changes rarely. Never used for movement: Presence allows 5 calls per client per 30 seconds. |
-| **State that must be ordered and kept** | Postgres tables with Broadcast from Database | Rooms, shared markers, sample log, tool-case holder, mission start time |
+| **One place per room** | A Durable Object addressed by name | A `Room` class. The room code is the object's name, so `ABCD` always reaches the same instance. |
+| **Fast, disposable updates** | WebSockets with the Hibernation API | The room relays each pose to the other players and stores nothing. |
+| **Who is in the room** | A per-socket attachment (`serializeAttachment`, up to 16 KB) | The crew list is the list of open sockets. It survives hibernation with no database row. |
+| **State that must be ordered and kept** | The object's SQLite storage | Mission start time, event seed, markers, sample log, tool-case holder, last route from the habitat |
+| **Hosting** | The existing `martian-map` Worker and Workers Builds | Same URL, same PR previews, no second service, no API key in the app |
 
-Supabase does not run game logic on the server. Two rules make that unnecessary:
+Compared with the earlier Supabase plan, we now write a small server, about 200 lines in `worker/`. In return the room decides order in plain code, no per-second message limit disconnects clients, and nothing lives outside the repository: no project to create, no key to configure, no project that pauses when idle.
 
-- **The clock and the scripted events are derived, not sent.** The room row stores the mission start time (database time) and an event seed. Every client computes mission time and the event schedule from those two values, so all players see the same storm at the same second.
-- **Shared changes made by players go through the database.** Dropping a marker or taking a sample is a row insert. The database orders the inserts and broadcasts them, and a unique constraint stops two players from taking the same sample.
+Two rules keep the server small:
 
-### 9.3 Capacity
+- **The clock and the scripted events are derived, not sent.** The room stores the mission start time (server time) and an event seed. Every client computes mission time and the event schedule from those two values, so all players see the same storm at the same second (section 9.5).
+- **Shared changes made by players go through the room.** Dropping a marker or taking a sample is a message to the room. The room handles messages one at a time, writes the change to SQLite and broadcasts the result. The sample table's primary key stops two players from taking the same sample.
 
-Limits from the Supabase documentation, per project:
+### 9.3 How a room works
 
-| Limit | Free plan | Pro plan |
+```text
+browser --- wss://<host>/api/room/ABCD ---> Worker fetch (worker/index.js)
+                                              checks code, Origin, Upgrade header
+                                              |
+                                              v
+                                            Room "ABCD" (Durable Object, SQLite)
+                                              sockets: one per player, attachment = crew entry
+                                              tables:  meta, markers, samples
+                                              relays:  poses and telemetry, never stored
+
+every other path ---> static files from dist/, as today (the Worker does not run)
+```
+
+- **Entry.** The Worker accepts only `GET /api/room/:code` with `Upgrade: websocket`. The code must be four letters from A to Z without I and O (331,776 codes), so a stray request cannot create objects with arbitrary names. The Worker also checks that `Origin` is the production host, a preview host or `localhost`. It then forwards the request to `ctx.exports.Room.getByName(code)`. Any other path returns 404.
+- **Seats.** At most six sockets per room: four on the surface, one per engine colour, and two in the habitat. A seventh connection is closed with code 4001 and the reason “room full”. The room gives each surface player the first free colour.
+- **Crew list.** On `hello`, the room calls `ctx.acceptWebSocket(server, [role])` and stores the crew entry (player ID, name, colour, role, time joined) with `serializeAttachment`. The crew list is `ctx.getWebSockets()` mapped through `deserializeAttachment()`. When a socket closes, the room broadcasts a `crew` leave message.
+- **Storage.** Three tables, created on first use:
+
+  ```sql
+  CREATE TABLE IF NOT EXISTS meta    (k TEXT PRIMARY KEY, v TEXT);   -- started_at, seed, case_holder, route
+  CREATE TABLE IF NOT EXISTS markers (id INTEGER PRIMARY KEY, client_id TEXT UNIQUE, author TEXT,
+                                      kind TEXT, x REAL, z REAL, label TEXT, at INTEGER);
+  CREATE TABLE IF NOT EXISTS samples (sample_id TEXT PRIMARY KEY, author TEXT, at INTEGER);
+  ```
+
+- **A sample can be taken only once.** The room runs `INSERT INTO samples ... ON CONFLICT DO NOTHING` and reads `cursor.rowsWritten`. 1 means this player took it, 0 means someone else did. The handler has no `await` between the read and the write, so the runtime commits the write atomically and no other message runs in between. The primary key still holds if a later change adds an `await`. Both players get the result. The one who lost sees “Sample already taken by <name>”.
+- **Markers survive a resend.** The client gives each marker a `client_id`. A resend after a reconnect hits the `UNIQUE` constraint and the room ignores it.
+- **Hibernation.** The room keeps nothing in memory that it cannot rebuild: the crew comes from the attachments, the rest from SQLite. Rate counters live in memory and reset when the room wakes, which is fine. Clients keep the connection alive with `ping` every 10 s, which the room answers through `setWebSocketAutoResponse` without waking up and without billed duration. A room where nobody moves goes to sleep after a few seconds. A room where someone walks stays awake, and that is the case section 9.10 prices.
+- **Stale sockets.** When the room handles any message, it closes sockets whose last auto-response (`getWebSocketAutoResponseTimestamp`) is older than 30 s.
+- **Cleanup.** Rooms are not deleted. A room with 50 markers is a few kilobytes. If that ever matters, an alarm 48 hours after creation can call `ctx.storage.deleteAll()`.
+
+### 9.4 Messages and rate caps
+
+JSON with short keys, all on one socket. Sizes are the JSON text before WebSocket framing, which adds 2 to 8 bytes.
+
+| Type | Direction | Contents | Size | Rate |
+| --- | --- | --- | :--: | --- |
+| `hello` | client to room | name, role, preferred colour | ~80 B | Once per connection |
+| `welcome` | room to client | your player ID and colour, crew list, `started_at`, seed, server time, markers, samples, case holder, last route | 0.3 to 3 KB | Once per connection |
+| `crew` | room to all | join or leave, with the crew entry | ~90 B | On change |
+| `p` (pose) | client to room to others | x, z, heading, pitch, animation, hand pose, client time. The room adds the sender's ID. | ~70 B in, ~80 B out | Only on change, at most 10 per second |
+| `tel` | client to room to others | oxygen, battery | ~40 B | Every 5 s |
+| `start` | client to room to all | nothing; the reply carries `started_at` and the seed | ~60 B | Once per mission |
+| `mk` (marker) | client to room to all | kind, x, z, label, `client_id`; the room adds the ID and author | ~100 B | On action |
+| `smp` (sample) | client to room to all | sample ID; the reply adds the result and who took it | ~50 B | On action |
+| `case` | client to room to all | who holds the tool case | ~40 B | On action |
+| `rt` (route) | habitat to room to surface | up to 200 waypoints in decimetres | up to 2.5 KB | On action |
+| `go` | habitat to room to all | go or no-go, short reason | ~60 B | On action |
+| `t` (clock) | client to room to client | client send time; the reply adds server time | ~50 B | 5 at join, then every 60 s |
+| `ping` | auto-response | the string `ping`, answered with `pong` | 4 B | Every 10 s, never wakes the room |
+
+Height is not sent. Each client reads it from its own terrain. The remote suit is drawn where it really is, because you see it with your eyes. Its marker on the map is that player's estimated position and appears only while there is radio line of sight (section 4.2). Behind a ridge it turns grey and reads “last known”.
+
+At these rates JSON is small enough. A full room at the cap sends each client 5 × 10 × 80 B = 4 KB/s. A binary pose of about 24 bytes is an optimisation for later, not for the event.
+
+Rate caps, enforced on both sides:
+
+- **Client.** At most 10 poses per second, and only when the suit moved more than 5 cm, turned more than 1° or changed animation. Telemetry every 5 s. At most 5 other actions per second.
+- **Room.** A token bucket per socket: 15 messages per second with bursts up to 30. The room drops anything over that. A socket that stays above three times the cap for 5 s is closed with code 1008. A socket that sends a message over 4 KB is closed with code 1009.
+- **Why both.** Cloudflare bills every incoming message, including the ones the room drops. The room's cap protects the other players. Only the client's cap protects the bill.
+- **Headroom.** A Durable Object has a soft limit of 1,000 requests per second. A full room at the cap is 6 × 15 = 90.
+
+### 9.5 Mission clock and scripted events
+
+- **Start.** The first `start` message sets `started_at` to the room's `Date.now()` and the seed to a random 32-bit number. The room handles one message at a time, so two players who press start together get the same values. Later joiners read both from `welcome`.
+- **Clock offset.** Each client sends `t` with its own time `c0`, gets the server time `s` back at `c1`, and computes offset = s − (c0 + c1) / 2. It takes five samples at join, keeps the one with the shortest round trip and repeats every 60 s. Accuracy is about half a round trip, tens of milliseconds. Events are scheduled in seconds.
+- **Mission time.** (`Date.now()` + offset − `started_at`) × time scale. The event engine already takes mission time as an input and keeps no clock of its own (`src/sim/eventEngine.js`), so two clients with the same mission time start the same event. Any random choice in an event file uses a seeded generator in `src/sim/` fed with the room's seed.
+- **Worker time.** In a Worker, `Date.now()` moves only between I/O operations. Inside one message handler it reads the time the message arrived, which is what we want.
+- **No pause online.** Mission time comes from the room, so one player cannot pause it. Online mode hides the pause control.
+- **Offline.** `started_at` is the local `Date.now()` at start and the offset is 0. Same code path.
+
+### 9.6 Code: partner source and `src/net/`
+
+The partner-source interface comes from A14 (#39). The network partner implements that interface as #39 defines it. If it lacks something online play needs, such as a player name or a “last known” flag, M2 extends the interface in #39's module, not in the engine.
+
+```text
+src/net/
+  protocol.js     message types, field lists, size and rate caps; imported by the app and by worker/
+  room.js         connect(code, hello), send, on, close; reconnects after 0.5, 1, 2, 4, 8 s, then every 8 s
+  clock.js        offset from `t` round trips; serverNow()
+  poseSync.js     throttles outgoing poses; 150 ms interpolation buffer per remote player
+  netPartner.js   one remote player as a partner source, fed by poseSync
+  sharedState.js  markers, samples, case holder and route, written into the store
+worker/
+  index.js        fetch: /api/room/:code to the Room, 404 for anything else
+  room.js         the Room Durable Object
+```
+
+- **The simulation core imports nothing from the network.** `src/sim/` never imports `src/net/`. The network code writes into the store and implements the partner source. The simulation reads the start time and the seed from the store as plain numbers.
+- **One protocol file.** `src/net/protocol.js` is plain JavaScript with no browser or Worker APIs, so the app and `worker/` import the same field list. Wrangler bundles the relative import.
+- **Lazy loading.** The app loads `src/net/` with a dynamic `import()` only when the link has a room code, so the offline build does not grow.
+
+### 9.7 Offline fallback
+
+- **No room code.** Without `?room=` in the link, the app never loads `src/net/`, sends nothing to `/api/` and runs the scripted partner as it does today. The demo uses this path unless the online beat is in the script.
+- **Room code, no connection.** After three failed attempts in about 4 s, the visor shows “Offline: playing solo” and the scripted partner takes the remote partner's place. The client keeps retrying every 8 s. On reconnect it sends `hello` again and rebuilds markers, samples and the clock from `welcome`.
+- **Lost mid-mission.** The mission clock keeps running from the last known `started_at` and offset. Markers placed while offline stay local and go to the room on reconnect, with their `client_id`.
+
+### 9.8 Local development
+
+Two processes, so two browsers on one laptop can share a room:
+
+1. `npx wrangler dev` runs the Worker and the Room in a local `workerd` on port 8787. Room storage persists in `.wrangler/state`, which `.gitignore` already excludes. Delete that folder to reset every local room. If Wrangler stops because `./dist` does not exist, run `npm run build` once.
+2. `npm run dev` runs Vite. `vite.config.js` proxies `/api` to `http://localhost:8787` with `ws: true`, so the browser connects to the same origin it loaded from.
+3. Open `http://localhost:5173/?room=TEST` in two browser windows, or in one normal and one private window so each gets its own player ID.
+
+To test from a teammate's laptop or phone on the same Wi-Fi, start Vite with `npm run dev -- --host` and open the laptop's address.
+
+M1 adds a `dev:room` script for step 1. Cloudflare's Vite plugin (`@cloudflare/vite-plugin`) can run the Worker inside `vite dev` as one process, but it changes the build output and how `wrangler deploy` finds its configuration. That is a deploy change to try after the event, not during it.
+
+### 9.9 Deploy changes for M1
+
+None of this is done yet. M1's first pull request makes these changes and nothing else, so a deploy problem shows up before any game code depends on it.
+
+`wrangler.jsonc` becomes:
+
+```jsonc
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "martian-map",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-29",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Room"] }
+  ],
+  "preview_urls": true,
+  "previews": {},
+  "workers_dev": true
+}
+```
+
+- **`main`** turns the assets-only Worker into one with code. Wrangler bundles it during `wrangler deploy` and `wrangler preview`, so the Workers Builds commands stay the same.
+- **`run_worker_first: ["/api/*"]`** sends `/api/*` to the Worker before asset routing. Without it, single-page-application mode answers browser navigations with `index.html` and never runs the Worker. A `new WebSocket()` call is not a navigation, but the explicit pattern removes the guesswork. Every other path stays a static asset. Asset requests remain free, and the Worker runs only for room connections. This needs Wrangler 4.20 or later. We pin 4.156.
+- **No `durable_objects.bindings`.** The Worker reaches the class through `ctx.exports.Room`, which is on by default for compatibility dates from 2025-11-17. The class must be exported from `worker/index.js`. With `ctx.exports`, the migration alone gives each PR preview its own namespace, and `previews` stays empty. If someone switches to an `env.ROOM` binding, it must also go in the `previews` block, or previews fail with error 1101.
+- **The `v1` migration is permanent.** Renaming or removing the class later takes a new migration entry (`renamed_classes`, `deleted_classes`). Never edit `v1` after it deploys.
+- **Version URLs.** Cloudflare does not generate version URLs for a Worker that has a Durable Object, so `preview_urls` stops producing them. The PR previews from `wrangler preview` are a separate feature and keep working. Check on M1's first pull request that the preview comment still appears.
+- **`docs/deploy.md`.** M1 updates the line “There is no Worker code”, adds a section on rooms, and fixes the limits section, which quotes the Workers Free plan although the account is on Workers Paid.
+
+**Previews and room isolation.** Each Worker Preview gets its own Durable Object namespace and storage. Storage persists across pushes to the same branch and is deleted when the preview is deleted. Room `ABCD` on a preview is a different room from `ABCD` in production, so a test on a preview never touches production rooms. Testers must all open the same preview URL. The room banner shows the host name to make a mismatch obvious.
+
+### 9.10 Capacity and cost
+
+Prices on the Workers Paid plan, from the Cloudflare pricing pages as of November 2026. The $5 monthly base is already paid for hosting. Included amounts are per account, shared with anything else on Scalaptia's account.
+
+| Item | Included per month | Over that |
 | --- | :--: | :--: |
-| **Concurrent connections** | 200 | 500 |
-| **Messages per second** | 100 | 500 |
-| **Presence messages per second** | 20 | 50 |
-| **Broadcast payload** | 256 KB | 3,000 KB |
-| **Messages included per month** | 2 million | 5 million, then $2.50 per million |
+| **Worker requests** (one per room connection here) | 10 million | $0.30 per million |
+| **Durable Object requests** (each connection is 1; every 20 incoming WebSocket messages are 1) | 1 million | $0.15 per million |
+| **Outgoing WebSocket messages and incoming pings** | Free | Free |
+| **Durable Object duration** (128 MB per object, wall-clock time while awake) | 400,000 GB-s | $12.50 per million GB-s |
+| **SQLite rows written** | 50 million | $1.00 per million |
+| **SQLite rows read** | 25 billion | $0.001 per million |
+| **SQLite stored data** | 5 GB-month | $0.20 per GB-month |
+| **Static asset requests** | Unlimited | Free |
 
-The per-second limit counts WebSocket messages sent from or delivered to clients. The documentation does not say outright whether one broadcast counts once or once per recipient, so plan for the stricter reading: N players sending R updates per second cost about N × N × R messages per second.
+The Supabase plan worried about messages per second. Cloudflare has no such limit for a room this size, so the numbers that matter are billed requests and awake time. N players sending R poses per second put N × R messages into the room and receive N × R × (N − 1) back. Only the incoming ones are billed, at 20 per request. A room with anyone walking stays awake: 3,600 s × 0.125 GB = 450 GB-s per room-hour, whatever the number of players.
 
-| Players | Pose updates per second | Messages per second | Plan needed |
-| :--: | :--: | :--: | :--: |
-| 2 | 10 | 40 | Free |
-| 3 | 10 | 90 | Free, with little margin |
-| 4 | 5 | 80 | Free |
-| 4 | 10 | 160 | Pro |
-| 6 | 10 | 360 | Pro |
-| 8 | 7 | 448 | Pro, with little margin |
+| Players | Poses per second | Messages in per second | Messages out per second | Billed requests per room-hour | Download per client |
+| :--: | :--: | :--: | :--: | :--: | :--: |
+| 2 | 5 | 10 | 10 | 1,800 | 0.4 KB/s |
+| 2 | 10 | 20 | 20 | 3,600 | 0.8 KB/s |
+| 3 | 5 | 15 | 30 | 2,700 | 0.8 KB/s |
+| 3 | 10 | 30 | 60 | 5,400 | 1.6 KB/s |
+| 4 | 5 | 20 | 60 | 3,600 | 1.2 KB/s |
+| 4 | 10 | 40 | 120 | 7,200 | 2.4 KB/s |
+| 5 | 5 | 25 | 100 | 4,500 | 1.6 KB/s |
+| 5 | 10 | 50 | 200 | 9,000 | 3.2 KB/s |
+| 6 | 5 | 30 | 150 | 5,400 | 2.0 KB/s |
+| 6 | 10 | 60 | 300 | 10,800 | 4.0 KB/s |
 
-- **Low rates are enough.** At walking speed, 5 updates per second move a suit 20 cm per update. With 150 ms of interpolation that looks continuous.
-- **Send only on change.** A standing player sends a heartbeat once per second and costs almost nothing.
-- **Cap the rate in code.** Going over the limit disconnects clients until traffic drops.
-- **Monthly quota.** A 10-minute session with two players at 10 updates per second is about 24,000 messages. The free quota covers about 80 such sessions.
-- **Latency.** Supabase's benchmark for client broadcast reports a median of 6 ms and a 95th percentile of 28 ms inside its servers, with six users per channel. Network distance to the project's region comes on top, so choose the region nearest the venue. There is no published figure for a room like ours: measure it in the first hour.
+Telemetry, clock samples and actions add under 5 % to these numbers.
 
-### 9.4 Design
+- **What fits in the included amounts.** Duration covers 888 room-hours a month. Requests cover 92 room-hours at the worst row (six players at 10 per second) and 555 at the lightest. Past the included amounts, the worst row costs $0.0016 in requests plus $0.0056 in duration per room-hour: under one cent.
+- **Low rates are enough.** At walking speed, 5 updates per second move a suit 20 cm per update. With 150 ms of interpolation that looks continuous. Start at 5 and raise it only if it looks wrong.
+- **Latency.** Cloudflare creates a Durable Object near the first request that reaches it, and players at one venue all connect to the same nearby location. There is no published figure for a room like ours. Measure the `t` round trip in the first hour of M2.
 
-- **Pose message.** About 50 bytes: player ID, x, z, heading, pitch, animation, hand pose, time. Height is not sent. Each client reads it from its own terrain.
-- **Team telemetry.** Oxygen and battery of each suit once per second on the same channel, for the team panel and the 100 m separation rule in mockup 7.
-- **What you see and what the map shows.** The remote suit is drawn where it really is, because you see it with your eyes. Its marker on the map is that player's estimated position and appears only while there is radio line of sight. Behind a ridge it turns grey and reads “last known”. This follows from section 4.2.
-- **Joining.** A four-letter room code in the link. A public channel with the project's public key is enough for the event. Private channels with row-level security come later and need sign-in.
-- **Code.** A `src/net/` module with a small interface: join, leave, send pose, on pose, on crew change, on shared change. The scripted partner and a networked partner implement the same partner source, so the transport can be replaced without touching the simulation.
+**A weekend of testing plus judging:**
 
-### 9.5 Alternatives
+| Use | Assumption | Billed requests | Duration |
+| --- | --- | :--: | :--: |
+| Testing | 30 room-hours at 4 players and 10 poses per second | 216,000 | 13,500 GB-s |
+| Judging | 4 room-hours at 6 players and 10 poses per second | 43,200 | 1,800 GB-s |
+| A room left awake | One tab walking in a loop for 48 hours, 2 players at 10 per second | 172,800 | 21,600 GB-s |
+| **Total** | | **432,000** (43 % of included) | **36,900 GB-s** (9 % of included) |
+
+Markers and samples add a few thousand rows written, against 50 million included. **The weekend costs nothing on top of the $5 the account already pays.** The worst case I can construct, one buggy client sending 60 messages per second for a whole month, comes to about 7.8 million billed requests, or about $1 over the included amount.
+
+### 9.11 Risks for online play
+
+| Risk | Level | Mitigation |
+| --- | :--: | --- |
+| Adding `main` and the migration breaks the deploy or the PR previews | Medium | Config-only first pull request in M1 (9.9). Check the preview comment and the production URL. Roll back from the Deployments page in `docs/deploy.md`. |
+| Testers join the same code on different hosts and never meet | Low | Previews and production have separate rooms by design. The room banner shows the host. Share the full link, not only the code. |
+| A chatty client keeps a room awake and adds billed messages | Low | Client throttle, room cap and close on abuse (9.4). The worst case is about $1 a month. |
+| The venue network blocks WebSockets | Low | Same origin over `wss` on port 443. Offline fallback (9.7). The demo runs without a room code. |
+| Clock offset makes an event start at different seconds on two screens | Low | Offset from the shortest of five round trips. Events are scheduled in seconds, the error is tens of milliseconds. |
+| Worker Previews is a 2026 feature and its behaviour could change | Low | Wrangler is pinned. If previews misbehave, test on production with a code nobody else uses. |
+
+### 9.12 Alternatives
 
 | Option | Good for | Why it is not the first choice |
 | --- | --- | --- |
-| **Supabase Realtime (recommended)** | No server to write or host. Database and sign-in included. Rooms of 2 to 8. | No server-side logic, rate limits, needs internet. |
-| **Colyseus, a Node.js room server** | A server that runs the simulation, higher update rates, larger rooms. Runs on a laptop on the venue network. | A server to write, deploy and keep alive during judging. |
-| **WebRTC peer to peer (PeerJS, Trystero)** | Lowest latency and no message quota. | Connections fail on restrictive venue networks. Nothing is kept. |
+| **One Durable Object per room (recommended)** | Same Worker, same deploy and previews as the app. The room decides order in code. No per-second limit that disconnects clients. Free at our volume. | About 200 lines of server code to write and test. |
+| **PartyServer on Cloudflare** | The same Durable Objects with room routing, lifecycle hooks, `broadcast()` and hibernation through `static options = { hibernate: true }`. A matching client, `partysocket`. | Two more dependencies and its own URL shape (`/parties/:server/:name`) to save about 50 lines. Worth it only if the M1 owner already knows it. |
+| **Supabase Realtime (previous plan)** | No server code to write. | A second service and key outside the Cloudflare account. Free projects pause when idle. Presence allows 5 calls per client per 30 s. The free plan's 100 messages per second disconnects clients when exceeded. Sample order depends on database rules instead of code we read. |
+| **Colyseus, a Node.js room server** | A server that runs the simulation, higher update rates, larger rooms. | A server to write, host and keep alive during judging, outside the deploy we have. |
+| **WebRTC peer to peer (PeerJS, Trystero)** | Lowest latency and no server traffic. | Connections fail on restrictive venue networks. Nothing is kept. Still needs a signalling server. |
 
-Move to Colyseus only if the server has to run the simulation, for example for competitive modes or shared physics, or if rooms grow beyond about eight players.
+Move to a server that runs the simulation only if a future mode needs shared physics or competitive rules. Rooms of six do not.
 
-### 9.6 Effort and cut-off
+### 9.13 Effort and cut-off
 
-- **Surface crew: about 2 person-days.** Room join and crew list (S), pose sync with a remote astronaut (M), shared markers and sample log (M).
-- **Habitat seat: about 1 person-day more,** once Plan mode exists.
+- **Surface crew: about 2.5 person-days.** Room, Worker entry, config change, crew list and clock (M1, M), pose sync with a remote astronaut (M2, M), shared markers and sample log in the same room (M3, S). M1 grew and M3 shrank compared with the Supabase plan, because the room is our code and the tables live next to it.
+- **Habitat seat: about 1 person-day more** (M4, M), once Plan mode exists.
 - **Start** only when the Phase 2 exit test passes and at least a quarter of the time remains. **Stop** adding features six hours before submission.
 - **The demo never depends on the network.** Without a room code in the link, the scripted partner runs as it does today.
-- **Free projects can be paused when inactive.** Open the Supabase project the day before judging.
+- **Nothing pauses.** Rooms do not expire and the Worker does not sleep. Still, open the production link with a room code on the morning of judging to check the last deploy.
 
-### 9.7 What to do now so it stays cheap
+### 9.14 What to do now so it stays cheap
 
-- Keep the simulation core free of React and three.js imports.
+- Keep the simulation core free of React, three.js and network imports.
 - Give every astronaut an ID, and take colours from the engine's four-colour list.
 - Drive the partner through one partner-source interface from the first day.
 - Derive mission time from a start timestamp, never from accumulated frame time.
+- Put any randomness in the event files behind a seed.
 
 ## 10. Risks
 
@@ -549,7 +724,7 @@ Move to Colyseus only if the server has to run the simulation, for example for c
 | Rules: prior work, AI-generated images, NASA insignia on the suit | Medium | Check the official rules or ask the organisers (E3). Disclose. Be ready to remove the insignia from the suit texture. |
 | Large files in Git: one `.blend` is 151 MB | Low | Git LFS from the first commit of those files. Leave out `.blend1` and the old terrain test. |
 | Venue network fails during the demo | Low | Local build on the demo laptop and a recorded video. |
-| Online play destabilises the build | Low | Off by default behind the room code. Cut-off time in 9.6. |
+| Online play destabilises the build | Low | Off by default behind the room code. Config change in its own pull request (9.9). Cut-off time in 9.13. |
 
 ## 11. Open questions
 
@@ -584,8 +759,11 @@ Move to Colyseus only if the server has to run the simulation, for example for c
 
 - [NASA's Perseverance Now Autonomously Pinpoints Its Location on Mars](https://www.jpl.nasa.gov/news/nasas-perseverance-now-autonomously-pinpoints-its-location-on-mars/) (JPL, February 2026)
 
-**Supabase Realtime**
+**Cloudflare Workers and Durable Objects** (checked 14 November 2026)
 
-- [Limits](https://supabase.com/docs/guides/realtime/limits), [Pricing](https://supabase.com/docs/guides/realtime/pricing), [Broadcast](https://supabase.com/docs/guides/realtime/broadcast), [Presence](https://supabase.com/docs/guides/realtime/presence), [Benchmarks](https://supabase.com/docs/guides/realtime/benchmarks), [Authorization](https://supabase.com/docs/guides/realtime/authorization)
+- Durable Objects: [WebSockets and hibernation](https://developers.cloudflare.com/durable-objects/best-practices/websockets/), [State API](https://developers.cloudflare.com/durable-objects/api/state/), [SQLite storage API](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/), [Pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/), [Limits](https://developers.cloudflare.com/durable-objects/platform/limits/)
+- Workers: [Pricing](https://developers.cloudflare.com/workers/platform/pricing/), [Worker script and assets routing](https://developers.cloudflare.com/workers/static-assets/routing/worker-script/), [Single-page application routing](https://developers.cloudflare.com/workers/static-assets/routing/single-page-application/), [Previews: resources and isolation](https://developers.cloudflare.com/workers/previews/resources/), [Vite plugin](https://developers.cloudflare.com/workers/vite-plugin/)
+- [PartyServer](https://github.com/cloudflare/partykit/tree/main/packages/partyserver)
+- Supabase Realtime, the previous plan: [Limits](https://supabase.com/docs/guides/realtime/limits), [Pricing](https://supabase.com/docs/guides/realtime/pricing)
 
 *Figures for Cheyava Falls, MEDA and RAD in sections 3 and 4 are from published NASA results as I know them. The Data area should confirm each against its source when it builds the hazard table (D1).*

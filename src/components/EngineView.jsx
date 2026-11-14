@@ -5,6 +5,12 @@ import { connectEngine } from '../state/engineBridge.js';
 
 const ASSET_BASE = import.meta.env.BASE_URL + 'marswalk/';
 
+// Manual quality override: ?tier=high or ?tier=low forces a tier and turns off the automatic choice.
+function tierFromUrl() {
+  const t = new URLSearchParams(window.location.search).get('tier');
+  return t || null;   // the engine checks the value and warns about an unknown one
+}
+
 /**
  * Mounts the Marswalk engine once and connects it to the mission store (src/state/engineBridge.js):
  * mode, layer, sky and route flow from the store to the engine; the player's position flows back 5 times per second.
@@ -23,6 +29,8 @@ export default function EngineView({ onStatus, onReady, onError }) {
     const engine = createEngine(containerRef.current, {
       assetBase: ASSET_BASE,
       mode: useMissionStore.getState().mode,
+      tier: tierFromUrl(),
+      debug: import.meta.env.DEV,
       onStatus: (text) => callbacks.current.onStatus?.(text),
       onError: (err) => callbacks.current.onError?.(err),
     });
