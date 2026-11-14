@@ -201,7 +201,7 @@ Implementation is small. The simulation knows the true position. A navigation mo
 | **Chemical and spectral** | PIXL, SHERLOC and SuperCam results for Cheyava Falls; CRISM for regional minerals | Science card at the rock; optional mineral view | **P1** | Write the card; a mineral view is P2 |
 | **Geologic map** | USGS map SIM 3464 of Jezero (349 MB database) | Geology layer | **P2** | Coarse at this scale: few units cross our site |
 | **Rover track** | Perseverance localisation data (PLACES) | “Perseverance drove here” line as ground truth on the map | **P2** | Optional |
-| **Thermal** | THEMIS on Mars Odyssey | Thermal view. Recommendation: drop it. 100 m pixels are too coarse for a site this small. | – | Team to decide |
+| **Thermal** | THEMIS on Mars Odyssey (day and night IR, thermal inertia, 100 m); MEDA ground temperature | Thermal view: dropped. THEMIS puts 15 x 15 pixels on the tile. See `docs/data/thermal-view-decision.md` | – | Dropped (#49) |
 
 Handling rules:
 
