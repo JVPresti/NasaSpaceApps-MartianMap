@@ -240,7 +240,7 @@
   "ui.hirise.orthomosaic.25.cm.per.pixel.no.analysis": "Ortomosaico HiRISE, 25 cm por píxel. Sin capa de análisis.",
   "ui.slope.hazard": "Peligro por pendiente",
   "ui.degrees": "grados",
-  "ui.slope.from.the.hirise.1.m.dem.suit": "Pendiente del DEM HiRISE de 1 m. Límites del traje: precaución a 15°, no transitable a 25°.",
+  "ui.slope.from.the.hirise.1.m.dem.suit": "Pendiente del DEM HiRISE de 1 m. Límites del traje: precaución a {caution}°, no transitable a {noGo}°.",
   "ui.derived.hirise.dtm.limits.in.hazards.json": "DERIVED · DTM HiRISE · límites en hazards.json",
   "ui.walkable": "transitable",
   "ui.elevation": "Elevación",

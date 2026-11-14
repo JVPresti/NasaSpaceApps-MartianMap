@@ -240,7 +240,7 @@
   "ui.hirise.orthomosaic.25.cm.per.pixel.no.analysis": "HiRISE orthomosaic, 25 cm per pixel. No analysis layer.",
   "ui.slope.hazard": "Slope hazard",
   "ui.degrees": "degrees",
-  "ui.slope.from.the.hirise.1.m.dem.suit": "Slope from the HiRISE 1 m DEM. Suit mobility limits: 15° caution, 25° no-go.",
+  "ui.slope.from.the.hirise.1.m.dem.suit": "Slope from the HiRISE 1 m DEM. Suit mobility limits: {caution}° caution, {noGo}° no-go.",
   "ui.derived.hirise.dtm.limits.in.hazards.json": "DERIVED · HiRISE DTM · limits in hazards.json",
   "ui.walkable": "walkable",
   "ui.elevation": "Elevation",
