@@ -11,7 +11,8 @@ export default function ModeSwitch({ mode, onChange }) {
         <button
           key={m.id}
           type="button"
-          title={m.title}
+          title={`${m.label} (M) — ${m.title}`}
+          aria-keyshortcuts="M"
           aria-pressed={mode === m.id}
           className={mode === m.id ? 'on' : undefined}
           onClick={() => onChange(m.id)}

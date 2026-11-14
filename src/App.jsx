@@ -4,6 +4,7 @@ import LoadingScreen from './components/LoadingScreen.jsx';
 import ModeSwitch from './components/ModeSwitch.jsx';
 import PauseMenu from './components/PauseMenu.jsx';
 import StartScreen from './components/StartScreen.jsx';
+import { useShortcuts } from './components/useShortcuts.js';
 import EventBanner from './events/EventBanner.jsx';
 import EventDebug from './events/EventDebug.jsx';
 import Hud from './hud/Hud.jsx';
@@ -313,6 +314,7 @@ export default function App() {
   }, [pauseFor]);
 
   const showTopbar = load.status === 'ready' && phase === EVA_PHASE.PLAYING;
+  useShortcuts(showTopbar);   // like the topbar: off while loading, on the start screen and in the pause menu
 
   return (
     <div className="app">

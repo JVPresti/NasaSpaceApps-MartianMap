@@ -61,6 +61,7 @@ export default function LayerPanel({ layer, onLayer, radioShadow, onRadioShadow 
             <button
               key={item.id}
               type="button"
+              title={`${item.name} — L: next layer; Shift+L: previous layer; 0: no layer`}
               aria-pressed={layer === item.index}
               className={layer === item.index ? 'on' : undefined}
               onClick={() => onLayer(item.index)}
