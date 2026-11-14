@@ -93,6 +93,8 @@ export const STORE_PATHS = Object.freeze({
   'navigation.errorM': sim('navigation error model (#42)'),
   'navigation.fixMode': sim('navigation fix model (#42)'),
   'navigation.lastFixSec': sim('navigation fix model (#42)'),
+  'navigation.waypointRangeM': sim('distance from the player position to the next waypoint or shelter (src/sim/waypointRunner.js)'),
+  'navigation.waypointBearingDeg': sim('bearing from the player position to the next waypoint or shelter (src/sim/waypointRunner.js)'),
 
   // route: planner, re-planner and per-leg costs (src/sim/legCosts.js)
   'route.waypoints': sim('waypoints of route.json, chosen by the team along the Perseverance traverse'),
