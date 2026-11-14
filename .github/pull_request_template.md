@@ -11,3 +11,4 @@ Closes #
 - [ ] Title follows `type(scope): description`
 - [ ] The issue is linked above
 - [ ] `npm run lint` and `npm run build` pass
+- [ ] Checked against an up-to-date `main` before opening: no merge conflicts (`git merge-tree --write-tree origin/main HEAD`)
