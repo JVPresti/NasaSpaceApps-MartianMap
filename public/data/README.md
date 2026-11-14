@@ -7,6 +7,7 @@ Research notes for `hazards.json` (what was checked, what could not be confirmed
 | File | What it holds | Issue |
 |---|---|---|
 | `hazards.json` | Dust storm, radiation, suit, walking cost, speed and slope numbers, plus the walking O2 model and the September 2017 radiation event profile | #18 |
+| `shelters.json` | The habitat and natural safe points with their sky view and dose reduction, built by `npm run shelters`. Method in `docs/route/shelters.md` | #40 |
 | `meda_sol.json`, `rad.json` | One MEDA sol and the RAD curve (planned) | #31 |
 | `stops.json` | Science stop texts and images (planned) | #37 |
 
