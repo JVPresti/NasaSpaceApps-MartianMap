@@ -8,6 +8,7 @@ import MissionClock from './plan/MissionClock.jsx';
 import PlanMode from './plan/PlanMode.jsx';
 import Hud from './hud/Hud.jsx';
 import SourcesRoot from './sources/SourcesScreen.jsx';
+import ScienceStops from './stops/ScienceStops.jsx';
 import { useMissionStore, setMode } from './state/store.js';
 import './App.css';
 
@@ -103,6 +104,8 @@ export default function App() {
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={SITE} onRetry={handleRetry} />
 
       {load.status === 'ready' && mode === 'walk' && <Hud engine={engine} />}
+
+      {load.status === 'ready' && <ScienceStops mode={mode} />}
 
       {load.status === 'ready' && <SourcesRoot />}
 
