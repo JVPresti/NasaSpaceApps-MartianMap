@@ -2,6 +2,8 @@
 
 Small JSON files the app loads at run time. The app makes no live calls to NASA. Every number in these files says where it comes from.
 
+Research notes for `hazards.json` (what was checked, what could not be confirmed, options turned down) are in `docs/data/hazards-research.md`.
+
 | File | What it holds | Issue |
 |---|---|---|
 | `hazards.json` | Dust storm, radiation, suit, walking cost, speed and slope numbers, plus the walking O2 model and the September 2017 radiation event profile | #18 |
