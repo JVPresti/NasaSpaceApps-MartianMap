@@ -8,7 +8,7 @@ export function createInitialState() {
   return {
     mode: 'walk',                                   // 'walk' | 'plan'
     mission: { startedAtMs: null, elapsedSec: 0, paused: false, sol: null, lmst: null },
-    suit: { oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, walkbackSec: null, effort: null },
+    suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
     navigation: { x: null, z: null, headingDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // the estimate, never the truth: no GPS on Mars
     route: { waypoints: [], path: null, nextIndex: 0, distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null },
     environment: { dustOpacity: 0, tempC: null, windMs: null, pressurePa: null, doseRateUgyH: null, doseUgy: null },
