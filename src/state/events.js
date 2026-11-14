@@ -4,6 +4,8 @@
 // Plain JavaScript (no React, no three.js). The browser pieces it needs are
 // `fetch`, `Worker` (through createRoutePlannerClient) and the mission store.
 import dustStorm from '../sim/events/dust-storm.json';
+import lowOxygenCaution from '../sim/events/low-oxygen-caution.json';
+import lowOxygenWarning from '../sim/events/low-oxygen-warning.json';
 import radiation from '../sim/events/radiation.json';
 import { createEventEngine } from '../sim/eventEngine.js';
 import { buildCostGrid, heightAt } from '../sim/costGrid.js';
@@ -15,7 +17,7 @@ const TERRAIN_URL = import.meta.env.BASE_URL + 'marswalk/assets/terrain.json';
 const HAZARDS_URL = import.meta.env.BASE_URL + 'data/hazards.json';
 const SHELTERS_URL = import.meta.env.BASE_URL + 'data/shelters.json';
 
-const EVENT_DEFINITIONS = [dustStorm, radiation];
+const EVENT_DEFINITIONS = [dustStorm, radiation, lowOxygenCaution, lowOxygenWarning];
 
 const ROUTE_SOURCES = {
   'route.path': { tag: 'DERIVED', source: 'A* planner · HiRISE DTM' },
