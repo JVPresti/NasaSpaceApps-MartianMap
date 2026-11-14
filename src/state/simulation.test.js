@@ -42,7 +42,8 @@ describe('startSimulation clock wiring', () => {
 
     const stop = startSimulation(ENGINE);
     const mission = useMissionStore.getState().mission;
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    // hazards.json and shelters.json are requested in parallel; the clock does not wait for either.
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(mission.startedAtMs).not.toBeNull();
     expect(mission.sol).toBe(1210);
     expect(mission.lmst).toBe('17:45');

@@ -437,15 +437,18 @@ export function planRoute(grid, waypointInput, options = {}) {
     if (finalPath.length > 0) smoothedSegment.shift();
     finalPath.push(...smoothedSegment);
   }
-  const metrics = measurePath(grid, finalPath);
-  const weightedCost = measureCost(grid, finalPath);
+  // Measure exactly the points that are returned: rounding 1 mm after measuring
+  // made `distance` disagree with the path by about a millimetre (#128).
+  const roundedPath = finalPath.map(([x, z]) => [
+    Math.round(x * 1000) / 1000,
+    Math.round(z * 1000) / 1000,
+  ]);
+  const metrics = measurePath(grid, roundedPath);
+  const weightedCost = measureCost(grid, roundedPath);
 
   return {
     ok: true,
-    path: finalPath.map(([x, z]) => [
-      Math.round(x * 1000) / 1000,
-      Math.round(z * 1000) / 1000,
-    ]),
+    path: roundedPath,
     waypoints,
     distance: metrics.distance,
     climb: metrics.climb,

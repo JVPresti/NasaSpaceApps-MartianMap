@@ -25,13 +25,18 @@ describe('buildAssetManifest', () => {
     }
   });
 
-  it('swaps only the ortho texture between tiers', () => {
+  it('swaps only the ortho and outcrop textures between tiers', () => {
     const high = buildAssetManifest('high');
     const low = buildAssetManifest('low');
 
     expect(high).toContain('assets/ortho_hi.jpg');
     expect(low).toContain('assets/ortho_lo.jpg');
     expect(low).not.toContain('assets/ortho_hi.jpg');
+    expect(high).toContain('assets/outcrop_color.jpg');
+    expect(low).toContain('assets/outcrop_color_lo.jpg');
+    expect(low).toContain('assets/outcrop_nao_lo.jpg');
+    expect(low).not.toContain('assets/outcrop_color.jpg');
+    for (const file of low) expect(existsSync(root + file), file).toBe(true);
     expect(high.length).toBe(low.length);
   });
 });

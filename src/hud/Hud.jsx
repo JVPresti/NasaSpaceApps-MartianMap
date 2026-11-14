@@ -3,18 +3,18 @@
 // Layout follows the v3 "Caminar · Normal" mockup; final Figma measurements come later (#11).
 import { useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
 import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, pickAlert, wrapDeg } from './format.js';
 import ElevationProfile from './ElevationProfile.jsx';
 import * as I from './icons.jsx';
+import NavLine from './NavLine.jsx';
 import './hud.css';
 
-/** Source tag for a store path (DATA, DERIVED or SIM), with the full source on hover. Replaced by #62's component later. */
-function SourceTag({ path }) {
-  const src = useMissionStore((s) => s.sources[path]);
-  if (!src) return null;
-  return <span className={'hud-src hud-src-' + String(src.tag).toLowerCase()} title={src.source || src.label || src.tag}>{src.tag}</span>;
-}
+// Shared source tag (#62). The HUD never takes the pointer, so the tag shows its tag text only and puts the full
+// source in the title and the screen reader text.
+const hudSrc = (tag) => 'hud-src hud-src-' + tag;
+const SourceTag = ({ path }) => <SharedSourceTag path={path} variant="tag" interactive={false} requireSource className={hudSrc} />;
 
 function Pill({ icon, children, label }) {
   return <div className="hud-pill" aria-label={label}>{icon}{children}</div>;
@@ -247,6 +247,7 @@ export default function Hud({ engine }) {
       <Clocks />
       <SuitPanel />
       <EnvStrip />
+      <NavLine><SourceTag path="navigation.errorM" /></NavLine>
       <WaypointPanel heightAt={engine?.heightAt} slopeAt={engine?.slopeAt} />
     </div>
   );

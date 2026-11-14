@@ -1,7 +1,8 @@
-// Connects the mission store and the engine. Store -> engine: mode, layer, sky, route path, shelter, when they change.
+// Connects the mission store and the engine. Store -> engine: mode, layer, sky, route path, shelter, dust, when they change.
 // Engine -> store: the player's position and heading, 5 times per second (never per frame).
 // For now the position written is the true one; the estimate with its error ring comes with #21 and #42.
 import { useMissionStore } from './store.js';
+import { dustLevelFromTau } from './dustLevel.js';
 
 export const PLAYER_POLL_MS = 200;
 
@@ -11,11 +12,14 @@ export function connectEngine(engine, store = useMissionStore) {
     if (!prev || s.mode !== prev.mode) engine.setMode(s.mode);
     if (!prev || s.view.layer !== prev.view.layer) engine.setLayer(s.view.layer);
     if (!prev || s.view.sky !== prev.view.sky) engine.setSky(s.view.sky);
-    if (!prev || s.view.skyBlend !== prev.view.skyBlend) {
-      engine.setSkyBlend('clear_day', 'dust_storm', s.view.skyBlend ?? 0);
+    // The dust storm blends from the current sky preset. At start only a non-zero blend is applied, so the
+    // default preset (late_afternoon, #59) is not replaced by a clear_day blend at t=0.
+    if (prev ? s.view.skyBlend !== prev.view.skyBlend : (s.view.skyBlend ?? 0) > 0) {
+      engine.setSkyBlend(s.view.sky, 'dust_storm', s.view.skyBlend ?? 0);
     }
     if (!prev || s.route.path !== prev.route.path) engine.setRoute(s.route.path);
     if (!prev || s.route.shelter !== prev.route.shelter) engine.setShelter(s.route.shelter ?? null);
+    if (!prev || s.environment.dustOpacity !== prev.environment.dustOpacity) engine.setDust(dustLevelFromTau(s.environment.dustOpacity));
   };
   apply(store.getState(), null);
   const unsubscribe = store.subscribe(apply);

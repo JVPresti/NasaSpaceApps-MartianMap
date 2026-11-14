@@ -142,7 +142,7 @@ describe('habitat as the default shelter', () => {
     expect(result.path[result.path.length - 1]).toEqual([520, 600]);
   });
 
-  it('re-plans from any position on the tile in under 100 ms', () => {
+  it('re-plans from any position on the tile', () => {
     const positions = [
       [0, 0],
       [300, -200],
@@ -151,18 +151,11 @@ describe('habitat as the default shelter', () => {
       [520, 600],
     ];
 
+    // Correctness only: wall-clock timing under Vitest's shared CI workers is
+    // not reliable. The 100 ms target is checked on demand with `npm run bench`.
     for (const [x, z] of positions) {
-      // Warm up the JIT and the search buffers for this starting point.
-      replanToNearestShelter(grid, { x, z }, [habitat]);
-      let best = Infinity;
-      let result = null;
-      for (let run = 0; run < 3; run += 1) {
-        const started = performance.now();
-        result = replanToNearestShelter(grid, { x, z }, [habitat]);
-        best = Math.min(best, performance.now() - started);
-      }
+      const result = replanToNearestShelter(grid, { x, z }, [habitat]);
       expect(result.ok).toBe(true);
-      expect(best).toBeLessThan(100);
       for (const [px, pz] of result.path) {
         expect(isBlockedAt(grid, px, pz)).toBe(false);
       }
