@@ -5,6 +5,7 @@
  *   const planner = createRoutePlannerClient();
  *   await planner.setGrid(costGrid);
  *   const result = await planner.plan(route.waypoints);
+ *   const rescue = await planner.replan({ from, shelters, reason });
  *   planner.terminate();
  *
  * There is no React or three.js import here; the Plan screen owns the client.
@@ -15,6 +16,7 @@
  * @returns {{
  *   setGrid: (grid: object) => Promise<void>,
  *   plan: (waypoints: Array<object>, options?: object) => Promise<object>,
+ *   replan: (request: {from: object, shelters?: Array<object>, options?: object}) => Promise<object>,
  *   terminate: () => void
  * }}
  */
@@ -75,6 +77,24 @@ export function createRoutePlannerClient(options = {}) {
       return new Promise((resolve, reject) => {
         pending.set(id, { resolve, reject });
         worker.postMessage({ type: 'plan', id, waypoints, options: planOptions });
+      });
+    },
+
+    replan(request) {
+      if (!gridReady) {
+        return Promise.reject(new Error('route planner has no grid yet'));
+      }
+      const id = nextId;
+      nextId += 1;
+      return new Promise((resolve, reject) => {
+        pending.set(id, { resolve, reject });
+        worker.postMessage({
+          type: 'replan',
+          id,
+          from: request.from,
+          shelters: request.shelters,
+          options: request.options,
+        });
       });
     },
 
