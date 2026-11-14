@@ -43,7 +43,7 @@ export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
  *   tier: force a quality tier and turn off the automatic choice (the app passes ?tier=high|low).
  *   debug: expose window.__marswalk for measuring (development builds only).
  */
-export function createEngine(container, { assetBase, mode = 'walk', tier = null, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {} } = {}) {
+export function createEngine(container, { assetBase, mode = 'walk', tier = null, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {}, onLockChange = () => {} } = {}) {
   if (!assetBase) throw new Error('createEngine: assetBase is required');
   assertWebGL2();
 
@@ -183,7 +183,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     ctx.terrain = createTerrain(ctx);
     sys.rocks = createRocks(ctx); sys.route = createRoute(ctx); sys.cast = createCast(ctx);
     sys.partner = createPartner(ctx); sys.arms = createArms(ctx); sys.legs = createLegs(ctx); sys.props = createProps(ctx); sys.habitat = createHabitat(ctx);
-    viewCtl = createView(ctx, canvas, signal);
+    viewCtl = createView(ctx, canvas, signal, { onLockChange: (locked) => { if (alive) onLockChange(locked); } });
 
     status('Loading textures…');
     const tr = TIERS[ctx.tier];
@@ -252,6 +252,8 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       groundUnderHabitat: () => ctx.terrain.meshH(sys.habitat.pos.x, sys.habitat.pos.z),
       setTier: (name) => { ctx.tierAuto = false; return setTier(name); },
       walking: (on) => { ctx.view.keys.KeyW = !!on; },
+      // camera and player pose, for checking speed and that the camera follows the ground smoothly
+      pose: () => ({ camY: camera.position.y, x: ctx.view.eye.x, z: ctx.view.eye.z, yaw: ctx.view.yaw, pitch: ctx.view.pitch, mode: ctx.view.mode, moveSpeed: ctx.view.moveSpeed }),
     };
   }
 
