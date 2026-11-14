@@ -1,3 +1,4 @@
+import { t, translateText } from '../i18n/index.js';
 /**
  * Provenance registry (#62): where each value on screen comes from.
  *
@@ -283,7 +284,7 @@ export function createProvenanceRegistry({ dev = defaultDev(), warn = (...a) => 
 export function describeEntry(entry) {
   if (!entry) return [];
   const lines = [
-    ['Tag', `${entry.tag}: ${TAG_MEANING[entry.tag]}`],
+    ['Tag', `${entry.tag}: ${translateText(TAG_MEANING[entry.tag])}`],
     ['Value', entry.source],
     ['Mission', entry.mission],
     ['Instrument', entry.instrument],
@@ -293,14 +294,14 @@ export function describeEntry(entry) {
     ['Data', entry.dataLink ? 'archive' : null, entry.dataLink],
     ['Note', entry.note],
   ];
-  return lines.filter(([, v]) => v);
+  return lines.filter(([, v]) => v).map(([label, value, href]) => [translateText(label), value, href]);
 }
 
 /** One sentence for screen readers: "Source: MEDA · Perseverance · sol 1187, DATA. Mission Mars 2020. ..." */
 export function textAlternative(entry) {
   if (!entry) return '';
-  const parts = [`Source: ${entry.label === entry.tag ? entry.tag : `${entry.label}, ${entry.tag}`}`];
-  for (const [k, v] of describeEntry(entry).slice(1)) if (k !== 'Data') parts.push(`${k} ${v}`);
+  const parts = [t('ui.source.label', { label: entry.label === entry.tag ? entry.tag : `${entry.label}, ${entry.tag}` })];
+  for (const [k, v] of describeEntry(entry).slice(1)) if (k !== translateText('Data')) parts.push(`${k} ${v}`);
   return parts.join('. ') + '.';
 }
 

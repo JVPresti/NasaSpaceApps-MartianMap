@@ -7,7 +7,7 @@ import { createInitialEvaState } from './eva.js';
 /** Plain data only. Units are in the field names. Coordinates: x east, z south, metres from Cheyava Falls. */
 export function createInitialState() {
   return {
-    mode: 'walk',                                   // 'walk' | 'plan'
+    mode: 'plan',                                   // 'walk' | 'plan'; the app opens at the planning table (#166)
     // Clock fields: docs/STATE_AND_ENGINE.md. anchorMs is the wall timestamp elapsedSec is measured from;
     // startedAtMs is the first start. The mission clock fills anchorMs and the fields after it when it starts.
     mission: {
@@ -32,7 +32,7 @@ export function createInitialState() {
     // `summary` is then a frozen snapshot with the outside time, distance, minima, events, route changes, samples and
     // current radiation reading. The HAB entry is the one in shelters.json, not the HAB route waypoint.
     eva: createInitialEvaState(),
-    view: { layer: 0, sky: 'late_afternoon', skyBlend: 0 },   // what the engine draws; #59 demo starts in late-afternoon light
+    view: { layer: 0, sky: 'late_afternoon', skyBlend: 0, slopeGrid: false },   // what the engine draws; #59 demo starts in late-afternoon light
     sources: {},                                    // { 'environment.tempC': { tag: 'DATA' | 'DERIVED' | 'SIM', source } }
   };
 }

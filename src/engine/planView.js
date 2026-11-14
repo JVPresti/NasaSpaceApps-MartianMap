@@ -1,3 +1,4 @@
+import { formatUnit } from '../i18n/index.js';
 /**
  * Pure helpers for the Plan camera: how many metres one screen pixel covers,
  * and which round scale-bar length fits a target width.
@@ -53,7 +54,7 @@ export function formatScaleLength(metres) {
   if (!(metres > 0)) return '—';
   if (metres >= 1000) {
     const km = metres / 1000;
-    return `${Number.isInteger(km) ? km : km.toFixed(1)} km`;
+    return formatUnit(km, 'km', Number.isInteger(km) ? 0 : 1);
   }
-  return `${Math.round(metres)} m`;
+  return formatUnit(Math.round(metres), 'm');
 }

@@ -27,7 +27,10 @@ const mission = (elapsedSec, paused = false) => useMissionStore.setState((state)
 const suit = (patch) => useMissionStore.setState((state) => ({ suit: { ...state.suit, ...patch } }));
 const eva = () => useMissionStore.getState().eva;
 
-beforeEach(() => resetStore());
+beforeEach(() => {
+  resetStore();
+  mode('walk');   // the store opens in Plan (#166); the EVA runs in Walk
+});
 
 afterEach(() => {
   while (runners.length > 0) runners.pop().stop();

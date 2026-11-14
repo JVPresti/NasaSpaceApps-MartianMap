@@ -1,3 +1,4 @@
+import { t, translateText, catalogs } from '../i18n/index.js';
 import { useEffect, useRef, useState } from 'react';
 import { useMissionStore } from '../state/store.js';
 import { requestSlopeDetour } from '../state/slopeDetour.js';
@@ -98,13 +99,13 @@ export default function SlopeAhead({ engine }) {
     if (!engine || busy) return;
     const state = useMissionStore.getState();
     if (Object.values(state.alerts ?? {}).some((alert) => alert && alert.active)) {
-      setError('An event route is active; wait for the alert to clear.');
+      setError(catalogs.en['ui.an.event.route.is.active.wait.for.the']);
       return;
     }
     const nextIndex = Number.isInteger(state.route.nextIndex) ? state.route.nextIndex : 0;
     const remaining = state.route.waypoints.slice(nextIndex);
     if (remaining.length === 0) {
-      setError('No waypoint left to route to.');
+      setError(catalogs.en['ui.no.waypoint.left.to.route.to']);
       return;
     }
     const position = positionAlongPath(state.route.path, { x: state.navigation.x, z: state.navigation.z });
@@ -119,16 +120,16 @@ export default function SlopeAhead({ engine }) {
       .then((result) => {
         if (requestId !== requestRef.current) return;
         if (useMissionStore.getState().route.path !== basePath) {
-          setError('Route changed while planning; the detour was discarded.');
+          setError(catalogs.en['ui.route.changed.while.planning.the.detour.was.discarded']);
           return;
         }
         if (!result.ok) {
-          setError(result.reason ?? 'No detour found.');
+          setError(result.reason ?? catalogs.en['ui.no.detour.found']);
           return;
         }
         const extra = detourExtra(result, remainingM, ETA_SPEED_MS);
         applyPlannedRoute(useMissionStore, result, {
-          reason: `Detour: steeper than ${SLOPE_NO_GO_DEG}° ahead`,
+          reason: t('ui.detour.steeper.than.p0.ahead', { p0: SLOPE_NO_GO_DEG }),
           etaSec: result.distance / ETA_SPEED_MS,
         });
         setDetour(extra);
@@ -144,16 +145,15 @@ export default function SlopeAhead({ engine }) {
   const facing = Number.isFinite(warning.bearingDeg) ? warning.bearingDeg : 0;
 
   return (
-    <section className="hud-slope-warning" aria-label="Slope ahead warning">
+    <section className="hud-slope-warning" aria-label={t('ui.slope.ahead.warning')}>
       <header>
-        <strong>SLOPE AHEAD</strong>
+        <strong>{t('ui.slope.ahead')}</strong>
         <span>
-          {Math.round(warning.maxSlopeDeg)}° · {Math.round(warning.distanceM ?? 0)} m
-          <span className="hud-src hud-src-derived" title="Slope from the HiRISE DTM, same query as the slope layer">DERIVED</span>
+          {Math.round(warning.maxSlopeDeg)}° · {Math.round(warning.distanceM ?? 0)}{t('units.metresSuffix')}<span className="hud-src hud-src-derived" title={t('ui.slope.from.the.hirise.dtm.same.query.as')}>{t('ui.derived')}</span>
         </span>
       </header>
       <div className="hud-slope-body">
-        <svg className="hud-slope-map" viewBox={`0 0 ${mapSize} ${mapSize}`} role="img" aria-label="No-go cells around the astronaut">
+        <svg className="hud-slope-map" viewBox={`0 0 ${mapSize} ${mapSize}`} role="img" aria-label={t('ui.no.go.cells.around.the.astronaut')}>
           <rect x="0" y="0" width={mapSize} height={mapSize} className="hud-slope-map-bg" />
           {warning.cells.map((cell, index) => {
             const dx = (cell.x - nav.x + mapRadius) * scale;
@@ -165,16 +165,14 @@ export default function SlopeAhead({ engine }) {
           </g>
         </svg>
         <div className="hud-slope-copy">
-          <p>The ground ahead is over the {SLOPE_NO_GO_DEG}° limit. The zone matches the slope layer.</p>
+          <p>{t('ui.the.ground.ahead.is.over.the')}{SLOPE_NO_GO_DEG}{t('ui.limit.the.zone.matches.the.slope.layer')}</p>
           {detour && (
-            <p className="hud-slope-detour">
-              Detour +{Math.round(detour.addedM)} m · +{Math.ceil(detour.addedSec / 60)} min
-              <span className="hud-src hud-src-sim" title="Time assumes the SIM walking speed, mobility.speed.flat 1 m/s">SIM</span>
+            <p className="hud-slope-detour">{t('ui.detour')}{Math.round(detour.addedM)}{t('slope.extraMetres')}{Math.ceil(detour.addedSec / 60)}{t('units.minutesSuffix')}<span className="hud-src hud-src-sim" title={t('ui.time.assumes.the.sim.walking.speed.mobility.speed')}>{t('ui.sim')}</span>
             </p>
           )}
-          {error && <p className="hud-slope-error" role="alert">{error}</p>}
+          {error && <p className="hud-slope-error" role="alert">{translateText(error)}</p>}
           <button type="button" onClick={runDetour} disabled={busy || eventActive}>
-            {busy ? 'Planning…' : eventActive ? 'Event route active' : 'Detour'}
+            {busy ? t('ui.planning') : eventActive ? t('ui.event.route.active') : t('slope.detourAction')}
           </button>
         </div>
       </div>

@@ -185,7 +185,7 @@ describe('EVA restart', () => {
     // Junk from the running EVA, all of which has to disappear.
     useMissionStore.setState((s) => ({
       ...s,
-      mode: 'plan',
+      mode: 'walk',
       navigation: { ...s.navigation, x: 42, z: -17 },
       suit: { ...s.suit, oxygenPct: 55 },
       route: { ...s.route, path: [[0, 0], [10, 10]], distanceM: 14.1 },
@@ -210,7 +210,7 @@ describe('EVA restart', () => {
     expect(result.message).toBeNull();
     expect(order).toEqual(['stop', 'start']);
     expect(engine.resets).toBe(1);
-    expect(engine.resetState.mode).toBe('walk');
+    expect(engine.resetState.mode).toBe('plan');   // a new EVA starts at the planning table (#166)
     expect(engine.resetState.navigation.x).toBeNull();
     expect(engine.resetState.suit.oxygenPct).toBeNull();
     expect(engine.resetState.route.path).toBeNull();

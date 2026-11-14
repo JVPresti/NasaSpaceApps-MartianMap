@@ -46,7 +46,7 @@ A partner source is any object with:
 
 | Source | File | What it does |
 |---|---|---|
-| `createScriptedPartner()` | `src/engine/partnerSource.js` | **The test bench's partner, now the default.** It patrols between (14, 58) and (5, 12) with 3 s pauses. The commands `'toggleCase'` and `'visitHabitat'` run the hand-over and the walk into the habitat and back. The case clip is timed from its data: 2.07 s, release or grab at 0.9 s (`astronaut.json`). |
+| `createScriptedPartner()` | `src/engine/partnerSource.js` | **The test bench's partner, now the default.** It patrols between (14, 58) and (5, 12) with 3 s pauses. The commands `'toggleCase'` and `'visitHabitat'` run the hand-over and the walk into the habitat and back. The case clip is timed from its data: 2.07 s, release or grab at 0.9 s (`astronaut.json`). For `'toggleCase'` it walks toward where the player is now, re-aimed every frame, and stops 1.6 m from them (`HANDOVER_M`), or at once if the player walks up closer. |
 | `createStaticPartner()` | `src/engine/partnerSource.js` | Holds one pose; `set(patch)` changes it. It is the shape of a network source: the latest received state. |
 
 ## Using it

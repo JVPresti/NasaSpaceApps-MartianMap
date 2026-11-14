@@ -254,6 +254,20 @@
   border-top: 1px solid var(--line);
 }
 
+.language-block { margin-top: 18px; }
+.language-block label { display: block; margin-bottom: 8px; font-weight: 600; }
+.language-block select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+.language-block select:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
 .quality-block h3 {
   margin: 0 0 9px;
   font-size: 10px;

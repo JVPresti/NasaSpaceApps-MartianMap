@@ -1,3 +1,4 @@
+import { t, translateText, formatUnit } from '../i18n/index.js';
 // Ported from docs/marswalk-assets/testbench-reference/main.js (lines 658-782).
 import * as THREE from 'three';
 import * as SH from './shaders.js';
@@ -37,44 +38,44 @@ export function createHabitat(ctx) {
         this.mat = new THREE.MeshBasicMaterial({ map: this.tex, toneMapped: false, side: THREE.DoubleSide }); },
       draw() { const g = this.g, T = (this.clock += 0.25), C = this.CELLS, F = (px, b) => (b ? 'bold ' : '') + px + 'px ui-monospace, Menlo, Consolas, monospace';
         const frame = (c, title, fg, bg) => { const [x, y, w, h] = c; g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip(); g.translate(x, y); g.fillStyle = bg; g.fillRect(0, 0, w, h);
-          g.fillStyle = fg; g.globalAlpha = 0.16; g.fillRect(0, 0, w, 46); g.globalAlpha = 1; g.font = F(26, true); g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillText(title, 16, 24);
+          g.fillStyle = fg; g.globalAlpha = 0.16; g.fillRect(0, 0, w, 46); g.globalAlpha = 1; g.font = F(26, true); g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillText(translateText(title), 16, 24, w - 32);
           g.strokeStyle = fg; g.globalAlpha = 0.5; g.lineWidth = 2; g.strokeRect(5, 5, w - 10, h - 10); g.globalAlpha = 1; return [w, h]; };
-        const bar = (x, y, w, label, val, unit, frac, fg, warn) => { g.font = F(20); g.fillStyle = fg; g.textAlign = 'left'; g.fillText(label, x, y); g.textAlign = 'right'; g.fillText(val + ' ' + unit, x + w, y);
+        const bar = (x, y, w, label, val, unit, frac, fg, warn) => { g.font = F(20); g.fillStyle = fg; g.textAlign = 'left'; g.fillText(translateText(label), x, y); g.textAlign = 'right'; g.fillText(formatUnit(Number(val), unit, String(val).split('.')[1]?.length ?? 0), x + w, y);
           g.globalAlpha = 0.22; g.fillRect(x, y + 14, w, 12); g.globalAlpha = 1; g.fillStyle = warn || fg; g.fillRect(x, y + 14, w * Math.min(1, Math.max(0, frac)), 12); };
         const trace = (x, y, w, h, fg, fn) => { g.strokeStyle = fg; g.lineWidth = 2.5; g.beginPath(); for (let i = 0; i <= w; i += 4) { const yy = y + h / 2 - fn(i / w) * h / 2; if (i) g.lineTo(x + i, yy); else g.moveTo(x + i, yy); } g.stroke(); };
         const wob = (k, a) => Math.sin(T * 0.7 + k * 2.1) * a, blink = Math.floor(T * 2) % 2 === 0, storm = /storm|dust/.test(ctx.presetName), night = /night/.test(ctx.presetName);
         // 1. life support (blue screen left of the sample cabinet)
-        frame(C.life, 'LIFE SUPPORT', '#8fe9ff', '#03222b');
+        frame(C.life, t('ui.life.support'), '#8fe9ff', '#03222b');
         bar(20, 78, 300, 'O2', (20.9 + wob(1, 0.1)).toFixed(1), '%', 0.84 + wob(1, 0.01), '#8fe9ff'); bar(20, 130, 300, 'CO2', (0.04 + wob(2, 0.005)).toFixed(3), '%', 0.12 + wob(2, 0.02), '#8fe9ff');
-        bar(20, 182, 300, 'PRESSURE', (70.3 + wob(3, 0.2)).toFixed(1), 'kPa', 0.70 + wob(3, 0.01), '#8fe9ff'); bar(20, 234, 300, 'CABIN', (21.5 + wob(4, 0.3)).toFixed(1), 'C', 0.55 + wob(4, 0.02), '#8fe9ff');
-        g.fillStyle = '#7dff9a'; g.beginPath(); g.arc(420, 120, 44, 0, 7); g.fill(); g.fillStyle = '#03222b'; g.font = F(22, true); g.textAlign = 'center'; g.fillText('OK', 420, 121);
-        g.fillStyle = '#8fe9ff'; g.font = F(17); g.fillText('SCRUBBER A', 420, 190); trace(350, 205, 140, 60, '#8fe9ff', u => Math.sin(u * 14 + T * 2) * 0.5 + Math.sin(u * 5 - T) * 0.3);
-        g.textAlign = 'left'; g.font = F(17); g.fillText('WATER 82 %   POWER ' + (storm ? '61' : '94') + ' %', 20, 305); g.restore();
+        bar(20, 182, 300, t('pressure'), (70.3 + wob(3, 0.2)).toFixed(1), 'kPa', 0.70 + wob(3, 0.01), '#8fe9ff'); bar(20, 234, 300, t('cabin'), (21.5 + wob(4, 0.3)).toFixed(1), 'C', 0.55 + wob(4, 0.02), '#8fe9ff');
+        g.fillStyle = '#7dff9a'; g.beginPath(); g.arc(420, 120, 44, 0, 7); g.fill(); g.fillStyle = '#03222b'; g.font = F(22, true); g.textAlign = 'center'; g.fillText(t('ok'), 420, 121);
+        g.fillStyle = '#8fe9ff'; g.font = F(17); g.fillText(t('scrubber'), 420, 190); trace(350, 205, 140, 60, '#8fe9ff', u => Math.sin(u * 14 + T * 2) * 0.5 + Math.sin(u * 5 - T) * 0.3);
+        g.textAlign = 'left'; g.font = F(17); g.fillText(t('waterPower') + (storm ? '61' : '94') + ' %', 20, 305); g.restore();
         // 2. EVA team (blue screen by the shelves)
-        frame(C.eva, 'EVA TEAM', '#8fe9ff', '#03222b');
+        frame(C.eva, t('ui.eva.team'), '#8fe9ff', '#03222b');
         [['EV1', 0, 91, 78], ['EV2', 1, 88, 84]].forEach(([nm, k, o2, bat]) => { const y = 70 + k * 125; g.fillStyle = '#ffffff'; g.font = F(24, true); g.textAlign = 'left'; g.fillText(nm, 20, y + 6);
-          bar(90, y, 190, 'SUIT O2', o2, '%', o2 / 100, '#8fe9ff'); bar(90, y + 50, 190, 'BATTERY', bat, '%', bat / 100, '#8fe9ff');
+          bar(90, y, 190, t('suitO2'), o2, '%', o2 / 100, '#8fe9ff'); bar(90, y + 50, 190, t('battery'), bat, '%', bat / 100, '#8fe9ff');
           const bpm = 72 + k * 9 + Math.round(wob(5 + k, 3)); g.fillStyle = '#7dff9a'; g.font = F(20); g.textAlign = 'right'; g.fillText(bpm + ' bpm', 492, y);
           trace(300, y + 14, 192, 64, '#7dff9a', u => { const ph = (u * 3 + T * 0.9 + k * 0.4) % 1; return ph < 0.06 ? ph * 14 : ph < 0.12 ? 0.84 - (ph - 0.06) * 26 : ph < 0.16 ? -0.72 + (ph - 0.12) * 18 : 0; }); });
         g.fillStyle = '#8fe9ff'; g.font = F(17); g.textAlign = 'left'; const mm = Math.floor(T / 60), ss = Math.floor(T % 60); g.fillText('NERETVA VALLIS   T+' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0'), 20, 315); g.restore();
         // 3. weather and alerts (amber screen by the ladder)
-        frame(C.weather, 'WEATHER  JEZERO', '#ffc56b', '#2b1a03');
-        bar(20, 78, 250, 'DUST TAU', storm ? '2.8' : '0.6', '', storm ? 0.93 : 0.2, '#ffc56b', storm ? '#ff5a3c' : null); bar(20, 130, 250, 'WIND', storm ? '24' : '6', 'm/s', storm ? 0.8 : 0.2, '#ffc56b', storm ? '#ff5a3c' : null);
-        bar(20, 182, 250, 'TEMP', night ? '-78' : '-23', 'C', night ? 0.15 : 0.5, '#ffc56b'); bar(20, 234, 250, 'RADIATION', '0.7', 'mSv/d', 0.3, '#ffc56b');
+        frame(C.weather, t('weather'), '#ffc56b', '#2b1a03');
+        bar(20, 78, 250, t('ui.dust.tau'), storm ? '2.8' : '0.6', '', storm ? 0.93 : 0.2, '#ffc56b', storm ? '#ff5a3c' : null); bar(20, 130, 250, t('wind'), storm ? '24' : '6', 'm/s', storm ? 0.8 : 0.2, '#ffc56b', storm ? '#ff5a3c' : null);
+        bar(20, 182, 250, t('temperature'), night ? '-78' : '-23', 'C', night ? 0.15 : 0.5, '#ffc56b'); bar(20, 234, 250, t('radiation'), '0.7', 'mSv/d', 0.3, '#ffc56b');
         g.strokeStyle = '#ffc56b'; g.lineWidth = 2; for (const r of [30, 60, 90]) { g.globalAlpha = 0.5; g.beginPath(); g.arc(395, 170, r, 0, 7); g.stroke(); } g.globalAlpha = 1;
         const sa = T * 1.2; g.beginPath(); g.moveTo(395, 170); g.lineTo(395 + Math.cos(sa) * 90, 170 + Math.sin(sa) * 90); g.stroke();
         g.fillStyle = storm ? '#ff5a3c' : '#ffc56b'; for (let k = 0; k < (storm ? 9 : 3); k++) { const a = k * 2.4 + 1, r = 25 + (k * 37 % 60); g.globalAlpha = 0.35 + 0.65 * Math.max(0, Math.cos(sa - a)); g.beginPath(); g.arc(395 + Math.cos(a) * r, 170 + Math.sin(a) * r, storm ? 9 : 5, 0, 7); g.fill(); } g.globalAlpha = 1;
         if (storm && blink) { g.fillStyle = '#ff5a3c'; g.fillRect(14, 286, 484, 40); g.fillStyle = '#2b1a03'; } else g.fillStyle = storm ? '#ff5a3c' : '#7dff9a';
-        g.font = F(22, true); g.textAlign = 'center'; g.fillText(storm ? 'DUST STORM  -  EVA HOLD' : 'EVA WINDOW OPEN', 256, 307); g.restore();
+        g.font = F(22, true); g.textAlign = 'center'; g.fillText(storm ? t('ui.dust.storm.eva.hold') : t('ui.eva.window.open'), 256, 307); g.restore();
         // 4. airlock status (blue screen inside the airlock)
-        frame(C.airlock, 'AIRLOCK', '#8fe9ff', '#03222b'); const op = sys.habitat.open > 0.5;
-        bar(20, 82, 472, 'CHAMBER', op ? '0.7' : '70.3', 'kPa', op ? 0.02 : 0.70, '#8fe9ff');
-        g.font = F(24, true); g.textAlign = 'left'; g.fillStyle = op ? '#ffc56b' : '#7dff9a'; g.fillText('OUTER HATCH  ' + (op ? 'OPEN' : 'SEALED'), 20, 160); g.fillStyle = '#7dff9a'; g.fillText('INNER HATCH  OPEN', 20, 200);
-        g.fillStyle = '#8fe9ff'; g.font = F(18); g.fillText(op ? 'vented to Mars ambient' : 'equalised with cabin', 20, 245); g.restore();
+        frame(C.airlock, t('airlock'), '#8fe9ff', '#03222b'); const op = sys.habitat.open > 0.5;
+        bar(20, 82, 472, t('chamber'), op ? '0.7' : '70.3', 'kPa', op ? 0.02 : 0.70, '#8fe9ff');
+        g.font = F(24, true); g.textAlign = 'left'; g.fillStyle = op ? '#ffc56b' : '#7dff9a'; g.fillText(t('outerHatch') + (op ? t('ui.open') : t('habitat.sealed')), 20, 160); g.fillStyle = '#7dff9a'; g.fillText(t('ui.inner.hatch.open'), 20, 200);
+        g.fillStyle = '#8fe9ff'; g.font = F(18); g.fillText(op ? t('ui.vented.to.mars.ambient') : t('ui.equalised.with.cabin'), 20, 245); g.restore();
         // 5. hatch control panel (beside the inner hatch)
-        frame(C.door, 'HATCH', '#8fe9ff', '#062a33');
-        g.fillStyle = op ? '#ffc56b' : '#7dff9a'; g.globalAlpha = blink || !op ? 1 : 0.4; g.beginPath(); g.arc(110, 190, 62, 0, 7); g.fill(); g.globalAlpha = 1; g.fillStyle = '#062a33'; g.font = F(24, true); g.textAlign = 'center'; g.fillText(op ? 'WAIT' : 'SAFE', 110, 191);
-        [['CYCLE', 80], ['OPEN', 165], ['LOCK', 250]].forEach(([t, y]) => { g.strokeStyle = '#8fe9ff'; g.lineWidth = 3; g.strokeRect(230, y, 250, 64); g.fillStyle = '#8fe9ff'; g.font = F(26, true); g.fillText(t, 355, y + 33); }); g.restore();
+        frame(C.door, t('hatch'), '#8fe9ff', '#062a33');
+        g.fillStyle = op ? '#ffc56b' : '#7dff9a'; g.globalAlpha = blink || !op ? 1 : 0.4; g.beginPath(); g.arc(110, 190, 62, 0, 7); g.fill(); g.globalAlpha = 1; g.fillStyle = '#062a33'; g.font = F(24, true); g.textAlign = 'center'; g.fillText(op ? t('ui.wait') : t('ui.safe'), 110, 191);
+        [[t('ui.cycle'), 80], [t('ui.open'), 165], [t('ui.lock'), 250]].forEach(([t, y]) => { g.strokeStyle = '#8fe9ff'; g.lineWidth = 3; g.strokeRect(230, y, 250, 64); g.fillStyle = '#8fe9ff'; g.font = F(26, true); g.fillText(translateText(t), 355, y + 33); }); g.restore();
         this.tex.needsUpdate = true; } },
     root: null, pos: new THREE.Vector3(1e9, 0, 1e9), clear: 12,
     // Sit the habitat back on the terrain after a tier change rebuilt the mesh (meshH changes with the grid).
