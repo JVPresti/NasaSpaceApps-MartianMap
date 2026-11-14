@@ -1,4 +1,4 @@
-import { useCallback, useReducer } from 'react';
+import { useCallback, useReducer, useState } from 'react';
 import EngineView from './components/EngineView.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
 import ModeSwitch from './components/ModeSwitch.jsx';
@@ -6,7 +6,8 @@ import { useMissionStore, setMode } from './state/store.js';
 import './App.css';
 
 const HINTS = {
-  walk: 'Drag to look · WASD to walk · Shift to jog',
+  walk: 'Click to look around · WASD to walk · Shift to jog',
+  walkLocked: 'Esc to release the mouse · WASD to walk · Shift to jog',
   plan: 'Drag to orbit · scroll to zoom · right-drag to pan',
 };
 
@@ -55,6 +56,7 @@ function loadReducer(state, action) {
 export default function App() {
   const mode = useMissionStore((s) => s.mode);
   const [load, dispatch] = useReducer(loadReducer, undefined, () => INITIAL_LOAD);
+  const [mouseLocked, setMouseLocked] = useState(false);   // changes only when the pointer lock does, never per frame
 
   const handleStatus = useCallback((text) => dispatch({ type: 'status', text }), []);
   const handleProgress = useCallback((progress) => dispatch({ type: 'progress', progress }), []);
@@ -70,6 +72,7 @@ export default function App() {
         onProgress={handleProgress}
         onReady={handleReady}
         onError={handleError}
+        onLockChange={setMouseLocked}
       />
 
       <header className="topbar" inert={load.status !== 'ready' ? true : undefined}>
@@ -81,7 +84,7 @@ export default function App() {
 
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={SITE} onRetry={handleRetry} />
 
-      {load.status === 'ready' && <p className="hint">{HINTS[mode]}</p>}
+      {load.status === 'ready' && <p className="hint">{mode === 'walk' && mouseLocked ? HINTS.walkLocked : HINTS[mode]}</p>}
     </div>
   );
 }

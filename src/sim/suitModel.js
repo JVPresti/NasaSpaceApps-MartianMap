@@ -157,8 +157,8 @@ export function createSuitState(c) {
 /**
  * Advance the consumables by dtSec at a measured speed and gradient. Returns a new state.
  * The O2 rate used for "time left" is smoothed over about 30 s so a short sprint does not swing the HUD.
- * Speed is capped at mobility.speed.jog (1.5 m/s): the formula is only valid up to about 1.5 m/s, and the engine's
- * test-bench speeds (1.4 m/s walking, 4.5 m/s jogging) would otherwise extrapolate to several kilowatts.
+ * Speed is capped at mobility.speed.jog (1.5 m/s): the formula is only valid up to about 1.5 m/s. Walk mode moves at
+ * 1.0 and 1.5 m/s (#13), so the cap is only a guard against faster input, for example a teleport or a future vehicle.
  */
 export function stepSuit(state, { dtSec, speedMs, gradient }, c) {
   const powerW = metabolicPowerW(Math.min(speedMs, c.speedJog), gradient, c), rate = o2RateGs(powerW, c);

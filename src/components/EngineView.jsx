@@ -18,13 +18,13 @@ function tierFromUrl() {
  * The engine runs its own render loop; this component never renders per frame.
  * Retrying remounts it with a new key, which disposes the previous engine before a new one boots.
  */
-export default function EngineView({ onStatus, onProgress, onReady, onError }) {
+export default function EngineView({ onStatus, onProgress, onReady, onError, onLockChange }) {
   const containerRef = useRef(null);
   const engineRef = useRef(null);
-  const callbacks = useRef({ onStatus, onProgress, onReady, onError });
+  const callbacks = useRef({ onStatus, onProgress, onReady, onError, onLockChange });
 
   useEffect(() => {
-    callbacks.current = { onStatus, onProgress, onReady, onError };
+    callbacks.current = { onStatus, onProgress, onReady, onError, onLockChange };
   });
 
   useEffect(() => {
@@ -45,6 +45,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError }) {
         onStatus: (text) => { if (current()) callbacks.current.onStatus?.(text); },
         onProgress: (progress) => { if (current()) callbacks.current.onProgress?.(progress); },
         onError: (err) => { if (current()) callbacks.current.onError?.(err); },
+        onLockChange: (locked) => { if (current()) callbacks.current.onLockChange?.(locked); },
       });
     } catch (err) {
       // Missing WebGL 2, or a synchronous WebGLRenderer failure.

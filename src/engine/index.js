@@ -15,7 +15,7 @@ import * as SH from './shaders.js';
 import { createAssets, b64u16, b64u8 } from './assets.js';
 import { buildAssetManifest, ROCK_NAMES } from './assetManifest.js';
 import { decodeTerrainJson, decodeRingJson } from './queries.js';
-import { createRouteLine } from './routeLine.js';
+import { createRouteGlow, validPath } from './routeGlow.js';
 import { createUniforms } from './uniforms.js';
 import { TIERS, detectTier } from './tiers.js';
 import { createTerrain } from './terrain.js';
@@ -45,11 +45,11 @@ export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
  *   tier: force a quality tier and turn off the automatic choice (the app passes ?tier=high|low).
  *   debug: expose window.__marswalk for measuring (development builds only).
  */
-export function createEngine(container, { assetBase, mode = 'walk', tier = null, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {} } = {}) {
+export function createEngine(container, { assetBase, mode = 'walk', tier = null, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {}, onLockChange = () => {} } = {}) {
   if (!assetBase) throw new Error('createEngine: assetBase is required');
   assertWebGL2();
 
-  let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null, routeLine = null;
+  let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null;
   const pending = { sky: null, route: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
@@ -123,6 +123,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     U.uRockR.value.set(t.radius[0] || 1, t.radius[1], t.radius[2]);
     ctx.terrain.buildTerrain(t); ctx.terrain.computeShadows(t.shadowRes); sys.rocks.reset();
     sys.habitat.reground();   // the rebuilt mesh has slightly different heights
+    if (sys.routeGlow) sys.routeGlow.rebuild();  // re-drape the route on the new mesh
   }
 
   // ---------------------------------------------------------------- frame loop (bench lines 826-868)
@@ -143,6 +144,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     const eyeMode = ctx.view.mode === 'eye';
     if (sys.arms.L) sys.arms.L.g.visible = sys.arms.R.g.visible = eyeMode;   // first-person arms only in Walk
     U.uTime.value += dt; sys.partner.update(dt); sys.arms.update(dt); sys.legs.update(dt, eyeMode ? ctx.view.moveSpeed : 0); sys.props.update(dt); sys.habitat.update(dt);
+    sys.routeGlow.update(dt, eyeMode ? ctx.view.eye : null);
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
     renderer.render(scene, camera);
@@ -183,7 +185,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     ctx.terrain = createTerrain(ctx);
     sys.rocks = createRocks(ctx); sys.route = createRoute(ctx); sys.cast = createCast(ctx);
     sys.partner = createPartner(ctx); sys.partner.setSource(createScriptedPartner({ id: CREW[1].id, color: CREW[1].color })); sys.arms = createArms(ctx); sys.legs = createLegs(ctx); sys.props = createProps(ctx); sys.habitat = createHabitat(ctx);
-    viewCtl = createView(ctx, canvas, signal);
+    viewCtl = createView(ctx, canvas, signal, { onLockChange: (locked) => { if (alive) onLockChange(locked); } });
 
     status('Loading textures…');
     const tr = TIERS[ctx.tier];
@@ -217,9 +219,9 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     await sys.habitat.init(); if (!alive) return;
 
     if (!alive) return;
-    routeLine = createRouteLine(ctx);
+    sys.routeGlow = createRouteGlow(ctx);
     if (pending.sky) applyPreset(ctx, pending.sky);
-    routeLine.set(pending.route);
+    sys.routeGlow.setPath(pending.route);
     viewCtl.setMode(requestedMode); started = true;
     booted = last = performance.now();
     renderer.setAnimationLoop(tick);
@@ -255,6 +257,8 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       partnerCommand: (name) => sys.partner.command(name),
       setPartnerSource: (source) => sys.partner.setSource(source),
       partnerState: () => sys.partner.state,
+      // camera and player pose, for checking speed and that the camera follows the ground smoothly
+      pose: () => ({ camY: camera.position.y, x: ctx.view.eye.x, z: ctx.view.eye.z, yaw: ctx.view.yaw, pitch: ctx.view.pitch, mode: ctx.view.mode, moveSpeed: ctx.view.moveSpeed }),
     };
   }
 
@@ -283,10 +287,13 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       if (!SKIES.includes(name)) throw new Error('setSky: expected one of ' + SKIES.join(', ') + ', got ' + name);
       if (started) applyPreset(ctx, name); else pending.sky = name;
     },
-    /** Route drawn on the ground, [[x, z], ...] in metres. null clears it. */
+    /**
+     * Route drawn on the ground as the route glow (routeGlow.js), [[x, z], ...] in metres. null clears it.
+     * Call it again after every re-plan; the walked part then follows the player along the new route.
+     */
     setRoute(path) {
-      if (path !== null && !(Array.isArray(path) && path.every((p) => Array.isArray(p) && p.length >= 2 && Number.isFinite(p[0]) && Number.isFinite(p[1])))) throw new Error('setRoute: expected [[x, z], ...] or null');
-      if (started) routeLine.set(path); else pending.route = path;
+      if (path !== null && !validPath(path)) throw new Error('setRoute: expected [[x, z], ...] with at least two points, or null');
+      if (started) sys.routeGlow.setPath(path); else pending.route = path;
     },
     /** Terrain height (m) at x, z. Available once ready. */
     heightAt(x, z) { return terrainQueries().heightAt(x, z); },
