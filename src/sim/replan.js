@@ -62,7 +62,7 @@ function normaliseShelter(shelter, index) {
  * @param {{x: number, z: number}} from current position
  * @param {Array<{id?: string, name?: string, x: number, z: number}>} [shelters]
  * @param {{reason?: string, zones?: Array<object>, smooth?: boolean,
- *   goalRadiusM?: number}} [options]
+ *   goalRadiusM?: number, heuristicWeight?: number}} [options]
  * @returns {{
  *   ok: boolean, path: Array<[number, number]>, target: object|null,
  *   reason: string, distance: number, climb: number, steepestSlopeDeg: number,
@@ -87,12 +87,18 @@ export function replanToNearestShelter(grid, from, shelters = [DEFAULT_HABITAT],
   const alternatives = [];
   let best = null;
   let bestScore = Infinity;
+  // Emergency routes use weighted A*: three times the Euclidean heuristic
+  // finds a safe path in a fraction of the time. The route can be slightly
+  // longer than the optimal one; speed matters when an alert asks the crew to
+  // leave now. Normal Plan-mode routes keep the exact heuristic (weight 1).
+  const heuristicWeight = options.heuristicWeight ?? 3;
 
   for (const shelter of candidates) {
     const route = planRoute(workingGrid, [shelter], {
       start: from,
       smooth: options.smooth,
       goalRadiusM: options.goalRadiusM,
+      heuristicWeight,
     });
     const alternative = {
       shelter,

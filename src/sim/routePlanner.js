@@ -166,7 +166,8 @@ function createSearchState(grid) {
  * @param {{x: number, z: number}} start
  * @param {{x: number, z: number}} goal
  * @param {object} state
- * @param {{maxIterations?: number, snapRadius?: number, goalRadiusM?: number}} options
+ * @param {{maxIterations?: number, snapRadius?: number, goalRadiusM?: number,
+ *   heuristicWeight?: number}} options
  * @returns {{nodes: Array<{i: number, j: number}>, snappedM: number}|null}
  */
 function searchSegment(grid, start, goal, state, options) {
@@ -182,10 +183,11 @@ function searchSegment(grid, start, goal, state, options) {
 
   const startNode = freeStart.j * n + freeStart.i;
   const heap = new MinHeap();
+  const heuristicWeight = options.heuristicWeight ?? 1;
   gScore[startNode] = 0;
   stamp[startNode] = generation;
   previous[startNode] = -1;
-  heap.push(startNode, heuristic(grid, freeStart.i, freeStart.j, goalCell.i, goalCell.j));
+  heap.push(startNode, heuristicWeight * heuristic(grid, freeStart.i, freeStart.j, goalCell.i, goalCell.j));
 
   let iterations = 0;
   const maxIterations = options.maxIterations ?? n * n;
@@ -245,7 +247,7 @@ function searchSegment(grid, start, goal, state, options) {
         gScore[neighbour] = tentative;
         previous[neighbour] = current;
         const h = heuristic(grid, ni, nj, goalCell.i, goalCell.j);
-        heap.push(neighbour, tentative + h);
+        heap.push(neighbour, tentative + heuristicWeight * h);
       }
     }
   }
@@ -350,7 +352,8 @@ export function measureCost(grid, path) {
  * @param {object} grid grid from `buildCostGrid`
  * @param {Array<{x: number, z: number, name?: string}|[number, number]>} waypointInput
  * @param {{smooth?: boolean, start?: {x: number, z: number},
- *   maxIterations?: number, snapRadius?: number}} [options]
+ *   maxIterations?: number, snapRadius?: number, goalRadiusM?: number,
+ *   heuristicWeight?: number}} [options]
  * @returns {{
  *   ok: boolean, path: Array<[number, number]>, waypoints: Array<{x: number, z: number, name?: string}>,
  *   distance: number, climb: number, steepestSlopeDeg: number, cost: number,
@@ -369,6 +372,7 @@ export function planRoute(grid, waypointInput, options = {}) {
     maxIterations: options.maxIterations ?? grid.n * grid.n,
     snapRadius: options.snapRadius ?? 16,
     goalRadiusM: options.goalRadiusM ?? 15,
+    heuristicWeight: options.heuristicWeight ?? 1,
   };
   const state = createSearchState(grid);
   const rawSegments = [];

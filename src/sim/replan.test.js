@@ -130,21 +130,43 @@ describe('habitat as the default shelter', () => {
     expect(DEFAULT_HABITAT).toMatchObject({ id: 'HAB', x: 520, z: 600 });
   });
 
-  it('re-plans from Cheyava Falls to the habitat in under 100 ms', () => {
-    const started = performance.now();
+  it('re-plans from Cheyava Falls to the habitat', () => {
     const result = replanToNearestShelter(grid, { x: 0, z: 0 }, [habitat], {
       reason: 'low oxygen',
     });
-    const elapsed = performance.now() - started;
 
     expect(result.ok).toBe(true);
     expect(result.target.id).toBe('HAB');
     expect(result.reason).toBe('low oxygen');
     expect(result.path[0]).toEqual([0, 0]);
     expect(result.path[result.path.length - 1]).toEqual([520, 600]);
-    // Manual benchmark: around 70 ms. Vitest runs files in parallel workers, so
-    // the assertion only catches a pathological regression.
-    expect(elapsed).toBeLessThan(1000);
+  });
+
+  it('re-plans from any position on the tile in under 100 ms', () => {
+    const positions = [
+      [0, 0],
+      [300, -200],
+      [-400, 400],
+      [-300, -300],
+      [520, 600],
+    ];
+
+    for (const [x, z] of positions) {
+      // Warm up the JIT and the search buffers for this starting point.
+      replanToNearestShelter(grid, { x, z }, [habitat]);
+      let best = Infinity;
+      let result = null;
+      for (let run = 0; run < 3; run += 1) {
+        const started = performance.now();
+        result = replanToNearestShelter(grid, { x, z }, [habitat]);
+        best = Math.min(best, performance.now() - started);
+      }
+      expect(result.ok).toBe(true);
+      expect(best).toBeLessThan(100);
+      for (const [px, pz] of result.path) {
+        expect(isBlockedAt(grid, px, pz)).toBe(false);
+      }
+    }
   });
 
   it('returns a one-point route when already at the shelter', () => {
