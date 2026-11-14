@@ -6,6 +6,7 @@ import { useMissionStore } from '../state/store.js';
 import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, pickAlert, wrapDeg } from './format.js';
 import * as I from './icons.jsx';
 import './hud.css';
+import SamplingPanel from './SamplingPanel.jsx';
 
 /** Source tag for a store path (DATA, DERIVED or SIM), with the full source on hover. Replaced by #62's component later. */
 function SourceTag({ path }) {
@@ -156,6 +157,7 @@ export default function Hud() {
       <SuitPanel />
       <EnvStrip />
       <WaypointPanel />
+      <SamplingPanel />
     </div>
   );
 }
