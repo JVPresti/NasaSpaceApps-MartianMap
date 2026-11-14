@@ -37,7 +37,7 @@ setMode('plan');
 
 | Field | Unit and meaning | Written by | Issue |
 |---|---|---|---|
-| `mode` | `'walk'` or `'plan'` | interface (mode switch) | #5 |
+| `mode` | `'walk'` or `'plan'`; starts as `'plan'`, the habitat's planning table | interface (mode switch) | #5, #166 |
 | `mission.startedAtMs`, `elapsedSec`, `paused` | mission clock. `startedAtMs` is the first start timestamp; `elapsedSec` is the current published reading, excluding pauses and including the time scale | mission clock | #59 |
 | `mission.anchorMs` | wall-clock ms of the last start, pause, resume or scale change. The matching elapsed baseline is private to the clock session; the store's current `elapsedSec` is already advanced | mission clock | #59 |
 | `mission.sol`, `lmst` | sol number, local mean solar time `'HH:MM'` at 77.3053 E | mission clock | #59 |
@@ -79,6 +79,7 @@ setMode('plan');
 | `view.layer` | 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop | Plan mode, wrist screen | #14, #67 |
 | `view.sky` | `'clear_day'`, `'dust_storm'`, `'late_afternoon'`, `'night'`. The default is `'late_afternoon'` (#59) | events, later the clock | #24, #59, #73 |
 | `view.skyBlend` | 0 to 1, blend from the current `view.sky` preset to `dust_storm` as the storm opacity rises | events | #24 |
+| `view.slopeGrid` | `true` shows the slope grid on the ground in Walk mode; the G key toggles it (`src/state/slopeGrid.js`) | interface | #50 |
 | `sources['<path>']` | `{ tag: 'DATA' \| 'DERIVED' \| 'SIM', source, label? }` for any value above. Every path also needs an entry in `src/data/provenance.js`, which adds the mission, instrument, site, sol or date and link | whoever writes the value | #62 |
 
 `null` means "not known yet". The interface should show a dash, not 0.
@@ -118,6 +119,7 @@ await engine.ready;
 | `resetSession()` | Returns the scene to the EVA spawn: input off, lock released, Walk mode, camera at `START`, route/shelter/waypoints cleared. The store, clock and simulation restart are done by `src/state/evaSession.js`. Quality is deliberately kept. Returns `false` before ready and is applied at the end of boot. |
 | `setLayer(n)` | Data layer on the terrain: 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop. The wrist screen follows. |
 | `setSky(name)` | Atmosphere preset: `clear_day`, `dust_storm`, `late_afternoon`, `night`. |
+| `setSlopeGrid(on)` | Slope grid (`src/engine/slopeGrid.js`, #50): thin lines every 2 m on the ground around the player in Walk mode, coloured by slope with the slope layer's legend (the route planner's limits). |
 | `setDust(level)` | Storm dust (`src/engine/dust.js`, #27), 0 = clear (the scene as before) to 1 = global storm: thicker, drifting haze on everything (visibility about 1 km), dimmer and redder light with fading shadows, and faint wisps near the helmet. Eased, so a storm builds up. Works on top of any sky preset or blend. |
 | `setRoute(path)` | Draws `[[x, z], ...]` as the route glow (`src/engine/routeGlow.js`, #29): a dotted line on the ground near the player, a thin outlined line further away, and chevrons floating ahead in Walk mode. The part already walked turns grey and follows the player, so walking back lights the route again. `null` clears it. |
 | `setShelter(shelter)` | Highlights a shelter in green (`src/engine/shelterHighlight.js`, #30): a safe zone on the ground, a column of light visible from far away and in the dust storm, and a label with its distance from the player. Takes an entry of `shelters.json`; `null` fades it out. |
@@ -180,6 +182,8 @@ No new store fields were added. Quality belongs to the engine; pause is the exis
 ## Simulation runners
 
 `startSimulation(engine)` in `src/state/simulation.js` starts the modules that write the store once the engine is ready. Today that is the mission clock below, the suit model (`src/sim/suitModel.js`, `src/sim/suitRunner.js`, #19) and the per-leg costs (`src/sim/legCosts.js`, #41). The suit runner ticks 4 times per second, reads `navigation` and `route.path`, uses `engine.heightAt` for the gradient, and writes `suit`. All its constants come from `public/data/hazards.json`. The per-leg costs recompute `route.legs` and `route.totals` whenever `route.path` or `route.waypoints` changes, with the same `walkCost` function the walkback uses. The partner runner (`src/sim/partnerRunner.js`, #70) ticks 4 times per second: it reads the partner only through `engine.getPartner()`, steps the partner's suit with the suit model from the partner's own measured speed and gradient, writes `crew[0]`, and applies the separation rule of `src/sim/partnerStatus.js` (100 m limit, caution from 80 m, 5 m hysteresis, all SIM). It checks the radio line of sight between the suits with `engine.lineOfSight` through `radioLinkState` (`src/sim/radio.js`); without it, `crew[0]` keeps the last position and suit values received. Nothing starts with `?mock=1`, so mock values stay put; the clock is not started and writes no session.
+
+The EVA starts at the first switch to Walk (#166). The app opens in Plan mode, where only the clock (for the top bar) and the per-leg costs run. The engine has already put the player just outside the airlock, facing WP1 (`src/engine/spawn.js`), with the partner beside them. On the first Walk, `startSimulation` starts a new clock session (EVA 0:00; the new `mission.startedAtMs` clears the boot prints), takes a terrain fix, marks the first waypoint (HAB) as visited so the next target is WP1, and starts the suit (full O2 and battery), waypoint, off-route and event runners. Later switches between Plan and Walk change neither the position nor the EVA. Plan mode plans the route from the HAB airlock entry in `public/data/shelters.json` (`src/plan/routeStart.js`), so the player starts on the route and the walkback starts near zero. A reload starts a new EVA at the airlock: the player position is not persisted, so the restored clock session only shows in Plan until the first Walk.
 
 In development, `window.__missionStore` is the store, for the browser console: `__missionStore.getState().suit`. Production builds do not have it.
 
@@ -278,5 +282,5 @@ Tests: `src/hud/minimapGeometry.test.js` (tile UV with the five real waypoints, 
 
 `connectEngine(engine)` in `src/state/engineBridge.js` is called by `EngineView` once the engine is ready. It returns a disconnect function.
 
-- **Store to engine:** `mode`, `view.layer`, `view.sky`, `view.skyBlend`, `route.path`, `route.shelter` and `environment.dustOpacity` (as the dust level), each when it changes.
+- **Store to engine:** `mode`, `view.layer`, `view.sky`, `view.skyBlend`, `view.slopeGrid`, `route.path`, `route.shelter` and `environment.dustOpacity` (as the dust level), each when it changes.
 - **Engine to store:** `navigation.x`, `z` and `headingDeg` every 200 ms, skipped while the player stands still. This is the true position until the navigation model (#42) writes the estimate instead; after that, move this write into the navigation module.

@@ -3,9 +3,9 @@ import { connectEngine } from '../state/engineBridge.js';
 import { resetStore, setLayer, setMode, useMissionStore } from '../state/store.js';
 import { handleShortcut } from './shortcuts.js';
 
-function press(code, extra = {}) {
+function press(code, extra = {}, options) {
   const event = { code, preventDefault: vi.fn(), ...extra };
-  handleShortcut(event);
+  handleShortcut(event, options);
   return event;
 }
 
@@ -14,6 +14,7 @@ afterEach(resetStore);
 
 describe('mission keyboard shortcuts', () => {
   it('toggles modes in both directions using physical codes, regardless of key label', () => {
+    setMode('walk');   // the store opens in Plan (#166); start from Walk to toggle both ways
     expect(press('KeyM', { key: 'different-layout' }).preventDefault).toHaveBeenCalledOnce();
     expect(useMissionStore.getState().mode).toBe('plan');
     press('KeyM');
@@ -62,17 +63,41 @@ describe('mission keyboard shortcuts', () => {
   });
 
   it('does not consume unrelated keys or repeat a held toggle', () => {
+    setMode('walk');
     press('KeyM');
     press('KeyM', { repeat: true });
     expect(useMissionStore.getState().mode).toBe('plan');
     expect(press('KeyW').preventDefault).not.toHaveBeenCalled();
   });
 
+  it('sends M through the mode button handler when one is given, so Walk gets the pointer lock (#174)', () => {
+    const onMode = vi.fn();
+    expect(press('KeyM', {}, { onMode }).preventDefault).toHaveBeenCalledOnce();
+    expect(onMode).toHaveBeenLastCalledWith('plan');
+    expect(useMissionStore.getState().mode).toBe('walk');          // the handler owns the change, not the shortcut
+    setMode('plan');
+    press('KeyM', {}, { onMode });
+    expect(onMode).toHaveBeenLastCalledWith('walk');
+    expect(onMode).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the guards and leaves layer keys alone when a mode handler is given', () => {
+    const onMode = vi.fn();
+    for (const extra of [{ repeat: true }, { ctrlKey: true }, { target: { closest: () => true } }]) {
+      expect(press('KeyM', extra, { onMode }).preventDefault).not.toHaveBeenCalled();
+    }
+    press('KeyL', {}, { onMode });
+    press('Digit0', {}, { onMode });
+    expect(onMode).not.toHaveBeenCalled();
+    expect(useMissionStore.getState().view.layer).toBe(0);
+  });
+
   it('delivers mode and layer changes through the existing engine bridge', () => {
     const engine = {
       setMode: vi.fn(), setLayer: vi.fn(), setSky: vi.fn(), setRoute: vi.fn(),
-      setShelter: vi.fn(), setDust: vi.fn(),
+      setShelter: vi.fn(), setDust: vi.fn(), setSlopeGrid: vi.fn(),
     };
+    setMode('walk');
     const disconnect = connectEngine(engine);
     try {
       press('KeyM');

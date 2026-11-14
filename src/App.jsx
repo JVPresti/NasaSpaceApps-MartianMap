@@ -314,7 +314,9 @@ export default function App() {
   }, [pauseFor]);
 
   const showTopbar = load.status === 'ready' && phase === EVA_PHASE.PLAYING;
-  useShortcuts(showTopbar);   // like the topbar: off while loading, on the start screen and in the pause menu
+  // Like the topbar: off while loading, on the start screen and in the pause menu. M goes through the mode
+  // button's handler, so it also captures the mouse in Walk (#174).
+  useShortcuts(showTopbar, handleModeChange);
 
   return (
     <div className="app">

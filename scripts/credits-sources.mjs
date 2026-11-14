@@ -616,8 +616,8 @@ export const CHALLENGE_RESOURCES = [
   {
     name: 'NASA Mars Trek',
     url: 'https://trek.nasa.gov/mars/',
-    used: null,
-    pending: 'Issue #44 checks the slope, elevation and rock layers against Mars Trek',
+    used: "Validation of the elevation and slope layers against Mars Trek's HiRISE Jezero DEM (docs/data/mars-trek-check/)",
+    pending: null,
   },
   { name: 'USGS-NASA Planetary Geologic Mapping Program', url: null, used: null },
   { name: 'Curiosity Mount Sharp route map', url: null, used: null },
