@@ -41,9 +41,9 @@ function LayerLegend({ meta }) {
 
 /**
  * Layer switch and its legend. The index is the engine's `uLayer` value.
- * @param {{ layer: number, onLayer: (index: number) => void, waypoints: Array<{ name: string, x: number, z: number }> }} props
+ * @param {{ layer: number, onLayer: (index: number) => void }} props
  */
-export default function LayerPanel({ layer, onLayer, waypoints }) {
+export default function LayerPanel({ layer, onLayer }) {
   const meta = layerMeta(layer);
 
   return (
@@ -74,25 +74,6 @@ export default function LayerPanel({ layer, onLayer, waypoints }) {
       <section className="plan-section">
         <h3>Legend</h3>
         <LayerLegend meta={meta} />
-      </section>
-
-      <section className="plan-section">
-        <h3>Waypoints</h3>
-        {waypoints.length === 0 ? (
-          <p className="plan-note">Loading route.json…</p>
-        ) : (
-          <ol className="waypoint-list">
-            {waypoints.map((waypoint, index) => (
-              <li key={`${waypoint.name}-${index}`}>
-                <span className="waypoint-number">{index + 1}</span>
-                <span className="waypoint-name">{waypoint.name}</span>
-                <span className="waypoint-coords">
-                  {Math.round(waypoint.x)} / {Math.round(waypoint.z)} m
-                </span>
-              </li>
-            ))}
-          </ol>
-        )}
       </section>
 
       <footer className="plan-panel-foot">

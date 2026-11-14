@@ -1,0 +1,477 @@
+{
+ "generated": "2026-11-14T20:56:55.744Z",
+ "generatedBy": "node scripts/mars-trek-check.mjs",
+ "sources": {
+  "trekDtm": {
+   "label": "JEZ_hirise_soc_006_DTM_MOLAtopography_DeltaGeoid_1m_Eqc_latTs0_lon0_blend40",
+   "url": "https://trek.nasa.gov/mars/TrekWS/rest/cat/data/stream?label=JEZ_hirise_soc_006_DTM_MOLAtopography_DeltaGeoid_1m_Eqc_latTs0_lon0_blend40",
+   "fetched": "2026-11-14T20:30:02.399Z",
+   "size": [
+    21400,
+    21488
+   ],
+   "pixelM": 1,
+   "tiepoint": [
+    0,
+    0,
+    0,
+    4577366,
+    1106618,
+    0
+   ],
+   "window": {
+    "row0": 9300,
+    "rows": 1800,
+    "col0": 3900,
+    "cols": 2000
+   }
+  },
+  "trekMola": "https://trek.nasa.gov/mars/trekarcgis/rest/services/mola128_mola64_merge_90Nto90S_SimpleC_clon0/ImageServer",
+  "trekTraverse": "https://trek.nasa.gov/mars/trekarcgis/rest/services/Perseverance_Traverse_Path/MapServer/0/query?where=1%3D1&geometry=%7B%22xmin%22%3A77.29262083635642%2C%22ymin%22%3A18.484860836356415%2C%22xmax%22%3A77.31792674364358%2C%22ymax%22%3A18.510166743643584%7D&geometryType=esriGeometryEnvelope&inSR=104905&outFields=sol,fromRMC,toRMC&returnGeometry=true&returnZ=true&f=json",
+  "mmgisWaypoints": "https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_waypoints.json"
+ },
+ "origin": {
+  "lat": 18.49751379,
+  "lon": 77.30527379,
+  "source": "blender/data/jezero_cheyava_meta.json center_latlon",
+  "readmeOrigin": {
+   "lat": 18.4975,
+   "lon": 77.3053
+  },
+  "readmeMinusMetaM": {
+   "east": 1.47,
+   "north": -0.82
+  },
+  "cropWindowCentre": {
+   "dtmColumn": 4881,
+   "dtmRow": 10183
+  },
+  "projectedX": 4582246.7,
+  "projectedY": 1096434.5,
+  "dtmColumn": 4880.7,
+  "dtmRow": 10183.5
+ },
+ "crop": {
+  "file": "blender/data/jezero_cheyava_dtm_1m.npy",
+  "shape": [
+   1500,
+   1500
+  ],
+  "pixelWindow": {
+   "col0": 4131,
+   "row0": 9433,
+   "size": 1500
+  },
+  "identicalPixels": 2250000,
+  "totalPixels": 2250000,
+  "maxAbsDiffM": 0
+ },
+ "tile": {
+  "oursMinusTrekM": {
+   "n": 564001,
+   "mean": -0.046,
+   "sd": 0.133,
+   "rms": 0.14,
+   "min": -0.902,
+   "p05": -0.322,
+   "median": -0.013,
+   "p95": 0.129,
+   "max": 0.639
+  },
+  "frames": {
+   "asBuilt": {
+    "atZeroShift": {
+     "meanOffsetM": -0.046,
+     "residualSdM": 0.133
+    },
+    "bestShift": {
+     "dxM": 0.3,
+     "dzM": -0.6,
+     "meanOffsetM": -0.026,
+     "residualSdM": 0.058
+    }
+   },
+   "readmeOrigin": {
+    "atZeroShift": {
+     "meanOffsetM": 0.05,
+     "residualSdM": 0.308
+    },
+    "bestShift": {
+     "dxM": -1.1,
+     "dzM": -1.4,
+     "meanOffsetM": -0.022,
+     "residualSdM": 0.058
+    }
+   },
+   "noEastWestCorrection": {
+    "atZeroShift": {
+     "meanOffsetM": -0.011,
+     "residualSdM": 2.254
+    },
+    "bestShift": {
+     "dxM": -6.7,
+     "dzM": 0.4,
+     "meanOffsetM": -0.424,
+     "residualSdM": 2.211
+    }
+   },
+   "mirroredEastWest": {
+    "atZeroShift": {
+     "meanOffsetM": -0.046,
+     "residualSdM": 55.071
+    },
+    "bestShift": {
+     "dxM": -16,
+     "dzM": -13.6,
+     "meanOffsetM": 0.985,
+     "residualSdM": 54.917
+    }
+   },
+   "mirroredNorthSouth": {
+    "atZeroShift": {
+     "meanOffsetM": -0.046,
+     "residualSdM": 44.072
+    },
+    "bestShift": {
+     "dxM": 16,
+     "dzM": -16,
+     "meanOffsetM": 0.981,
+     "residualSdM": 42.146
+    }
+   }
+  }
+ },
+ "slope": {
+  "oursMinusTrekDeg": {
+   "n": 556515,
+   "mean": -0.03,
+   "sd": 0.75,
+   "rms": 0.75,
+   "min": -10.37,
+   "p05": -1.22,
+   "median": -0.02,
+   "p95": 1.16,
+   "max": 11.31
+  },
+  "oursMinusTrekWithoutEastWestCorrectionDeg": {
+   "n": 79502,
+   "mean": 0.15,
+   "sd": 0.77,
+   "rms": 0.78,
+   "min": -9.68,
+   "p05": -1.08,
+   "median": 0.16,
+   "p95": 1.36,
+   "max": 8.18
+  },
+  "classes": [
+   "0-15 deg",
+   "15-25 deg",
+   "over 25 deg"
+  ],
+  "confusionOursRowsTrekColumns": [
+   [
+    412285,
+    6344,
+    0
+   ],
+   [
+    5671,
+    114413,
+    1708
+   ],
+   [
+    0,
+    1507,
+    14587
+   ]
+  ],
+  "agreementPct": 97.26
+ },
+ "spots": [
+  {
+   "id": "cheyava",
+   "name": "Cheyava Falls (tile origin)",
+   "x": 0,
+   "z": 0,
+   "lon": 77.305274,
+   "lat": 18.497514,
+   "ours": {
+    "elevationM": -2353.55,
+    "slopeDeg": 17.5,
+    "slopeMean10mDeg": 13.6
+   },
+   "trek": {
+    "elevationM": -2353.69,
+    "slopeDeg": 16.9,
+    "slopeMean10mDeg": 13.6
+   },
+   "diff": {
+    "elevationM": 0.144,
+    "slopeDeg": 0.6
+   },
+   "trekMolaM": -2298,
+   "hiriseMeanOverMolaCell": {
+    "meanM": -2352.9,
+    "coveredPct": 100.18
+   },
+   "molaUrl": "https://trek.nasa.gov/mars/trekarcgis/rest/services/mola128_mola64_merge_90Nto90S_SimpleC_clon0/ImageServer/identify?geometry=%7B%22x%22%3A77.30527379%2C%22y%22%3A18.49751379%7D&geometryType=esriGeometryPoint&returnGeometry=false&returnCatalogItems=false&f=json",
+   "nearestRover": {
+    "sol": 1210,
+    "rmc": "55_434",
+    "distanceM": 0,
+    "elevationM": -2353.65,
+    "oursThereM": -2353.55
+   }
+  },
+  {
+   "id": "steep",
+   "name": "Steep spot from the asset README",
+   "x": -201,
+   "z": -52,
+   "lon": 77.301698,
+   "lat": 18.498391,
+   "ours": {
+    "elevationM": -2314.03,
+    "slopeDeg": 37.8,
+    "slopeMean10mDeg": 34.3
+   },
+   "trek": {
+    "elevationM": -2314.34,
+    "slopeDeg": 36.9,
+    "slopeMean10mDeg": 34.3
+   },
+   "diff": {
+    "elevationM": 0.313,
+    "slopeDeg": 0.9
+   },
+   "trekMolaM": -2269,
+   "hiriseMeanOverMolaCell": {
+    "meanM": -2343.31,
+    "coveredPct": 99.96
+   },
+   "molaUrl": "https://trek.nasa.gov/mars/trekarcgis/rest/services/mola128_mola64_merge_90Nto90S_SimpleC_clon0/ImageServer/identify?geometry=%7B%22x%22%3A77.30169806737814%2C%22y%22%3A18.498391061452622%7D&geometryType=esriGeometryPoint&returnGeometry=false&returnCatalogItems=false&f=json",
+   "nearestRover": null
+  },
+  {
+   "id": "channel",
+   "name": "WP1, channel floor",
+   "x": 330,
+   "z": 300,
+   "lon": 77.311144,
+   "lat": 18.492453,
+   "ours": {
+    "elevationM": -2359.87,
+    "slopeDeg": 4.7,
+    "slopeMean10mDeg": 3.5
+   },
+   "trek": {
+    "elevationM": -2359.83,
+    "slopeDeg": 4.5,
+    "slopeMean10mDeg": 3.6
+   },
+   "diff": {
+    "elevationM": -0.035,
+    "slopeDeg": 0.2
+   },
+   "trekMolaM": -2313,
+   "hiriseMeanOverMolaCell": {
+    "meanM": -2352.9,
+    "coveredPct": 100.18
+   },
+   "molaUrl": "https://trek.nasa.gov/mars/trekarcgis/rest/services/mola128_mola64_merge_90Nto90S_SimpleC_clon0/ImageServer/identify?geometry=%7B%22x%22%3A77.31114437937919%2C%22y%22%3A18.492452608542564%7D&geometryType=esriGeometryPoint&returnGeometry=false&returnCatalogItems=false&f=json",
+   "nearestRover": null
+  },
+  {
+   "id": "habitat",
+   "name": "Habitat airlock (shelters.json HAB)",
+   "x": 535.1,
+   "z": 574.1,
+   "lon": 77.314793,
+   "lat": 18.487828,
+   "ours": {
+    "elevationM": -2331.61,
+    "slopeDeg": 8.7,
+    "slopeMean10mDeg": 7.7
+   },
+   "trek": {
+    "elevationM": -2331.49,
+    "slopeDeg": 6,
+    "slopeMean10mDeg": 7.4
+   },
+   "diff": {
+    "elevationM": -0.116,
+    "slopeDeg": 2.7
+   },
+   "trekMolaM": -2332,
+   "hiriseMeanOverMolaCell": {
+    "meanM": -2344.48,
+    "coveredPct": 99.96
+   },
+   "molaUrl": "https://trek.nasa.gov/mars/trekarcgis/rest/services/mola128_mola64_merge_90Nto90S_SimpleC_clon0/ImageServer/identify?geometry=%7B%22x%22%3A77.31479303962666%2C%22y%22%3A18.487828375750954%7D&geometryType=esriGeometryPoint&returnGeometry=false&returnCatalogItems=false&f=json",
+   "nearestRover": null
+  }
+ ],
+ "rover": {
+  "trekTraverseVertices": {
+   "n": 814,
+   "sols": [
+    1148,
+    1176
+   ],
+   "skippedZeroZSols": [
+    1140,
+    1142,
+    1143,
+    1144,
+    1145,
+    1162
+   ],
+   "oursMinusRover": {
+    "n": 814,
+    "mean": -0.026,
+    "sd": 0.15,
+    "rms": 0.152,
+    "min": -0.545,
+    "p05": -0.266,
+    "median": -0.025,
+    "p95": 0.231,
+    "max": 0.419
+   },
+   "trekMinusRover": {
+    "n": 814,
+    "mean": 0.007,
+    "sd": 0.157,
+    "rms": 0.157,
+    "min": -0.586,
+    "p05": -0.228,
+    "median": -0.011,
+    "p95": 0.285,
+    "max": 0.593
+   }
+  },
+  "mmgisWaypoints": {
+   "n": 64,
+   "sols": [
+    1140,
+    1266
+   ],
+   "oursMinusRover": {
+    "n": 64,
+    "mean": -0.077,
+    "sd": 0.137,
+    "rms": 0.157,
+    "min": -0.418,
+    "p05": -0.34,
+    "median": -0.072,
+    "p95": 0.151,
+    "max": 0.21
+   },
+   "trekMinusRover": {
+    "n": 64,
+    "mean": 0.003,
+    "sd": 0.065,
+    "rms": 0.065,
+    "min": -0.192,
+    "p05": -0.093,
+    "median": 0.003,
+    "p95": 0.104,
+    "max": 0.186
+   }
+  }
+ },
+ "profile": {
+  "route": [
+   "HAB",
+   "WP1 · channel floor",
+   "WP2 · dune field edge",
+   "WP3 · Bright Angel outcrop",
+   "Cheyava Falls"
+  ],
+  "lengthM": 943.5,
+  "oursMinusTrekM": {
+   "n": 475,
+   "mean": -0.02,
+   "sd": 0.117,
+   "rms": 0.118,
+   "min": -0.447,
+   "p05": -0.293,
+   "median": -0.018,
+   "p95": 0.158,
+   "max": 0.221
+  },
+  "oursMinusTrekSlopeDeg": {
+   "n": 475,
+   "mean": -0.09,
+   "sd": 0.65,
+   "rms": 0.66,
+   "min": -2.82,
+   "p05": -1.11,
+   "median": -0.09,
+   "p95": 0.94,
+   "max": 2.08
+  },
+  "mola": [
+   {
+    "d": 0,
+    "mola": -2332,
+    "trek": -2330.52,
+    "molaMinusTrek": -1.5
+   },
+   {
+    "d": 100,
+    "mola": -2332,
+    "trek": -2334.45,
+    "molaMinusTrek": 2.5
+   },
+   {
+    "d": 200,
+    "mola": -2332,
+    "trek": -2338.69,
+    "molaMinusTrek": 6.7
+   },
+   {
+    "d": 300,
+    "mola": -2313,
+    "trek": -2361.62,
+    "molaMinusTrek": 48.6
+   },
+   {
+    "d": 399,
+    "mola": -2313,
+    "trek": -2359.8,
+    "molaMinusTrek": 46.8
+   },
+   {
+    "d": 499,
+    "mola": -2313,
+    "trek": -2362.21,
+    "molaMinusTrek": 49.2
+   },
+   {
+    "d": 599,
+    "mola": -2298,
+    "trek": -2360.82,
+    "molaMinusTrek": 62.8
+   },
+   {
+    "d": 700,
+    "mola": -2298,
+    "trek": -2360.25,
+    "molaMinusTrek": 62.2
+   },
+   {
+    "d": 800,
+    "mola": -2298,
+    "trek": -2351.17,
+    "molaMinusTrek": 53.2
+   },
+   {
+    "d": 899,
+    "mola": -2298,
+    "trek": -2341.01,
+    "molaMinusTrek": 43
+   }
+  ]
+ }
+}

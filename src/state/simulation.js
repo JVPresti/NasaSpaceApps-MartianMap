@@ -2,6 +2,7 @@
 // Today: the mission clock (#59), the suit model (#19) and the per-leg route costs (#41). Navigation and events join here as they land.
 import { useMissionStore } from './store.js';
 import { DEMO_MISSION_CLOCK, SKY_PRESETS, startMissionClock } from '../sim/missionClock.js';
+import { startEventRunner } from './events.js';
 import { suitConstantsFromHazards } from '../sim/suitModel.js';
 import { startSuitRunner } from '../sim/suitRunner.js';
 import { legCostSources, startLegCostRunner } from '../sim/legCosts.js';
@@ -20,6 +21,7 @@ function initialSky(state) {
  */
 export function startSimulation(engine, { mock = false } = {}) {
   if (mock) return () => {};
+  const events = startEventRunner({ store: useMissionStore });
   let stopped = false, suit = null, legs = null, clock = null;
 
   // The clock starts from its own timestamp and does not wait for hazards.json. A slow or failed hazard
@@ -42,6 +44,7 @@ export function startSimulation(engine, { mock = false } = {}) {
   return () => {
     stopped = true;
     if (clock) clock.stop();
+    events.stop();
     if (suit) suit.stop();
     if (legs) legs.stop();
   };

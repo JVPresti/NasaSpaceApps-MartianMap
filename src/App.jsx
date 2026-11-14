@@ -3,6 +3,8 @@ import EngineView from './components/EngineView.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
 import ModeSwitch from './components/ModeSwitch.jsx';
 import RouteLegsPanel from './components/RouteLegsPanel.jsx';
+import EventBanner from './events/EventBanner.jsx';
+import EventDebug from './events/EventDebug.jsx';
 import PlanMode from './plan/PlanMode.jsx';
 import Hud from './hud/Hud.jsx';
 import { useMissionStore, setMode } from './state/store.js';
@@ -15,6 +17,10 @@ const HINTS = {
 };
 
 const SITE = 'Neretva Vallis · Jezero crater · Mars';
+
+const DEBUG_EVENTS =
+  import.meta.env.DEV ||
+  (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1');
 
 const INITIAL_LOAD = {
   status: 'loading',
@@ -81,6 +87,8 @@ export default function App() {
       />
 
       {load.status === 'ready' && <PlanMode engine={engine} active={mode === 'plan'} />}
+      {load.status === 'ready' && <EventBanner />}
+      {load.status === 'ready' && DEBUG_EVENTS && <EventDebug />}
 
       <header className="topbar" inert={load.status !== 'ready' ? true : undefined}>
         <h1>
