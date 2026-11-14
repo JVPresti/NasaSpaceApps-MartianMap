@@ -14,11 +14,14 @@ export function createInitialState() {
       anchorMs: null, timeScale: 1, initialSol: null, initialLmst: null, longitudeDeg: null, sky: null,
     },
     suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
-    navigation: { x: null, z: null, headingDeg: null, slopeDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // the estimate, never the truth: no GPS on Mars
-    route: { waypoints: [], path: null, nextIndex: 0, distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [] },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js
+    navigation: { x: null, z: null, headingDeg: null, slopeDeg: null, waypointRangeM: null, waypointBearingDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // the estimate, never the truth: no GPS on Mars
+    route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [] },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js
     environment: { dustOpacity: 0, tempC: null, windMs: null, pressurePa: null, doseRateUgyH: null, doseUgy: null },
     alerts: {},                                     // { [eventId]: { id, eventId, level, text, startedAtSec, active } | null }
     crew: [],                                       // [{ id, name, color, x, z, oxygenPct, batteryPct }]
+    // #36, written by src/state/sampling.js: samples secured this EVA, the checklist of the sample in progress, and the engine's
+    // sampling status (what the crosshair is on, the clip phase, the partner's case and what each input does), 5 times per second
+    sampling: { count: 0, photos: 0, samples: [], checklist: { photo: false, texture: false, sample: false, seal: false, photoAt: null, siteAt: null, sampleId: null }, status: null },
     view: { layer: 0, sky: 'late_afternoon', skyBlend: 0 },   // what the engine draws; #59 demo starts in late-afternoon light
     sources: {},                                    // { 'environment.tempC': { tag: 'DATA' | 'DERIVED' | 'SIM', source } }
   };

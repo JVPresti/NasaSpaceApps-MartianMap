@@ -4,11 +4,16 @@
   "trigger": { "type": "missionTime", "atSec": 480 },
   "timeline": [
     { "atSec": 0, "set": { "environment.dustOpacity": 0.45, "view.skyBlend": 0 } },
-    { "atSec": 60, "set": { "environment.dustOpacity": 0.76, "view.skyBlend": 0.2 } },
-    { "atSec": 120, "set": { "environment.dustOpacity": 1.07, "view.skyBlend": 0.4 } },
-    { "atSec": 180, "set": { "environment.dustOpacity": 1.38, "view.skyBlend": 0.6 } },
-    { "atSec": 240, "set": { "environment.dustOpacity": 1.69, "view.skyBlend": 0.8 } },
-    { "atSec": 300, "set": { "environment.dustOpacity": 2.0, "view.skyBlend": 1 } }
+    { "atSec": 9, "set": { "environment.dustOpacity": 0.53, "view.skyBlend": 0.1 } },
+    { "atSec": 18, "set": { "environment.dustOpacity": 0.75, "view.skyBlend": 0.2 } },
+    { "atSec": 27, "set": { "environment.dustOpacity": 1.13, "view.skyBlend": 0.3 } },
+    { "atSec": 36, "set": { "environment.dustOpacity": 1.66, "view.skyBlend": 0.4 } },
+    { "atSec": 45, "set": { "environment.dustOpacity": 2.34, "view.skyBlend": 0.5 } },
+    { "atSec": 54, "set": { "environment.dustOpacity": 3.17, "view.skyBlend": 0.6 } },
+    { "atSec": 63, "set": { "environment.dustOpacity": 4.15, "view.skyBlend": 0.7 } },
+    { "atSec": 72, "set": { "environment.dustOpacity": 5.28, "view.skyBlend": 0.8 } },
+    { "atSec": 81, "set": { "environment.dustOpacity": 6.57, "view.skyBlend": 0.9 } },
+    { "atSec": 90, "set": { "environment.dustOpacity": 8.0, "view.skyBlend": 1 } }
   ],
   "alert": {
     "level": "warning",
@@ -17,5 +22,5 @@
   "planner": { "action": "replan", "target": "habitat" },
   "end": { "type": "area", "x": 535.1, "z": 574.1, "radius": 25 },
   "endSet": { "environment.dustOpacity": 0.45, "view.skyBlend": 0 },
-  "notes": "Opacity values: dust.tau.clear_season 0.45 and dust.tau.storm_2022_peak 2.0 in public/data/hazards.json. Ramp duration 300 s is dust.event.ramp_duration (SIM). The sky blend uses clear_day and dust_storm from atmosphere_presets.json."
+  "notes": "A global dust storm that keeps getting worse (#126): optical depth rises from dust.tau.clear_season 0.45 to dust.tau.gale_global_storm_2018 8.0 (Curiosity, Gale crater 2018, not Jezero) in public/data/hazards.json. In between it follows clear + (peak - clear) x (t / ramp)^2, slow at first and faster at every step (SIM). Ramp duration 90 s is dust.event.ramp_duration (SIM). The sky blend uses clear_day and dust_storm from atmosphere_presets.json."
 }

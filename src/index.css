@@ -8,6 +8,36 @@
   --cyan: #8fd3ee;
   --danger: #ff8a7a;
 
+  /* Shared interface tokens (Plan mode panels, top bar, event alerts). The Walk HUD keeps its own set in hud.css. */
+  --surface: rgba(17, 10, 8, 0.8);          /* panel over the terrain, with --blur behind it */
+  --surface-sunk: rgba(0, 0, 0, 0.22);       /* wells inside a panel: legend, metric tiles */
+  --surface-hover: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 214, 170, 0.28);
+  --unit: #9fd8ee;                           /* units after a number, same cyan as the HUD */
+  --ok: #8fe9b8;                             /* go, nominal margin */
+  --caution: #ffc56b;                        /* alert colors: only for alerts and margins */
+  --warning: #ff9a3c;
+  --focus: var(--cyan);
+  --blur: blur(14px);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-l: 14px;
+
+  --text-xs: 11px;
+  --text-s: 12px;
+  --text-m: 13px;
+  --text-l: 15px;
+  --text-xl: 20px;
+
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+
   font: 15px/1.4 system-ui, 'Segoe UI', Roboto, sans-serif;
   color: var(--ink);
   background: var(--bg);
@@ -29,3 +59,34 @@ body,
   overflow: hidden;
   background: var(--bg);
 }
+
+/* Units after a number and DATA / DERIVED / SIM source tags (plan section 4.1), shared by Plan mode and the event banner. */
+.unit {
+  margin-left: 0.2em;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.78em;
+  font-weight: 500;
+  color: var(--unit);
+}
+
+.unit-tight {
+  margin-left: 0;
+}
+
+.src-tag {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 0 4px;
+  font: 600 9.5px/1.5 var(--font-mono);
+  letter-spacing: 0.04em;
+  vertical-align: 1px;
+  color: var(--dim);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  cursor: help;
+}
+
+/* Same tag colors as the Walk HUD (.hud-src). */
+.src-tag-data { color: #b9ecff; border-color: rgba(159, 216, 238, 0.6); }
+.src-tag-derived { color: #d6f5d0; border-color: rgba(143, 233, 184, 0.5); }
+.src-tag-sim { color: var(--dim); }

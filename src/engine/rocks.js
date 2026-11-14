@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import * as SH from './shaders.js';
 import { ROCK_NAMES } from './assetManifest.js';
+import { rockBlocks, footprint, addFootprint, groundFootprint } from './collide.js';
 
 // rock classes: counts per m2 from the Golombek Mars rock model at ~5 % cover (x1.6 max, thinned by HiRISE brightness)
 const CLASSES = [
@@ -10,7 +11,7 @@ const CLASSES = [
   { name: 'medium', dens: 0.08 * 1.6,  D: [0.30, 1.00], types: [3, 2, 1], sink: 0.15 },
   { name: 'large',  dens: 0.0004 * 1.6, D: [1.0, 2.5],  types: [4, 3],    sink: 0.20 },
 ];
-const CELL = 16, CAP = 16384;
+export const CELL = 16, CAP = 16384;   // CELL (m) is also used by sampling.js to find the rocks near the crosshair
 const f1 = (v = 0) => ({ value: v });
 function mulberry(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
@@ -18,11 +19,11 @@ export function createRocks(ctx) {
   const { scene, U, sys, T } = ctx;
   const { meshH, density } = ctx.terrain;
   const rocks = {
-    meshes: [], heights: [], blob: null, cache: new Map(), large: null, last: new THREE.Vector3(1e9, 0, 0), enabled: true, total: 0,
+    meshes: [], heights: [], feet: [], hero: null, blob: null, cache: new Map(), large: null, last: new THREE.Vector3(1e9, 0, 0), enabled: true, total: 0,
     init(data, maps) {
       ROCK_NAMES.forEach((name, ti) => {
         const mat = new THREE.ShaderMaterial({ uniforms: { ...U, tMap: { value: maps[ti] }, uRockH: f1(data[name].lods[0].height) }, vertexShader: SH.ROCK_VERT, fragmentShader: SH.ROCK_FRAG });
-        this.heights[ti] = data[name].lods[0].height;
+        this.heights[ti] = data[name].lods[0].height; this.feet[ti] = footprint(data[name].lods[0].p);   // outline from above, for collisions
         data[name].lods.forEach((l, li) => {
           const g = new THREE.BufferGeometry();
           g.setAttribute('position', new THREE.Float32BufferAttribute(l.p, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(l.n, 3));
@@ -70,14 +71,19 @@ export function createRocks(ctx) {
       if (!c) { c = this.gen(ci, cx * CELL, cz * CELL, CELL, CELL, (cx * 73856093) ^ (cz * 19349663) ^ ((ci + 1) * 83492791)); this.cache.set(key, c); }
       return c;
     },
-    // reference collision: pushes a walker (radius pr) out of rocks 0.35 m and larger; same deterministic rocks as the ones drawn
-    collide(p, pr) {
-      const hit = (x, z, rad) => { const dx = p.x - x, dz = p.z - z, d = Math.hypot(dx, dz), m = rad + pr; if (d < m && d > 1e-4) { p.x = x + dx / d * m; p.z = z + dz / d * m; } };
-      const scan = c => { for (let i = 0; i < c.n; i++) { const D = c.meta[i * 4 + 2]; if (D >= 0.35) hit(c.meta[i * 4], c.meta[i * 4 + 1], D * 0.40); } };
+    // walker collision (#38): adds every rock of 0.35 m and larger whose edge is within reach of p to an obstacle list (collide.js),
+    // as a capsule fitted to that rock type's outline and turned like the drawn rock (the meshes are about twice as long as wide;
+    // the reference used one circle of 0.4 x size). Same deterministic rocks as the ones drawn, plus the Cheyava Falls rock and the outcrop.
+    obstacles(p, out, reach = 1) {
+      const add = c => { for (let i = 0; i < c.n; i++) { const D = c.meta[i * 4 + 2]; if (!rockBlocks(D)) continue;
+        const x = c.meta[i * 4], z = c.meta[i * 4 + 1], f = this.feet[c.meta[i * 4 + 3]], R = f.ext * D + reach; if ((p.x - x) ** 2 + (p.z - z) ** 2 > R * R) continue;
+        addFootprint(out, f, x, z, D, c.mat[i * 16], c.mat[i * 16 + 2]); } };   // instance matrix elements 0 and 2: where the rock's local x points
       if (this.enabled) { const cx = Math.floor(p.x / CELL), cz = Math.floor(p.z / CELL);
-        for (let ci = 1; ci < 3; ci++) for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) scan(this.cell(ci, cx + i, cz + j));
-        if (this.large) scan(this.large); }
-      hit(0, 0, 0.75);   // Cheyava Falls rock
+        for (let ci = 0; ci < 3; ci++) if (rockBlocks(CLASSES[ci].D[1])) for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) add(this.cell(ci, cx + i, cz + j));   // classes that never reach 0.35 m are skipped
+        if (this.large) add(this.large); }
+      const h = this.hero; if (h) addFootprint(out, h.f, h.x, h.z, 1, h.ax, h.az);
+      const o = ctx.outcrop && ctx.outcrop.userData; if (o && o.foot) addFootprint(out, o.foot, o.at.x, o.at.z, 1, o.at.ux, o.at.uz);   // the layered outcrop at WP3
+      return out;
     },
     update(cam, tier, force) {
       if (!force && Math.hypot(cam.x - this.last.x, cam.z - this.last.z) < 4) return;
@@ -121,6 +127,7 @@ export async function buildCheyava(ctx, maps) {
   g.setAttribute('uv', new THREE.Float32BufferAttribute(d.uv, 2)); g.setIndex(d.i);
   const m = new THREE.Mesh(g, new THREE.ShaderMaterial({ defines: { HERO: 1 }, uniforms: { ...U, tMap: { value: maps[0] }, tNao: { value: maps[1] }, uRockH: f1(0.3) }, vertexShader: SH.ROCK_VERT, fragmentShader: SH.ROCK_FRAG }));
   m.position.set(0, tileH(0, 0) - 0.06, 0); m.rotation.y = d.rot_z_blender || 0; scene.add(m);
+  ctx.sys.rocks.hero = { f: footprint(d.p), x: 0, z: 0, ax: Math.cos(m.rotation.y), az: -Math.sin(m.rotation.y) };   // walker collision (#38): its outline, turned like the mesh
   return m;
 }
 
@@ -157,25 +164,43 @@ export function outcropPlacement(wp, height, back = OUTCROP.back) {
   };
 }
 
+/** The outcrop's model-to-world transform for a placement: laid on the ground plane, turned by yaw, sunk OUTCROP.sink. */
+export function outcropMatrix(at) {
+  const up = new THREE.Vector3(0, 1, 0), q = new THREE.Quaternion().setFromUnitVectors(up, new THREE.Vector3(...at.normal)).multiply(new THREE.Quaternion().setFromAxisAngle(up, at.yaw));
+  return new THREE.Matrix4().compose(new THREE.Vector3(at.x, at.y - OUTCROP.sink, at.z), q, new THREE.Vector3(1, 1, 1));
+}
+
+/**
+ * Walker collision (#38): capsule fitted to the outline of the part of the outcrop that stands above the ground (its buried end
+ * and the half-buried chips can be walked over). p = model vertex positions (x y z per vertex), at = outcropPlacement(),
+ * height = the ground the placement used. Add it with addFootprint(out, f, at.x, at.z, 1, at.ux, at.uz).
+ */
+export function outcropFootprint(p, at, height) {
+  const M = outcropMatrix(at), v = new THREE.Vector3(), w = new Float32Array(p.length);
+  for (let i = 0; i < p.length; i += 3) { v.set(p[i], p[i + 1], p[i + 2]).applyMatrix4(M); w[i] = v.x; w[i + 1] = v.y; w[i + 2] = v.z; }
+  return groundFootprint(w, height, at.x, at.z, at.ux, at.uz);
+}
+
 export async function buildOutcrop(ctx, maps) {
   const { scene, U, assets } = ctx;
   const [gltf, route] = await Promise.all([assets.glb('assets/outcrop.glb'), assets.json('route.json')]);
   const wp = route.waypoints.find((w) => w.name.startsWith(OUTCROP.waypoint));
   if (!wp) return null;
   const mat = new THREE.ShaderMaterial({ defines: { HERO: 1 }, uniforms: { ...U, tMap: { value: maps[0] }, tNao: { value: maps[1] }, uRockH: f1(1.0) }, vertexShader: SH.ROCK_VERT, fragmentShader: SH.ROCK_FRAG });
-  const lod = new THREE.LOD(), up = new THREE.Vector3(0, 1, 0);
+  const lod = new THREE.LOD();
   for (let k = 0; k < 3; k++) {
     const g = gltf.scene.getObjectByName('Outcrop_LOD' + k).geometry, uv = g.attributes.uv;
     if (!g.userData.vFlipped) { for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i)); g.userData.vFlipped = true; }   // glTF stores v flipped; these textures load the three.js way, like the Cheyava ones
     lod.addLevel(new THREE.Mesh(g, mat), 0);
   }
+  const pa = lod.levels[0].object.geometry.attributes.position, p0 = new Float32Array(pa.count * 3);   // the finest outline, for collisions
+  for (let i = 0; i < pa.count; i++) { p0[i * 3] = pa.getX(i); p0[i * 3 + 1] = pa.getY(i); p0[i * 3 + 2] = pa.getZ(i); }
   // Sits on the drawn mesh, which changes a little with the quality tier: call again after the terrain is rebuilt.
   lod.userData.place = (tier) => {
     const at = outcropPlacement(wp, ctx.terrain.meshH), dist = OUTCROP.lod[tier] || OUTCROP.lod.high;
-    lod.position.set(at.x, at.y - OUTCROP.sink, at.z);
-    lod.quaternion.setFromUnitVectors(up, new THREE.Vector3(...at.normal)).multiply(new THREE.Quaternion().setFromAxisAngle(up, at.yaw));
+    outcropMatrix(at).decompose(lod.position, lod.quaternion, lod.scale);
     lod.levels.forEach((level, k) => { level.distance = dist[k]; });
-    lod.userData.at = at;
+    lod.userData.at = at; lod.userData.foot = outcropFootprint(p0, at, ctx.terrain.meshH);
   };
   lod.userData.place(ctx.tier); scene.add(lod);
   return lod;

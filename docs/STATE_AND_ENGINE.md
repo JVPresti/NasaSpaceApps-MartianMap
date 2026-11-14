@@ -52,11 +52,13 @@ setMode('plan');
 | `suit.marginSec` | O2 time left minus walkback minus the 30 min reserve | suit model | #19 |
 | `suit.status` | `'nominal'`, `'caution'` (margin under 15 min) or `'warning'` (margin at or under 0) | suit model | #19, used by #26 |
 | `navigation.x`, `z`, `headingDeg` | position estimate; heading clockwise from north | engine bridge now; navigation model later | #6, #21, #42 |
+| `navigation.waypointRangeM`, `waypointBearingDeg` | distance and bearing to the next unvisited waypoint, written in Walk mode | waypoint runner | #61 |
 | `navigation.slopeDeg` | terrain slope under the player in degrees (DERIVED from the HiRISE DTM), for the HUD | engine bridge | #20 |
 | `navigation.errorM`, `fixMode`, `lastFixSec` | uncertainty radius in metres (the ring on the Plan map), `'terrain fix'` or `'dead reckoning'`, mission time (`mission.elapsedSec`) of last fix. Tagged `SIM` | placeholder in `src/sim/navigation.js` now (a terrain fix at start, fixed 0.4 m); drift model later | #21, #42 |
 | `route.waypoints` | `[{ name, x, z }]` | Plan mode, planner | #17 |
 | `route.path` | `[[x, z], ...]`, the format of `route.json` and `planRoute()` | planner | #16, #23 |
 | `route.nextIndex` | index of the next waypoint | waypoint tracking | #61 |
+| `route.visited` | names of the waypoints already reached, in order | waypoint tracking | #61 |
 | `route.distanceM`, `climbM`, `steepestSlopeDeg`, `etaSec` | from `planRoute()` (`distance`, `climb`, `steepestSlopeDeg`) | planner | #16, #41 |
 | `route.reason` | why the route changed, for example after an event | re-planner | #23 |
 | `route.shelter` | `{ id, name, x, z, type, protection }` from `public/data/shelters.json`: the shelter the re-planner chose, highlighted in green; `null` when no event is active | re-planner, events | #23, #24 to #26, #30 |
@@ -69,6 +71,10 @@ setMode('plan');
 | `environment.doseRateUgyH`, `doseUgy` | radiation dose rate (µGy/h) and dose received (µGy) | RAD curve, events | #25, #31 |
 | `alerts.<eventId>` | `{ id, eventId, level, text, startedAtSec, active }`, or `null` when cleared. **The event engine writes these.** | event engine | #22 |
 | `crew` | `[{ id, name, color, x, z, oxygenPct, batteryPct }]` | partner, online play | #39, #52 |
+| `sampling.count`, `samples` | samples secured in a container this EVA, and `[{ id, kind: 'rock' \| 'ground', site, x, z, into: 'pouch' \| 'case', photo, texture, sealed, atSec }]` (`site` is `'Cheyava Falls'`, `'Bright Angel'` or `null`) | sampling bridge | #36 |
+| `sampling.checklist` | `{ photo, texture, sample, seal }` of the sample in progress, plus `photoAt`, `siteAt` and `sampleId` for the rules in [Sampling](#sampling-36) | sampling bridge | #36 |
+| `sampling.photos` | helmet camera photos taken this EVA | sampling bridge | #36 |
+| `sampling.status` | the engine's `getSampling()`: `{ phase, holding, target, caseState, caseInReach, actions }`, or `null` before the engine reports | sampling bridge, 5 times per second when it changes | #36 |
 | `view.layer` | 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop | Plan mode, wrist screen | #14, #67 |
 | `view.sky` | `'clear_day'`, `'dust_storm'`, `'late_afternoon'`, `'night'`. The default is `'late_afternoon'` (#59) | events, later the clock | #24, #59, #73 |
 | `view.skyBlend` | 0 to 1, blend from the current `view.sky` preset to `dust_storm` as the storm opacity rises | events | #24 |
@@ -115,6 +121,8 @@ await engine.ready;
 | `project(x, z, y?)` | World point to canvas CSS pixels: `{ x, y, visible, inFront }`. `y` defaults to ground + 2.2 m. Used by the next-waypoint HUD marker (#61). |
 | `setPartnerSource(source | null)` | Who drives the partner astronaut (see [PARTNER.md](PARTNER.md)). The scripted partner is the default; `null` hides it. |
 | `partnerCommand(name)` | Scripted actions of the current source: `'toggleCase'`, `'visitHabitat'`. Returns `false` if the source ignores it. |
+| `getSampling()` | `{ phase, holding, target, caseState, caseInReach, actions }` (see [Sampling](#sampling-36)); `null` before `ready`. Runs one aim test, so poll it, never per frame. |
+| `onSampling(listener)` | Sampling events `{ type: 'photo' \| 'collect' \| 'texture' \| 'secured' \| 'sealed' \| 'input', ... }`. Returns an unsubscribe function. Available once ready. |
 | `getPlayer()` | `{ x, z, headingDeg, mode }`. This is the true position, so only the bridge should read it; the interface reads `navigation`. |
 | `dispose()` | Stops everything and frees the GPU. |
 
@@ -170,6 +178,26 @@ setMissionTimeScale(60);         // or a direct mission.timeScale write
 The runner subscribes to `mission.paused` and `mission.timeScale`, so the suit runner's existing check of `mission.paused` and any direct `storeAdapter.set('mission.paused', true)` are honoured at the exact instant and are not overwritten by the clock. `view.sky` is set once at start from the chosen/restored preset; later time never changes the sky (#73). The clock tags `mission.startedAtMs`, the initial/preset fields and `timeScale` as `SIM` (demo epoch and configuration, not a historical measurement or precise ephemeris); `elapsedSec`, `anchorMs`, `sol` and `lmst` are `DERIVED`.
 
 **Limitations.** The suit runner still keeps its own wall clock for consumables and they do not persist across reload. Changing the mission scale affects mission time only in this issue. There are no visual clock controls yet; use the store actions or a console. No online clock offset or no-pause rule is part of #59.
+
+## Sampling (#36)
+
+`src/engine/sampling.js` connects the ready arm clips, the scoop and the partner's case to the player in Walk mode. The rules are plain functions in `src/engine/samplingRules.js`; the checklist and the count are in `src/state/sampling.js`, which `EngineView` connects with `connectSampling(engine)`. The HUD shows them with `src/hud/SamplingPanel.jsx`.
+
+| Input | When | What happens |
+|---|---|---|
+| Click | a rock or the ground under the crosshair is within `SAMPLE_REACH_M` (1.5 m from the feet) and the scoop is free | `collect_rock` for Cheyava Falls, the Bright Angel outcrop or a loose rock of at least 0.35 m (the scoop shows chips), `collect_ground` otherwise (soil). The player steps to the clip's stand point (0.70 m from the rock face, 0.47 m short of the soil) and is held there until the clip ends. Ignored while a clip plays |
+| P | a rock or the ground is in view within 8 m | a helmet camera photo |
+| E | holding a sample | `stow_sample`: into the sample bag; the scoop goes back on the belt |
+| F | holding a sample, or with the scoop free | the hand-over of `props.json`: asks the partner to set the case down; once it is down within 2 m, `pour_sample` from 0.85 m on the side away from the partner; then the partner closes the lid and takes the case back by itself |
+
+| Checklist item | Ticks when |
+|---|---|
+| Photo | P is pressed with the sample site in view, before or after the scoop, within 3 m of where the sample is taken. A photo of another place does not count |
+| Texture | the scoop comes up with material the player can see (the clip's content time in `props.js`) |
+| Sample | the sample is in a container: in the bag (`stow_sample` at 1.1 s) or landed in the open case. This is also when `sampling.count` rises |
+| Seal | the container is closed: the stow clip ended, or the partner took the case back with the lid closed |
+
+A sealed checklist stays ticked until the next photo or scoop starts a new one. Out of scope here: the dust puff and the mark in the soil (#50).
 
 ## The helmet HUD
 
