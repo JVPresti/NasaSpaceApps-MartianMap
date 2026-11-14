@@ -1,3 +1,4 @@
+import { t, translateText } from '../i18n/index.js';
 import { useEffect, useRef, useState } from 'react';
 import { groupEntries, linkHost } from './credits.js';
 import { SOURCES_KEY, closeSources, openSources, useSourcesStore } from './sourcesStore.js';
@@ -19,16 +20,16 @@ function loadCredits() {
 }
 
 const STATEMENT = [
-  { key: 'real', label: 'Real' },
-  { key: 'artistic', label: 'Artistic' },
-  { key: 'modelled', label: 'Modelled' },
+  { key: 'real', get label() { return t('ui.real'); } },
+  { key: 'artistic', get label() { return t('ui.artistic'); } },
+  { key: 'modelled', get label() { return t('ui.modelled'); } },
 ];
 
 // Plain-text tags until #62 ships the SourceTag component and provenance registry. Swap these spans for it then.
 const TAGS = [
-  { id: 'data', label: 'DATA', text: 'measured by a mission or stated in a NASA document' },
-  { id: 'derived', label: 'DERIVED', text: 'calculated by us from DATA' },
-  { id: 'sim', label: 'SIM', text: 'our assumption or a game choice' },
+  { id: 'data', label: 'DATA', get text() { return t('ui.measured.by.a.mission.or.stated.in.a'); } },
+  { id: 'derived', label: 'DERIVED', get text() { return t('ui.calculated.by.us.from.data'); } },
+  { id: 'sim', label: 'SIM', get text() { return t('ui.our.assumption.or.a.game.choice'); } },
 ];
 
 const sentence = (text) => (text ? text.charAt(0).toUpperCase() + text.slice(1) : '');
@@ -142,21 +143,18 @@ export function SourcesScreen({ credits, status, onClose }) {
       <div className="sources-frame">
         <header className="sources-head">
           <div>
-            <p className="sources-kicker">Credits</p>
-            <h2 id="sources-title">Sources</h2>
+            <p className="sources-kicker">{t('ui.credits')}</p>
+            <h2 id="sources-title">{t('ui.sources.188')}</h2>
           </div>
           <p className="sources-count">
-            {groups.length ? `${credits.entries.length} sources in ${groups.length} groups` : null}
+            {groups.length ? t('ui.p0.sources.in.p1.groups', { p0: credits.entries.length, p1: groups.length }) : null}
           </p>
-          <button ref={closeRef} type="button" className="sources-close" onClick={onClose} aria-label="Close sources">
-            Close <kbd>Esc</kbd>
+          <button ref={closeRef} type="button" className="sources-close" onClick={onClose} aria-label={t('ui.close.sources')}>{t('ui.close')}<kbd>{t('ui.esc')}</kbd>
           </button>
         </header>
 
         <section className="sources-statement" aria-labelledby="sources-statement-title">
-          <h3 id="sources-statement-title" className="sources-visually-hidden">
-            What is real, what is artistic and what is modelled
-          </h3>
+          <h3 id="sources-statement-title" className="sources-visually-hidden">{t('ui.what.is.real.what.is.artistic.and.what')}</h3>
           <dl className="sources-truth">
             {STATEMENT.map(({ key, label }) => (
               <div key={key} className={`sources-truth-item sources-truth-${key}`}>
@@ -175,13 +173,13 @@ export function SourcesScreen({ credits, status, onClose }) {
         </section>
 
         <div className="sources-body" tabIndex={-1}>
-          {status === 'error' && <p className="sources-status">credits.json could not be loaded. Close and open the screen to try again.</p>}
-          {status === 'loading' && !credits && <p className="sources-status">Loading sources…</p>}
+          {status === 'error' && <p className="sources-status">{t('ui.credits.json.could.not.be.loaded.close.and')}</p>}
+          {status === 'loading' && !credits && <p className="sources-status">{t('ui.loading.sources')}</p>}
 
           {groups.map((group) => (
             <section key={group.id} className="sources-group" aria-labelledby={`sources-${group.id}`}>
               <h3 id={`sources-${group.id}`}>
-                {group.label} <span>{group.entries.length}</span>
+                {translateText(group.label)} <span>{group.entries.length}</span>
               </h3>
               <ul className="sources-list">
                 {group.entries.map((entry) => (
@@ -189,21 +187,21 @@ export function SourcesScreen({ credits, status, onClose }) {
                     <h4>{entry.name}</h4>
                     <dl>
                       <div>
-                        <dt>Provider</dt>
+                        <dt>{t('ui.provider')}</dt>
                         <dd>{entry.provider}</dd>
                       </div>
                       <div>
-                        <dt>Credit</dt>
+                        <dt>{t('ui.credit')}</dt>
                         <dd className="sources-credit">{entry.credit_line}</dd>
                       </div>
                       <div>
-                        <dt>Licence</dt>
+                        <dt>{t('ui.licence')}</dt>
                         <dd>{entry.license}</dd>
                       </div>
                     </dl>
                     <a href={entry.url} target="_blank" rel="noopener noreferrer">
                       {linkHost(entry.url)}
-                      <span className="sources-visually-hidden"> (opens in a new tab)</span>
+                      <span className="sources-visually-hidden">{t('ui.opens.in.a.new.tab')}</span>
                     </a>
                   </li>
                 ))}
@@ -213,19 +211,19 @@ export function SourcesScreen({ credits, status, onClose }) {
 
           {resources.length > 0 && (
             <section className="sources-group" aria-labelledby="sources-challenge">
-              <h3 id="sources-challenge">Space Apps challenge resources</h3>
+              <h3 id="sources-challenge">{t('ui.space.apps.challenge.resources')}</h3>
               <ul className="sources-resources">
                 {resources.map((r) => (
                   <li key={r.name}>
                     {r.url ? (
                       <a href={r.url} target="_blank" rel="noopener noreferrer">
                         {r.name}
-                        <span className="sources-visually-hidden"> (opens in a new tab)</span>
+                        <span className="sources-visually-hidden">{t('ui.opens.in.a.new.tab')}</span>
                       </a>
                     ) : (
                       <b>{r.name}</b>
                     )}
-                    <span>{r.used ? `Used: ${r.used}` : r.pending ? `Pending: ${r.pending}` : 'Not used'}</span>
+                    <span>{r.used ? t('used', { text: r.used }) : r.pending ? t('pendingResource', { text: r.pending }) : t('ui.not.used')}</span>
                   </li>
                 ))}
               </ul>

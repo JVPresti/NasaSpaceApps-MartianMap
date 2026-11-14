@@ -1,7 +1,8 @@
+import { t, formatNumber } from '../i18n/index.js';
 // What the sampling prompt under the crosshair says (#36). Plain functions over the store's `sampling.status`
 // (src/engine/sampling.js status()), tested in samplingPrompt.test.js.
 
-const ROCK = (t) => t.site || 'the rock';
+const ROCK = (target) => target.site || t('ui.the.rock');
 
 /**
  * @param {{ phase: string, holding: string | null, target: { kind: string, site: string | null, distanceM: number, inReach: boolean } | null,
@@ -13,25 +14,25 @@ const ROCK = (t) => t.site || 'the rock';
 export function samplingPrompt(status) {
   const out = { reticle: null, items: [], note: null };
   if (!status || !status.actions) return out;
-  const { phase, target: t, actions: a, caseState: cs, caseInReach } = status;
+  const { phase, target, actions: a, caseState: cs, caseInReach } = status;
   // the prompt shows up when the player looks at a rock, or at the ground within reach, or holds a sample: not while
   // walking with the ground ahead in view (the P key still works on any target in the camera's range)
-  const shown = t && (t.kind === 'rock' || t.inReach);
-  if (a.click) out.items.push({ key: 'Click', text: t.kind === 'rock' ? 'Take rock chips from ' + ROCK(t) : 'Scoop soil' });
-  if (a.photo && shown) out.items.push({ key: 'P', text: 'Photograph ' + (t.kind === 'rock' ? ROCK(t) : 'the site') });
-  if (a.stow) out.items.push({ key: 'E', text: 'Stow in the sample bag' });
-  if (a.case === 'pour') out.items.push({ key: 'F', text: 'Pour into the case' });
-  else if (a.case === 'call-case' && phase === 'holding') out.items.push({ key: 'F', text: 'Ask EV2 to set the case down' });
-  else if (a.case === 'pick-up-case' && phase === 'idle') out.items.push({ key: 'F', text: 'EV2 takes the case back' });
+  const shown = target && (target.kind === 'rock' || target.inReach);
+  if (a.click) out.items.push({ key: t('click'), text: target.kind === 'rock' ? t('sampleRock', { site: ROCK(target) }) : t('ui.scoop.soil') });
+  if (a.photo && shown) out.items.push({ key: 'P', text: t('photoSite', { site: target.kind === 'rock' ? ROCK(target) : t('ui.the.site') }) });
+  if (a.stow) out.items.push({ key: 'E', get text() { return t('ui.stow.in.the.sample.bag'); } });
+  if (a.case === 'pour') out.items.push({ key: 'F', get text() { return t('ui.pour.into.the.case'); } });
+  else if (a.case === 'call-case' && phase === 'holding') out.items.push({ key: 'F', get text() { return t('ui.ask.ev2.to.set.the.case.down'); } });
+  else if (a.case === 'pick-up-case' && phase === 'idle') out.items.push({ key: 'F', get text() { return t('ui.ev2.takes.the.case.back'); } });
 
-  if (phase === 'collecting') out.note = 'Sampling…';
-  else if (phase === 'stowing') out.note = 'Stowing the sample…';
-  else if (phase === 'pouring') out.note = 'Pouring into the case…';
-  else if (cs === 'coming') out.note = 'EV2 is bringing the case';
-  else if (cs === 'setting-down') out.note = 'EV2 is setting the case down';
-  else if (cs === 'picking-up') out.note = 'EV2 is closing the case';
-  else if (phase === 'holding' && cs === 'down' && !caseInReach) out.note = 'Walk to the case to pour';
-  else if (phase === 'idle' && t && t.kind === 'rock' && !t.inReach) out.note = (t.site || 'Rock') + ' · ' + t.distanceM.toFixed(1) + ' m · walk closer to sample';
+  if (phase === 'collecting') out.note = t('sampling');
+  else if (phase === 'stowing') out.note = t('ui.stowing.the.sample');
+  else if (phase === 'pouring') out.note = t('ui.pouring.into.the.case');
+  else if (cs === 'coming') out.note = t('ui.ev2.is.bringing.the.case');
+  else if (cs === 'setting-down') out.note = t('ui.ev2.is.setting.the.case.down');
+  else if (cs === 'picking-up') out.note = t('ui.ev2.is.closing.the.case');
+  else if (phase === 'holding' && cs === 'down' && !caseInReach) out.note = t('ui.walk.to.the.case.to.pour');
+  else if (phase === 'idle' && target && target.kind === 'rock' && !target.inReach) out.note = t('closer', { site: target.site || t('rock'), distance: formatNumber(target.distanceM, 1) });
 
   if (shown && (phase === 'idle' || phase === 'holding')) out.reticle = a.click ? 'reach' : 'look';
   return out;
@@ -39,8 +40,8 @@ export function samplingPrompt(status) {
 
 /** The checklist rows: what each one means and what ticks it. */
 export const CHECKLIST = [
-  { id: 'photo', label: 'Photo', how: 'P · site in view' },
-  { id: 'texture', label: 'Texture', how: 'seen in the scoop' },
-  { id: 'sample', label: 'Sample', how: 'E bag · F case' },
-  { id: 'seal', label: 'Seal', how: 'bag or case closed' },
+  { id: 'photo', get label() { return t('ui.photo'); }, get how() { return t('ui.p.site.in.view'); } },
+  { id: 'texture', get label() { return t('ui.texture'); }, get how() { return t('ui.seen.in.the.scoop'); } },
+  { id: 'sample', get label() { return t('sampling.checklistSample'); }, get how() { return t('ui.e.bag.f.case'); } },
+  { id: 'seal', get label() { return t('ui.seal'); }, get how() { return t('ui.bag.or.case.closed'); } },
 ];

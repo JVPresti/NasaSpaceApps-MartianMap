@@ -1,3 +1,4 @@
+import { subscribeLanguage } from '../i18n/index.js';
 // Marswalk engine: the Cheyava Falls scene (Neretva Vallis, Jezero crater) as a module with its own render loop.
 // Ported from docs/marswalk-assets/testbench-reference/main.js. No React and no page DOM: the engine owns one
 // <canvas> inside the container it is given and removes it on dispose().
@@ -125,6 +126,10 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     tier: initialTier, orthoCache: {}, presetName: 'clear_day', gpu: detected.gpu,
   };
   const { U, assets, sys } = ctx;
+  const unsubscribeLanguage = subscribeLanguage(() => {
+    if (started && alive) { sys.arms.draw(); sys.habitat.screens.draw(); }
+  });
+  signal.addEventListener('abort', unsubscribeLanguage, { once: true });
 
   // Serialises UI and automatic quality changes. The actual work is applyTier below.
   const quality = createQualityController({

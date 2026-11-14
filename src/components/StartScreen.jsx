@@ -1,3 +1,4 @@
+import { t, translateText } from '../i18n/index.js';
 import ControlsHelp from './ControlsHelp.jsx';
 import Modal from './Modal.jsx';
 
@@ -9,31 +10,26 @@ export default function StartScreen({ mode = 'walk', busy, notice, onStart }) {
   return (
     <Modal labelledBy="start-title" className="start-dialog" onCancel={() => {}}>
       <div className="dialog-body">
-        <p className="dialog-kicker">Marswalk</p>
-        <h2 id="start-title" className="dialog-title">Cheyava Falls</h2>
-        <p className="dialog-site">Neretva Vallis · Jezero crater · Mars</p>
+        <p className="dialog-kicker">{t('app.brand')}</p>
+        <h2 id="start-title" className="dialog-title">{t('ui.cheyava.falls')}</h2>
+        <p className="dialog-site">{t('ui.neretva.vallis.jezero.crater.mars')}</p>
 
-        <p className="dialog-mission">
-          Walk to Cheyava Falls and sample the science target in Neretva Vallis, on the floor of Jezero crater.
-          Your EVA starts 70 m south of the rock.
-        </p>
-        <p className="dialog-source">
-          Start position SIM: x 8 m east, z 70 m south of Cheyava Falls. Site 18.4975 N, 77.3053 E (DATA: Mars 2020 Perseverance waypoint, sol 1210).
-        </p>
+        <p className="dialog-mission">{t('menu.walk.to.cheyava.falls.and.sample.the.science')}</p>
+        <p className="dialog-source">{t('menu.start.position.sim.x.8.m.east.z')}</p>
 
         <ControlsHelp />
 
-        {notice && <p className="dialog-notice" role="alert">{notice}</p>}
+        {notice && <p className="dialog-notice" role="alert">{translateText(notice)}</p>}
 
         <div className="dialog-actions">
           <button type="button" className="ui-button primary" onClick={onStart} disabled={busy} data-autofocus="true">
-            {busy ? (mode === 'plan' ? 'Opening…' : 'Capturing the mouse…') : mode === 'plan' ? 'Start in Plan view' : 'Start EVA'}
+            {busy ? (mode === 'plan' ? t('menu.opening') : t('menu.capturing.the.mouse')) : mode === 'plan' ? t('menu.start.in.plan.view') : t('menu.start.eva')}
           </button>
         </div>
         <p className="dialog-footnote">
           {mode === 'plan'
-            ? 'Plan view resumes without capturing the mouse. The mission clock and suit stay paused behind this screen.'
-            : 'Start captures the mouse for looking around. The mission clock and suit stay paused behind this screen.'}
+            ? t('menu.plan.view.resumes.without.capturing.the.mouse.the')
+            : t('menu.start.captures.the.mouse.for.looking.around.the')}
         </p>
       </div>
     </Modal>

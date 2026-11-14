@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { useEffect, useState } from 'react';
 import EventBanner from '../events/EventBanner.jsx';
 import { useMissionStore, setLayer } from '../state/store.js';
@@ -134,7 +135,7 @@ export default function PlanMode({ engine, active }) {
           <p className="plan-readout" role="status">
             {routeStatus === 'error'
               ? 'route.json could not be loaded; markers are unavailable.'
-              : 'North up · 1422 × 1500 m tile · origin at Cheyava Falls'}
+              : t('ui.north.up.1422.1500.m.tile.origin.at')}
           </p>
         </div>
       </div>
