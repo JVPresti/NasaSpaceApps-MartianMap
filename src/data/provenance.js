@@ -102,6 +102,7 @@ export const STORE_PATHS = Object.freeze({
   'route.steepestSlopeDeg': PLANNER,
   'route.etaSec': suitModel('route distance at the walking speed of the suit model', SUIT_O2),
   'route.nextIndex': sim('first waypoint not visited yet'),
+  'route.visited': sim('waypoints already reached in Walk mode'),
   'route.reason': sim('why the re-planner changed the route'),
   'route.shelter': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'shelters.json: sky view ray cast on the HiRISE height grid', from: HIRISE },
   'route.decision': sim('go or no-go chosen by the crew'),

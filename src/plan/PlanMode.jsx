@@ -86,7 +86,7 @@ export default function PlanMode({ engine, active }) {
       <PlanPositionMarker engine={engine} />
       <LayerPanel layer={layer} onLayer={setLayer} />
 
-      <RoutePanel planner={planner} waypoints={waypoints} onWaypointsChange={setWaypoints} />
+      <RoutePanel planner={planner} waypoints={waypoints} onWaypointsChange={setWaypoints} engine={engine} />
       <PlanChrome metresPerPixel={metresPerPixel} />
       <SourcesButton />
 

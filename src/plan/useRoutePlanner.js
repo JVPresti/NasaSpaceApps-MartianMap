@@ -103,6 +103,8 @@ export function useRoutePlanner({ waypoints, enabled }) {
               steepestSlopeDeg: result.steepestSlopeDeg,
               etaSec: walk.timeSec,
               reason: 'Planned route',
+              nextIndex: 0,
+              visited: [],
             },
             sources: { ...store.sources, ...ROUTE_SOURCES },
           }));
