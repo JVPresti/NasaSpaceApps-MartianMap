@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { setRouteDecision, useMissionStore } from '../state/store.js';
+import ElevationProfile from '../hud/ElevationProfile.jsx';
 import { planSummary } from './routePlan.js';
 
 function WaypointRow({ waypoint, index, onCommit }) {
@@ -65,12 +66,13 @@ function WaypointRow({ waypoint, index, onCommit }) {
 }
 
 /**
- * Route summary, waypoint editing and the go / no-go decision.
+ * Route summary, elevation profile, waypoint editing and the go / no-go decision.
  * @param {{ planner: { status: string, error: string | null, replan: () => void },
  *   waypoints: Array<{ name: string, x: number, z: number }>,
- *   onWaypointsChange: (waypoints: Array<object>) => void }} props
+ *   onWaypointsChange: (waypoints: Array<object>) => void,
+ *   engine: object | null }} props
  */
-export default function RoutePanel({ planner, waypoints, onWaypointsChange }) {
+export default function RoutePanel({ planner, waypoints, onWaypointsChange, engine }) {
   const route = useMissionStore((s) => s.route);
   const summary = planSummary(route);
   const decision = route.decision;
@@ -116,6 +118,13 @@ export default function RoutePanel({ planner, waypoints, onWaypointsChange }) {
           <dd>{summary.eta}</dd>
         </div>
       </dl>
+
+      <ElevationProfile
+        path={route.path}
+        waypoints={route.waypoints}
+        heightAt={engine?.heightAt}
+        slopeAt={engine?.slopeAt}
+      />
 
       <p className={`route-status ${planner.status}`} role="status">
         {statusText}
