@@ -132,9 +132,12 @@ It is now matched to colour photos Perseverance took at this exact spot: nine Ma
 - Credit for these frames: NASA/JPL-Caltech/ASU.
 
 ## Credits
-HiRISE DTM and orthomosaic, CTX DEM and mosaic: NASA/JPL-Caltech/University of Arizona/MSSS/USGS Astrogeology.
+The full list, with licences, links and the text for the submission form, is in [docs/credits.md](../credits.md) (built by `npm run credits`).
+HiRISE DTM and orthomosaic: NASA/JPL/University of Arizona, as the HiRISE usage policy asks; mosaics by USGS Astrogeology (Fergason et al. 2020).
+CTX DEM and mosaic: NASA/JPL/Malin Space Science Systems, as MSSS asks; mosaics by USGS Astrogeology (Fergason et al. 2020).
 Rover waypoint: NASA/JPL-Caltech (Mars 2020 MMGIS). Cheyava Falls reference: NASA/JPL-Caltech/ASU/MSSS (PIA26401).
-Rock size model: Golombek et al. Rock models, detail textures and habitat stool / shelves / crate: Poly Haven (CC0).
+Rock size model: Golombek et al. 2003. Rock models, detail textures and habitat stool / shelves / crate: Poly Haven (CC0).
+Z-2 suit and Habitat Demonstration Unit: NASA 3D Resources.
 
 ## assets_astronaut/ (third-person astronaut, first-person arms, first-person legs)
 | File | What it is |
