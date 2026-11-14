@@ -53,6 +53,8 @@ Close Blender or set its viewport to Solid before measuring: a Rendered viewport
 ### How the app picks a tier
 - At load, from the GPU name (`detectTier` in `src/engine/tiers.js`). Intel and mobile GPUs and AMD integrated graphics
   ("AMD Radeon(TM) Graphics", "Radeon Vega") start on Low. Discrete cards and newer named APUs (for example "Radeon 780M") start on High.
+  Intel Arc and Iris Xe ("Intel(R) Iris(R) Xe Graphics", "Mesa Intel(R) Xe Graphics" on Linux) are the Intel exception and start on High.
+  Not measured on an Iris Xe laptop yet; the automatic switch below drops it to Low if High is too slow. Tested in `src/engine/tiers.test.js`.
 - While running, three slow seconds in a row on High (under 40 fps) switch to Low. There is no switch back up.
 - Manual override: add `?tier=high` or `?tier=low` to the URL. It forces that tier and turns off the automatic switch.
   An unknown value is ignored with a console warning.
