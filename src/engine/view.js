@@ -12,8 +12,9 @@ import { addCircle, pushOut, PARTNER_GAP, WALKER_RADIUS } from './collide.js';
 import { createInputGate } from './input.js';
 import { createPointerLock } from './pointerLock.js';
 
-export const START = new THREE.Vector3(8, 0, 70);   // 70 m south of Cheyava Falls, in Neretva Vallis
-export const START_YAW = -0.11;
+// The test bench's start, 70 m south of Cheyava Falls in Neretva Vallis. Only a debug teleport now (__marswalk.cheyavaView,
+// scripts/measure-fps.mjs): the EVA starts at the habitat airlock (spawn.js, placed by the engine once the habitat is down, #166).
+export const CHEYAVA_VIEW = Object.freeze({ x: 8, z: 70, yaw: -0.11 });
 const PLAN_MIN_HEIGHT = 1200;                         // enough to read the whole tile on a laptop screen
 const NEAR = { eye: 0.15, orbit: 5 };
 // Suited walking speeds from public/data/hazards.json: mobility.speed.flat and mobility.speed.jog (both SIM).
@@ -24,7 +25,7 @@ const LOOK_LOCKED = 0.0025;       // rad per pixel of mouse movement while the p
 const LOOK_DRAG = 0.004;          // rad per pixel while dragging (the bench's value)
 
 export function createViewState() {
-  return { mode: 'eye', yaw: START_YAW, pitch: 0, eye: START.clone(), keys: {}, moveSpeed: 0 };
+  return { mode: 'eye', yaw: 0, pitch: 0, eye: new THREE.Vector3(), keys: {}, moveSpeed: 0 };   // eye and yaw: set at the airlock during boot
 }
 
 /**
@@ -154,17 +155,21 @@ export function createView(ctx, canvas, signal, { onLockChange = () => {}, input
     }
   }
 
-  /** Return to the spawn pose after a restart. The caller still decides the mode. */
-  function reset() {
-    view.eye.copy(START);
-    view.yaw = START_YAW;
+  /**
+   * Return to the spawn pose after a restart (the airlock, spawn.js, #166).
+   * @param {{ x: number, z: number, yaw: number }} pose
+   * @param {'plan' | 'walk'} mode
+   */
+  function reset(pose, mode) {
+    view.eye.set(pose.x, 0, pose.z);
+    view.yaw = pose.yaw;
     view.pitch = 0;
     view.moveSpeed = 0;
     gate.clear();
     drag = false;
     bobAmp = 0; bobPhase = 0; camGround = 0; camDuck = 0; groundInit = false;
     pointerLock.release();
-    setMode('walk');
+    setMode(mode);
     update(0);   // snap the camera to the new eye position before the next frame
   }
 

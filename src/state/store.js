@@ -6,7 +6,7 @@ import { create } from 'zustand';
 /** Plain data only. Units are in the field names. Coordinates: x east, z south, metres from Cheyava Falls. */
 export function createInitialState() {
   return {
-    mode: 'walk',                                   // 'walk' | 'plan'
+    mode: 'plan',                                   // 'walk' | 'plan'; the app opens at the planning table (#166)
     // Clock fields: docs/STATE_AND_ENGINE.md. anchorMs is the wall timestamp elapsedSec is measured from;
     // startedAtMs is the first start. The mission clock fills anchorMs and the fields after it when it starts.
     mission: {
