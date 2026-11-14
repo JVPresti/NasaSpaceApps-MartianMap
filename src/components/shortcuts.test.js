@@ -72,6 +72,7 @@ describe('mission keyboard shortcuts', () => {
 
   it('sends M through the mode button handler when one is given, so Walk gets the pointer lock (#174)', () => {
     const onMode = vi.fn();
+    setMode('walk');   // the store opens in Plan (#166); start from Walk
     expect(press('KeyM', {}, { onMode }).preventDefault).toHaveBeenCalledOnce();
     expect(onMode).toHaveBeenLastCalledWith('plan');
     expect(useMissionStore.getState().mode).toBe('walk');          // the handler owns the change, not the shortcut
