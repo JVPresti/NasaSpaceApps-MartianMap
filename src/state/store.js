@@ -2,6 +2,7 @@
 // React components subscribe to the slices they need. Contract and field list: docs/STATE_AND_ENGINE.md.
 // No React and no three.js here: the hook comes from Zustand, and the simulation can use the store without React.
 import { create } from 'zustand';
+import { createInitialEvaState } from './eva.js';
 
 /** Plain data only. Units are in the field names. Coordinates: x east, z south, metres from Cheyava Falls. */
 export function createInitialState() {
@@ -26,6 +27,11 @@ export function createInitialState() {
     // #36, written by src/state/sampling.js: samples secured this EVA, the checklist of the sample in progress, and the engine's
     // sampling status (what the crosshair is on, the clip phase, the partner's case and what each input does), 5 times per second
     sampling: { count: 0, photos: 0, samples: [], checklist: { photo: false, texture: false, sample: false, seal: false, photoAt: null, siteAt: null, sampleId: null }, status: null },
+    // #43, written by src/state/eva.js: statistics and history for the debrief. `phase` is 'ready' until the astronaut
+    // first walks outside the habitat arrival area, 'active' during the EVA and 'ended' when they re-enter the HAB;
+    // `summary` is then a frozen snapshot with the outside time, distance, minima, events, route changes, samples and
+    // current radiation reading. The HAB entry is the one in shelters.json, not the HAB route waypoint.
+    eva: createInitialEvaState(),
     view: { layer: 0, sky: 'late_afternoon', skyBlend: 0 },   // what the engine draws; #59 demo starts in late-afternoon light
     sources: {},                                    // { 'environment.tempC': { tag: 'DATA' | 'DERIVED' | 'SIM', source } }
   };

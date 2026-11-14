@@ -1,0 +1,184 @@
+/* EVA debrief (#43). It reuses the start/pause dialog shell in menu.css and the app tokens in index.css.
+   The mission log is the one visual focus: a quiet metric grid above, then one chronological rail. */
+
+.debrief-dialog {
+  width: min(760px, calc(100% - 32px));
+}
+
+.debrief-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 20px;
+  margin: 20px 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.debrief-metric {
+  padding: 12px 0 11px;
+  border-bottom: 1px solid var(--line);
+}
+
+.debrief-metric dt {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.debrief-metric dd {
+  margin: 4px 0 0;
+  line-height: 1.2;
+}
+
+.debrief-value {
+  font-size: 21px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.debrief-metric-note {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+}
+
+/* The default SourceTag chip is built for body text; next to a 21 px metric it needs its own size. */
+.source-tag.debrief-tag {
+  margin-left: 6px;
+  padding: 0 4px;
+  font-size: 9.5px;
+  vertical-align: 3px;
+}
+
+.debrief-section-title {
+  margin: 24px 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.debrief-log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line-strong);
+}
+
+.debrief-entry {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 14px;
+  padding: 11px 0 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.debrief-time {
+  padding-top: 1px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+}
+
+.debrief-entry-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.debrief-entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--dim);
+}
+
+.debrief-entry-id {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+}
+
+.debrief-route-distance {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.debrief-empty {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dim);
+}
+
+.debrief-notes {
+  margin-top: 20px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+.debrief-notes p {
+  max-width: 68ch;
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--dim);
+}
+
+.debrief-actions {
+  margin-top: 18px;
+}
+
+.debrief-dialog .dialog-footnote {
+  max-width: 68ch;
+}
+
+@media (max-width: 620px) {
+  .debrief-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
+  }
+
+  .debrief-entry {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .debrief-value {
+    font-size: 19px;
+  }
+}
+
+@media (max-width: 420px) {
+  .debrief-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .debrief-entry {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .debrief-time {
+    padding-top: 0;
+  }
+
+  .debrief-actions .ui-button {
+    flex: 1 1 100%;
+  }
+}
+
+/* Keep the opening focus at the heading so long summaries start at the metrics. */
+#debrief-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
