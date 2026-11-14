@@ -20,8 +20,9 @@ export function connectEngine(engine, store = useMissionStore) {
   const timer = setInterval(() => {
     const p = engine.getPlayer(), nav = store.getState().navigation;
     const x = Math.round(p.x * 100) / 100, z = Math.round(p.z * 100) / 100, headingDeg = Math.round(p.headingDeg * 10) / 10;
-    if (x === nav.x && z === nav.z && headingDeg === nav.headingDeg) return;   // standing still: no store update, no re-render
-    store.setState((s) => ({ navigation: { ...s.navigation, x, z, headingDeg } }));
+    if (x === nav.x && z === nav.z && headingDeg === nav.headingDeg && nav.slopeDeg !== null) return;   // standing still: no store update, no re-render
+    const slopeDeg = Math.round(engine.slopeAt(x, z) * 10) / 10;   // terrain slope under the player, for the HUD (DERIVED from the HiRISE DTM)
+    store.setState((s) => ({ navigation: { ...s.navigation, x, z, headingDeg, slopeDeg } }));
   }, PLAYER_POLL_MS);
 
   return () => { unsubscribe(); clearInterval(timer); };
