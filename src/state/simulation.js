@@ -3,6 +3,7 @@
 import { useMissionStore } from './store.js';
 import { DEMO_MISSION_CLOCK, SKY_PRESETS, startMissionClock } from '../sim/missionClock.js';
 import { startEventRunner } from './events.js';
+import { startOffRoute } from './offRoute.js';
 import { suitConstantsFromHazards } from '../sim/suitModel.js';
 import { startSuitRunner } from '../sim/suitRunner.js';
 import { legCostSources, startLegCostRunner } from '../sim/legCosts.js';
@@ -22,6 +23,7 @@ function initialSky(state) {
 export function startSimulation(engine, { mock = false } = {}) {
   if (mock) return () => {};
   const events = startEventRunner({ store: useMissionStore });
+  const offRoute = startOffRoute({ store: useMissionStore });
   let stopped = false, suit = null, legs = null, clock = null;
 
   // The clock starts from its own timestamp and does not wait for hazards.json. A slow or failed hazard
@@ -45,6 +47,7 @@ export function startSimulation(engine, { mock = false } = {}) {
     stopped = true;
     if (clock) clock.stop();
     events.stop();
+    offRoute.stop();
     if (suit) suit.stop();
     if (legs) legs.stop();
   };
