@@ -7,6 +7,7 @@ import PlanChrome from './PlanChrome.jsx';
 import PlanPositionMarker from './PlanPositionMarker.jsx';
 import RoutePanel from './RoutePanel.jsx';
 import SourcesButton from '../sources/SourcesButton.jsx';
+import { PlanStopCard } from '../stops/ScienceStops.jsx';
 import { useRoutePlanner } from './useRoutePlanner.js';
 import './plan.css';
 
@@ -121,6 +122,7 @@ export default function PlanMode({ engine, active }) {
 
         <div className="plan-region plan-alerts">
           <EventBanner />
+          <PlanStopCard />
         </div>
 
         <div className="plan-region plan-right">

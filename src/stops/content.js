@@ -5,7 +5,7 @@
  *
  * Plain JavaScript, no React and no three.js.
  */
-import { arrivedStop } from '../data/stops.js';
+import { stopForWaypoint } from '../data/stops.js';
 import { provenance } from '../data/provenance.js';
 
 /**
@@ -100,26 +100,29 @@ export function registerStops(stops, registry = provenance) {
 }
 
 /**
- * Walk mode arrival: `update` returns a stop the first time the position comes
- * within that stop's arrival radius (2 m for both stops, from stops.json) and
- * null on every later call, so the card opens once per stop per session.
- * Stops without content never open a card.
+ * Walk mode arrival. The waypoint runner (src/sim/waypointRunner.js, #139) appends each waypoint the astronaut
+ * reaches to `route.visited`, using a 2 m radius at science targets. `update` returns the stop of the first visited
+ * waypoint whose card has not opened yet, and null after that, so the card opens once per stop per session. A
+ * re-plan empties `route.visited`; the tracker keeps its own list, so revisiting a stop opens nothing.
+ * Waypoints without a stop, and stops without content, never open a card.
  */
 export function createArrivalTracker() {
   const shown = new Set();
   return {
     /**
      * @param {Array<object>} stops
-     * @param {{x: number|null, z: number|null}} position the player position from the store
+     * @param {Array<string>} visited `route.visited` from the mission store
      * @returns {object|null}
      */
-    update(stops, position) {
-      if (!Array.isArray(stops) || stops.length === 0) return null;
-      if (!Number.isFinite(position?.x) || !Number.isFinite(position?.z)) return null;
-      const stop = arrivedStop(stops, position);
-      if (!stop || shown.has(stop.id) || !stopHasContent(stop)) return null;
-      shown.add(stop.id);
-      return stop;
+    update(stops, visited) {
+      if (!Array.isArray(stops) || !Array.isArray(visited)) return null;
+      for (const name of visited) {
+        const stop = stopForWaypoint(stops, name);
+        if (!stop || shown.has(stop.id) || !stopHasContent(stop)) continue;
+        shown.add(stop.id);
+        return stop;
+      }
+      return null;
     },
     /** Ids of the stops whose card has opened. */
     shown: () => [...shown],
