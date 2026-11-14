@@ -3,6 +3,7 @@ import { useMissionStore, setLayer } from '../state/store.js';
 import LayerPanel from './LayerPanel.jsx';
 import PlanChrome from './PlanChrome.jsx';
 import RoutePanel from './RoutePanel.jsx';
+import SourcesButton from '../sources/SourcesButton.jsx';
 import { useRoutePlanner } from './useRoutePlanner.js';
 import './plan.css';
 
@@ -85,6 +86,7 @@ export default function PlanMode({ engine, active }) {
 
       <RoutePanel planner={planner} waypoints={waypoints} onWaypointsChange={setWaypoints} />
       <PlanChrome metresPerPixel={metresPerPixel} />
+      <SourcesButton />
 
       <p className="plan-readout" role="status">
         {routeStatus === 'error'
