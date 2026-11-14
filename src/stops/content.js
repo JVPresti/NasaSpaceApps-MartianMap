@@ -6,6 +6,7 @@
  * Plain JavaScript, no React and no three.js.
  */
 import { arrivedStop } from '../data/stops.js';
+import { provenance } from '../data/provenance.js';
 
 /**
  * True when the stop has a title, at least one sentence and one credited image.
@@ -34,10 +35,68 @@ export function cardImage(stop, { preferReference = false } = {}) {
   return images[0];
 }
 
-/** Text for the image's source tag, for example "DATA · Mastcam-Z · Perseverance · sol 1217". */
-export function imageSource(image) {
-  const label = image.label || [image.camera, image.sol != null ? `sol ${image.sol}` : null].filter(Boolean).join(' · ');
-  return label ? `${image.tag} · ${label}` : image.tag;
+/** Registry paths for the card's source tags (src/components/SourceTag.jsx). */
+export const stopPaths = {
+  title: (stop) => `stops.${stop.id}.title`,
+  sentence: (stop, index) => `stops.${stop.id}.text.${index}`,
+  image: (stop, image) => `stops.${stop.id}.image.${image.image_id}`,
+};
+
+/** SourceTag's text alternative ends each field with a period, so the source lines carry none. */
+const noStop = (text) => String(text ?? '').trim().replace(/\.$/, '');
+
+/** Registry fields from one stops.json provenance block (public/data/README.md). */
+function fromBlock(p) {
+  if (!p) return {};
+  const text = (v) => (v ? noStop(v) : v);
+  return {
+    mission: p.mission, instrument: p.instrument, site: p.site, solOrDate: p.sol_or_date,
+    reference: text(p.reference), link: p.url, dataLink: p.data_url, note: text(p.note),
+  };
+}
+
+/**
+ * Provenance registry entries for every tag the card shows: the title, each sentence and each image.
+ * The blocks come from stops.json, so the tag's details name the NASA release, the camera and the sol.
+ * @param {Array<object>} stops
+ * @returns {Record<string, object>}
+ */
+export function stopProvenance(stops) {
+  const entries = {};
+  for (const stop of stops) {
+    const firstData = stop.text.find((s) => s.tag === stop.title_tag) ?? stop.text[0];
+    if (stop.title_tag) {
+      entries[stopPaths.title(stop)] = {
+        ...fromBlock(firstData?.provenance?.[0]),
+        tag: stop.title_tag, label: stop.title_tag, source: noStop(`${stop.name}: ${stop.summary ?? firstData?.sentence}`),
+      };
+    }
+    stop.text.forEach((s, i) => {
+      const blocks = s.provenance ?? [];
+      entries[stopPaths.sentence(stop, i)] = {
+        ...fromBlock(blocks[0]),
+        reference: blocks.map((b) => noStop(b.reference)).join('; ') || null,
+        tag: s.tag, label: s.tag, source: noStop(s.sentence),
+      };
+    });
+    for (const image of stop.images ?? []) {
+      if (!image?.image_id || !image?.tag) continue;
+      entries[stopPaths.image(stop, image)] = {
+        ...fromBlock(image.provenance),
+        tag: image.tag,
+        label: image.label || [image.camera, image.sol != null ? `sol ${image.sol}` : null].filter(Boolean).join(' · ') || image.tag,
+        source: `${noStop(image.caption ?? image.alt)}. Credit: ${noStop(image.credit)}`,
+        link: image.page_url ?? image.provenance?.url ?? null,
+      };
+    }
+  }
+  return entries;
+}
+
+/** Add the stops' entries to the provenance registry, so every SourceTag on the card resolves. */
+export function registerStops(stops, registry = provenance) {
+  registry.define(stopProvenance(stops));
+  return registry;
 }
 
 /**

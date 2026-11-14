@@ -100,23 +100,10 @@
 }
 .stop-credit { font-size: 0.78em; color: var(--stop-dim); }
 
-/* Source tags: DATA, DERIVED, SIM. Same colours as the HUD's tags (src/hud/hud.css). */
-.stop-tag {
-  flex: none;
-  padding: 0.05em 0.4em;
-  font: 600 0.74em/1.4 ui-monospace, Consolas, monospace;
-  letter-spacing: 0.04em;
-  color: var(--stop-dim);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 0.3em;
-  white-space: nowrap;
-}
-.stop-card h2 .stop-tag { font-size: 0.55em; }
-.stop-figure .stop-tag { max-width: 100%; white-space: normal; }
-.stop-tag a { color: inherit; text-decoration: none; }
-.stop-tag a:hover { text-decoration: underline; }
-.stop-tag-data { color: #b9ecff; border-color: rgba(159, 216, 238, 0.6); }
-.stop-tag-derived { color: #d6f5d0; border-color: rgba(143, 233, 184, 0.5); }
+/* Shared SourceTag chips (src/components/SourceTag.css), sized to the card. */
+.stop-card .source-tag-chip { margin-left: 0; flex: none; }
+.stop-card h2 .source-tag-chip { font-size: 0.55em; }
+.stop-figure .source-tag { max-width: 100%; white-space: normal; }
 
 .stop-summary { margin: 0.7em 0 0; }
 .stop-text {

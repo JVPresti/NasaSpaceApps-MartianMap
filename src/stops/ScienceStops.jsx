@@ -1,7 +1,8 @@
 // Mount point for the science stop card (#66), one per app. Plan mode: the card of the waypoint selected in the route
 // panel. Walk mode: the card of a stop the player reaches, once per stop, until Enter, Esc or the close button.
-// Arrival uses arrivedStop from src/data/stops.js with the player position in the store; #61 replaces it with the
-// engine's arrival detection when it merges.
+// Arrival uses arrivedStop from src/data/stops.js with the player position in the store. When #139 (#61) merges,
+// its waypoint runner appends each reached waypoint to route.visited: open the card for the last visited name with
+// stopForWaypoint instead, and drop createArrivalTracker.
 import { useCallback, useEffect, useState } from 'react';
 import { stopForWaypoint } from '../data/stops.js';
 import { useMissionStore } from '../state/store.js';

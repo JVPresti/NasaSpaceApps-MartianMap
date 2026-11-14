@@ -1,23 +1,13 @@
 // Science stop card (#66): title, short text, a Perseverance image with its credit always visible, and a source tag.
 // Plan mode shows every sentence, because reading belongs in Plan mode (docs/IMPLEMENTATION_PLAN.md 3.3). Walk mode
 // shows the one-line summary and, at Cheyava Falls, the reference-match image beside the view (3.4, scenario 1).
+import SourceTag from '../components/SourceTag.jsx';
+import { provenance } from '../data/provenance.js';
 import { imageUrl } from '../data/stops.js';
-import { cardImage, imageSource, stopHasContent } from './content.js';
+import { cardImage, stopHasContent, stopPaths } from './content.js';
 import './stopCard.css';
 
-/**
- * DATA, DERIVED or SIM. Plain text until #62's SourceTag component merges; swap this for it then.
- * @param {{ tag: string, title?: string, children?: import('react').ReactNode }} props
- */
-function Tag({ tag, title, children }) {
-  return (
-    <span className={'stop-tag stop-tag-' + String(tag).toLowerCase()} title={title}>
-      {children ?? tag}
-    </span>
-  );
-}
-
-function StopImage({ image, reference }) {
+function StopImage({ stop, image, reference, registry }) {
   return (
     <figure className="stop-figure">
       <div className="stop-image-frame">
@@ -26,20 +16,17 @@ function StopImage({ image, reference }) {
       </div>
       <figcaption>
         <span className="stop-credit">Image: {image.credit}</span>
-        <Tag tag={image.tag} title={image.caption}>
-          {image.page_url ? (
-            <a href={image.page_url} target="_blank" rel="noreferrer">{imageSource(image)}</a>
-          ) : imageSource(image)}
-        </Tag>
+        <SourceTag path={stopPaths.image(stop, image)} registry={registry} />
       </figcaption>
     </figure>
   );
 }
 
 /**
- * @param {{ stop: object | null, variant?: 'plan' | 'walk', onClose?: () => void }} props
+ * Source tags come from the provenance registry; useStops adds the stops' entries (registerStops in content.js).
+ * @param {{ stop: object | null, variant?: 'plan' | 'walk', onClose?: () => void, registry?: object }} props
  */
-export default function StopCard({ stop, variant = 'plan', onClose }) {
+export default function StopCard({ stop, variant = 'plan', onClose, registry = provenance }) {
   if (!stopHasContent(stop)) return null;
   const walk = variant === 'walk';
   const image = cardImage(stop, { preferReference: walk });
@@ -54,7 +41,7 @@ export default function StopCard({ stop, variant = 'plan', onClose }) {
         </p>
         <h2>
           {stop.name}
-          {stop.title_tag && <Tag tag={stop.title_tag} />}
+          {stop.title_tag && <SourceTag path={stopPaths.title(stop)} variant="tag" registry={registry} />}
         </h2>
         {onClose && (
           <button type="button" className="stop-close" onClick={onClose} aria-label={`Close ${stop.name} card`}>
@@ -64,7 +51,7 @@ export default function StopCard({ stop, variant = 'plan', onClose }) {
         )}
       </header>
 
-      <StopImage image={image} reference={reference} />
+      <StopImage stop={stop} image={image} reference={reference} registry={registry} />
 
       {walk ? (
         <p className="stop-summary">{stop.summary || stop.text[0].sentence}</p>
@@ -72,9 +59,9 @@ export default function StopCard({ stop, variant = 'plan', onClose }) {
         <>
           {stop.summary && <p className="stop-summary">{stop.summary}</p>}
           <ul className="stop-text">
-            {stop.text.map((s) => (
+            {stop.text.map((s, i) => (
               <li key={s.sentence}>
-                <Tag tag={s.tag} title={s.provenance?.map((p) => p.reference).join('\n')} />
+                <SourceTag path={stopPaths.sentence(stop, i)} variant="tag" registry={registry} />
                 <span>{s.sentence}</span>
               </li>
             ))}
