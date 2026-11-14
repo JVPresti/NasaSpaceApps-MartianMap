@@ -4,6 +4,7 @@
 //   plan: the site from above (OrbitControls): right-drag to pan and scroll to zoom; rotation is disabled.
 // Internally view.mode keeps the bench's values ('eye' | 'orbit') because the arms, legs and habitat check them.
 import * as THREE from 'three';
+import { addCircle, pushOut, PARTNER_GAP, WALKER_RADIUS } from './collide.js';
 
 export const START = new THREE.Vector3(8, 0, 70);   // 70 m south of Cheyava Falls, in Neretva Vallis
 const PLAN_MIN_HEIGHT = 1200;                         // enough to read the whole tile on a laptop screen
@@ -89,6 +90,7 @@ export function createView(ctx, canvas, signal, { onLockChange = () => {} } = {}
 
   const fwd = new THREE.Vector3(), right = new THREE.Vector3();
   let bobAmp = 0, bobPhase = 0, camGround = 0, camDuck = 0, groundInit = false;
+  const obs = [];   // this frame's obstacles near the walker (collide.js), reused
 
   function update(dt) {
     const { arms, rocks, partner, habitat } = sys;
@@ -100,8 +102,11 @@ export function createView(ctx, canvas, signal, { onLockChange = () => {} } = {}
       if (keys.KeyS || keys.ArrowDown) eye.addScaledVector(fwd, -sp);
       if (keys.KeyD || keys.ArrowRight) eye.addScaledVector(right, sp);
       if (keys.KeyA || keys.ArrowLeft) eye.addScaledVector(right, -sp);
-      if (!arms.clip) { rocks.collide(eye, 0.3); if (partner.root && partner.root.visible) { const dx = eye.x - partner.root.position.x, dz = eye.z - partner.root.position.z, d = Math.hypot(dx, dz); if (d < 0.9 && d > 1e-4) { eye.x = partner.root.position.x + dx / d * 0.9; eye.z = partner.root.position.z + dz / d * 0.9; } } }
-      if (!habitat.canStand(eye.x, eye.z)) { if (habitat.canStand(eye.x, ez)) eye.z = ez; else if (habitat.canStand(ex, eye.z)) eye.x = ex; else { eye.x = ex; eye.z = ez; } }   // habitat walls: slide along them
+      // collisions (#38, collide.js): rocks of 0.35 m and larger, the Cheyava Falls rock and the partner push the walker out, in one solve
+      // so a walker squeezed between two of them ends clear of both. Then the habitat walls, last and hard: a blocked step slides along
+      // the wall, and no push can shove the walker through one. Also while an arm clip plays: a clip moves only the camera (arms.cam).
+      obs.length = 0; rocks.obstacles(eye, obs); if (partner.root && partner.root.visible) addCircle(obs, partner.root.position.x, partner.root.position.z, PARTNER_GAP - WALKER_RADIUS);
+      pushOut(eye, obs, WALKER_RADIUS); habitat.slide(ex, ez, eye);
       eye.x = Math.max(-T.W / 2 + 3, Math.min(T.W / 2 - 3, eye.x)); eye.z = Math.max(-T.H / 2 + 3, Math.min(T.H / 2 - 3, eye.z));
       const cc = arms.cam, cs = Math.min(1, cc.pitch / (arms.CLIP_PITCH[arms.clipName] || 1)), cx = eye.x + Math.sin(yaw) * cc.fwd, cz = eye.z - Math.cos(yaw) * cc.fwd;   // interaction clips can crouch the camera
       const dig = (arms.clipName === 'collect_ground' ? Math.min(1, -cc.drop / 0.86) : 0) * (meshH(eye.x + Math.sin(yaw) * 0.47, eye.z - Math.cos(yaw) * 0.47) - meshH(eye.x, eye.z));   // follow the ground at the dig point on slopes
