@@ -42,8 +42,11 @@ import { createLegs } from './legs.js';
 import { createArms } from './arms.js';
 import { createProps } from './props.js';
 import { createSampling } from './sampling.js';
+import { createSampleDust } from './sampleDust.js';
+import { createSlopeGrid } from './slopeGrid.js';
 import { createHabitat } from './habitat.js';
-import { createView, createViewState } from './view.js';
+import { createView, createViewState, CHEYAVA_VIEW } from './view.js';
+import { airlockExit, partnerPatrol } from './spawn.js';
 import { createLoadLifecycle } from './lifecycle.js';
 import { createProgressTracker } from './progress.js';
 import { assertWebGL2, rendererFailure } from './webgl.js';
@@ -61,15 +64,15 @@ export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
  *   inputEnabled: false starts with gameplay input gated off, for a start screen or a menu.
  *   debug: expose window.__marswalk for measuring (development builds only).
  */
-export function createEngine(container, { assetBase, mode = 'walk', tier = null, inputEnabled: inputEnabledOption = true, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {}, onLockChange = () => {} } = {}) {
+export function createEngine(container, { assetBase, mode = 'plan', tier = null, inputEnabled: inputEnabledOption = true, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {}, onLockChange = () => {} } = {}) {
   if (!assetBase) throw new Error('createEngine: assetBase is required');
   assertWebGL2();
 
-  let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null, waypoints = null;
+  let alive = true, started = false, firstFrame = false, walked = false, requestedMode = mode, viewCtl = null, waypoints = null;
   let inputEnabled = inputEnabledOption !== false;
   let pendingLock = null, pendingLockResolve = null;
   let pendingReset = false;
-  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null };   // set before boot ends, applied when ready
+  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -161,6 +164,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     if (sys.routeGlow) sys.routeGlow.rebuild();  // re-drape the route on the new mesh
     if (sys.shelter) sys.shelter.rebuild();
     if (sys.prints) sys.prints.setTier(name);
+    if (sys.slopeGrid) sys.slopeGrid.rebuild();
     if (sys.dust) sys.dust.setTier(name);
   }
 
@@ -183,6 +187,8 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     if (sys.arms.L) sys.arms.L.g.visible = sys.arms.R.g.visible = eyeMode;   // first-person arms only in Walk
     U.uTime.value += dt; sys.partner.update(dt); sys.arms.update(dt); sys.legs.update(dt, eyeMode ? ctx.view.moveSpeed : 0); sys.props.update(dt); sys.habitat.update(dt);
     sys.sampling.update(dt);   // after props: follows the clip and the scoop content (#36)
+    sys.sampleDust.update(dt);   // after sampling: the puff and the scrape when the scoop reaches the ground (#50)
+    sys.slopeGrid.update(dt);
     sys.routeGlow.update(dt, eyeMode ? ctx.view.eye : null);
     sys.shelter.update(dt, ctx.view.eye, camera);
     sys.prints.update(dt);
@@ -228,7 +234,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     // subsystems: created now (terrain data is known), loaded below in the bench's order
     ctx.terrain = createTerrain(ctx);
     sys.rocks = createRocks(ctx); sys.route = createRoute(ctx); sys.cast = createCast(ctx);
-    sys.partner = createPartner(ctx); sys.partner.setSource(createScriptedPartner({ id: CREW[1].id, color: CREW[1].color })); sys.arms = createArms(ctx); sys.legs = createLegs(ctx); sys.props = createProps(ctx); sys.habitat = createHabitat(ctx);
+    sys.partner = createPartner(ctx); sys.arms = createArms(ctx); sys.legs = createLegs(ctx); sys.props = createProps(ctx); sys.habitat = createHabitat(ctx);
     viewCtl = createView(ctx, canvas, signal, {
       inputEnabled,
       onLockChange: (locked) => { if (alive) onLockChange(locked); },
@@ -271,10 +277,13 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     await sys.legs.init(); if (!alive) return;
     await sys.props.init(); if (!alive) return;
     sys.sampling = createSampling(ctx, canvas, signal);
+    sys.sampleDust = createSampleDust(ctx);
+    sys.slopeGrid = createSlopeGrid(ctx); sys.slopeGrid.set(pending.slopeGrid);
 
     status('Loading the habitat…');
     U.uRelief.value = tj.range_m; sys.route.data = await assets.json('route.json'); if (!alive) return;
     await sys.habitat.init(); if (!alive) return;
+    placeAtAirlock();   // the player shows at the airlock on the Plan map too
 
     if (!alive) return;
     sys.routeGlow = createRouteGlow(ctx);
@@ -292,11 +301,10 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     if (pending.skyBlend) applySkyBlend(ctx, pending.skyBlend.from, pending.skyBlend.to, pending.skyBlend.t);
     waypoints.set(pending.waypoints);
     waypoints.group.visible = requestedMode === 'plan';
-    viewCtl.setMode(requestedMode); started = true;
+    viewCtl.setMode(requestedMode); started = true; walked = requestedMode === 'walk';
     if (pendingReset) {
       pendingReset = false;
-      requestedMode = 'walk';
-      viewCtl.reset();
+      resetToAirlock();
     }
     booted = last = performance.now();
     renderer.setAnimationLoop(tick);
@@ -313,11 +321,30 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     return { ...lastStats, tier: ctx.tier, auto: quality.get().auto, gpu: ctx.gpu, triangles: r.triangles, drawCalls: r.calls };
   }
 
+  function setPose(x, z, yaw, pitch = 0) { ctx.view.eye.set(x, 0, z); ctx.view.yaw = yaw; ctx.view.pitch = pitch; }
+  // The EVA start (#166): outside the airlock facing the first waypoint (spawn.js), the partner beside the player.
+  function placeAtAirlock() {
+    const exit = airlockExit(sys.habitat.pos, sys.habitat.dir, sys.route.data.waypoints[1]);
+    setPose(exit.x, exit.z, exit.yaw);
+    sys.partner.setSource(createScriptedPartner({ id: CREW[1].id, color: CREW[1].color, ...partnerPatrol(exit) }));
+    return exit;
+  }
+  // Restart (#64): back to the airlock in Plan, and the next Walk starts the EVA again.
+  function resetToAirlock() {
+    walked = false;
+    requestedMode = 'plan';
+    viewCtl.reset(placeAtAirlock(), 'plan');
+    if (waypoints) waypoints.group.visible = true;
+  }
+
   // Development hook for scripts/measure-fps.mjs: put the camera at a known spot and read stats().
   if (debug) {
-    const place = (x, z, yaw, pitch = 0) => { viewCtl.setMode('walk'); requestedMode = 'walk'; ctx.view.eye.set(x, 0, z); ctx.view.yaw = yaw; ctx.view.pitch = pitch; };
+    const place = (x, z, yaw, pitch = 0) => { viewCtl.setMode('walk'); requestedMode = 'walk'; walked = true; setPose(x, z, yaw, pitch); };
     window.__marswalk = {
       stats, place,
+      // the EVA start (spawn.js) and the test bench's old start near Cheyava Falls
+      airlock() { const e = placeAtAirlock(); place(e.x, e.z, e.yaw); },
+      cheyavaView() { place(CHEYAVA_VIEW.x, CHEYAVA_VIEW.z, CHEYAVA_VIEW.yaw); },
       setMode: (m) => { requestedMode = m; viewCtl.setMode(m); },
       // the bench's 'habin' and 'hab' views (testbench main.js lines 802-803)
       insideHabitat() { const h = sys.habitat; place(h.pos.x + h.dir.x * 1.45, h.pos.z + h.dir.z * 1.45, Math.atan2(-h.dir.x, h.dir.z), 0.12); },
@@ -351,6 +378,9 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       if (m !== 'plan' && m !== 'walk') throw new Error('setMode: expected "plan" or "walk", got ' + m);
       requestedMode = m;
       if (started) {
+        // The first Walk starts the EVA at the airlock (#166). The partner patrolled during Plan, so it is placed again
+        // beside the player. Later switches keep both where they are.
+        if (m === 'walk' && !walked) { walked = true; placeAtAirlock(); }
         viewCtl.setMode(m);   // before boot ends, the mode is applied when ready
         if (waypoints) waypoints.group.visible = m === 'plan';
       }
@@ -411,19 +441,19 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     getQuality() { return { ...quality.get(), gpu: detected.gpu }; },
     /**
      * Return the scene to the EVA spawn: clear input, release the lock, drop the route/shelter markers and
-     * put the camera back at START in Walk. The store reset and simulation restart are the caller's job
+     * put the player back at the airlock in Plan (#166); the next Walk starts the EVA again. The store reset and simulation restart are the caller's job
      * (src/state/evaSession.js) because the engine owns no simulation. Quality is deliberately untouched.
      * @returns {boolean} false when called before ready (the reset is applied at the end of boot)
      */
     resetSession() {
       if (!alive) return false;
-      requestedMode = 'walk';
+      requestedMode = 'plan';   // a new EVA starts at the planning table, like the reset store (#166)
       if (!started) { pendingReset = true; return false; }
       viewCtl.setInputEnabled(false);
-      viewCtl.reset();
+      resetToAirlock();
       if (sys.routeGlow) sys.routeGlow.setPath(null);
       if (sys.shelter) sys.shelter.set(null);
-      if (waypoints) { waypoints.set(null); waypoints.group.visible = false; }
+      if (waypoints) waypoints.set(null);
       return true;
     },
     /** Data layer drawn on the terrain: 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop. */
@@ -451,6 +481,10 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       const clamped = Math.max(0, Math.min(1, t));
       if (started) applySkyBlend(ctx, from, to, clamped);
       else pending.skyBlend = { from, to, t: clamped };
+    },
+    /** Slope grid in Walk mode (slopeGrid.js, #50): lines on the ground around the player coloured by slope. */
+    setSlopeGrid(on) {
+      if (started) sys.slopeGrid.set(!!on); else pending.slopeGrid = !!on;
     },
     /**
      * Storm dust (dust.js, #27), 0 = clear (the scene as before) to 1 = global storm: thicker, drifting haze on everything

@@ -15,7 +15,7 @@ export default function StartScreen({ mode = 'walk', busy, notice, onStart }) {
         <p className="dialog-site">{t('ui.neretva.vallis.jezero.crater.mars')}</p>
 
         <p className="dialog-mission">{t('menu.walk.to.cheyava.falls.and.sample.the.science')}</p>
-        <p className="dialog-source">{t('menu.start.position.sim.x.8.m.east.z')}</p>
+        <p className="dialog-source">{t('menu.start.position.sim.the.foot.of.the.habitat')}</p>
 
         <ControlsHelp />
 

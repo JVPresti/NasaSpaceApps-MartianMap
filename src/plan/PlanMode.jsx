@@ -10,9 +10,11 @@ import RoutePanel from './RoutePanel.jsx';
 import SourcesButton from '../sources/SourcesButton.jsx';
 import { PlanStopCard } from '../stops/ScienceStops.jsx';
 import { useRoutePlanner } from './useRoutePlanner.js';
+import { startAtAirlock } from './routeStart.js';
 import './plan.css';
 
 const ROUTE_URL = import.meta.env.BASE_URL + 'marswalk/assets/route.json';
+const SHELTERS_URL = import.meta.env.BASE_URL + 'data/shelters.json';
 
 /**
  * Plan mode overlay: layer switch, legends and map chrome over the engine's
@@ -35,18 +37,21 @@ export default function PlanMode({ engine, active }) {
     }));
   };
 
-  // route.json holds the five placeholder waypoints from the assets team.
+  // route.json holds the five placeholder waypoints from the assets team. The route starts at the airlock (#166);
+  // without shelters.json it starts at the HAB waypoint as before.
   useEffect(() => {
     let cancelled = false;
+    const shelters = fetch(SHELTERS_URL).then((response) => (response.ok ? response.json() : null)).catch(() => null);
     fetch(ROUTE_URL)
       .then((response) => {
         if (!response.ok) throw new Error(`route.json ${response.status}`);
         return response.json();
       })
-      .then((route) => {
+      .then(async (route) => {
+        const start = await shelters;
         if (cancelled) return;
         useMissionStore.setState((state) => ({
-          route: { ...state.route, waypoints: route.waypoints ?? [] },
+          route: { ...state.route, waypoints: startAtAirlock(route.waypoints ?? [], start) },
         }));
         setRouteStatus('ready');
       })
