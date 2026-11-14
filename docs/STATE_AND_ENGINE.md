@@ -72,7 +72,7 @@ setMode('plan');
 | `view.layer` | 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop | Plan mode, wrist screen | #14, #67 |
 | `view.sky` | `'clear_day'`, `'dust_storm'`, `'late_afternoon'`, `'night'`. The default is `'late_afternoon'` (#59) | events, later the clock | #24, #59, #73 |
 | `view.skyBlend` | 0 to 1, blend from `clear_day` to `dust_storm` as the storm opacity rises | events | #24 |
-| `sources['<path>']` | `{ tag: 'DATA' \| 'DERIVED' \| 'SIM', source }` for any value above | whoever writes the value | #62 |
+| `sources['<path>']` | `{ tag: 'DATA' \| 'DERIVED' \| 'SIM', source, label? }` for any value above. Every path also needs an entry in `src/data/provenance.js`, which adds the mission, instrument, site, sol or date and link | whoever writes the value | #62 |
 
 `null` means "not known yet". The interface should show a dash, not 0.
 
@@ -174,7 +174,7 @@ The runner subscribes to `mission.paused` and `mission.timeScale`, so the suit r
 `src/hud/Hud.jsx` (#20) reads only the store and shows in Walk mode once the scene is ready.
 - **Values shown:** suit (`suit.*`), mission clock (`mission.elapsedSec`, `lmst`), heading and slope (`navigation.*`), the next waypoint (`route.waypoints[route.nextIndex]`, with range, bearing and an ETA at 1 m/s), the environment (`environment.*`) and the most severe active alert (`alerts`).
 - **Unsourced values:** an environment value without an entry in `sources` shows as a dash.
-- **Source tags:** each value shows its tag from `sources` until the shared source-tag component (#62) replaces the inline one.
+- **Source tags:** each value shows its tag through the shared `SourceTag` (`src/components/SourceTag.jsx`, #62), in its tag-only, non-interactive form because the HUD never takes the pointer. The tag appears once the value's writer has put it in `sources`.
 
 ## The bridge
 

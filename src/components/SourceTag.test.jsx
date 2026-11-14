@@ -31,10 +31,9 @@ describe('SourceTag', () => {
     expect(render({ path: 'navigation.headingDeg', variant: 'short' })).toContain('>SIM<');
   });
 
-  it('puts the site in the details of a RAD value', () => {
+  it('puts the site in the text alternative of a RAD value', () => {
     const html = render({ path: 'environment.doseRateUgyH' });
-    expect(html).toMatch(/Site<\/dt><dd>Gale crater[^<]*not Jezero/);
-    expect(html).toContain('href="https://');
+    expect(html).toMatch(/Site Gale crater.{0,30}not Jezero/);
   });
 
   it('follows the live tag from the store', () => {

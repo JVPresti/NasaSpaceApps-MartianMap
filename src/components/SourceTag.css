@@ -1,17 +1,18 @@
 /* Source tag (#62). Colours come from the app tokens in src/index.css when they exist, with fallbacks, so the
-   component looks right on its own. To restyle it, change the --source-tag-* variables, not the rules. */
-.source-tag {
+   component looks right on its own. To restyle it, change the --source-tag-* variables, not the rules.
+   The details popover lives in a portal on document.body, so it carries the same variables. */
+.source-tag,
+.source-tag-tip {
   --source-tag-ink: var(--ink, #f3e6d8);
   --source-tag-dim: var(--dim, #b9a08a);
-  --source-tag-panel: var(--panel, rgba(20, 12, 9, 0.94));
+  --source-tag-panel: rgba(20, 12, 9, 0.95);  /* the app --panel (0.78) is too thin for text over the map */
   --source-tag-line: var(--line, rgba(255, 214, 170, 0.16));
   --source-tag-data: var(--cyan, #8fd3ee);
   --source-tag-derived: #b8e6c4;
   --source-tag-sim: var(--accent, #e0683a);
   --source-tag-focus: var(--cyan, #8fd3ee);
-  position: relative;
-  white-space: nowrap;
 }
+.source-tag { position: relative; white-space: nowrap; }
 
 /* default chip, used when the caller passes no className */
 .source-tag-chip {
@@ -45,34 +46,23 @@
   border: 0;
 }
 
-/* details on hover and keyboard focus */
+/* details on hover and keyboard focus; SourceTag.jsx sets left, top or bottom, and max-width */
 .source-tag-tip {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 50;
+  position: fixed;
+  z-index: 1000;
+  box-sizing: border-box;
   width: max-content;
-  max-width: min(360px, 80vw);
   padding: 8px 10px;
   font: 400 12px/1.4 system-ui, sans-serif;
-  letter-spacing: 0;
   text-align: left;
-  white-space: normal;
   color: var(--source-tag-ink);
   background: var(--source-tag-panel);
   border: 1px solid var(--source-tag-line);
   border-radius: 6px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity 120ms ease, visibility 0s linear 120ms;
+  animation: source-tag-in 120ms ease;
 }
-.source-tag-interactive:hover .source-tag-tip,
-.source-tag-interactive:focus .source-tag-tip {
-  visibility: visible;
-  opacity: 1;
-  transition: opacity 120ms ease;
-}
+@keyframes source-tag-in { from { opacity: 0; } }
 .source-tag-tip dl { display: grid; gap: 3px; margin: 0; }
 .source-tag-tip dl > div { display: grid; grid-template-columns: 6.5em 1fr; gap: 8px; }
 .source-tag-tip dt { color: var(--source-tag-dim); }
@@ -80,5 +70,5 @@
 .source-tag-tip a { color: var(--source-tag-data); }
 
 @media (prefers-reduced-motion: reduce) {
-  .source-tag-tip { transition: none; }
+  .source-tag-tip { animation: none; }
 }

@@ -1,4 +1,5 @@
-import { useId, useSyncExternalStore } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { provenance as appRegistry, describeEntry, textAlternative } from '../data/provenance.js';
 import { useMissionStore } from '../state/store.js';
 import './SourceTag.css';
@@ -8,6 +9,33 @@ import './SourceTag.css';
 // entry, written by whoever writes the value, overrides the tag and label for the current sample.
 
 const TEXT = { label: (e) => e.label, short: (e) => e.short, tag: (e) => e.tag };
+const TIP_WIDTH = 360, GAP = 6, MARGIN = 8, CLOSE_MS = 150;
+
+// The details render in a portal on document.body with fixed coordinates, so a scrolling panel
+// (overflow: auto) cannot clip them. They open below the tag, or above it when there is no room.
+function placeTip(anchor) {
+  const r = anchor.getBoundingClientRect();
+  const w = Math.min(TIP_WIDTH, window.innerWidth - 2 * MARGIN);
+  const left = Math.max(MARGIN, Math.min(r.left, window.innerWidth - w - MARGIN));
+  const below = r.bottom + GAP;
+  return below < window.innerHeight * 0.6 ? { left, top: below, maxWidth: w } : { left, bottom: window.innerHeight - r.top + GAP, maxWidth: w };
+}
+
+function Details({ entry, style, onEnter, onLeave }) {
+  return createPortal(
+    <div className="source-tag-tip" style={style} aria-hidden="true" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+      <dl>
+        {describeEntry(entry).map(([k, v, href]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd>{href ? <a href={href} target="_blank" rel="noreferrer" tabIndex={-1}>{v}</a> : v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>,
+    document.body,
+  );
+}
 
 /**
  * @param {{
@@ -32,6 +60,9 @@ export default function SourceTag({ path, variant = 'label', interactive = true,
   const live = source === undefined ? stored : source;
   useSyncExternalStore(registry.subscribe, registry.getVersion, registry.getVersion);
   const id = useId();
+  const [tip, setTip] = useState(null);
+  const closeTimer = useRef(null);
+  useEffect(() => () => clearTimeout(closeTimer.current), []);
   const entry = registry.resolve(path, live);
   if (!entry || (requireSource && !live)) return null;
 
@@ -50,21 +81,19 @@ export default function SourceTag({ path, variant = 'label', interactive = true,
     );
   }
 
-  const onKeyDown = (e) => { if (e.key === 'Escape' && e.currentTarget.contains(document.activeElement)) document.activeElement.blur(); };
+  const open = (e) => { clearTimeout(closeTimer.current); setTip(placeTip(e.currentTarget)); };
+  const closeSoon = () => { clearTimeout(closeTimer.current); closeTimer.current = setTimeout(() => setTip(null), CLOSE_MS); };
+  const keep = () => clearTimeout(closeTimer.current);
+  const close = () => { clearTimeout(closeTimer.current); setTip(null); };
+  const onKeyDown = (e) => { if (e.key === 'Escape') close(); };
   return (
-    <span className={classes + ' source-tag-interactive'} data-tag={entry.tag} tabIndex={0} aria-describedby={id} onKeyDown={onKeyDown}>
+    <span
+      className={classes + ' source-tag-interactive'} data-tag={entry.tag} tabIndex={0} aria-describedby={id}
+      onMouseEnter={open} onMouseLeave={closeSoon} onFocus={open} onBlur={close} onKeyDown={onKeyDown}
+    >
       <span aria-hidden="true">{text}</span>
       <span id={id} className="source-tag-sr">{alt}</span>
-      <span className="source-tag-tip" aria-hidden="true">
-        <dl>
-          {describeEntry(entry).map(([k, v, href]) => (
-            <div key={k}>
-              <dt>{k}</dt>
-              <dd>{href ? <a href={href} target="_blank" rel="noreferrer" tabIndex={-1}>{v}</a> : v}</dd>
-            </div>
-          ))}
-        </dl>
-      </span>
+      {tip && <Details entry={entry} style={tip} onEnter={keep} onLeave={closeSoon} />}
     </span>
   );
 }
