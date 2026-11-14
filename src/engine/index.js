@@ -15,7 +15,7 @@ import * as SH from './shaders.js';
 import { createAssets, b64u16, b64u8 } from './assets.js';
 import { buildAssetManifest, ROCK_NAMES } from './assetManifest.js';
 import { decodeTerrainJson, decodeRingJson } from './queries.js';
-import { createRouteLine } from './routeLine.js';
+import { createRouteGlow, validPath } from './routeGlow.js';
 import { createUniforms } from './uniforms.js';
 import { TIERS, detectTier } from './tiers.js';
 import { createTerrain } from './terrain.js';
@@ -47,7 +47,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
   if (!assetBase) throw new Error('createEngine: assetBase is required');
   assertWebGL2();
 
-  let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null, routeLine = null;
+  let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null;
   const pending = { sky: null, route: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
@@ -121,6 +121,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     U.uRockR.value.set(t.radius[0] || 1, t.radius[1], t.radius[2]);
     ctx.terrain.buildTerrain(t); ctx.terrain.computeShadows(t.shadowRes); sys.rocks.reset();
     sys.habitat.reground();   // the rebuilt mesh has slightly different heights
+    if (sys.routeGlow) sys.routeGlow.rebuild();  // re-drape the route on the new mesh
   }
 
   // ---------------------------------------------------------------- frame loop (bench lines 826-868)
@@ -141,6 +142,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     const eyeMode = ctx.view.mode === 'eye';
     if (sys.arms.L) sys.arms.L.g.visible = sys.arms.R.g.visible = eyeMode;   // first-person arms only in Walk
     U.uTime.value += dt; sys.partner.update(dt); sys.arms.update(dt); sys.legs.update(dt, eyeMode ? ctx.view.moveSpeed : 0); sys.props.update(dt); sys.habitat.update(dt);
+    sys.routeGlow.update(dt, eyeMode ? ctx.view.eye : null);
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
     renderer.render(scene, camera);
@@ -215,9 +217,9 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     await sys.habitat.init(); if (!alive) return;
 
     if (!alive) return;
-    routeLine = createRouteLine(ctx);
+    sys.routeGlow = createRouteGlow(ctx);
     if (pending.sky) applyPreset(ctx, pending.sky);
-    routeLine.set(pending.route);
+    sys.routeGlow.setPath(pending.route);
     viewCtl.setMode(requestedMode); started = true;
     booted = last = performance.now();
     renderer.setAnimationLoop(tick);
@@ -278,10 +280,13 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       if (!SKIES.includes(name)) throw new Error('setSky: expected one of ' + SKIES.join(', ') + ', got ' + name);
       if (started) applyPreset(ctx, name); else pending.sky = name;
     },
-    /** Route drawn on the ground, [[x, z], ...] in metres. null clears it. */
+    /**
+     * Route drawn on the ground as the route glow (routeGlow.js), [[x, z], ...] in metres. null clears it.
+     * Call it again after every re-plan; the walked part then follows the player along the new route.
+     */
     setRoute(path) {
-      if (path !== null && !(Array.isArray(path) && path.every((p) => Array.isArray(p) && p.length >= 2 && Number.isFinite(p[0]) && Number.isFinite(p[1])))) throw new Error('setRoute: expected [[x, z], ...] or null');
-      if (started) routeLine.set(path); else pending.route = path;
+      if (path !== null && !validPath(path)) throw new Error('setRoute: expected [[x, z], ...] with at least two points, or null');
+      if (started) sys.routeGlow.setPath(path); else pending.route = path;
     },
     /** Terrain height (m) at x, z. Available once ready. */
     heightAt(x, z) { return terrainQueries().heightAt(x, z); },

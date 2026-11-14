@@ -275,28 +275,6 @@ void main(){
 }
 `;
 
-export const ROUTE_VERT = /* glsl */`
-attribute vec3 aDir; attribute float aSide; attribute float aLen;
-varying float vLen; varying vec3 vW;
-void main(){
-  vec3 perp = normalize(vec3(-aDir.z, 0.0, aDir.x));
-  float w = max(0.35, distance(position, cameraPosition)*0.0035);
-  vec3 p = position + perp*aSide*w; vW = p; vLen = aLen;
-  gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
-}
-`;
-export const ROUTE_FRAG = /* glsl */`
-uniform vec3 uInscatter; uniform float uFogK;
-varying float vLen; varying vec3 vW;
-void main(){
-  float dash = 0.75 + 0.25*step(0.5, fract(vLen/6.0));
-  vec3 c = vec3(0.30,0.80,1.0)*dash;
-  float f = 1.0 - exp(-uFogK*0.4*distance(vW, cameraPosition));
-  gl_FragColor = vec4(mix(c, uInscatter, f), 0.92);
-  #include <colorspace_fragment>
-}
-`;
-
 export const SUIT_VERT = /* glsl */`
 #include <common>
 #include <skinning_pars_vertex>
