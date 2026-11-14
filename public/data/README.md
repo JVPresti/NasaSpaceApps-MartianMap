@@ -9,6 +9,7 @@ Research notes for `hazards.json` (what was checked, what could not be confirmed
 | `hazards.json` | Dust storm, radiation, suit, walking cost, speed and slope numbers, plus the walking O2 model and the September 2017 radiation event profile | #18 |
 | `shelters.json` | The habitat and natural safe points with their sky view and dose reduction, built by `npm run shelters`. Method in `docs/route/shelters.md` | #40 |
 | `meda_sol.json`, `rad.json` | One MEDA sol and the RAD curve (planned) | #31 |
+| `credits.json` | Every dataset, image, paper, model, texture and library with its credit line, licence and link, plus the real, artistic and modelled statement. Built by `npm run credits` from the provenance blocks here; readable copy in `docs/credits.md`. Rerun it after adding data | #32 |
 | `stops.json` | The Bright Angel and Cheyava Falls science stops: text, Perseverance images in `images/`, sampling checklist. Loader: `src/data/stops.js` | #37 |
 
 ## Tags
