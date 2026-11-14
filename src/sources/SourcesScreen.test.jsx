@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
-import { SourcesScreen } from './SourcesScreen.jsx';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SourcesScreen, wrapFocus } from './SourcesScreen.jsx';
 import { groupEntries, linkHost } from './credits.js';
 
 const credits = JSON.parse(readFileSync(fileURLToPath(new URL('../../public/data/credits.json', import.meta.url)), 'utf8'));
@@ -82,5 +82,51 @@ describe('credits helpers', () => {
   it('shortens a link to its host', () => {
     expect(linkHost('https://www.uahirise.org/dtm/x')).toBe('uahirise.org');
     expect(linkHost('not a url')).toBe('not a url');
+  });
+});
+
+describe('wrapFocus', () => {
+  // No DOM in this test environment: stand-ins with only what wrapFocus reads.
+  const button = (name) => ({ name, focus: vi.fn() });
+  const setup = (activeName) => {
+    const items = [button('close'), button('link-1'), button('link-2')];
+    const dialog = { querySelectorAll: () => items, contains: (el) => items.includes(el) };
+    const active = items.find((i) => i.name === activeName) ?? { name: 'body' };
+    vi.stubGlobal('document', { activeElement: active });
+    return { items, dialog };
+  };
+  const tab = (shiftKey) => ({ shiftKey, preventDefault: vi.fn() });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('wraps Shift+Tab on the first item to the last', () => {
+    const { items, dialog } = setup('close');
+    const event = tab(true);
+    wrapFocus(event, dialog);
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(items[2].focus).toHaveBeenCalled();
+  });
+
+  it('wraps Tab on the last item to the first', () => {
+    const { items, dialog } = setup('link-2');
+    const event = tab(false);
+    wrapFocus(event, dialog);
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(items[0].focus).toHaveBeenCalled();
+  });
+
+  it('leaves Tab in the middle to the browser', () => {
+    const { items, dialog } = setup('link-1');
+    const event = tab(false);
+    wrapFocus(event, dialog);
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(items.some((i) => i.focus.mock.calls.length)).toBe(false);
+  });
+
+  it('pulls focus back in when it is outside the dialog', () => {
+    const { items, dialog } = setup('nowhere');
+    const event = tab(false);
+    wrapFocus(event, dialog);
+    expect(items[0].focus).toHaveBeenCalled();
   });
 });

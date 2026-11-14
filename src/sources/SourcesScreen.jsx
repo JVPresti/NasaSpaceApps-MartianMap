@@ -33,7 +33,27 @@ const TAGS = [
 
 const sentence = (text) => (text ? text.charAt(0).toUpperCase() + text.slice(1) : '');
 
-const typingTarget = (el) => el instanceof HTMLElement && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+/**
+ * Keep Tab inside the dialog. A native modal dialog makes the page inert, but Chrome still lets Tab
+ * leave for the browser UI at either end, which drops focus on <body>. Wrap from last to first and back.
+ */
+export function wrapFocus(event, dialog) {
+  if (!dialog) return;
+  const items = [...dialog.querySelectorAll('button:not([disabled]), a[href]')];
+  if (!items.length) return;
+  const first = items[0];
+  const last = items[items.length - 1];
+  const active = document.activeElement;
+  if (event.shiftKey && (active === first || !dialog.contains(active))) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (active === last || !dialog.contains(active))) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+const typingTarget =(el) => el instanceof HTMLElement && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
 
 /**
  * Mounted once by App. Owns the keyboard shortcut and the credits fetch, and
@@ -102,6 +122,7 @@ export function SourcesScreen({ credits, status, onClose }) {
     // Keep walk keys (WASD, arrows) from reaching the engine's window listener while the screen is open.
     event.stopPropagation();
     if (event.key === 'Escape') onCancel(event);
+    else if (event.key === 'Tab') wrapFocus(event, dialogRef.current);
     else if (event.code === SOURCES_KEY && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey && !typingTarget(event.target)) onClose();
   };
 
