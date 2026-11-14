@@ -16,6 +16,7 @@ import { createAssets, b64u16, b64u8 } from './assets.js';
 import { buildAssetManifest, ROCK_NAMES } from './assetManifest.js';
 import { decodeTerrainJson, decodeRingJson } from './queries.js';
 import { createRouteGlow, validPath } from './routeGlow.js';
+import { createBootPrints } from './bootPrints.js';
 import { createShelterHighlight } from './shelterHighlight.js';
 import { validShelter } from './shelterRules.js';
 import { createWaypointMarkers } from './waypoints.js';
@@ -129,6 +130,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     sys.habitat.reground();   // the rebuilt mesh has slightly different heights
     if (sys.routeGlow) sys.routeGlow.rebuild();  // re-drape the route on the new mesh
     if (sys.shelter) sys.shelter.rebuild();
+    if (sys.prints) sys.prints.setTier(name);
   }
 
   // ---------------------------------------------------------------- frame loop (bench lines 826-868)
@@ -151,6 +153,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     U.uTime.value += dt; sys.partner.update(dt); sys.arms.update(dt); sys.legs.update(dt, eyeMode ? ctx.view.moveSpeed : 0); sys.props.update(dt); sys.habitat.update(dt);
     sys.routeGlow.update(dt, eyeMode ? ctx.view.eye : null);
     sys.shelter.update(dt, ctx.view.eye, camera);
+    sys.prints.update(dt);
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
     renderer.render(scene, camera);
@@ -231,6 +234,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     sys.routeGlow.setPath(pending.route);
     sys.shelter = createShelterHighlight(ctx);
     sys.shelter.set(pending.shelter);
+    sys.prints = createBootPrints(ctx); sys.prints.setTier(ctx.tier);
     if (pending.skyBlend) applySkyBlend(ctx, pending.skyBlend.from, pending.skyBlend.to, pending.skyBlend.t);
     waypoints.set(pending.waypoints);
     waypoints.group.visible = requestedMode === 'plan';
