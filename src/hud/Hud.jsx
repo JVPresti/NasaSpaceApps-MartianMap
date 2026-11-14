@@ -1,4 +1,4 @@
-import { t, translateText, formatNumber } from '../i18n/index.js';
+import { t, formatNumber } from '../i18n/index.js';
 // Helmet HUD (issue #20): what the astronaut reads while walking. Every value comes from the mission store; the store
 // changes a few times per second (suit 4 Hz, position 5 Hz), so these components re-render at that rate, never per frame.
 // Layout follows the v3 "Caminar · Normal" mockup; final Figma measurements come later (#11).
@@ -8,7 +8,7 @@ import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
 import { bearingDeg } from '../sim/bearing.js';
 import { nextTarget } from '../sim/waypointRunner.js';
-import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, pickAlert, wrapDeg } from './format.js';
+import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, wrapDeg } from './format.js';
 import ElevationProfile from './ElevationProfile.jsx';
 import RadioLink from './RadioLink.jsx';
 import SlopeAhead from './SlopeAhead.jsx';
@@ -16,7 +16,7 @@ import * as I from './icons.jsx';
 import NavLine from './NavLine.jsx';
 import Minimap from './Minimap.jsx';
 import './hud.css';
-import SamplingPanel from './SamplingPanel.jsx';
+import { SamplingChecklist, SamplingCrosshair } from './SamplingPanel.jsx';
 import PartnerPanel from './PartnerPanel.jsx';
 
 // Shared source tag (#62). The HUD never takes the pointer, so the tag shows its tag text only and puts the full
@@ -258,18 +258,9 @@ function WaypointMarker({ engine }) {
   );
 }
 
-function AlertBanner() {
-  const alert = useMissionStore(useShallow((s) => { const a = pickAlert(s.alerts); return a ? { id: a.id, level: a.level, text: a.text } : null; }));
-  if (!alert) return null;
-  return (
-    <div className={'hud-alert hud-alert-' + alert.level} role={alert.level === 'info' ? 'status' : 'alert'}>
-      <I.Alert /><span>{translateText(alert.text)}</span>
-    </div>
-  );
-}
-
 /**
- * The whole visor HUD. Rendered by App in Walk mode once the scene is ready.
+ * The whole visor HUD. Rendered by App in Walk mode once the scene is ready. Alerts show in App's event banner, under
+ * the heading box (src/events/events.css), so the HUD has no alert strip of its own.
  * `minimapRoute` is App's route tracker: it outlives this component so Plan mode does not reset the walk.
  */
 export default function Hud({ engine, minimapRoute }) {
@@ -278,16 +269,19 @@ export default function Hud({ engine, minimapRoute }) {
       <HeadingTape />
       <WaypointMarker engine={engine} />
       <SlopeAhead engine={engine} />
-      <AlertBanner />
       <Clocks />
       <SuitPanel />
-      <Minimap tracker={minimapRoute} />
       <PartnerPanel />
-      <EnvStrip />
-      <RadioLink engine={engine} />
-      <NavLine><SourceTag path="navigation.errorM" /></NavLine>
+      {/* One flex column on the right (#191): each panel sits under the one above, so none can cover another. */}
+      <div className="hud-right">
+        <Minimap tracker={minimapRoute} />
+        <SamplingChecklist />
+        <EnvStrip />
+        <NavLine><SourceTag path="navigation.errorM" /></NavLine>
+        <RadioLink engine={engine} />
+      </div>
       <WaypointPanel heightAt={engine?.heightAt} slopeAt={engine?.slopeAt} />
-      <SamplingPanel />
+      <SamplingCrosshair />
     </div>
   );
 }

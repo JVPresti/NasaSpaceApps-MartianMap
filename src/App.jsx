@@ -364,8 +364,8 @@ export default function App() {
       {load.status === 'ready' && (
         <PlanMode key={`plan-${load.attempt}-${planEpoch}`} engine={engine} active={mode === 'plan'} />
       )}
-      {/* Plan mode places the banner in its own alert region; Walk keeps the free-floating strip. */}
-      {load.status === 'ready' && mode === 'walk' && <EventBanner />}
+      {/* Plan mode places the banner in its own alert region; Walk puts it under the heading box, the HUD's only alert. */}
+      {load.status === 'ready' && mode === 'walk' && <EventBanner className="event-banner-walk" />}
       {load.status === 'ready' && DEBUG_EVENTS && <EventDebug />}
 
       <header className="topbar" inert={showTopbar ? undefined : true}>
