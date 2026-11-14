@@ -1,0 +1,13 @@
+{
+  "id": "low-oxygen-warning",
+  "label": "Low oxygen · warning",
+  "trigger": { "type": "threshold", "path": "suit.marginSec", "op": "lte", "value": 0 },
+  "timeline": [],
+  "alert": {
+    "level": "warning",
+    "text": "Oxygen warning: walkback margin gone. Head straight for the habitat."
+  },
+  "planner": { "action": "replan", "target": "habitat" },
+  "end": { "type": "area", "x": 535.1, "z": 574.1, "radius": 25 },
+  "notes": "The warning fires when the margin is at or below zero, after the caution. The margin and the 30 min reserve come from the suit model and suit.reserve.time in hazards.json. The route to the habitat is requested once, in the planner worker."
+}
