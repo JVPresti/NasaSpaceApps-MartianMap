@@ -109,7 +109,6 @@ export default function App() {
   // that ends an attempt (Escape, a mode change, restart, retry), so a late grant can never resume input or
   // the mission clock behind the current screen.
   const resumeSeqRef = useRef(0);
-  const resumeSeqRef = useRef(0);
   const walkLockSeqRef = useRef(0);
 
   const handleStatus = useCallback((text) => dispatch({ type: 'status', text }), []);

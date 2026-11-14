@@ -1,5 +1,26 @@
 # Issue #64 validation
 
+## Current integration status (supersedes earlier results below)
+
+The branch now includes main through `f9d435a` (HUD/minimap, sources screen and science stops).
+The duplicate `resumeSeqRef` declaration introduced while integrating App was removed.
+On this final tree, `npm run lint` and `npm run build` pass (seven existing lint warnings).
+`npm test`: 65 files, 593 tests; 592 pass and one fails in
+`src/stops/StopCard.test.jsx`, at the 2.5 m arrival assertion. The same isolated test was
+reproduced on `origin/main` before returning to this branch; it is not a #64 regression.
+
+Earlier browser results below describe the earlier tree and are not final acceptance of the
+integration with main. The latest headed Edge run passed the frozen start screen and keyboard
+focus check, but timed out waiting for pointer lock. The current raw result is in
+`ISSUE_64_PARENT_BROWSER_EVIDENCE.json`. A separate diagnostic observed native pointer-lock
+grant followed by release; the complete final Walk/Resume/restart flow is not confirmed.
+The previous React maximum-update-depth report did not recur in the diagnostic after the
+duplicate declaration fix, but the final browser pass remains incomplete. Sources now uses
+the real screen already integrated from #63 instead of a disabled placeholder.
+
+The pull request is a draft: browser acceptance and the inherited suite failure are disclosed.
+No teammate review or merge is claimed.
+
 Local work for `[Feature] Start screen, controls help and pause menu` (#64) on branch
 `feat/issue-64-start-controls-pause`, HEAD `0518244` (`feat(sim): add persistent mission clock and local Mars time (#112)`).
 The worktree is shared; no commit, push, pull request, issue reassignment or external message was made.
