@@ -1,0 +1,242 @@
+{
+ "model": "arm_left.glb",
+ "what": "First-person LEFT forearm + EVA glove with a wrist screen. The right arm is the same model mirrored (scale.x = -1, double-sided, hide the WristScreen meshes).",
+ "triangles": {
+  "arm": 12752,
+  "wrist_screen": 382
+ },
+ "bones": 17,
+ "poses_as_animations": [
+  "open",
+  "relaxed",
+  "point",
+  "pinch",
+  "fist"
+ ],
+ "how_to_pose": "Each animation is a held pose. Play all of them and crossfade their weights.",
+ "axes_in_threejs": "As exported the arm points +Z from elbow to hand and the back of the hand faces +Y. Rotate 180 deg about Y to point it forward.",
+ "materials": {
+  "Glove": "vertex colours (COLOR_0, linear) measured from the Z-2 suit; UV.x = 1 marks the wrist ring (player colour); 1 - UV.y is the cloth class (1 sleeve cloth, 0.5 glove cloth, 0 rubber/metal) that drives the soot and dust in ARM_FRAG",
+  "Screen": "one quad with 0-1 UVs; put a canvas / UI texture on it (flipY = false)"
+ },
+ "gestures_in_camera_space": {
+  "note": "elbow position, arm direction, back-of-hand direction (x right, y up, z toward the viewer), finger pose",
+  "down": {
+   "L": [
+    [
+     -0.3,
+     -0.62,
+     -0.18
+    ],
+    [
+     0.1,
+     -0.45,
+     -1
+    ],
+    [
+     0,
+     1,
+     0.2
+    ],
+    "relaxed"
+   ],
+   "R": [
+    [
+     0.3,
+     -0.62,
+     -0.18
+    ],
+    [
+     -0.1,
+     -0.45,
+     -1
+    ],
+    [
+     0,
+     1,
+     0.2
+    ],
+    "relaxed"
+   ]
+  },
+  "screen": {
+   "L": [
+    [
+     -0.36,
+     -0.27,
+     -0.58
+    ],
+    [
+     0.95,
+     0.06,
+     -0.14
+    ],
+    [
+     0,
+     0.42,
+     0.91
+    ],
+    "fist"
+   ],
+   "R": "solved every frame: the right index fingertip (arm-local [-0.051,-0.012,-0.571] in the 'point' pose) is placed on the selected screen row, 14 mm above the glass (1 mm during a tap), with the arm approaching from the right and 0.21 m above the screen plane so nothing passes through the left arm. See arms.tapTarget() in src/main.js."
+  },
+  "point": {
+   "R": [
+    [
+     0.26,
+     -0.3,
+     -0.22
+    ],
+    [
+     -0.16,
+     0.14,
+     -1
+    ],
+    [
+     0.25,
+     1,
+     0
+    ],
+    "point"
+   ]
+  },
+  "pinch": {
+   "R": [
+    [
+     0.2,
+     -0.3,
+     -0.24
+    ],
+    [
+     -0.14,
+     0.18,
+     -1
+    ],
+    [
+     0.5,
+     1,
+     0
+    ],
+    "pinch"
+   ]
+  },
+  "open": {
+   "L": [
+    [
+     -0.22,
+     -0.34,
+     -0.3
+    ],
+    [
+     0.12,
+     0.3,
+     -1
+    ],
+    [
+     0,
+     0.3,
+     1
+    ],
+    "open"
+   ],
+   "R": [
+    [
+     0.22,
+     -0.34,
+     -0.3
+    ],
+    [
+     -0.12,
+     0.3,
+     -1
+    ],
+    [
+     0,
+     0.3,
+     1
+    ],
+    "open"
+   ]
+  }
+ },
+ "credit": "Arm, glove and wrist screen modelled for Marswalk (procedural, Blender).",
+ "wrist_screen": {
+  "centre_in_arm_local": [
+   0,
+   0.0806,
+   -0.213
+  ],
+  "normal_in_arm_local": [
+   0,
+   1,
+   0
+  ],
+  "size_m": [
+   0.116,
+   0.08
+  ],
+  "note": "arm-local = after the 180 deg flip: x across the screen (toward the viewer's bottom edge), y out of the glass, z from hand to elbow"
+ },
+ "rest_pose": {
+  "state": "down",
+  "space": "torso (yaw only), then rotated by the look pitch clamped to -0.3..0.45 rad, so the gloves sit at the bottom edge at level gaze and rise as you look down",
+  "left": {
+   "elbow": [
+    -0.3,
+    -0.4,
+    -0.08
+   ],
+   "direction": [
+    0.12,
+    0.17,
+    -1
+   ],
+   "back_of_hand": [
+    0.25,
+    1,
+    0.2
+   ],
+   "pose": "relaxed"
+  },
+  "right": "mirror of left",
+  "walk_sway_m": 0.012
+ },
+ "clips": {
+  "file": "arm_clips.glb (skeleton + animations only, no mesh; bone names match arm_left.glb, so the clips play on the arm's own AnimationMixer)",
+  "common": {
+   "hand": "right (the mirrored copy)",
+   "needs": "sample_scoop.glb parented to the 'hand' bone (see assets_props/props.json)",
+   "space": "camera space: while the clip plays, set the arm group to position 0 / no rotation; the 'forearm' root bone carries the whole motion",
+   "start_end": "exactly the 'tool' hold placement, so the clip can take over and hand back without a jump; set all pose weights to 0 while it plays ('fist' is baked into the clip)"
+  },
+  "collect_rock": {
+   "seconds": 3.85,
+   "camera": "bends: eye height 1.70 -> 1.15 m, 0.20 m forward, pitch 35 deg down, then stands",
+   "use": "take chips from a low rock such as Cheyava Falls",
+   "stand": "feet 0.70 m from the rock face, facing it; the scoop tip meets the rock about 0.3 m above the ground",
+   "scoop_in_rock_s": [
+    1.4,
+    1.75
+   ],
+   "show_contents": "ScoopRocks from 1.75 s"
+  },
+  "collect_ground": {
+   "seconds": 4.9,
+   "camera": "crouches: eye height 1.70 -> 0.84 m, 0.28 m forward, pitch 55 deg down, then stands",
+   "use": "scoop loose soil from the ground",
+   "slope": "add (ground height 0.47 m ahead - ground height at the feet) to the camera height while crouched, so the scoop meets the soil on slopes",
+   "scoop_in_soil_s": [
+    2.3,
+    2.7
+   ],
+   "show_contents": "ScoopSoil from 2.7 s"
+  },
+  "camera_track": {
+   "bone": "camrig (in arm_clips.glb; it is not a bone of arm_left.glb, so play its tracks on a separate dummy node named 'camrig')",
+   "read": "position.y = height offset in metres (negative = lower), position.z = metres forward, angle from its first-frame rotation = pitch down in radians",
+   "apply": "camera height += offset; camera moves forward along the heading; pitch = mix(player pitch, clip pitch, clip pitch / its maximum: 0.96 rad for collect_ground, 0.61 rad for collect_rock)",
+   "reference": "arms.play and the 'cc' lines in tick() in src/main.js"
+  },
+  "not_in_clip": "dust puff, the mark left in the soil, the first-person legs (hidden in the test bench while crouched), the player's shadow while crouched"
+ }
+}

@@ -1,0 +1,55 @@
+{
+ "units": "metres; glTF Y-up; colours are in COLOR_0 (linear), no textures",
+ "shader": "PROP_VERT / PROP_FRAG in src/shaders.js (vertex colour + shared lighting + light dust film). Use double-sided when a copy is mirrored.",
+ "sample_scoop": {
+  "file": "sample_scoop.glb",
+  "triangles": 1168,
+  "size_m": [
+   0.088,
+   0.087,
+   0.582
+  ],
+  "origin": "centre of the grip; handle along +Y (tether ring end at +Y, scoop pan at -Y)",
+  "how_to_hold": "child of the RIGHT first-person arm group (arm space of arms.json): position [0,-0.045,-0.47], basis X=[0,-1,0] Y=[1,0,0] Z=[0,0,1]; arm finger pose 'fist'",
+  "arm_placement_camera_space": {
+   "elbow": [
+    0.27,
+    -0.33,
+    -0.1
+   ],
+   "direction": [
+    -0.2,
+    0.16,
+    -1
+   ],
+   "back_of_hand": [
+    1,
+    0.25,
+    0
+   ]
+  },
+  "note": "generic EVA soil scoop with a glove-sized grip and tether ring, made for Marswalk; not a copy of a specific flight tool",
+  "contents": {
+   "ScoopSoil": "heap of loose soil in the pan (1.0k triangles)",
+   "ScoopRocks": "seven rock chips in the pan (560 triangles)",
+   "how": "extra meshes inside sample_scoop.glb, already in place in the pan; hide both, show one after a sampling clip, hide it again during stow_sample or pour_sample (times in arms.json)",
+   "look": "no textures; vertex alpha tells PROP_FRAG what the surface is: 1 = hardware, 0.5 = rock (mottling, pale veins, dark specks), 0 = soil (grains and clods)"
+  }
+ },
+ "tool_case": {
+  "file": "tool_case.glb",
+  "triangles": 1808,
+  "size_m": [
+   0.374,
+   0.218,
+   0.306
+  ],
+  "origin": "centre of the carry handle; body hangs below; long side along X",
+  "how_to_carry": "each frame: position = world position of the astronaut bone 'hand.L' minus 0.10 m in Y; rotation.y = astronaut heading + 90 deg (long side along the walking direction)",
+  "note": "generic hard sample/tool case with latches, hinges, corner bumpers and a label plate",
+  "parts": "two meshes: ToolCase (body with an open cavity) and its child ToolCaseLid (lid with the handle; origin on the hinge line)",
+  "lid": "rotation.x = 0 closed, -1.75 rad fully open",
+  "on_the_ground": "origin (handle) at ground height + 0.29 m",
+  "hand_over": "1) partner plays case_set_down, release the case at 0.9 s and open the lid; 2) player stands 0.85 m from the case on the side away from the partner and plays pour_sample; 3) close the lid, partner plays case_set_down again and grabs the case at 0.9 s. Reference: partner.toggleCase, props.update and the 'pourbtn' handler in src/main.js"
+ }
+}
