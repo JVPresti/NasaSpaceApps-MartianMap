@@ -1,4 +1,5 @@
 import { useMissionStore } from '../state/store.js';
+import SourceTag from './SourceTag.jsx';
 import './RouteLegsPanel.css';
 
 // Time, oxygen and battery per leg of the planned route (#41). Reads route.legs and route.totals, which
@@ -9,11 +10,8 @@ const num = (v, digits = 0) => (Number.isFinite(v) ? v.toFixed(digits) : dash);
 const min = (sec) => (Number.isFinite(sec) ? (sec / 60).toFixed(1) : dash);
 const short = (name) => (name ? name.split(' · ')[0] : dash);
 
-function Tag({ path }) {
-  const s = useMissionStore((st) => st.sources[path]);
-  if (!s) return null;
-  return <span className={'legs-tag legs-tag-' + s.tag.toLowerCase()} title={s.source}>{s.tag}</span>;
-}
+const legsTag = (tag) => 'legs-tag legs-tag-' + tag;
+const Tag = ({ path }) => <SourceTag path={path} variant="tag" requireSource className={legsTag} />;
 
 function Row({ label, title, v, total }) {
   return (

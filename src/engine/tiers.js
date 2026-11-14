@@ -13,6 +13,10 @@ export function detectTier(renderer) {
   // High drops to 41 fps inside the habitat while Low holds 58-60 everywhere (docs/marswalk-assets/README.md, Tiers).
   // Discrete cards ("Radeon RX ...", "Radeon Pro ...") and newer named iGPUs ("Radeon 780M") keep High; the 3-second check still guards them.
   const amdIntegrated = /Radeon(\(TM\))? (Graphics|Vega)/i.test(gpu) && !/Radeon(\(TM\))? (RX|Pro)/i.test(gpu);
-  const weak = (/Intel|SwiftShader|llvmpipe|Mali|Adreno|PowerVR|Apple GPU|Microsoft Basic/i.test(gpu) && !/Arc|Iris Xe/i.test(gpu)) || amdIntegrated;
+  // Intel Arc and Iris Xe keep High. Real names: "Intel(R) Arc(TM) A770 Graphics", "Intel(R) Iris(R) Xe Graphics" (Windows, often
+  // inside "ANGLE (Intel, ... Direct3D11 ...)"), "Mesa Intel(R) Xe Graphics (TGL GT2)" (Linux). Whole words only, so "arc" inside
+  // another word does not count. Not measured on an Iris Xe laptop yet; the 3-second check drops it to Low if High is too slow.
+  const intelFast = /\bArc\b|\bIris(\(R\))? ?Xe\b|\bIntel(\(R\))? Xe Graphics\b/i.test(gpu);
+  const weak = (/Intel|SwiftShader|llvmpipe|Mali|Adreno|PowerVR|Apple GPU|Microsoft Basic/i.test(gpu) && !intelFast) || amdIntegrated;
   return { tier: weak ? 'low' : 'high', gpu };
 }

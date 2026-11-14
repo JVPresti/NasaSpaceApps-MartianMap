@@ -14,6 +14,16 @@
   to { opacity: 1; }
 }
 
+/* The astronaut's estimated position and its uncertainty ring, over the map
+   and under the panels. It never takes the pointer, so panning still works. */
+.plan-position {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 .plan-panel {
   position: absolute;
   top: 78px;
