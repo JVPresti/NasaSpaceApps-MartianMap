@@ -1,5 +1,6 @@
 import { t } from '../i18n/index.js';
 import { LAYERS, layerMeta } from './layers.js';
+import LayerPreview from './LayerPreview.jsx';
 
 function LayerLegend({ meta }) {
   return (
@@ -69,6 +70,7 @@ export default function LayerPanel({ layer, onLayer, radioShadow, onRadioShadow 
             >
               <span className="layer-index">{item.index || '—'}</span>
               <span className="layer-name">{item.name}</span>
+              <LayerPreview layer={item} />
             </button>
           ))}
         </div>
