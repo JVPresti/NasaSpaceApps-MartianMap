@@ -36,7 +36,9 @@ REPO = os.path.dirname(os.path.dirname(HERE))
 #   images      "WEBP" packs the textures as WebP, "NONE" writes no textures
 #   max_texture largest texture side in pixels; bigger textures are scaled down
 #   at_origin   True: the first object is moved to the origin for the export
-#               (the scene keeps its pieces side by side; the app places them)
+#               (the scene keeps its pieces side by side; the app places them).
+#               "each": every object is moved to the origin (detail levels parked side by side)
+#   materials   "NONE" writes the mesh without materials (the app supplies its own shader)
 #   drop_bones  helper bones removed for this file (the scene is not saved)
 #   quality     WebP quality, 0-100 (default 75)
 # The object names are part of the contract with the app code. The full list is
@@ -89,6 +91,14 @@ MANIFEST = {
             {"out": "assets_habitat/furniture/crate.glb", "objects": ["crate"], "images": "WEBP", "quality": 80, "at_origin": True, "max_texture": 512},
             {"out": "assets_habitat/furniture/shelves.glb", "objects": ["shelves"], "images": "WEBP", "quality": 80, "at_origin": True, "max_texture": 512},
             {"out": "assets_habitat/furniture/stool.glb", "objects": ["stool"], "images": "WEBP", "quality": 80, "at_origin": True, "max_texture": 512},
+        ],
+    },
+    "outcrop": {
+        "scene": "marswalk_outcrop.blend",
+        "files": [
+            # three detail levels of the layered outcrop; its textures are assets/outcrop_color*.jpg and outcrop_nao*.jpg
+            {"out": "assets/outcrop.glb", "objects": ["Outcrop_LOD0", "Outcrop_LOD1", "Outcrop_LOD2"], "images": "NONE",
+             "materials": "NONE", "at_origin": "each"},
         ],
     },
     "terrain": {
@@ -165,7 +175,7 @@ def export_file(spec, out_root):
     if spec.get("at_origin"):
         off = objs[0].matrix_world.translation.copy()
         for ob in objs:
-            if ob.parent is None: ob.location = ob.location - off
+            if ob.parent is None: ob.location = (0, 0, 0) if spec["at_origin"] == "each" else ob.location - off
     for ob in objs:
         if ob.type == "ARMATURE" and spec.get("drop_bones"):
             bpy.context.view_layer.objects.active = ob; bpy.ops.object.mode_set(mode="EDIT")
@@ -195,7 +205,7 @@ def export_file(spec, out_root):
     kw = gltf_kwargs(
         filepath=path, export_format="GLB", use_selection=True, export_apply=True, export_yup=True,
         export_cameras=False, export_lights=False, export_extras=False,
-        export_image_format=spec.get("images", "NONE"), export_materials="EXPORT", export_image_quality=spec.get("quality", 75),
+        export_image_format=spec.get("images", "NONE"), export_materials=spec.get("materials", "EXPORT"), export_image_quality=spec.get("quality", 75),
         export_vertex_color="ACTIVE", export_all_vertex_colors=False, export_active_vertex_color_when_no_material=True,
         export_animations=anim, export_animation_mode="NLA_TRACKS", export_def_bones=spec.get("def_bones", False),
         export_force_sampling=spec.get("sample", False), export_optimize_animation_size=not spec.get("sample", False),
