@@ -22,14 +22,15 @@ export const LMST_SOL_SEC = 86400;
  * not Jezero), then the sol or the tag.
  *   MEDA on Perseverance, sol 1187 -> "MEDA · Perseverance · sol 1187"
  *   RAD on Curiosity in Gale       -> "RAD · Curiosity (Gale) · DATA"
+ * With `site: false` the site is left out, as in the dust storm mockup ("RAD · Curiosity").
  * @param {{ mission: string|null, instrument: string|null, site: string|null }} provenance
- * @param {{ sol?: number|null, tag?: string|null }} [options]
+ * @param {{ sol?: number|null, tag?: string|null, site?: boolean }} [options]
  */
-export function hudLabel(provenance, { sol = null, tag = null } = {}) {
+export function hudLabel(provenance, { sol = null, tag = null, site: withSite = true } = {}) {
   const instrument = String(provenance.instrument ?? '').split(/[ ,(]/)[0];
   const rover = ROVER[provenance.mission] ?? provenance.mission ?? '';
   const site = String(provenance.site ?? '');
-  const where = /not Jezero/i.test(site) ? ` (${site.split(/[ ,]/)[0]})` : '';
+  const where = withSite && /not Jezero/i.test(site) ? ` (${site.split(/[ ,]/)[0]})` : '';
   const last = sol != null ? `sol ${sol}` : tag;
   return [instrument, rover + where, last].filter(Boolean).join(' · ');
 }
