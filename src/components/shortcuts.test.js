@@ -14,6 +14,7 @@ afterEach(resetStore);
 
 describe('mission keyboard shortcuts', () => {
   it('toggles modes in both directions using physical codes, regardless of key label', () => {
+    setMode('walk');   // the store opens in Plan (#166); start from Walk to toggle both ways
     expect(press('KeyM', { key: 'different-layout' }).preventDefault).toHaveBeenCalledOnce();
     expect(useMissionStore.getState().mode).toBe('plan');
     press('KeyM');
@@ -62,6 +63,7 @@ describe('mission keyboard shortcuts', () => {
   });
 
   it('does not consume unrelated keys or repeat a held toggle', () => {
+    setMode('walk');
     press('KeyM');
     press('KeyM', { repeat: true });
     expect(useMissionStore.getState().mode).toBe('plan');
@@ -73,6 +75,7 @@ describe('mission keyboard shortcuts', () => {
       setMode: vi.fn(), setLayer: vi.fn(), setSky: vi.fn(), setRoute: vi.fn(),
       setShelter: vi.fn(), setDust: vi.fn(),
     };
+    setMode('walk');
     const disconnect = connectEngine(engine);
     try {
       press('KeyM');
