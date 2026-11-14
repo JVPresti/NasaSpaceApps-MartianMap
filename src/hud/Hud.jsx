@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useMissionStore } from '../state/store.js';
 import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, pickAlert, wrapDeg } from './format.js';
+import ElevationProfile from './ElevationProfile.jsx';
 import * as I from './icons.jsx';
 import './hud.css';
 
@@ -120,7 +121,7 @@ function EnvStrip() {
   );
 }
 
-function WaypointPanel() {
+function WaypointPanel({ heightAt, slopeAt }) {
   const w = useMissionStore(useShallow((s) => {
     const info = nextWaypointInfo(s.route, s.navigation);
     if (!info) return null;
@@ -131,16 +132,29 @@ function WaypointPanel() {
       brg: Math.round(Number.isFinite(s.navigation.waypointBearingDeg) ? s.navigation.waypointBearingDeg : info.bearingDeg),
       eta: Math.round(info.etaSec / 60),
       slope: s.navigation.slopeDeg,
+      path: s.route.path,
+      waypoints: s.route.waypoints,
+      position: Number.isFinite(s.navigation.x) && Number.isFinite(s.navigation.z) ? { x: s.navigation.x, z: s.navigation.z } : null,
     };
   }));
   if (!w) return <section className="hud-panel hud-waypoint hud-waypoint-empty" aria-label="Next waypoint">No route yet · plan one in Plan mode</section>;
   return (
     <section className="hud-panel hud-waypoint" aria-label="Next waypoint" title={w.full}>
-      <div className="hud-wp-name"><I.Pointer /><b>{w.name}</b></div>
-      <div className="hud-wp-cell"><div><b>{w.range}</b><small>m</small></div><span>RNG</span></div>
-      <div className="hud-wp-cell"><div><b>{String(w.brg).padStart(3, '0')}</b><small>°</small></div><span>BRG</span></div>
-      <div className="hud-wp-cell"><div><b>{w.eta}</b><small>min</small></div><span>ETA</span></div>
-      <div className="hud-wp-cell"><div><b>{formatValue(w.slope)}</b><small>°</small></div><span>SLOPE</span></div>
+      <div className="hud-waypoint-row">
+        <div className="hud-wp-name"><I.Pointer /><b>{w.name}</b></div>
+        <div className="hud-wp-cell"><div><b>{w.range}</b><small>m</small></div><span>RNG</span></div>
+        <div className="hud-wp-cell"><div><b>{String(w.brg).padStart(3, '0')}</b><small>°</small></div><span>BRG</span></div>
+        <div className="hud-wp-cell"><div><b>{w.eta}</b><small>min</small></div><span>ETA</span></div>
+        <div className="hud-wp-cell"><div><b>{formatValue(w.slope)}</b><small>°</small></div><span>SLOPE</span></div>
+      </div>
+      <ElevationProfile
+        path={w.path}
+        waypoints={w.waypoints}
+        heightAt={heightAt}
+        slopeAt={slopeAt}
+        position={w.position}
+        compact
+      />
     </section>
   );
 }
@@ -233,7 +247,7 @@ export default function Hud({ engine }) {
       <Clocks />
       <SuitPanel />
       <EnvStrip />
-      <WaypointPanel />
+      <WaypointPanel heightAt={engine?.heightAt} slopeAt={engine?.slopeAt} />
     </div>
   );
 }

@@ -83,7 +83,7 @@ export default function PlanMode({ engine, active }) {
     <div className="plan-ui">
       <LayerPanel layer={layer} onLayer={setLayer} />
 
-      <RoutePanel planner={planner} waypoints={waypoints} onWaypointsChange={setWaypoints} />
+      <RoutePanel planner={planner} waypoints={waypoints} onWaypointsChange={setWaypoints} engine={engine} />
       <PlanChrome metresPerPixel={metresPerPixel} />
 
       <p className="plan-readout" role="status">

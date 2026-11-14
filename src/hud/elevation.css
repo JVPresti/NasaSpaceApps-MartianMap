@@ -1,0 +1,77 @@
+.elevation-profile {
+  margin: 0;
+  width: min(360px, 100%);
+}
+
+.elevation-profile svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.elevation-area {
+  fill: rgba(143, 211, 238, 0.1);
+  stroke: none;
+}
+
+.elevation-line {
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.elevation-line.ok { stroke: #8fe9b8; }
+.elevation-line.caution { stroke: #ffc56b; }
+.elevation-line.nogo { stroke: #ff6a4d; }
+
+.elevation-waypoint line {
+  stroke: rgba(251, 245, 238, 0.4);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
+.elevation-waypoint circle {
+  fill: #f5a742;
+  stroke: rgba(20, 12, 9, 0.6);
+  stroke-width: 0.8;
+}
+
+.elevation-waypoint text {
+  fill: #f5a742;
+  font: 700 7px 'Iowan Old Style', Georgia, serif;
+}
+
+.elevation-position line {
+  stroke: #ffffff;
+  stroke-width: 1.5;
+}
+
+.elevation-position circle {
+  fill: #ffffff;
+  stroke: rgba(20, 12, 9, 0.7);
+  stroke-width: 1;
+}
+
+.elevation-label {
+  fill: rgba(251, 245, 238, 0.62);
+  font: 600 7px ui-monospace, Consolas, monospace;
+}
+
+/* inside the visor waypoint panel */
+.hud-waypoint .elevation-profile {
+  width: 100%;
+  margin-top: 0.55em;
+}
+
+/* inside the Plan route panel */
+.route-panel .elevation-profile {
+  margin-top: 10px;
+  padding: 8px 8px 4px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.route-panel .elevation-profile svg {
+  max-height: 96px;
+}
