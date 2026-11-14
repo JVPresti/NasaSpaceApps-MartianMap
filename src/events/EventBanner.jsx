@@ -35,7 +35,7 @@ export default function EventBanner() {
       </div>
       <div className="event-banner-meta">
         {alert.eventId === 'dust-storm' && (
-          <span>τ {environment.dustOpacity?.toFixed(2) ?? '—'} · MEDA 2022 storm profile</span>
+          <span>τ {environment.dustOpacity?.toFixed(2) ?? '—'} · global storm profile · up to Curiosity's Gale 2018 storm, not Jezero</span>
         )}
         {alert.eventId === 'radiation' && (
           <span>
