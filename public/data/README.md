@@ -8,8 +8,7 @@ Research notes for `hazards.json` (what was checked, what could not be confirmed
 |---|---|---|
 | `hazards.json` | Dust storm, radiation, suit, walking cost, speed and slope numbers, plus the walking O2 model and the September 2017 radiation event profile | #18 |
 | `shelters.json` | The habitat and natural safe points with their sky view and dose reduction, built by `npm run shelters`. Method in `docs/route/shelters.md` | #40 |
-| `meda_sol.json`, `rad.json` | One MEDA sol and the RAD curve (planned) | #31 |
-| `credits.json` | Every dataset, image, paper, model, texture and library with its credit line, licence and link, plus the real, artistic and modelled statement. Built by `npm run credits` from the provenance blocks here; readable copy in `docs/credits.md`. Rerun it after adding data | #32 |
+| `meda_sol.json`, `rad.json` | One MEDA sol (sol 1187 at Cheyava Falls, wind from sol 312) in one-minute bins, and the RAD background plus the September 2017 event curve. Built by `npm run meda` and `npm run rad`. Loader: `src/data/medaRad.js`. Notes in `docs/data/meda-rad-notes.md` | #31 |
 | `stops.json` | The Bright Angel and Cheyava Falls science stops: text, Perseverance images in `images/`, sampling checklist. Loader: `src/data/stops.js` | #37 |
 
 ## Tags
@@ -81,6 +80,15 @@ NASA and PDS data are public with no restriction of use (NASA Science Mission Di
 - `checklist`: photo, texture, sample, seal (SIM, scenario 1).
 
 Show the image credit next to every image.
+
+## MEDA sol and RAD curve
+
+Both files hold series, not single values, so their layout differs from `values`:
+
+- `meda_sol.json` has a dataset `provenance` block at the top and a list of `series`. Each series has `sol`, `t` (LMST minutes with data, 0 to 1439) and `channels`. Each channel has `unit`, `tag`, `label`, a full `provenance` block and `values` aligned with `t`, `null` where that channel has no data. Wind is its own series from another sol, and its block says so.
+- `rad.json` keeps the background in `values`, copied from `hazards.json`. `event` holds the September 2017 curve: `t_min` in minutes from the onset at Mars, `channels.dose_rate_b` and `dose_rate_e` in µGy/h, the pre-event `baseline`, and `checks` against the published numbers.
+
+Read them through `src/data/medaRad.js`: `medaAt(meda, lmstSec)`, `radBackground(rad)` and `radEventAt(rad, tMin)` return values with their tag and HUD label, such as `MEDA · Perseverance · sol 1187` or `RAD · Curiosity (Gale) · DATA`.
 
 ## Models
 

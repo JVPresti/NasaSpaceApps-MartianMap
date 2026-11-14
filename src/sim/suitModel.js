@@ -104,27 +104,32 @@ export function constantEffortSpeed(i, c) {
 }
 
 /**
- * Time and O2 to walk a path at constant effort, with the walkback pad on the metabolic rate.
+ * Time, O2 and battery to walk a path at constant effort, with the walkback pad on the metabolic rate.
+ * Also returns climb, descent and the steepest gradient met along the walking direction, so per-leg costs (#41)
+ * and the walkback (#19) come from this one function.
  * @param {Array<[number, number]>} path [[x, z], ...] in walking order
  * @param {(x: number, z: number) => number} heightAt terrain height in metres
  * @param {object} c constants
  * @param {{ stepM?: number, pad?: number }} [options] stepM: sampling step along the path (default 10 m)
- * @returns {{ distanceM: number, timeSec: number, o2G: number }}
+ * @returns {{ distanceM: number, timeSec: number, o2G: number, batteryWh: number, climbM: number, descentM: number,
+ *   maxSlopeDeg: number }} maxSlopeDeg: steepest sampled gradient along the path, uphill or downhill
  */
 export function walkCost(path, heightAt, c, { stepM = 10, pad = c.walkbackPad } = {}) {
-  let distanceM = 0, timeSec = 0, o2G = 0;
+  let distanceM = 0, timeSec = 0, o2G = 0, batteryWh = 0, climbM = 0, descentM = 0, maxGrade = 0;
   for (let k = 0; k < path.length - 1; k++) {
     const [ax, az] = path[k], [bx, bz] = path[k + 1], len = Math.hypot(bx - ax, bz - az);
     const n = Math.max(1, Math.ceil(len / stepM));
     for (let s = 0; s < n; s++) {
       const x0 = ax + (bx - ax) * s / n, z0 = az + (bz - az) * s / n, x1 = ax + (bx - ax) * (s + 1) / n, z1 = az + (bz - az) * (s + 1) / n;
       const run = len / n; if (run <= 0) continue;
-      const i = (heightAt(x1, z1) - heightAt(x0, z0)) / run, v = constantEffortSpeed(i, c);
+      const rise = heightAt(x1, z1) - heightAt(x0, z0), i = rise / run, v = constantEffortSpeed(i, c);
       const t = run / v, p = metabolicPowerW(v, i, c) * (1 + pad);
-      distanceM += run; timeSec += t; o2G += o2RateGs(p, c) * t;
+      distanceM += run; timeSec += t; o2G += o2RateGs(p, c) * t; batteryWh += batteryDrawW(p, c) * t / 3600;
+      if (rise > 0) climbM += rise; else descentM -= rise;
+      maxGrade = Math.max(maxGrade, Math.abs(i));
     }
   }
-  return { distanceM, timeSec, o2G };
+  return { distanceM, timeSec, o2G, batteryWh, climbM, descentM, maxSlopeDeg: Math.atan(maxGrade) * 180 / Math.PI };
 }
 
 /**

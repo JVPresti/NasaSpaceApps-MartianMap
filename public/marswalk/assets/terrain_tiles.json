@@ -1,0 +1,14 @@
+{
+ "file": "assets/terrain_tiles.glb",
+ "grid_n": 751,
+ "tiles": 5,
+ "tile_cells": 150,
+ "draco": true,
+ "x_west_m": -711.2530767917633,
+ "x_east_m": 711.2530767917633,
+ "y_north_m": 750.0,
+ "y_south_m": -750.0,
+ "lowest_point_blender_z_m": 0.0,
+ "height_range_m": 220.7314453125,
+ "note": "Nodes Terrain_<row>_<col>, row 0 = north, col 0 = west. In three.js: x east, z south, y = height above the lowest point (same zero as terrain.json). UV: u east, v north over the whole terrain."
+}

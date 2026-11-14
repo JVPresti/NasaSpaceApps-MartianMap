@@ -2,6 +2,7 @@ import { useCallback, useReducer, useState } from 'react';
 import EngineView from './components/EngineView.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
 import ModeSwitch from './components/ModeSwitch.jsx';
+import RouteLegsPanel from './components/RouteLegsPanel.jsx';
 import { useMissionStore, setMode } from './state/store.js';
 import './App.css';
 
@@ -83,6 +84,8 @@ export default function App() {
       </header>
 
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={SITE} onRetry={handleRetry} />
+
+      {load.status === 'ready' && mode === 'plan' && <RouteLegsPanel />}
 
       {load.status === 'ready' && <p className="hint">{mode === 'walk' && mouseLocked ? HINTS.walkLocked : HINTS[mode]}</p>}
     </div>

@@ -18,6 +18,7 @@ HiRISE files are stretched 5.4 % east-west (equirectangular, lat_ts = 0); everyt
 | File | What it is |
 |---|---|
 | terrain.json | 751x751 heights (Uint16 base64, 2 m spacing) + 256x256 brightness map used for rock density. The routing team can read this directly. |
+| terrain_tiles.glb + terrain_tiles.json | The same 751x751 grid as a mesh: 25 tiles (nodes Terrain_<row>_<col>, row 0 = north, col 0 = west) with normals and UVs, Draco-compressed, 1.7 MB. Written by blender/export/export_all.py and checked against terrain.json by blender/export/check_terrain.py. Needs a DRACOLoader (see blender/export/README.md). The .json records the extent. |
 | ring.json | 241x241 heights (50 m spacing) for the 12 km background terrain (CTX). |
 | ortho_hi.jpg / ortho_lo.jpg | HiRISE orthomosaic, grayscale (3000 px / 1500 px). The Mars colour ramp is applied in the shader. |
 | normal_ao.jpg | R,B = world-space normal x,z from the 1 m DEM; G = baked ambient occlusion. |
@@ -86,8 +87,35 @@ so the GPU check now starts AMD integrated graphics on Low. On High, walking stu
 - Real spot for the "dangerous slope" scene: about 200 m west of Cheyava Falls (x -201, z -52), 34 deg average.
 - There is no mesa overhang in this area; elevation data cannot contain overhangs.
 
+## Export from Blender
+The Blender scenes are in `blender/` (Git LFS). One command re-exports every .glb and the terrain mesh, and a second one
+checks the terrain mesh against terrain.json:
+
+    blender -b --python blender/export/export_all.py
+    blender -b --python blender/export/check_terrain.py
+
+Details, options and the list of what each scene produces: `blender/export/README.md` and `blender/README.md`.
+Convention: 1 unit = 1 m, origin at Cheyava Falls, Blender +X east / +Y north / +Z up becomes three.js x east / z south / y up,
+so Blender (x, y, z) is three.js (x, z, -y). The 5.4 % east-west correction is already in the scenes; do not apply it again.
+
+### Object names the code depends on
+The export script writes exactly these names. Renaming one in Blender breaks the code that looks it up.
+
+| File | Names | Used for |
+|---|---|---|
+| assets_astronaut/z2_astronaut.glb | mesh `Z2`, rig `Z2_rig`; bones `root`, `hips`, `spine`, `chest`, `head`, `shoulder.L/R`, `upper_arm.L/R`, `forearm.L/R`, `hand.L/R`, `thigh.L/R`, `shin.L/R`, `foot.L/R` (three.js drops the dot: `handL`); clips `walk`, `idle`, `case_set_down`, `walk_stoop` | Partner astronaut. The left hand bone (`/hand.?L/`) carries the tool case. |
+| assets_astronaut/z2_fp_legs.glb | mesh `Z2_fp_legs`, rig `Z2_rig`; clips `walk`, `idle` | First-person legs. |
+| assets_astronaut/arm_left.glb | meshes `ArmL`, `WristScreen` (material `Screen` is the display), rig `ArmL_rig`, bone `hand`; clips `open`, `relaxed`, `point`, `pinch`, `fist` | First-person arm, mirrored for the right arm. The scoop is attached to `hand`. |
+| assets_astronaut/arm_clips.glb | rig `ArmL_rig` with the extra bone `camrig`; clips `collect_rock`, `collect_ground`, `stow_sample`, `pour_sample` plus the five hand poses | Sampling animations. Tracks of `camrig` move the camera; the rest move the arm. |
+| assets_props/sample_scoop.glb | `SampleScoop`, `ScoopSoil`, `ScoopRocks` | The code shows `ScoopSoil` or `ScoopRocks` depending on the sample. |
+| assets_props/tool_case.glb | `ToolCase`, `ToolCaseLid`, `CaseSoil`, `CaseRocks` | The lid opens by rotating `ToolCaseLid`; `CaseSoil` / `CaseRocks` show what was poured in. |
+| assets_habitat/habitat.glb | `HabitatBase`, `HabitatCore`, `HabitatExterior`, `HabitatHatch`, `HabitatHatchFrames`, `HabitatHatchSideA`, `HabitatHatchSideB`, `HabitatHatchRear` | `HabitatHatch` is the door that opens. |
+| assets_habitat/habitat_interior.glb | `HabitatInterior`, `HabitatScreens` | Any mesh with `Screens` in its name gets the wall-screen canvas. |
+| assets_habitat/furniture/*.glb | one mesh named like the file; `sample_glovebox_glass` in the glovebox | Any mesh with `glass` in its name gets the glass material. |
+| assets/terrain_tiles.glb | `Terrain_0_0` to `Terrain_4_4` | Terrain mesh tiles. |
+
 ## Source files (not in this folder)
-- ..\marswalk_jezero_real.blend : Blender scene (terrain, Geometry Nodes rock scatter, Cheyava rock, presets).
+- blender/marswalk_jezero_real.blend : Blender scene (terrain, Geometry Nodes rock scatter, Cheyava rock, presets). All scenes are listed in blender/README.md.
 - ..\data\ : raw NASA clips. ..\out\ : Blender renders. ..\out\_old\ : outdated, do not use.
 
 ## Colour (matched to rover photos, 2026-11-14)
