@@ -119,6 +119,7 @@ Figma, the rules check, the demo video and the submission form are left for the 
 - [docs/marswalk-assets/README.md](docs/marswalk-assets/README.md): every asset file, the coordinates, credits, and what is real.
 - [docs/EVENT_ENGINE.md](docs/EVENT_ENGINE.md): how to define an event.
 - [docs/STATE_AND_ENGINE.md](docs/STATE_AND_ENGINE.md): the mission store snapshot and the engine API.
+- [docs/PARTNER.md](docs/PARTNER.md): the partner astronaut, scripted for now, and the interface a network player will use.
 - [Issues](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues) and [milestones](https://github.com/JVPresti/NasaSpaceApps-MartianMap/milestones): what is being worked on now.
 
 ## Glossary

@@ -1343,7 +1343,7 @@
         "locator": null,
         "data_url": null,
         "license": "Project value",
-        "note": "Default walking speed on flat ground, the value the engine already uses. It lies between Apollo's planning walkback speed (0.92 m/s) and the slowest suited speed tested at Mars gravity (1.07 m/s). Flat walking at this speed costs 589 W in the suit model, already 1.7 times the xEMU design average."
+        "note": "Default walking speed on flat ground. The engine walks at this speed (WALK_SPEED in src/engine/view.js), and a test checks they match. It lies between Apollo's planning walkback speed (0.92 m/s) and the slowest suited speed tested at Mars gravity (1.07 m/s). Flat walking at this speed costs 589 W in the suit model, already 1.7 times the xEMU design average."
       }
     },
     "mobility.speed.jog": {
@@ -1362,7 +1362,7 @@
         "locator": null,
         "data_url": null,
         "license": "Project value",
-        "note": "Top speed when the player hurries. Close to the fastest suited speed tested at Mars gravity (1.52 m/s). The suit model is valid up to there. Flat at 1.5 m/s costs 1138 W (3884 BTU/hr), above the suit's 10 min cooling peak (suit.metabolic.design_peak)."
+        "note": "Top speed when the player hurries (Shift). The engine jogs at this speed (JOG_SPEED in src/engine/view.js). Close to the fastest suited speed tested at Mars gravity (1.52 m/s). The suit model is valid up to there. Flat at 1.5 m/s costs 1138 W (3884 BTU/hr), above the suit's 10 min cooling peak (suit.metabolic.design_peak)."
       }
     },
     "mobility.speed.min": {
@@ -1420,7 +1420,7 @@
         "locator": "p. 38: 'Walking up/down/across a slope of up to 20° [Note: Apollo 15 traversed on slopes of ~17°]'",
         "data_url": null,
         "license": "NASA document, public domain",
-        "note": "NASA's suited walking limit. The 2025 Artemis overview (NTRS 20250009323, p. 21) gives the same 'Surface slope limit for EVA (2km): <20 deg'. The engine still uses 25 deg (docs/marswalk-assets/testbench-reference). 25 deg only matches the Apollo Lunar Roving Vehicle's climbing spec (NASA TM X-64623, p. 6: 'Climbing a 25-deg slope fully loaded'), a vehicle limit. A route issue should move the engine to 20."
+        "note": "NASA's suited walking limit. The 2025 Artemis overview (NTRS 20250009323, p. 21) gives the same 'Surface slope limit for EVA (2km): <20 deg'. The route planner (SLOPE_LIMIT_DEG in src/sim/costGrid.js) and the slope layer use this value, and a test checks they match. The test bench used 25 deg (docs/marswalk-assets/testbench-reference), which only matches the Apollo Lunar Roving Vehicle's climbing spec (NASA TM X-64623, p. 6: 'Climbing a 25-deg slope fully loaded'), a vehicle limit."
       }
     },
     "slope.caution": {
@@ -1439,7 +1439,7 @@
         "locator": "NASA/TP-2010-216125 p. 98: 'metabolic rate differences became most significant at steeper grades (≥ 20%)'",
         "data_url": null,
         "license": "Project value",
-        "note": "The engine's current caution threshold. No NASA source states 15 deg. It sits between 11.3 deg (20 % grade, where Norcross saw the cost of climbing in a suit become significant) and the 20 deg suited limit. Apollo 15 walked slopes of about 17 deg."
+        "note": "The slope layer's caution threshold (SLOPE_CAUTION_DEG in src/sim/costGrid.js). No NASA source states 15 deg. It sits between 11.3 deg (20 % grade, where Norcross saw the cost of climbing in a suit become significant) and the 20 deg suited limit. Apollo 15 walked slopes of about 17 deg."
       }
     }
   },

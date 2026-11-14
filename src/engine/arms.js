@@ -1,6 +1,7 @@
 // Ported from docs/marswalk-assets/testbench-reference/main.js (lines 505-604).
 import * as THREE from 'three';
 import * as SH from './shaders.js';
+import { CREW } from './crew.js';
 import { cloneSkinned } from './skinned.js';
 
 export const LAYER_NAMES = ['VISIBLE', 'SLOPE HAZARD', 'ELEVATION', 'ROCK ABUNDANCE', 'OUTCROP'];
@@ -8,7 +9,7 @@ export const LAYER_NAMES = ['VISIBLE', 'SLOPE HAZARD', 'ELEVATION', 'ROCK ABUNDA
 export function createArms(ctx) {
   const { scene, camera, U, assets, sys, view } = ctx;
   const arms = {
-    L: null, R: null, state: 'down', canvas: null, tex: null, uPlayer: { value: new THREE.Vector3(0.05, 0.25, 0.9) },
+    L: null, R: null, state: 'down', canvas: null, tex: null, uPlayer: { value: new THREE.Vector3(...CREW[0].color) },
     // camera-space placements: elbow position, arm direction, "back of hand" direction, finger pose
     P: {
       // 'body' entries are relative to the torso (yaw only), so the hands rise into view as you look down

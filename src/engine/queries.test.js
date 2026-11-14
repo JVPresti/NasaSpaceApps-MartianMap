@@ -38,8 +38,8 @@ describe('heightAt', () => {
 });
 
 describe('slopeAt', () => {
-  it('is steeper than the 25 degree walking limit at the steep spot', () => {
-    expect(q.slopeAt(-201, -52)).toBeGreaterThan(25);
+  it('is steeper than the 20 degree walking limit at the steep spot', () => {
+    expect(q.slopeAt(-201, -52)).toBeGreaterThan(20);
   });
 
   it('is 0 on flat synthetic ground', () => {

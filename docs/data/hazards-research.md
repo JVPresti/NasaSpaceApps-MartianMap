@@ -52,7 +52,7 @@ The file marks each of these SIM or says so in the note.
 | Suit for consumables | xEMU | The only suit with every consumable number in NASA documents at the same design level. The ISS EMU lacks its primary O2 mass and Apollo lacks battery figures |
 | Radiation event to replay | September 2017, with May 2024 as a reference row | Peer-reviewed rates and timeline from RAD (Zeitlin 2018) and a complete DONKI chain, giving a real warning time. May 2024 has one number and no DONKI record |
 | Dust baseline and storm | Aphelion tau 0.4 to 0.5, and the January 2022 regional storm | The aphelion values are published with a range. The January 2022 storm passed over the rover and has its own paper with before, peak and after values |
-| Slope limits | No-go 20 deg (DATA), caution 15 deg (SIM) | 20 deg is NASA's suited walking limit in two documents. The engine's 25 deg only matches the Apollo rover's climbing spec. 15 deg has no source |
+| Slope limits | No-go 20 deg (DATA), caution 15 deg (SIM) | 20 deg is NASA's suited walking limit in two documents. The test bench's 25 deg only matches the Apollo rover's climbing spec. The engine moved to 20 deg in #93. 15 deg has no source |
 | Provenance schema | One block per value, documented in `public/data/README.md` | Each number carries its own source, so the HUD can read the label next to the value without a second lookup |
 | Model mass | 202.4 kg (Walkback Test body plus Mark III) | The level walking cost was measured at this mass, so the model stays inside its data. The xEMU is 177 kg and raises every cost by 27 % |
 | DATA tag scope | Measurements plus NASA specs and procedures | Values like the 30 min reserve and the 20 deg limit are NASA rules, not measurements, but they are not our assumptions either. The plan's definition says "measured", so this is wider |
@@ -129,7 +129,6 @@ Records used: flare `2017-09-10T15:35:00-FLR-001` (X8.2, peak 16:06Z), CME `2017
 
 ## Follow-ups this PR does not do
 
-- Move the engine's slope no-go from 25 deg to 20 deg (route owner).
 - Extract the full RAD curve for September 2017 from PDS (#31).
 - Decide how much #25 compresses the 57 h radiation event and #24 the storm onset.
 - If someone finds suited downhill data or IST-2 subject speeds, revisit `metabolic.grade_factor` and the downhill branch of the walking model.
