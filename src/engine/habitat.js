@@ -81,6 +81,17 @@ export function createHabitat(ctx) {
         [['CYCLE', 80], ['OPEN', 165], ['LOCK', 250]].forEach(([t, y]) => { g.strokeStyle = '#8fe9ff'; g.lineWidth = 3; g.strokeRect(230, y, 250, 64); g.fillStyle = '#8fe9ff'; g.font = F(26, true); g.fillText(t, 355, y + 33); }); g.restore();
         this.tex.needsUpdate = true; } },
     root: null, pos: new THREE.Vector3(1e9, 0, 1e9), clear: 12,
+    // Sit the habitat back on the terrain after a tier change rebuilt the mesh (meshH changes with the grid).
+    // Same height rule as init; the spot and heading do not change. Not in the bench, which left it floating.
+    reground() {
+      if (!this.root) return;
+      const x = this.pos.x, z = this.pos.z, d = this.dir; let lo = 1e9, hi = -1e9;
+      for (let a = 0; a < 12; a++) { const hh = meshH(x + Math.cos(a * 0.5236) * 5.5, z + Math.sin(a * 0.5236) * 5.5); lo = Math.min(lo, hh); hi = Math.max(hi, hh); }
+      const y = (lo + hi) / 2; this.relief = hi - lo; this.pos.y = y - 0.04; this.root.position.y = this.pos.y;
+      this.root.updateMatrixWorld(true); U.uHabInv.value.copy(this.root.matrixWorld).invert();
+      U.uHabP0.value.y = U.uHabP1.value.y = this.pos.y;
+      U.uCastC.value[2].set(x + d.x * 1.5, y + 3.5, z + d.z * 1.5); sys.cast.dirty = true;
+    },
     async init() {
       const gltf = await assets.glb('assets_habitat/habitat.glb');
       const prop = new THREE.ShaderMaterial({ uniforms: U, vertexShader: SH.PROP_VERT, fragmentShader: SH.PROP_FRAG, vertexColors: true, side: THREE.DoubleSide });

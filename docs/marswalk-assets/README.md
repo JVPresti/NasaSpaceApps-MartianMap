@@ -40,13 +40,42 @@ Placed around the camera in 16 m cells, deterministic (same rocks every run). Co
 Mars rock size-frequency model at about 5 % cover, thinned by HiRISE brightness (more on outcrop, fewer on sand).
 Detail level is chosen by apparent size; rocks grow in over the last 20 % of their draw radius.
 
-## Tiers (measured on an RTX 5060 Ti: 60 fps both; not yet measured on integrated graphics)
+## Tiers
 | | High | Low |
 |---|---|---|
 | Terrain grid | 501x501 | 189x189 |
 | Rock radius (pebble / small / medium) | 12 / 55 / 180 m | 0 / 28 / 110 m |
 | Typical load | 1.25 M triangles, 19k rocks | 0.42 M triangles, 6k rocks |
 Close Blender or set its viewport to Solid before measuring: a Rendered viewport takes the GPU.
+
+### How the app picks a tier
+- At load, from the GPU name (`detectTier` in `src/engine/tiers.js`). Intel and mobile GPUs and AMD integrated graphics
+  ("AMD Radeon(TM) Graphics", "Radeon Vega") start on Low. Discrete cards and newer named APUs (for example "Radeon 780M") start on High.
+- While running, three slow seconds in a row on High (under 40 fps) switch to Low. There is no switch back up.
+- Manual override: add `?tier=high` or `?tier=low` to the URL. It forces that tier and turns off the automatic switch.
+  An unknown value is ignored with a console warning.
+
+### Measured frame rate
+`npm run measure` starts the dev server, opens a visible Chrome (or Edge if Chrome is not installed) at the screen's size,
+and measures each tier for 10 s per situation. Frame times come from requestAnimationFrame; "1 % low" is the frame rate of
+the slowest 1 % of frames. Add a row group for your machine when you measure. Plug in the laptop and close Blender first.
+
+Ryzen 5 5600H laptop, AMD Radeon integrated graphics (Vega), Edge 157 (Chrome not installed), window 1672 x 988 CSS px
+at pixel ratio 1.5, on AC power, Windows balanced power plan. Measured 2026-11-14.
+
+| Tier | Situation | fps | 1 % low |
+|---|---|---|---|
+| High | Walk, standing outdoors | 60 | 58 |
+| High | Walk, walking outdoors | 59 | 30 |
+| High | Walk, inside the habitat | 41 | 15 |
+| High | Plan | 59 | 30 |
+| Low | Walk, standing outdoors | 60 | 57 |
+| Low | Walk, walking outdoors | 60 | 58 |
+| Low | Walk, inside the habitat | 58 | 30 |
+| Low | Plan | 60 | 58 |
+
+Result: Low holds the 30 fps target everywhere. High drops to 41 fps inside the habitat, just above the 40 fps automatic switch,
+so the GPU check now starts AMD integrated graphics on Low. On High, walking stutters briefly (1 % low 30) when the nearby rocks are regenerated every 4 m.
 
 ## What is real and what is not (say this in the app)
 - Real: terrain shape and photo (HiRISE DTM 1 m + orthomosaic 25 cm), background (CTX DEM 20 m + mosaic 6 m),

@@ -3,6 +3,12 @@ import { createEngine } from '../engine/index.js';
 
 const ASSET_BASE = import.meta.env.BASE_URL + 'marswalk/';
 
+// Manual quality override: ?tier=high or ?tier=low forces a tier and turns off the automatic choice.
+function tierFromUrl() {
+  const t = new URLSearchParams(window.location.search).get('tier');
+  return t || null;   // the engine checks the value and warns about an unknown one
+}
+
 /**
  * Mounts the Marswalk engine once and forwards the mode to it.
  * The engine runs its own render loop; this component renders only when its props change, never per frame.
@@ -21,6 +27,8 @@ export default function EngineView({ mode, onStatus, onReady, onError }) {
     const engine = createEngine(containerRef.current, {
       assetBase: ASSET_BASE,
       mode: modeRef.current,
+      tier: tierFromUrl(),
+      debug: import.meta.env.DEV,
       onStatus: (text) => callbacks.current.onStatus?.(text),
       onError: (err) => callbacks.current.onError?.(err),
     });
