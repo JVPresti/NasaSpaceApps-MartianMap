@@ -2,13 +2,14 @@ import { useCallback, useReducer, useState } from 'react';
 import EngineView from './components/EngineView.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
 import ModeSwitch from './components/ModeSwitch.jsx';
+import PlanMode from './plan/PlanMode.jsx';
 import { useMissionStore, setMode } from './state/store.js';
 import './App.css';
 
 const HINTS = {
   walk: 'Click to look around · WASD to walk · Shift to jog',
   walkLocked: 'Esc to release the mouse · WASD to walk · Shift to jog',
-  plan: 'Drag to orbit · scroll to zoom · right-drag to pan',
+  plan: 'Right-drag to pan · scroll to zoom',
 };
 
 const SITE = 'Neretva Vallis · Jezero crater · Mars';
@@ -55,6 +56,7 @@ function loadReducer(state, action) {
 
 export default function App() {
   const mode = useMissionStore((s) => s.mode);
+  const [engine, setEngine] = useState(null);
   const [load, dispatch] = useReducer(loadReducer, undefined, () => INITIAL_LOAD);
   const [mouseLocked, setMouseLocked] = useState(false);   // changes only when the pointer lock does, never per frame
 
@@ -73,7 +75,10 @@ export default function App() {
         onReady={handleReady}
         onError={handleError}
         onLockChange={setMouseLocked}
+        onEngine={setEngine}
       />
+
+      {load.status === 'ready' && <PlanMode engine={engine} active={mode === 'plan'} />}
 
       <header className="topbar" inert={load.status !== 'ready' ? true : undefined}>
         <h1>
