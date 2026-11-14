@@ -1,0 +1,5 @@
+# Git LFS: Blender sources only. Everything under public/ stays a regular Git
+# file (the Cloudflare build does not pull LFS objects). See issue #7.
+blender/**/*.blend filter=lfs diff=lfs merge=lfs -text
+blender/**/*.npy filter=lfs diff=lfs merge=lfs -text
+blender/**/*.png filter=lfs diff=lfs merge=lfs -text
