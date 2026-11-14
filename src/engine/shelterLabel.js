@@ -1,3 +1,4 @@
+import { translateText } from '../i18n/index.js';
 // Marker above the highlighted shelter. Kept small so it never blocks the view while walking (NASA's Joint AR asks for a
 // "minimally intrusive, translucent" suit display):
 //   - compact by default: an icon and the distance, half transparent
@@ -59,7 +60,7 @@ export function createShelterLabel() {
       alpha += (target - alpha) * Math.min(1, dt * 6);
       material.opacity = alpha * on;
       sprite.visible = material.opacity > 0.01;
-      if (mode !== 'hidden') draw(mode, title, formatDistance(distanceM));
+      if (mode !== 'hidden') draw(mode, translateText(title), formatDistance(distanceM));
     },
     dispose() { tex.dispose(); material.dispose(); },
   };

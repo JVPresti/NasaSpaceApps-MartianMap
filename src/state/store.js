@@ -6,7 +6,7 @@ import { create } from 'zustand';
 /** Plain data only. Units are in the field names. Coordinates: x east, z south, metres from Cheyava Falls. */
 export function createInitialState() {
   return {
-    mode: 'walk',                                   // 'walk' | 'plan'
+    mode: 'plan',                                   // 'walk' | 'plan'; the app opens at the planning table (#166)
     // Clock fields: docs/STATE_AND_ENGINE.md. anchorMs is the wall timestamp elapsedSec is measured from;
     // startedAtMs is the first start. The mission clock fills anchorMs and the fields after it when it starts.
     mission: {
@@ -26,7 +26,7 @@ export function createInitialState() {
     // #36, written by src/state/sampling.js: samples secured this EVA, the checklist of the sample in progress, and the engine's
     // sampling status (what the crosshair is on, the clip phase, the partner's case and what each input does), 5 times per second
     sampling: { count: 0, photos: 0, samples: [], checklist: { photo: false, texture: false, sample: false, seal: false, photoAt: null, siteAt: null, sampleId: null }, status: null },
-    view: { layer: 0, sky: 'late_afternoon', skyBlend: 0 },   // what the engine draws; #59 demo starts in late-afternoon light
+    view: { layer: 0, sky: 'late_afternoon', skyBlend: 0, slopeGrid: false },   // what the engine draws; #59 demo starts in late-afternoon light
     sources: {},                                    // { 'environment.tempC': { tag: 'DATA' | 'DERIVED' | 'SIM', source } }
   };
 }

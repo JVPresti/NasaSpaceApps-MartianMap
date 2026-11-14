@@ -1,3 +1,5 @@
+import { t, translateText } from './i18n/index.js';
+import { useLanguage } from './i18n/useLanguage.js';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import EngineView from './components/EngineView.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
@@ -20,11 +22,11 @@ import './App.css';
 import './components/menu.css';
 
 const HINTS = {
-  walk: 'Esc to pause · WASD to walk · Shift to jog · H for controls',
-  plan: 'Right-drag to pan · scroll to zoom · Esc to pause · H for controls',
+  get walk() { return t('menu.esc.to.pause.wasd.to.walk.shift.to'); },
+  get plan() { return t('menu.right.drag.to.pan.scroll.to.zoom.esc'); },
 };
 
-const SITE = 'Neretva Vallis · Jezero crater · Mars';
+const SITE = 'ui.neretva.vallis.jezero.crater.mars';
 
 const DEBUG_EVENTS =
   import.meta.env.DEV ||
@@ -32,11 +34,11 @@ const DEBUG_EVENTS =
 
 // Escape is a key press, not a user activation, so it cannot grant pointer lock. In the Walk pause menu it
 // must explain that instead of starting a request that can only fail.
-const ESC_LOCK_NOTICE = 'Press Enter or click Resume to capture the mouse.';
+const ESC_LOCK_NOTICE = 'menu.press.enter.or.click.resume.to.capture.the';
 
 const INITIAL_LOAD = {
   status: 'loading',
-  stage: 'Starting the engine…',
+  stage: 'ui.starting.the.engine',
   progress: 0,
   loaded: 0,
   total: 0,
@@ -75,6 +77,7 @@ function loadReducer(state, action) {
 }
 
 export default function App() {
+  useLanguage();
   const mode = useMissionStore((s) => s.mode);
   const [engine, setEngine] = useState(null);
   const [load, dispatch] = useReducer(loadReducer, undefined, () => INITIAL_LOAD);
@@ -159,7 +162,7 @@ export default function App() {
   const handleLockChange = useCallback((locked) => {
     if (locked || phaseRef.current !== EVA_PHASE.PLAYING) return;
     if (useMissionStore.getState().mode !== 'walk') return;   // Plan deliberately releases the lock
-    pauseFor(PAUSE_VIEW.MENU, 'The mouse was released, so the EVA is paused. Choose Resume to capture it again.');
+    pauseFor(PAUSE_VIEW.MENU, 'menu.the.mouse.was.released.so.the.eva.is');
   }, [pauseFor]);
 
   /** Start or Resume. In Walk nothing runs until the browser grants the lock; Plan needs no lock. */
@@ -222,7 +225,7 @@ export default function App() {
       setQuality(result);
       if (result.error) setQualityError(result.error);
     } catch (cause) {
-      setQualityError((cause && cause.message) || 'Scene quality could not be changed.');
+      setQualityError((cause && cause.message) || 'menu.scene.quality.could.not.be.changed');
       setQuality(instance.getQuality());
     } finally {
       qualityBusyRef.current = false;
@@ -246,7 +249,7 @@ export default function App() {
         startSimulation: runtimeRef.current?.startSimulation,
       });
     } catch (cause) {
-      result = { ok: false, message: (cause && cause.message) || 'The EVA could not be restarted.' };
+      result = { ok: false, message: (cause && cause.message) || 'menu.the.eva.could.not.be.restarted' };
     }
     setBusyState(false);
     setPhase(EVA_PHASE.START);
@@ -314,7 +317,9 @@ export default function App() {
   }, [pauseFor]);
 
   const showTopbar = load.status === 'ready' && phase === EVA_PHASE.PLAYING;
-  useShortcuts(showTopbar);   // like the topbar: off while loading, on the start screen and in the pause menu
+  // Like the topbar: off while loading, on the start screen and in the pause menu. M goes through the mode
+  // button's handler, so it also captures the mouse in Walk (#174).
+  useShortcuts(showTopbar, handleModeChange);
 
   return (
     <div className="app">
@@ -336,14 +341,13 @@ export default function App() {
       {load.status === 'ready' && DEBUG_EVENTS && <EventDebug />}
 
       <header className="topbar" inert={showTopbar ? undefined : true}>
-        <h1>
-          Marswalk <span>Cheyava Falls · Neretva Vallis, Jezero crater</span>
+        <h1>{t('app.brandSpaced')}<span>{t('ui.cheyava.falls.neretva.vallis.jezero.crater')}</span>
         </h1>
         {showTopbar && mode === 'plan' && <MissionClock />}
         <ModeSwitch mode={mode} onChange={handleModeChange} />
       </header>
 
-      <LoadingScreen key={`loading-${load.attempt}`} state={load} site={SITE} onRetry={handleRetry} onGone={handleGone} />
+      <LoadingScreen key={`loading-${load.attempt}`} state={load} site={translateText(SITE)} onRetry={handleRetry} onGone={handleGone} />
 
       {load.status === 'ready' && mode === 'walk' && <Hud engine={engine} minimapRoute={minimapRoute} />}
 

@@ -1,3 +1,4 @@
+import { t, formatNumber, formatUnit, translateText } from '../i18n/index.js';
 // Pure helpers for the helmet HUD: formatting and the few derived values it shows. No React, no three.js.
 // Coordinates: x east, z south, metres from Cheyava Falls. Bearings and headings are degrees clockwise from north.
 import { bearingDeg, wrapDeg } from '../sim/bearing.js';
@@ -20,7 +21,7 @@ export function formatEva(sec) {
 
 /** Rounded value as text, or a dash when the value is not known yet (the store uses null for that). */
 export function formatValue(v, digits = 0) {
-  return num(v) ? v.toFixed(digits) : dash;
+  return num(v) ? formatNumber(v, digits) : dash;
 }
 
 /** Whole minutes from seconds, rounded, with a sign when asked: '+41', '-3'. */
@@ -33,7 +34,7 @@ export function formatMinutes(sec, { signed = false } = {}) {
 const CARDINALS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 /** The nearest of the eight compass points. */
 export function cardinal(deg) {
-  return CARDINALS[Math.round(wrapDeg(deg) / 45) % 8];
+  return translateText(CARDINALS[Math.round(wrapDeg(deg) / 45) % 8]);
 }
 
 /**
@@ -90,22 +91,22 @@ export const NAV_FIX_LIMIT_M = 5;
 /** '±0.4 m' under 10 m, '±12 m' from 10 m, '±– m' when unknown. */
 export function formatNavError(m) {
   if (!num(m) || m < 0) return '±' + dash + ' m';
-  return '±' + (m < 9.95 ? m.toFixed(1) : String(Math.round(m))) + ' m';
+  return '±' + formatUnit(m < 9.95 ? m : Math.round(m), 'm', m < 9.95 ? 1 : 0);
 }
 
 /** Age of the last fix in mission time: 'just now', '3 min ago', '1 h 05 min ago'; 'no fix yet' without one. */
 export function formatFixAge(lastFixSec, nowSec) {
-  if (!num(lastFixSec)) return 'no fix yet';
+  if (!num(lastFixSec)) return t('ui.no.fix.yet');
   if (!num(nowSec)) return dash;
   const m = Math.floor(Math.max(0, nowSec - lastFixSec) / 60);
-  if (m < 1) return 'just now';
-  return m < 60 ? m + ' min ago' : Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' min ago';
+  if (m < 1) return t('ui.just.now');
+  return m < 60 ? t('fixAgeMinutes', { minutes: formatNumber(m) }) : t('fixAgeHours', { hours: formatNumber(Math.floor(m / 60)), minutes: String(m % 60).padStart(2, '0') });
 }
 
 /** 'NAV · terrain fix · ±0.4 m · 3 min ago' from the navigation slice and the mission time (mission.elapsedSec). */
 export function formatNavLine(nav, nowSec) {
-  if (!nav || !num(nav.errorM)) return 'NAV · no position estimate';
-  return ['NAV', nav.fixMode || dash, formatNavError(nav.errorM), formatFixAge(nav.lastFixSec, nowSec)].join(' · ');
+  if (!nav || !num(nav.errorM)) return t('ui.nav.no.position.estimate');
+  return [t('ui.nav'), translateText(nav.fixMode) || dash, formatNavError(nav.errorM), formatFixAge(nav.lastFixSec, nowSec)].join(' · ');
 }
 
 /** True once the error passes the limit: the visor then asks for a terrain fix. */
@@ -115,5 +116,5 @@ export function needsFix(errorM, limitM = NAV_FIX_LIMIT_M) {
 
 /** The prompt under the navigation line, or null while the error is within the limit. */
 export function navFixPrompt(errorM, limitM = NAV_FIX_LIMIT_M) {
-  return needsFix(errorM, limitM) ? 'Stop for a terrain fix · stand still and look at the horizon' : null;
+  return needsFix(errorM, limitM) ? t('ui.stop.for.a.terrain.fix.stand.still.and') : null;
 }

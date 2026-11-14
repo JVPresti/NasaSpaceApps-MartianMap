@@ -1,18 +1,20 @@
+import { t, translateText, setLanguage } from '../i18n/index.js';
+import { useLanguage } from '../i18n/useLanguage.js';
 import { useEffect, useRef } from 'react';
 import ControlsHelp from './ControlsHelp.jsx';
 import Modal from './Modal.jsx';
 import ModeSwitch from './ModeSwitch.jsx';
 
 const QUALITY = [
-  ['auto', 'Auto'],
-  ['high', 'High'],
-  ['low', 'Low'],
+  ['auto', 'menu.auto'],
+  ['high', 'menu.high'],
+  ['low', 'menu.low'],
 ];
 
 function qualityLabel(quality) {
-  if (!quality) return 'Reading scene quality…';
-  if (quality.pending) return 'Applying scene quality…';
-  return quality.auto ? 'Auto (' + quality.tier + ')' : quality.tier;
+  if (!quality) return t('menu.reading.scene.quality');
+  if (quality.pending) return t('menu.applying.scene.quality');
+  return quality.auto ? t('menu.auto.tier', { tier: translateText(quality.tier) }) : translateText(quality.tier);
 }
 
 /**
@@ -39,6 +41,7 @@ export default function PauseMenu({
   onModeChange,
   onCancel,
 }) {
+  const language = useLanguage();
   const resumeRef = useRef(null);
   const backRef = useRef(null);
   const cancelRef = useRef(null);
@@ -60,14 +63,13 @@ export default function PauseMenu({
     >
       {view === 'menu' && (
         <div className="dialog-body">
-          <p className="dialog-kicker">Marswalk</p>
-          <h2 id="pause-menu-title" className="dialog-title">EVA paused</h2>
+          <p className="dialog-kicker">{t('app.brand')}</p>
+          <h2 id="pause-menu-title" className="dialog-title">{t('menu.eva.paused')}</h2>
           <p className="dialog-site">
-            {mode === 'plan' ? 'Plan view' : 'Walk view'} · mission clock paused
-          </p>
+            {mode === 'plan' ? t('menu.plan.view') : t('menu.walk.view')}{t('menu.mission.clock.paused')}</p>
 
           <div className="pause-view-switch" inert={busy ? true : undefined}>
-            <span>View</span>
+            <span>{t('menu.view')}</span>
             <ModeSwitch mode={mode} onChange={onModeChange} />
           </div>
 
@@ -80,26 +82,27 @@ export default function PauseMenu({
               onClick={onResume}
               disabled={busy}
             >
-              {busy ? (mode === 'plan' ? 'Resuming…' : 'Capturing the mouse…') : 'Resume'}
+              {busy ? (mode === 'plan' ? t('menu.resuming') : t('menu.capturing.the.mouse')) : t('resume')}
             </button>
-            <button type="button" className="ui-button ghost" onClick={onRestartRequest} disabled={busy}>
-              Restart EVA
-            </button>
-            <button type="button" className="ui-button ghost" onClick={onControls} disabled={busy}>
-              Controls
-            </button>
-            <button type="button" className="ui-button ghost" onClick={onSources} disabled={busy}>
-              Sources
-            </button>
-            <p id="sources-note" className="menu-note">
-              Credits and the data, artistic and modelled sources.
-            </p>
+            <button type="button" className="ui-button ghost" onClick={onRestartRequest} disabled={busy}>{t('menu.restart.eva')}</button>
+            <button type="button" className="ui-button ghost" onClick={onControls} disabled={busy}>{t('menu.controls')}</button>
+            <button type="button" className="ui-button ghost" onClick={onSources} disabled={busy}>{t('ui.sources.188')}</button>
+            <p id="sources-note" className="menu-note">{t('menu.credits.and.the.data.artistic.and.modelled.sources')}</p>
           </div>
 
-          {notice && <p className="dialog-notice" role="alert">{notice}</p>}
+          {notice && <p className="dialog-notice" role="alert">{translateText(notice)}</p>}
+
+          <div className="language-block">
+            <label htmlFor="interface-language">{t('language')}</label>
+            <select id="interface-language" value={language} onChange={(event) => setLanguage(event.target.value)}>
+              <option value="en" lang="en">{t('english')}</option>
+              <option value="es" lang="es">{t('spanish')}</option>
+            </select>
+            <p className="menu-note">{t('languageHelp')}</p>
+          </div>
 
           <div className="quality-block">
-            <h3 id="quality-label">Scene quality</h3>
+            <h3 id="quality-label">{t('menu.scene.quality')}</h3>
             <div className="quality-options" role="group" aria-labelledby="quality-label" aria-describedby="quality-status">
               {QUALITY.map(([id, label]) => (
                 <button
@@ -110,48 +113,41 @@ export default function PauseMenu({
                   disabled={qualityDisabled}
                   onClick={() => onQuality(id)}
                 >
-                  {label}
+                  {t(label)}
                 </button>
               ))}
             </div>
             <p id="quality-status" className="quality-status" role="status" aria-live="polite">
-              {qualityBusy ? 'Changing scene quality…' : qualityLabel(quality)}
+              {qualityBusy ? t('menu.changing.scene.quality') : qualityLabel(quality)}
             </p>
-            {quality?.gpu && <p className="quality-device">GPU: {quality.gpu}</p>}
-            {qualityError && <p className="dialog-error" role="alert">{qualityError}</p>}
+            {quality?.gpu && <p className="quality-device">{t('menu.gpu')}{quality.gpu}</p>}
+            {qualityError && <p className="dialog-error" role="alert">{translateText(qualityError)}</p>}
           </div>
 
-          {mode === 'plan' && <p className="dialog-footnote">Plan resumes without capturing the mouse.</p>}
+          {mode === 'plan' && <p className="dialog-footnote">{t('menu.plan.resumes.without.capturing.the.mouse')}</p>}
         </div>
       )}
 
       {view === 'controls' && (
         <div className="dialog-body">
-          <p className="dialog-kicker">Marswalk</p>
-          <h2 id="pause-controls-title" className="dialog-title">Controls</h2>
+          <p className="dialog-kicker">{t('app.brand')}</p>
+          <h2 id="pause-controls-title" className="dialog-title">{t('menu.controls')}</h2>
           <ControlsHelp />
           <div className="dialog-actions">
-            <button type="button" className="ui-button primary" ref={backRef} data-autofocus="true" onClick={onMenu}>
-              Back to pause menu
-            </button>
+            <button type="button" className="ui-button primary" ref={backRef} data-autofocus="true" onClick={onMenu}>{t('menu.back.to.pause.menu')}</button>
           </div>
         </div>
       )}
 
       {view === 'restart' && (
         <div className="dialog-body">
-          <p className="dialog-kicker">Marswalk</p>
-          <h2 id="pause-restart-title" className="dialog-title">Restart EVA?</h2>
-          <p className="dialog-mission" id="restart-warning">
-            This resets your position, route, alerts, suit and the mission clock, then returns to the start screen.
-            It cannot be undone.
-          </p>
+          <p className="dialog-kicker">{t('app.brand')}</p>
+          <h2 id="pause-restart-title" className="dialog-title">{t('menu.restart.eva')}</h2>
+          <p className="dialog-mission" id="restart-warning">{t('menu.this.resets.your.position.route.alerts.suit.and')}</p>
           <div className="dialog-actions">
-            <button type="button" className="ui-button ghost" ref={cancelRef} data-autofocus="true" onClick={onMenu} disabled={busy}>
-              Cancel
-            </button>
+            <button type="button" className="ui-button ghost" ref={cancelRef} data-autofocus="true" onClick={onMenu} disabled={busy}>{t('menu.cancel')}</button>
             <button type="button" className="ui-button danger" onClick={onRestartConfirm} disabled={busy} aria-describedby="restart-warning">
-              {busy ? 'Restarting…' : 'Restart EVA'}
+              {busy ? t('menu.restarting') : t('menu.restart.eva')}
             </button>
           </div>
         </div>

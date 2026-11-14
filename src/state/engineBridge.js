@@ -15,6 +15,7 @@ export function connectEngine(engine, store = useMissionStore) {
     if (!prev || s.view.sky !== prev.view.sky) engine.setSky(s.view.sky);
     // The dust storm blends from the current sky preset. At start only a non-zero blend is applied, so the
     // default preset (late_afternoon, #59) is not replaced by a clear_day blend at t=0.
+    if (!prev || s.view.slopeGrid !== prev.view.slopeGrid) engine.setSlopeGrid(!!s.view.slopeGrid);
     if (prev ? s.view.skyBlend !== prev.view.skyBlend : (s.view.skyBlend ?? 0) > 0) {
       engine.setSkyBlend(s.view.sky, 'dust_storm', s.view.skyBlend ?? 0);
     }

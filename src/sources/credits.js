@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 /** Group credit entries by kind, in the order credits.json lists the kinds. Kinds with no entries are dropped. */
 export function groupEntries(credits) {
   const kinds = credits?.kinds ?? [];
@@ -7,7 +8,7 @@ export function groupEntries(credits) {
     .map((kind) => ({ ...kind, entries: entries.filter((e) => e.kind === kind.id) }))
     .filter((g) => g.entries.length);
   const orphans = entries.filter((e) => !known.has(e.kind));
-  if (orphans.length) groups.push({ id: 'other', label: 'Other sources', entries: orphans });
+  if (orphans.length) groups.push({ id: 'other', get label() { return t('ui.other.sources'); }, entries: orphans });
   return groups;
 }
 

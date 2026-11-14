@@ -1,3 +1,4 @@
+import { t, translateText } from '../i18n/index.js';
 // Canvas painter for the helmet minimap (#60). Draws the ortho photo, the route split into walked and
 // remaining, waypoints, the habitat, refuges, active hazard zones, the partner (#70), a north ring and a scale bar.
 // No player marker and no uncertainty ring: those belong to #21. No Plan-mode map: that is #14.
@@ -190,7 +191,7 @@ function drawShelters(g, view, project, radius) {
       g.font = font(Math.max(7, radius * 0.065), 700);
       g.textAlign = 'center';
       g.textBaseline = 'top';
-      g.fillText('HAB', p.x, p.y + icon * 1.2);
+      g.fillText(t('hab'), p.x, p.y + icon * 1.2);
     }
   }
   for (const shelter of refuges) {
@@ -268,7 +269,7 @@ function drawCardinalRing(g, cx, cy, radius, headingDeg) {
     g.font = font(Math.max(8, radius * (north ? 0.09 : 0.072)), north ? 700 : 600);
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText(point.label, point.x, point.y);
+    g.fillText(translateText(point.label), point.x, point.y);
   }
 }
 
@@ -332,7 +333,7 @@ export function drawMinimap(g, view) {
     g.font = font(Math.max(10, radius * 0.09), 700);
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText('NO FIX', cx, cy);
+    g.fillText(t('ui.no.fix'), cx, cy);
     g.restore();
     return;
   }
@@ -355,7 +356,7 @@ export function drawMinimap(g, view) {
     g.font = font(Math.max(7, radius * 0.06), 600);
     g.textAlign = 'right';
     g.textBaseline = 'bottom';
-    g.fillText('N-UP', cx + radius * 0.55, cy + radius * 0.72);
+    g.fillText(t('northUp'), cx + radius * 0.55, cy + radius * 0.72);
   }
   g.restore();
 }

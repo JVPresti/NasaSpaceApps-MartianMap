@@ -1,3 +1,4 @@
+import { t, translateText } from '../i18n/index.js';
 // Partner on the helmet HUD (#70, plan section 3.4 scenario 7). The visor keeps one chip: suit status dot, range and a
 // bearing arrow relative to the heading. The detail (O2, battery, separation bar with the limit) opens with T, and
 // opens by itself while the separation or the partner's suit is in caution or warning. Plan section 3.3: what takes
@@ -73,29 +74,29 @@ export default function PartnerPanel() {
   const open = manual || suit !== 'nominal' || p.separation !== 'nominal';
   const scale = p.limitM * 1.2;   // the bar runs 20 % past the limit so a warning still shows how far over
   const brg = String(p.bearingDeg % 360).padStart(3, '0');
-  const lastSeen = p.ageMin === null ? '' : p.ageMin < 1 ? 'under 1 min ago' : p.ageMin + ' min ago';
-  const label = `Partner ${p.id}: ${p.link ? '' : 'no radio link, last known '}${p.rangeM} metres, bearing ${brg}, suit ${suit}, separation ${p.separation}`;
+  const lastSeen = p.ageMin === null ? '' : p.ageMin < 1 ? t('menu.under.1.min.ago') : t('fixAgeMinutes', { minutes: p.ageMin });
+  const label = t('menu.partner.p0.p1.p2.metres.bearing.p3.suit', { p0: p.id, p1: p.link ? '' : t('menu.no.radio.link.last.known'), p2: p.rangeM, p3: brg, p4: translateText(suit), p5: translateText(p.separation) });
 
   return (
     <section className={'hud-partner hud-partner-sep-' + p.separation + (p.link ? '' : ' hud-partner-lost')} aria-label={label} style={p.color ? { '--partner': p.color } : undefined}>
       <div className="hud-panel hud-partner-chip">
-        <span className={'hud-partner-dot hud-partner-dot-' + (p.link ? suit : 'lost')} title={p.link ? 'Partner suit: ' + suit : 'No radio link'} />
+        <span className={'hud-partner-dot hud-partner-dot-' + (p.link ? suit : 'lost')} title={p.link ? t('menu.partner.suit.status', { status: translateText(suit) }) : t('menu.no.radio.link')} />
         <b className="hud-partner-id">{p.id}</b>
         {p.relDeg !== null && (
           <svg viewBox="0 0 24 24" className="hud-icon hud-partner-arrow" style={{ transform: `rotate(${p.relDeg}deg)` }} aria-hidden="true">
             <path d="M12 3 19 20 12 16 5 20Z" />
           </svg>
         )}
-        <span className="hud-partner-range"><b>{p.rangeM}</b><small>m</small></span>
+        <span className="hud-partner-range"><b>{p.rangeM}</b><small>{t('units.metres')}</small></span>
         <span className="hud-partner-brg">{brg}<small>°</small></span>
-        {!p.link && <span className="hud-partner-last" title={'Last known position, ' + lastSeen}>LAST</span>}
-        {!open && p.link && <kbd className="hud-partner-key" title="Press T for partner detail">T</kbd>}
+        {!p.link && <span className="hud-partner-last" title={t('menu.last.known.position.age', { age: lastSeen })}>{t('menu.last')}</span>}
+        {!open && p.link && <kbd className="hud-partner-key" title={t('menu.press.t.for.partner.detail')}>{t('menu.t')}</kbd>}
       </div>
       {open && (
         <div className="hud-panel hud-partner-detail">
-          {!p.link && <div className="hud-partner-nolink">NO LINK · last contact {lastSeen}<SourceTag path="crew.0.link" /></div>}
+          {!p.link && <div className="hud-partner-nolink">{t('menu.no.link.last.contact')}{lastSeen}<SourceTag path="crew.0.link" /></div>}
           <div className="hud-partner-row">
-            <div className="hud-row-head"><span className="hud-o2">O<sub>2</sub></span><b>{formatValue(p.o2)}</b><small>%</small><SourceTag path="crew.0.oxygenPct" /></div>
+            <div className="hud-row-head"><span className="hud-o2">{t('ui.o')}<sub>2</sub></span><b>{formatValue(p.o2)}</b><small>%</small><SourceTag path="crew.0.oxygenPct" /></div>
             <Bar frac={p.o2 / 100} level={p.o2Level} />
           </div>
           <div className="hud-partner-row">
@@ -103,9 +104,9 @@ export default function PartnerPanel() {
             <Bar frac={p.batt / 100} level={p.battLevel} />
           </div>
           <div className="hud-partner-row hud-partner-sep">
-            <div className="hud-row-head"><span className="hud-partner-sep-label">SEP</span><b>{p.rangeM}</b><small>/ {p.limitM} m</small><SourceTag path="crew.0.rangeM" /></div>
+            <div className="hud-row-head"><span className="hud-partner-sep-label">{t('menu.sep')}</span><b>{p.rangeM}</b><small>/ {p.limitM}{t('units.metresSuffix')}</small><SourceTag path="crew.0.rangeM" /></div>
             <Bar frac={p.rangeM / scale} level={p.separation} marks={[{ at: p.cautionM / scale, kind: 'caution' }, { at: p.limitM / scale, kind: 'limit' }]} />
-            <div className="hud-caption">SEPARATION LIMIT {p.limitM} m<SourceTag path="crew.0.separationLimitM" /></div>
+            <div className="hud-caption">{t('menu.separation.limit')}{p.limitM}{t('units.metresSuffix')}<SourceTag path="crew.0.separationLimitM" /></div>
           </div>
         </div>
       )}

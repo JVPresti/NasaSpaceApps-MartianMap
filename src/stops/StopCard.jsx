@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 // Science stop card (#66): title, short text, a Perseverance image with its credit always visible, and a source tag.
 // Plan mode shows every sentence, because reading belongs in Plan mode (docs/IMPLEMENTATION_PLAN.md 3.3). Walk mode
 // shows the one-line summary and, at Cheyava Falls, the reference-match image beside the view (3.4, scenario 1).
@@ -15,10 +16,10 @@ function StopImage({ stop, image, reference, registry }) {
     <figure className="stop-figure">
       <div className="stop-image-frame">
         <img src={imageUrl(image)} alt={image.alt} width={image.width_px} height={image.height_px} />
-        {reference && <span className="stop-match">Reference match</span>}
+        {reference && <span className="stop-match">{t('ui.reference.match')}</span>}
       </div>
       <figcaption>
-        <span className="stop-credit">Image: {image.credit}</span>
+        <span className="stop-credit">{t('ui.image')}{image.credit}</span>
         <SourceTag path={stopPaths.image(stop, image)} registry={registry} />
       </figcaption>
     </figure>
@@ -37,18 +38,18 @@ export default function StopCard({ stop, variant = 'plan', onClose, registry = p
   const radius = stop.arrival_radius?.value;
 
   return (
-    <aside id={walk ? undefined : PLAN_CARD_ID} className={`stop-card stop-card-${variant}${reference ? ' stop-card-reference' : ''}`} aria-label={`Science stop: ${stop.name}`}>
+    <aside id={walk ? undefined : PLAN_CARD_ID} className={`stop-card stop-card-${variant}${reference ? ' stop-card-reference' : ''}`} aria-label={t('ui.science.stop.p0', { p0: stop.name })}>
       <header className="stop-head">
         <p className="stop-kicker">
-          {walk ? `Science stop · arrived${radius ? ` within ${radius} m` : ''}` : `Science stop · ${stop.waypoint}`}
+          {walk ? t('ui.science.stop.arrived.p0', { p0: radius ? t('within', { radius }) : '' }) : t('stops.waypointTitle', { p0: stop.waypoint })}
         </p>
         <h2>
           {stop.name}
           {stop.title_tag && <SourceTag path={stopPaths.title(stop)} variant="tag" registry={registry} />}
         </h2>
         {onClose && (
-          <button type="button" className="stop-close" onClick={onClose} aria-label={`Close ${stop.name} card`}>
-            {walk && <kbd>Enter</kbd>}
+          <button type="button" className="stop-close" onClick={onClose} aria-label={t('ui.close.p0.card', { p0: stop.name })}>
+            {walk && <kbd>{t('ui.enter')}</kbd>}
             <span aria-hidden="true">×</span>
           </button>
         )}
