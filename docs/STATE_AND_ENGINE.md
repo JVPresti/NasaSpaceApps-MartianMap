@@ -56,6 +56,8 @@ setMode('plan');
 | `route.distanceM`, `climbM`, `steepestSlopeDeg`, `etaSec` | from `planRoute()` (`distance`, `climb`, `steepestSlopeDeg`) | planner | #16, #41 |
 | `route.reason` | why the route changed, for example after an event | re-planner | #23 |
 | `route.shelter` | `{ id, name, x, z, type, protection }` from `public/data/shelters.json`: the shelter the re-planner chose, highlighted in green; `null` when no event is active | re-planner, events | #23, #24 to #26, #30 |
+| `route.legs` | `[{ from, to, distanceM, climbM, descentM, maxSlopeDeg, timeSec, o2G, o2Pct, batteryWh, batteryPct }]`, one per leg between consecutive `route.waypoints`, walked out at nominal effort. `maxSlopeDeg` is the steepest grade along the walking direction. `[]` without a route | per-leg costs (`src/sim/legCosts.js`) | #41 |
+| `route.totals` | the same fields summed over the legs (the maximum for `maxSlopeDeg`), plus the walk home along the same path with the 20 % pad (`returnTimeSec`, `returnO2G`, `returnBatteryWh`), what is left at the habitat (`arrivalO2G`, `arrivalO2Pct`, `arrivalBatteryWh`, `arrivalBatteryPct`), `marginSec` (O2 left at the habitat as time at the flat walking rate, minus the 30 min reserve) and `status` as for `suit.status`. `null` without a route | per-leg costs | #41 |
 | `environment.dustOpacity` | tau. **The event engine writes this path.** | events, MEDA replay | #22, #24, #31 |
 | `environment.tempC`, `windMs`, `pressurePa` | weather | MEDA replay | #31 |
 | `environment.doseRateUgyH`, `doseUgy` | radiation dose rate (µGy/h) and dose received (µGy) | RAD curve, events | #25, #31 |
@@ -110,7 +112,7 @@ await engine.ready;
 
 ## Simulation runners
 
-`startSimulation(engine)` in `src/state/simulation.js` starts the modules that write the store once the engine is ready. Today that is the suit model (`src/sim/suitModel.js`, `src/sim/suitRunner.js`, #19). It ticks 4 times per second, reads `navigation` and `route.path`, uses `engine.heightAt` for the gradient, and writes `suit`. All its constants come from `public/data/hazards.json`. Nothing starts with `?mock=1`, so mock values stay put.
+`startSimulation(engine)` in `src/state/simulation.js` starts the modules that write the store once the engine is ready. Today that is the suit model (`src/sim/suitModel.js`, `src/sim/suitRunner.js`, #19). It ticks 4 times per second, reads `navigation` and `route.path`, uses `engine.heightAt` for the gradient, and writes `suit`. All its constants come from `public/data/hazards.json`. The per-leg costs (`src/sim/legCosts.js`, #41) recompute `route.legs` and `route.totals` whenever `route.path` or `route.waypoints` changes, with the same `walkCost` function the walkback uses. Nothing starts with `?mock=1`, so mock values stay put.
 
 In development, `window.__missionStore` is the store, for the browser console: `__missionStore.getState().suit`. Production builds do not have it.
 
