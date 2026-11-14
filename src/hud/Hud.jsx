@@ -13,6 +13,7 @@ import RadioLink from './RadioLink.jsx';
 import SlopeAhead from './SlopeAhead.jsx';
 import * as I from './icons.jsx';
 import NavLine from './NavLine.jsx';
+import Minimap from './Minimap.jsx';
 import './hud.css';
 import SamplingPanel from './SamplingPanel.jsx';
 
@@ -265,8 +266,11 @@ function AlertBanner() {
   );
 }
 
-/** The whole visor HUD. Rendered by App in Walk mode once the scene is ready. */
-export default function Hud({ engine }) {
+/**
+ * The whole visor HUD. Rendered by App in Walk mode once the scene is ready.
+ * `minimapRoute` is App's route tracker: it outlives this component so Plan mode does not reset the walk.
+ */
+export default function Hud({ engine, minimapRoute }) {
   return (
     <div className="hud" aria-label="Helmet display">
       <HeadingTape />
@@ -275,6 +279,7 @@ export default function Hud({ engine }) {
       <AlertBanner />
       <Clocks />
       <SuitPanel />
+      <Minimap tracker={minimapRoute} />
       <EnvStrip />
       <RadioLink engine={engine} />
       <NavLine><SourceTag path="navigation.errorM" /></NavLine>
