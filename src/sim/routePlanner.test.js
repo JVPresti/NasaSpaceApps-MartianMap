@@ -143,8 +143,8 @@ describe('the five waypoints in route.json', () => {
       routeJson.waypoints[routeJson.waypoints.length - 1].z,
     ]);
     assertPathIsOpen(grid, result.path);
-    // path points are rounded to 1 mm, so the re-measured length drifts by a few mm
-    expect(measurePath(grid, result.path).distance).toBeCloseTo(result.distance, 2);
+    // distance, climb and slope are measured on the rounded path that is returned (#128)
+    expect(measurePath(grid, result.path).distance).toBe(result.distance);
   });
 
   it('reaches every waypoint, or its walkable edge for the outcrop', () => {
