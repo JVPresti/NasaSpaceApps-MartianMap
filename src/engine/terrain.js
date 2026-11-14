@@ -2,12 +2,7 @@
 // Ported from docs/marswalk-assets/testbench-reference/main.js (lines 61-129, 138-163).
 import * as THREE from 'three';
 import * as SH from './shaders.js';
-
-function bilinear(arr, n, fx, fy) {
-  const x0 = Math.max(0, Math.min(n - 2, Math.floor(fx))), y0 = Math.max(0, Math.min(n - 2, Math.floor(fy)));
-  const tx = Math.max(0, Math.min(1, fx - x0)), ty = Math.max(0, Math.min(1, fy - y0)), i = y0 * n + x0;
-  return (arr[i] * (1 - tx) + arr[i + 1] * tx) * (1 - ty) + (arr[i + n] * (1 - tx) + arr[i + n + 1] * tx) * ty;
-}
+import { bilinear, createHeightQueries } from './queries.js';
 
 /**
  * ctx.T = { n, W, H, h, dens, dn, base }, ctx.RING = { n, size, h } must be loaded first.
@@ -15,10 +10,8 @@ function bilinear(arr, n, fx, fy) {
  */
 export function createTerrain(ctx) {
   const { T, RING, U, scene } = ctx;
-  const inTile = (x, z) => Math.abs(x) <= T.W / 2 && Math.abs(z) <= T.H / 2;
-  const tileH = (x, z) => bilinear(T.h, T.n, (x / T.W + 0.5) * (T.n - 1), (z / T.H + 0.5) * (T.n - 1));
-  const ringH = (x, z) => bilinear(RING.h, RING.n, (x / RING.size + 0.5) * (RING.n - 1), (z / RING.size + 0.5) * (RING.n - 1));
-  const groundH = (x, z) => inTile(x, z) ? tileH(x, z) : ringH(x, z);
+  const queries = createHeightQueries(T, RING);   // source-grid heights, shared with the public engine API
+  const { inTile, tileH, ringH, groundH } = queries;
   // height on the mesh that is actually drawn in this tier (so rocks sit on the visible surface)
   let meshGrid = null; // { n, h }
   const meshH = (x, z) => bilinear(meshGrid.h, meshGrid.n, (x / T.W + 0.5) * (meshGrid.n - 1), (z / T.H + 0.5) * (meshGrid.n - 1));
@@ -30,7 +23,7 @@ export function createTerrain(ctx) {
 
   const group = new THREE.Group(); scene.add(group);
   const api = {
-    inTile, tileH, ringH, groundH, meshH, density, group,
+    inTile, tileH, ringH, groundH, meshH, density, group, queries,
     /** ShaderMaterial shared by all terrain chunks; set once the textures are loaded. */
     material: null,
     shadowTex: null,

@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { createEngine } from '../engine/index.js';
+import { useMissionStore } from '../state/store.js';
+import { connectEngine } from '../state/engineBridge.js';
 
 const ASSET_BASE = import.meta.env.BASE_URL + 'marswalk/';
 
@@ -10,13 +12,12 @@ function tierFromUrl() {
 }
 
 /**
- * Mounts the Marswalk engine once and forwards the mode to it.
- * The engine runs its own render loop; this component renders only when its props change, never per frame.
+ * Mounts the Marswalk engine once and connects it to the mission store (src/state/engineBridge.js):
+ * mode, layer, sky and route flow from the store to the engine; the player's position flows back 5 times per second.
+ * The engine runs its own render loop; this component never renders per frame.
  */
-export default function EngineView({ mode, onStatus, onReady, onError }) {
+export default function EngineView({ onStatus, onReady, onError }) {
   const containerRef = useRef(null);
-  const engineRef = useRef(null);
-  const modeRef = useRef(mode);
   const callbacks = useRef({ onStatus, onReady, onError });
 
   useEffect(() => {
@@ -24,28 +25,26 @@ export default function EngineView({ mode, onStatus, onReady, onError }) {
   });
 
   useEffect(() => {
+    let disconnect = null, disposed = false;
     const engine = createEngine(containerRef.current, {
       assetBase: ASSET_BASE,
-      mode: modeRef.current,
+      mode: useMissionStore.getState().mode,
       tier: tierFromUrl(),
       debug: import.meta.env.DEV,
       onStatus: (text) => callbacks.current.onStatus?.(text),
       onError: (err) => callbacks.current.onError?.(err),
     });
-    engineRef.current = engine;
     engine.ready.then(() => {
-      if (engineRef.current === engine) callbacks.current.onReady?.();
+      if (disposed) return;
+      disconnect = connectEngine(engine);
+      callbacks.current.onReady?.();
     }, () => {});
     return () => {
+      disposed = true;
+      if (disconnect) disconnect();
       engine.dispose();
-      if (engineRef.current === engine) engineRef.current = null;
     };
   }, []);
-
-  useEffect(() => {
-    modeRef.current = mode;
-    engineRef.current?.setMode(mode);
-  }, [mode]);
 
   return <div ref={containerRef} className="engine-view" />;
 }
