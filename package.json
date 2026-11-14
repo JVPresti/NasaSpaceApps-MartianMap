@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "test": "vitest run",
+    "shelters": "node scripts/build-shelters.mjs",
     "measure": "node scripts/measure-fps.mjs",
     "preview": "vite preview"
   },

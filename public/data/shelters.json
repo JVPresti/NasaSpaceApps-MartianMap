@@ -1,0 +1,366 @@
+{
+  "schema_version": 1,
+  "title": "Marswalk shelters and safe points",
+  "description": "Places the route planner can send the crew to when an event starts. The habitat comes first. Natural safe points come from the sky view of the terrain. Field definitions are in public/data/README.md, the method is in docs/route/shelters.md. Built by scripts/build-shelters.mjs; do not edit by hand.",
+  "frame": "x east, z south, metres from Cheyava Falls (engine frame, same as route.json)",
+  "tags": {
+    "DATA": "Measured by a mission or a lab study, or stated in a NASA specification or procedure. The provenance block names the document and the page.",
+    "DERIVED": "Calculated by us from DATA values. The note gives the calculation.",
+    "SIM": "Our own assumption or game choice. The note says why and what it is based on."
+  },
+  "events": {
+    "radiation": "Solar particle event (hazards.json radiation.sep_*)",
+    "dust_storm": "Dust storm (hazards.json dust.*)",
+    "low_oxygen": "Low suit oxygen (hazards.json suit.*)"
+  },
+  "protection": {
+    "full": "Closes the hazard: the crew can stay as long as needed.",
+    "partial": "Lowers the hazard but does not stop it. Planner fallback when no full shelter can be reached."
+  },
+  "sky_view": {
+    "method": "Ray cast on the 751 x 751 height grid: 48 azimuths, rays to 400 m or the tile edge, dose point 1 m above the ground. Visible fraction = mean over azimuths of (1 - sin(horizon elevation)), horizon clamped at 0.",
+    "tile_stats": {
+      "min": 0.807,
+      "p01": 0.848,
+      "p50": 0.927,
+      "p99": 0.983,
+      "max": 1
+    },
+    "selection": {
+      "minDoseReduction": 0.12,
+      "patchRadiusM": 4,
+      "edgeMarginM": 60,
+      "minSeparationM": 300,
+      "routeCorridorM": 80,
+      "count": 4
+    }
+  },
+  "shelters": [
+    {
+      "id": "HAB",
+      "name": "HAB · habitat airlock",
+      "type": "habitat",
+      "x": 535.1,
+      "z": 574.1,
+      "events": [
+        "radiation",
+        "dust_storm",
+        "low_oxygen"
+      ],
+      "protection": "full",
+      "reason": "Pressurised habitat. Inside the crew has air, power and walls between them and the sky. It is the only shelter that protects from every event.",
+      "waypoint": {
+        "x": 520,
+        "z": 600
+      },
+      "values": {
+        "position": {
+          "value": [
+            535.1,
+            574.1
+          ],
+          "unit": "m (x east, z south, from Cheyava Falls)",
+          "tag": "DERIVED",
+          "label": "HiRISE DEM · habitat placement",
+          "provenance": {
+            "mission": "MRO",
+            "instrument": "HiRISE",
+            "product_id": null,
+            "site": "Jezero crater, Neretva Vallis, around Cheyava Falls",
+            "sol_or_date": null,
+            "reference": "Habitat placement rule in src/engine/habitat.js (habitat.init) and the airlock geometry in public/marswalk/assets_habitat/habitat.json",
+            "url": null,
+            "locator": "habitat.json, airlock: \"outer hatch faces +X; sill 1.02 m above the ground at x = 7.23; the steps reach the ground at about x = 9.9\"",
+            "data_url": null,
+            "license": "Project code and data.",
+            "note": "Foot of the airlock steps. The engine places the habitat on the flattest spot within 30 m of the HAB waypoint (520, 600): centre (541, 582), 0.26 m of relief under the 11 m footprint, airlock turned toward the first waypoint. The steps reach the ground 9.9 m from the habitat origin along that heading. build-shelters.mjs repeats the rule on the same height grid."
+          }
+        }
+      }
+    },
+    {
+      "id": "SP1",
+      "name": "SP1 · terrain shade",
+      "type": "natural",
+      "x": -92.9,
+      "z": -20,
+      "events": [
+        "radiation"
+      ],
+      "protection": "partial",
+      "reason": "Walkable ground where the terrain hides 16 % of the sky, next to the route. The horizon rises to 29 deg toward azimuth 350 deg. Use it to wait out a solar particle event only when the habitat is too far. It gives no protection from a dust storm or low oxygen.",
+      "values": {
+        "sky_view_factor": {
+          "value": 0.841,
+          "unit": "fraction of the upper hemisphere",
+          "tag": "DERIVED",
+          "label": "HiRISE DEM · sky view",
+          "provenance": {
+            "mission": "MRO",
+            "instrument": "HiRISE",
+            "product_id": null,
+            "site": "Jezero crater, Neretva Vallis, around Cheyava Falls",
+            "sol_or_date": null,
+            "reference": "Marswalk terrain tile public/marswalk/assets/terrain.json (751 x 751 heights, 2 m spacing, from the HiRISE 1 m DEM of Jezero crater); sky view computed by src/sim/skyView.js through scripts/build-shelters.mjs",
+            "url": "https://www.uahirise.org/dtm/",
+            "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
+            "data_url": "https://www.uahirise.org/dtm/",
+            "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
+            "note": "Sky view 0.841 of the upper hemisphere at 1 m above the ground (72 azimuths, rays to 400 m), against 1.000 on open flat ground and a tile median of 0.927. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+          }
+        },
+        "dose_reduction": {
+          "value": 0.159,
+          "unit": "fraction of the open-ground SEP dose",
+          "tag": "DERIVED",
+          "label": "HiRISE DEM · sky view",
+          "provenance": {
+            "mission": "MRO",
+            "instrument": "HiRISE",
+            "product_id": null,
+            "site": "Jezero crater, Neretva Vallis, around Cheyava Falls",
+            "sol_or_date": null,
+            "reference": "Marswalk terrain tile public/marswalk/assets/terrain.json (751 x 751 heights, 2 m spacing, from the HiRISE 1 m DEM of Jezero crater); sky view computed by src/sim/skyView.js through scripts/build-shelters.mjs",
+            "url": "https://www.uahirise.org/dtm/",
+            "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
+            "data_url": "https://www.uahirise.org/dtm/",
+            "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
+            "note": "1 - sky view factor. Applied to the September 2017 event (544 µGy (water), above background, RAD in Gale crater, hazards.json radiation.sep_2017.event_dose) it would save at most 87 µGy. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+          }
+        },
+        "route_from_hab": {
+          "value": 874,
+          "unit": "m",
+          "tag": "DERIVED",
+          "label": "A* planner · HiRISE DEM",
+          "provenance": {
+            "mission": "MRO",
+            "instrument": "HiRISE",
+            "product_id": null,
+            "site": "Jezero crater, Neretva Vallis, around Cheyava Falls",
+            "sol_or_date": null,
+            "reference": "Marswalk terrain tile public/marswalk/assets/terrain.json (751 x 751 heights, 2 m spacing, from the HiRISE 1 m DEM of Jezero crater); sky view computed by src/sim/skyView.js through scripts/build-shelters.mjs",
+            "url": "https://www.uahirise.org/dtm/",
+            "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
+            "data_url": "https://www.uahirise.org/dtm/",
+            "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
+            "note": "Walking distance of the A* route from the HAB entry (src/sim/routePlanner.js, slope limit 25 deg). Straight line 864 m, steepest slope on the route 22.2 deg."
+          }
+        }
+      }
+    },
+    {
+      "id": "SP2",
+      "name": "SP2 · terrain shade",
+      "type": "natural",
+      "x": -460.9,
+      "z": -92,
+      "events": [
+        "radiation"
+      ],
+      "protection": "partial",
+      "reason": "Walkable ground where the terrain hides 17 % of the sky, spread across the tile. The horizon rises to 25 deg toward azimuth 5 deg. Use it to wait out a solar particle event only when the habitat is too far. It gives no protection from a dust storm or low oxygen.",
+      "values": {
+        "sky_view_factor": {
+          "value": 0.833,
+          "unit": "fraction of the upper hemisphere",
+          "tag": "DERIVED",
+          "label": "HiRISE DEM · sky view",
+          "provenance": {
+            "mission": "MRO",
+            "instrument": "HiRISE",
+            "product_id": null,
+            "site": "Jezero crater, Neretva Vallis, around Cheyava Falls",
+            "sol_or_date": null,
+            "reference": "Marswalk terrain tile public/marswalk/assets/terrain.json (751 x 751 heights, 2 m spacing, from the HiRISE 1 m DEM of Jezero crater); sky view computed by src/sim/skyView.js through scripts/build-shelters.mjs",
+            "url": "https://www.uahirise.org/dtm/",
+            "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
+            "data_url": "https://www.uahirise.org/dtm/",
+            "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
+            "note": "Sky view 0.833 of the upper hemisphere at 1 m above the ground (72 azimuths, rays to 400 m), against 1.000 on open flat ground and a tile median of 0.927. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+          }
+        },
+        "dose_reduction": {
+          "value": 0.167,
+          "unit": "fraction of the open-ground SEP dose",
+          "tag": "DERIVED",
+          "label": "HiRISE DEM · sky view",
+          "provenance": {
+            "mission": "MRO",
+            "instrument": "HiRISE",
+            "product_id": null,
+            "site": "Jezero crater, Neretva Vallis, around Cheyava Falls",
+            "sol_or_date": null,
+            "reference": "Marswalk terrain tile public/marswalk/assets/terrain.json (751 x 751 heights, 2 m spacing, from the HiRISE 1 m DEM of Jezero crater); sky view computed by src/sim/skyView.js through scripts/build-shelters.mjs",
+            "url": "https://www.uahirise.org/dtm/",
+            "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
+            "data_url": "https://www.uahirise.org/dtm/",
+            "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
+            "note": "1 - sky view factor. Applied to the September 2017 event (544 µGy (water), above background, RAD in Gale crater, hazards.json radiation.sep_2017.event_dose) it would save at most 91 µGy. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+          }
+        },
+        "route_from_hab": {
+          "value": 1255,
+          "unit": "m",
+          "tag": "DERIVED",
+          "label": "A* planner · HiRISE DEM",
+          "provenance": {
+            "mission": "MRO",
+            "instrument": "HiRISE",
+            "product_id": null,
+            "site": "Jezero crater, Neretva Vallis, around Cheyava Falls",
+            "sol_or_date": null,
+            "reference": "Marswalk terrain tile public/marswalk/assets/terrain.json (751 x 751 heights, 2 m spacing, from the HiRISE 1 m DEM of Jezero crater); sky view computed by src/sim/skyView.js through scripts/build-shelters.mjs",
+            "url": "https://www.uahirise.org/dtm/",
+            "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
+            "data_url": "https://www.uahirise.org/dtm/",
+            "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
+            "note": "Walking distance of the A* route from the HAB entry (src/sim/routePlanner.js, slope limit 25 deg). Straight line 1198 m, steepest slope on the route 22.1 deg."
+          }
+        }
+      }
+    },
+    {
+      "id": "SP3",
+      "name": "SP3 · terrain shade",
+      "type": "natural",
+      "x": -493.1,
+      "z": 242,
+      "events": [
+        "radiation"
+      ],
+      "protection": "partial",
+      "reason": "Walkable ground where the terrain hides 16 % of the sky, spread across the tile. The horizon rises to 21 deg toward azimuth 235 deg. Use it to wait out a solar particle event only when the habitat is too far. It gives no protection from a dust storm or low oxygen.",
+      "values": {
+        "sky_view_factor": {
+          "value": 0.841,
+          "unit": "fraction of the upper hemisphere",
+          "tag": "DERIVED",
+          "label": "HiRISE DEM · sky view",
+          "provenance": {
+            "mission": "MRO",
+            "instrument": "HiRISE",
+            "product_id": null,
+            "site": "Jezero crater, Neretva Vallis, around Cheyava Falls",
+            "sol_or_date": null,
+            "reference": "Marswalk terrain tile public/marswalk/assets/terrain.json (751 x 751 heights, 2 m spacing, from the HiRISE 1 m DEM of Jezero crater); sky view computed by src/sim/skyView.js through scripts/build-shelters.mjs",
+            "url": "https://www.uahirise.org/dtm/",
+            "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
+            "data_url": "https://www.uahirise.org/dtm/",
+            "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
+            "note": "Sky view 0.841 of the upper hemisphere at 1 m above the ground (72 azimuths, rays to 400 m), against 1.000 on open flat ground and a tile median of 0.927. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+          }
+        },
+        "dose_reduction": {
+          "value": 0.159,
+          "unit": "fraction of the open-ground SEP dose",
+          "tag": "DERIVED",
+          "label": "HiRISE DEM · sky view",
+          "provenance": {
+            "mission": "MRO",
+            "instrument": "HiRISE",
+            "product_id": null,
+            "site": "Jezero crater, Neretva Vallis, around Cheyava Falls",
+            "sol_or_date": null,
+            "reference": "Marswalk terrain tile public/marswalk/assets/terrain.json (751 x 751 heights, 2 m spacing, from the HiRISE 1 m DEM of Jezero crater); sky view computed by src/sim/skyView.js through scripts/build-shelters.mjs",
+            "url": "https://www.uahirise.org/dtm/",
+            "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
+            "data_url": "https://www.uahirise.org/dtm/",
+            "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
+            "note": "1 - sky view factor. Applied to the September 2017 event (544 µGy (water), above background, RAD in Gale crater, hazards.json radiation.sep_2017.event_dose) it would save at most 86 µGy. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+          }
+        },
+        "route_from_hab": {
+          "value": 1152,
+          "unit": "m",
+          "tag": "DERIVED",
+          "label": "A* planner · HiRISE DEM",
+          "provenance": {
+            "mission": "MRO",
+            "instrument": "HiRISE",
+            "product_id": null,
+            "site": "Jezero crater, Neretva Vallis, around Cheyava Falls",
+            "sol_or_date": null,
+            "reference": "Marswalk terrain tile public/marswalk/assets/terrain.json (751 x 751 heights, 2 m spacing, from the HiRISE 1 m DEM of Jezero crater); sky view computed by src/sim/skyView.js through scripts/build-shelters.mjs",
+            "url": "https://www.uahirise.org/dtm/",
+            "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
+            "data_url": "https://www.uahirise.org/dtm/",
+            "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
+            "note": "Walking distance of the A* route from the HAB entry (src/sim/routePlanner.js, slope limit 25 deg). Straight line 1081 m, steepest slope on the route 22.1 deg."
+          }
+        }
+      }
+    },
+    {
+      "id": "SP4",
+      "name": "SP4 · terrain shade",
+      "type": "natural",
+      "x": 193.5,
+      "z": -416,
+      "events": [
+        "radiation"
+      ],
+      "protection": "partial",
+      "reason": "Walkable ground where the terrain hides 16 % of the sky, spread across the tile. The horizon rises to 27 deg toward azimuth 335 deg. Use it to wait out a solar particle event only when the habitat is too far. It gives no protection from a dust storm or low oxygen.",
+      "values": {
+        "sky_view_factor": {
+          "value": 0.843,
+          "unit": "fraction of the upper hemisphere",
+          "tag": "DERIVED",
+          "label": "HiRISE DEM · sky view",
+          "provenance": {
+            "mission": "MRO",
+            "instrument": "HiRISE",
+            "product_id": null,
+            "site": "Jezero crater, Neretva Vallis, around Cheyava Falls",
+            "sol_or_date": null,
+            "reference": "Marswalk terrain tile public/marswalk/assets/terrain.json (751 x 751 heights, 2 m spacing, from the HiRISE 1 m DEM of Jezero crater); sky view computed by src/sim/skyView.js through scripts/build-shelters.mjs",
+            "url": "https://www.uahirise.org/dtm/",
+            "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
+            "data_url": "https://www.uahirise.org/dtm/",
+            "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
+            "note": "Sky view 0.843 of the upper hemisphere at 1 m above the ground (72 azimuths, rays to 400 m), against 1.000 on open flat ground and a tile median of 0.927. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+          }
+        },
+        "dose_reduction": {
+          "value": 0.157,
+          "unit": "fraction of the open-ground SEP dose",
+          "tag": "DERIVED",
+          "label": "HiRISE DEM · sky view",
+          "provenance": {
+            "mission": "MRO",
+            "instrument": "HiRISE",
+            "product_id": null,
+            "site": "Jezero crater, Neretva Vallis, around Cheyava Falls",
+            "sol_or_date": null,
+            "reference": "Marswalk terrain tile public/marswalk/assets/terrain.json (751 x 751 heights, 2 m spacing, from the HiRISE 1 m DEM of Jezero crater); sky view computed by src/sim/skyView.js through scripts/build-shelters.mjs",
+            "url": "https://www.uahirise.org/dtm/",
+            "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
+            "data_url": "https://www.uahirise.org/dtm/",
+            "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
+            "note": "1 - sky view factor. Applied to the September 2017 event (544 µGy (water), above background, RAD in Gale crater, hazards.json radiation.sep_2017.event_dose) it would save at most 85 µGy. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+          }
+        },
+        "route_from_hab": {
+          "value": 1110,
+          "unit": "m",
+          "tag": "DERIVED",
+          "label": "A* planner · HiRISE DEM",
+          "provenance": {
+            "mission": "MRO",
+            "instrument": "HiRISE",
+            "product_id": null,
+            "site": "Jezero crater, Neretva Vallis, around Cheyava Falls",
+            "sol_or_date": null,
+            "reference": "Marswalk terrain tile public/marswalk/assets/terrain.json (751 x 751 heights, 2 m spacing, from the HiRISE 1 m DEM of Jezero crater); sky view computed by src/sim/skyView.js through scripts/build-shelters.mjs",
+            "url": "https://www.uahirise.org/dtm/",
+            "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
+            "data_url": "https://www.uahirise.org/dtm/",
+            "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
+            "note": "Walking distance of the A* route from the HAB entry (src/sim/routePlanner.js, slope limit 25 deg). Straight line 1047 m, steepest slope on the route 22.2 deg."
+          }
+        }
+      }
+    }
+  ]
+}
