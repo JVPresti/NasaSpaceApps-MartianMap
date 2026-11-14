@@ -1,3 +1,4 @@
+import { t, subscribeLanguage } from '../i18n/index.js';
 // Helmet minimap (#60). App mounts it in Walk mode and owns the route tracker, so leaving Walk for
 // Plan and coming back keeps the walked distance. `tracker` (required) is App's `createRouteProgress()`
 // instance. It reads the store through a subscription and paints a canvas at most 10 times per second.
@@ -107,6 +108,7 @@ export default function Minimap({ tracker }) {
       },
     });
 
+    const unsubscribeLanguage = subscribeLanguage(() => scheduler.request('language'));
     const unsubscribe = useMissionStore.subscribe((nextState) => {
       state = nextState;
       if (nextState.route?.path !== lastPath) {
@@ -165,6 +167,7 @@ export default function Minimap({ tracker }) {
     return () => {
       disposed = true;
       unsubscribe();
+      unsubscribeLanguage();
       controller.abort();
       ro?.disconnect();
       window.removeEventListener('resize', requestResize);
@@ -176,21 +179,22 @@ export default function Minimap({ tracker }) {
 
   return (
     <div className="hud-map-wrap" ref={wrapRef}>
-      <section className="hud-map" aria-label="Minimap">
+      <section className="hud-map" aria-label={t('ui.minimap')}>
         <canvas
           ref={canvasRef}
           className="hud-map-canvas"
           role="img"
-          aria-label="Minimap centred on the astronaut"
+          aria-label={t('ui.minimap.centred.on.the.astronaut')}
         />
       </section>
-      <div className="hud-map-legend" aria-label="Map legend">
-        <span><i className="hud-map-key hud-map-key-route" />Route</span>
-        <span><i className="hud-map-key hud-map-key-wp">3</i>WP</span>
-        <span><i className="hud-map-key hud-map-key-shelter" />Refuge</span>
-        <span><i className="hud-map-key hud-map-key-hazard" />Hazard</span>
-        <span><i className="hud-map-key hud-map-key-hab" />Habitat</span>
-        <span><i className="hud-map-key hud-map-key-partner" />Partner</span>
+      <div className="hud-map-legend" aria-label={t('ui.map.legend')}>
+        <span><i className="hud-map-key hud-map-key-route" />{t('ui.route')}</span>
+        <span><i className="hud-map-key hud-map-key-wp">3</i>{t('ui.wp')}</span>
+        <span><i className="hud-map-key hud-map-key-shelter" />{t('ui.refuge')}</span>
+        <span><i className="hud-map-key hud-map-key-hazard" />{t('ui.hazard')}</span>
+        <span><i className="hud-map-key hud-map-key-hab" />{t('ui.habitat')}</span>
+        <span><i className="hud-map-key hud-map-key-partner" />{t('menu.partner')}</span>
+
       </div>
     </div>
   );

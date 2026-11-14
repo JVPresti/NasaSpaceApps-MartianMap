@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { useShallow } from 'zustand/react/shallow';
 import { formatEva } from '../hud/format.js';
 import { useMissionStore } from '../state/store.js';
@@ -13,19 +14,19 @@ export default function MissionClock() {
   );
 
   return (
-    <div className="mission-clock" role="group" aria-label="Mission clock">
+    <div className="mission-clock" role="group" aria-label={t('ui.mission.clock')}>
       <span className="clock-item">
-        <span className="clock-label">Sol</span>
+        <span className="clock-label">{t('sol')}</span>
         <b>{Number.isFinite(sol) ? sol : '–'}</b>
       </span>
       <span className="clock-item">
         <b>{lmst || '––:––'}</b>
-        <span className="unit">LMST</span>
+        <span className="unit">{t('ui.lmst')}</span>
       </span>
       <span className="clock-item">
-        <span className="clock-label">EVA</span>
+        <span className="clock-label">{t('clock.eva')}</span>
         <b>{formatEva(elapsedSec)}</b>
-        <span className="unit">h:mm</span>
+        <span className="unit">{t('ui.h.mm')}</span>
       </span>
       <SourceTag path="mission.lmst" />
     </div>

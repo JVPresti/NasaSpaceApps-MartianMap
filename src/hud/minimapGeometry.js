@@ -1,3 +1,4 @@
+import { formatUnit } from '../i18n/index.js';
 // Pure geometry for the helmet minimap (#60). No React, no three.js, no canvas.
 // Coordinates: x east, z south, metres from Cheyava Falls. North is -z.
 // The map is heading-up: the heading direction points to the top of the circle and north rotates around the rim.
@@ -89,7 +90,7 @@ export function niceScaleBar(rangeM, radiusPx, { targetPx = radiusPx * 0.55 } = 
   const step = norm >= 5 ? 5 : norm >= 2 ? 2 : 1;
   const meters = step * base;
   const px = (meters / rangeM) * radiusPx;
-  return { meters, px, label: meters >= 1000 ? `${meters / 1000} km` : `${meters} m` };
+  return { meters, px, label: meters >= 1000 ? formatUnit(meters / 1000, 'km', Number.isInteger(meters / 1000) ? 0 : 1) : formatUnit(meters, 'm') };
 }
 
 /**

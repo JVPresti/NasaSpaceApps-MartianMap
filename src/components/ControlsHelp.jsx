@@ -1,20 +1,21 @@
+import { t } from '../i18n/index.js';
 const GROUPS = [
   {
-    title: 'Walk',
+    title: 'ui.walk',
     rows: [
-      ['W A S D or arrows', 'Walk'],
-      ['Shift', 'Jog'],
-      ['Mouse', 'Look around while the pointer is captured'],
-      ['Esc', 'Release the mouse and pause'],
-      ['H', 'Open this help and pause'],
+      ['menu.w.a.s.d.or.arrows', 'ui.walk'],
+      ['menu.shift', 'menu.jog'],
+      ['menu.mouse', 'menu.look.around.while.the.pointer.is.captured'],
+      ['ui.esc', 'menu.release.the.mouse.and.pause'],
+      ['menu.h', 'menu.open.this.help.and.pause'],
     ],
   },
   {
-    title: 'Plan',
+    title: 'ui.plan',
     rows: [
-      ['Right-drag', 'Pan the map'],
-      ['Scroll', 'Zoom in and out'],
-      ['Esc', 'Pause and open the menu'],
+      ['menu.right.drag', 'menu.pan.the.map'],
+      ['menu.scroll', 'menu.zoom.in.and.out'],
+      ['ui.esc', 'menu.pause.and.open.the.menu'],
     ],
   },
 ];
@@ -24,13 +25,13 @@ export default function ControlsHelp() {
   return (
     <div className="controls-help">
       {GROUPS.map((group) => (
-        <section key={group.title} className="controls-group">
-          <h3>{group.title}</h3>
+        <section key={t(group.title)} className="controls-group">
+          <h3>{t(group.title)}</h3>
           <dl className="controls-list">
             {group.rows.map(([keys, action]) => (
-              <div className="controls-row" key={keys}>
-                <dt>{keys}</dt>
-                <dd>{action}</dd>
+              <div className="controls-row" key={t(keys)}>
+                <dt>{t(keys)}</dt>
+                <dd>{t(action)}</dd>
               </div>
             ))}
           </dl>

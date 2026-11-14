@@ -1,3 +1,4 @@
+import { t, translateText } from '../i18n/index.js';
 import { useEffect, useState } from 'react';
 import { fireEvent, listEvents } from '../state/events.js';
 import './events.css';
@@ -32,10 +33,10 @@ export default function EventDebug() {
   return (
     <div className={'event-debug' + (open ? ' open' : '')}>
       {open && (
-        <div id="event-debug-list" className="event-debug-list" role="group" aria-label="Fire an event">
+        <div id="event-debug-list" className="event-debug-list" role="group" aria-label={t('ui.fire.an.event')}>
           {events.map((event) => (
-            <button key={event.id} type="button" onClick={() => fireEvent(event.id)} title={event.label}>
-              {event.label}
+            <button key={event.id} type="button" onClick={() => fireEvent(event.id)} title={translateText(event.label)}>
+              {translateText(event.label)}
             </button>
           ))}
         </div>
@@ -45,10 +46,9 @@ export default function EventDebug() {
         className="event-debug-toggle"
         aria-expanded={open}
         aria-controls="event-debug-list"
-        title="Event debug controls (` key)"
+        title={t('ui.event.debug.controls.key')}
         onClick={() => setOpen((value) => !value)}
-      >
-        Events <kbd>`</kbd>
+      >{t('ui.events')}<kbd>`</kbd>
       </button>
     </div>
   );
