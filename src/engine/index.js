@@ -35,6 +35,7 @@ import { CREW } from './crew.js';
 import { createLegs } from './legs.js';
 import { createArms } from './arms.js';
 import { createProps } from './props.js';
+import { createSampling } from './sampling.js';
 import { createHabitat } from './habitat.js';
 import { createView, createViewState } from './view.js';
 import { createLoadLifecycle } from './lifecycle.js';
@@ -154,6 +155,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     const eyeMode = ctx.view.mode === 'eye';
     if (sys.arms.L) sys.arms.L.g.visible = sys.arms.R.g.visible = eyeMode;   // first-person arms only in Walk
     U.uTime.value += dt; sys.partner.update(dt); sys.arms.update(dt); sys.legs.update(dt, eyeMode ? ctx.view.moveSpeed : 0); sys.props.update(dt); sys.habitat.update(dt);
+    sys.sampling.update(dt);   // after props: follows the clip and the scoop content (#36)
     sys.routeGlow.update(dt, eyeMode ? ctx.view.eye : null);
     sys.shelter.update(dt, ctx.view.eye, camera);
     sys.prints.update(dt);
@@ -229,6 +231,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     await sys.arms.init(); if (!alive) return;
     await sys.legs.init(); if (!alive) return;
     await sys.props.init(); if (!alive) return;
+    sys.sampling = createSampling(ctx, canvas, signal);
 
     status('Loading the habitat…');
     U.uRelief.value = tj.range_m; sys.route.data = await assets.json('route.json'); if (!alive) return;
@@ -407,6 +410,16 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     },
     /** Scripted actions of the current source: 'toggleCase', 'visitHabitat'. Returns false if the source ignores it. */
     partnerCommand(name) { return sys.partner ? sys.partner.command(name) : false; },
+    /**
+     * Sampling (sampling.js, #36): what the crosshair is on, the clip phase, the partner's case and what each input does now.
+     * Plain data for the store bridge; null before the scene is ready.
+     */
+    getSampling() { return sys.sampling ? sys.sampling.status() : null; },
+    /** Sampling events ({ type: 'photo' | 'collect' | 'texture' | 'secured' | 'sealed' | 'input', ... }). Returns an unsubscribe function. Available once ready. */
+    onSampling(listener) {
+      if (!sys.sampling) throw new Error('engine is not ready: wait for engine.ready');
+      return sys.sampling.subscribe(listener);
+    },
     getPlayer() {
       const v = ctx.view, deg = ((v.yaw * 180 / Math.PI) % 360 + 360) % 360;
       return { x: v.eye.x, z: v.eye.z, headingDeg: deg, mode: v.mode === 'eye' ? 'walk' : 'plan' };
