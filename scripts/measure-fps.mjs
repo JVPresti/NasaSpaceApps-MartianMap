@@ -46,8 +46,8 @@ const SAMPLE = (seconds) => new Promise((resolve) => {
 // Mode changes go through the mission store, because the app pauses safely if the engine releases
 // pointer lock outside a store change (the Plan switch is a real mode change, not a debug shortcut).
 const CASES = [
-  ['Walk, standing outdoors', () => { window.__missionStore.setState({ mode: 'walk' }); window.__marswalk.walking(false); window.__marswalk.place(8, 70, -0.11, 0); }],
-  ['Walk, walking outdoors', () => { window.__missionStore.setState({ mode: 'walk' }); window.__marswalk.place(8, 70, -0.11, 0); window.__marswalk.walking(true); }],
+  ['Walk, standing outdoors', () => { window.__missionStore.setState({ mode: 'walk' }); window.__marswalk.walking(false); window.__marswalk.cheyavaView(); }],
+  ['Walk, walking outdoors', () => { window.__missionStore.setState({ mode: 'walk' }); window.__marswalk.cheyavaView(); window.__marswalk.walking(true); }],
   ['Walk, inside the habitat', () => { window.__missionStore.setState({ mode: 'walk' }); window.__marswalk.walking(false); window.__marswalk.insideHabitat(); }],
   ['Plan', () => { window.__marswalk.walking(false); window.__missionStore.setState({ mode: 'plan' }); }],
 ];
