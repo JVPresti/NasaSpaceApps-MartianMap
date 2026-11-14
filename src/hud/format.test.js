@@ -45,6 +45,17 @@ describe('next waypoint', () => {
     expect(nextWaypointInfo(route, { x: null, z: null })).toBeNull();
     expect(nextWaypointInfo({ waypoints: [], nextIndex: 0 }, { x: 0, z: 0 })).toBeNull();
   });
+  it('is null once the route is complete, not the last waypoint again', () => {
+    expect(nextWaypointInfo({ ...route, nextIndex: 2 }, { x: 330, z: 400 })).toBeNull();
+    expect(nextWaypointInfo({ ...route, skipped: ['WP1 · channel floor'] }, { x: 330, z: 400 })).toBeNull();
+  });
+  it('points at the shelter while an event sets one', () => {
+    const w = nextWaypointInfo({ ...route, shelter: { id: 'HAB', name: 'HAB · habitat airlock', x: 330, z: 500 } }, { x: 330, z: 400 });
+    expect(w.kind).toBe('shelter');
+    expect(w.shortName).toBe('HAB');
+    expect(w.rangeM).toBeCloseTo(100);
+    expect(w.bearingDeg).toBeCloseTo(180);
+  });
   it('keeps names without a code', () => {
     expect(shortName('Cheyava Falls')).toBe('Cheyava Falls');
   });

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import EventBanner from '../events/EventBanner.jsx';
 import { useMissionStore, setLayer } from '../state/store.js';
+import { radioShadowCells } from '../sim/radio.js';
 import LayerPanel from './LayerPanel.jsx';
 import PlanChrome from './PlanChrome.jsx';
 import PlanPositionMarker from './PlanPositionMarker.jsx';
 import RoutePanel from './RoutePanel.jsx';
 import SourcesButton from '../sources/SourcesButton.jsx';
+import { PlanStopCard } from '../stops/ScienceStops.jsx';
 import { useRoutePlanner } from './useRoutePlanner.js';
 import './plan.css';
 
@@ -23,11 +25,12 @@ export default function PlanMode({ engine, active }) {
   const waypoints = useMissionStore((s) => s.route.waypoints);
   const [routeStatus, setRouteStatus] = useState('loading');
   const [metresPerPixel, setMetresPerPixel] = useState(0);
+  const [radioShadow, setRadioShadow] = useState(false);
   const planner = useRoutePlanner({ waypoints, enabled: active });
 
   const setWaypoints = (list) => {
     useMissionStore.setState((state) => ({
-      route: { ...state.route, waypoints: list, decision: 'pending' },
+      route: { ...state.route, waypoints: list, decision: 'pending', nextIndex: 0, visited: [], skipped: [] },   // an edited route starts over
     }));
   };
 
@@ -80,6 +83,28 @@ export default function PlanMode({ engine, active }) {
     return () => clearInterval(timer);
   }, [engine, active]);
 
+  // Radio shadow is a separate ground overlay, not one of the four shader
+  // layers. It is computed only while the toggle is on and Plan mode is active.
+  useEffect(() => {
+    if (!engine) return undefined;
+    if (!active || !radioShadow) {
+      engine.setRadioShadow(null);
+      return undefined;
+    }
+    const mast = engine.getHabitatMast();
+    if (!mast) return undefined;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      const cells = radioShadowCells({ mast, lineOfSight: engine.lineOfSight });
+      if (!cancelled) engine.setRadioShadow(cells);
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      engine.setRadioShadow(null);
+    };
+  }, [engine, active, radioShadow]);
+
   if (!active) return null;
 
   // One grid for the whole screen (plan.css): layers on the left, the route on the right, alerts at the top
@@ -91,12 +116,13 @@ export default function PlanMode({ engine, active }) {
 
       <div className="plan-ui">
         <div className="plan-region plan-left">
-          <LayerPanel layer={layer} onLayer={setLayer} />
+          <LayerPanel layer={layer} onLayer={setLayer} radioShadow={radioShadow} onRadioShadow={setRadioShadow} />
           <SourcesButton />
         </div>
 
         <div className="plan-region plan-alerts">
           <EventBanner />
+          <PlanStopCard />
         </div>
 
         <div className="plan-region plan-right">

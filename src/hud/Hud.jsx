@@ -1,15 +1,19 @@
 // Helmet HUD (issue #20): what the astronaut reads while walking. Every value comes from the mission store; the store
 // changes a few times per second (suit 4 Hz, position 5 Hz), so these components re-render at that rate, never per frame.
 // Layout follows the v3 "Caminar · Normal" mockup; final Figma measurements come later (#11).
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
+import { bearingDeg } from '../sim/bearing.js';
+import { nextTarget } from '../sim/waypointRunner.js';
 import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, pickAlert, wrapDeg } from './format.js';
 import ElevationProfile from './ElevationProfile.jsx';
+import RadioLink from './RadioLink.jsx';
 import SlopeAhead from './SlopeAhead.jsx';
 import * as I from './icons.jsx';
 import NavLine from './NavLine.jsx';
+import Minimap from './Minimap.jsx';
 import './hud.css';
 import SamplingPanel from './SamplingPanel.jsx';
 
@@ -126,13 +130,20 @@ function EnvStrip() {
 function WaypointPanel({ heightAt, slopeAt }) {
   const w = useMissionStore(useShallow((s) => {
     const info = nextWaypointInfo(s.route, s.navigation);
-    if (!info) return null;
+    const complete = !info && nextTarget(s.route)?.kind === 'complete';
+    if (!info && !complete) return null;
     return {
-      name: info.shortName,
-      full: info.name,
-      range: Math.round(Number.isFinite(s.navigation.waypointRangeM) ? s.navigation.waypointRangeM : info.rangeM),
-      brg: Math.round(Number.isFinite(s.navigation.waypointBearingDeg) ? s.navigation.waypointBearingDeg : info.bearingDeg),
-      eta: Math.round(info.etaSec / 60),
+      complete,
+      shelter: info?.kind === 'shelter',
+      name: info?.shortName,
+      full: info?.name,
+      // Range and bearing come from nextTarget and the position, like the runner's navigation.waypointRangeM, so the
+      // panel, the tape and the marker never show a target the runner has already left.
+      range: info ? Math.round(info.rangeM) : null,
+      brg: info ? Math.round(info.bearingDeg) : null,
+      eta: info ? Math.round(info.etaSec / 60) : null,
+      reached: Array.isArray(s.route.visited) ? s.route.visited.length : 0,
+      total: s.route.waypoints.length,
       slope: s.navigation.slopeDeg,
       path: s.route.path,
       waypoints: s.route.waypoints,
@@ -144,12 +155,21 @@ function WaypointPanel({ heightAt, slopeAt }) {
   const position = useMemo(() => (Number.isFinite(px) && Number.isFinite(pz) ? { x: px, z: pz } : null), [px, pz]);
   if (!w) return <section className="hud-panel hud-waypoint hud-waypoint-empty" aria-label="Next waypoint">No route yet · plan one in Plan mode</section>;
   return (
-    <section className="hud-panel hud-waypoint" aria-label="Next waypoint" title={w.full}>
+    <section className="hud-panel hud-waypoint" aria-label={w.complete ? 'Route complete' : w.shelter ? 'Shelter' : 'Next waypoint'} title={w.complete ? undefined : w.full}>
       <div className="hud-waypoint-row">
-        <div className="hud-wp-name"><I.Pointer /><b>{w.name}</b></div>
-        <div className="hud-wp-cell"><div><b>{w.range}</b><small>m</small></div><span>RNG</span></div>
-        <div className="hud-wp-cell"><div><b>{String(w.brg).padStart(3, '0')}</b><small>°</small></div><span>BRG</span></div>
-        <div className="hud-wp-cell"><div><b>{w.eta}</b><small>min</small></div><span>ETA</span></div>
+        {w.complete ? (
+          <>
+            <div className="hud-wp-name"><I.Pointer /><b>Route complete</b></div>
+            <div className="hud-wp-cell"><div><b>{w.reached}</b><small>of {w.total}</small></div><span>REACHED</span></div>
+          </>
+        ) : (
+          <>
+            <div className="hud-wp-name"><I.Pointer /><b>{w.name}</b>{w.shelter && <small>SHELTER</small>}</div>
+            <div className="hud-wp-cell"><div><b>{w.range}</b><small>m</small><SourceTag path="navigation.waypointRangeM" /></div><span>RNG</span></div>
+            <div className="hud-wp-cell"><div><b>{String(w.brg).padStart(3, '0')}</b><small>°</small><SourceTag path="navigation.waypointBearingDeg" /></div><span>BRG</span></div>
+            <div className="hud-wp-cell"><div><b>{w.eta}</b><small>min</small></div><span>ETA</span></div>
+          </>
+        )}
         <div className="hud-wp-cell"><div><b>{formatValue(w.slope)}</b><small>°</small></div><span>SLOPE</span></div>
       </div>
       <ElevationProfile
@@ -164,71 +184,75 @@ function WaypointPanel({ heightAt, slopeAt }) {
   );
 }
 
+const EDGE_INSET_PX = 84;   // the edge arrow keeps this far from the sides of the view
+
+// Where the marker goes on screen: over the target when the camera sees it, else an arrow on the edge of the view
+// that points the way to turn. Sizes are the engine container's, the same ones engine.project() uses.
+function placeMarker(engine, target, width, height) {
+  const projected = engine.project(target.x, target.z);
+  if (!projected) return null;
+  if (projected.visible) return { mode: 'marker', x: projected.x, y: projected.y };
+  const player = engine.getPlayer();
+  const relative = ((bearingDeg(player, target) - player.headingDeg + 540) % 360) - 180;
+  const rad = relative * Math.PI / 180;
+  const dx = Math.sin(rad), dy = -Math.cos(rad);
+  const halfW = Math.max(40, width / 2 - EDGE_INSET_PX), halfH = Math.max(40, height / 2 - EDGE_INSET_PX);
+  let t = Infinity;
+  if (Math.abs(dx) > 1e-6) t = Math.min(t, halfW / Math.abs(dx));
+  if (Math.abs(dy) > 1e-6) t = Math.min(t, halfH / Math.abs(dy));
+  if (!Number.isFinite(t)) t = 0;
+  return { mode: 'edge', x: width / 2 + dx * t, y: height / 2 + dy * t, angle: relative };
+}
+
+// Projects every frame and writes style.transform through refs, so the marker follows head turns without a React
+// render. The store only changes the text (name and range) at its own rate.
 function WaypointMarker({ engine }) {
   const info = useMissionStore(useShallow((s) => {
     const next = nextWaypointInfo(s.route, s.navigation);
-    return next ? {
-      name: next.shortName,
-      full: next.name,
-      x: next.x,
-      z: next.z,
-      rangeM: next.rangeM,
-      bearingDeg: next.bearingDeg,
-      headingDeg: s.navigation.headingDeg,
-    } : null;
+    return next ? { name: next.shortName, full: next.name, x: next.x, z: next.z, rangeM: Math.round(next.rangeM) } : null;
   }));
-  const [position, setPosition] = useState(null);
+  const target = useRef(null);
+  useEffect(() => { target.current = info; }, [info]);
+  const marker = useRef(null);
+  const arrow = useRef(null);
+  const hasTarget = info !== null;
 
   useEffect(() => {
-    if (!engine || !info) return undefined;
-    const update = () => {
-      const projected = engine.project(info.x, info.z);
-      if (!projected) return;
-      if (projected.visible) {
-        setPosition({ mode: 'marker', x: projected.x, y: projected.y });
-        return;
-      }
-      const heading = Number.isFinite(info.headingDeg) ? info.headingDeg : 0;
-      const relative = ((info.bearingDeg - heading + 540) % 360) - 180;
-      const rad = relative * Math.PI / 180;
-      const dx = Math.sin(rad);
-      const dy = -Math.cos(rad);
-      const halfW = Math.max(40, window.innerWidth / 2 - 84);
-      const halfH = Math.max(40, window.innerHeight / 2 - 84);
-      let t = Infinity;
-      if (Math.abs(dx) > 1e-6) t = Math.min(t, halfW / Math.abs(dx));
-      if (Math.abs(dy) > 1e-6) t = Math.min(t, halfH / Math.abs(dy));
-      if (!Number.isFinite(t)) t = 0;
-      setPosition({
-        mode: 'edge',
-        x: window.innerWidth / 2 + dx * t,
-        y: window.innerHeight / 2 + dy * t,
-        angle: relative,
-      });
+    if (!engine || !hasTarget) return undefined;
+    let frame = 0;
+    const draw = () => {
+      frame = requestAnimationFrame(draw);
+      const m = marker.current, a = arrow.current, t = target.current;
+      if (!m || !a) return;
+      const box = m.parentElement;   // the .hud overlay, inset 0 over the engine container
+      const place = t && box ? placeMarker(engine, t, box.clientWidth, box.clientHeight) : null;
+      m.style.visibility = place?.mode === 'marker' ? 'visible' : 'hidden';
+      a.style.visibility = place?.mode === 'edge' ? 'visible' : 'hidden';
+      if (!place) return;
+      const el = place.mode === 'marker' ? m : a;
+      el.style.transform = `translate(${place.x}px, ${place.y}px) translate(-50%, -50%)` + (place.mode === 'edge' ? ` rotate(${place.angle}deg)` : '');
     };
-    update();
-    const timer = setInterval(update, 200);
-    return () => clearInterval(timer);
-  }, [engine, info]);
+    draw();
+    return () => cancelAnimationFrame(frame);
+  }, [engine, hasTarget]);
 
-  if (!info || !position) return null;
-  if (position.mode === 'marker') {
-    return (
-      <div className="hud-wp-marker" style={{ left: position.x, top: position.y }} title={info.full}>
-        <span className="hud-wp-marker-name">{info.name}</span>
-        <span className="hud-wp-marker-range">{Math.round(info.rangeM)} m</span>
-      </div>
-    );
-  }
+  if (!info) return null;
   return (
-    <div
-      className="hud-wp-arrow"
-      style={{ left: position.x, top: position.y, transform: `translate(-50%, -50%) rotate(${position.angle}deg)` }}
-      title={`${info.full} · ${Math.round(info.rangeM)} m`}
-      aria-label={`Waypoint ${info.full}, ${Math.round(info.rangeM)} metres, off screen`}
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 21 21 12 16 3 21Z" /></svg>
-    </div>
+    <>
+      <div ref={marker} className="hud-wp-marker" style={{ left: 0, top: 0, visibility: 'hidden' }} title={info.full}>
+        <span className="hud-wp-marker-name">{info.name}</span>
+        <span className="hud-wp-marker-range">{info.rangeM} m<SourceTag path="navigation.waypointRangeM" /></span>
+      </div>
+      <div
+        ref={arrow}
+        className="hud-wp-arrow"
+        style={{ left: 0, top: 0, visibility: 'hidden' }}
+        title={`${info.full} · ${info.rangeM} m`}
+        aria-label={`Waypoint ${info.full}, ${info.rangeM} metres, off screen`}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 21 21 12 16 3 21Z" /></svg>
+      </div>
+    </>
   );
 }
 
@@ -242,8 +266,11 @@ function AlertBanner() {
   );
 }
 
-/** The whole visor HUD. Rendered by App in Walk mode once the scene is ready. */
-export default function Hud({ engine }) {
+/**
+ * The whole visor HUD. Rendered by App in Walk mode once the scene is ready.
+ * `minimapRoute` is App's route tracker: it outlives this component so Plan mode does not reset the walk.
+ */
+export default function Hud({ engine, minimapRoute }) {
   return (
     <div className="hud" aria-label="Helmet display">
       <HeadingTape />
@@ -252,7 +279,9 @@ export default function Hud({ engine }) {
       <AlertBanner />
       <Clocks />
       <SuitPanel />
+      <Minimap tracker={minimapRoute} />
       <EnvStrip />
+      <RadioLink engine={engine} />
       <NavLine><SourceTag path="navigation.errorM" /></NavLine>
       <WaypointPanel heightAt={engine?.heightAt} slopeAt={engine?.slopeAt} />
       <SamplingPanel />

@@ -21,6 +21,7 @@ import { createDust, clampDust } from './dust.js';
 import { createShelterHighlight } from './shelterHighlight.js';
 import { validShelter } from './shelterRules.js';
 import { createSlopeZone } from './slopeZone.js';
+import { createRadioShadow } from './radioShadow.js';
 import { createWaypointMarkers } from './waypoints.js';
 import { metresPerPixel } from './planView.js';
 import { createUniforms } from './uniforms.js';
@@ -58,7 +59,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
   assertWebGL2();
 
   let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null, waypoints = null;
-  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null };   // set before boot ends, applied when ready
+  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -249,6 +250,8 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     sys.dust = createDust(ctx); sys.dust.setTier(ctx.tier); sys.dust.set(pending.dust);
     sys.slopeZone = createSlopeZone(ctx);
     sys.slopeZone.set(pending.slopeZone);
+    sys.radioShadow = createRadioShadow(ctx);
+    sys.radioShadow.set(pending.radioShadow);
     if (pending.skyBlend) applySkyBlend(ctx, pending.skyBlend.from, pending.skyBlend.to, pending.skyBlend.t);
     waypoints.set(pending.waypoints);
     waypoints.group.visible = requestedMode === 'plan';
@@ -287,6 +290,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       partnerCommand: (name) => sys.partner.command(name),
       setPartnerSource: (source) => sys.partner.setSource(source),
       partnerState: () => sys.partner.state,
+      prints: () => sys.prints.stats(),
       // camera and player pose, for checking speed and that the camera follows the ground smoothly
       pose: () => ({ camY: camera.position.y, x: ctx.view.eye.x, z: ctx.view.eye.z, yaw: ctx.view.yaw, pitch: ctx.view.pitch, mode: ctx.view.mode, moveSpeed: ctx.view.moveSpeed }),
     };
@@ -377,11 +381,28 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       if (cells !== null && !(Array.isArray(cells) && cells.every((c) => c && Number.isFinite(c.x) && Number.isFinite(c.z)))) throw new Error('setSlopeZone: expected [{ x, z }] or null');
       if (started) sys.slopeZone.set(cells); else pending.slopeZone = cells;
     },
+    /**
+     * Blue-grey radio-shadow cells in Plan mode (#74).
+     * @param {Array<{ x: number, z: number }> | null} cells
+     */
+    setRadioShadow(cells) {
+      if (cells !== null && !(Array.isArray(cells) && cells.every((c) => c && Number.isFinite(c.x) && Number.isFinite(c.z)))) throw new Error('setRadioShadow: expected [{ x, z }] or null');
+      if (started) sys.radioShadow.set(cells); else pending.radioShadow = cells;
+    },
     /** Metres of ground per CSS pixel in Plan mode, or null when the engine is not ready. */
     getPlanScale() {
       if (!started || ctx.view.mode !== 'orbit') return null;
       const height = Math.abs(camera.position.y - controls.target.y);
       return metresPerPixel(height, camera.fov, container.clientHeight);
+    },
+    /** World position of the habitat comms mast, for the radio link (#74). */
+    getHabitatMast() {
+      if (!started || !sys.habitat?.root) return null;
+      const root = sys.habitat.root;
+      root.updateWorldMatrix(true, false);
+      const point = new THREE.Vector3(-1.9, 4.35, 3.4);
+      root.localToWorld(point);
+      return { x: point.x, y: point.y, z: point.z };
     },
     /** Terrain height (m) at x, z. Available once ready. */
     heightAt(x, z) { return terrainQueries().heightAt(x, z); },
@@ -409,6 +430,8 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
         visible: inFront && Math.abs(p.x) <= 1 && Math.abs(p.y) <= 1,
       };
     },
+    /** Removes every boot print (bootPrints.js): the start of a new EVA. */
+    clearPrints() { if (sys.prints) sys.prints.clear(); },
     /** Player position and heading (degrees clockwise from north), and the current mode. */
     /**
      * Who drives the partner astronaut: a partner source (src/engine/partnerSource.js, docs/PARTNER.md).
@@ -442,6 +465,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       if (debug && window.__marswalk && window.__marswalk.stats === stats) delete window.__marswalk;
       renderer.setAnimationLoop(null);
       ac.abort(); ro.disconnect(); controls.dispose();
+      if (sys.prints) sys.prints.dispose();
       const textures = new Set(), materials = new Set();
       scene.traverse((o) => {
         if (o.geometry) o.geometry.dispose();
@@ -457,6 +481,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       if (sys.cast) sys.cast.rt.dispose();
       if (waypoints) waypoints.dispose();
       if (sys.slopeZone) sys.slopeZone.dispose();
+      if (sys.radioShadow) sys.radioShadow.dispose();
       if (ctx.terrain && ctx.terrain.shadowTex) ctx.terrain.shadowTex.dispose();
       for (const s of [sys.partner, sys.legs]) if (s && s.mixer) s.mixer.stopAllAction();
       renderer.dispose(); renderer.forceContextLoss();

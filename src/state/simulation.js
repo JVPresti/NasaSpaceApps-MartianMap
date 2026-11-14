@@ -6,6 +6,7 @@ import { startEventRunner } from './events.js';
 import { startOffRoute } from './offRoute.js';
 import { startSlopeDetourService } from './slopeDetour.js';
 import { startWaypointRunner } from '../sim/waypointRunner.js';
+import { loadStops } from '../data/stops.js';
 import { parseShelters } from '../sim/shelters.js';
 import { suitConstantsFromHazards } from '../sim/suitModel.js';
 import { startSuitRunner } from '../sim/suitRunner.js';
@@ -31,6 +32,8 @@ export function startSimulation(engine, { mock = false } = {}) {
   const offRoute = startOffRoute({ store: useMissionStore });
   const waypoints = startWaypointRunner({ store: useMissionStore });
   const slopeDetour = startSlopeDetourService();
+  // Science stop radii (arrival_radius in stops.json). Until the file loads every waypoint uses 5 m.
+  loadStops().then((stops) => waypoints.setStops(stops)).catch((e) => console.error('stops.json not loaded, arrival radius 5 m:', e));
   let stopped = false, suit = null, legs = null, clock = null;
 
   // The clock starts from its own timestamp and does not wait for hazards.json. A slow or failed hazard

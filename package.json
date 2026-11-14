@@ -13,6 +13,7 @@
     "rad": "node scripts/build-rad.mjs",
     "measure": "node scripts/measure-fps.mjs",
     "bench": "node scripts/bench-replan.mjs",
+    "prints:eva": "node scripts/eva-prints.mjs",
     "preview": "vite preview",
     "credits": "node scripts/build-credits.mjs"
   },

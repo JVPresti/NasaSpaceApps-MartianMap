@@ -14,3 +14,4 @@ export const Wind = () => <Svg><path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-
 export const Radiation = () => <Svg><circle cx="12" cy="12" r="1.6" {...S} /><path d="M12 10.4 9.2 5.6a7.5 7.5 0 0 1 5.6 0ZM13.4 12.8l2.8 4.8a7.5 7.5 0 0 0 2.8-4.9ZM10.6 12.8l-2.8 4.8A7.5 7.5 0 0 1 5 12.7Z" {...S} /></Svg>;
 export const Pointer = () => <Svg><path d="M4 4l16 6.5-7 1.8L11.2 20Z" {...S} /></Svg>;
 export const Alert = () => <Svg><path d="M12 3.5 2.5 20h19Z" {...S} /><path d="M12 10v4.5M12 17.3v.2" {...S} /></Svg>;
+export const Radio = () => <Svg><circle cx="12" cy="12" r="2.2" {...S} /><path d="M8.2 8.2a5.4 5.4 0 0 1 7.6 0M5.6 5.6a9.1 9.1 0 0 1 12.8 0M8.2 15.8a5.4 5.4 0 0 0 7.6 0M5.6 18.4a9.1 9.1 0 0 0 12.8 0" {...S} /></Svg>;

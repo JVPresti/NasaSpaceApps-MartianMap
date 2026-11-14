@@ -8,7 +8,8 @@ import MissionClock from './plan/MissionClock.jsx';
 import PlanMode from './plan/PlanMode.jsx';
 import Hud from './hud/Hud.jsx';
 import SourcesRoot from './sources/SourcesScreen.jsx';
-import ScienceStops from './stops/ScienceStops.jsx';
+import { WalkStopCard } from './stops/ScienceStops.jsx';
+import { createRouteProgress } from './hud/minimapRoute.js';
 import { useMissionStore, setMode } from './state/store.js';
 import './App.css';
 
@@ -69,6 +70,10 @@ export default function App() {
   const [engine, setEngine] = useState(null);
   const [load, dispatch] = useReducer(loadReducer, undefined, () => INITIAL_LOAD);
   const [mouseLocked, setMouseLocked] = useState(false);   // changes only when the pointer lock does, never per frame
+  // The minimap route tracker belongs to the app, not to the minimap: App unmounts the HUD in Plan mode,
+  // so a tracker created inside the Minimap effect would lose the walked distance on every mode switch.
+  // It resets only when the route content changes (Minimap calls setPath on mount and on route updates).
+  const [minimapRoute] = useState(() => createRouteProgress());
 
   const handleStatus = useCallback((text) => dispatch({ type: 'status', text }), []);
   const handleProgress = useCallback((progress) => dispatch({ type: 'progress', progress }), []);
@@ -103,9 +108,9 @@ export default function App() {
 
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={SITE} onRetry={handleRetry} />
 
-      {load.status === 'ready' && mode === 'walk' && <Hud engine={engine} />}
+      {load.status === 'ready' && mode === 'walk' && <Hud engine={engine} minimapRoute={minimapRoute} />}
 
-      {load.status === 'ready' && <ScienceStops mode={mode} />}
+      {load.status === 'ready' && <WalkStopCard active={mode === 'walk'} />}
 
       {load.status === 'ready' && <SourcesRoot />}
 

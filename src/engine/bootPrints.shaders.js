@@ -3,6 +3,9 @@
 // leaves the ground unchanged), so it matches any ground colour. The wall of the dent that faces the sun is lit and the
 // floor next to the wall on the sun side is in shadow, like the Apollo boot-print photos. In a storm (uDust, #142) fine dust
 // settles in: the tread and walls lose contrast and the inside gets a little lighter, but the print never disappears.
+// The haze is the terrain's own (FOG_K in shaders.js, storm dust included), so a print fades exactly as the ground under it.
+import { FOG_K } from './shaders.js';
+
 export const PRINT_VERT = /* glsl */`
 attribute float aSide;                 // 1 right foot, -1 left foot (mirrors the sole)
 attribute float aSeed;                 // 0..1, small differences between prints
@@ -20,7 +23,8 @@ void main(){
 }
 `;
 export const PRINT_FRAG = /* glsl */`
-uniform float uFogK, uFadeFar, uDust;
+${FOG_K}
+uniform float uFadeFar;   // uFogK and uDust come from FOG_K
 varying vec2 vP; varying vec2 vSun; varying float vSeed; varying vec3 vW;
 // signed distance to the sole outline (negative inside): one rounded sole, narrow at the heel, wider at the toe
 float sole(vec2 p){
@@ -53,8 +57,9 @@ void main(){
   k = mix(k, 1.0, 0.55 * uDust);
   k *= 1.0 + 0.05 * uDust * inside;
   // fade out with distance and in the haze
-  float dist = distance(vW, cameraPosition);
-  float fade = (1.0 - smoothstep(uFadeFar * 0.6, uFadeFar, dist)) * exp(-uFogK * dist * 2.0);
+  vec3 toFrag = vW - cameraPosition;
+  float dist = length(toFrag);
+  float fade = (1.0 - smoothstep(uFadeFar * 0.6, uFadeFar, dist)) * exp(-fogK(toFrag) * dist);
   k = mix(1.0, k, fade);
   gl_FragColor = vec4(vec3(0.5 * k), 1.0);
 }

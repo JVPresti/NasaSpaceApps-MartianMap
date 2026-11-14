@@ -4,7 +4,7 @@ import ElevationProfile from '../hud/ElevationProfile.jsx';
 import RouteLegs from './RouteLegs.jsx';
 import { fixed as num, minutesFixed as min, routeMetrics } from './routePlan.js';
 import SourceTag from './SourceTag.jsx';
-import { toggleWaypoint } from '../stops/selection.js';
+import WaypointName from '../stops/WaypointName.jsx';
 
 function WaypointRow({ waypoint, index, onCommit }) {
   const [x, setX] = useState(String(Math.round(waypoint.x)));
@@ -35,10 +35,8 @@ function WaypointRow({ waypoint, index, onCommit }) {
   return (
     <li className="route-waypoint">
       <span className="waypoint-number">{index + 1}</span>
-      {/* Selecting a waypoint opens its science stop card, if it has one (#66). */}
-      <button type="button" className="waypoint-name waypoint-select" title={waypoint.name} onClick={() => toggleWaypoint(waypoint.name)}>
-        {waypoint.name}
-      </button>
+      {/* A waypoint with a science stop opens its card (#66). */}
+      <WaypointName name={waypoint.name} />
       <label>
         <span>x</span>
         <input

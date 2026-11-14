@@ -276,6 +276,53 @@
   outline-offset: 2px;
 }
 
+/* direct radio link to the habitat mast */
+.hud-radio {
+  position: absolute;
+  right: 7.8vw;
+  top: 61vh;
+  display: flex;
+  align-items: baseline;
+  gap: 0.45em;
+  padding: 0.45em 0.9em;
+  border-radius: 0.55em;
+  font-family: system-ui, 'Segoe UI', sans-serif;
+  font-size: 0.82em;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  background: var(--glass);
+  border: 1px solid var(--edge);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.hud-radio .hud-icon {
+  align-self: center;
+  color: var(--ok);
+}
+
+.hud-radio small {
+  color: var(--dim);
+  font-size: 0.8em;
+  letter-spacing: 0.02em;
+}
+
+.hud-radio-weak {
+  border-color: rgba(255, 197, 107, 0.8);
+}
+
+.hud-radio-weak .hud-icon {
+  color: var(--caution);
+}
+
+.hud-radio-lost {
+  border-color: rgba(255, 106, 77, 0.9);
+}
+
+.hud-radio-lost .hud-icon {
+  color: var(--warning);
+}
+
 /* alert banner, under the heading box */
 .hud-alert {
   position: absolute; top: calc(var(--u) * 10.6); left: 50%; transform: translateX(-50%);
