@@ -41,6 +41,8 @@ import { createLegs } from './legs.js';
 import { createArms } from './arms.js';
 import { createProps } from './props.js';
 import { createSampling } from './sampling.js';
+import { createSampleDust } from './sampleDust.js';
+import { createSlopeGrid } from './slopeGrid.js';
 import { createHabitat } from './habitat.js';
 import { createView, createViewState, CHEYAVA_VIEW } from './view.js';
 import { airlockExit, partnerPatrol } from './spawn.js';
@@ -69,7 +71,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   let inputEnabled = inputEnabledOption !== false;
   let pendingLock = null, pendingLockResolve = null;
   let pendingReset = false;
-  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null };   // set before boot ends, applied when ready
+  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -157,6 +159,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     if (sys.routeGlow) sys.routeGlow.rebuild();  // re-drape the route on the new mesh
     if (sys.shelter) sys.shelter.rebuild();
     if (sys.prints) sys.prints.setTier(name);
+    if (sys.slopeGrid) sys.slopeGrid.rebuild();
     if (sys.dust) sys.dust.setTier(name);
   }
 
@@ -179,6 +182,8 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     if (sys.arms.L) sys.arms.L.g.visible = sys.arms.R.g.visible = eyeMode;   // first-person arms only in Walk
     U.uTime.value += dt; sys.partner.update(dt); sys.arms.update(dt); sys.legs.update(dt, eyeMode ? ctx.view.moveSpeed : 0); sys.props.update(dt); sys.habitat.update(dt);
     sys.sampling.update(dt);   // after props: follows the clip and the scoop content (#36)
+    sys.sampleDust.update(dt);   // after sampling: the puff and the scrape when the scoop reaches the ground (#50)
+    sys.slopeGrid.update(dt);
     sys.routeGlow.update(dt, eyeMode ? ctx.view.eye : null);
     sys.shelter.update(dt, ctx.view.eye, camera);
     sys.prints.update(dt);
@@ -267,6 +272,8 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     await sys.legs.init(); if (!alive) return;
     await sys.props.init(); if (!alive) return;
     sys.sampling = createSampling(ctx, canvas, signal);
+    sys.sampleDust = createSampleDust(ctx);
+    sys.slopeGrid = createSlopeGrid(ctx); sys.slopeGrid.set(pending.slopeGrid);
 
     status('Loading the habitat…');
     U.uRelief.value = tj.range_m; sys.route.data = await assets.json('route.json'); if (!alive) return;
@@ -469,6 +476,10 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       const clamped = Math.max(0, Math.min(1, t));
       if (started) applySkyBlend(ctx, from, to, clamped);
       else pending.skyBlend = { from, to, t: clamped };
+    },
+    /** Slope grid in Walk mode (slopeGrid.js, #50): lines on the ground around the player coloured by slope. */
+    setSlopeGrid(on) {
+      if (started) sys.slopeGrid.set(!!on); else pending.slopeGrid = !!on;
     },
     /**
      * Storm dust (dust.js, #27), 0 = clear (the scene as before) to 1 = global storm: thicker, drifting haze on everything
