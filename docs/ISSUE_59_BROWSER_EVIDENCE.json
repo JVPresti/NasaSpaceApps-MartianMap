@@ -1,0 +1,178 @@
+{
+  "date": "2026-11-14",
+  "environment": "T3 shared browser, Vite http://localhost:5173/, real loaded WebGL application",
+  "method": "Browser console API calls, timestamp measurements and same-tab navigations; no clock mocking",
+  "results": {
+    "after": {
+      "anchorMs": 1794688486072,
+      "elapsedSec": 12.006,
+      "initialLmst": "17:45",
+      "initialSol": 1210,
+      "lmst": "17:45",
+      "longitudeDeg": 77.3053,
+      "paused": false,
+      "sky": "late_afternoon",
+      "sol": 1210,
+      "startedAtMs": 1794688486072,
+      "timeScale": 1
+    },
+    "at": 1794688498224,
+    "before": {
+      "anchorMs": 1794688486072,
+      "elapsedSec": 9.004,
+      "initialLmst": "17:45",
+      "initialSol": 1210,
+      "lmst": "17:45",
+      "longitudeDeg": 77.3053,
+      "paused": false,
+      "sky": "late_afternoon",
+      "sol": 1210,
+      "startedAtMs": 1794688486072,
+      "timeScale": 1
+    },
+    "beforeCorrupt": {
+      "anchorMs": 1794688518692,
+      "elapsedSec": 156.916,
+      "initialLmst": "17:45",
+      "initialSol": 1210,
+      "lmst": "17:47",
+      "longitudeDeg": 77.3053,
+      "paused": true,
+      "sky": "late_afternoon",
+      "sol": 1210,
+      "startedAtMs": 1794688486072,
+      "timeScale": 60
+    },
+    "corruptRecovery": {
+      "mission": {
+        "anchorMs": 1794688527206,
+        "elapsedSec": 7.001,
+        "initialLmst": "17:45",
+        "initialSol": 1210,
+        "lmst": "17:45",
+        "longitudeDeg": 77.3053,
+        "paused": false,
+        "sky": "late_afternoon",
+        "sol": 1210,
+        "startedAtMs": 1794688527206,
+        "timeScale": 1
+      },
+      "newEpoch": true,
+      "stored": {
+        "anchorMs": 1794688527206,
+        "elapsedSec": 0,
+        "initialLmst": "17:45",
+        "initialSol": 1210,
+        "longitudeDeg": 77.3053,
+        "paused": false,
+        "sky": "late_afternoon",
+        "startedAtMs": 1794688527206,
+        "timeScale": 1,
+        "version": 1
+      }
+    },
+    "later": {
+      "anchorMs": 1794688504928,
+      "elapsedSec": 18.856,
+      "initialLmst": "17:45",
+      "initialSol": 1210,
+      "lmst": "17:45",
+      "longitudeDeg": 77.3053,
+      "paused": true,
+      "sky": "late_afternoon",
+      "sol": 1210,
+      "startedAtMs": 1794688486072,
+      "timeScale": 1
+    },
+    "mock": {
+      "after": {
+        "elapsedSec": 6180,
+        "lmst": "15:20",
+        "paused": false,
+        "sol": 1210,
+        "startedAtMs": 1794688535315
+      },
+      "before": {
+        "elapsedSec": 6180,
+        "lmst": "15:20",
+        "paused": false,
+        "sol": 1210,
+        "startedAtMs": 1794688535315
+      },
+      "storage": null,
+      "unchanged": true
+    },
+    "paused": {
+      "anchorMs": 1794688504928,
+      "elapsedSec": 18.856,
+      "initialLmst": "17:45",
+      "initialSol": 1210,
+      "lmst": "17:45",
+      "longitudeDeg": 77.3053,
+      "paused": true,
+      "sky": "late_afternoon",
+      "sol": 1210,
+      "startedAtMs": 1794688486072,
+      "timeScale": 1
+    },
+    "restored": {
+      "anchorMs": 1794688486072,
+      "elapsedSec": 18.53,
+      "initialLmst": "17:45",
+      "initialSol": 1210,
+      "lmst": "17:45",
+      "longitudeDeg": 77.3053,
+      "paused": false,
+      "sky": "late_afternoon",
+      "sol": 1210,
+      "startedAtMs": 1794688486072,
+      "timeScale": 1
+    },
+    "scaleCheck": {
+      "after": {
+        "anchorMs": 1794688518692,
+        "elapsedSec": 156.916,
+        "initialLmst": "17:45",
+        "initialSol": 1210,
+        "lmst": "17:47",
+        "longitudeDeg": 77.3053,
+        "paused": true,
+        "sky": "late_afternoon",
+        "sol": 1210,
+        "startedAtMs": 1794688486072,
+        "timeScale": 60
+      },
+      "expected": 138.06,
+      "missionDelta": 138.06,
+      "realMs": 2301,
+      "restored": {
+        "anchorMs": 1794688504928,
+        "elapsedSec": 18.856,
+        "initialLmst": "17:45",
+        "initialSol": 1210,
+        "lmst": "17:45",
+        "longitudeDeg": 77.3053,
+        "paused": true,
+        "sky": "late_afternoon",
+        "sol": 1210,
+        "startedAtMs": 1794688486072,
+        "timeScale": 1
+      },
+      "samePaused": true,
+      "scaledPaused": {
+        "anchorMs": 1794688516391,
+        "elapsedSec": 18.856,
+        "initialLmst": "17:45",
+        "initialSol": 1210,
+        "lmst": "17:45",
+        "longitudeDeg": 77.3053,
+        "paused": true,
+        "sky": "late_afternoon",
+        "sol": 1210,
+        "startedAtMs": 1794688486072,
+        "timeScale": 60
+      },
+      "sky": "late_afternoon"
+    }
+  }
+}

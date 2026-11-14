@@ -7,14 +7,19 @@ import { create } from 'zustand';
 export function createInitialState() {
   return {
     mode: 'walk',                                   // 'walk' | 'plan'
-    mission: { startedAtMs: null, elapsedSec: 0, paused: false, sol: null, lmst: null },
+    // Clock fields: docs/STATE_AND_ENGINE.md. anchorMs is the wall timestamp elapsedSec is measured from;
+    // startedAtMs is the first start. The mission clock fills anchorMs and the fields after it when it starts.
+    mission: {
+      startedAtMs: null, elapsedSec: 0, paused: false, sol: null, lmst: null,
+      anchorMs: null, timeScale: 1, initialSol: null, initialLmst: null, longitudeDeg: null, sky: null,
+    },
     suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
     navigation: { x: null, z: null, headingDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // the estimate, never the truth: no GPS on Mars
     route: { waypoints: [], path: null, nextIndex: 0, distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js
     environment: { dustOpacity: 0, tempC: null, windMs: null, pressurePa: null, doseRateUgyH: null, doseUgy: null },
     alerts: {},                                     // { [eventId]: { id, eventId, level, text, startedAtSec, active } | null }
     crew: [],                                       // [{ id, name, color, x, z, oxygenPct, batteryPct }]
-    view: { layer: 0, sky: 'clear_day' },           // what the engine draws
+    view: { layer: 0, sky: 'late_afternoon' },      // what the engine draws; #59 demo starts in late-afternoon light
     sources: {},                                    // { 'environment.tempC': { tag: 'DATA' | 'DERIVED' | 'SIM', source } }
   };
 }
@@ -65,3 +70,17 @@ export const setLayer = (layer) => storeAdapter.set('view.layer', layer);
 export const setSky = (sky) => storeAdapter.set('view.sky', sky);
 export const setRoutePath = (path) => storeAdapter.set('route.path', path);
 export const resetStore = () => useMissionStore.setState(createInitialState(), true);
+
+// Mission clock controls. The clock runner subscribes to `mission.paused` and `mission.timeScale`, so these
+// actions (and a direct storeAdapter.set / setState with the same paths) are anchored at the exact moment they
+// happen. The clock never overwrites a pause with its own value.
+export const setMissionPaused = (paused) => {
+  if (typeof paused !== 'boolean') throw new Error('mission.paused must be a boolean');
+  storeAdapter.set('mission.paused', paused);
+};
+export const pauseMission = () => setMissionPaused(true);
+export const resumeMission = () => setMissionPaused(false);
+export const setMissionTimeScale = (scale) => {
+  if (typeof scale !== 'number' || !Number.isFinite(scale) || scale <= 0) throw new Error('mission.timeScale must be a finite number greater than 0');
+  storeAdapter.set('mission.timeScale', scale);
+};
