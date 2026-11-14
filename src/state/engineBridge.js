@@ -11,6 +11,9 @@ export function connectEngine(engine, store = useMissionStore) {
     if (!prev || s.mode !== prev.mode) engine.setMode(s.mode);
     if (!prev || s.view.layer !== prev.view.layer) engine.setLayer(s.view.layer);
     if (!prev || s.view.sky !== prev.view.sky) engine.setSky(s.view.sky);
+    if (!prev || s.view.skyBlend !== prev.view.skyBlend) {
+      engine.setSkyBlend('clear_day', 'dust_storm', s.view.skyBlend ?? 0);
+    }
     if (!prev || s.route.path !== prev.route.path) engine.setRoute(s.route.path);
   };
   apply(store.getState(), null);

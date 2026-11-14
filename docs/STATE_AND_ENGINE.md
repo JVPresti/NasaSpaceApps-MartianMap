@@ -56,6 +56,7 @@ setMode('plan');
 | `route.distanceM`, `climbM`, `steepestSlopeDeg`, `etaSec` | from `planRoute()` (`distance`, `climb`, `steepestSlopeDeg`) | planner | #16, #41 |
 | `route.reason` | why the route changed, for example after an event | re-planner | #23 |
 | `route.decision` | `'pending'`, `'go'` or `'no-go'`, set by the crew in Plan mode | interface | #17 |
+| `route.skipped` | waypoint names the event route leaves out, for example after a dust storm | events | #24 |
 | `environment.dustOpacity` | tau. **The event engine writes this path.** | events, MEDA replay | #22, #24, #31 |
 | `environment.tempC`, `windMs`, `pressurePa` | weather | MEDA replay | #31 |
 | `environment.doseRateUgyH`, `doseUgy` | radiation dose rate (µGy/h) and dose received (µGy) | RAD curve, events | #25, #31 |
@@ -63,6 +64,7 @@ setMode('plan');
 | `crew` | `[{ id, name, color, x, z, oxygenPct, batteryPct }]` | partner, online play | #39, #52 |
 | `view.layer` | 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop | Plan mode, wrist screen | #14, #67 |
 | `view.sky` | `'clear_day'`, `'dust_storm'`, `'late_afternoon'`, `'night'` | events, later the clock | #24, #73 |
+| `view.skyBlend` | 0 to 1, blend from `clear_day` to `dust_storm` as the storm opacity rises | events | #24 |
 | `sources['<path>']` | `{ tag: 'DATA' \| 'DERIVED' \| 'SIM', source }` for any value above | whoever writes the value | #62 |
 
 `null` means "not known yet". The interface should show a dash, not 0.

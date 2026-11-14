@@ -21,7 +21,7 @@ import { metresPerPixel } from './planView.js';
 import { createUniforms } from './uniforms.js';
 import { TIERS, detectTier } from './tiers.js';
 import { createTerrain } from './terrain.js';
-import { buildSky, applyPreset } from './atmosphere.js';
+import { buildSky, applyPreset, applySkyBlend } from './atmosphere.js';
 import { createRocks, buildCheyava } from './rocks.js';
 import { createRoute } from './route.js';
 import { createCast } from './cast.js';
@@ -52,7 +52,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
   assertWebGL2();
 
   let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null, waypoints = null;
-  const pending = { sky: null, route: null, waypoints: null };   // set before boot ends, applied when ready
+  const pending = { sky: null, skyBlend: null, route: null, waypoints: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -225,6 +225,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     waypoints = createWaypointMarkers(ctx);
     if (pending.sky) applyPreset(ctx, pending.sky);
     sys.routeGlow.setPath(pending.route);
+    if (pending.skyBlend) applySkyBlend(ctx, pending.skyBlend.from, pending.skyBlend.to, pending.skyBlend.t);
     waypoints.set(pending.waypoints);
     waypoints.group.visible = requestedMode === 'plan';
     viewCtl.setMode(requestedMode); started = true;
@@ -294,6 +295,21 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     setSky(name) {
       if (!SKIES.includes(name)) throw new Error('setSky: expected one of ' + SKIES.join(', ') + ', got ' + name);
       if (started) applyPreset(ctx, name); else pending.sky = name;
+    },
+    /**
+    /**
+     * Blend two atmosphere presets without changing the scene geometry.
+     * Used by the dust storm to raise opacity gradually.
+     * @param {string} from preset name
+     * @param {string} to preset name
+     * @param {number} t 0 = from, 1 = to
+     */
+    setSkyBlend(from, to, t) {
+      if (!SKIES.includes(from) || !SKIES.includes(to)) throw new Error('setSkyBlend: expected two known presets');
+      if (!Number.isFinite(t)) throw new Error('setSkyBlend: t must be a number');
+      const clamped = Math.max(0, Math.min(1, t));
+      if (started) applySkyBlend(ctx, from, to, clamped);
+      else pending.skyBlend = { from, to, t: clamped };
     },
     /**
      * Route drawn on the ground as the route glow (routeGlow.js), [[x, z], ...] in metres. null clears it.
