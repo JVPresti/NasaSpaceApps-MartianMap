@@ -182,7 +182,7 @@
       }
     },
     "dust.event.ramp_duration": {
-      "value": 300,
+      "value": 90,
       "unit": "s",
       "tag": "SIM",
       "label": "SIM",
@@ -197,7 +197,7 @@
         "locator": null,
         "data_url": null,
         "license": "Project value",
-        "note": "Time for the in-game optical depth to go from dust.tau.clear_season to dust.tau.storm_2022_peak. The real rise took up to one sol (dust.storm_2022.onset). #24 asks for 'a few minutes' so the event fits in an EVA."
+        "note": "Time for the in-game optical depth to go from dust.tau.clear_season to dust.tau.gale_global_storm_2018 (#126; before that, dust.tau.storm_2022_peak). The real rise took up to one sol (dust.storm_2022.onset). #24 asked for 'a few minutes'; shortened to 90 s in #126 so the storm builds up quickly during the demo."
       }
     },
     "dust.event.nav_fix_tau_max": {
@@ -332,6 +332,25 @@
         "data_url": "https://atmos.nmsu.edu/PDS/data/PDS4/Mars2020/mars2020_meda/",
         "license": "Cited fact.",
         "note": "Sunlight reaching the ground during the storm. Useful for any solar power or lighting effect."
+      }
+    },
+    "dust.tau.gale_global_storm_2018": {
+      "value": 8.0,
+      "unit": "optical depth, visible (lower bound)",
+      "tag": "DATA",
+      "label": "Curiosity · Gale crater, not Jezero",
+      "provenance": {
+        "mission": "MSL Curiosity",
+        "instrument": "Mastcam",
+        "product_id": null,
+        "site": "Gale crater, not Jezero",
+        "sol_or_date": "around sol 2084, 20 June 2018 (MY 34 global dust storm)",
+        "reference": "NASA/JPL, Martian Dust Storm Grows Global; Curiosity Captures Photos of Thickening Haze, 20 June 2018",
+        "url": "https://www.jpl.nasa.gov/news/martian-dust-storm-grows-global-curiosity-captures-photos-of-thickening-haze/",
+        "locator": "Body text: 'The sunlight-blocking haze, called \"tau,\" is now above 8.0 at Gale Crater -- the highest tau the mission has ever recorded.'",
+        "data_url": null,
+        "license": "NASA web content, public domain",
+        "note": "Peak of the dust storm event (#126): a global storm, not the 2022 Jezero regional storm. 8.0 is a lower bound ('above 8.0'). The storm dust effect (src/state/dustLevel.js) reaches its full strength at this value."
       }
     },
     "dust.tau.record_opportunity_2018": {

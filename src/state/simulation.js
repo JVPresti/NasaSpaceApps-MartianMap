@@ -4,6 +4,7 @@ import { useMissionStore } from './store.js';
 import { DEMO_MISSION_CLOCK, SKY_PRESETS, startMissionClock } from '../sim/missionClock.js';
 import { startEventRunner } from './events.js';
 import { startOffRoute } from './offRoute.js';
+import { startSlopeDetourService } from './slopeDetour.js';
 import { startWaypointRunner } from '../sim/waypointRunner.js';
 import { loadStops } from '../data/stops.js';
 import { parseShelters } from '../sim/shelters.js';
@@ -30,6 +31,7 @@ export function startSimulation(engine, { mock = false } = {}) {
   const events = startEventRunner({ store: useMissionStore });
   const offRoute = startOffRoute({ store: useMissionStore });
   const waypoints = startWaypointRunner({ store: useMissionStore });
+  const slopeDetour = startSlopeDetourService();
   // Science stop radii (arrival_radius in stops.json). Until the file loads every waypoint uses 5 m.
   loadStops().then((stops) => waypoints.setStops(stops)).catch((e) => console.error('stops.json not loaded, arrival radius 5 m:', e));
   let stopped = false, suit = null, legs = null, clock = null;
@@ -70,6 +72,7 @@ export function startSimulation(engine, { mock = false } = {}) {
     events.stop();
     offRoute.stop();
     waypoints.stop();
+    slopeDetour.stop();
     if (suit) suit.stop();
     if (legs) legs.stop();
   };

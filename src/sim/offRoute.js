@@ -10,6 +10,8 @@
  * runner in `src/state/offRoute.js` supplies the A* worker and the store.
  */
 
+import { applyPlannedRoute } from './routeUpdate.js';
+
 /** Defaults from issue #98: about 20 m, about 5 s, one re-plan every few seconds. */
 export const OFF_ROUTE_DEFAULTS = Object.freeze({
   thresholdM: 20,
@@ -121,47 +123,6 @@ export function createOffRouteMonitor(options = {}) {
 }
 
 /**
- * Write the result of an off-route re-plan to the store.
- * The path starts at the player and goes through the remaining waypoints.
- * @param {{ getState: Function, setState: Function }} store
- * @param {object} result
- * @param {string} reason
- */
-function writeStore(store, result, reason) {
-  store.setState((state) => {
-    if (!result?.ok) {
-      return {
-        route: {
-          ...state.route,
-          reason: `Off-route re-plan failed: ${result?.detail ?? result?.reason ?? 'no path'}`,
-        },
-      };
-    }
-    return {
-      route: {
-        ...state.route,
-        path: result.path,
-        distanceM: result.distance,
-        climbM: result.climb,
-        steepestSlopeDeg: result.steepestSlopeDeg,
-        etaSec: result.distance,
-        reason,
-        decision: 'pending',
-        skipped: [],
-      },
-      sources: {
-        ...state.sources,
-        'route.path': { tag: 'DERIVED', source: 'A* planner · HiRISE DTM' },
-        'route.distanceM': { tag: 'DERIVED', source: 'A* planner · HiRISE DTM' },
-        'route.climbM': { tag: 'DERIVED', source: 'A* planner · HiRISE DTM' },
-        'route.steepestSlopeDeg': { tag: 'DERIVED', source: 'A* planner · HiRISE DTM' },
-        'route.etaSec': { tag: 'SIM', source: 'distance at 1 m/s (mobility.speed.flat)' },
-      },
-    };
-  });
-}
-
-/**
  * Start the off-route watcher.
  *
  * `route.nextIndex` is the contract from #61: the first waypoint not visited
@@ -225,10 +186,16 @@ export function startOffRouteRunner({
     try {
       const result = await Promise.resolve(plan(remaining, { start: point, smooth: true }));
       if (stopped) return;
-      writeStore(store, result, decision.reason ?? 'Off route: new route from your position');
+      applyPlannedRoute(store, result, {
+        reason: decision.reason ?? 'Off route: new route from your position',
+        etaSec: result.distance,
+      });
     } catch (error) {
       if (!stopped) {
-        writeStore(store, { ok: false, detail: error instanceof Error ? error.message : String(error) }, decision.reason);
+        applyPlannedRoute(store, {
+          ok: false,
+          detail: error instanceof Error ? error.message : String(error),
+        }, { reason: decision.reason ?? 'Off route re-plan' });
       }
     } finally {
       planning = false;

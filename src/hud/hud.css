@@ -169,6 +169,113 @@
   fill: currentColor;
 }
 
+/* slope ahead warning + local no-go map */
+.hud-slope-warning {
+  position: absolute;
+  right: 7.8vw;
+  top: 34vh;
+  width: min(330px, 28vw);
+  padding: 0.8em 0.9em;
+  color: var(--ink);
+  background: rgba(70, 24, 18, 0.55);
+  border: 1px solid rgba(255, 106, 77, 0.85);
+  border-radius: 0.7em;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: auto;
+}
+
+.hud-slope-warning header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6em;
+  margin-bottom: 0.45em;
+  font-family: system-ui, 'Segoe UI', sans-serif;
+  color: var(--warning);
+  letter-spacing: 0.08em;
+}
+
+.hud-slope-warning header strong {
+  font-size: 0.78em;
+}
+
+.hud-slope-warning header span {
+  font-size: 0.78em;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-slope-body {
+  display: flex;
+  gap: 0.7em;
+  align-items: flex-start;
+}
+
+.hud-slope-map {
+  width: 5.6em;
+  height: 5.6em;
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(20, 12, 9, 0.55);
+}
+
+.hud-slope-map-bg {
+  fill: rgba(143, 211, 238, 0.08);
+}
+
+.hud-slope-cell {
+  fill: rgba(230, 58, 31, 0.78);
+}
+
+.hud-slope-player {
+  fill: #ffffff;
+  stroke: rgba(20, 12, 9, 0.65);
+  stroke-width: 0.8;
+}
+
+.hud-slope-copy {
+  min-width: 0;
+  font-family: system-ui, 'Segoe UI', sans-serif;
+  font-size: 0.68em;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.hud-slope-copy p {
+  margin: 0 0 0.4em;
+}
+
+.hud-slope-detour {
+  color: var(--ok);
+}
+
+.hud-slope-error {
+  color: #ffd2c8;
+}
+
+.hud-slope-copy button {
+  min-height: 2.9em;
+  padding: 0.35em 0.9em;
+  font: inherit;
+  font-weight: 700;
+  color: #2a0d08;
+  background: #ffb199;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 0.45em;
+  cursor: pointer;
+}
+
+.hud-slope-copy button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.hud-slope-copy button:focus-visible {
+  outline: 2px solid var(--unit);
+  outline-offset: 2px;
+}
+
 /* alert banner, under the heading box */
 .hud-alert {
   position: absolute; top: calc(var(--u) * 10.6); left: 50%; transform: translateX(-50%);

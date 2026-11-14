@@ -1,7 +1,7 @@
 // Helmet HUD (issue #20): what the astronaut reads while walking. Every value comes from the mission store; the store
 // changes a few times per second (suit 4 Hz, position 5 Hz), so these components re-render at that rate, never per frame.
 // Layout follows the v3 "Caminar · Normal" mockup; final Figma measurements come later (#11).
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
@@ -9,9 +9,11 @@ import { bearingDeg } from '../sim/bearing.js';
 import { nextTarget } from '../sim/waypointRunner.js';
 import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, pickAlert, wrapDeg } from './format.js';
 import ElevationProfile from './ElevationProfile.jsx';
+import SlopeAhead from './SlopeAhead.jsx';
 import * as I from './icons.jsx';
 import NavLine from './NavLine.jsx';
 import './hud.css';
+import SamplingPanel from './SamplingPanel.jsx';
 
 // Shared source tag (#62). The HUD never takes the pointer, so the tag shows its tag text only and puts the full
 // source in the title and the screen reader text.
@@ -143,12 +145,12 @@ function WaypointPanel({ heightAt, slopeAt }) {
       slope: s.navigation.slopeDeg,
       path: s.route.path,
       waypoints: s.route.waypoints,
-      // primitives only: a new { x, z } object on every call would defeat useShallow and loop the render
-      px: s.navigation.x,
-      pz: s.navigation.z,
+      px: s.navigation.x,   // plain numbers only: useShallow compares one level deep, so a new { x, z } object here
+      pz: s.navigation.z,   // would look like a change on every read and re-render forever (#153)
     };
   }));
-  const position = w && Number.isFinite(w.px) && Number.isFinite(w.pz) ? { x: w.px, z: w.pz } : null;
+  const px = w?.px, pz = w?.pz;
+  const position = useMemo(() => (Number.isFinite(px) && Number.isFinite(pz) ? { x: px, z: pz } : null), [px, pz]);
   if (!w) return <section className="hud-panel hud-waypoint hud-waypoint-empty" aria-label="Next waypoint">No route yet · plan one in Plan mode</section>;
   return (
     <section className="hud-panel hud-waypoint" aria-label={w.complete ? 'Route complete' : w.shelter ? 'Shelter' : 'Next waypoint'} title={w.complete ? undefined : w.full}>
@@ -268,12 +270,14 @@ export default function Hud({ engine }) {
     <div className="hud" aria-label="Helmet display">
       <HeadingTape />
       <WaypointMarker engine={engine} />
+      <SlopeAhead engine={engine} />
       <AlertBanner />
       <Clocks />
       <SuitPanel />
       <EnvStrip />
       <NavLine><SourceTag path="navigation.errorM" /></NavLine>
       <WaypointPanel heightAt={engine?.heightAt} slopeAt={engine?.slopeAt} />
+      <SamplingPanel />
     </div>
   );
 }

@@ -20,6 +20,7 @@ import { createBootPrints } from './bootPrints.js';
 import { createDust, clampDust } from './dust.js';
 import { createShelterHighlight } from './shelterHighlight.js';
 import { validShelter } from './shelterRules.js';
+import { createSlopeZone } from './slopeZone.js';
 import { createWaypointMarkers } from './waypoints.js';
 import { metresPerPixel } from './planView.js';
 import { createUniforms } from './uniforms.js';
@@ -35,6 +36,7 @@ import { CREW } from './crew.js';
 import { createLegs } from './legs.js';
 import { createArms } from './arms.js';
 import { createProps } from './props.js';
+import { createSampling } from './sampling.js';
 import { createHabitat } from './habitat.js';
 import { createView, createViewState } from './view.js';
 import { createLoadLifecycle } from './lifecycle.js';
@@ -56,7 +58,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
   assertWebGL2();
 
   let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null, waypoints = null;
-  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0 };   // set before boot ends, applied when ready
+  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -154,6 +156,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     const eyeMode = ctx.view.mode === 'eye';
     if (sys.arms.L) sys.arms.L.g.visible = sys.arms.R.g.visible = eyeMode;   // first-person arms only in Walk
     U.uTime.value += dt; sys.partner.update(dt); sys.arms.update(dt); sys.legs.update(dt, eyeMode ? ctx.view.moveSpeed : 0); sys.props.update(dt); sys.habitat.update(dt);
+    sys.sampling.update(dt);   // after props: follows the clip and the scoop content (#36)
     sys.routeGlow.update(dt, eyeMode ? ctx.view.eye : null);
     sys.shelter.update(dt, ctx.view.eye, camera);
     sys.prints.update(dt);
@@ -229,6 +232,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     await sys.arms.init(); if (!alive) return;
     await sys.legs.init(); if (!alive) return;
     await sys.props.init(); if (!alive) return;
+    sys.sampling = createSampling(ctx, canvas, signal);
 
     status('Loading the habitat…');
     U.uRelief.value = tj.range_m; sys.route.data = await assets.json('route.json'); if (!alive) return;
@@ -243,6 +247,8 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     sys.shelter.set(pending.shelter);
     sys.prints = createBootPrints(ctx); sys.prints.setTier(ctx.tier);
     sys.dust = createDust(ctx); sys.dust.setTier(ctx.tier); sys.dust.set(pending.dust);
+    sys.slopeZone = createSlopeZone(ctx);
+    sys.slopeZone.set(pending.slopeZone);
     if (pending.skyBlend) applySkyBlend(ctx, pending.skyBlend.from, pending.skyBlend.to, pending.skyBlend.t);
     waypoints.set(pending.waypoints);
     waypoints.group.visible = requestedMode === 'plan';
@@ -363,6 +369,14 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       if (list !== null && !(Array.isArray(list) && list.every((w) => w && Number.isFinite(w.x) && Number.isFinite(w.z)))) throw new Error('setWaypoints: expected [{ x, z, name }] or null');
       if (started) waypoints.set(list); else pending.waypoints = list;
     },
+    /**
+     * Red ground patch for the no-go cells from the slope look-ahead (#69).
+     * @param {Array<{ x: number, z: number }> | null} cells
+     */
+    setSlopeZone(cells) {
+      if (cells !== null && !(Array.isArray(cells) && cells.every((c) => c && Number.isFinite(c.x) && Number.isFinite(c.z)))) throw new Error('setSlopeZone: expected [{ x, z }] or null');
+      if (started) sys.slopeZone.set(cells); else pending.slopeZone = cells;
+    },
     /** Metres of ground per CSS pixel in Plan mode, or null when the engine is not ready. */
     getPlanScale() {
       if (!started || ctx.view.mode !== 'orbit') return null;
@@ -407,6 +421,16 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     },
     /** Scripted actions of the current source: 'toggleCase', 'visitHabitat'. Returns false if the source ignores it. */
     partnerCommand(name) { return sys.partner ? sys.partner.command(name) : false; },
+    /**
+     * Sampling (sampling.js, #36): what the crosshair is on, the clip phase, the partner's case and what each input does now.
+     * Plain data for the store bridge; null before the scene is ready.
+     */
+    getSampling() { return sys.sampling ? sys.sampling.status() : null; },
+    /** Sampling events ({ type: 'photo' | 'collect' | 'texture' | 'secured' | 'sealed' | 'input', ... }). Returns an unsubscribe function. Available once ready. */
+    onSampling(listener) {
+      if (!sys.sampling) throw new Error('engine is not ready: wait for engine.ready');
+      return sys.sampling.subscribe(listener);
+    },
     getPlayer() {
       const v = ctx.view, deg = ((v.yaw * 180 / Math.PI) % 360 + 360) % 360;
       return { x: v.eye.x, z: v.eye.z, headingDeg: deg, mode: v.mode === 'eye' ? 'walk' : 'plan' };
@@ -432,6 +456,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       for (const t of textures) t.dispose();
       if (sys.cast) sys.cast.rt.dispose();
       if (waypoints) waypoints.dispose();
+      if (sys.slopeZone) sys.slopeZone.dispose();
       if (ctx.terrain && ctx.terrain.shadowTex) ctx.terrain.shadowTex.dispose();
       for (const s of [sys.partner, sys.legs]) if (s && s.mixer) s.mixer.stopAllAction();
       renderer.dispose(); renderer.forceContextLoss();
