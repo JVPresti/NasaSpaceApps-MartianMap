@@ -62,6 +62,10 @@ engine.partnerCommand('toggleCase');                              // forwarded t
 - **`color`:** take it from the player's slot in `PLAYER_COLORS` (`src/engine/crew.js`).
 - **Height:** never send it, because each client reads it from its own terrain.
 
+## Partner status on the HUD (#70)
+
+`engine.getPartner()` returns `{ id, color, state }`, the source's id and colour and the PartnerState it returned on the last frame. The partner runner (`src/sim/partnerRunner.js`) reads only that, so a network source feeds the HUD chip, the partner's suit and the separation alert with no other change. The partner's O2 and battery come from the suit model, fed by the movement between its reported positions.
+
 ## Crew colours
 
 `src/engine/crew.js` holds the four suggested player colours of `astronaut.json`:

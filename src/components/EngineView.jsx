@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { createEngine } from '../engine/index.js';
-import { useMissionStore } from '../state/store.js';
+import { pauseMission, useMissionStore } from '../state/store.js';
 import { connectEngine } from '../state/engineBridge.js';
 import { connectSampling } from '../state/sampling.js';
 import { startSimulation } from '../state/simulation.js';
@@ -18,6 +18,10 @@ function tierFromUrl() {
  * mode, layer, sky and route flow from the store to the engine; the player's position flows back 5 times per second.
  * The engine runs its own render loop; this component never renders per frame.
  * Retrying remounts it with a new key, which disposes the previous engine before a new one boots.
+ *
+ * The engine starts with gameplay input disabled and the simulation paused, so the start screen is a real
+ * stop: no mission clock, suit consumption or walking happens behind it. `onEngine` also receives the
+ * simulation controls used by the restart flow in src/state/evaSession.js.
  */
 export default function EngineView({ onStatus, onProgress, onReady, onError, onLockChange, onEngine }) {
   const containerRef = useRef(null);
@@ -35,12 +39,28 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
     let engine;
     let live = true;
     let disconnect = null, stopSimulation = null, disconnectSampling = null;
+    const mock = new URLSearchParams(window.location.search).get('mock') === '1';
     const current = () => live && (engine === undefined || engineRef.current === engine);
+
+    const stopCurrentSimulation = () => {
+      if (!stopSimulation) return;
+      const stop = stopSimulation;
+      stopSimulation = null;
+      stop();
+    };
+    const startCurrentSimulation = () => {
+      if (!live) return null;
+      stopCurrentSimulation();
+      stopSimulation = startSimulation(engine, { mock });
+      return stopSimulation;
+    };
+
     try {
       engine = createEngine(container, {
         assetBase: ASSET_BASE,
         mode: useMissionStore.getState().mode,
         tier: tierFromUrl(),
+        inputEnabled: false,
         debug: import.meta.env.DEV,
         // Identity checks keep a disposed StrictMode/retry engine from writing stale progress into React.
         onStatus: (text) => { if (current()) callbacks.current.onStatus?.(text); },
@@ -58,11 +78,20 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
     engineRef.current = engine;
     engine.ready.then(() => {
       if (!current()) return;
-      disconnect = connectEngine(engine);
-      disconnectSampling = connectSampling(engine);   // checklist, sample count and the sampling prompt (#36)
-      stopSimulation = startSimulation(engine, { mock: new URLSearchParams(window.location.search).get('mock') === '1' });
-      callbacks.current.onEngine?.(engine);
-      callbacks.current.onReady?.();
+      try {
+        disconnect = connectEngine(engine);
+        disconnectSampling = connectSampling(engine);   // checklist, sample count and the sampling prompt (#36)
+        startCurrentSimulation();
+        pauseMission();   // the start screen is a real pause, including ?mock=1 where nothing starts
+        callbacks.current.onEngine?.(engine, {
+          stopSimulation: stopCurrentSimulation,
+          startSimulation: startCurrentSimulation,
+        });
+        callbacks.current.onReady?.();
+      } catch (err) {
+        // A partly wired scene must surface as a loading error, not as a silent stuck loader.
+        if (current()) callbacks.current.onError?.(err);
+      }
     }, () => {});
     return () => {
       live = false;
@@ -70,7 +99,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
         engineRef.current = null;
         callbacks.current.onEngine?.(null);
       }
-      if (stopSimulation) stopSimulation();
+      stopCurrentSimulation();
       if (disconnect) disconnect();
       if (disconnectSampling) disconnectSampling();
       engine.dispose();

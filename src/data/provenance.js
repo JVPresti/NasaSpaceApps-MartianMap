@@ -85,6 +85,15 @@ export const STORE_PATHS = Object.freeze({
   'suit.marginSec': suitModel('suit model: Apollo 30 min reserve + 20 % pad; thresholds SIM', SUIT_MARGIN),
   'suit.status': suitModel('suit model: margin against the caution and warning thresholds (SIM)', SUIT_MARGIN),
 
+  // partner (src/sim/partnerRunner.js, #70): the same suit model as the player, fed by the partner's movement
+  'crew.0.rangeM': sim('range from the player to the partner source position; no GPS on Mars'),
+  'crew.0.bearingDeg': sim('bearing from the player to the partner source position; no GPS on Mars'),
+  'crew.0.oxygenPct': suitModel('suit model fed by the partner\'s movement: xEMU primary O2 minus walking use', SUIT_O2),
+  'crew.0.batteryPct': suitModel('suit model fed by the partner\'s movement: xEMU battery, the effort share of the draw is SIM', SUIT_BATTERY),
+  'crew.0.status': suitModel('partner suit margin against the caution and warning thresholds (SIM)', SUIT_MARGIN),
+  'crew.0.link': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'radio line of sight between the two suits on the HiRISE height map', from: HIRISE },
+  'crew.0.separationLimitM': sim('our rule: 100 m from the pair-walk mockup, caution from 80 m; hazards.json has no separation value'),
+
   // navigation: the engine writes the true position until the navigation model (#42) estimates it
   'navigation.x': sim('player position from the engine; no GPS on Mars, the estimate comes with #42'),
   'navigation.z': sim('player position from the engine; no GPS on Mars, the estimate comes with #42'),
