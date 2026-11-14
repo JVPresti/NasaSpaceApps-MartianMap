@@ -9,8 +9,11 @@
     "lint": "oxlint",
     "test": "vitest run",
     "shelters": "node scripts/build-shelters.mjs",
+    "meda": "node scripts/build-meda-sol.mjs",
+    "rad": "node scripts/build-rad.mjs",
     "measure": "node scripts/measure-fps.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "credits": "node scripts/build-credits.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

@@ -18,13 +18,13 @@ function tierFromUrl() {
  * The engine runs its own render loop; this component never renders per frame.
  * Retrying remounts it with a new key, which disposes the previous engine before a new one boots.
  */
-export default function EngineView({ onStatus, onProgress, onReady, onError, onLockChange }) {
+export default function EngineView({ onStatus, onProgress, onReady, onError, onLockChange, onEngine }) {
   const containerRef = useRef(null);
   const engineRef = useRef(null);
-  const callbacks = useRef({ onStatus, onProgress, onReady, onError, onLockChange });
+  const callbacks = useRef({ onStatus, onProgress, onReady, onError, onLockChange, onEngine });
 
   useEffect(() => {
-    callbacks.current = { onStatus, onProgress, onReady, onError, onLockChange };
+    callbacks.current = { onStatus, onProgress, onReady, onError, onLockChange, onEngine };
   });
 
   useEffect(() => {
@@ -59,11 +59,15 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
       if (!current()) return;
       disconnect = connectEngine(engine);
       stopSimulation = startSimulation(engine, { mock: new URLSearchParams(window.location.search).get('mock') === '1' });
+      callbacks.current.onEngine?.(engine);
       callbacks.current.onReady?.();
     }, () => {});
     return () => {
       live = false;
-      if (engineRef.current === engine) engineRef.current = null;
+      if (engineRef.current === engine) {
+        engineRef.current = null;
+        callbacks.current.onEngine?.(null);
+      }
       if (stopSimulation) stopSimulation();
       if (disconnect) disconnect();
       engine.dispose();

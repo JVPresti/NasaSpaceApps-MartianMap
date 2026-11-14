@@ -1,0 +1,593 @@
+{
+ "schema_version": 1,
+ "title": "Marswalk science stops",
+ "description": "Text, Perseverance images and a sampling checklist for the two science stops. Each stop links to a route.json waypoint by name. Every sentence and image carries the shared provenance block from public/data/README.md. Shown in Plan mode when a waypoint is selected and in Walk mode on arrival (card: #66).",
+ "frame": "x east, z south, metres from Cheyava Falls (engine frame, same as route.json)",
+ "tags": {
+  "DATA": "Measured or reported by a NASA mission, a NASA release or a peer-reviewed paper. The provenance block names the source and quotes it.",
+  "DERIVED": "Calculated by us from DATA values. The note gives the calculation.",
+  "SIM": "Our own assumption or game choice. The note says why and what it is based on."
+ },
+ "image_credit_rule": "Show the credit string next to every image, always.",
+ "stops": [
+  {
+   "id": "bright-angel",
+   "name": "Bright Angel",
+   "waypoint": "WP3 · Bright Angel outcrop",
+   "x": -40,
+   "z": -60,
+   "position": {
+    "tag": "SIM",
+    "label": "SIM · placeholder waypoint",
+    "provenance": {
+     "mission": null,
+     "instrument": null,
+     "product_id": null,
+     "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+     "sol_or_date": null,
+     "reference": "Marswalk implementation plan, docs/IMPLEMENTATION_PLAN.md",
+     "url": null,
+     "locator": "public/marswalk/assets/route.json, waypoint \"WP3 · Bright Angel outcrop\"",
+     "data_url": null,
+     "license": "Project text, same license as the repository",
+     "note": "Copied from route.json, where the waypoints are placeholders. Bright Angel is a formation, not one point; the stop sits at the placeholder until the Route team moves WP3."
+    }
+   },
+   "arrival_radius": {
+    "value": 2,
+    "unit": "m",
+    "tag": "SIM",
+    "label": "SIM",
+    "provenance": {
+     "mission": null,
+     "instrument": null,
+     "product_id": null,
+     "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+     "sol_or_date": null,
+     "reference": "Marswalk implementation plan, docs/IMPLEMENTATION_PLAN.md",
+     "url": null,
+     "locator": "Issue #61: \"2 m at a science target, 5 m elsewhere\"; Bright Angel is a science target",
+     "data_url": null,
+     "license": "Project text, same license as the repository",
+     "note": "Arrival trigger distance for the game, from the plan and issue #61 (2 m at a science target, 5 m elsewhere)."
+    }
+   },
+   "title_tag": "DATA",
+   "summary": "Light-toned river-channel rocks made of clay and silt, the kind of mud that keeps traces of life.",
+   "text": [
+    {
+     "sentence": "Bright Angel is a set of light-toned rock outcrops at the edges of Neretva Vallis, a 400 m wide valley that water carved on its way into Jezero crater.",
+     "tag": "DATA",
+     "provenance": [
+      {
+       "mission": "Mars 2020",
+       "instrument": null,
+       "product_id": null,
+       "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+       "sol_or_date": null,
+       "reference": "NASA news release, \"NASA Says Mars Rover Discovered Potential Biosignature Last Year\", 10 September 2025",
+       "url": "https://www.nasa.gov/news-release/nasa-says-mars-rover-discovered-potential-biosignature-last-year/",
+       "locator": "\"the “Bright Angel” formation, a set of rocky outcrops on the northern and southern edges of Neretva Vallis, an ancient river valley measuring a quarter-mile (400 meters) wide that was carved by water rushing into Jezero Crater long ago\"",
+       "data_url": null,
+       "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech as stated (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+       "note": "Historical observation, not a current condition."
+      },
+      {
+       "mission": "Mars 2020",
+       "instrument": "Navcam",
+       "product_id": null,
+       "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+       "sol_or_date": "sol 1172, 6 June 2024",
+       "reference": "NASA/JPL Photojournal PIA26336, \"Perseverance Views 'Bright Angel'\", 13 June 2024",
+       "url": "https://science.nasa.gov/photojournal/perseverance-views-bright-angel/",
+       "locator": "Caption: \"Bright Angel is at the base of the northern wall of the river channel\" and \"The area features light-toned rocky outcrops\"",
+       "data_url": null,
+       "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech as stated (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+       "note": "Historical observation, not a current condition."
+      }
+     ]
+    },
+    {
+     "sentence": "Perseverance arrived on 9 June 2024 and found sedimentary rocks made of clay and silt.",
+     "tag": "DATA",
+     "provenance": [
+      {
+       "mission": "Mars 2020",
+       "instrument": null,
+       "product_id": null,
+       "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+       "sol_or_date": "9 June 2024",
+       "reference": "NASA/JPL news release, \"NASA's Perseverance Fords an Ancient River to Reach Science Target\", 13 June 2024",
+       "url": "https://www.nasa.gov/missions/mars-2020-perseverance/perseverance-rover/nasas-perseverance-fords-an-ancient-river-to-reach-science-target/",
+       "locator": "\"reached its latest area of scientific interest on June 9\"",
+       "data_url": null,
+       "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech as stated (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+       "note": "Historical observation, not a current condition."
+      },
+      {
+       "mission": "Mars 2020",
+       "instrument": null,
+       "product_id": null,
+       "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+       "sol_or_date": null,
+       "reference": "NASA news release, \"NASA Says Mars Rover Discovered Potential Biosignature Last Year\", 10 September 2025",
+       "url": "https://www.nasa.gov/news-release/nasa-says-mars-rover-discovered-potential-biosignature-last-year/",
+       "locator": "\"the formation’s sedimentary rocks are composed of clay and silt\"",
+       "data_url": null,
+       "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech as stated (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+       "note": "Historical observation, not a current condition."
+      }
+     ]
+    },
+    {
+     "sentence": "On Earth, clay and silt preserve signs of past microbial life very well.",
+     "tag": "DATA",
+     "provenance": [
+      {
+       "mission": "Mars 2020",
+       "instrument": null,
+       "product_id": null,
+       "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+       "sol_or_date": null,
+       "reference": "NASA news release, \"NASA Says Mars Rover Discovered Potential Biosignature Last Year\", 10 September 2025",
+       "url": "https://www.nasa.gov/news-release/nasa-says-mars-rover-discovered-potential-biosignature-last-year/",
+       "locator": "\"clay and silt, which, on Earth, are excellent preservers of past microbial life\"",
+       "data_url": null,
+       "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech as stated (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+       "note": "Earth analogue stated by NASA, not a measurement on Mars."
+      }
+     ]
+    },
+    {
+     "sentence": "On foot, a geologist can follow the layers across the outcrop and pick fresh rock to sample.",
+     "tag": "SIM",
+     "provenance": [
+      {
+       "mission": null,
+       "instrument": null,
+       "product_id": null,
+       "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+       "sol_or_date": null,
+       "reference": "Marswalk implementation plan, docs/IMPLEMENTATION_PLAN.md",
+       "url": null,
+       "locator": "section 3.1: \"A geologist on foot can do what it could not: break fresh faces, follow the veins across the outcrop and choose samples in context\"",
+       "data_url": null,
+       "license": "Project text, same license as the repository",
+       "note": "Mission framing for the game, not a NASA finding."
+      }
+     ]
+    }
+   ],
+   "images": [
+    {
+     "file": "images/bright-angel-zl0-sol1187.jpg",
+     "width_px": 1200,
+     "height_px": 874,
+     "bytes": 241348,
+     "alt": "Layered, light-toned rock slabs half buried in reddish sand.",
+     "caption": "Light-toned outcrop at Bright Angel, Left Mastcam-Z, sol 1187 (22 June 2024).",
+     "credit": "NASA/JPL-Caltech/ASU",
+     "image_id": "ZL0_1187_0772321307_818EBY_N0541010ZCAM09237_0630LMJ",
+     "sol": 1187,
+     "date_utc": "2024-06-22T09:57:26Z",
+     "camera": "Left Mastcam-Z (MCZ_LEFT)",
+     "original_url": "https://mars.nasa.gov/mars2020-raw-images/pub/ods/surface/sol/01187/ids/edr/browse/zcam/ZL0_1187_0772321307_818EBY_N0541010ZCAM09237_0630LMJ01.png",
+     "page_url": "https://mars.nasa.gov/mars2020/multimedia/raw-images/ZL0_1187_0772321307_818EBY_N0541010ZCAM09237_0630LMJ",
+     "processing": "auto-stretched raw, resized",
+     "label": "Mastcam-Z · Perseverance · sol 1187",
+     "tag": "DATA",
+     "provenance": {
+      "mission": "Mars 2020",
+      "instrument": "Mastcam-Z (left camera)",
+      "product_id": "ZL0_1187_0772321307_818EBY_N0541010ZCAM09237_0630LMJ",
+      "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+      "sol_or_date": "sol 1187, 22 June 2024, 13:59:51 LMST",
+      "reference": "NASA Mars 2020 raw images, \"Mars Perseverance Sol 1187: Left Mastcam-Z Camera\"",
+      "url": "https://mars.nasa.gov/mars2020/multimedia/raw-images/ZL0_1187_0772321307_818EBY_N0541010ZCAM09237_0630LMJ",
+      "locator": "Raw images API caption: \"This image was acquired on June 22, 2024 (Sol 1187) at the local mean solar time of 13:59:51.\" Credit field: \"NASA/JPL-Caltech/ASU\"",
+      "data_url": "https://mars.nasa.gov/rss/api/?feed=raw_images&category=mars2020&feedtype=json&sol=1187",
+      "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech as stated (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+      "note": "Raw image from the Mars 2020 raw images feed: auto-stretched for display, not calibrated, so brightness and colour are not measurements. Resized by us to 1200 px wide JPEG, no other edits. Location: sol 1187 falls between the rover reaching Bright Angel (9 June 2024) and the Cheyava Falls work in the same formation (sols 1212 to 1217); the frame shows the light-toned outcrop near the rover, not the WP3 placeholder spot."
+     }
+    }
+   ],
+   "checklist": [
+    {
+     "id": "photo",
+     "label": "Photo",
+     "text": "Photograph the rock and its surroundings before touching it.",
+     "tag": "SIM",
+     "provenance": {
+      "mission": null,
+      "instrument": null,
+      "product_id": null,
+      "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+      "sol_or_date": null,
+      "reference": "Marswalk implementation plan, docs/IMPLEMENTATION_PLAN.md",
+      "url": null,
+      "locator": "section 3.4, scenario 1: \"Reference image match, then the checklist: photo, texture, sample, seal\"",
+      "data_url": null,
+      "license": "Project text, same license as the repository",
+      "note": "Game step for scenario 1 (arrival and sampling checklist). Not a NASA procedure."
+     }
+    },
+    {
+     "id": "texture",
+     "label": "Texture",
+     "text": "Look at the surface up close: grain, layers, veins, spots.",
+     "tag": "SIM",
+     "provenance": {
+      "mission": null,
+      "instrument": null,
+      "product_id": null,
+      "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+      "sol_or_date": null,
+      "reference": "Marswalk implementation plan, docs/IMPLEMENTATION_PLAN.md",
+      "url": null,
+      "locator": "section 3.4, scenario 1: \"Reference image match, then the checklist: photo, texture, sample, seal\"",
+      "data_url": null,
+      "license": "Project text, same license as the repository",
+      "note": "Game step for scenario 1 (arrival and sampling checklist). Not a NASA procedure."
+     }
+    },
+    {
+     "id": "sample",
+     "label": "Sample",
+     "text": "Take a scoop of rock chips from a fresh, undusted spot.",
+     "tag": "SIM",
+     "provenance": {
+      "mission": null,
+      "instrument": null,
+      "product_id": null,
+      "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+      "sol_or_date": null,
+      "reference": "Marswalk implementation plan, docs/IMPLEMENTATION_PLAN.md",
+      "url": null,
+      "locator": "section 3.4, scenario 1: \"Reference image match, then the checklist: photo, texture, sample, seal\"",
+      "data_url": null,
+      "license": "Project text, same license as the repository",
+      "note": "Game step for scenario 1 (arrival and sampling checklist). Not a NASA procedure."
+     }
+    },
+    {
+     "id": "seal",
+     "label": "Seal",
+     "text": "Close the sample in its container and log it.",
+     "tag": "SIM",
+     "provenance": {
+      "mission": null,
+      "instrument": null,
+      "product_id": null,
+      "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+      "sol_or_date": null,
+      "reference": "Marswalk implementation plan, docs/IMPLEMENTATION_PLAN.md",
+      "url": null,
+      "locator": "section 3.4, scenario 1: \"Reference image match, then the checklist: photo, texture, sample, seal\"",
+      "data_url": null,
+      "license": "Project text, same license as the repository",
+      "note": "Game step for scenario 1 (arrival and sampling checklist). Not a NASA procedure."
+     }
+    }
+   ]
+  },
+  {
+   "id": "cheyava-falls",
+   "name": "Cheyava Falls",
+   "waypoint": "Cheyava Falls",
+   "x": 0,
+   "z": 0,
+   "position": {
+    "tag": "DATA",
+    "label": "Mars 2020 · rover waypoint sol 1210",
+    "provenance": {
+     "mission": "Mars 2020",
+     "instrument": null,
+     "product_id": null,
+     "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+     "sol_or_date": "sol 1210",
+     "reference": "Mars 2020 rover waypoint (NASA/JPL-Caltech, MMGIS), recorded in docs/marswalk-assets/README.md",
+     "url": "https://mars.nasa.gov/mars2020/mission/where-is-the-rover/",
+     "locator": "docs/marswalk-assets/README.md, Coordinates: \"Origin = Cheyava Falls (Perseverance waypoint sol 1210, 18.4975 N, 77.3053 E)\"",
+     "data_url": null,
+     "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech as stated (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+     "note": "Engine origin, same as route.json waypoint \"Cheyava Falls\". The 3D rock at the origin is hand-made after PIA26401."
+    }
+   },
+   "arrival_radius": {
+    "value": 2,
+    "unit": "m",
+    "tag": "SIM",
+    "label": "SIM",
+    "provenance": {
+     "mission": null,
+     "instrument": null,
+     "product_id": null,
+     "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+     "sol_or_date": null,
+     "reference": "Marswalk implementation plan, docs/IMPLEMENTATION_PLAN.md",
+     "url": null,
+     "locator": "section 3.4, scenario 1: \"Within 2 m of the target\"",
+     "data_url": null,
+     "license": "Project text, same license as the repository",
+     "note": "Arrival trigger distance for the game, from the plan and issue #61 (2 m at a science target, 5 m elsewhere)."
+    }
+   },
+   "title_tag": "DATA",
+   "summary": "The rock with \"leopard spots\" that NASA called a potential biosignature in 2025. Perseverance cored it on 21 July 2024.",
+   "text": [
+    {
+     "sentence": "Cheyava Falls is an arrowhead-shaped rock, 1 m by 0.6 m, that Perseverance found in the Bright Angel formation in July 2024.",
+     "tag": "DATA",
+     "provenance": [
+      {
+       "mission": "Mars 2020",
+       "instrument": null,
+       "product_id": null,
+       "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+       "sol_or_date": null,
+       "reference": "NASA news release, \"NASA Says Mars Rover Discovered Potential Biosignature Last Year\", 10 September 2025",
+       "url": "https://www.nasa.gov/news-release/nasa-says-mars-rover-discovered-potential-biosignature-last-year/",
+       "locator": "\"Perseverance came upon Cheyava Falls in July 2024 while exploring the “Bright Angel” formation\" and \"an arrowhead-shaped rock measuring 3.2 feet by 2 feet (1 meter by 0.6 meters)\"",
+       "data_url": null,
+       "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech as stated (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+       "note": "Historical observation, not a current condition."
+      }
+     ]
+    },
+    {
+     "sentence": "It holds organic compounds, white calcium sulfate veins and millimetre-size \"leopard spots\" whose black rims contain iron and phosphate.",
+     "tag": "DATA",
+     "provenance": [
+      {
+       "mission": "Mars 2020",
+       "instrument": "SHERLOC, PIXL",
+       "product_id": null,
+       "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+       "sol_or_date": "July 2024",
+       "reference": "NASA/JPL news release, \"NASA's Perseverance Rover Scientists Find Intriguing Mars Rock\", 25 July 2024",
+       "url": "https://www.nasa.gov/missions/mars-2020-perseverance/perseverance-rover/nasas-perseverance-rover-scientists-find-intriguing-mars-rock/",
+       "locator": "\"irregularly shaped, millimeter-size off-white splotches, each ringed with black material, akin to leopard spots\"; \"Multiple scans of Cheyava Falls by the rover’s SHERLOC instrument indicate it contains organic compounds\"; \"Running the length of the rock are large white calcium sulfate veins\"; PIXL \"has determined these black halos contain both iron and phosphate\"",
+       "data_url": null,
+       "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech as stated (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+       "note": "Historical observation, not a current condition."
+      },
+      {
+       "mission": "Mars 2020",
+       "instrument": "SHERLOC WATSON",
+       "product_id": null,
+       "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+       "sol_or_date": "sol 1212, 18 July 2024",
+       "reference": "NASA/JPL Photojournal PIA26368, \"Perseverance Finds a Rock with Leopard Spots\", 25 July 2024",
+       "url": "https://science.nasa.gov/photojournal/perseverance-finds-a-rock-with-leopard-spots/",
+       "locator": "Caption: \"the millimeter-size, irregularly shaped light patches on the central reddish band ... that are surrounded by a thin ring of dark material\"",
+       "data_url": null,
+       "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech as stated (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+       "note": "Historical observation, not a current condition."
+      }
+     ]
+    },
+    {
+     "sentence": "In September 2025 the team reported in Nature that the spots likely hold vivianite and greigite, iron minerals that microbes can make but that also form without life, so NASA calls them a potential biosignature.",
+     "tag": "DATA",
+     "provenance": [
+      {
+       "mission": "Mars 2020",
+       "instrument": null,
+       "product_id": null,
+       "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+       "sol_or_date": "published 10 September 2025",
+       "reference": "Hurowitz, J. A. et al. 2025, \"Redox-driven mineral and organic associations in Jezero Crater, Mars\", Nature 645, 332-340",
+       "url": "https://doi.org/10.1038/s41586-025-09413-0",
+       "locator": "Abstract: \"reaction fronts enriched in ferrous iron phosphate and sulfide minerals, likely vivianite and greigite, respectively\"",
+       "data_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12422973/",
+       "license": "Cited fact. Paper is open access under CC BY-NC-ND 4.0; only the short quote in locator is reproduced",
+       "note": "Historical observation, not a current condition."
+      },
+      {
+       "mission": "Mars 2020",
+       "instrument": null,
+       "product_id": null,
+       "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+       "sol_or_date": null,
+       "reference": "NASA news release, \"NASA Says Mars Rover Discovered Potential Biosignature Last Year\", 10 September 2025",
+       "url": "https://www.nasa.gov/news-release/nasa-says-mars-rover-discovered-potential-biosignature-last-year/",
+       "locator": "\"The spots carried the signature of two iron-rich minerals: vivianite (hydrated iron phosphate) and greigite (iron sulfide)\"; \"certain forms of microbial life on Earth can produce greigite\"; \"The minerals also can be generated abiotically, or without the presence of life\"; \"A potential biosignature is a substance or structure that might have a biological origin but requires more data or further study\"",
+       "data_url": null,
+       "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech as stated (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+       "note": "Historical observation, not a current condition."
+      }
+     ]
+    },
+    {
+     "sentence": "The rover cored the rock on 21 July 2024, and labs on Earth will need that core, Sapphire Canyon, to tell where its minerals and organics came from.",
+     "tag": "DATA",
+     "provenance": [
+      {
+       "mission": "Mars 2020",
+       "instrument": null,
+       "product_id": null,
+       "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+       "sol_or_date": "sol 1215, 21 July 2024",
+       "reference": "NASA/JPL news release, \"NASA's Perseverance Rover Scientists Find Intriguing Mars Rock\", 25 July 2024",
+       "url": "https://www.nasa.gov/missions/mars-2020-perseverance/perseverance-rover/nasas-perseverance-rover-scientists-find-intriguing-mars-rock/",
+       "locator": "\"was collected on July 21\" (the rover’s 22nd rock core sample)",
+       "data_url": null,
+       "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech as stated (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+       "note": "Sol 1215 from the raw images feed: CacheCam frames dated 2024-07-21 UTC. Historical observation."
+      },
+      {
+       "mission": "Mars 2020",
+       "instrument": null,
+       "product_id": null,
+       "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+       "sol_or_date": null,
+       "reference": "NASA news release, \"NASA Says Mars Rover Discovered Potential Biosignature Last Year\", 10 September 2025",
+       "url": "https://www.nasa.gov/news-release/nasa-says-mars-rover-discovered-potential-biosignature-last-year/",
+       "locator": "\"the sample, called “Sapphire Canyon,” contains potential biosignatures\"",
+       "data_url": null,
+       "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech as stated (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+       "note": "Historical observation, not a current condition."
+      },
+      {
+       "mission": "Mars 2020",
+       "instrument": null,
+       "product_id": null,
+       "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+       "sol_or_date": "published 10 September 2025",
+       "reference": "Hurowitz, J. A. et al. 2025, \"Redox-driven mineral and organic associations in Jezero Crater, Mars\", Nature 645, 332-340",
+       "url": "https://doi.org/10.1038/s41586-025-09413-0",
+       "locator": "Abstract: \"analysis of the core sample collected from this unit using high-sensitivity instrumentation on Earth will enable the measurements required to determine the origin of the minerals, organics and textures it contains\"",
+       "data_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12422973/",
+       "license": "Cited fact. Paper is open access under CC BY-NC-ND 4.0; only the short quote in locator is reproduced",
+       "note": "Historical observation, not a current condition."
+      }
+     ]
+    }
+   ],
+   "images": [
+    {
+     "file": "images/cheyava-falls-pia26401.jpg",
+     "width_px": 1200,
+     "height_px": 513,
+     "bytes": 100383,
+     "alt": "Two rocks seen from above. The left one, Cheyava Falls, has a drill hole and a white abrasion patch; the right one, Steamboat Mountain, has another white patch.",
+     "caption": "The Cheyava Falls workspace, Mastcam-Z, sol 1217 (23 July 2024). The drill hole at far left is where the rover cored the rock.",
+     "credit": "NASA/JPL-Caltech/ASU/MSSS",
+     "image_id": "PIA26401",
+     "sol": 1217,
+     "date_utc": "2024-07-23",
+     "camera": "Mastcam-Z",
+     "original_url": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia26/pia26401/PIA26401.jpg",
+     "page_url": "https://science.nasa.gov/photojournal/mastcam-z-views-the-cheyava-falls-workspace",
+     "processing": "NASA release mosaic, resized",
+     "label": "Mastcam-Z · Perseverance · sol 1217",
+     "reference_match": true,
+     "tag": "DATA",
+     "provenance": {
+      "mission": "Mars 2020",
+      "instrument": "Mastcam-Z",
+      "product_id": "PIA26401",
+      "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+      "sol_or_date": "sol 1217, 23 July 2024",
+      "reference": "NASA/JPL Photojournal PIA26401, \"Mastcam-Z Views the ‘Cheyava Falls’ Workspace\", 25 July 2024",
+      "url": "https://science.nasa.gov/photojournal/mastcam-z-views-the-cheyava-falls-workspace",
+      "locator": "Caption: \"A drill hole is visible (far left) where a sample was collected on July 21, 2024\"; \"At right is a rock nicknamed “Steamboat Mountain”\"; taken on \"the 1217th day, or sol, of the mission\"",
+      "data_url": null,
+      "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech as stated (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+      "note": "Processed NASA release, not a raw frame; the caption does not say whether the colour is natural or enhanced. Resized by us from 14444 x 6175 px to 1200 px wide JPEG. Same image the hand-made 3D rock follows (docs/marswalk-assets/README.md), so it is the one to show beside the rock as the reference match."
+     }
+    },
+    {
+     "file": "images/cheyava-falls-pia26368.jpg",
+     "width_px": 1200,
+     "height_px": 874,
+     "bytes": 208616,
+     "alt": "Close-up of a reddish rock band dotted with small pale spots ringed in black, between two white veins.",
+     "caption": "\"Leopard spots\" on Cheyava Falls, WATSON camera, sol 1212 (18 July 2024).",
+     "credit": "NASA/JPL-Caltech/MSSS",
+     "image_id": "PIA26368",
+     "sol": 1212,
+     "date_utc": "2024-07-18",
+     "camera": "SHERLOC WATSON",
+     "original_url": "https://d2pn8kiwq2w21t.cloudfront.net/original_images/1-PIA26368-Perseverance_Finds_a_Rock_with_Leopard_Spots.png",
+     "page_url": "https://www.jpl.nasa.gov/images/pia26368-perseverance-finds-a-rock-with-leopard-spots/",
+     "processing": "NASA release, resized",
+     "label": "WATSON · Perseverance · sol 1212",
+     "reference_match": false,
+     "tag": "DATA",
+     "provenance": {
+      "mission": "Mars 2020",
+      "instrument": "SHERLOC WATSON",
+      "product_id": "PIA26368",
+      "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+      "sol_or_date": "sol 1212, 18 July 2024",
+      "reference": "NASA/JPL Photojournal PIA26368, \"Perseverance Finds a Rock with Leopard Spots\", 25 July 2024",
+      "url": "https://science.nasa.gov/photojournal/perseverance-finds-a-rock-with-leopard-spots/",
+      "locator": "Caption: WATSON image of \"millimeter-size, irregularly shaped light patches on the central reddish band\", with \"large white calcium sulfate veins\" and \"a few green olivine crystals\"",
+      "data_url": "https://photojournal.jpl.nasa.gov/tiff/PIA26368.tif",
+      "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech as stated (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+      "note": "Processed NASA release; the WATSON raw image ID is not given in the caption and the caption does not describe colour processing. Resized by us from 1648 x 1200 px PNG to 1200 px wide JPEG."
+     }
+    }
+   ],
+   "checklist": [
+    {
+     "id": "photo",
+     "label": "Photo",
+     "text": "Photograph the rock and its surroundings before touching it.",
+     "tag": "SIM",
+     "provenance": {
+      "mission": null,
+      "instrument": null,
+      "product_id": null,
+      "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+      "sol_or_date": null,
+      "reference": "Marswalk implementation plan, docs/IMPLEMENTATION_PLAN.md",
+      "url": null,
+      "locator": "section 3.4, scenario 1: \"Reference image match, then the checklist: photo, texture, sample, seal\"",
+      "data_url": null,
+      "license": "Project text, same license as the repository",
+      "note": "Game step for scenario 1 (arrival and sampling checklist). Not a NASA procedure."
+     }
+    },
+    {
+     "id": "texture",
+     "label": "Texture",
+     "text": "Look at the surface up close: grain, layers, veins, spots.",
+     "tag": "SIM",
+     "provenance": {
+      "mission": null,
+      "instrument": null,
+      "product_id": null,
+      "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+      "sol_or_date": null,
+      "reference": "Marswalk implementation plan, docs/IMPLEMENTATION_PLAN.md",
+      "url": null,
+      "locator": "section 3.4, scenario 1: \"Reference image match, then the checklist: photo, texture, sample, seal\"",
+      "data_url": null,
+      "license": "Project text, same license as the repository",
+      "note": "Game step for scenario 1 (arrival and sampling checklist). Not a NASA procedure."
+     }
+    },
+    {
+     "id": "sample",
+     "label": "Sample",
+     "text": "Take a scoop of rock chips from a fresh, undusted spot.",
+     "tag": "SIM",
+     "provenance": {
+      "mission": null,
+      "instrument": null,
+      "product_id": null,
+      "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+      "sol_or_date": null,
+      "reference": "Marswalk implementation plan, docs/IMPLEMENTATION_PLAN.md",
+      "url": null,
+      "locator": "section 3.4, scenario 1: \"Reference image match, then the checklist: photo, texture, sample, seal\"",
+      "data_url": null,
+      "license": "Project text, same license as the repository",
+      "note": "Game step for scenario 1 (arrival and sampling checklist). Not a NASA procedure."
+     }
+    },
+    {
+     "id": "seal",
+     "label": "Seal",
+     "text": "Close the sample in its container and log it.",
+     "tag": "SIM",
+     "provenance": {
+      "mission": null,
+      "instrument": null,
+      "product_id": null,
+      "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+      "sol_or_date": null,
+      "reference": "Marswalk implementation plan, docs/IMPLEMENTATION_PLAN.md",
+      "url": null,
+      "locator": "section 3.4, scenario 1: \"Reference image match, then the checklist: photo, texture, sample, seal\"",
+      "data_url": null,
+      "license": "Project text, same license as the repository",
+      "note": "Game step for scenario 1 (arrival and sampling checklist). Not a NASA procedure."
+     }
+    }
+   ]
+  }
+ ]
+}

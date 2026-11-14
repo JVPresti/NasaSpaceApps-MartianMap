@@ -13,18 +13,25 @@
 /**
  * Penalty constants in one place.
  *
- * The expression `1 + (slope / 9)^2 + 0.6 * rock` and the 25 degree limit come
- * from the reference planner in
+ * The expression `1 + (slope / 9)^2 + 0.6 * rock` comes from the reference
+ * planner in
  * `docs/marswalk-assets/testbench-reference/main.js` (`route.astar`). The test
  * bench calls it a placeholder, so these values are DERIVED, not measured:
  * slope grows quadratically because a suit gets much slower on steep ground,
  * and rock abundance adds a fixed penalty for the chance of tripping or
  * slipping. They are intentionally easy to retune once the mobility numbers
  * from issue #18 land.
+ *
+ * The slope limits match `slope.no_go` and `slope.caution` in
+ * `public/data/hazards.json` (20 deg is NASA's suited walking limit, xEVA con
+ * ops EVA-EXP-0042 Rev B p. 38). The engine's slope layer reads them from here,
+ * and `costGrid.test.js` fails if they drift from `hazards.json`.
  */
 export const COST_CONSTANTS = Object.freeze({
-  /** Ground steeper than this is NO-GO. Degrees. */
-  SLOPE_LIMIT_DEG: 25,
+  /** Ground steeper than this is NO-GO. Degrees. hazards.json `slope.no_go`. */
+  SLOPE_LIMIT_DEG: 20,
+  /** Ground steeper than this shows as caution in the slope layer. Degrees. hazards.json `slope.caution`. */
+  SLOPE_CAUTION_DEG: 15,
   /** Slope divisor of the quadratic penalty. Degrees. */
   SLOPE_PENALTY_DEG: 9,
   /** Weight of the rock-abundance term, 0 to 1. Dimensionless. */

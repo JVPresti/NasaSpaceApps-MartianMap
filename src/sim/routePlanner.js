@@ -19,6 +19,13 @@ import {
 } from './costGrid.js';
 
 const SQRT2 = Math.SQRT2;
+/**
+ * How close the route gets to a waypoint that sits on blocked ground. Metres.
+ * WP3, the Bright Angel outcrop, sits on a 28.7 degree slope, over the 20 degree
+ * suited limit, so the astronaut samples it from walkable ground at its base.
+ * With that limit the nearest connected walkable ground is between 15 and 20 m away.
+ */
+const DEFAULT_GOAL_RADIUS_M = 20;
 const NEIGHBOURS = [
   [1, 0],
   [-1, 0],
@@ -191,7 +198,7 @@ function searchSegment(grid, start, goal, state, options) {
 
   let iterations = 0;
   const maxIterations = options.maxIterations ?? n * n;
-  const goalRadius = options.goalRadiusM ?? 15;
+  const goalRadius = options.goalRadiusM ?? DEFAULT_GOAL_RADIUS_M;
 
   while (heap.size > 0) {
     const current = heap.pop();
@@ -371,7 +378,7 @@ export function planRoute(grid, waypointInput, options = {}) {
   const searchOptions = {
     maxIterations: options.maxIterations ?? grid.n * grid.n,
     snapRadius: options.snapRadius ?? 16,
-    goalRadiusM: options.goalRadiusM ?? 15,
+    goalRadiusM: options.goalRadiusM ?? DEFAULT_GOAL_RADIUS_M,
     heuristicWeight: options.heuristicWeight ?? 1,
   };
   const state = createSearchState(grid);
