@@ -24,7 +24,7 @@ export function createBootPrints(ctx) {
   const { scene, U, sys, view } = ctx;
   const { meshTriH } = ctx.terrain;
   const uniforms = {
-    uSunDir: U.uSunDir, uFogK: U.uFogK, uDust: U.uDust, uDustK: U.uDustK, uDustOff: U.uDustOff,
+    uSunDir: U.uSunDir, uFogK: U.uFogK, uDust: U.uDust, uDustK: U.uDustK, uDustOff: U.uDustOff,   // uDust: haze and storm dust in the prints (#142)
     uFadeFar: { value: DRAW_TO_M.high },
   };
   const material = new THREE.ShaderMaterial({
