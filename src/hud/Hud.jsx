@@ -11,6 +11,7 @@ import * as I from './icons.jsx';
 import NavLine from './NavLine.jsx';
 import './hud.css';
 import SamplingPanel from './SamplingPanel.jsx';
+import { selectWaypoint, waypointPosition } from './waypointSelection.js';
 
 // Shared source tag (#62). The HUD never takes the pointer, so the tag shows its tag text only and puts the full
 // source in the title and the screen reader text.
@@ -123,21 +124,7 @@ function EnvStrip() {
 }
 
 function WaypointPanel({ heightAt, slopeAt }) {
-  const w = useMissionStore(useShallow((s) => {
-    const info = nextWaypointInfo(s.route, s.navigation);
-    if (!info) return null;
-    return {
-      name: info.shortName,
-      full: info.name,
-      range: Math.round(Number.isFinite(s.navigation.waypointRangeM) ? s.navigation.waypointRangeM : info.rangeM),
-      brg: Math.round(Number.isFinite(s.navigation.waypointBearingDeg) ? s.navigation.waypointBearingDeg : info.bearingDeg),
-      eta: Math.round(info.etaSec / 60),
-      slope: s.navigation.slopeDeg,
-      path: s.route.path,
-      waypoints: s.route.waypoints,
-      position: Number.isFinite(s.navigation.x) && Number.isFinite(s.navigation.z) ? { x: s.navigation.x, z: s.navigation.z } : null,
-    };
-  }));
+  const w = useMissionStore(useShallow(selectWaypoint));
   if (!w) return <section className="hud-panel hud-waypoint hud-waypoint-empty" aria-label="Next waypoint">No route yet · plan one in Plan mode</section>;
   return (
     <section className="hud-panel hud-waypoint" aria-label="Next waypoint" title={w.full}>
@@ -153,7 +140,7 @@ function WaypointPanel({ heightAt, slopeAt }) {
         waypoints={w.waypoints}
         heightAt={heightAt}
         slopeAt={slopeAt}
-        position={w.position}
+        position={waypointPosition(w)}
         compact
       />
     </section>
