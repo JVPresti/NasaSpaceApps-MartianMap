@@ -115,6 +115,7 @@ NASA data and resources used
 
 Space Apps challenge resources:
 - NASA Mars 2020 Perseverance raw images gallery (https://mars.nasa.gov/mars2020/multimedia/raw-images/): Science stop image at Bright Angel (sol 1187) and the colour reference frames from sols 1211 to 1217.
+- NASA Mars Trek (https://trek.nasa.gov/mars/): Validation of the elevation and slope layers against Mars Trek's HiRISE Jezero DEM (docs/data/mars-trek-check/).
 
 NASA data products:
 - CTX digital terrain model mosaic for Mars 2020 TRN, 20 m (JEZ_ctx_B_soc_008). Credit: NASA/JPL/Malin Space Science Systems. https://doi.org/10.5066/P906QQT8
@@ -157,5 +158,5 @@ NASA 3D models: Habitat Demonstration Unit (NASA 3D Resources); Z2 Spacesuit (NA
 
 Peer-reviewed papers on Mars measurements: Bell et al. 2022; Lemmon et al. 2022; Rodriguez-Manfredi et al. et al. 2020; Sanchez-Lavega et al. 2025; Smith et al. 2019; Guo et al. 2015; Hassler et al. 2014; Zeitlin et al. 2018; Hurowitz et al. 2025.
 
-Not used: NASA Mars Trek (planned: Issue #44 checks the slope, elevation and rock layers against Mars Trek); USGS-NASA Planetary Geologic Mapping Program; Curiosity Mount Sharp route map; NASA Worldview.
+Not used: USGS-NASA Planetary Geologic Mapping Program; Curiosity Mount Sharp route map; NASA Worldview.
 ```
