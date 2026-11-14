@@ -20,7 +20,7 @@ export function createMockState() {
     mission: { startedAtMs: Date.now(), elapsedSec: 103 * 60, paused: false, sol: 1210, lmst: '15:20' },
     suit: { oxygenG: 601, oxygenSec: 4.1 * 3600, oxygenPct: 78, batteryPct: 75, pressurePsi: 4.3, metabolicW: 420, effort: 0.4, walkbackSec: 17 * 60, walkbackO2G: 48, marginSec: 41 * 60, status: 'nominal' },
     navigation: { x: 8, z: 70, headingDeg: 354, errorM: 0.4, fixMode: 'terrain fix', lastFixSec: 3 * 60 },
-    route: { waypoints: WAYPOINTS, path: WAYPOINTS.map((w) => [w.x, w.z]), nextIndex: 2, distanceM: 930, climbM: 30, steepestSlopeDeg: 23, etaSec: 15 * 60, reason: null, decision: 'pending', skipped: [] },
+    route: { waypoints: WAYPOINTS, path: WAYPOINTS.map((w) => [w.x, w.z]), nextIndex: 2, visited: [], distanceM: 930, climbM: 30, steepestSlopeDeg: 23, etaSec: 15 * 60, reason: null, decision: 'pending', skipped: [] },
     environment: { dustOpacity: 0.62, tempC: -18, windMs: 8, pressurePa: 724, doseRateUgyH: 16, doseUgy: 16.1 },
     crew: [{ id: 'EV2', name: 'EV2', color: [0.05, 0.25, 0.9], x: 15, z: 39, oxygenPct: 81, batteryPct: 70 }],
   };

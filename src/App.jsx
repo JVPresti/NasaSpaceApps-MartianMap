@@ -102,7 +102,7 @@ export default function App() {
 
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={SITE} onRetry={handleRetry} />
 
-      {load.status === 'ready' && mode === 'walk' && <Hud />}
+      {load.status === 'ready' && mode === 'walk' && <Hud engine={engine} />}
 
       {load.status === 'ready' && <SourcesRoot />}
 

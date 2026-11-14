@@ -99,14 +99,75 @@
 /* next waypoint */
 .hud-waypoint {
   position: absolute; left: 50%; bottom: calc(var(--u) * 4.4); transform: translateX(-50%);
-  display: flex; align-items: center; gap: 2em; padding: 0.9em 2em; border-radius: 0.8em; white-space: nowrap;
+  display: flex; flex-direction: column; align-items: stretch; gap: 0.45em;
+  padding: 0.9em 1.4em 0.8em; border-radius: 0.8em; white-space: nowrap;
 }
+.hud-waypoint-row { display: flex; align-items: center; gap: 2em; }
 .hud-waypoint-empty { font-size: 0.95em; color: var(--dim); }
 .hud-wp-name { display: flex; align-items: center; gap: 0.5em; font-size: 1.55em; }
 .hud-wp-name .hud-icon { width: 1.1em; height: 1.1em; }
 .hud-wp-cell { display: flex; flex-direction: column; align-items: flex-start; }
 .hud-wp-cell b { font-size: 1.6em; }
 .hud-wp-cell span { font-size: 0.6em; letter-spacing: 0.16em; color: var(--dim); }
+
+/* next waypoint in the world and its edge arrow */
+.hud-wp-marker {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.08em;
+  padding: 0.25em 0.55em;
+  transform: translate(-50%, -50%);
+  color: var(--ink);
+  background: rgba(70, 40, 28, 0.42);
+  border: 1px solid rgba(255, 240, 225, 0.82);
+  border-radius: 0.35em;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  white-space: nowrap;
+}
+
+.hud-wp-marker::after {
+  content: '';
+  width: 0.32em;
+  height: 0.32em;
+  margin-top: 0.05em;
+  background: #f5a742;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0.2em rgba(245, 167, 66, 0.22);
+}
+
+.hud-wp-marker-name {
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.hud-wp-marker-range {
+  font-size: 0.62em;
+  color: var(--unit);
+}
+
+.hud-wp-arrow {
+  position: absolute;
+  width: 2.1em;
+  height: 2.1em;
+  display: grid;
+  place-items: center;
+  color: #f5a742;
+  background: rgba(70, 40, 28, 0.4);
+  border: 1px solid rgba(245, 167, 66, 0.9);
+  border-radius: 50%;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.hud-wp-arrow svg {
+  width: 1.15em;
+  height: 1.15em;
+  fill: currentColor;
+}
 
 /* alert banner, under the heading box */
 .hud-alert {

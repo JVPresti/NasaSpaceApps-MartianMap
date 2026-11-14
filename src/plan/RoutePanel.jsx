@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { setRouteDecision, useMissionStore } from '../state/store.js';
+import ElevationProfile from '../hud/ElevationProfile.jsx';
 import RouteLegs from './RouteLegs.jsx';
 import { fixed as num, minutesFixed as min, routeMetrics } from './routePlan.js';
 import SourceTag from './SourceTag.jsx';
@@ -118,12 +119,13 @@ function DecisionReason({ planner, route }) {
 const DECISION_LABEL = { pending: 'Pending', go: 'Go', 'no-go': 'No-go' };
 
 /**
- * One route panel for Plan mode: summary, go / no-go with its reason, cost per leg and the waypoint editor.
+ * One route panel for Plan mode: summary, elevation profile, go / no-go with its reason, cost per leg and the waypoint editor.
  * @param {{ planner: { status: string, error: string | null, replan: () => void },
  *   waypoints: Array<{ name: string, x: number, z: number }>,
- *   onWaypointsChange: (waypoints: Array<object>) => void }} props
+ *   onWaypointsChange: (waypoints: Array<object>) => void,
+ *   engine: object | null }} props
  */
-export default function RoutePanel({ planner, waypoints, onWaypointsChange }) {
+export default function RoutePanel({ planner, waypoints, onWaypointsChange, engine }) {
   const route = useMissionStore((s) => s.route);
   const metrics = routeMetrics(route);
   const decision = route.decision;
@@ -147,6 +149,13 @@ export default function RoutePanel({ planner, waypoints, onWaypointsChange }) {
           <Metric key={metric.key} metric={metric} />
         ))}
       </dl>
+
+      <ElevationProfile
+        path={route.path}
+        waypoints={route.waypoints}
+        heightAt={engine?.heightAt}
+        slopeAt={engine?.slopeAt}
+      />
 
       <section className="route-decision-block" aria-label="Go or no-go">
         <div className="decision-head">

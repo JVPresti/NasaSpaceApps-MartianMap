@@ -313,6 +313,27 @@
       "origin": "provenance"
     },
     {
+      "id": "nasa-jpl-martian-dust-storm-grows",
+      "name": "NASA/JPL, Martian Dust Storm Grows Global; Curiosity Captures Photos of Thickening Haze, 20 June 2018",
+      "kind": "weather",
+      "provider": "MSL Curiosity",
+      "mission": "MSL Curiosity",
+      "instrument": "Mastcam",
+      "credit_line": "NASA/JPL, Martian Dust Storm Grows Global; Curiosity Captures Photos of Thickening Haze, 20 June 2018",
+      "citation": null,
+      "license": "NASA web content, public domain",
+      "license_url": null,
+      "url": "https://www.jpl.nasa.gov/news/martian-dust-storm-grows-global-curiosity-captures-photos-of-thickening-haze/",
+      "source_urls": [
+        "https://www.jpl.nasa.gov/news/martian-dust-storm-grows-global-curiosity-captures-photos-of-thickening-haze/"
+      ],
+      "data_urls": [],
+      "used_in": [
+        "public/data/hazards.json: values.dust.tau.gale_global_storm_2018"
+      ],
+      "origin": "provenance"
+    },
+    {
       "id": "rodriguez-manfredi-et-al-mars-2020",
       "name": "Rodriguez-Manfredi et al., Mars 2020 MEDA Bundle (urn:nasa:pds:mars2020_meda), NASA Planetary Data System, Atmospheres node",
       "kind": "weather",

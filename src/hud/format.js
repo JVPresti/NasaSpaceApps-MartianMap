@@ -46,7 +46,7 @@ export function nextWaypointInfo(route, nav) {
   if (!list || !list.length || !nav || !num(nav.x) || !num(nav.z)) return null;
   const wp = list[Math.min(Math.max(0, i), list.length - 1)];
   const rangeM = Math.hypot(wp.x - nav.x, wp.z - nav.z);
-  return { name: wp.name || 'WP' + (i + 1), shortName: shortName(wp.name, i), rangeM, bearingDeg: bearingDeg(nav, wp), etaSec: rangeM / ETA_SPEED_MS };
+  return { name: wp.name || 'WP' + (i + 1), shortName: shortName(wp.name, i), x: wp.x, z: wp.z, rangeM, bearingDeg: bearingDeg(nav, wp), etaSec: rangeM / ETA_SPEED_MS };
 }
 
 /** 'WP2 · dune field edge' -> 'WP2'; a name without a code stays as it is. */

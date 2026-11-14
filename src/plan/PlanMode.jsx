@@ -100,7 +100,7 @@ export default function PlanMode({ engine, active }) {
         </div>
 
         <div className="plan-region plan-right">
-          <RoutePanel planner={planner} waypoints={waypoints} onWaypointsChange={setWaypoints} />
+          <RoutePanel planner={planner} waypoints={waypoints} onWaypointsChange={setWaypoints} engine={engine} />
         </div>
 
         <div className="plan-region plan-foot">

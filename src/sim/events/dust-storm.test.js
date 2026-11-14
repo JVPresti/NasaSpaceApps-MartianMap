@@ -8,14 +8,21 @@ describe('dust storm event data', () => {
     expect(validateEvent(dustStorm)).toEqual({ ok: true, errors: [] });
   });
 
-  it('uses the clear and storm opacity values from hazards.json', () => {
+  it('goes from a clear Jezero sky to a global storm, both from hazards.json', () => {
     const timeline = dustStorm.timeline;
     expect(timeline[0].set['environment.dustOpacity']).toBe(
       hazards.values['dust.tau.clear_season'].value,
     );
     expect(timeline[timeline.length - 1].set['environment.dustOpacity']).toBe(
-      hazards.values['dust.tau.storm_2022_peak'].value,
+      hazards.values['dust.tau.gale_global_storm_2018'].value,
     );
+  });
+
+  it('keeps getting worse: every step adds more dust than the one before', () => {
+    const tau = dustStorm.timeline.map((step) => step.set['environment.dustOpacity']);
+    for (let index = 2; index < tau.length; index += 1) {
+      expect(tau[index] - tau[index - 1]).toBeGreaterThan(tau[index - 1] - tau[index - 2]);
+    }
   });
 
   it('ramps opacity and sky blend together over the SIM ramp duration', () => {
