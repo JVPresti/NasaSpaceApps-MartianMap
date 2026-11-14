@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createEventEngine } from '../sim/eventEngine.js';
 import exampleEvent from '../sim/events/example-event.json';
-import { createInitialState, resetStore, setMode, storeAdapter, useMissionStore } from './store.js';
+import { createInitialState, resetStore, setMode, setRouteDecision, storeAdapter, useMissionStore } from './store.js';
 import { createMockState } from './mock.js';
 
 beforeEach(() => resetStore());
@@ -74,6 +74,15 @@ describe('actions and mock data', () => {
     setMode('plan');
     expect(useMissionStore.getState().mode).toBe('plan');
     expect(() => setMode('orbit')).toThrow();
+  });
+
+  it('only accepts the three go / no-go decisions', () => {
+    expect(useMissionStore.getState().route.decision).toBe('pending');
+    setRouteDecision('go');
+    expect(useMissionStore.getState().route.decision).toBe('go');
+    setRouteDecision('no-go');
+    expect(useMissionStore.getState().route.decision).toBe('no-go');
+    expect(() => setRouteDecision('maybe')).toThrow();
   });
 
   it('tags every mock value SIM', () => {

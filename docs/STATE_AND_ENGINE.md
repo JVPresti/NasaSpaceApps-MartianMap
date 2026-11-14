@@ -55,6 +55,7 @@ setMode('plan');
 | `route.nextIndex` | index of the next waypoint | waypoint tracking | #61 |
 | `route.distanceM`, `climbM`, `steepestSlopeDeg`, `etaSec` | from `planRoute()` (`distance`, `climb`, `steepestSlopeDeg`) | planner | #16, #41 |
 | `route.reason` | why the route changed, for example after an event | re-planner | #23 |
+| `route.decision` | `'pending'`, `'go'` or `'no-go'`, set by the crew in Plan mode | interface | #17 |
 | `environment.dustOpacity` | tau. **The event engine writes this path.** | events, MEDA replay | #22, #24, #31 |
 | `environment.tempC`, `windMs`, `pressurePa` | weather | MEDA replay | #31 |
 | `environment.doseRateUgyH`, `doseUgy` | radiation dose rate (µGy/h) and dose received (µGy) | RAD curve, events | #25, #31 |

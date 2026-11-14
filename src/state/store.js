@@ -10,7 +10,7 @@ export function createInitialState() {
     mission: { startedAtMs: null, elapsedSec: 0, paused: false, sol: null, lmst: null },
     suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
     navigation: { x: null, z: null, headingDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // the estimate, never the truth: no GPS on Mars
-    route: { waypoints: [], path: null, nextIndex: 0, distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null },
+    route: { waypoints: [], path: null, nextIndex: 0, distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, decision: 'pending' },
     environment: { dustOpacity: 0, tempC: null, windMs: null, pressurePa: null, doseRateUgyH: null, doseUgy: null },
     alerts: {},                                     // { [eventId]: { id, eventId, level, text, startedAtSec, active } | null }
     crew: [],                                       // [{ id, name, color, x, z, oxygenPct, batteryPct }]
@@ -64,4 +64,9 @@ export const setMode = (mode) => { if (mode !== 'walk' && mode !== 'plan') throw
 export const setLayer = (layer) => storeAdapter.set('view.layer', layer);
 export const setSky = (sky) => storeAdapter.set('view.sky', sky);
 export const setRoutePath = (path) => storeAdapter.set('route.path', path);
+/** @param {'pending' | 'go' | 'no-go'} decision */
+export const setRouteDecision = (decision) => {
+  if (!['pending', 'go', 'no-go'].includes(decision)) throw new Error('route decision must be pending, go or no-go');
+  storeAdapter.set('route.decision', decision);
+};
 export const resetStore = () => useMissionStore.setState(createInitialState(), true);
