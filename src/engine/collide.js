@@ -34,6 +34,23 @@ export function footprint(p) {
   return { cx, cz, alongX: hx >= hz, half: Math.abs(hx - hz), r: Math.min(hx, hz), ext: Math.hypot(cx, cz) + Math.max(hx, hz) };
 }
 
+export const STEP_OVER = 0.15;   // m: the walker steps over anything lower (rocks under 0.35 m stand about this tall)
+
+/**
+ * Capsule fitted to the part of a placed mesh that stands more than `above` metres over the ground (a buried end or half-buried
+ * chips can be walked over). w = world vertex positions, x y z per vertex; height(x, z) = ground height. The capsule is in the frame
+ * whose local x points along (ux, uz), origin (x, z): add it with addFootprint(out, f, x, z, 1, ux, uz). null if nothing stands up.
+ */
+export function groundFootprint(w, height, x, z, ux, uz, above = STEP_OVER) {
+  const l = Math.hypot(ux, uz) || 1, cx = ux / l, cz = uz / l, p = [];
+  for (let i = 0; i < w.length; i += 3) {
+    if (w[i + 1] - height(w[i], w[i + 2]) <= above) continue;
+    const dx = w[i] - x, dz = w[i + 2] - z;
+    p.push(dx * cx + dz * cz, 0, -dx * cz + dz * cx);
+  }
+  return p.length ? footprint(p) : null;
+}
+
 /**
  * Adds footprint f, placed in the world, to an obstacle list. (x, z) is where the mesh origin stands, s its scale, and (ax, az) the
  * direction its local x axis points in the world, any length (three.js rotation.y = t gives (cos t, -sin t); an instance matrix

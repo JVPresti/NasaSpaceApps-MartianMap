@@ -5,6 +5,7 @@ import {
   DOOR_OPEN, FURNITURE_MARGIN, HAB_SOLIDS, HAB_ZONES, PARTNER_GAP, ROCK_BLOCK_D, WALKER_RADIUS,
   addCircle, addFootprint, footprint, habCanStand, habSlide, habSlideWorld, habZone, pushOut, rockBlocks,
 } from './collide.js';
+import { OUTCROP, outcropFootprint, outcropPlacement } from './rocks.js';
 
 const load = (path) => JSON.parse(readFileSync(fileURLToPath(new URL('../../public/marswalk/' + path, import.meta.url)), 'utf8'));
 const habitatJson = load('assets_habitat/habitat.json');
@@ -307,5 +308,44 @@ describe('habSlide', () => {
     habSlide(7.05, 0, 7.04, 0, 0, BLOCKS, out);   // in the hatch as it shut: back onto the porch or into the airlock, not round the habitat
     expect(habCanStand(out.x, out.v, 0, BLOCKS)).toBe(true);
     expect(Math.abs(out.x - 7.05)).toBeLessThan(0.25);
+  });
+});
+
+describe('the layered outcrop at WP3', () => {
+  // vertex positions of a node's mesh in a .glb (tightly packed float32 positions, no node transform: true of outcrop.glb)
+  function glbPositions(path, nodeName) {
+    const b = readFileSync(fileURLToPath(new URL('../../public/marswalk/' + path, import.meta.url)));
+    const n = b.readUInt32LE(12), j = JSON.parse(b.toString('utf8', 20, 20 + n)), bin = 20 + n + 8;
+    const node = j.nodes.find((q) => q.name === nodeName), a = j.accessors[j.meshes[node.mesh].primitives[0].attributes.POSITION], v = j.bufferViews[a.bufferView];
+    const p = new Float32Array(a.count * 3), o = bin + (v.byteOffset || 0) + (a.byteOffset || 0);
+    for (let i = 0; i < a.count * 3; i++) p[i] = b.readFloatLE(o + i * 4);
+    return p;
+  }
+  const p = glbPositions('assets/outcrop.glb', 'Outcrop_LOD0');
+  const k = Math.tan(30 * Math.PI / 180), slope = (x, z) => 100 + k * (x - z) / Math.SQRT2;   // the steady 30 degree slope at WP3, uphill (+x, -z)
+  const wp = { x: -40, z: -60 }, at = outcropPlacement(wp, slope), f = outcropFootprint(p, at, slope), obs = [];
+  addFootprint(obs, f, at.x, at.z, 1, at.ux, at.uz);
+
+  it('blocks the walker along the part of it that stands above the ground', () => {
+    // the 6.7 x 3.4 m model lies 5.8 m long on the slope, but its uphill half is buried: about 3.2 x 3 m stands up, downhill
+    expect(f).not.toBeNull();
+    expect(2 * (f.half + f.r)).toBeGreaterThan(2.8);
+    expect(2 * (f.half + f.r)).toBeLessThan(4.5);
+    expect(2 * f.r).toBeGreaterThan(2.5);
+    expect(f.cx).toBeLessThan(-0.5);
+    for (let a = 0; a < 16; a++) {
+      const dx = Math.cos(a * Math.PI / 8), dz = Math.sin(a * Math.PI / 8);
+      const path = walk({ x: at.x - dx * 8, z: at.z - dz * 8 }, () => ({ x: dx, z: dz }), 900, obs);
+      for (const q of path) expect(clearance(q, obs)).toBeGreaterThan(-1e-9);
+    }
+  });
+
+  it('leaves room to stand at the waypoint in front of its broken face', () => {
+    expect(OUTCROP.back).toBeGreaterThan(2);
+    expect(clearance(wp, obs)).toBeGreaterThan(0.2);
+    const path = walk(wp, () => ({ x: at.ux, z: at.uz }), 300, obs);   // walk uphill at it from the waypoint
+    const end = path[path.length - 1];
+    expect(clearance(end, obs)).toBeCloseTo(0, 6);   // stopped against it
+    expect(Math.hypot(end.x - wp.x, end.z - wp.z)).toBeLessThan(2);   // still inside the 2 m arrival circle
   });
 });
