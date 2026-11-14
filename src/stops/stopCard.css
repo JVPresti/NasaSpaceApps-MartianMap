@@ -1,11 +1,12 @@
-/* Science stop card (#66). Self-contained tokens until style/plan-mode-layout lands its visual system variables. */
+/* Science stop card (#66). Colours, spacing and type come from the interface tokens in src/index.css (#149), with
+   fallbacks so the card still reads without them. The Walk card follows the HUD glass instead (src/hud/hud.css). */
 .stop-card {
-  --stop-ink: #f3e6d8;
-  --stop-dim: #c8b19c;
-  --stop-line: rgba(255, 214, 170, 0.22);
-  --stop-panel: rgba(22, 13, 10, 0.88);
-  --stop-cyan: #9fd8ee;
-  --stop-ok: #8fe9b8;
+  --stop-ink: var(--ink, #f3e6d8);
+  --stop-dim: var(--dim, #b9a08a);
+  --stop-line: var(--line-strong, rgba(255, 214, 170, 0.28));
+  --stop-panel: var(--surface, rgba(17, 10, 8, 0.8));
+  --stop-cyan: var(--focus, #8fd3ee);
+  --stop-ok: var(--ok, #8fe9b8);
   position: absolute;
   z-index: 5;
   display: flex;
@@ -117,25 +118,41 @@
 .stop-text li { display: grid; grid-template-columns: auto 1fr; gap: 0.5em; align-items: baseline; color: var(--stop-dim); }
 .stop-text li span:last-child { color: var(--stop-ink); }
 
-/* Plan mode: beside the route panel (right: 14px, width 348px in src/plan/plan.css), under the top bar. */
+/* Plan mode: a panel in the centre column of the Plan grid (src/plan/plan.css, area "alerts"), against the route
+   panel and under the event alert. The grid keeps it clear of the other panels; it scrolls if the column is short. */
+.plan-alerts:has(> .stop-card-plan) {
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-end;
+  gap: var(--space-3, 12px);
+}
+.plan-alerts:has(> .stop-card-plan) > .event-banner { align-self: center; }
 .stop-card-plan {
-  top: 78px;
-  right: 376px;
-  width: 340px;
-  max-height: calc(100% - 218px);   /* ends above the event controls at bottom: 54px (src/events/events.css) */
+  position: relative;
+  flex: 0 1 auto;
+  width: min(340px, 100%);
+  min-height: 0;
+  max-height: 100%;
   overflow-y: auto;
-  padding: 16px 16px 14px;
-  border-radius: 16px;
-  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.38);
+  padding: var(--space-4, 16px);
+  font-size: var(--text-m, 13px);
+  border-color: var(--line, rgba(255, 214, 170, 0.16));
+  border-radius: var(--radius-l, 14px);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+  backdrop-filter: var(--blur, blur(14px));
+  -webkit-backdrop-filter: var(--blur, blur(14px));
   scrollbar-width: thin;
+  scrollbar-color: var(--line-strong, rgba(255, 214, 170, 0.28)) transparent;
 }
 
-/* Walk mode: right column of the visor, between the heading tape's right end and the environment strip
-   (src/hud/hud.css: .hud-env at top 54vh, right 7.8vw). --u matches the HUD's base unit. */
+/* Walk mode: beside the sampling checklist (src/hud/sampling.css: .hud-sampling at right 7.8vw, top 27vh, width
+   14.5 --u), so the reference image and the checklist read as one group, as in docs/img/sc_arrival.jpg. Top 22vh keeps
+   it under the heading tape's right end; 30.5vh tall ends it above the environment strip line (54vh).
+   --u matches the HUD's base unit (src/hud/hud.css). */
 .stop-card-walk {
   --u: clamp(11px, 1.4vh, 20px);
   top: 22vh;
-  right: 7.8vw;
+  right: calc(7.8vw + var(--u) * 14.5 + var(--u) * 1.2);
   width: calc(var(--u) * 21);
   max-height: calc(30.5vh);
   overflow-y: auto;
@@ -162,5 +179,5 @@
   border: 0;
   cursor: pointer;
 }
-.waypoint-select:hover { color: #ffd24a; text-decoration: underline; }
-.waypoint-select:focus-visible { outline: 2px solid #9fd8ee; outline-offset: 2px; border-radius: 3px; }
+.waypoint-select:hover { text-decoration: underline; }
+.waypoint-select:focus-visible { outline: 2px solid var(--focus, #8fd3ee); outline-offset: 2px; border-radius: 3px; }

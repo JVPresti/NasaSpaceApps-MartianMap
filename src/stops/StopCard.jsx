@@ -7,6 +7,9 @@ import { imageUrl } from '../data/stops.js';
 import { cardImage, stopHasContent, stopPaths } from './content.js';
 import './stopCard.css';
 
+/** id of the Plan mode card, for the waypoint button's aria-controls. */
+export const PLAN_CARD_ID = 'science-stop-card';
+
 function StopImage({ stop, image, reference, registry }) {
   return (
     <figure className="stop-figure">
@@ -34,7 +37,7 @@ export default function StopCard({ stop, variant = 'plan', onClose, registry = p
   const radius = stop.arrival_radius?.value;
 
   return (
-    <aside className={`stop-card stop-card-${variant}${reference ? ' stop-card-reference' : ''}`} aria-label={`Science stop: ${stop.name}`}>
+    <aside id={walk ? undefined : PLAN_CARD_ID} className={`stop-card stop-card-${variant}${reference ? ' stop-card-reference' : ''}`} aria-label={`Science stop: ${stop.name}`}>
       <header className="stop-head">
         <p className="stop-kicker">
           {walk ? `Science stop · arrived${radius ? ` within ${radius} m` : ''}` : `Science stop · ${stop.waypoint}`}

@@ -5,6 +5,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createProvenanceRegistry } from '../data/provenance.js';
 import { parseStops, stopForWaypoint } from '../data/stops.js';
 import { cardImage, createArrivalTracker, registerStops, stopHasContent, stopPaths } from './content.js';
+import { createStore } from 'zustand/vanilla';
+import { startWaypointRunner } from '../sim/waypointRunner.js';
+import { createInitialState } from '../state/store.js';
+import { isCloseKey } from './closeKeys.js';
 import StopCard from './StopCard.jsx';
 
 vi.mock('./stopCard.css', () => ({}));
@@ -94,25 +98,68 @@ describe('registerStops', () => {
 describe('createArrivalTracker', () => {
   const cheyava = stops.find((s) => s.id === 'cheyava-falls');
   const brightAngel = stops.find((s) => s.id === 'bright-angel');
+  const [hab, wp1, wp2, wp3, cf] = route.waypoints.map((w) => w.name);
 
-  it('opens the card once per stop, within the 2 m radius', () => {
+  it('opens the card once per stop as route.visited grows', () => {
     const tracker = createArrivalTracker();
-    expect(tracker.update(stops, { x: 520, z: 600 })).toBeNull();          // at the habitat
-    expect(tracker.update(stops, { x: 2.5, z: 0 })).toBeNull();            // 2.5 m from the rock
-    expect(tracker.update(stops, { x: 1.9, z: 0 })).toBe(cheyava);         // inside 2 m
-    expect(tracker.update(stops, { x: 0.5, z: 0.5 })).toBeNull();          // still there
-    expect(tracker.update(stops, { x: 30, z: 30 })).toBeNull();            // walked away
-    expect(tracker.update(stops, { x: 0, z: 1 })).toBeNull();              // came back: no second card
-    expect(tracker.update(stops, { x: brightAngel.x + 1, z: brightAngel.z })).toBe(brightAngel);
-    expect(tracker.update(stops, { x: brightAngel.x, z: brightAngel.z })).toBeNull();
-    expect(tracker.shown()).toEqual(['cheyava-falls', 'bright-angel']);
+    expect(tracker.update(stops, [])).toBeNull();
+    expect(tracker.update(stops, [hab, wp1, wp2])).toBeNull();            // no stop at these waypoints
+    expect(tracker.update(stops, [hab, wp1, wp2, wp3])).toBe(brightAngel);
+    expect(tracker.update(stops, [hab, wp1, wp2, wp3])).toBeNull();       // same list again
+    expect(tracker.update(stops, [])).toBeNull();                         // a re-plan empties route.visited
+    expect(tracker.update(stops, [wp3])).toBeNull();                      // revisiting after the re-plan
+    expect(tracker.update(stops, [wp3, cf])).toBe(cheyava);
+    expect(tracker.update(stops, [wp3, cf])).toBeNull();
+    expect(tracker.shown()).toEqual(['bright-angel', 'cheyava-falls']);
   });
 
-  it('ignores an unknown position, an empty stop list and stops without content', () => {
+  it('ignores a missing list, an empty stop list and stops without content', () => {
     const tracker = createArrivalTracker();
-    expect(tracker.update(stops, { x: null, z: null })).toBeNull();
-    expect(tracker.update([], { x: 0, z: 0 })).toBeNull();
-    expect(tracker.update([{ ...cheyava, text: [] }], { x: 0, z: 0 })).toBeNull();
+    expect(tracker.update(stops, undefined)).toBeNull();
+    expect(tracker.update([], [cf])).toBeNull();
+    expect(tracker.update([{ ...cheyava, text: [] }], [cf])).toBeNull();
     expect(tracker.shown()).toEqual([]);
+  });
+
+  it('opens the Cheyava Falls card from the waypoint runner (#139) only within 2 m', () => {
+    const store = createStore(() => createInitialState());
+    store.setState((s) => ({ mode: 'walk', route: { ...s.route, waypoints: route.waypoints, nextIndex: 4, visited: [hab, wp1, wp2, wp3] } }));
+    const runner = startWaypointRunner({ store, setInterval: () => 0, clearInterval: () => {} });
+    const tracker = createArrivalTracker();
+    tracker.update(stops, store.getState().route.visited);                // Bright Angel, already passed
+    const at = (x, z) => {
+      store.setState((s) => ({ navigation: { ...s.navigation, x, z } }));
+      runner.tick();
+      return tracker.update(stops, store.getState().route.visited);
+    };
+    expect(at(2.5, 0)).toBeNull();
+    expect(at(1.9, 0)).toBe(cheyava);
+    expect(at(0, 0)).toBeNull();
+    runner.stop();
+  });
+});
+
+describe('isCloseKey', () => {
+  const el = (matches) => ({ closest: (selector) => matches.some((m) => selector.includes(m)) });
+  const key = (code, target = el([]), extra = {}) => isCloseKey({ code, target, ...extra });
+
+  it('closes on Enter and Esc with focus on the page', () => {
+    expect(key('Enter')).toBe(true);
+    expect(key('NumpadEnter')).toBe(true);
+    expect(key('Escape')).toBe(true);
+    expect(key('KeyW')).toBe(false);
+    expect(key('Enter', null)).toBe(true);
+  });
+
+  it('leaves Enter to a focused button, so the waypoint button does not reopen the card it just closed', () => {
+    expect(key('Enter', el(['button']))).toBe(false);
+    expect(key('Escape', el(['button']))).toBe(true);
+  });
+
+  it('leaves both keys to coordinate fields, and Esc to a source tag', () => {
+    expect(key('Enter', el(['input']))).toBe(false);
+    expect(key('Escape', el(['input']))).toBe(false);
+    expect(key('Escape', el(['.source-tag-interactive']))).toBe(false);
+    expect(key('Escape', el([]), { defaultPrevented: true })).toBe(false);
   });
 });
