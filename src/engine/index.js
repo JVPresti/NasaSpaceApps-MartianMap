@@ -18,6 +18,8 @@ import { decodeTerrainJson, decodeRingJson } from './queries.js';
 import { createRouteGlow, validPath } from './routeGlow.js';
 import { createShelterHighlight } from './shelterHighlight.js';
 import { validShelter } from './shelterRules.js';
+import { createWaypointMarkers } from './waypoints.js';
+import { metresPerPixel } from './planView.js';
 import { createUniforms } from './uniforms.js';
 import { TIERS, detectTier } from './tiers.js';
 import { createTerrain } from './terrain.js';
@@ -51,8 +53,8 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
   if (!assetBase) throw new Error('createEngine: assetBase is required');
   assertWebGL2();
 
-  let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null;
-  const pending = { sky: null, route: null, shelter: null };   // set before boot ends, applied when ready
+  let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null, waypoints = null;
+  const pending = { sky: null, route: null, shelter: null, waypoints: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -224,10 +226,13 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
 
     if (!alive) return;
     sys.routeGlow = createRouteGlow(ctx);
+    waypoints = createWaypointMarkers(ctx);
     if (pending.sky) applyPreset(ctx, pending.sky);
     sys.routeGlow.setPath(pending.route);
     sys.shelter = createShelterHighlight(ctx);
     sys.shelter.set(pending.shelter);
+    waypoints.set(pending.waypoints);
+    waypoints.group.visible = requestedMode === 'plan';
     viewCtl.setMode(requestedMode); started = true;
     booted = last = performance.now();
     renderer.setAnimationLoop(tick);
@@ -280,7 +285,10 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     setMode(m) {
       if (m !== 'plan' && m !== 'walk') throw new Error('setMode: expected "plan" or "walk", got ' + m);
       requestedMode = m;
-      if (started) viewCtl.setMode(m);   // before boot ends, the mode is applied when ready
+      if (started) {
+        viewCtl.setMode(m);   // before boot ends, the mode is applied when ready
+        if (waypoints) waypoints.group.visible = m === 'plan';
+      }
     },
     /** Data layer drawn on the terrain: 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop. */
     setLayer(n) {
@@ -308,6 +316,21 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     setShelter(shelter) {
       if (shelter !== null && !validShelter(shelter)) throw new Error('setShelter: expected { x, z } in metres, or null');
       if (started) sys.shelter.set(shelter); else pending.shelter = shelter;
+    },
+    /**
+     * Numbered markers for the plan map. Each waypoint is { x, z, name?, active? }.
+     * The markers are only shown in Plan mode.
+     * @param {Array<{ x: number, z: number, name?: string, active?: boolean }>} list
+     */
+    setWaypoints(list) {
+      if (list !== null && !(Array.isArray(list) && list.every((w) => w && Number.isFinite(w.x) && Number.isFinite(w.z)))) throw new Error('setWaypoints: expected [{ x, z, name }] or null');
+      if (started) waypoints.set(list); else pending.waypoints = list;
+    },
+    /** Metres of ground per CSS pixel in Plan mode, or null when the engine is not ready. */
+    getPlanScale() {
+      if (!started || ctx.view.mode !== 'orbit') return null;
+      const height = Math.abs(camera.position.y - controls.target.y);
+      return metresPerPixel(height, camera.fov, container.clientHeight);
     },
     /** Terrain height (m) at x, z. Available once ready. */
     heightAt(x, z) { return terrainQueries().heightAt(x, z); },
@@ -351,6 +374,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       for (const t of Object.values(ctx.orthoCache)) textures.add(t);
       for (const t of textures) t.dispose();
       if (sys.cast) sys.cast.rt.dispose();
+      if (waypoints) waypoints.dispose();
       if (ctx.terrain && ctx.terrain.shadowTex) ctx.terrain.shadowTex.dispose();
       for (const s of [sys.partner, sys.legs]) if (s && s.mixer) s.mixer.stopAllAction();
       renderer.dispose(); renderer.forceContextLoss();
