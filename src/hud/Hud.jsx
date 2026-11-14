@@ -7,6 +7,7 @@ import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
 import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, pickAlert, wrapDeg } from './format.js';
 import ElevationProfile from './ElevationProfile.jsx';
+import RadioLink from './RadioLink.jsx';
 import SlopeAhead from './SlopeAhead.jsx';
 import * as I from './icons.jsx';
 import NavLine from './NavLine.jsx';
@@ -253,6 +254,7 @@ export default function Hud({ engine }) {
       <Clocks />
       <SuitPanel />
       <EnvStrip />
+      <RadioLink engine={engine} />
       <NavLine><SourceTag path="navigation.errorM" /></NavLine>
       <WaypointPanel heightAt={engine?.heightAt} slopeAt={engine?.slopeAt} />
       <SamplingPanel />
