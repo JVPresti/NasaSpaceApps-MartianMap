@@ -7,11 +7,13 @@
  *
  * Request:  { type: 'setGrid', grid }
  *           { type: 'plan', id, waypoints, options }
+ *           { type: 'replan', id, from, shelters, options }
  * Response: { type: 'gridReady' }
  *           { type: 'result', id, result }
  *           { type: 'error', id, message }
  */
 
+import { replanToNearestShelter } from './replan.js';
 import { planRoute } from './routePlanner.js';
 
 let grid = null;
@@ -30,7 +32,7 @@ self.addEventListener('message', (event) => {
     return;
   }
 
-  if (message.type !== 'plan') {
+  if (message.type !== 'plan' && message.type !== 'replan') {
     reply({ type: 'error', id: message.id, message: `unknown message type: ${message.type}` });
     return;
   }
@@ -41,7 +43,10 @@ self.addEventListener('message', (event) => {
   }
 
   try {
-    const result = planRoute(grid, message.waypoints, message.options);
+    const result =
+      message.type === 'replan'
+        ? replanToNearestShelter(grid, message.from, message.shelters, message.options)
+        : planRoute(grid, message.waypoints, message.options);
     reply({ type: 'result', id: message.id, result });
   } catch (error) {
     reply({ type: 'error', id: message.id, message: error instanceof Error ? error.message : String(error) });
