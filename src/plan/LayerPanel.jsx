@@ -82,6 +82,8 @@ export default function LayerPanel({ layer, onLayer, radioShadow, onRadioShadow 
           <button
             type="button"
             aria-pressed={radioShadow}
+            aria-describedby="radio-shadow-note"
+            title={t('ui.blue.grey.cells.are.out.of.direct.line')}
             className={radioShadow ? 'on' : undefined}
             onClick={() => onRadioShadow(!radioShadow)}
           >
@@ -89,7 +91,7 @@ export default function LayerPanel({ layer, onLayer, radioShadow, onRadioShadow 
             <span className="layer-name">{t('ui.radio.shadow')}</span>
           </button>
         </div>
-        <p className="plan-note">{t('ui.blue.grey.cells.are.out.of.direct.line')}</p>
+        <p id="radio-shadow-note" className="plan-note">{t('ui.blue.grey.cells.are.out.of.direct.line')}</p>
       </section>
 
       <section className="plan-section">
