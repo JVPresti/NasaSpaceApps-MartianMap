@@ -1,0 +1,36 @@
+{
+  "id": "demo-alarm",
+  "label": "Demo alarm (example event)",
+  "trigger": {
+    "type": "manual"
+  },
+  "timeline": [
+    {
+      "atSec": 0,
+      "set": {
+        "environment.dustOpacity": 0.1
+      }
+    },
+    {
+      "atSec": 5,
+      "set": {
+        "environment.dustOpacity": 0.2
+      }
+    }
+  ],
+  "alert": {
+    "level": "caution",
+    "text": "Example event. Demo alarm only, not a real hazard."
+  },
+  "planner": {
+    "action": "replan",
+    "target": "nearestShelter"
+  },
+  "end": {
+    "type": "duration",
+    "afterSec": 10
+  },
+  "endSet": {
+    "environment.dustOpacity": 0
+  }
+}
