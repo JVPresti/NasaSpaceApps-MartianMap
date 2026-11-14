@@ -1,8 +1,15 @@
 import { LAYERS } from '../plan/layers.js';
 import { setLayer, setMode, useMissionStore } from '../state/store.js';
 
-/** Interface shortcuts use the same actions as the buttons; the bridge owns engine updates. */
-export function handleShortcut(event) {
+/**
+ * Interface shortcuts use the same actions as the buttons; the bridge owns engine updates.
+ * `onMode` is the mode button's handler (App's handleModeChange, #174): it also requests the Walk pointer lock
+ * and respects a pending resume or restart. Without it, M falls back to the store's setMode.
+ *
+ * @param {KeyboardEvent} event
+ * @param {{ onMode?: (mode: 'walk' | 'plan') => unknown }} [options]
+ */
+export function handleShortcut(event, { onMode = setMode } = {}) {
   if (event.defaultPrevented || event.repeat || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
   const target = event.composedPath?.()[0] ?? event.target;
   if (target?.isContentEditable || target?.closest?.('input, textarea, select, [role="textbox"], dialog[open], [aria-modal="true"]')) return;
@@ -10,7 +17,7 @@ export function handleShortcut(event) {
   const state = useMissionStore.getState();
   switch (event.code) {
     case 'KeyM':
-      setMode(state.mode === 'walk' ? 'plan' : 'walk');
+      onMode(state.mode === 'walk' ? 'plan' : 'walk');
       break;
     case 'KeyL': {
       const current = LAYERS.findIndex((layer) => layer.index === state.view.layer);
