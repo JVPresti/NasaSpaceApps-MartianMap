@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import EventBanner from '../events/EventBanner.jsx';
 import { useMissionStore, setLayer } from '../state/store.js';
 import LayerPanel from './LayerPanel.jsx';
 import PlanChrome from './PlanChrome.jsx';
@@ -81,20 +82,36 @@ export default function PlanMode({ engine, active }) {
 
   if (!active) return null;
 
+  // One grid for the whole screen (plan.css): layers on the left, the route on the right, alerts at the top
+  // of the free centre column, map chrome along the bottom. Regions never share space, so nothing overlaps.
   return (
-    <div className="plan-ui">
+    <>
+      {/* Full-viewport canvas, outside the grid: engine.project() returns viewport coordinates. */}
       <PlanPositionMarker engine={engine} />
-      <LayerPanel layer={layer} onLayer={setLayer} />
 
-      <RoutePanel planner={planner} waypoints={waypoints} onWaypointsChange={setWaypoints} />
-      <PlanChrome metresPerPixel={metresPerPixel} />
-      <SourcesButton />
+      <div className="plan-ui">
+        <div className="plan-region plan-left">
+          <LayerPanel layer={layer} onLayer={setLayer} />
+          <SourcesButton />
+        </div>
 
-      <p className="plan-readout" role="status">
-        {routeStatus === 'error'
-          ? 'route.json could not be loaded; markers are unavailable.'
-          : 'North up · 1422 × 1500 m tile · origin at Cheyava Falls'}
-      </p>
-    </div>
+        <div className="plan-region plan-alerts">
+          <EventBanner />
+        </div>
+
+        <div className="plan-region plan-right">
+          <RoutePanel planner={planner} waypoints={waypoints} onWaypointsChange={setWaypoints} />
+        </div>
+
+        <div className="plan-region plan-foot">
+          <PlanChrome metresPerPixel={metresPerPixel} />
+          <p className="plan-readout" role="status">
+            {routeStatus === 'error'
+              ? 'route.json could not be loaded; markers are unavailable.'
+              : 'North up · 1422 × 1500 m tile · origin at Cheyava Falls'}
+          </p>
+        </div>
+      </div>
+    </>
   );
 }

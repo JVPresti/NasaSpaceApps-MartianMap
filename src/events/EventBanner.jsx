@@ -1,3 +1,4 @@
+import SourceTag from '../plan/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
 import './events.css';
 
@@ -35,16 +36,23 @@ export default function EventBanner() {
       </div>
       <div className="event-banner-meta">
         {alert.eventId === 'dust-storm' && (
-          <span>τ {environment.dustOpacity?.toFixed(2) ?? '—'} · MEDA 2022 storm profile</span>
+          <span>
+            τ {environment.dustOpacity?.toFixed(2) ?? '—'} · MEDA 2022 storm profile
+            <SourceTag path="environment.dustOpacity" interactive={false} requireSource={false} />
+          </span>
         )}
         {alert.eventId === 'radiation' && (
           <span>
             {environment.doseRateUgyH?.toFixed(1) ?? '—'} µGy/h · {environment.doseUgy?.toFixed(1) ?? '—'} µGy
             · RAD · Curiosity · Gale crater, not Jezero
+            <SourceTag path="environment.doseRateUgyH" interactive={false} requireSource={false} />
           </span>
         )}
         {String(alert.eventId).startsWith('low-oxygen') && (
-          <span>Margin {formatMargin(suit.marginSec)} · 30 min reserve · hazards.json</span>
+          <span>
+            Margin {formatMargin(suit.marginSec)} · 30 min reserve · hazards.json
+            <SourceTag path="suit.marginSec" interactive={false} />
+          </span>
         )}
         {skipped.length > 0 && <span>Skipped: {skipped.join(' · ')}</span>}
         {active.length > 1 && <span>+{active.length - 1} more alert{active.length > 2 ? 's' : ''}</span>}
