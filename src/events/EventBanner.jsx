@@ -1,9 +1,33 @@
+import { useSyncExternalStore } from 'react';
 import { t, translateText, formatNumber } from '../i18n/index.js';
+import { provenance } from '../data/provenance.js';
 import SourceTag from '../plan/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
 import './events.css';
 
 const ORDER = { danger: 4, warning: 3, caution: 2, info: 1 };
+
+// Registry paths whose entry gives both the caption and the tag of an event value (#196). The tag ignores the live
+// store entry (source={null}), so the words and the tag always come from the same registry entry.
+export const EVENT_VALUE_PATHS = Object.freeze({
+  'dust-storm': 'environment.dustOpacity',
+  radiation: 'events.radiation.doseRateUgyH',
+});
+
+/** Caption of a registry entry, translated, with the " · " that joins it to the value. Empty when unknown. */
+export function eventCaption(path, registry = provenance) {
+  const caption = registry.lookup(path)?.caption;
+  return caption ? ' · ' + translateText(caption) : '';
+}
+
+function EventValue({ path, children }) {
+  useSyncExternalStore(provenance.subscribe, provenance.getVersion, provenance.getVersion);
+  return (
+    <span>
+      {children}{eventCaption(path)}<SourceTag path={path} source={null} interactive={false} requireSource={false} />
+    </span>
+  );
+}
 
 function formatMargin(seconds) {
   if (!Number.isFinite(seconds)) return '—';
@@ -37,14 +61,10 @@ export default function EventBanner() {
       </div>
       <div className="event-banner-meta">
         {alert.eventId === 'dust-storm' && (
-          <span>
-            τ {formatNumber(environment.dustOpacity, 2)}{t('ui.global.storm.profile.up.to.curiosity.s.gale')}<SourceTag path="environment.dustOpacity" interactive={false} requireSource={false} />
-          </span>
+          <EventValue path={EVENT_VALUE_PATHS['dust-storm']}>τ {formatNumber(environment.dustOpacity, 2)}</EventValue>
         )}
         {alert.eventId === 'radiation' && (
-          <span>
-            {formatNumber(environment.doseRateUgyH, 1)}{t('ui.gy.h')}{formatNumber(environment.doseUgy, 1)}{t('ui.gy.rad.curiosity.gale.crater.not.jezero')}<SourceTag path="environment.doseRateUgyH" interactive={false} requireSource={false} />
-          </span>
+          <EventValue path={EVENT_VALUE_PATHS.radiation}>{formatNumber(environment.doseRateUgyH, 1)}{t('ui.gy.h')}{formatNumber(environment.doseUgy, 1)} {t('ui.gy')}</EventValue>
         )}
         {String(alert.eventId).startsWith('low-oxygen') && (
           <span>{t('ui.margin')}{formatMargin(suit.marginSec)}{t('ui.30.min.reserve.hazards.json')}<SourceTag path="suit.marginSec" interactive={false} />

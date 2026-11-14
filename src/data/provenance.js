@@ -35,11 +35,15 @@ const SUIT_MARGIN = [...SUIT_O2, 'suit.reserve.time', 'suit.reserve.walkback_pad
 const suitModel = (source, ids) => ({ tag: 'DERIVED', label: 'Suit model', source, from: { hazards: ids } });
 const sim = (source) => ({ tag: 'SIM', source });
 
+// Plan route costs (src/sim/legCosts.js) take the weakest tag of their hazards.json inputs (combinedTag). Time, O2,
+// battery and margin all rest on the SIM speed rule (mobility.speed_rule), so they are SIM here too: the Plan chips
+// "O2 out" and "Battery out" then show the same tag as their tooltip (#196). provenance.test.js checks the match.
+const routeModel = (source, ids) => ({ ...suitModel(source, ids), tag: 'SIM' });
 const LEG_TERRAIN = { tag: 'DERIVED', label: 'HiRISE DTM', source: 'planner path on the HiRISE height map, sampled every 10 m', from: HIRISE };
-const LEG_TIME = suitModel('suit model: walking speed at constant effort, no stops', SUIT_O2);
-const LEG_O2 = suitModel('suit model: walking O2 use, share of the xEMU primary tank', SUIT_O2);
-const LEG_BATTERY = suitModel('suit model: xEMU battery, the effort share of the draw is SIM', SUIT_BATTERY);
-const LEG_MARGIN = suitModel('suit model: O2 after the walk out and the padded walk home, minus the 30 min reserve', SUIT_MARGIN);
+const LEG_TIME = routeModel('suit model: walking speed at constant effort, no stops', SUIT_O2);
+const LEG_O2 = routeModel('suit model: walking O2 use, share of the xEMU primary tank', SUIT_O2);
+const LEG_BATTERY = routeModel('suit model: xEMU battery, the effort share of the draw is SIM', [...SUIT_BATTERY, 'mobility.speed_rule']);
+const LEG_MARGIN = routeModel('suit model: O2 after the walk out and the padded walk home, minus the 30 min reserve', SUIT_MARGIN);
 const LEG_FIELDS = {
   distanceM: LEG_TERRAIN, climbM: LEG_TERRAIN, descentM: LEG_TERRAIN, maxSlopeDeg: LEG_TERRAIN,
   timeSec: LEG_TIME, o2G: LEG_O2, o2Pct: LEG_O2, batteryWh: LEG_BATTERY, batteryPct: LEG_BATTERY,
@@ -135,14 +139,26 @@ export const STORE_PATHS = Object.freeze({
   'environment.rhPct': { ...MEDA, source: 'MEDA relative humidity, replayed sol', from: { meda: 'relative_humidity' } },
   'environment.doseRateUgyH': { ...RAD, source: 'RAD surface dose rate', from: { rad: 'background' } },
   'environment.doseUgy': { ...RAD, tag: 'DERIVED', source: 'dose this EVA: the RAD dose rate summed over mission time', from: { rad: 'background' } },
+  // The dust storm event (src/sim/events/dust-storm.json) ramps tau from the Jezero clear season (0.45, Perseverance)
+  // to the 2018 global storm Curiosity measured in Gale crater (8.0). The ramp shape and timing are ours, so the
+  // values in between are DERIVED. The event banner prints `caption` next to this tag (#196).
   'environment.dustOpacity': {
-    tag: 'DATA', label: 'Mastcam-Z + MEDA · Perseverance', short: 'MEDA · Perseverance',
-    source: 'tau from the January 2022 Jezero dust storm; the ramp timing is SIM',
-    from: { hazards: ['dust.tau.storm_2022_peak', 'dust.tau.clear_season', 'dust.event.ramp_duration'] },
+    tag: 'DERIVED', label: 'Dust storm model', short: 'Dust storm model',
+    source: 'dust storm event: tau from the Jezero clear season 0.45 up to the 2018 global storm 8.0 in Gale crater, not Jezero; the ramp timing is SIM',
+    caption: 'global storm profile · up to Curiosity\'s Gale 2018 storm, not Jezero',
+    from: { hazards: ['dust.tau.gale_global_storm_2018', 'dust.tau.clear_season', 'dust.event.ramp_duration'] },
+  },
+  // The radiation event (src/sim/events/radiation.json) plays the September 2017 solar particle event from
+  // hazards.json models.sep_2017_profile, not the background rate above. The event banner shows this entry (#196).
+  'events.radiation.doseRateUgyH': {
+    tag: 'DATA', label: 'RAD · Curiosity (Gale)', short: 'RAD · Curiosity',
+    source: 'radiation event: RAD B dose rate of the September 2017 solar particle event, hazards.json models.sep_2017_profile; the 12 min timeline is SIM',
+    caption: 'September 2017 solar particle event · RAD · Curiosity · Gale crater, not Jezero',
+    from: { hazards: ['model:sep_2017_profile'] },
   },
 });
 
-const FIELDS = ['tag', 'label', 'short', 'source', 'mission', 'instrument', 'site', 'solOrDate', 'reference', 'link', 'dataLink', 'note'];
+const FIELDS = ['tag', 'label', 'short', 'source', 'caption', 'mission', 'instrument', 'site', 'solOrDate', 'reference', 'link', 'dataLink', 'note'];
 
 function checkEntry(path, entry) {
   if (typeof path !== 'string' || !path) throw new Error('provenance path must be a non-empty string');
@@ -182,7 +198,8 @@ function dataFor(spec, files) {
     return { ...fromBlock(p), label: hudLabel(p), short: hudLabel(p, { site: false }) };
   }
   if (from.hazards && files.hazards) {
-    const values = from.hazards.map((id) => files.hazards.values?.[id]).filter(Boolean);
+    const h = files.hazards;
+    const values = from.hazards.map((id) => (id.startsWith('model:') ? h.models?.[id.slice(6)] : h.values?.[id])).filter((v) => v?.provenance);
     if (values.length === 0) return null;
     const blocks = values.map((v) => v.provenance);
     const measured = values.filter((v) => v.tag !== 'SIM');

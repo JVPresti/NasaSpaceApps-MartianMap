@@ -141,6 +141,47 @@ function writtenPaths() {
   return [...paths].sort();
 }
 
+describe('tags that agree with their writers (#196)', () => {
+  it('gives every route leg and total the tag legCostSources writes, so a chip and its tooltip agree', () => {
+    const r = loaded();
+    const live = legCostSources(files.hazards);
+    const mismatched = Object.entries(live).filter(([path, src]) => r.lookup(path)?.tag !== src.tag);
+    expect(mismatched.map(([path]) => path)).toEqual([]);
+    for (const path of ['route.totals.o2G', 'route.totals.batteryWh']) {
+      const entry = r.resolve(path, live[path]);
+      expect(entry.tag).toBe('SIM');
+      expect(entry.note).toBeNull();
+      expect(describeEntry(entry).map(([, v]) => v).join(' ')).not.toMatch(/Registry entry/);
+    }
+  });
+
+  it('describes the dust profile the event plays: Jezero clear season up to the Gale 2018 storm', () => {
+    const r = loaded();
+    const dust = r.lookup('environment.dustOpacity');
+    const storm = files.hazards.values['dust.tau.gale_global_storm_2018'];
+    const profile = readJson('src/sim/events/dust-storm.json').timeline.map((k) => k.set['environment.dustOpacity']);
+    expect(Math.max(...profile)).toBe(storm.value);
+    expect(Math.min(...profile)).toBe(files.hazards.values['dust.tau.clear_season'].value);
+    expect(dust.site).toMatch(/Gale crater/);
+    expect(dust.solOrDate).toMatch(/2018/);
+    expect(dust.source).not.toMatch(/2022/);
+    expect(dust.caption).toMatch(/Gale 2018/);
+  });
+
+  it('cites the September 2017 event for the radiation event rate', () => {
+    const r = loaded();
+    const ev = r.lookup('events.radiation.doseRateUgyH');
+    const model = files.hazards.models.sep_2017_profile;
+    const rates = readJson('src/sim/events/radiation.json').timeline.map((k) => k.set['environment.doseRateUgyH']);
+    expect(Math.max(...rates)).toBeCloseTo(Math.max(...model.points.map((p) => p.rate)) / 24, 2);
+    expect(ev).toMatchObject({ tag: 'DATA', mission: 'MSL' });
+    expect(ev.reference).toMatch(/Zeitlin et al. 2018/);
+    expect(ev.solOrDate).toMatch(/2017-09/);
+    expect(ev.site).toMatch(/not Jezero/);
+    expect(r.lookup('environment.doseRateUgyH').reference).toMatch(/Hassler/);
+  });
+});
+
 describe('store coverage', () => {
   it('has an entry for every path the store keeps under sources', () => {
     const r = loaded();
