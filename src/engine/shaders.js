@@ -1,5 +1,8 @@
 // Shared GLSL for the Marswalk engine. One lighting / fog model for every material,
 // driven by atmosphere_presets.json.
+import { COST_CONSTANTS } from '../sim/costGrid.js';
+
+const SLOPE_NO_GO = COST_CONSTANTS.SLOPE_LIMIT_DEG.toFixed(1), SLOPE_CAUTION = COST_CONSTANTS.SLOPE_CAUTION_DEG.toFixed(1);   // same limits as the route planner
 export const COMMON = /* glsl */`
 uniform vec3 uSunDir, uSunColor, uAmbSky, uAmbGround;
 uniform vec3 uSkyZenith, uSkyHorizon, uHaloColor, uInscatter;
@@ -128,8 +131,8 @@ void main(){
     vec3 lay = vec3(0.0); float a = 0.0;
     if(uLayer < 1.5){            // slope hazard (from the 1 m DEM)
       float hatch = step(0.5, fract((vW.x + vW.z)/3.0));
-      if(slope > 25.0){ lay = vec3(0.9,0.08,0.05); a = mix(0.35,0.7,hatch); }
-      else if(slope > 15.0){ lay = vec3(0.95,0.6,0.1); a = 0.32; }
+      if(slope > ${SLOPE_NO_GO}){ lay = vec3(0.9,0.08,0.05); a = mix(0.35,0.7,hatch); }
+      else if(slope > ${SLOPE_CAUTION}){ lay = vec3(0.95,0.6,0.1); a = 0.32; }
       else { lay = vec3(0.2,0.8,0.4); a = 0.10; }
     } else if(uLayer < 2.5){     // elevation bands + 5 m contours
       float t = clamp(vW.y/uRelief, 0.0, 1.0);
