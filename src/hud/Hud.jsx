@@ -16,6 +16,7 @@ import NavLine from './NavLine.jsx';
 import Minimap from './Minimap.jsx';
 import './hud.css';
 import SamplingPanel from './SamplingPanel.jsx';
+import PartnerPanel from './PartnerPanel.jsx';
 
 // Shared source tag (#62). The HUD never takes the pointer, so the tag shows its tag text only and puts the full
 // source in the title and the screen reader text.
@@ -280,6 +281,7 @@ export default function Hud({ engine, minimapRoute }) {
       <Clocks />
       <SuitPanel />
       <Minimap tracker={minimapRoute} />
+      <PartnerPanel />
       <EnvStrip />
       <RadioLink engine={engine} />
       <NavLine><SourceTag path="navigation.errorM" /></NavLine>

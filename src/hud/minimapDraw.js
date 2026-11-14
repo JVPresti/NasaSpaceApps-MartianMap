@@ -1,5 +1,5 @@
 // Canvas painter for the helmet minimap (#60). Draws the ortho photo, the route split into walked and
-// remaining, waypoints, the habitat, refuges, active hazard zones, a north ring and a scale bar.
+// remaining, waypoints, the habitat, refuges, active hazard zones, the partner (#70), a north ring and a scale bar.
 // No player marker and no uncertainty ring: those belong to #21. No Plan-mode map: that is #14.
 // Plain JavaScript, no React and no three.js.
 
@@ -8,6 +8,7 @@ import {
   cardinalPoints, niceScaleBar, projectToMap, splitShelters,
 } from './minimapGeometry.js';
 import { resampleRoute } from './minimapRoute.js';
+import { drawPartner } from './minimapPartner.js';
 
 const TAU = Math.PI * 2;
 const COLORS = {
@@ -306,6 +307,7 @@ function drawScaleBar(g, cx, cy, radius, rangeM) {
  *   route?: { path: Array<[number, number]>|null, waypoints?: Array<object>, nextIndex?: number },
  *   progress?: object,
  *   shelters?: Array<object>, zones?: Array<object>,
+ *   partner?: object|null,   crew[0]: the partner marker (#70)
  * }} view
  */
 export function drawMinimap(g, view) {
@@ -345,6 +347,7 @@ export function drawMinimap(g, view) {
   drawRoute(g, view, project, radius);
   drawShelters(g, view, project, radius);
   drawWaypoints(g, view, project, radius);
+  drawPartner(g, view.partner, project, cx, cy, radius);
   drawCardinalRing(g, cx, cy, radius, headingDeg);
   drawScaleBar(g, cx, cy, radius, rangeM);
   if (headingDeg === null) {

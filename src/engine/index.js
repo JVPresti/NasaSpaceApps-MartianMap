@@ -445,6 +445,14 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     /** Scripted actions of the current source: 'toggleCase', 'visitHabitat'. Returns false if the source ignores it. */
     partnerCommand(name) { return sys.partner ? sys.partner.command(name) : false; },
     /**
+     * The partner as its source reported it on the last frame: { id, color, state } with the PartnerState
+     * (docs/PARTNER.md), or null without a source. state is null until the first frame. Read by the partner runner (#70).
+     */
+    getPartner() {
+      const p = sys.partner;
+      return p && p.source ? { id: p.source.id, color: p.source.color, state: p.state } : null;
+    },
+    /**
      * Sampling (sampling.js, #36): what the crosshair is on, the clip phase, the partner's case and what each input does now.
      * Plain data for the store bridge; null before the scene is ready.
      */
