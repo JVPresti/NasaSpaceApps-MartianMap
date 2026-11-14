@@ -121,6 +121,12 @@ export default function RoutePanel({ planner, waypoints, onWaypointsChange }) {
         {statusText}
       </p>
 
+      {route.skipped?.length > 0 && (
+        <p className="route-skipped">
+          Skipped: {route.skipped.join(' · ')}
+        </p>
+      )}
+
       <section className="plan-section">
         <h3>Waypoints · x / z metres</h3>
         <ol className="route-waypoints">
