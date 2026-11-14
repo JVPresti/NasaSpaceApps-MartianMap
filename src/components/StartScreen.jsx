@@ -15,10 +15,10 @@ export default function StartScreen({ mode = 'walk', busy, notice, onStart }) {
 
         <p className="dialog-mission">
           Walk to Cheyava Falls and sample the science target in Neretva Vallis, on the floor of Jezero crater.
-          Your EVA starts 70 m south of the rock.
+          Plan the route at the habitat, then switch to Walk: your EVA starts at the airlock, 785 m from the rock in a straight line.
         </p>
         <p className="dialog-source">
-          Start position SIM: x 8 m east, z 70 m south of Cheyava Falls. Site 18.4975 N, 77.3053 E (DATA: Mars 2020 Perseverance waypoint, sol 1210).
+          Start position SIM: the foot of the habitat airlock steps, x 535 m east, z 574 m south of Cheyava Falls (HAB entry in shelters.json). Site 18.4975 N, 77.3053 E (DATA: Mars 2020 Perseverance waypoint, sol 1210).
         </p>
 
         <ControlsHelp />
