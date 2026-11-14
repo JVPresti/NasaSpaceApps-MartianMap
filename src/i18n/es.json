@@ -454,8 +454,8 @@
   "menu.no.link.last.contact": "SIN ENLACE · último contacto ",
   "menu.sep": "SEP",
   "menu.separation.limit": "LÍMITE DE SEPARACIÓN ",
-  "menu.mouse.capture.was.not.granted.so.the.eva": "No se concedió la captura del ratón y la EVA sigue en pausa. Espera un momento tras pulsar Esc y pulsa Intro o el botón para reintentar. Revisa los ajustes del navegador si persiste.",
-  "menu.mouse.capture.is.not.available.in.this.browser": "Este navegador no permite capturar el ratón; la EVA no puede continuar en Modo Caminar.",
+  "menu.mouse.capture.was.not.granted.so.the.eva": "No se concedió la captura del ratón y la EVA sigue en pausa. Espera un momento tras pulsar Esc y pulsa Intro o el botón para reintentar, o continúa sin capturar el ratón y arrastra para mirar. Revisa los ajustes del navegador si persiste.",
+  "menu.mouse.capture.is.not.available.in.this.browser": "Aquí no se puede capturar el ratón. Continúa sin capturarlo y arrastra para mirar alrededor.",
   "menu.the.scene.input.could.not.be.enabled": "No se pudieron activar los controles de la escena.",
   "menu.no.radio.link.last.known": "sin enlace de radio, última posición conocida ",
   "menu.partner.suit.status": "Traje del compañero: {status}",
@@ -492,5 +492,9 @@
   "finds.error.event": "Hay una ruta de evento activa. Espera a que pase la alerta.",
   "finds.error.route.changed": "La ruta cambió durante la planificación. Inténtalo de nuevo.",
   "finds.error.no.route": "El planificador no encontró ruta por este hallazgo.",
-  "menu.q.hold.2.s": "Q (mantener 2 s)"
+  "menu.q.hold.2.s": "Q (mantener 2 s)",
+  "menu.continue.without.mouse.capture": "Continuar sin capturar el ratón",
+  "menu.drag.to.look.start": "La captura del ratón está desactivada: arrastra sobre la escena para mirar. El reloj de misión y el traje siguen en pausa detrás de esta pantalla.",
+  "menu.drag.to.look.pause": "Modo Caminar continúa sin capturar el ratón. Arrastra sobre la escena para mirar.",
+  "menu.esc.to.pause.drag.to.look": "Esc para pausar · Arrastra para mirar · WASD para caminar · Mayús para trotar · H para controles"
 }

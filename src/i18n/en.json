@@ -454,8 +454,8 @@
   "menu.no.link.last.contact": "NO LINK · last contact ",
   "menu.sep": "SEP",
   "menu.separation.limit": "SEPARATION LIMIT ",
-  "menu.mouse.capture.was.not.granted.so.the.eva": "Mouse capture was not granted, so the EVA stays paused. Wait briefly after Escape, then press Enter or click the button to try again. Check your browser settings if this continues.",
-  "menu.mouse.capture.is.not.available.in.this.browser": "Mouse capture is not available in this browser, so the EVA cannot resume in Walk.",
+  "menu.mouse.capture.was.not.granted.so.the.eva": "Mouse capture was not granted, so the EVA stays paused. Wait briefly after Escape, then press Enter or click the button to try again, or continue without mouse capture and drag to look around. Check your browser settings if this continues.",
+  "menu.mouse.capture.is.not.available.in.this.browser": "Mouse capture is not available here. Continue without mouse capture and drag to look around.",
   "menu.the.scene.input.could.not.be.enabled": "The scene input could not be enabled.",
   "menu.no.radio.link.last.known": "no radio link, last known ",
   "menu.partner.suit.status": "Partner suit: {status}",
@@ -492,5 +492,9 @@
   "finds.error.event": "An event route is active. Wait for the alert to clear.",
   "finds.error.route.changed": "The route changed while planning. Try again.",
   "finds.error.no.route": "The planner found no route through this find.",
-  "menu.q.hold.2.s": "Q (hold 2 s)"
+  "menu.q.hold.2.s": "Q (hold 2 s)",
+  "menu.continue.without.mouse.capture": "Continue without mouse capture",
+  "menu.drag.to.look.start": "Mouse capture is off, so drag on the scene to look around. The mission clock and suit stay paused behind this screen.",
+  "menu.drag.to.look.pause": "Walk resumes without capturing the mouse. Drag on the scene to look around.",
+  "menu.esc.to.pause.drag.to.look": "Esc to pause · Drag to look · WASD to walk · Shift to jog · H for controls"
 }
