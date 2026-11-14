@@ -8,7 +8,7 @@ const readJson = (path) =>
 
 const routeJson = readJson('public/marswalk/assets/route.json');
 const PATH = routeJson.waypoints.map((w) => [w.x, w.z]);
-const TOTAL_M = 943.500131;
+const TOTAL_M = 894.99861;
 
 function pointAt(path, distance) {
   let left = distance;
