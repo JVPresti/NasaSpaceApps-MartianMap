@@ -101,7 +101,7 @@ export default function App() {
 
       {load.status === 'ready' && mode === 'plan' && <RouteLegsPanel />}
 
-      {load.status === 'ready' && mode === 'walk' && <Hud />}
+      {load.status === 'ready' && mode === 'walk' && <Hud engine={engine} />}
 
       {load.status === 'ready' && <p className="hint">{mode === 'walk' && mouseLocked ? HINTS.walkLocked : HINTS[mode]}</p>}
     </div>
