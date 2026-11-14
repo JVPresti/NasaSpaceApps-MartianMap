@@ -1,7 +1,7 @@
 // Helmet HUD (issue #20): what the astronaut reads while walking. Every value comes from the mission store; the store
 // changes a few times per second (suit 4 Hz, position 5 Hz), so these components re-render at that rate, never per frame.
 // Layout follows the v3 "Caminar · Normal" mockup; final Figma measurements come later (#11).
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
@@ -136,9 +136,12 @@ function WaypointPanel({ heightAt, slopeAt }) {
       slope: s.navigation.slopeDeg,
       path: s.route.path,
       waypoints: s.route.waypoints,
-      position: Number.isFinite(s.navigation.x) && Number.isFinite(s.navigation.z) ? { x: s.navigation.x, z: s.navigation.z } : null,
+      px: s.navigation.x,   // plain numbers only: useShallow compares one level deep, so a new { x, z } object here
+      pz: s.navigation.z,   // would look like a change on every read and re-render forever (#153)
     };
   }));
+  const px = w?.px, pz = w?.pz;
+  const position = useMemo(() => (Number.isFinite(px) && Number.isFinite(pz) ? { x: px, z: pz } : null), [px, pz]);
   if (!w) return <section className="hud-panel hud-waypoint hud-waypoint-empty" aria-label="Next waypoint">No route yet · plan one in Plan mode</section>;
   return (
     <section className="hud-panel hud-waypoint" aria-label="Next waypoint" title={w.full}>
@@ -154,7 +157,7 @@ function WaypointPanel({ heightAt, slopeAt }) {
         waypoints={w.waypoints}
         heightAt={heightAt}
         slopeAt={slopeAt}
-        position={w.position}
+        position={position}
         compact
       />
     </section>
