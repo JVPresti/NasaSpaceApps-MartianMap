@@ -6,7 +6,7 @@
     "source": "docs/marswalk-assets/README.md",
     "real": "terrain shape and photo (HiRISE DTM 1 m + orthomosaic 25 cm), background (CTX DEM 20 m + mosaic 6 m), position of Cheyava Falls, slope values, sun shadows.",
     "artistic": "the Mars colour (HiRISE and CTX are grayscale), sky and haze presets, night lamp.",
-    "modelled": "rock positions (statistical model, not individual real rocks), rock shapes and close-up textures (Earth scans), the Cheyava Falls rock (hand-made after NASA PIA26401), rock-abundance layer.",
+    "modelled": "rock positions (statistical model, not individual real rocks), rock shapes and close-up textures (Earth scans), the Cheyava Falls rock (hand-made after NASA PIA26401), the layered outcrop at Bright Angel (hand-made in the style of the Mastcam-Z images of sol 1217, not a copy of a specific rock), rock-abundance layer.",
     "notes": [
       "Real spot for the \"dangerous slope\" scene: about 200 m west of Cheyava Falls (x -201, z -52), 34 deg average.",
       "There is no mesa overhang in this area; elevation data cannot contain overhangs."

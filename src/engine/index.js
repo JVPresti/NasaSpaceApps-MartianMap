@@ -16,6 +16,7 @@ import { createAssets, b64u16, b64u8 } from './assets.js';
 import { buildAssetManifest, ROCK_NAMES } from './assetManifest.js';
 import { decodeTerrainJson, decodeRingJson } from './queries.js';
 import { createRouteGlow, validPath } from './routeGlow.js';
+import { createDust, clampDust } from './dust.js';
 import { createShelterHighlight } from './shelterHighlight.js';
 import { validShelter } from './shelterRules.js';
 import { createWaypointMarkers } from './waypoints.js';
@@ -24,7 +25,7 @@ import { createUniforms } from './uniforms.js';
 import { TIERS, detectTier } from './tiers.js';
 import { createTerrain } from './terrain.js';
 import { buildSky, applyPreset, applySkyBlend } from './atmosphere.js';
-import { createRocks, buildCheyava } from './rocks.js';
+import { createRocks, buildCheyava, buildOutcrop } from './rocks.js';
 import { createRoute } from './route.js';
 import { createCast } from './cast.js';
 import { createPartner } from './partner.js';
@@ -55,7 +56,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
   assertWebGL2();
 
   let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null, waypoints = null;
-  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null };   // set before boot ends, applied when ready
+  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0 };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -128,8 +129,10 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     U.uRockR.value.set(t.radius[0] || 1, t.radius[1], t.radius[2]);
     ctx.terrain.buildTerrain(t); ctx.terrain.computeShadows(t.shadowRes); sys.rocks.reset();
     sys.habitat.reground();   // the rebuilt mesh has slightly different heights
+    if (ctx.outcrop) ctx.outcrop.userData.place(name);
     if (sys.routeGlow) sys.routeGlow.rebuild();  // re-drape the route on the new mesh
     if (sys.shelter) sys.shelter.rebuild();
+    if (sys.dust) sys.dust.setTier(name);
   }
 
   // ---------------------------------------------------------------- frame loop (bench lines 826-868)
@@ -153,6 +156,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     sys.sampling.update(dt);   // after props: follows the clip and the scoop content (#36)
     sys.routeGlow.update(dt, eyeMode ? ctx.view.eye : null);
     sys.shelter.update(dt, ctx.view.eye, camera);
+    sys.dust.update(dt);
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
     renderer.render(scene, camera);
@@ -197,9 +201,11 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
 
     status('Loading textures…');
     const tr = TIERS[ctx.tier];
-    const [nrm, mask, gravel, slab, ring, ortho, cCol, cNao, ...rockMaps] = await Promise.all([
+    const oc = ctx.tier === 'low' ? '_lo' : '';   // the layered outcrop has half-size textures for the Low tier
+    const [nrm, mask, gravel, slab, ring, ortho, cCol, cNao, oCol, oNao, ...rockMaps] = await Promise.all([
       assets.tex('normal_ao.jpg'), assets.tex('outcrop_mask.jpg'), assets.tex('gravel_nl.jpg', { repeat: true, aniso: tr.aniso }), assets.tex('slab_nl.jpg', { repeat: true, aniso: tr.aniso }),
       assets.tex('ring_gray.jpg'), assets.tex(tr.ortho, { aniso: tr.aniso }), assets.tex('cheyava_color.jpg', { srgb: true }), assets.tex('cheyava_nao.jpg'),
+      assets.tex('outcrop_color' + oc + '.jpg', { srgb: true, aniso: tr.aniso }), assets.tex('outcrop_nao' + oc + '.jpg'),
       ...ROCK_NAMES.map((n) => assets.tex(n + '.jpg', { srgb: true })),
     ]);
     if (!alive) return;
@@ -213,6 +219,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     applyPreset(ctx, 'clear_day');
     renderer.setPixelRatio(Math.min(devicePixelRatio, tr.pixelRatio)); resize(); U.uRockR.value.set(tr.radius[0] || 1, tr.radius[1], tr.radius[2]);
     ctx.terrain.buildTerrain(tr); ctx.terrain.buildRing(ring); buildSky(ctx);
+    ctx.outcrop = await buildOutcrop(ctx, [oCol, oNao]); if (!alive) return;   // before the rocks, which keep clear of it
     sys.rocks.init(rocksJ, rockMaps);
     ctx.cheyava = await buildCheyava(ctx, [cCol, cNao]); if (!alive) return;
 
@@ -234,6 +241,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     sys.routeGlow.setPath(pending.route);
     sys.shelter = createShelterHighlight(ctx);
     sys.shelter.set(pending.shelter);
+    sys.dust = createDust(ctx); sys.dust.setTier(ctx.tier); sys.dust.set(pending.dust);
     if (pending.skyBlend) applySkyBlend(ctx, pending.skyBlend.from, pending.skyBlend.to, pending.skyBlend.t);
     waypoints.set(pending.waypoints);
     waypoints.group.visible = requestedMode === 'plan';
@@ -321,6 +329,15 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       else pending.skyBlend = { from, to, t: clamped };
     },
     /**
+     * Storm dust (dust.js, #27), 0 = clear (the scene as before) to 1 = global storm: thicker, drifting haze on everything
+     * (visibility about 1 km), dimmer and redder light with fading shadows, and faint wisps near the helmet. Eased, so a
+     * storm builds up. Works on top of any sky preset or blend.
+     */
+    setDust(level) {
+      const v = clampDust(level);
+      if (started) sys.dust.set(v); else pending.dust = v;
+    },
+    /**
      * Route drawn on the ground as the route glow (routeGlow.js), [[x, z], ...] in metres. null clears it.
      * Call it again after every re-plan; the walked part then follows the player along the new route.
      */
@@ -357,6 +374,26 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     slopeAt(x, z) { return terrainQueries().slopeAt(x, z); },
     /** Line of sight between two { x, y?, z } points (no y = eye height above ground). Available once ready. */
     lineOfSight(a, b, options) { return terrainQueries().lineOfSight(a, b, options); },
+    /**
+     * Project a world point to CSS pixels in the canvas. `visible` means it is
+     * inside the viewport and in front of the camera; `inFront` separates the
+     * two cases for the edge arrow. Available once ready.
+     * @param {number} x east, metres
+     * @param {number} z south, metres
+     * @param {number} [y] height, defaults to ground + 2.2 m
+     */
+    project(x, z, y) {
+      if (!started) return null;
+      const worldY = Number.isFinite(y) ? y : ctx.terrain.meshH(x, z) + 2.2;
+      const p = new THREE.Vector3(x, worldY, z).project(camera);
+      const inFront = p.z < 1;
+      return {
+        x: (p.x + 1) / 2 * container.clientWidth,
+        y: (1 - p.y) / 2 * container.clientHeight,
+        inFront,
+        visible: inFront && Math.abs(p.x) <= 1 && Math.abs(p.y) <= 1,
+      };
+    },
     /** Player position and heading (degrees clockwise from north), and the current mode. */
     /**
      * Who drives the partner astronaut: a partner source (src/engine/partnerSource.js, docs/PARTNER.md).

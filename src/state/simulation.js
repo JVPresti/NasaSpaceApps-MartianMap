@@ -4,11 +4,15 @@ import { useMissionStore } from './store.js';
 import { DEMO_MISSION_CLOCK, SKY_PRESETS, startMissionClock } from '../sim/missionClock.js';
 import { startEventRunner } from './events.js';
 import { startOffRoute } from './offRoute.js';
+import { startWaypointRunner } from '../sim/waypointRunner.js';
+import { parseShelters } from '../sim/shelters.js';
 import { suitConstantsFromHazards } from '../sim/suitModel.js';
 import { startSuitRunner } from '../sim/suitRunner.js';
 import { legCostSources, startLegCostRunner } from '../sim/legCosts.js';
+import { initNavigation } from '../sim/navigation.js';
 
 const HAZARDS_URL = import.meta.env.BASE_URL + 'data/hazards.json';
+const SHELTERS_URL = import.meta.env.BASE_URL + 'data/shelters.json';
 
 // The clock may start from an alternate sky preset (?); it takes its coarse demo local start time.
 function initialSky(state) {
@@ -24,6 +28,7 @@ export function startSimulation(engine, { mock = false } = {}) {
   if (mock) return () => {};
   const events = startEventRunner({ store: useMissionStore });
   const offRoute = startOffRoute({ store: useMissionStore });
+  const waypoints = startWaypointRunner({ store: useMissionStore });
   let stopped = false, suit = null, legs = null, clock = null;
 
   // The clock starts from its own timestamp and does not wait for hazards.json. A slow or failed hazard
@@ -33,13 +38,26 @@ export function startSimulation(engine, { mock = false } = {}) {
   } catch (e) {
     console.error('mission clock not started:', e);
   }
+  initNavigation({ store: useMissionStore });   // a terrain fix now, fixed error until the drift model (#42); after the clock, for the fix time
 
-  fetch(HAZARDS_URL)
-    .then((r) => { if (!r.ok) throw new Error('hazards.json ' + r.status); return r.json(); })
-    .then((hazards) => {
+  const shelters = fetch(SHELTERS_URL)
+    .then((r) => { if (!r.ok) throw new Error('shelters.json ' + r.status); return r.json(); })
+    .catch(() => null);
+
+  Promise.all([
+    fetch(HAZARDS_URL).then((r) => { if (!r.ok) throw new Error('hazards.json ' + r.status); return r.json(); }),
+    shelters,
+  ])
+    .then(([hazards, shelterData]) => {
       if (stopped) return;
       const constants = suitConstantsFromHazards(hazards);
-      suit = startSuitRunner({ store: useMissionStore, heightAt: engine.heightAt, constants });
+      let habitat;
+      try {
+        habitat = shelterData ? parseShelters(shelterData)[0] : undefined;
+      } catch {
+        habitat = undefined;   // DEFAULT_HABITAT in the suit runner remains the fallback
+      }
+      suit = startSuitRunner({ store: useMissionStore, heightAt: engine.heightAt, constants, habitat });
       legs = startLegCostRunner({ store: useMissionStore, heightAt: engine.heightAt, constants, sources: legCostSources(hazards) });
     })
     .catch((e) => console.error('suit model not started:', e));
@@ -48,6 +66,7 @@ export function startSimulation(engine, { mock = false } = {}) {
     if (clock) clock.stop();
     events.stop();
     offRoute.stop();
+    waypoints.stop();
     if (suit) suit.stop();
     if (legs) legs.stop();
   };

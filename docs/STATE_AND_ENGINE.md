@@ -48,15 +48,17 @@ setMode('plan');
 | `suit.batteryPct` | 0 to 100 (xEMU 756 Wh) | suit model | #19 |
 | `suit.pressurePsi` | suit pressure, 4.3 psid nominal | suit model | #19 |
 | `suit.metabolicW`, `effort` | metabolic power in W; effort 0 at rest, 1 at the design peak (879 W) | suit model | #19 |
-| `suit.walkbackSec`, `walkbackO2G` | time and O2 (with the 20 % pad) to walk back to the habitat along the route | suit model | #19 |
+| `suit.walkbackSec`, `walkbackO2G` | time and O2 (with the 20 % pad) to walk back to the habitat entry in `public/data/shelters.json` along the route | suit model | #19, #129 |
 | `suit.marginSec` | O2 time left minus walkback minus the 30 min reserve | suit model | #19 |
 | `suit.status` | `'nominal'`, `'caution'` (margin under 15 min) or `'warning'` (margin at or under 0) | suit model | #19, used by #26 |
 | `navigation.x`, `z`, `headingDeg` | position estimate; heading clockwise from north | engine bridge now; navigation model later | #6, #21, #42 |
+| `navigation.waypointRangeM`, `waypointBearingDeg` | distance and bearing to the next unvisited waypoint, written in Walk mode | waypoint runner | #61 |
 | `navigation.slopeDeg` | terrain slope under the player in degrees (DERIVED from the HiRISE DTM), for the HUD | engine bridge | #20 |
-| `navigation.errorM`, `fixMode`, `lastFixSec` | uncertainty radius, `'terrain fix'` or `'dead reckoning'`, mission time of last fix | navigation model | #21, #42 |
+| `navigation.errorM`, `fixMode`, `lastFixSec` | uncertainty radius in metres (the ring on the Plan map), `'terrain fix'` or `'dead reckoning'`, mission time (`mission.elapsedSec`) of last fix. Tagged `SIM` | placeholder in `src/sim/navigation.js` now (a terrain fix at start, fixed 0.4 m); drift model later | #21, #42 |
 | `route.waypoints` | `[{ name, x, z }]` | Plan mode, planner | #17 |
 | `route.path` | `[[x, z], ...]`, the format of `route.json` and `planRoute()` | planner | #16, #23 |
 | `route.nextIndex` | index of the next waypoint | waypoint tracking | #61 |
+| `route.visited` | names of the waypoints already reached, in order | waypoint tracking | #61 |
 | `route.distanceM`, `climbM`, `steepestSlopeDeg`, `etaSec` | from `planRoute()` (`distance`, `climb`, `steepestSlopeDeg`) | planner | #16, #41 |
 | `route.reason` | why the route changed, for example after an event | re-planner | #23 |
 | `route.shelter` | `{ id, name, x, z, type, protection }` from `public/data/shelters.json`: the shelter the re-planner chose, highlighted in green; `null` when no event is active | re-planner, events | #23, #24 to #26, #30 |
@@ -64,7 +66,7 @@ setMode('plan');
 | `route.totals` | the same fields summed over the legs (the maximum for `maxSlopeDeg`), plus the walk home along the same path with the 20 % pad (`returnTimeSec`, `returnO2G`, `returnBatteryWh`), what is left at the habitat (`arrivalO2G`, `arrivalO2Pct`, `arrivalBatteryWh`, `arrivalBatteryPct`), `marginSec` (O2 left at the habitat as time at the flat walking rate, minus the 30 min reserve) and `status` as for `suit.status`. `null` without a route | per-leg costs | #41 |
 | `route.decision` | `'pending'`, `'go'` or `'no-go'`, set by the crew in Plan mode | interface | #17 |
 | `route.skipped` | waypoint names the event route leaves out, for example after a dust storm | events | #24 |
-| `environment.dustOpacity` | tau. **The event engine writes this path.** | events, MEDA replay | #22, #24, #31 |
+| `environment.dustOpacity` | tau. **The event engine writes this path.** The bridge turns it into the engine's storm-dust level (`src/state/dustLevel.js`): tau 0.45 (clear Jezero) is 0, tau 8 (global storm, Gale 2018) is 1. | events, MEDA replay | #22, #24, #27, #31 |
 | `environment.tempC`, `windMs`, `pressurePa` | weather | MEDA replay | #31 |
 | `environment.doseRateUgyH`, `doseUgy` | radiation dose rate (µGy/h) and dose received (µGy) | RAD curve, events | #25, #31 |
 | `alerts.<eventId>` | `{ id, eventId, level, text, startedAtSec, active }`, or `null` when cleared. **The event engine writes these.** | event engine | #22 |
@@ -75,8 +77,8 @@ setMode('plan');
 | `sampling.status` | the engine's `getSampling()`: `{ phase, holding, target, caseState, caseInReach, actions }`, or `null` before the engine reports | sampling bridge, 5 times per second when it changes | #36 |
 | `view.layer` | 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop | Plan mode, wrist screen | #14, #67 |
 | `view.sky` | `'clear_day'`, `'dust_storm'`, `'late_afternoon'`, `'night'`. The default is `'late_afternoon'` (#59) | events, later the clock | #24, #59, #73 |
-| `view.skyBlend` | 0 to 1, blend from `clear_day` to `dust_storm` as the storm opacity rises | events | #24 |
-| `sources['<path>']` | `{ tag: 'DATA' \| 'DERIVED' \| 'SIM', source }` for any value above | whoever writes the value | #62 |
+| `view.skyBlend` | 0 to 1, blend from the current `view.sky` preset to `dust_storm` as the storm opacity rises | events | #24 |
+| `sources['<path>']` | `{ tag: 'DATA' \| 'DERIVED' \| 'SIM', source, label? }` for any value above. Every path also needs an entry in `src/data/provenance.js`, which adds the mission, instrument, site, sol or date and link | whoever writes the value | #62 |
 
 `null` means "not known yet". The interface should show a dash, not 0.
 
@@ -108,6 +110,7 @@ await engine.ready;
 | `setMode('plan' \| 'walk')` | Switches the camera. Can be called before `ready`; it is applied when ready. |
 | `setLayer(n)` | Data layer on the terrain: 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop. The wrist screen follows. |
 | `setSky(name)` | Atmosphere preset: `clear_day`, `dust_storm`, `late_afternoon`, `night`. |
+| `setDust(level)` | Storm dust (`src/engine/dust.js`, #27), 0 = clear (the scene as before) to 1 = global storm: thicker, drifting haze on everything (visibility about 1 km), dimmer and redder light with fading shadows, and faint wisps near the helmet. Eased, so a storm builds up. Works on top of any sky preset or blend. |
 | `setRoute(path)` | Draws `[[x, z], ...]` as the route glow (`src/engine/routeGlow.js`, #29): a dotted line on the ground near the player, a thin outlined line further away, and chevrons floating ahead in Walk mode. The part already walked turns grey and follows the player, so walking back lights the route again. `null` clears it. |
 | `setShelter(shelter)` | Highlights a shelter in green (`src/engine/shelterHighlight.js`, #30): a safe zone on the ground, a column of light visible from far away and in the dust storm, and a label with its distance from the player. Takes an entry of `shelters.json`; `null` fades it out. |
 | `setWaypoints(list)` | Numbered sprites for `[{ x, z, name, active? }]`, shown in Plan mode; `null` clears them. |
@@ -115,6 +118,7 @@ await engine.ready;
 | `heightAt(x, z)` | Terrain height in metres, from the source grid: the HiRISE tile, or the CTX ring outside it. Relative to the lowest point of the tile; add `terrain.json` `base_elev_m` for MOLA elevation. |
 | `slopeAt(x, z)` | Slope in degrees, central difference over 2 m. |
 | `lineOfSight(a, b)` | `a`, `b` are `{ x, y?, z }`. A point without `y` is taken at eye height (ground + 1.7 m). Returns `{ clear, blockedAt }` and samples every 2 m. |
+| `project(x, z, y?)` | World point to canvas CSS pixels: `{ x, y, visible, inFront }`. `y` defaults to ground + 2.2 m. Used by the next-waypoint HUD marker (#61). |
 | `setPartnerSource(source | null)` | Who drives the partner astronaut (see [PARTNER.md](PARTNER.md)). The scripted partner is the default; `null` hides it. |
 | `partnerCommand(name)` | Scripted actions of the current source: `'toggleCase'`, `'visitHabitat'`. Returns `false` if the source ignores it. |
 | `getSampling()` | `{ phase, holding, target, caseState, caseInReach, actions }` (see [Sampling](#sampling-36)); `null` before `ready`. Runs one aim test, so poll it, never per frame. |
@@ -122,7 +126,7 @@ await engine.ready;
 | `getPlayer()` | `{ x, z, headingDeg, mode }`. This is the true position, so only the bridge should read it; the interface reads `navigation`. |
 | `dispose()` | Stops everything and frees the GPU. |
 
-- **When they work:** the terrain queries throw before `ready`; `setSky` and `setRoute` before `ready` are stored and applied when ready.
+- **When they work:** the terrain queries throw before `ready`; `setSky`, `setRoute` and `setDust` before `ready` are stored and applied when ready.
 - **Same numbers as the simulation:** the queries are plain functions in `src/engine/queries.js`, with no three.js, and they agree with `src/sim/costGrid.js` to within 1 cm. Tests are in `src/engine/queries.test.js`.
 
 ## Simulation runners
@@ -199,12 +203,13 @@ A sealed checklist stays ticked until the next photo or scoop starts a new one. 
 
 `src/hud/Hud.jsx` (#20) reads only the store and shows in Walk mode once the scene is ready.
 - **Values shown:** suit (`suit.*`), mission clock (`mission.elapsedSec`, `lmst`), heading and slope (`navigation.*`), the next waypoint (`route.waypoints[route.nextIndex]`, with range, bearing and an ETA at 1 m/s), the environment (`environment.*`) and the most severe active alert (`alerts`).
+- **Navigation (#21):** a line under the environment strip says how the position was estimated, its error and its age, for example `NAV · terrain fix · ±0.4 m · 3 min ago` (`formatNavLine` in `src/hud/format.js`). Past `NAV_FIX_LIMIT_M` (5 m, SIM) it turns amber and asks the astronaut to stop for a terrain fix. The Plan map shows the same estimate as a marker with an uncertainty ring of radius `navigation.errorM`, placed with `project()` (`src/plan/PlanPositionMarker.jsx`). The drawing is in `src/hud/positionMarker.js`, so the minimap (#60) reuses it with its own world-to-screen function.
 - **Unsourced values:** an environment value without an entry in `sources` shows as a dash.
-- **Source tags:** each value shows its tag from `sources` until the shared source-tag component (#62) replaces the inline one.
+- **Source tags:** each value shows its tag through the shared `SourceTag` (`src/components/SourceTag.jsx`, #62), in its tag-only, non-interactive form because the HUD never takes the pointer. The tag appears once the value's writer has put it in `sources`.
 
 ## The bridge
 
 `connectEngine(engine)` in `src/state/engineBridge.js` is called by `EngineView` once the engine is ready. It returns a disconnect function.
 
-- **Store to engine:** `mode`, `view.layer`, `view.sky`, `route.path` and `route.shelter`, each when it changes.
+- **Store to engine:** `mode`, `view.layer`, `view.sky`, `view.skyBlend`, `route.path`, `route.shelter` and `environment.dustOpacity` (as the dust level), each when it changes.
 - **Engine to store:** `navigation.x`, `z` and `headingDeg` every 200 ms, skipped while the player stands still. This is the true position until the navigation model (#42) writes the estimate instead; after that, move this write into the navigation module.

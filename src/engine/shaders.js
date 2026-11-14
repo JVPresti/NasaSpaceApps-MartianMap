@@ -50,9 +50,24 @@ float castShadow(vec3 p){   // slots: 0 = player, 1 = partner (1.3 m half-size),
   }
   return 1.0 - sh;
 }
+// Storm dust (#27): the haze thickens toward uDustK and drifts in curtains with the wind (uDustOff), so the same
+// patches pass over terrain, rocks, astronauts and the habitat. uDust = 0 gives exactly the preset fog.
+uniform float uDust, uDustK; uniform vec2 uDustOff;
+float dh(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }
+float dn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f); return mix(mix(dh(i), dh(i + vec2(1.0, 0.0)), f.x), mix(dh(i + vec2(0.0, 1.0)), dh(i + vec2(1.0, 1.0)), f.x), f.y); }
+float dustDensity(vec2 xz){   // 0..1, curtains about 60 m across with 15 m detail
+  vec2 p = (xz + uDustOff) / 60.0;
+  return 0.65 * dn(p) + 0.35 * dn(p * 4.1 + 7.3);
+}
 vec3 applyFog(vec3 c, vec3 toFrag){
-  float f = 1.0 - exp(-uFogK * length(toFrag));
-  return mix(c, uInscatter, f);
+  float d = length(toFrag), k = uFogK;
+  if(uDust > 0.001){
+    // density sampled near the viewer and at the surface, so close curtains also veil the ground behind them
+    vec2 nearP = cameraPosition.xz + toFrag.xz * min(1.0, 30.0 / max(d, 1.0));
+    float n = 0.5 * (dustDensity(nearP) + dustDensity(cameraPosition.xz + toFrag.xz));
+    k = mix(uFogK, max(uFogK, uDustK * (0.45 + 1.1 * n)), uDust);
+  }
+  return mix(c, uInscatter, 1.0 - exp(-k * d));
 }
 // A window seen from either side: shows the Mars sky and ground in the viewing direction, with a glass reflection on top.
 float wvh(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -271,7 +286,7 @@ void main(){
     c += vec3(0.9,0.92,1.0) * step(0.9975, h) * (0.3 + 0.7*fract(h*91.7)) * uStars * 0.25 * smoothstep(0.0, 0.15, d.y);
   }
   float path = min(1300.0 / max(d.y, 0.02), 7000.0);
-  c = mix(c, uInscatter, 1.0 - exp(-uFogK * path));
+  c = mix(c, uInscatter, 1.0 - exp(-mix(uFogK, max(uFogK, uDustK), uDust) * path));   // storm dust hazes the sky too
   gl_FragColor = vec4(c, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>

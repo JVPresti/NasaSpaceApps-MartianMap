@@ -49,6 +49,7 @@ export function createRocks(ctx) {
         if (acc > density(x, z)) continue;
         if (x * x + z * z < (ci >= 2 ? 30 : 2.2)) continue;                         // keep Cheyava Falls clear
         if ((x - sys.habitat.pos.x) ** 2 + (z - sys.habitat.pos.z) ** 2 < sys.habitat.clear * sys.habitat.clear) continue;   // keep the habitat pad clear
+        if (ctx.outcrop && (x - ctx.outcrop.userData.at.x) ** 2 + (z - ctx.outcrop.userData.at.z) ** 2 < OUTCROP.clear * OUTCROP.clear) continue;   // keep the layered outcrop clear
         const D = cls.D[0] * Math.pow(cls.D[1] / cls.D[0], u * u), type = cls.types[Math.min(cls.types.length - 1, Math.floor(tp * cls.types.length))];
         const hgt = this.heights[type] * D, y = meshH(x, z);
         Nrm.set(meshH(x - 1, z) - meshH(x + 1, z), 2, meshH(x, z - 1) - meshH(x, z + 1)).normalize();
@@ -121,4 +122,61 @@ export async function buildCheyava(ctx, maps) {
   const m = new THREE.Mesh(g, new THREE.ShaderMaterial({ defines: { HERO: 1 }, uniforms: { ...U, tMap: { value: maps[0] }, tNao: { value: maps[1] }, uRockH: f1(0.3) }, vertexShader: SH.ROCK_VERT, fragmentShader: SH.ROCK_FRAG }));
   m.position.set(0, tileH(0, 0) - 0.06, 0); m.rotation.y = d.rot_z_blender || 0; scene.add(m);
   return m;
+}
+
+// Layered outcrop at the Bright Angel stop (bench buildOutcrop). assets/outcrop.glb holds three detail levels
+// (Outcrop_LOD0/1/2: 16k, 4k and 1.8k triangles); shader and texture layout are the same as the Cheyava Falls rock.
+// It is a hand-made model in the style of the Bright Angel outcrops (docs/marswalk-assets/README.md, "Layered outcrop").
+export const OUTCROP = {
+  waypoint: 'WP3',                                // name prefix of the route.json waypoint it belongs to
+  back: 4.2,                                      // m uphill of the waypoint, outside the 2 m arrival circle
+  sink: 0.2,                                      // m into the ground: the lowest beds and the loose chips are half buried
+  clear: 4.2,                                     // m around its centre kept free of scattered rocks
+  lod: { high: [0, 30, 90], low: [0, 14, 60] },   // m from the camera at which each detail level takes over
+};
+
+/**
+ * Where the outcrop sits. The ground at WP3 is a steady 30 degree slope, so the model is laid on that slope uphill of
+ * the waypoint, tilted to the ground plane under its 6.7 x 3.4 m footprint, with its buried end uphill and its broken
+ * face towards the walker. Its beds dip 24 degrees inside the model, so on this slope they end up nearly level.
+ * Plain math, no three.js: `height(x, z)` is any ground height function (x east, z south, metres).
+ * @returns {{ x: number, y: number, z: number, ux: number, uz: number, normal: number[], yaw: number, slopeDeg: number }}
+ */
+export function outcropPlacement(wp, height, back = OUTCROP.back) {
+  const gx = (height(wp.x + 3, wp.z) - height(wp.x - 3, wp.z)) / 6, gz = (height(wp.x, wp.z + 3) - height(wp.x, wp.z - 3)) / 6, gl = Math.hypot(gx, gz);
+  const ux = gl > 1e-6 ? gx / gl : 0, uz = gl > 1e-6 ? gz / gl : -1;   // uphill; on flat ground the buried end points north
+  const px = -uz, pz = ux, x = wp.x + ux * back, z = wp.z + uz * back;
+  const hu = height(x + ux * 3, z + uz * 3), hd = height(x - ux * 3, z - uz * 3), hl = height(x + px * 1.6, z + pz * 1.6), hr = height(x - px * 1.6, z - pz * 1.6);
+  const along = (hu - hd) / 6, across = (hl - hr) / 3.2;
+  const nx = -(along * ux + across * px), nz = -(along * uz + across * pz), nl = Math.hypot(nx, 1, nz);
+  return {
+    x, z, y: (height(x, z) * 2 + hu + hd + hl + hr) / 6, ux, uz,
+    normal: [nx / nl, 1 / nl, nz / nl],
+    yaw: Math.atan2(-uz, ux),   // turns the model's +x (its buried end) uphill
+    slopeDeg: Math.atan(Math.hypot(along, across)) * 180 / Math.PI,
+  };
+}
+
+export async function buildOutcrop(ctx, maps) {
+  const { scene, U, assets } = ctx;
+  const [gltf, route] = await Promise.all([assets.glb('assets/outcrop.glb'), assets.json('route.json')]);
+  const wp = route.waypoints.find((w) => w.name.startsWith(OUTCROP.waypoint));
+  if (!wp) return null;
+  const mat = new THREE.ShaderMaterial({ defines: { HERO: 1 }, uniforms: { ...U, tMap: { value: maps[0] }, tNao: { value: maps[1] }, uRockH: f1(1.0) }, vertexShader: SH.ROCK_VERT, fragmentShader: SH.ROCK_FRAG });
+  const lod = new THREE.LOD(), up = new THREE.Vector3(0, 1, 0);
+  for (let k = 0; k < 3; k++) {
+    const g = gltf.scene.getObjectByName('Outcrop_LOD' + k).geometry, uv = g.attributes.uv;
+    if (!g.userData.vFlipped) { for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i)); g.userData.vFlipped = true; }   // glTF stores v flipped; these textures load the three.js way, like the Cheyava ones
+    lod.addLevel(new THREE.Mesh(g, mat), 0);
+  }
+  // Sits on the drawn mesh, which changes a little with the quality tier: call again after the terrain is rebuilt.
+  lod.userData.place = (tier) => {
+    const at = outcropPlacement(wp, ctx.terrain.meshH), dist = OUTCROP.lod[tier] || OUTCROP.lod.high;
+    lod.position.set(at.x, at.y - OUTCROP.sink, at.z);
+    lod.quaternion.setFromUnitVectors(up, new THREE.Vector3(...at.normal)).multiply(new THREE.Quaternion().setFromAxisAngle(up, at.yaw));
+    lod.levels.forEach((level, k) => { level.distance = dist[k]; });
+    lod.userData.at = at;
+  };
+  lod.userData.place(ctx.tier); scene.add(lod);
+  return lod;
 }
