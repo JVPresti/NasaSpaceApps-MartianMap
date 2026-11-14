@@ -14,8 +14,8 @@ import { useMissionStore, setMode } from './state/store.js';
 import './App.css';
 
 const HINTS = {
-  walk: 'Click to look around · WASD to walk · Shift to jog',
-  walkLocked: 'Esc to release the mouse · WASD to walk · Shift to jog',
+  walk: 'Click to look around · WASD to walk · Shift to jog · R wrist',
+  walkLocked: 'Esc to release the mouse · WASD to walk · Shift to jog · R wrist',
   plan: 'Right-drag to pan · scroll to zoom',
 };
 
