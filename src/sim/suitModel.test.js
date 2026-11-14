@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
-  constantEffortSpeed, createSuitState, metabolicPowerW, o2RateGs, pathHome, stepSuit, suitConstantsFromHazards, suitReadout, walkCost,
+  combinedTag, constantEffortSpeed, createSuitState, metabolicPowerW, o2RateGs, pathHome, pathToShelter, stepSuit, suitConstantsFromHazards, suitReadout, SUIT_INPUTS, walkCost,
 } from './suitModel.js';
 import { startSuitRunner } from './suitRunner.js';
 
@@ -108,6 +108,53 @@ describe('walkback and margin', () => {
   });
 });
 
+describe('margin now (#195)', () => {
+  const rest = createSuitState(c);
+
+  it('never exceeds the 8 h EVA limit at rest', () => {
+    const r = suitReadout(rest, { timeSec: 0, o2G: 0 }, c);
+    expect(r.o2MarginSec / 60).toBeGreaterThan(1000);   // the full tank at the resting rate: about 1192 min
+    expect(r.marginSec).toBe(hazards.values['suit.eva_duration_max'].value * 3600);
+    expect(r.marginLimit).toBe('eva');
+  });
+
+  it('takes off the EVA time so far and the walkback time', () => {
+    const r = suitReadout(rest, { timeSec: 600, o2G: 0 }, c, { elapsedSec: 3600 });
+    expect(r.marginSec).toBe(8 * 3600 - 3600 - 600);
+  });
+
+  it('keeps the O2 margin when the tank runs out first', () => {
+    const s = { ...rest, o2RateSmoothGs: o2RateGs(589, c), o2G: o2RateGs(589, c) * (c.reserveSec + 600) };
+    const r = suitReadout(s, { timeSec: 0, o2G: 0 }, c);
+    expect(r.marginSec).toBeCloseTo(600, 0);
+    expect(r.marginLimit).toBe('o2');
+  });
+
+  it('carries the same tag as the Plan margin at the end of the plan', () => {
+    expect(c.sources['suit.marginSec'].tag).toBe(combinedTag(hazards, SUIT_INPUTS.margin));
+    expect(c.sources['suit.marginSec'].tag).toBe('SIM');
+    expect(SUIT_INPUTS.margin).toContain('suit.eva_duration_max');
+  });
+});
+
+describe('walkback to a shelter (#195)', () => {
+  const shelterRoute = [[100, 100], [100, 400], [829, 400]];   // re-planned from the player at (100, 100) to the shelter
+
+  it('walks forward to the end of the shelter route', () => {
+    const path = pathToShelter({ x: 100, z: 100 }, shelterRoute, { x: 829, z: 400 });
+    expect(path[path.length - 1]).toEqual([829, 400]);
+    expect(walkCost(path, () => 0, c).distanceM).toBeCloseTo(300 + 729, 0);
+  });
+
+  it('starts from the nearest point on the route', () => {
+    expect(pathToShelter({ x: 105, z: 300 }, shelterRoute, { x: 829, z: 400 })).toEqual([[105, 300], [100, 300], [100, 400], [829, 400]]);
+  });
+
+  it('goes straight to the shelter without a route', () => {
+    expect(pathToShelter({ x: 0, z: 0 }, null, { x: 3, z: 4 })).toEqual([[0, 0], [3, 4]]);
+  });
+});
+
 describe('runner on a store', () => {
   function fakeStore(state) {
     return { getState: () => state, setState: (fn) => { state = { ...state, ...(typeof fn === 'function' ? fn(state) : fn) }; } };
@@ -126,6 +173,30 @@ describe('runner on a store', () => {
     expect(s.suit.walkbackSec).toBeGreaterThan(0);
     expect(s.suit.status).toBe('nominal');
     expect(s.sources['suit.oxygenPct'].tag).toBe('DERIVED');
+    r.stop();
+  });
+
+  it('times the walkback along the shelter route during an event', () => {
+    const path = [[0, 0], [0, 300], [729, 300]];
+    const store = fakeStore({
+      navigation: { x: 0, z: 0 }, mission: { paused: false, elapsedSec: 0 }, suit: {}, sources: {},
+      route: { path, shelter: { id: 'S1', name: 'Shelter', x: 729, z: 300 } },
+    });
+    const r = startSuitRunner({ store, heightAt: () => 0, constants: c, now: () => 0, setInterval: () => 0, clearInterval: () => {} });
+    r.tick();
+    const s = store.getState().suit;
+    expect(s.walkbackTo).toBe('shelter');
+    expect(s.walkbackSec).toBeCloseTo(walkCost(path, () => 0, c).timeSec, 6);
+    expect(s.walkbackSec).toBeGreaterThan(10 * 60);
+    r.stop();
+  });
+
+  it('caps the margin with the mission time from the store', () => {
+    const store = fakeStore({ navigation: { x: 0, z: 0 }, route: { path: null }, mission: { paused: false, elapsedSec: 2 * 3600 }, suit: {}, sources: {} });
+    const r = startSuitRunner({ store, heightAt: () => 0, constants: c, habitat: { x: 0, z: 0 }, now: () => 0, setInterval: () => 0, clearInterval: () => {} });
+    r.tick();
+    expect(store.getState().suit.marginSec).toBe(6 * 3600);
+    expect(store.getState().suit.walkbackTo).toBe('habitat');
     r.stop();
   });
 

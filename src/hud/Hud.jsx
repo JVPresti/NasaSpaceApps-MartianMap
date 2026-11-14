@@ -81,7 +81,7 @@ function Bar({ frac, level }) {
 function SuitPanel() {
   const s = useMissionStore(useShallow((st) => ({
     o2: st.suit.oxygenPct, batt: st.suit.batteryPct, psi: st.suit.pressurePsi,
-    walkbackSec: st.suit.walkbackSec, marginSec: st.suit.marginSec, status: st.suit.status || 'nominal',
+    walkbackSec: st.suit.walkbackSec, walkbackTo: st.suit.walkbackTo, marginSec: st.suit.marginSec, status: st.suit.status || 'nominal',
   })));
   const battLevel = batteryLevel(s.batt);
   return (
@@ -98,9 +98,9 @@ function SuitPanel() {
         <div className="hud-row-head"><I.Gauge /><b>{formatValue(s.psi, 1)}</b><small>{t('ui.psi')}</small><SourceTag path="suit.pressurePsi" /></div>
         <Bar frac={s.psi / 4.3} level="nominal" />
       </div>
-      <div className={'hud-walkback hud-' + s.status} title={t('ui.oxygen.margin.after.walking.back.to.the.habitat')}>
+      <div className={'hud-walkback hud-' + s.status} title={t('ui.margin.now.title')}>
         <div className="hud-row-head"><I.Return /><b>{formatMinutes(s.marginSec, { signed: true })}</b><small>{t('ui.min')}</small><SourceTag path="suit.marginSec" /></div>
-        <div className="hud-caption">{t('ui.walkback.margin.home.in')}{formatMinutes(s.walkbackSec)}{t('units.minutesSuffix')}</div>
+        <div className="hud-caption">{t(s.walkbackTo === 'shelter' ? 'ui.margin.now.shelter.in' : 'ui.margin.now.home.in')}{formatMinutes(s.walkbackSec)}{t('units.minutesSuffix')}</div>
       </div>
     </section>
   );
