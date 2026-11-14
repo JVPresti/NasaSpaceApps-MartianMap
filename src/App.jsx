@@ -2,9 +2,9 @@ import { useCallback, useReducer, useState } from 'react';
 import EngineView from './components/EngineView.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
 import ModeSwitch from './components/ModeSwitch.jsx';
-import RouteLegsPanel from './components/RouteLegsPanel.jsx';
 import EventBanner from './events/EventBanner.jsx';
 import EventDebug from './events/EventDebug.jsx';
+import MissionClock from './plan/MissionClock.jsx';
 import PlanMode from './plan/PlanMode.jsx';
 import Hud from './hud/Hud.jsx';
 import SourcesRoot from './sources/SourcesScreen.jsx';
@@ -88,19 +88,19 @@ export default function App() {
       />
 
       {load.status === 'ready' && <PlanMode engine={engine} active={mode === 'plan'} />}
-      {load.status === 'ready' && <EventBanner />}
+      {/* Plan mode places the banner in its own alert region; Walk keeps the free-floating strip. */}
+      {load.status === 'ready' && mode === 'walk' && <EventBanner />}
       {load.status === 'ready' && DEBUG_EVENTS && <EventDebug />}
 
       <header className="topbar" inert={load.status !== 'ready' ? true : undefined}>
         <h1>
           Marswalk <span>Cheyava Falls · Neretva Vallis, Jezero crater</span>
         </h1>
+        {load.status === 'ready' && mode === 'plan' && <MissionClock />}
         <ModeSwitch mode={mode} onChange={setMode} />
       </header>
 
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={SITE} onRetry={handleRetry} />
-
-      {load.status === 'ready' && mode === 'plan' && <RouteLegsPanel />}
 
       {load.status === 'ready' && mode === 'walk' && <Hud engine={engine} />}
 

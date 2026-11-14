@@ -1,28 +1,24 @@
 // Ported from docs/marswalk-assets/testbench-reference/main.js (lines 658-782).
 import * as THREE from 'three';
 import * as SH from './shaders.js';
+import { HAB_ZONES, HAB_SOLIDS, habZone, habCanStand, habSlideWorld } from './collide.js';
 
 export function createHabitat(ctx) {
   const { scene, camera, U, assets, sys, view, T } = ctx;
   const { meshH } = ctx.terrain;
   const habitat = {
-    // Walkable zones in habitat space (x = toward the airlock end, v = sideways, metres; floor = height above the habitat origin).
-    // Everything else inside the solid boxes below is blocked. Same numbers as habitat.json.
-    ZONES: [
-      { n: 'stairs', x0: 8.23, x1: 9.95, v0: -0.5, v1: 0.5, floor: x => 1.02 * (9.95 - x) / 1.72 },
-      { n: 'porch', x0: 7.25, x1: 8.23, v0: -0.6, v1: 0.6, floor: () => 1.02 },
-      { n: 'hatch', x0: 6.85, x1: 7.25, v0: -0.36, v1: 0.36, floor: x => 1.10 + 0.15 * Math.min(1, Math.max(0, (x - 6.98) / 0.10)), door: true, duck: 0.42 },   // 15 cm hatch sill
-      { n: 'airlock', x0: 2.80, x1: 6.85, v0: -0.5, v1: 0.8, floor: () => 1.10 },
-      { n: 'inner', x0: 2.15, x1: 2.80, v0: -0.36, v1: 0.36, floor: x => 1.10 + 0.15 * Math.min(1, Math.max(0, Math.min(x - 2.12, 2.70 - x) / 0.10)), duck: 0.42 },   // 15 cm hatch sill: step over it
-      { n: 'main', r: 2.2, floor: () => 1.10 },
-    ],
-    SOLIDS: [{ r: 2.75 }, { x0: 2.5, x1: 7.25, v0: -1.45, v1: 1.45 }, { x0: -4.45, x1: -2.4, v0: -1.05, v1: 1.05 }, { x0: 7.25, x1: 9.95, v0: -0.78, v1: 0.78 }],
+    // Walkable zones and solid boxes in habitat space (x = toward the airlock end, v = sideways, metres; floor = height above the habitat origin).
+    // A walker stands inside a zone or outside every solid. The numbers and the rules live in collide.js (same numbers as habitat.json).
+    ZONES: HAB_ZONES, SOLIDS: HAB_SOLIDS,
     local(x, z, o) { const dx = x - this.pos.x, dz = z - this.pos.z, t = this.root.rotation.y, c = Math.cos(t), s = Math.sin(t); o.x = dx * c - dz * s; o.v = dx * s + dz * c; return o; },
     _l: { x: 0, v: 0 }, open: 0, BLOCKS: [],
-    zone(x, z) { if (!this.root) return null; const l = this.local(x, z, this._l);
-      for (const q of this.ZONES) { if (q.r ? l.x * l.x + l.v * l.v < q.r * q.r : (l.x >= q.x0 && l.x <= q.x1 && l.v >= q.v0 && l.v <= q.v1)) { if (q.door && this.open < 0.8) continue; if (q.n === 'main') { let hit = false; for (const b of this.BLOCKS) if ((l.x - b.x) ** 2 + (l.v - b.v) ** 2 < (b.radius + 0.25) ** 2) hit = true; if (hit) continue; } return q; } } return null; },
-    canStand(x, z) { if (!this.root) return true; if (this.zone(x, z)) return true; const l = this.local(x, z, this._l);
-      for (const q of this.SOLIDS) if (q.r ? l.x * l.x + l.v * l.v < q.r * q.r : (l.x >= q.x0 && l.x <= q.x1 && l.v >= q.v0 && l.v <= q.v1)) return false; return true; },
+    zone(x, z) { if (!this.root) return null; const l = this.local(x, z, this._l); return habZone(l.x, l.v, this.open, this.BLOCKS); },
+    canStand(x, z) { if (!this.root) return true; const l = this.local(x, z, this._l); return habCanStand(l.x, l.v, this.open, this.BLOCKS); },
+    // walker collision (#38): one step from (x0, z0) to p ({ x, z }, changed in place). A blocked step slides along the wall it hit
+    // (collide.js habSlide, in habitat space, where every wall is an axis-aligned box side or a circle). Far from the habitat: no-op.
+    slide(x0, z0, p) { if (!this.root) return p; const R = 12, px = this.pos.x, pz = this.pos.z;
+      if ((p.x - px) ** 2 + (p.z - pz) ** 2 > R * R && (x0 - px) ** 2 + (z0 - pz) ** 2 > R * R) return p;   // every solid is within 10 m of the origin
+      return habSlideWorld(px, pz, this.root.rotation.y, this.open, this.BLOCKS, x0, z0, p); },
     ground(x, z) { const q = this.zone(x, z); return q ? Math.max(meshH(x, z), this.pos.y + q.floor(this._l.x)) : meshH(x, z); },   // floor or terrain under a walker
     duck(x, z) { if (!this.root) return 0; const l = this.local(x, z, this._l); if (Math.abs(l.v) > 0.9) return 0;   // hatches are 1.43 m tall: stoop BEFORE the frame. Full stoop within 0.55 m of a hatch, starting 1.4 m away.
       const d = Math.min(Math.abs(l.x - 7.05), Math.abs(l.x - 2.45)), t = Math.min(1, Math.max(0, (d - 0.55) / 0.85)); return 0.42 * (1 - t * t * (3 - 2 * t)); },

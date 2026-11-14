@@ -49,8 +49,8 @@ export default function LayerPanel({ layer, onLayer }) {
   return (
     <aside className="plan-panel" aria-label="Plan mode layers and waypoints">
       <header className="plan-panel-head">
-        <p className="plan-kicker">Plan · Cheyava Falls</p>
-        <h2>Traverse plan</h2>
+        <h2>Map layers</h2>
+        <p className="plan-panel-source">Cheyava Falls</p>
       </header>
 
       <section className="plan-section">

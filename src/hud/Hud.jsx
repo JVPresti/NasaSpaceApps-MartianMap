@@ -11,6 +11,7 @@ import SlopeAhead from './SlopeAhead.jsx';
 import * as I from './icons.jsx';
 import NavLine from './NavLine.jsx';
 import './hud.css';
+import SamplingPanel from './SamplingPanel.jsx';
 
 // Shared source tag (#62). The HUD never takes the pointer, so the tag shows its tag text only and puts the full
 // source in the title and the screen reader text.
@@ -251,6 +252,7 @@ export default function Hud({ engine }) {
       <EnvStrip />
       <NavLine><SourceTag path="navigation.errorM" /></NavLine>
       <WaypointPanel heightAt={engine?.heightAt} slopeAt={engine?.slopeAt} />
+      <SamplingPanel />
     </div>
   );
 }

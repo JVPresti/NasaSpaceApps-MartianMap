@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { createEngine } from '../engine/index.js';
 import { useMissionStore } from '../state/store.js';
 import { connectEngine } from '../state/engineBridge.js';
+import { connectSampling } from '../state/sampling.js';
 import { startSimulation } from '../state/simulation.js';
 
 const ASSET_BASE = import.meta.env.BASE_URL + 'marswalk/';
@@ -33,7 +34,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
 
     let engine;
     let live = true;
-    let disconnect = null, stopSimulation = null;
+    let disconnect = null, stopSimulation = null, disconnectSampling = null;
     const current = () => live && (engine === undefined || engineRef.current === engine);
     try {
       engine = createEngine(container, {
@@ -58,6 +59,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
     engine.ready.then(() => {
       if (!current()) return;
       disconnect = connectEngine(engine);
+      disconnectSampling = connectSampling(engine);   // checklist, sample count and the sampling prompt (#36)
       stopSimulation = startSimulation(engine, { mock: new URLSearchParams(window.location.search).get('mock') === '1' });
       callbacks.current.onEngine?.(engine);
       callbacks.current.onReady?.();
@@ -70,6 +72,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
       }
       if (stopSimulation) stopSimulation();
       if (disconnect) disconnect();
+      if (disconnectSampling) disconnectSampling();
       engine.dispose();
     };
   }, []);
