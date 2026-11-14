@@ -407,6 +407,16 @@
   border-left-color: var(--danger);
 }
 
+.route-skipped {
+  margin: 8px 0 0;
+  padding: 7px 9px;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: #ffca8a;
+  background: rgba(255, 154, 60, 0.08);
+  border-radius: 6px;
+}
+
 .route-waypoints {
   display: grid;
   gap: 6px;
