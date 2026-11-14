@@ -48,7 +48,7 @@ setMode('plan');
 | `suit.batteryPct` | 0 to 100 (xEMU 756 Wh) | suit model | #19 |
 | `suit.pressurePsi` | suit pressure, 4.3 psid nominal | suit model | #19 |
 | `suit.metabolicW`, `effort` | metabolic power in W; effort 0 at rest, 1 at the design peak (879 W) | suit model | #19 |
-| `suit.walkbackSec`, `walkbackO2G` | time and O2 (with the 20 % pad) to walk back to the habitat along the route | suit model | #19 |
+| `suit.walkbackSec`, `walkbackO2G` | time and O2 (with the 20 % pad) to walk back to the habitat entry in `public/data/shelters.json` along the route | suit model | #19, #129 |
 | `suit.marginSec` | O2 time left minus walkback minus the 30 min reserve | suit model | #19 |
 | `suit.status` | `'nominal'`, `'caution'` (margin under 15 min) or `'warning'` (margin at or under 0) | suit model | #19, used by #26 |
 | `navigation.x`, `z`, `headingDeg` | position estimate; heading clockwise from north | engine bridge now; navigation model later | #6, #21, #42 |
