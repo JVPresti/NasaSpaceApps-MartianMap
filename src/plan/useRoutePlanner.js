@@ -72,6 +72,13 @@ export function useRoutePlanner({ waypoints, enabled }) {
 
     const key = waypointKey(waypoints);
     if (key === lastKeyRef.current && nonce === lastNonceRef.current) return undefined;
+    // A find accepted in Walk (#71) already re-planned these waypoints from the player. Planning again from the
+    // habitat would reset nextIndex and lose the walk so far. Re-plan still forces a new route.
+    if (nonce === lastNonceRef.current && key === useMissionStore.getState().finds?.routeKey) {
+      lastKeyRef.current = key;
+      useMissionStore.setState((s) => ({ finds: { ...s.finds, routeKey: null } }));   // used once: a later edit plans as usual
+      return undefined;
+    }
     lastKeyRef.current = key;
     lastNonceRef.current = nonce;
 

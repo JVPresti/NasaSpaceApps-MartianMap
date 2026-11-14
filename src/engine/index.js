@@ -26,6 +26,7 @@ import { validShelter } from './shelterRules.js';
 import { createSlopeZone } from './slopeZone.js';
 import { createRadioShadow } from './radioShadow.js';
 import { createWaypointMarkers } from './waypoints.js';
+import { createFindsApi } from './finds.js';
 import { metresPerPixel } from './planView.js';
 import { createUniforms } from './uniforms.js';
 import { TIERS, detectTier } from './tiers.js';
@@ -365,6 +366,9 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     };
   }
 
+  // unexpected finds (#71): setFinds, aimGround and setPointing in the API below
+  const finds = createFindsApi(ctx, { isStarted: () => started && alive });
+
   function terrainQueries() {
     if (!ctx.terrain) throw new Error('engine is not ready: wait for engine.ready before querying the terrain');
     return ctx.terrain.queries;
@@ -373,6 +377,9 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   return {
     ready,
     stats,
+    setFinds: finds.setFinds,
+    aimGround: finds.aimGround,
+    setPointing: finds.setPointing,
     /** @param {'plan' | 'walk'} m */
     setMode(m) {
       if (m !== 'plan' && m !== 'walk') throw new Error('setMode: expected "plan" or "walk", got ' + m);
@@ -644,6 +651,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       for (const t of textures) t.dispose();
       if (sys.cast) sys.cast.rt.dispose();
       if (waypoints) waypoints.dispose();
+      finds.dispose();
       if (sys.slopeZone) sys.slopeZone.dispose();
       if (sys.radioShadow) sys.radioShadow.dispose();
       if (ctx.terrain && ctx.terrain.shadowTex) ctx.terrain.shadowTex.dispose();
