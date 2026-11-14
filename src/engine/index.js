@@ -2,8 +2,8 @@
 // Ported from docs/marswalk-assets/testbench-reference/main.js. No React and no page DOM: the engine owns one
 // <canvas> inside the container it is given and removes it on dispose().
 //
-//   const engine = createEngine(container, { assetBase, mode, onStatus, onError });
-//   await engine.ready;          // rejects if loading fails
+//   const engine = createEngine(container, { assetBase, mode, onStatus, onProgress, onError });
+//   await engine.ready;          // resolves after the first frame is actually rendered, rejects on failure
 //   engine.setMode('plan' | 'walk');
 //   engine.setLayer(0..4); engine.setSky('clear_day'); engine.setRoute([[x, z], ...]);
 //   engine.heightAt(x, z); engine.slopeAt(x, z); engine.lineOfSight(a, b); engine.getPlayer();
@@ -13,13 +13,14 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as SH from './shaders.js';
 import { createAssets, b64u16, b64u8 } from './assets.js';
+import { buildAssetManifest, ROCK_NAMES } from './assetManifest.js';
 import { decodeTerrainJson, decodeRingJson } from './queries.js';
 import { createRouteLine } from './routeLine.js';
 import { createUniforms } from './uniforms.js';
 import { TIERS, detectTier } from './tiers.js';
 import { createTerrain } from './terrain.js';
 import { buildSky, applyPreset } from './atmosphere.js';
-import { createRocks, buildCheyava, ROCK_NAMES } from './rocks.js';
+import { createRocks, buildCheyava } from './rocks.js';
 import { createRoute } from './route.js';
 import { createCast } from './cast.js';
 import { createPartner } from './partner.js';
@@ -28,6 +29,9 @@ import { createArms } from './arms.js';
 import { createProps } from './props.js';
 import { createHabitat } from './habitat.js';
 import { createView, createViewState } from './view.js';
+import { createLoadLifecycle } from './lifecycle.js';
+import { createProgressTracker } from './progress.js';
+import { assertWebGL2, rendererFailure } from './webgl.js';
 
 export const LAYERS = ['none', 'slope hazard', 'elevation', 'rock abundance', 'outcrop'];
 export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
@@ -35,23 +39,42 @@ export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
 /**
  * @param {HTMLElement} container element the canvas fills; its size drives the render size
  * @param {{ assetBase: string, mode?: 'plan' | 'walk', tier?: 'high' | 'low' | null, debug?: boolean,
- *   onStatus?: (text: string) => void, onError?: (err: Error) => void }} options
+ *   onStatus?: (text: string) => void, onProgress?: (progress: { loaded: number, failed: number, total: number, ratio: number }) => void, onError?: (err: Error) => void }} options
  *   tier: force a quality tier and turn off the automatic choice (the app passes ?tier=high|low).
  *   debug: expose window.__marswalk for measuring (development builds only).
  */
-export function createEngine(container, { assetBase, mode = 'walk', tier = null, debug = false, onStatus = () => {}, onError = () => {} } = {}) {
+export function createEngine(container, { assetBase, mode = 'walk', tier = null, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {} } = {}) {
   if (!assetBase) throw new Error('createEngine: assetBase is required');
-  let alive = true, started = false, requestedMode = mode, viewCtl = null, routeLine = null;
+  assertWebGL2();
+
+  let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null, routeLine = null;
   const pending = { sky: null, route: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
-  const status = (t) => { if (alive) onStatus(t); };
-  const fail = (e) => { if (alive) onError(e instanceof Error ? e : new Error(String(e))); };
+
+  // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
+  let resolveReady, rejectReady;
+  const ready = new Promise((resolve, reject) => { resolveReady = resolve; rejectReady = reject; });
+  ready.catch(() => {});   // consumers may only attach later or dispose during boot
+
+  const lifecycle = createLoadLifecycle({ onStatus, onProgress, onError });
+  const status = (text) => lifecycle.status(text);
+  let renderer = null;
+  const fail = (cause) => {
+    if (!lifecycle.fail(cause)) return;
+    rejectReady(lifecycle.error);
+    if (renderer) renderer.setAnimationLoop(null);
+  };
 
   // ---------------------------------------------------------------- renderer (bench lines 27-36)
   const canvas = document.createElement('canvas');
   canvas.style.display = 'block'; canvas.style.width = '100%'; canvas.style.height = '100%'; canvas.style.touchAction = 'none';
   container.appendChild(canvas);
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  } catch (cause) {
+    canvas.remove();
+    throw rendererFailure(cause);
+  }
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.AgXToneMapping;
   renderer.debug.onShaderError = (gl, prog, vs, fs) => { const m = (gl.getShaderInfoLog(fs) || '') + ' ' + (gl.getShaderInfoLog(vs) || '') + ' ' + (gl.getProgramInfoLog(prog) || ''); fail(new Error('shader: ' + m.slice(0, 400))); };
@@ -60,13 +83,24 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.495; controls.minDistance = 5; controls.maxDistance = 9000; controls.enabled = false;
 
+  // The quality tier decides which ortho texture belongs in the initial manifest, so detect it before
+  // registering the total. Everything else is the same for both tiers.
+  const detected = detectTier(renderer);
+  if (tier && !TIERS[tier]) console.warn('createEngine: unknown tier "' + tier + '", using automatic choice');
+  const forcedTier = tier && TIERS[tier] ? tier : null;   // a forced tier also stops the automatic downgrade
+  const initialTier = forcedTier || detected.tier;
+  const tracker = createProgressTracker({
+    expected: buildAssetManifest(initialTier),
+    onChange: (progress) => lifecycle.progress(progress),
+  });
+
   // Shared context: every subsystem factory reads what it needs from here. Cross-references go through ctx.sys.
   const ctx = {
     renderer, scene, camera, controls,
-    U: createUniforms(), assets: createAssets(assetBase),
+    U: createUniforms(), assets: createAssets(assetBase, { tracker, signal }),
     view: createViewState(), sys: {},
     T: null, RING: null, PRESETS: null, terrain: null,
-    tier: 'high', tierAuto: true, orthoCache: {}, presetName: 'clear_day', gpu: '',
+    tier: initialTier, tierAuto: !forcedTier, orthoCache: {}, presetName: 'clear_day', gpu: detected.gpu,
   };
   const { U, assets, sys } = ctx;
 
@@ -78,9 +112,10 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
 
   // ---------------------------------------------------------------- tiers (bench lines 810-822)
   async function setTier(name) {
-    ctx.tier = name; const t = TIERS[name];
+    const t = TIERS[name];
     if (!ctx.orthoCache[name]) ctx.orthoCache[name] = await assets.tex(t.ortho, { aniso: t.aniso });
     if (!alive) return;
+    ctx.tier = name;
     ctx.terrain.material.uniforms.tOrtho.value = ctx.orthoCache[name];
     renderer.setPixelRatio(Math.min(devicePixelRatio, t.pixelRatio)); resize();
     U.uRockR.value.set(t.radius[0] || 1, t.radius[1], t.radius[2]);
@@ -92,6 +127,13 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
   let frames = 0, acc = 0, last = 0, worst = 0, slowWindows = 0, booted = 0;
   let lastStats = { fps: 0, worstMs: 0 };
   function tick() {
+    try {
+      renderFrame();
+    } catch (cause) {
+      fail(cause);
+    }
+  }
+  function renderFrame() {
     const now = performance.now(), ft = now - last; last = now;
     const dt = Math.min(ft / 1000, 0.1);
     viewCtl.update(dt);
@@ -102,6 +144,13 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
     renderer.render(scene, camera);
+    if (!firstFrame) {
+      firstFrame = true;
+      if (!lifecycle.error) {
+        status('');
+        if (lifecycle.complete()) resolveReady();
+      }
+    }
     frames++; acc += ft; worst = Math.max(worst, ft);
     if (acc > 1000) {
       const fps = Math.round(frames * 1000 / acc);
@@ -109,14 +158,18 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       // auto tier: three slow seconds in a row on High -> Low
       if (ctx.tierAuto && ctx.tier === 'high' && now - booted > 3000) {
         slowWindows = (fps < 40 && worst < 250 && !document.hidden) ? slowWindows + 1 : 0;
-        if (slowWindows >= 3) setTier('low').catch(fail);
+        if (slowWindows >= 3) {
+          // A failed optional quality download must leave the current scene running.
+          ctx.tierAuto = false;
+          setTier('low').catch((cause) => { if (alive) console.warn('Could not change scene quality', cause); });
+        }
       }
       frames = 0; acc = 0; worst = 0;
     }
   }
 
   // ---------------------------------------------------------------- boot (bench lines 870-935)
-  const ready = (async () => {
+  const boot = (async () => {
     status('Loading terrain data…');
     const [tj, rj, pj, rocksJ] = await Promise.all([assets.json('terrain.json'), assets.json('ring.json'), assets.json('atmosphere_presets.json'), assets.json('rocks.json')]);
     if (!alive) return;
@@ -129,10 +182,6 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     sys.rocks = createRocks(ctx); sys.route = createRoute(ctx); sys.cast = createCast(ctx);
     sys.partner = createPartner(ctx); sys.arms = createArms(ctx); sys.legs = createLegs(ctx); sys.props = createProps(ctx); sys.habitat = createHabitat(ctx);
     viewCtl = createView(ctx, canvas, signal);
-
-    const detected = detectTier(renderer); ctx.gpu = detected.gpu;
-    if (tier && !TIERS[tier]) console.warn('createEngine: unknown tier "' + tier + '", using automatic choice');
-    if (tier && TIERS[tier]) { ctx.tier = tier; ctx.tierAuto = false; } else ctx.tier = detected.tier;   // a forced tier also stops the automatic downgrade
 
     status('Loading textures…');
     const tr = TIERS[ctx.tier];
@@ -165,15 +214,19 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     U.uRelief.value = tj.range_m; sys.route.data = await assets.json('route.json'); if (!alive) return;
     await sys.habitat.init(); if (!alive) return;
 
+    if (!alive) return;
     routeLine = createRouteLine(ctx);
     if (pending.sky) applyPreset(ctx, pending.sky);
     routeLine.set(pending.route);
     viewCtl.setMode(requestedMode); started = true;
-    status('');
     booted = last = performance.now();
     renderer.setAnimationLoop(tick);
   })();
-  ready.catch((e) => { console.error(e); fail(e); });
+  boot.catch((cause) => {
+    if (lifecycle.isClosed || lifecycle.error) return;
+    console.error(cause);
+    fail(cause);
+  });
 
   /** Last one-second measurement. Plain data, safe to poll; the engine never calls back from its frame loop. */
   function stats() {
@@ -244,6 +297,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     dispose() {
       if (!alive) return;
       alive = false;
+      lifecycle.close();
       if (debug && window.__marswalk && window.__marswalk.stats === stats) delete window.__marswalk;
       renderer.setAnimationLoop(null);
       ac.abort(); ro.disconnect(); controls.dispose();
