@@ -10,7 +10,7 @@ const CLASSES = [
   { name: 'medium', dens: 0.08 * 1.6,  D: [0.30, 1.00], types: [3, 2, 1], sink: 0.15 },
   { name: 'large',  dens: 0.0004 * 1.6, D: [1.0, 2.5],  types: [4, 3],    sink: 0.20 },
 ];
-const CELL = 16, CAP = 16384;
+export const CELL = 16, CAP = 16384;   // CELL (m) is also used by sampling.js to find the rocks near the crosshair
 const f1 = (v = 0) => ({ value: v });
 function mulberry(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
