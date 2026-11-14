@@ -1,41 +1,21 @@
-// Lazy planner service for the slope detour button (#69).
-//
-// The terrain and worker are loaded only when the crew asks for a detour, so a
-// normal walk pays nothing. The service is stopped with the rest of the
-// simulation.
-import { buildCostGrid } from '../sim/costGrid.js';
-import { createRoutePlannerClient } from '../sim/routePlannerClient.js';
+// Lazy access to the shared planner worker for the slope detour button (#69).
+// The worker is the same one used by the off-route watcher (#98); the terrain
+// and cost grid are not loaded a second time.
+import { acquirePlannerService, releasePlannerService } from './plannerService.js';
 
-const TERRAIN_URL = import.meta.env.BASE_URL + 'marswalk/assets/terrain.json';
-
-let service = null;
-let stopping = false;
-
-function load() {
-  if (!service) {
-    service = fetch(TERRAIN_URL)
-      .then((response) => {
-        if (!response.ok) throw new Error(`terrain.json ${response.status}`);
-        return response.json();
-      })
-      .then(async (terrainJson) => {
-        const grid = buildCostGrid(terrainJson);
-        const client = createRoutePlannerClient();
-        await client.setGrid(grid);
-        return client;
-      });
-  }
-  return service;
-}
+let active = false;
+let acquired = false;
+let plannerPromise = null;
 
 export function startSlopeDetourService() {
-  stopping = false;
+  active = true;
   return {
     stop() {
-      stopping = true;
-      if (service) {
-        service.then((client) => client.terminate()).catch(() => {});
-        service = null;
+      active = false;
+      if (acquired) {
+        releasePlannerService();
+        acquired = false;
+        plannerPromise = null;
       }
     },
   };
@@ -43,14 +23,22 @@ export function startSlopeDetourService() {
 
 /**
  * Plan a route from the player through the remaining waypoints, avoiding the
- * blocked slope cells. Rejects when the service was stopped.
+ * blocked slope cells. Rejects when the service was stopped or there is no
+ * waypoint left.
  * @param {{ x: number, z: number }} from
  * @param {Array<{ x: number, z: number, name: string }>} waypoints
  */
 export function requestSlopeDetour(from, waypoints) {
-  if (stopping) return Promise.reject(new Error('slope detour service is stopped'));
+  if (!active) return Promise.reject(new Error('slope detour service is stopped'));
   if (!Array.isArray(waypoints) || waypoints.length === 0) {
     return Promise.reject(new Error('no remaining waypoints'));
   }
-  return load().then((client) => client.plan(waypoints, { start: from, smooth: true }));
+  if (!acquired) {
+    acquired = true;
+    plannerPromise = acquirePlannerService();
+  }
+  return plannerPromise.then((client) => {
+    if (!active) throw new Error('slope detour service is stopped');
+    return client.plan(waypoints, { start: from, smooth: true });
+  });
 }

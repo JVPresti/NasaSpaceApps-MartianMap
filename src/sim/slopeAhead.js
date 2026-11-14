@@ -5,9 +5,13 @@
  * north (-z), clockwise, the same convention as the HUD.
  */
 
+import { COST_CONSTANTS } from './costGrid.js';
+
 export const LOOK_AHEAD_M = 20;
 export const LOOK_STEP_M = 2;
-export const SLOPE_NO_GO_DEG = 25;
+/** One source of truth with the cost grid and the slope layer: 20 degrees since #105. */
+export const SLOPE_NO_GO_DEG = COST_CONSTANTS.SLOPE_LIMIT_DEG;
+export const SLOPE_CAUTION_DEG = COST_CONSTANTS.SLOPE_CAUTION_DEG;
 export const CELL_M = 3;
 export const ZONE_RADIUS_M = 18;
 
@@ -56,12 +60,16 @@ export function noGoCells(point, slopeAt, options = {}) {
   const cellM = options.cellM ?? CELL_M;
   const limitDeg = options.limitDeg ?? SLOPE_NO_GO_DEG;
   if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.z)) return [];
+  // Snap the whole mask to the cell that contains the player. Points that move
+  // inside one 3 m cell produce exactly the same patch, so the growth in the
+  // ground geometry only happens when the player crosses a cell boundary.
+  const anchorX = Math.floor(point.x / cellM) * cellM + cellM / 2;
+  const anchorZ = Math.floor(point.z / cellM) * cellM + cellM / 2;
+  const reach = Math.ceil(radiusM / cellM) * cellM;
   const cells = [];
-  for (let dz = -radiusM; dz <= radiusM; dz += cellM) {
-    for (let dx = -radiusM; dx <= radiusM; dx += cellM) {
-      if (dx * dx + dz * dz > radiusM * radiusM) continue;
-      const x = point.x + dx;
-      const z = point.z + dz;
+  for (let z = anchorZ - reach; z <= anchorZ + reach; z += cellM) {
+    for (let x = anchorX - reach; x <= anchorX + reach; x += cellM) {
+      if ((x - anchorX) ** 2 + (z - anchorZ) ** 2 > radiusM * radiusM) continue;
       const slopeDeg = slopeAt(x, z);
       if (slopeDeg > limitDeg) cells.push({ x, z, slopeDeg });
     }
