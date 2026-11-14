@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { setRouteDecision, useMissionStore } from '../state/store.js';
 import ElevationProfile from '../hud/ElevationProfile.jsx';
-import { planSummary } from './routePlan.js';
+import RouteLegs from './RouteLegs.jsx';
+import { fixed as num, minutesFixed as min, routeMetrics } from './routePlan.js';
+import SourceTag from './SourceTag.jsx';
+import { toggleWaypoint } from '../stops/selection.js';
 
 function WaypointRow({ waypoint, index, onCommit }) {
   const [x, setX] = useState(String(Math.round(waypoint.x)));
@@ -32,9 +35,10 @@ function WaypointRow({ waypoint, index, onCommit }) {
   return (
     <li className="route-waypoint">
       <span className="waypoint-number">{index + 1}</span>
-      <span className="waypoint-name" title={waypoint.name}>
+      {/* Selecting a waypoint opens its science stop card, if it has one (#66). */}
+      <button type="button" className="waypoint-name waypoint-select" title={waypoint.name} onClick={() => toggleWaypoint(waypoint.name)}>
         {waypoint.name}
-      </span>
+      </button>
       <label>
         <span>x</span>
         <input
@@ -65,8 +69,59 @@ function WaypointRow({ waypoint, index, onCommit }) {
   );
 }
 
+function Metric({ metric }) {
+  return (
+    <div className="route-metric">
+      <dt>
+        {metric.label}
+        <SourceTag path={metric.path} />
+      </dt>
+      <dd>
+        <span className="metric-value">{metric.value}</span>
+        <span className={metric.unit === '°' ? 'unit unit-tight' : 'unit'}>{metric.unit}</span>
+        {metric.detail && <span className="metric-detail">{metric.detail}</span>}
+      </dd>
+    </div>
+  );
+}
+
+/** The reason under the go / no-go buttons: planner state first, then the oxygen margin from route.totals. */
+function DecisionReason({ planner, route }) {
+  const totals = route.totals;
+  if (planner.status === 'loading') return <p className="decision-reason">Loading terrain and hazard data…</p>;
+  if (planner.status === 'planning') return <p className="decision-reason planning" role="status">Planning route…</p>;
+  if (planner.status === 'error') return <p className="decision-reason error" role="status">{planner.error}</p>;
+  if (!route.path || !totals) return <p className="decision-reason">Waiting for the first plan…</p>;
+
+  return (
+    <div className={'decision-reason margin-' + totals.status}>
+      <p className="decision-margin">
+        Margin <b>{min(totals.marginSec)}</b>
+        <span className="unit">min</span> over the 30 min reserve
+        <SourceTag path="route.totals.marginSec" />
+      </p>
+      <p className="decision-detail">
+        Back at the habitat: O2 <b>{num(totals.arrivalO2Pct)}</b>
+        <span className="unit">%</span>, battery <b>{num(totals.arrivalBatteryPct)}</b>
+        <span className="unit">%</span>.{' '}
+        {totals.roundTrip ? (
+          'Round trip.'
+        ) : (
+          <>
+            Walk home <b>{min(totals.returnTimeSec)}</b>
+            <span className="unit">min</span>, <b>{num(totals.returnO2G)}</b>
+            <span className="unit">g</span> O2 with the 20 % pad.
+          </>
+        )}
+      </p>
+    </div>
+  );
+}
+
+const DECISION_LABEL = { pending: 'Pending', go: 'Go', 'no-go': 'No-go' };
+
 /**
- * Route summary, elevation profile, waypoint editing and the go / no-go decision.
+ * One route panel for Plan mode: summary, elevation profile, go / no-go with its reason, cost per leg and the waypoint editor.
  * @param {{ planner: { status: string, error: string | null, replan: () => void },
  *   waypoints: Array<{ name: string, x: number, z: number }>,
  *   onWaypointsChange: (waypoints: Array<object>) => void,
@@ -74,19 +129,10 @@ function WaypointRow({ waypoint, index, onCommit }) {
  */
 export default function RoutePanel({ planner, waypoints, onWaypointsChange, engine }) {
   const route = useMissionStore((s) => s.route);
-  const summary = planSummary(route);
+  const metrics = routeMetrics(route);
   const decision = route.decision;
   const planning = planner.status === 'planning';
-  const statusText =
-    planner.status === 'loading'
-      ? 'Loading terrain and hazard data…'
-      : planning
-        ? 'Planning route…'
-        : planner.status === 'error'
-          ? planner.error
-          : route.path
-            ? 'Route ready. Walk mode follows the same line.'
-            : 'Waiting for the first plan…';
+  const skipped = route.skipped ?? [];
 
   const commitWaypoint = (index, waypoint) => {
     const next = waypoints.map((item, itemIndex) => (itemIndex === index ? waypoint : item));
@@ -96,27 +142,14 @@ export default function RoutePanel({ planner, waypoints, onWaypointsChange, engi
   return (
     <aside className="plan-panel route-panel" aria-label="Planned route and cost">
       <header className="plan-panel-head">
-        <p className="plan-kicker">A* · HiRISE DEM</p>
         <h2>Route</h2>
+        <p className="plan-panel-source">A* planner · HiRISE DTM</p>
       </header>
 
       <dl className="route-metrics">
-        <div>
-          <dt>Distance</dt>
-          <dd>{summary.distance}</dd>
-        </div>
-        <div>
-          <dt>Climb</dt>
-          <dd>{summary.climb}</dd>
-        </div>
-        <div>
-          <dt>Steepest</dt>
-          <dd>{summary.steepest}</dd>
-        </div>
-        <div>
-          <dt>Walk time</dt>
-          <dd>{summary.eta}</dd>
-        </div>
+        {metrics.map((metric) => (
+          <Metric key={metric.key} metric={metric} />
+        ))}
       </dl>
 
       <ElevationProfile
@@ -126,18 +159,50 @@ export default function RoutePanel({ planner, waypoints, onWaypointsChange, engi
         slopeAt={engine?.slopeAt}
       />
 
-      <p className={`route-status ${planner.status}`} role="status">
-        {statusText}
-      </p>
+      <section className="route-decision-block" aria-label="Go or no-go">
+        <div className="decision-head">
+          <h3>Go / no-go</h3>
+          <span className={'decision-state ' + decision}>{DECISION_LABEL[decision] ?? decision}</span>
+        </div>
+        <DecisionReason planner={planner} route={route} />
+        {skipped.length > 0 && (
+          <p className="route-skipped">
+            Re-planned for the event. Skipped: {skipped.join(' · ')}
+          </p>
+        )}
+        <div className="route-actions">
+          <button type="button" className="route-replan" onClick={planner.replan} disabled={planning}>
+            Re-plan
+          </button>
+          <button
+            type="button"
+            className={decision === 'go' ? 'route-go on' : 'route-go'}
+            aria-pressed={decision === 'go'}
+            disabled={!route.path}
+            onClick={() => setRouteDecision('go')}
+          >
+            Go
+          </button>
+          <button
+            type="button"
+            className={decision === 'no-go' ? 'route-nogo on' : 'route-nogo'}
+            aria-pressed={decision === 'no-go'}
+            onClick={() => setRouteDecision('no-go')}
+          >
+            No-go
+          </button>
+        </div>
+      </section>
 
-      {route.skipped?.length > 0 && (
-        <p className="route-skipped">
-          Skipped: {route.skipped.join(' · ')}
-        </p>
-      )}
+      <details className="plan-disclosure" open>
+        <summary>Cost per leg</summary>
+        <RouteLegs />
+      </details>
 
-      <section className="plan-section">
-        <h3>Waypoints · x / z metres</h3>
+      <details className="plan-disclosure">
+        <summary>
+          Waypoints <span className="disclosure-meta">{waypoints.length} · x / z in m</span>
+        </summary>
         <ol className="route-waypoints">
           {waypoints.map((waypoint, index) => (
             <WaypointRow
@@ -148,32 +213,7 @@ export default function RoutePanel({ planner, waypoints, onWaypointsChange, engi
             />
           ))}
         </ol>
-      </section>
-
-      <div className="route-actions">
-        <button type="button" className="route-replan" onClick={planner.replan} disabled={planning}>
-          Re-plan
-        </button>
-        <div className="route-decision" role="group" aria-label="Go or no-go">
-          <button
-            type="button"
-            className={decision === 'go' ? 'on go' : undefined}
-            aria-pressed={decision === 'go'}
-            disabled={!route.path}
-            onClick={() => setRouteDecision('go')}
-          >
-            Go
-          </button>
-          <button
-            type="button"
-            className={decision === 'no-go' ? 'on no-go' : undefined}
-            aria-pressed={decision === 'no-go'}
-            onClick={() => setRouteDecision('no-go')}
-          >
-            No-go
-          </button>
-        </div>
-      </div>
+      </details>
     </aside>
   );
 }

@@ -1,14 +1,10 @@
-// Browser wiring for the off-route watcher (#98). Loads the terrain once a
-// route exists, sends the cost grid to a planner worker, then starts the
-// simulation runner.
+// Browser wiring for the off-route watcher (#98). Acquires the shared planner
+// worker once a route exists, then starts the simulation runner.
 //
 // The runner itself is plain JavaScript and testable (src/sim/offRoute.js).
-import { buildCostGrid } from '../sim/costGrid.js';
 import { startOffRouteRunner } from '../sim/offRoute.js';
-import { createRoutePlannerClient } from '../sim/routePlannerClient.js';
+import { acquirePlannerService, releasePlannerService } from './plannerService.js';
 import { useMissionStore } from './store.js';
-
-const TERRAIN_URL = import.meta.env.BASE_URL + 'marswalk/assets/terrain.json';
 
 function hasRoute(state) {
   return Array.isArray(state.route?.path)
@@ -25,27 +21,20 @@ export function startOffRoute({ store = useMissionStore } = {}) {
   let stopped = false;
   let loading = false;
   let failed = false;
-  let client = null;
+  let acquired = false;
   let runner = null;
 
   function maybeStart() {
     if (stopped || loading || failed || runner) return;
     if (!hasRoute(store.getState())) return;
     loading = true;
+    acquired = true;
 
-    fetch(TERRAIN_URL)
-      .then((response) => {
-        if (!response.ok) throw new Error(`terrain.json ${response.status}`);
-        return response.json();
-      })
-      .then(async (terrainJson) => {
-        if (stopped) return;
-        const grid = buildCostGrid(terrainJson);
-        client = createRoutePlannerClient();
-        await client.setGrid(grid);
+    acquirePlannerService()
+      .then((client) => {
         if (stopped) {
-          client.terminate();
-          client = null;
+          releasePlannerService();
+          acquired = false;
           return;
         }
         runner = startOffRouteRunner({
@@ -57,6 +46,8 @@ export function startOffRoute({ store = useMissionStore } = {}) {
       .catch((error) => {
         loading = false;
         failed = true;
+        releasePlannerService();
+        acquired = false;
         if (!stopped) console.error('off-route watcher not started:', error);
       });
   }
@@ -69,7 +60,7 @@ export function startOffRoute({ store = useMissionStore } = {}) {
       stopped = true;
       unsubscribe();
       if (runner) runner.stop();
-      if (client) client.terminate();
+      if (acquired) releasePlannerService();
     },
   };
 }

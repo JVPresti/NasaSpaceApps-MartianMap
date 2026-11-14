@@ -1,0 +1,166 @@
+/* Science stop card (#66). Self-contained tokens until style/plan-mode-layout lands its visual system variables. */
+.stop-card {
+  --stop-ink: #f3e6d8;
+  --stop-dim: #c8b19c;
+  --stop-line: rgba(255, 214, 170, 0.22);
+  --stop-panel: rgba(22, 13, 10, 0.88);
+  --stop-cyan: #9fd8ee;
+  --stop-ok: #8fe9b8;
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  color: var(--stop-ink);
+  background: var(--stop-panel);
+  border: 1px solid var(--stop-line);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: auto;
+  font: 13px/1.4 system-ui, 'Segoe UI', Roboto, sans-serif;
+  animation: stop-in 220ms ease both;
+}
+
+@keyframes stop-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.stop-head { position: relative; padding-right: 2.4em; }
+.stop-kicker {
+  margin: 0 0 0.2em;
+  font-size: 0.72em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--stop-dim);
+}
+.stop-card h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0;
+  font-size: 1.3em;
+  line-height: 1.2;
+}
+
+.stop-close {
+  position: absolute;
+  top: -0.2em;
+  right: -0.3em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.15em 0.45em;
+  font: inherit;
+  font-size: 1em;
+  color: var(--stop-ink);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--stop-line);
+  border-radius: 0.4em;
+  cursor: pointer;
+}
+.stop-close:hover { background: rgba(255, 255, 255, 0.14); }
+.stop-close:focus-visible { outline: 2px solid var(--stop-cyan); outline-offset: 2px; }
+.stop-close span { font-size: 1.25em; line-height: 1; }
+.stop-close kbd {
+  font: 600 0.7em/1.3 ui-monospace, Consolas, monospace;
+  color: var(--stop-dim);
+}
+
+.stop-figure { margin: 0.7em 0 0; }
+.stop-image-frame { position: relative; }
+.stop-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 0.5em;
+  border: 1px solid var(--stop-line);
+  background: #2a1a12;
+}
+.stop-match {
+  position: absolute;
+  right: 0.5em;
+  bottom: 0.5em;
+  padding: 0.1em 0.5em;
+  font-size: 0.78em;
+  font-weight: 700;
+  color: var(--stop-ok);
+  background: rgba(10, 30, 20, 0.72);
+  border: 1px solid rgba(143, 233, 184, 0.6);
+  border-radius: 0.4em;
+}
+.stop-match::before { content: '✓ '; }
+
+.stop-figure figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.3em 0.6em;
+  margin-top: 0.35em;
+}
+.stop-credit { font-size: 0.78em; color: var(--stop-dim); }
+
+/* Shared SourceTag chips (src/components/SourceTag.css), sized to the card. */
+.stop-card .source-tag-chip { margin-left: 0; flex: none; }
+.stop-card h2 .source-tag-chip { font-size: 0.55em; }
+.stop-figure .source-tag { max-width: 100%; white-space: normal; }
+
+.stop-summary { margin: 0.7em 0 0; }
+.stop-text {
+  display: grid;
+  gap: 0.55em;
+  margin: 0.7em 0 0;
+  padding: 0.7em 0 0;
+  list-style: none;
+  border-top: 1px solid var(--stop-line);
+}
+.stop-text li { display: grid; grid-template-columns: auto 1fr; gap: 0.5em; align-items: baseline; color: var(--stop-dim); }
+.stop-text li span:last-child { color: var(--stop-ink); }
+
+/* Plan mode: beside the route panel (right: 14px, width 348px in src/plan/plan.css), under the top bar. */
+.stop-card-plan {
+  top: 78px;
+  right: 376px;
+  width: 340px;
+  max-height: calc(100% - 218px);   /* ends above the event controls at bottom: 54px (src/events/events.css) */
+  overflow-y: auto;
+  padding: 16px 16px 14px;
+  border-radius: 16px;
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.38);
+  scrollbar-width: thin;
+}
+
+/* Walk mode: right column of the visor, between the heading tape's right end and the environment strip
+   (src/hud/hud.css: .hud-env at top 54vh, right 7.8vw). --u matches the HUD's base unit. */
+.stop-card-walk {
+  --u: clamp(11px, 1.4vh, 20px);
+  top: 22vh;
+  right: 7.8vw;
+  width: calc(var(--u) * 21);
+  max-height: calc(30.5vh);
+  overflow-y: auto;
+  padding: calc(var(--u) * 0.8) calc(var(--u) * 0.9);
+  font-size: calc(var(--u) * 0.86);
+  background: rgba(40, 22, 15, 0.62);
+  border-color: rgba(255, 240, 225, 0.7);
+  border-radius: calc(var(--u) * 0.8);
+  scrollbar-width: none;
+}
+.stop-card-walk .stop-figure img { max-height: 12vh; object-fit: cover; }
+.stop-card-walk .stop-summary { margin-top: 0.5em; }
+
+
+/* The route panel's waypoint names are buttons that select the waypoint (src/plan/RoutePanel.jsx). Reset them to
+   look like the text they replaced. */
+.waypoint-select {
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.waypoint-select:hover { color: #ffd24a; text-decoration: underline; }
+.waypoint-select:focus-visible { outline: 2px solid #9fd8ee; outline-offset: 2px; border-radius: 3px; }

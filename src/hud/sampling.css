@@ -1,0 +1,48 @@
+/* Sampling on the helmet HUD (#36). Uses the variables of .hud (hud.css): --u, --ink, --dim, --unit, --glass, --edge, --ok. */
+
+/* checklist: right side, mirroring the suit panel */
+.hud-sampling {
+  position: absolute; right: 7.8vw; top: 27vh; width: calc(var(--u) * 14.5);
+  padding: 0.9em 1.2em 0.8em; border-radius: 0.9em;
+}
+.hud-sampling-head { display: flex; align-items: baseline; gap: 0.45em; margin-bottom: 0.55em; }
+.hud-sampling-head span { flex: 1; font-size: 0.7em; letter-spacing: 0.16em; color: var(--dim); }
+.hud-sampling-head b { font-size: 1.9em; line-height: 1; }
+.hud-checklist { list-style: none; margin: 0; padding: 0; }
+.hud-checklist li { display: flex; align-items: center; gap: 0.5em; padding: 0.22em 0; color: var(--dim); }
+.hud-checklist li span { font-size: 1.05em; }
+.hud-checklist li em { margin-left: auto; font-style: normal; font-size: 0.62em; letter-spacing: 0.06em; color: var(--dim); white-space: nowrap; }
+.hud-checklist li.hud-done { color: var(--ink); }
+.hud-checklist li.hud-done .hud-check { color: var(--ok); }
+.hud-sampling-last { margin-top: 0.6em; padding-top: 0.55em; border-top: 1px solid rgba(255, 245, 235, 0.45); letter-spacing: 0.08em; }
+
+/* crosshair: only while something can be sampled or photographed */
+.hud-reticle {
+  position: absolute; left: 50%; top: 50%; width: calc(var(--u) * 1.6); height: calc(var(--u) * 1.6);
+  transform: translate(-50%, -50%); border-radius: 50%; border: 1.5px solid rgba(255, 245, 235, 0.55);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+}
+.hud-reticle::after { content: ''; position: absolute; left: 50%; top: 50%; width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px; border-radius: 50%; background: currentColor; }
+.hud-reticle-reach { border: 2px solid var(--ok); color: var(--ok); }
+
+/* prompt under the crosshair */
+.hud-sample-prompt {
+  position: absolute; left: 50%; top: calc(50% + var(--u) * 2); transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 0.35em;
+  font-family: system-ui, 'Segoe UI', sans-serif; font-size: 0.95em; white-space: nowrap;
+}
+.hud-prompt-item { display: flex; align-items: center; gap: 0.55em; }
+.hud-prompt-item kbd {
+  min-width: 1.6em; padding: 0.1em 0.45em; border: 1px solid var(--edge); border-radius: 0.3em; background: var(--glass);
+  font: 700 0.85em/1.4 ui-monospace, Consolas, monospace; text-align: center; color: var(--ink);
+}
+.hud-prompt-note { font-size: 0.85em; letter-spacing: 0.06em; color: var(--unit); }
+
+/* helmet camera shutter */
+.hud-photo-flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: hud-shutter 0.35s ease-out; }
+@keyframes hud-shutter { 0% { opacity: 0.45; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .hud-photo-flash { animation-duration: 0.12s; } }
+
+@media (max-width: 900px) {
+  .hud-sampling { right: 3vw; }
+}
