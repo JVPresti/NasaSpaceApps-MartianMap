@@ -1,6 +1,7 @@
 // Ported from docs/marswalk-assets/testbench-reference/main.js (lines 198-289).
 import * as THREE from 'three';
 import * as SH from './shaders.js';
+import { ROCK_NAMES } from './assetManifest.js';
 
 // rock classes: counts per m2 from the Golombek Mars rock model at ~5 % cover (x1.6 max, thinned by HiRISE brightness)
 const CLASSES = [
@@ -9,7 +10,6 @@ const CLASSES = [
   { name: 'medium', dens: 0.08 * 1.6,  D: [0.30, 1.00], types: [3, 2, 1], sink: 0.15 },
   { name: 'large',  dens: 0.0004 * 1.6, D: [1.0, 2.5],  types: [4, 3],    sink: 0.20 },
 ];
-export const ROCK_NAMES = ['rock_09', 'rock_07', 'namaqualand_boulder_06', 'namaqualand_boulder_05', 'namaqualand_boulder_03'];
 const CELL = 16, CAP = 16384;
 const f1 = (v = 0) => ({ value: v });
 function mulberry(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }

@@ -16,33 +16,53 @@ function tierFromUrl() {
  * Mounts the Marswalk engine once and connects it to the mission store (src/state/engineBridge.js):
  * mode, layer, sky and route flow from the store to the engine; the player's position flows back 5 times per second.
  * The engine runs its own render loop; this component never renders per frame.
+ * Retrying remounts it with a new key, which disposes the previous engine before a new one boots.
  */
-export default function EngineView({ onStatus, onReady, onError }) {
+export default function EngineView({ onStatus, onProgress, onReady, onError }) {
   const containerRef = useRef(null);
-  const callbacks = useRef({ onStatus, onReady, onError });
+  const engineRef = useRef(null);
+  const callbacks = useRef({ onStatus, onProgress, onReady, onError });
 
   useEffect(() => {
-    callbacks.current = { onStatus, onReady, onError };
+    callbacks.current = { onStatus, onProgress, onReady, onError };
   });
 
   useEffect(() => {
-    let disconnect = null, stopSimulation = null, disposed = false;
-    const engine = createEngine(containerRef.current, {
-      assetBase: ASSET_BASE,
-      mode: useMissionStore.getState().mode,
-      tier: tierFromUrl(),
-      debug: import.meta.env.DEV,
-      onStatus: (text) => callbacks.current.onStatus?.(text),
-      onError: (err) => callbacks.current.onError?.(err),
-    });
+    const container = containerRef.current;
+    if (!container) return undefined;
+
+    let engine;
+    let live = true;
+    let disconnect = null, stopSimulation = null;
+    const current = () => live && (engine === undefined || engineRef.current === engine);
+    try {
+      engine = createEngine(container, {
+        assetBase: ASSET_BASE,
+        mode: useMissionStore.getState().mode,
+        tier: tierFromUrl(),
+        debug: import.meta.env.DEV,
+        // Identity checks keep a disposed StrictMode/retry engine from writing stale progress into React.
+        onStatus: (text) => { if (current()) callbacks.current.onStatus?.(text); },
+        onProgress: (progress) => { if (current()) callbacks.current.onProgress?.(progress); },
+        onError: (err) => { if (current()) callbacks.current.onError?.(err); },
+      });
+    } catch (err) {
+      // Missing WebGL 2, or a synchronous WebGLRenderer failure.
+      live = false;
+      callbacks.current.onError?.(err);
+      return undefined;
+    }
+
+    engineRef.current = engine;
     engine.ready.then(() => {
-      if (disposed) return;
+      if (!current()) return;
       disconnect = connectEngine(engine);
       stopSimulation = startSimulation(engine, { mock: new URLSearchParams(window.location.search).get('mock') === '1' });
       callbacks.current.onReady?.();
     }, () => {});
     return () => {
-      disposed = true;
+      live = false;
+      if (engineRef.current === engine) engineRef.current = null;
       if (stopSimulation) stopSimulation();
       if (disconnect) disconnect();
       engine.dispose();
