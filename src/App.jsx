@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import EngineView from './components/EngineView.jsx';
 import ModeSwitch from './components/ModeSwitch.jsx';
+import { useMissionStore, setMode } from './state/store.js';
 import './App.css';
 
 const HINTS = {
@@ -9,13 +10,12 @@ const HINTS = {
 };
 
 export default function App() {
-  const [mode, setMode] = useState('walk');
+  const mode = useMissionStore((s) => s.mode);
   const [load, setLoad] = useState({ state: 'loading', text: 'Starting…' });
 
   return (
     <div className="app">
       <EngineView
-        mode={mode}
         onStatus={(text) => { if (text) setLoad({ state: 'loading', text }); }}
         onReady={() => setLoad({ state: 'ready', text: '' })}
         onError={(err) => setLoad({ state: 'error', text: err.message })}

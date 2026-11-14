@@ -5,11 +5,16 @@
 //   const engine = createEngine(container, { assetBase, mode, onStatus, onError });
 //   await engine.ready;          // rejects if loading fails
 //   engine.setMode('plan' | 'walk');
+//   engine.setLayer(0..4); engine.setSky('clear_day'); engine.setRoute([[x, z], ...]);
+//   engine.heightAt(x, z); engine.slopeAt(x, z); engine.lineOfSight(a, b); engine.getPlayer();
 //   engine.dispose();
+// The full contract is in docs/STATE_AND_ENGINE.md.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as SH from './shaders.js';
 import { createAssets, b64u16, b64u8 } from './assets.js';
+import { decodeTerrainJson, decodeRingJson } from './queries.js';
+import { createRouteLine } from './routeLine.js';
 import { createUniforms } from './uniforms.js';
 import { TIERS, detectTier } from './tiers.js';
 import { createTerrain } from './terrain.js';
@@ -24,13 +29,17 @@ import { createProps } from './props.js';
 import { createHabitat } from './habitat.js';
 import { createView, createViewState } from './view.js';
 
+export const LAYERS = ['none', 'slope hazard', 'elevation', 'rock abundance', 'outcrop'];
+export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
+
 /**
  * @param {HTMLElement} container element the canvas fills; its size drives the render size
  * @param {{ assetBase: string, mode?: 'plan' | 'walk', onStatus?: (text: string) => void, onError?: (err: Error) => void }} options
  */
 export function createEngine(container, { assetBase, mode = 'walk', onStatus = () => {}, onError = () => {} } = {}) {
   if (!assetBase) throw new Error('createEngine: assetBase is required');
-  let alive = true, started = false, requestedMode = mode, viewCtl = null;
+  let alive = true, started = false, requestedMode = mode, viewCtl = null, routeLine = null;
+  const pending = { sky: null, route: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
   const status = (t) => { if (alive) onStatus(t); };
   const fail = (e) => { if (alive) onError(e instanceof Error ? e : new Error(String(e))); };
@@ -105,10 +114,8 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
     status('Loading terrain data…');
     const [tj, rj, pj, rocksJ] = await Promise.all([assets.json('terrain.json'), assets.json('ring.json'), assets.json('atmosphere_presets.json'), assets.json('rocks.json')]);
     if (!alive) return;
-    const u = b64u16(tj.heights_u16_b64), h = new Float32Array(u.length); for (let i = 0; i < u.length; i++) h[i] = u[i] / 65535 * tj.range_m;
-    ctx.T = { n: tj.n, W: tj.width_m, H: tj.depth_m, h, dens: b64u8(tj.density_u8_b64), dn: tj.density_n, base: tj.base_elev_m };
-    const ru = b64u16(rj.heights_u16_b64), rh = new Float32Array(ru.length); for (let i = 0; i < ru.length; i++) rh[i] = rj.min_m + ru[i] / 65535 * rj.range_m;
-    ctx.RING = { n: rj.n, size: rj.size_m, h: rh }; U.uSize.value.set(ctx.T.W, ctx.T.H); U.uRingSize.value = ctx.RING.size;
+    ctx.T = decodeTerrainJson(tj, b64u16, b64u8);
+    ctx.RING = decodeRingJson(rj, b64u16); U.uSize.value.set(ctx.T.W, ctx.T.H); U.uRingSize.value = ctx.RING.size;
     ctx.PRESETS = pj.presets; U.uFadeStart.value = pj.terrain_detail_fade_m.start; U.uFadeEnd.value = pj.terrain_detail_fade_m.end;
 
     // subsystems: created now (terrain data is known), loaded below in the bench's order
@@ -150,12 +157,20 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
     U.uRelief.value = tj.range_m; sys.route.data = await assets.json('route.json'); if (!alive) return;
     await sys.habitat.init(); if (!alive) return;
 
+    routeLine = createRouteLine(ctx);
+    if (pending.sky) applyPreset(ctx, pending.sky);
+    routeLine.set(pending.route);
     viewCtl.setMode(requestedMode); started = true;
     status('');
     booted = last = performance.now();
     renderer.setAnimationLoop(tick);
   })();
   ready.catch((e) => { console.error(e); fail(e); });
+
+  function terrainQueries() {
+    if (!ctx.terrain) throw new Error('engine is not ready: wait for engine.ready before querying the terrain');
+    return ctx.terrain.queries;
+  }
 
   return {
     ready,
@@ -164,6 +179,33 @@ export function createEngine(container, { assetBase, mode = 'walk', onStatus = (
       if (m !== 'plan' && m !== 'walk') throw new Error('setMode: expected "plan" or "walk", got ' + m);
       requestedMode = m;
       if (started) viewCtl.setMode(m);   // before boot ends, the mode is applied when ready
+    },
+    /** Data layer drawn on the terrain: 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop. */
+    setLayer(n) {
+      if (!Number.isInteger(n) || n < 0 || n >= LAYERS.length) throw new Error('setLayer: expected 0-' + (LAYERS.length - 1) + ', got ' + n);
+      U.uLayer.value = n;
+      if (sys.arms && sys.arms.L) { sys.arms.draw(); sys.arms.tap = 0.35; }   // the wrist screen shows the active layer
+    },
+    /** Atmosphere preset: 'clear_day' | 'dust_storm' | 'late_afternoon' | 'night'. */
+    setSky(name) {
+      if (!SKIES.includes(name)) throw new Error('setSky: expected one of ' + SKIES.join(', ') + ', got ' + name);
+      if (started) applyPreset(ctx, name); else pending.sky = name;
+    },
+    /** Route drawn on the ground, [[x, z], ...] in metres. null clears it. */
+    setRoute(path) {
+      if (path !== null && !(Array.isArray(path) && path.every((p) => Array.isArray(p) && p.length >= 2 && Number.isFinite(p[0]) && Number.isFinite(p[1])))) throw new Error('setRoute: expected [[x, z], ...] or null');
+      if (started) routeLine.set(path); else pending.route = path;
+    },
+    /** Terrain height (m) at x, z. Available once ready. */
+    heightAt(x, z) { return terrainQueries().heightAt(x, z); },
+    /** Slope (degrees) at x, z. Available once ready. */
+    slopeAt(x, z) { return terrainQueries().slopeAt(x, z); },
+    /** Line of sight between two { x, y?, z } points (no y = eye height above ground). Available once ready. */
+    lineOfSight(a, b, options) { return terrainQueries().lineOfSight(a, b, options); },
+    /** Player position and heading (degrees clockwise from north), and the current mode. */
+    getPlayer() {
+      const v = ctx.view, deg = ((v.yaw * 180 / Math.PI) % 360 + 360) % 360;
+      return { x: v.eye.x, z: v.eye.z, headingDeg: deg, mode: v.mode === 'eye' ? 'walk' : 'plan' };
     },
     dispose() {
       if (!alive) return;
