@@ -21,6 +21,9 @@ function relevantState(s) {
     waypoints: s.route?.waypoints,
     nextIndex: s.route?.nextIndex,
     zones: s.hazards?.zones,
+    partnerX: s.crew?.[0]?.x,
+    partnerZ: s.crew?.[0]?.z,
+    partnerLink: s.crew?.[0]?.link,
   };
 }
 
@@ -31,7 +34,10 @@ function changed(prev, next) {
     || prev.path !== next.path
     || prev.waypoints !== next.waypoints
     || prev.nextIndex !== next.nextIndex
-    || prev.zones !== next.zones;
+    || prev.zones !== next.zones
+    || prev.partnerX !== next.partnerX
+    || prev.partnerZ !== next.partnerZ
+    || prev.partnerLink !== next.partnerLink;
 }
 
 export default function Minimap({ tracker }) {
@@ -80,6 +86,7 @@ export default function Minimap({ tracker }) {
         progress: lastProgress,
         shelters,
         zones: state.hazards?.zones,
+        partner: state.crew?.[0] ?? null,
       });
     }
 
@@ -183,6 +190,7 @@ export default function Minimap({ tracker }) {
         <span><i className="hud-map-key hud-map-key-shelter" />Refuge</span>
         <span><i className="hud-map-key hud-map-key-hazard" />Hazard</span>
         <span><i className="hud-map-key hud-map-key-hab" />Habitat</span>
+        <span><i className="hud-map-key hud-map-key-partner" />Partner</span>
       </div>
     </div>
   );

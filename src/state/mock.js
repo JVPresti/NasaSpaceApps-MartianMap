@@ -22,7 +22,7 @@ export function createMockState() {
     navigation: { x: 8, z: 70, headingDeg: 354, errorM: 0.4, fixMode: 'terrain fix', lastFixSec: 3 * 60 },
     route: { waypoints: WAYPOINTS, path: WAYPOINTS.map((w) => [w.x, w.z]), nextIndex: 2, visited: [], distanceM: 930, climbM: 30, steepestSlopeDeg: 23, etaSec: 15 * 60, reason: null, decision: 'pending', skipped: [] },
     environment: { dustOpacity: 0.62, tempC: -18, windMs: 8, pressurePa: 724, doseRateUgyH: 16, doseUgy: 16.1 },
-    crew: [{ id: 'EV2', name: 'EV2', color: [0.05, 0.25, 0.9], x: 15, z: 39, oxygenPct: 81, batteryPct: 70 }],
+    crew: [{ id: 'EV2', name: 'EV2', color: [1, 0.32, 0.03], x: 15, z: 39, rangeM: 31.8, bearingDeg: 12.7, oxygenPct: 81, batteryPct: 70, status: 'nominal', separation: 'nominal', separationLimitM: 100, separationCautionM: 80 }],
   };
   const sources = {};
   for (const section of ['mission', 'suit', 'navigation', 'route', 'environment']) for (const key of Object.keys(state[section])) sources[section + '.' + key] = SIM;
