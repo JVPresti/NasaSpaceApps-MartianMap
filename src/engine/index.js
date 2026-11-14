@@ -16,6 +16,8 @@ import { createAssets, b64u16, b64u8 } from './assets.js';
 import { buildAssetManifest, ROCK_NAMES } from './assetManifest.js';
 import { decodeTerrainJson, decodeRingJson } from './queries.js';
 import { createRouteGlow, validPath } from './routeGlow.js';
+import { createShelterHighlight } from './shelterHighlight.js';
+import { validShelter } from './shelterRules.js';
 import { createUniforms } from './uniforms.js';
 import { TIERS, detectTier } from './tiers.js';
 import { createTerrain } from './terrain.js';
@@ -50,7 +52,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
   assertWebGL2();
 
   let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null;
-  const pending = { sky: null, route: null };   // set before boot ends, applied when ready
+  const pending = { sky: null, route: null, shelter: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -124,6 +126,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     ctx.terrain.buildTerrain(t); ctx.terrain.computeShadows(t.shadowRes); sys.rocks.reset();
     sys.habitat.reground();   // the rebuilt mesh has slightly different heights
     if (sys.routeGlow) sys.routeGlow.rebuild();  // re-drape the route on the new mesh
+    if (sys.shelter) sys.shelter.rebuild();
   }
 
   // ---------------------------------------------------------------- frame loop (bench lines 826-868)
@@ -145,6 +148,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     if (sys.arms.L) sys.arms.L.g.visible = sys.arms.R.g.visible = eyeMode;   // first-person arms only in Walk
     U.uTime.value += dt; sys.partner.update(dt); sys.arms.update(dt); sys.legs.update(dt, eyeMode ? ctx.view.moveSpeed : 0); sys.props.update(dt); sys.habitat.update(dt);
     sys.routeGlow.update(dt, eyeMode ? ctx.view.eye : null);
+    sys.shelter.update(dt, ctx.view.eye, camera);
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
     renderer.render(scene, camera);
@@ -222,6 +226,8 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     sys.routeGlow = createRouteGlow(ctx);
     if (pending.sky) applyPreset(ctx, pending.sky);
     sys.routeGlow.setPath(pending.route);
+    sys.shelter = createShelterHighlight(ctx);
+    sys.shelter.set(pending.shelter);
     viewCtl.setMode(requestedMode); started = true;
     booted = last = performance.now();
     renderer.setAnimationLoop(tick);
@@ -294,6 +300,14 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     setRoute(path) {
       if (path !== null && !validPath(path)) throw new Error('setRoute: expected [[x, z], ...] with at least two points, or null');
       if (started) sys.routeGlow.setPath(path); else pending.route = path;
+    },
+    /**
+     * Shelter highlighted in green (shelterHighlight.js): safe zone on the ground, a column of light and a distance label.
+     * Takes an entry of public/data/shelters.json ({ id, name, x, z, type, protection }); null fades it out.
+     */
+    setShelter(shelter) {
+      if (shelter !== null && !validShelter(shelter)) throw new Error('setShelter: expected { x, z } in metres, or null');
+      if (started) sys.shelter.set(shelter); else pending.shelter = shelter;
     },
     /** Terrain height (m) at x, z. Available once ready. */
     heightAt(x, z) { return terrainQueries().heightAt(x, z); },
