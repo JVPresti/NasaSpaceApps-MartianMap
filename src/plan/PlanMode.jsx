@@ -26,7 +26,7 @@ export default function PlanMode({ engine, active }) {
 
   const setWaypoints = (list) => {
     useMissionStore.setState((state) => ({
-      route: { ...state.route, waypoints: list, decision: 'pending', nextIndex: 0, visited: [] },   // an edited route starts over
+      route: { ...state.route, waypoints: list, decision: 'pending', nextIndex: 0, visited: [], skipped: [] },   // an edited route starts over
     }));
   };
 
