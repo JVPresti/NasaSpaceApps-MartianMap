@@ -2,7 +2,7 @@
 // Ported from docs/marswalk-assets/testbench-reference/main.js (lines 61-129, 138-163).
 import * as THREE from 'three';
 import * as SH from './shaders.js';
-import { bilinear, createHeightQueries } from './queries.js';
+import { bilinear, triangleHeight, createHeightQueries } from './queries.js';
 
 /**
  * ctx.T = { n, W, H, h, dens, dn, base }, ctx.RING = { n, size, h } must be loaded first.
@@ -15,6 +15,8 @@ export function createTerrain(ctx) {
   // height on the mesh that is actually drawn in this tier (so rocks sit on the visible surface)
   let meshGrid = null; // { n, h }
   const meshH = (x, z) => bilinear(meshGrid.h, meshGrid.n, (x / T.W + 0.5) * (meshGrid.n - 1), (z / T.H + 0.5) * (meshGrid.n - 1));
+  // the same mesh, read on the triangles the index buffer below draws (bilinear differs by up to 0.24 m on Low)
+  const meshTriH = (x, z) => triangleHeight(meshGrid.h, meshGrid.n, (x / T.W + 0.5) * (meshGrid.n - 1), (z / T.H + 0.5) * (meshGrid.n - 1));
   function density(x, z) {
     const n = T.dn, c = Math.max(0, Math.min(n - 1, Math.floor((x / T.W + 0.5) * n))), r = Math.max(0, Math.min(n - 1, Math.floor((z / T.H + 0.5) * n)));
     const g = T.dens[r * n + c] / 255;
@@ -23,7 +25,7 @@ export function createTerrain(ctx) {
 
   const group = new THREE.Group(); scene.add(group);
   const api = {
-    inTile, tileH, ringH, groundH, meshH, density, group, queries,
+    inTile, tileH, ringH, groundH, meshH, meshTriH, density, group, queries,
     /** ShaderMaterial shared by all terrain chunks; set once the textures are loaded. */
     material: null,
     shadowTex: null,

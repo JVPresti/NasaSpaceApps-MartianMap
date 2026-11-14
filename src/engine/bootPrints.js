@@ -1,26 +1,32 @@
 // Boot prints (issue #46): the player and the partner leave prints on the ground at every step, left and right in turn.
 // They stay for the whole EVA, so the astronaut's own track shows the way back when visibility drops.
-//   - placement: bootPrintRules.js (one step tracker per walker)
-//   - drawing: one instanced mesh for everyone, a dent in the regolith (bootPrints.shaders.js)
-//   - bounded: one ring buffer of KEEP prints; past it, the oldest go first. The same on both tiers, so an automatic
-//     switch to Low keeps every print; Low only draws them less far.
+//   - placement: bootPrintRules.js (one step tracker and one ring of prints per walker)
+//   - drawing: one instanced mesh for everyone, a dent in the regolith (bootPrints.shaders.js). Slots [0, KEEP_PARTNER)
+//     hold the partner's ring, the player's ring follows, so the partner's patrol never pushes out the player's trail.
+//   - seated on the triangles the terrain mesh draws (terrain.meshTriH), and placed again on every tier change.
 //
-//   sys.prints.setTier(tier)   'high' | 'low': how far prints are drawn
+//   sys.prints.setTier(tier)   'high' | 'low': how far prints are drawn; re-seats every print on the new mesh
+//   sys.prints.rebuild()       re-seat every print after the terrain mesh changes
 //   sys.prints.update(dt)      once per frame
 //   sys.prints.clear()         a new EVA
 import * as THREE from 'three';
 import * as SH from './bootPrints.shaders.js';
-import { createStepTracker } from './bootPrintRules.js';
+import { createStepTracker, createPrintStore, seatPrint, KEEP_PLAYER, KEEP_PARTNER } from './bootPrintRules.js';
 
-const KEEP = 5000;                               // about 1.2 km of walking each for player and partner
 const DRAW_TO_M = { high: 80, low: 45 };         // prints fade out by this distance
-const SOLE_W = 0.15, SOLE_L = 0.34;              // Z-2 boot sole, metres
+// The quad around one print. The Z-2 sole is 0.15 x 0.34 m (the shader divisors 0.075 and 0.17); the quad is larger so
+// the dent's rim at the toe and heel fades out inside it instead of stopping at a straight edge.
+const QUAD_W = 0.24, QUAD_L = 0.44;
 const LIFT_M = 0.015;
+const FLOATS_PER_MATRIX = 16;
 
 export function createBootPrints(ctx) {
   const { scene, U, sys, view } = ctx;
-  const { meshH } = ctx.terrain;
-  const uniforms = { uSunDir: U.uSunDir, uFogK: U.uFogK, uFadeFar: { value: DRAW_TO_M.high } };
+  const { meshTriH } = ctx.terrain;
+  const uniforms = {
+    uSunDir: U.uSunDir, uFogK: U.uFogK, uDust: U.uDust, uDustK: U.uDustK, uDustOff: U.uDustOff,
+    uFadeFar: { value: DRAW_TO_M.high },
+  };
   const material = new THREE.ShaderMaterial({
     uniforms, vertexShader: SH.PRINT_VERT, fragmentShader: SH.PRINT_FRAG,
     transparent: true, depthWrite: false,
@@ -28,70 +34,103 @@ export function createBootPrints(ctx) {
     blendSrc: THREE.DstColorFactor, blendDst: THREE.SrcColorFactor,   // result = 2 x print x ground; 0.5 = unchanged
     polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4,
   });
-  const geo = new THREE.PlaneGeometry(SOLE_W, SOLE_L);
-  geo.rotateX(-Math.PI / 2);   // lie flat: x across, z along (toe toward -z)
 
-  let mesh = null, cap = 0, next = 0, count = 0, aSide = null, aSeed = null;
-  const walkers = { player: createStepTracker(), partner: createStepTracker() };
+  const walkers = {
+    partner: { base: 0, store: createPrintStore(KEEP_PARTNER), tracker: createStepTracker() },
+    player: { base: KEEP_PARTNER, store: createPrintStore(KEEP_PLAYER), tracker: createStepTracker() },
+  };
+  const total = KEEP_PARTNER + KEEP_PLAYER;
+  const geometry = new THREE.PlaneGeometry(QUAD_W, QUAD_L);
+  geometry.rotateX(-Math.PI / 2);   // lie flat: x across, z along (toe toward -z)
+  const aSide = new THREE.InstancedBufferAttribute(new Float32Array(total), 1), aSeed = new THREE.InstancedBufferAttribute(new Float32Array(total), 1);
+  geometry.setAttribute('aSide', aSide); geometry.setAttribute('aSeed', aSeed);
+  const mesh = new THREE.InstancedMesh(geometry, material, total);
+  const matrices = mesh.instanceMatrix;
+  matrices.array.fill(0);   // an empty slot collapses to a point and draws nothing (three.js starts them as identity)
+  mesh.count = 0; mesh.frustumCulled = false; mesh.renderOrder = 1;
+  scene.add(mesh);
+
   const m = new THREE.Matrix4(), up = new THREE.Vector3(), fwd = new THREE.Vector3(), right = new THREE.Vector3(), pos = new THREE.Vector3();
+  const seat = { y: 0, ux: 0, uy: 1, uz: 0 };
 
-  function build(n) {
-    if (mesh) { scene.remove(mesh); mesh.dispose(); }
-    cap = n; next = 0; count = 0;
-    const g = geo.clone();
-    aSide = new THREE.InstancedBufferAttribute(new Float32Array(n), 1); aSeed = new THREE.InstancedBufferAttribute(new Float32Array(n), 1);
-    g.setAttribute('aSide', aSide); g.setAttribute('aSeed', aSeed);
-    mesh = new THREE.InstancedMesh(g, material, n);
-    mesh.count = 0; mesh.frustumCulled = false; mesh.renderOrder = 1;
-    scene.add(mesh);
+  // a print lies on the drawn triangles, tilted with the slope, toe pointing the way the walker faced
+  function place(w, s) {
+    const { x, z, yaw } = w.store, px = x[s], pz = z[s], slot = w.base + s;
+    seatPrint(meshTriH, px, pz, yaw[s], QUAD_W / 2, QUAD_L / 2, LIFT_M, seat);
+    up.set(seat.ux, seat.uy, seat.uz);
+    fwd.set(Math.sin(yaw[s]), 0, -Math.cos(yaw[s]));
+    right.crossVectors(fwd, up).normalize(); fwd.crossVectors(up, right).normalize();
+    pos.set(px, seat.y, pz);
+    m.makeBasis(right, up, fwd.negate()).setPosition(pos);   // local -z = toe = walking direction
+    m.toArray(matrices.array, slot * FLOATS_PER_MATRIX);
+    return slot;
   }
 
-  // a print lies on the drawn mesh, tilted with the slope, toe pointing the way the walker went
-  function place(p) {
-    const { x, z, yaw, side } = p, e = 0.25;
-    up.set(meshH(x - e, z) - meshH(x + e, z), 2 * e, meshH(x, z - e) - meshH(x, z + e)).normalize();
-    fwd.set(Math.sin(yaw), 0, -Math.cos(yaw));
-    right.crossVectors(fwd, up).normalize(); fwd.crossVectors(up, right).normalize();
-    pos.set(x, meshH(x, z) + LIFT_M, z);
-    m.makeBasis(right, up, fwd.negate()).setPosition(pos);   // local -z = toe = walking direction
-    mesh.setMatrixAt(next, m);
-    aSide.setX(next, side); aSeed.setX(next, (Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1 * 0.5 + 0.5);
-    next = (next + 1) % cap; count = Math.min(count + 1, cap);
+  function drawCount() {
+    const p = walkers.player.store.count;
+    return p ? KEEP_PARTNER + p : walkers.partner.store.count;   // empty partner slots in between draw nothing
   }
 
   // no prints on the habitat's stairs, porch and floors
   const onGround = (x, z) => !(sys.habitat && sys.habitat.root && sys.habitat.zone(x, z));
 
-  function feed(tracker, x, z, dt, facingYaw) {
-    let added = 0;
-    for (const p of tracker.track(x, z, dt, facingYaw)) if (onGround(p.x, p.z)) { place(p); added++; }
-    return added;
+  let added = 0;
+  const emitter = (w) => (x, z, yaw, side) => {
+    if (!onGround(x, z)) return;
+    const s = w.store.add(x, z, yaw, side);
+    if (s < 0) return;   // the walker already left a print here
+    const slot = place(w, s);
+    aSide.array[slot] = side;
+    aSeed.array[slot] = (Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1 * 0.5 + 0.5;
+    matrices.addUpdateRange(slot * FLOATS_PER_MATRIX, FLOATS_PER_MATRIX);
+    aSide.addUpdateRange(slot, 1); aSeed.addUpdateRange(slot, 1);
+    added++;
+  };
+  const emitPlayer = emitter(walkers.player), emitPartner = emitter(walkers.partner);
+
+  function rebuild() {
+    for (const w of [walkers.partner, walkers.player]) for (let s = 0; s < w.store.count; s++) place(w, s);
+    matrices.clearUpdateRanges(); matrices.needsUpdate = true;   // every matrix moved: upload the whole buffer once
   }
 
   return {
-    get count() { return count; },
+    mesh,
+    get count() { return walkers.player.store.count + walkers.partner.store.count; },
+    /** Prints per walker and memory: the CPU rings and the GPU buffers (one matrix and two floats per slot). */
+    stats() {
+      return {
+        player: walkers.player.store.count, partner: walkers.partner.store.count, drawn: mesh.count,
+        cpuBytes: walkers.player.store.bytes + walkers.partner.store.bytes + matrices.array.byteLength + aSide.array.byteLength + aSeed.array.byteLength,
+        gpuBytes: matrices.array.byteLength + aSide.array.byteLength + aSeed.array.byteLength,
+      };
+    },
     /** @param {'high' | 'low'} tier */
     setTier(tier) {
       uniforms.uFadeFar.value = DRAW_TO_M[tier] || DRAW_TO_M.low;
-      if (!mesh) build(KEEP);
+      rebuild();
     },
-    /** @param {number} dt */
-    update(dt) {
-      if (!mesh) return;
-      let added = 0;
-      // the player, in Walk mode and not in the middle of a crouching sampling clip
-      if (view.mode === 'eye' && !(sys.arms && sys.arms.clip)) added += feed(walkers.player, view.eye.x, view.eye.z, dt, view.yaw);
-      else walkers.player.reset();
+    rebuild,
+    /** @param {number} _dt */
+    update(_dt) {
+      added = 0;
+      // the player, in Walk mode and not in the middle of a crouching sampling clip; Shift is the jog (view.js)
+      const keys = view.keys || {};
+      if (view.mode === 'eye' && !(sys.arms && sys.arms.clip)) walkers.player.tracker.track(view.eye.x, view.eye.z, view.yaw, !!(keys.ShiftLeft || keys.ShiftRight), emitPlayer);
+      else walkers.player.tracker.reset();
       const pr = sys.partner && sys.partner.root;
-      // the partner model faces +z at rotation.y = 0, which is yaw = PI in the view.yaw convention
-      if (pr && pr.visible && !sys.partner.bending) added += feed(walkers.partner, pr.position.x, pr.position.z, dt, Math.PI - pr.rotation.y);
-      else walkers.partner.reset();
+      // the partner model faces +z at rotation.y = 0, which is yaw = PI in the view.yaw convention; it only walks
+      if (pr && pr.visible && !sys.partner.bending) walkers.partner.tracker.track(pr.position.x, pr.position.z, Math.PI - pr.rotation.y, false, emitPartner);
+      else walkers.partner.tracker.reset();
       if (added) {
-        mesh.count = count;
-        mesh.instanceMatrix.needsUpdate = true; aSide.needsUpdate = true; aSeed.needsUpdate = true;
+        mesh.count = drawCount();
+        matrices.needsUpdate = true; aSide.needsUpdate = true; aSeed.needsUpdate = true;
       }
     },
-    clear() { next = 0; count = 0; if (mesh) mesh.count = 0; walkers.player.reset(); walkers.partner.reset(); },
-    dispose() { if (mesh) { scene.remove(mesh); mesh.geometry.dispose(); mesh.dispose(); } geo.dispose(); material.dispose(); },
+    clear() {
+      for (const w of [walkers.partner, walkers.player]) { w.store.clear(); w.tracker.reset(); }
+      matrices.array.fill(0); matrices.clearUpdateRanges(); matrices.needsUpdate = true;
+      mesh.count = 0;
+    },
+    dispose() { scene.remove(mesh); geometry.dispose(); mesh.dispose(); material.dispose(); },
   };
 }

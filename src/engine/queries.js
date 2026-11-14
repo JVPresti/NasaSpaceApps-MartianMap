@@ -8,6 +8,20 @@ export function bilinear(arr, n, fx, fy) {
   return (arr[i] * (1 - tx) + arr[i + 1] * tx) * (1 - ty) + (arr[i + n] * (1 - tx) + arr[i + n + 1] * tx) * ty;
 }
 
+/**
+ * Height on a grid drawn as triangles, the way terrain.js splits each cell: the diagonal runs from (x0 + 1, y0) to
+ * (x0, y0 + 1), so the cell is triangles a-d-b and b-d-e with a = (x0, y0), b = (x0 + 1, y0), d = (x0, y0 + 1),
+ * e = (x0 + 1, y0 + 1). Unlike bilinear(), this is the surface the GPU actually draws.
+ */
+export function triangleHeight(arr, n, fx, fy) {
+  const x0 = Math.max(0, Math.min(n - 2, Math.floor(fx))), y0 = Math.max(0, Math.min(n - 2, Math.floor(fy)));
+  const tx = Math.max(0, Math.min(1, fx - x0)), ty = Math.max(0, Math.min(1, fy - y0)), i = y0 * n + x0;
+  const b = arr[i + 1], d = arr[i + n];
+  if (tx + ty <= 1) { const a = arr[i]; return a + (b - a) * tx + (d - a) * ty; }
+  const e = arr[i + n + 1];
+  return e + (d - e) * (1 - tx) + (b - e) * (1 - ty);
+}
+
 /** Decodes terrain.json into the T object the engine uses: { n, W, H, h, dens, dn, base }. */
 export function decodeTerrainJson(tj, decodeU16, decodeU8) {
   const u = decodeU16(tj.heights_u16_b64), h = new Float32Array(u.length);

@@ -287,6 +287,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       partnerCommand: (name) => sys.partner.command(name),
       setPartnerSource: (source) => sys.partner.setSource(source),
       partnerState: () => sys.partner.state,
+      prints: () => sys.prints.stats(),
       // camera and player pose, for checking speed and that the camera follows the ground smoothly
       pose: () => ({ camY: camera.position.y, x: ctx.view.eye.x, z: ctx.view.eye.z, yaw: ctx.view.yaw, pitch: ctx.view.pitch, mode: ctx.view.mode, moveSpeed: ctx.view.moveSpeed }),
     };
@@ -409,6 +410,8 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
         visible: inFront && Math.abs(p.x) <= 1 && Math.abs(p.y) <= 1,
       };
     },
+    /** Removes every boot print (bootPrints.js): the start of a new EVA. */
+    clearPrints() { if (sys.prints) sys.prints.clear(); },
     /** Player position and heading (degrees clockwise from north), and the current mode. */
     /**
      * Who drives the partner astronaut: a partner source (src/engine/partnerSource.js, docs/PARTNER.md).
@@ -442,6 +445,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       if (debug && window.__marswalk && window.__marswalk.stats === stats) delete window.__marswalk;
       renderer.setAnimationLoop(null);
       ac.abort(); ro.disconnect(); controls.dispose();
+      if (sys.prints) sys.prints.dispose();
       const textures = new Set(), materials = new Set();
       scene.traverse((o) => {
         if (o.geometry) o.geometry.dispose();
