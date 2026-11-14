@@ -102,13 +102,20 @@ Open the app with `?mock=1` to fill the store with plausible values from `src/st
 ## The engine API
 
 ```js
-const engine = createEngine(container, { assetBase, mode, onStatus, onError });
+const engine = createEngine(container, { assetBase, mode, onStatus, onError, onLockChange, inputEnabled });
 await engine.ready;
 ```
 
 | Call | Behaviour |
 |---|---|
-| `setMode('plan' \| 'walk')` | Switches the camera. Can be called before `ready`; it is applied when ready. |
+| `setMode('plan' \| 'walk')` | Switches the camera. Can be called before `ready`; it is applied when ready. Plan cancels any pending pointer-lock request and releases the lock, so a late Walk grant cannot capture the mouse in the map. |
+| `setInputEnabled(enabled)` | Gates walk/orbit input. Disabling clears every held key and stops orbit controls, so WASD, arrows and mouse look cannot act behind a menu. Can be called before `ready`. |
+| `requestPointerLock()` | Asks the browser to lock the pointer on the engine canvas. Supports the legacy void form and the promise form; resolves `true` only after a real grant and `false` on refusal, an unsupported browser, the 3 s watchdog, release or dispose. A browser promise that resolves while `document.pointerLockElement` is still not the canvas is not success: the change event settles the request. Concurrent calls share one request. A call before `ready` is queued until the canvas exists. |
+| `releasePointerLock()` | Releases the lock now. A queued pre-ready request resolves `false`. |
+| `isPointerLocked()` | `true` when `document.pointerLockElement` is the engine canvas. |
+| `setQuality('auto' \| 'high' \| 'low')` | Quality choice. `auto` runs the real `detectTier` again and re-enables the existing three-slow-seconds downgrade; `high`/`low` force a tier and stop the automatic downgrade. Changes are serialised and coalesced, so rapid choices cannot interleave terrain rebuilds. Resolves with `{ tier, auto, pending, error, gpu }`; a failed texture download keeps the current scene and returns the error in `error`. |
+| `getQuality()` | The same quality state without using the development-only `window.__marswalk` hook. |
+| `resetSession()` | Returns the scene to the EVA spawn: input off, lock released, Walk mode, camera at `START`, route/shelter/waypoints cleared. The store, clock and simulation restart are done by `src/state/evaSession.js`. Quality is deliberately kept. Returns `false` before ready and is applied at the end of boot. |
 | `setLayer(n)` | Data layer on the terrain: 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop. The wrist screen follows. |
 | `setSky(name)` | Atmosphere preset: `clear_day`, `dust_storm`, `late_afternoon`, `night`. |
 | `setDust(level)` | Storm dust (`src/engine/dust.js`, #27), 0 = clear (the scene as before) to 1 = global storm: thicker, drifting haze on everything (visibility about 1 km), dimmer and redder light with fading shadows, and faint wisps near the helmet. Eased, so a storm builds up. Works on top of any sky preset or blend. |
@@ -123,7 +130,7 @@ await engine.ready;
 | `slopeAt(x, z)` | Slope in degrees, central difference over 2 m. |
 | `lineOfSight(a, b)` | `a`, `b` are `{ x, y?, z }`. A point without `y` is taken at eye height (ground + 1.7 m). Returns `{ clear, blockedAt }` and samples every 2 m. |
 | `project(x, z, y?)` | World point to canvas CSS pixels: `{ x, y, visible, inFront }`. `y` defaults to ground + 2.2 m. Used by the next-waypoint HUD marker (#61). |
-| `setPartnerSource(source | null)` | Who drives the partner astronaut (see [PARTNER.md](PARTNER.md)). The scripted partner is the default; `null` hides it. |
+| `setPartnerSource(source \| null)` | Who drives the partner astronaut (see [PARTNER.md](PARTNER.md)). The scripted partner is the default; `null` hides it. |
 | `partnerCommand(name)` | Scripted actions of the current source: `'toggleCase'`, `'visitHabitat'`. Returns `false` if the source ignores it. |
 | `getSampling()` | `{ phase, holding, target, caseState, caseInReach, actions }` (see [Sampling](#sampling-36)); `null` before `ready`. Runs one aim test, so poll it, never per frame. |
 | `onSampling(listener)` | Sampling events `{ type: 'photo' \| 'collect' \| 'texture' \| 'secured' \| 'sealed' \| 'input', ... }`. Returns an unsubscribe function. Available once ready. |
@@ -131,8 +138,43 @@ await engine.ready;
 | `getPlayer()` | `{ x, z, headingDeg, mode }`. This is the true position, so only the bridge should read it; the interface reads `navigation`. |
 | `dispose()` | Stops everything and frees the GPU. |
 
-- **When they work:** the terrain queries throw before `ready`; `setSky`, `setRoute` and `setDust` before `ready` are stored and applied when ready.
+Options: `inputEnabled: false` starts with gameplay input gated off (the app shell passes this for the start
+screen). `onLockChange(locked)` fires only when the pointer lock actually changes, never per frame. The app
+uses it to pause as soon as the lock is lost in Walk.
+
+- **When they work:** the terrain queries throw before `ready`; `setSky`, `setRoute`, `setDust`, `setInputEnabled`, the
+  pointer-lock request/quality calls and `resetSession` before `ready` are stored and applied when ready.
 - **Same numbers as the simulation:** the queries are plain functions in `src/engine/queries.js`, with no three.js, and they agree with `src/sim/costGrid.js` to within 1 cm. Tests are in `src/engine/queries.test.js`.
+- **Tests without a browser:** the input gate (`src/engine/input.js`), pointer-lock controller
+  (`src/engine/pointerLock.js`), quality controller (`src/engine/quality.js`) and the EVA session order
+  (`src/state/evaSession.js`, with the real store and a fake engine) are plain JavaScript with minimal
+  DOM/EventTarget fakes. They do not test the three.js canvas itself.
+
+### Start, pause and restart (#64)
+
+`src/state/evaSession.js` owns the order of the real contracts. It does not add a second clock.
+
+| Step | Real calls |
+|---|---|
+| App opens | `EngineView` starts the simulation, then `pauseMission()`. The start screen is a real pause: no mission seconds, no suit step and no player input advance behind it. |
+| Start / Resume in Walk | `engine.requestPointerLock()` first. Only after a real `true` grant: `engine.setInputEnabled(true)` and `resumeMission()`. A refusal keeps the pause and shows a retry message. |
+| Resume in Plan | `engine.setInputEnabled(true)` and `resumeMission()`; Plan uses orbit controls and needs no lock. |
+| Esc in the Walk pause menu | No lock request. Esc is a key press, not a user activation for pointer lock, so it cannot capture the mouse: the menu stays paused, cancels any request already in flight, focuses Resume and shows `Press Enter or click Resume to capture the mouse.` Esc inside Controls/Restart returns to the menu; the menu itself keeps the pause. |
+| Esc in the Plan pause menu | Resumes like Resume, because Plan needs no lock. |
+| Esc, H, lock loss | `engine.setInputEnabled(false)`, `pauseMission()`, `engine.releasePointerLock()`. The #59 clock anchors elapsed time at the exact pause write. |
+| Mode change | Every change ends a pending resume. Opening Plan releases the lock and cancels a pending Walk request; if Plan is opened while a Walk request is still pending, its answer is ignored and a late grant released. A superseded request never pauses or resumes the mission. |
+| Restart | `stopSimulation()` → `clearClockSession(defaultSessionStorage())` → `resetStore()` → `engine.resetSession()` → `startSimulation()` → `pauseMission()`. The synchronous pause after start leaves the new clock at elapsed 0. Clearing before the new clock starts is what stops an old persisted EVA reappearing after a remount; the quality tier survives because the engine is not recreated. |
+
+`resumeEva()` takes an optional `isCurrent` check. It runs after the browser answers the lock request and
+before any input or clock write; when the interface paused, changed mode or restarted in the meantime, a
+late grant is released and the attempt is reported as `{ ok: false, stale: true, message: null }` instead
+of resuming behind the menu.
+
+Menus are native `<dialog>` modals (`src/components/Modal.jsx`): `showModal()` makes the scene and top bar
+inert, traps Tab and Shift+Tab, and returns focus when closed. The top bar's mode switch is repeated inside
+the pause menu so Plan remains reachable while paused. `Sources` is disabled with a visible note until #63.
+
+No new store fields were added. Quality belongs to the engine; pause is the existing `mission.paused` path.
 
 ## Simulation runners
 

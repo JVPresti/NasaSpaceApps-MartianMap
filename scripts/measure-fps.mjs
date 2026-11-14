@@ -43,11 +43,13 @@ const SAMPLE = (seconds) => new Promise((resolve) => {
 });
 
 // Each setup runs in the page (page.evaluate serialises the function), using the development hook.
+// Mode changes go through the mission store, because the app pauses safely if the engine releases
+// pointer lock outside a store change (the Plan switch is a real mode change, not a debug shortcut).
 const CASES = [
-  ['Walk, standing outdoors', () => { window.__marswalk.walking(false); window.__marswalk.place(8, 70, -0.11, 0); }],
-  ['Walk, walking outdoors', () => { window.__marswalk.place(8, 70, -0.11, 0); window.__marswalk.walking(true); }],
-  ['Walk, inside the habitat', () => { window.__marswalk.walking(false); window.__marswalk.insideHabitat(); }],
-  ['Plan', () => { window.__marswalk.walking(false); window.__marswalk.setMode('plan'); }],
+  ['Walk, standing outdoors', () => { window.__missionStore.setState({ mode: 'walk' }); window.__marswalk.walking(false); window.__marswalk.place(8, 70, -0.11, 0); }],
+  ['Walk, walking outdoors', () => { window.__missionStore.setState({ mode: 'walk' }); window.__marswalk.place(8, 70, -0.11, 0); window.__marswalk.walking(true); }],
+  ['Walk, inside the habitat', () => { window.__missionStore.setState({ mode: 'walk' }); window.__marswalk.walking(false); window.__marswalk.insideHabitat(); }],
+  ['Plan', () => { window.__marswalk.walking(false); window.__missionStore.setState({ mode: 'plan' }); }],
 ];
 
 const server = await createServer({ server: { port: 0, strictPort: false }, logLevel: 'error' });
@@ -58,7 +60,19 @@ const browser = await puppeteer.launch({ executablePath: browserPath, headless: 
 async function open(query) {
   const page = (await browser.pages())[0] || await browser.newPage();
   await page.goto(base + query, { waitUntil: 'load' });
-  await page.waitForFunction(() => window.__marswalk && document.querySelector('.hint'), { timeout: 180000 });
+  // The app now opens on the start screen, so the hint only exists after Start captures the mouse.
+  await page.waitForFunction(
+    () => window.__marswalk && (document.querySelector('.hint') || document.querySelector('dialog[open].start-dialog .ui-button.primary')),
+    { timeout: 180000 },
+  );
+  if (!(await page.evaluate(() => !!document.querySelector('.hint')))) {
+    await page.click('dialog[open].start-dialog .ui-button.primary');
+    try {
+      await page.waitForFunction(() => document.querySelector('.hint'), { timeout: 15000 });
+    } catch {
+      throw new Error('The start screen did not close. Pointer lock may be unavailable in this automated browser session.');
+    }
+  }
   await page.bringToFront();
   return page;
 }

@@ -12,7 +12,7 @@ function prefersReducedMotion() {
  * Centred loading panel with real file progress, an explainable error state, and a fade that starts
  * only once App has received the engine's first-frame ready signal.
  */
-export default function LoadingScreen({ state, site, onRetry }) {
+export default function LoadingScreen({ state, site, onRetry, onGone }) {
   const { status, stage, progress, loaded, total, error } = state;
   const retryRef = useRef(null);
   const [gone, setGone] = useState(false);
@@ -21,9 +21,9 @@ export default function LoadingScreen({ state, site, onRetry }) {
     if (status !== 'ready') return undefined;
     // App remounts this component on retry, so a transition that was interrupted cannot leak here.
     const delay = prefersReducedMotion() ? 0 : FADE_MS;
-    const timer = setTimeout(() => setGone(true), delay);
+    const timer = setTimeout(() => { setGone(true); onGone?.(); }, delay);
     return () => clearTimeout(timer);
-  }, [status]);
+  }, [status, onGone]);
 
   useEffect(() => {
     if (status === 'error') retryRef.current?.focus();
