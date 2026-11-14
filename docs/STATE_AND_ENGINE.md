@@ -52,6 +52,7 @@ setMode('plan');
 | `suit.marginSec` | O2 time left minus walkback minus the 30 min reserve | suit model | #19 |
 | `suit.status` | `'nominal'`, `'caution'` (margin under 15 min) or `'warning'` (margin at or under 0) | suit model | #19, used by #26 |
 | `navigation.x`, `z`, `headingDeg` | position estimate; heading clockwise from north | engine bridge now; navigation model later | #6, #21, #42 |
+| `navigation.slopeDeg` | terrain slope under the player in degrees (DERIVED from the HiRISE DTM), for the HUD | engine bridge | #20 |
 | `navigation.errorM`, `fixMode`, `lastFixSec` | uncertainty radius, `'terrain fix'` or `'dead reckoning'`, mission time of last fix | navigation model | #21, #42 |
 | `route.waypoints` | `[{ name, x, z }]` | Plan mode, planner | #17 |
 | `route.path` | `[[x, z], ...]`, the format of `route.json` and `planRoute()` | planner | #16, #23 |
@@ -167,6 +168,13 @@ setMissionTimeScale(60);         // or a direct mission.timeScale write
 The runner subscribes to `mission.paused` and `mission.timeScale`, so the suit runner's existing check of `mission.paused` and any direct `storeAdapter.set('mission.paused', true)` are honoured at the exact instant and are not overwritten by the clock. `view.sky` is set once at start from the chosen/restored preset; later time never changes the sky (#73). The clock tags `mission.startedAtMs`, the initial/preset fields and `timeScale` as `SIM` (demo epoch and configuration, not a historical measurement or precise ephemeris); `elapsedSec`, `anchorMs`, `sol` and `lmst` are `DERIVED`.
 
 **Limitations.** The suit runner still keeps its own wall clock for consumables and they do not persist across reload. Changing the mission scale affects mission time only in this issue. There are no visual clock controls yet; use the store actions or a console. No online clock offset or no-pause rule is part of #59.
+
+## The helmet HUD
+
+`src/hud/Hud.jsx` (#20) reads only the store and shows in Walk mode once the scene is ready.
+- **Values shown:** suit (`suit.*`), mission clock (`mission.elapsedSec`, `lmst`), heading and slope (`navigation.*`), the next waypoint (`route.waypoints[route.nextIndex]`, with range, bearing and an ETA at 1 m/s), the environment (`environment.*`) and the most severe active alert (`alerts`).
+- **Unsourced values:** an environment value without an entry in `sources` shows as a dash.
+- **Source tags:** each value shows its tag from `sources` until the shared source-tag component (#62) replaces the inline one.
 
 ## The bridge
 

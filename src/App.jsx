@@ -6,6 +6,7 @@ import RouteLegsPanel from './components/RouteLegsPanel.jsx';
 import EventBanner from './events/EventBanner.jsx';
 import EventDebug from './events/EventDebug.jsx';
 import PlanMode from './plan/PlanMode.jsx';
+import Hud from './hud/Hud.jsx';
 import { useMissionStore, setMode } from './state/store.js';
 import './App.css';
 
@@ -99,6 +100,8 @@ export default function App() {
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={SITE} onRetry={handleRetry} />
 
       {load.status === 'ready' && mode === 'plan' && <RouteLegsPanel />}
+
+      {load.status === 'ready' && mode === 'walk' && <Hud />}
 
       {load.status === 'ready' && <p className="hint">{mode === 'walk' && mouseLocked ? HINTS.walkLocked : HINTS[mode]}</p>}
     </div>
