@@ -1,0 +1,21 @@
+{
+  "id": "dust-storm",
+  "label": "Dust storm",
+  "trigger": { "type": "missionTime", "atSec": 480 },
+  "timeline": [
+    { "atSec": 0, "set": { "environment.dustOpacity": 0.45, "view.skyBlend": 0 } },
+    { "atSec": 60, "set": { "environment.dustOpacity": 0.76, "view.skyBlend": 0.2 } },
+    { "atSec": 120, "set": { "environment.dustOpacity": 1.07, "view.skyBlend": 0.4 } },
+    { "atSec": 180, "set": { "environment.dustOpacity": 1.38, "view.skyBlend": 0.6 } },
+    { "atSec": 240, "set": { "environment.dustOpacity": 1.69, "view.skyBlend": 0.8 } },
+    { "atSec": 300, "set": { "environment.dustOpacity": 2.0, "view.skyBlend": 1 } }
+  ],
+  "alert": {
+    "level": "warning",
+    "text": "Dust storm: opacity rising. Return to the habitat."
+  },
+  "planner": { "action": "replan", "target": "habitat" },
+  "end": { "type": "area", "x": 535.1, "z": 574.1, "radius": 25 },
+  "endSet": { "environment.dustOpacity": 0.45, "view.skyBlend": 0 },
+  "notes": "Opacity values: dust.tau.clear_season 0.45 and dust.tau.storm_2022_peak 2.0 in public/data/hazards.json. Ramp duration 300 s is dust.event.ramp_duration (SIM). The sky blend uses clear_day and dust_storm from atmosphere_presets.json."
+}

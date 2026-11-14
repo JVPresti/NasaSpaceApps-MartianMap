@@ -15,11 +15,11 @@ export function createInitialState() {
     },
     suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
     navigation: { x: null, z: null, headingDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // the estimate, never the truth: no GPS on Mars
-    route: { waypoints: [], path: null, nextIndex: 0, distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js
+    route: { waypoints: [], path: null, nextIndex: 0, distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [] },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js
     environment: { dustOpacity: 0, tempC: null, windMs: null, pressurePa: null, doseRateUgyH: null, doseUgy: null },
     alerts: {},                                     // { [eventId]: { id, eventId, level, text, startedAtSec, active } | null }
     crew: [],                                       // [{ id, name, color, x, z, oxygenPct, batteryPct }]
-    view: { layer: 0, sky: 'late_afternoon' },      // what the engine draws; #59 demo starts in late-afternoon light
+    view: { layer: 0, sky: 'late_afternoon', skyBlend: 0 },   // what the engine draws; #59 demo starts in late-afternoon light
     sources: {},                                    // { 'environment.tempC': { tag: 'DATA' | 'DERIVED' | 'SIM', source } }
   };
 }
@@ -69,6 +69,11 @@ export const setMode = (mode) => { if (mode !== 'walk' && mode !== 'plan') throw
 export const setLayer = (layer) => storeAdapter.set('view.layer', layer);
 export const setSky = (sky) => storeAdapter.set('view.sky', sky);
 export const setRoutePath = (path) => storeAdapter.set('route.path', path);
+/** @param {'pending' | 'go' | 'no-go'} decision */
+export const setRouteDecision = (decision) => {
+  if (!['pending', 'go', 'no-go'].includes(decision)) throw new Error('route decision must be pending, go or no-go');
+  storeAdapter.set('route.decision', decision);
+};
 export const resetStore = () => useMissionStore.setState(createInitialState(), true);
 
 // Mission clock controls. The clock runner subscribes to `mission.paused` and `mission.timeScale`, so these

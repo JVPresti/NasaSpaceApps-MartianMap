@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useMissionStore, setLayer } from '../state/store.js';
 import LayerPanel from './LayerPanel.jsx';
 import PlanChrome from './PlanChrome.jsx';
+import RoutePanel from './RoutePanel.jsx';
+import { useRoutePlanner } from './useRoutePlanner.js';
 import './plan.css';
 
 const ROUTE_URL = import.meta.env.BASE_URL + 'marswalk/assets/route.json';
@@ -18,6 +20,13 @@ export default function PlanMode({ engine, active }) {
   const waypoints = useMissionStore((s) => s.route.waypoints);
   const [routeStatus, setRouteStatus] = useState('loading');
   const [metresPerPixel, setMetresPerPixel] = useState(0);
+  const planner = useRoutePlanner({ waypoints, enabled: active });
+
+  const setWaypoints = (list) => {
+    useMissionStore.setState((state) => ({
+      route: { ...state.route, waypoints: list, decision: 'pending' },
+    }));
+  };
 
   // route.json holds the five placeholder waypoints from the assets team.
   useEffect(() => {
@@ -72,8 +81,9 @@ export default function PlanMode({ engine, active }) {
 
   return (
     <div className="plan-ui">
-      <LayerPanel layer={layer} onLayer={setLayer} waypoints={waypoints} />
+      <LayerPanel layer={layer} onLayer={setLayer} />
 
+      <RoutePanel planner={planner} waypoints={waypoints} onWaypointsChange={setWaypoints} />
       <PlanChrome metresPerPixel={metresPerPixel} />
 
       <p className="plan-readout" role="status">
