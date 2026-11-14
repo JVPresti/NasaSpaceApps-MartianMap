@@ -53,7 +53,7 @@ setMode('plan');
 | `suit.status` | `'nominal'`, `'caution'` (margin under 15 min) or `'warning'` (margin at or under 0) | suit model | #19, used by #26 |
 | `navigation.x`, `z`, `headingDeg` | position estimate; heading clockwise from north | engine bridge now; navigation model later | #6, #21, #42 |
 | `navigation.slopeDeg` | terrain slope under the player in degrees (DERIVED from the HiRISE DTM), for the HUD | engine bridge | #20 |
-| `navigation.errorM`, `fixMode`, `lastFixSec` | uncertainty radius, `'terrain fix'` or `'dead reckoning'`, mission time of last fix | navigation model | #21, #42 |
+| `navigation.errorM`, `fixMode`, `lastFixSec` | uncertainty radius in metres (the ring on the Plan map), `'terrain fix'` or `'dead reckoning'`, mission time (`mission.elapsedSec`) of last fix. Tagged `SIM` | placeholder in `src/sim/navigation.js` now (a terrain fix at start, fixed 0.4 m); drift model later | #21, #42 |
 | `route.waypoints` | `[{ name, x, z }]` | Plan mode, planner | #17 |
 | `route.path` | `[[x, z], ...]`, the format of `route.json` and `planRoute()` | planner | #16, #23 |
 | `route.nextIndex` | index of the next waypoint | waypoint tracking | #61 |
@@ -112,6 +112,7 @@ await engine.ready;
 | `heightAt(x, z)` | Terrain height in metres, from the source grid: the HiRISE tile, or the CTX ring outside it. Relative to the lowest point of the tile; add `terrain.json` `base_elev_m` for MOLA elevation. |
 | `slopeAt(x, z)` | Slope in degrees, central difference over 2 m. |
 | `lineOfSight(a, b)` | `a`, `b` are `{ x, y?, z }`. A point without `y` is taken at eye height (ground + 1.7 m). Returns `{ clear, blockedAt }` and samples every 2 m. |
+| `project(x, z, y?)` | World point to canvas CSS pixels: `{ x, y, visible, inFront }`. `y` defaults to ground + 2.2 m. Used by the next-waypoint HUD marker (#61). |
 | `setPartnerSource(source | null)` | Who drives the partner astronaut (see [PARTNER.md](PARTNER.md)). The scripted partner is the default; `null` hides it. |
 | `partnerCommand(name)` | Scripted actions of the current source: `'toggleCase'`, `'visitHabitat'`. Returns `false` if the source ignores it. |
 | `getPlayer()` | `{ x, z, headingDeg, mode }`. This is the true position, so only the bridge should read it; the interface reads `navigation`. |
@@ -174,6 +175,7 @@ The runner subscribes to `mission.paused` and `mission.timeScale`, so the suit r
 
 `src/hud/Hud.jsx` (#20) reads only the store and shows in Walk mode once the scene is ready.
 - **Values shown:** suit (`suit.*`), mission clock (`mission.elapsedSec`, `lmst`), heading and slope (`navigation.*`), the next waypoint (`route.waypoints[route.nextIndex]`, with range, bearing and an ETA at 1 m/s), the environment (`environment.*`) and the most severe active alert (`alerts`).
+- **Navigation (#21):** a line under the environment strip says how the position was estimated, its error and its age, for example `NAV · terrain fix · ±0.4 m · 3 min ago` (`formatNavLine` in `src/hud/format.js`). Past `NAV_FIX_LIMIT_M` (5 m, SIM) it turns amber and asks the astronaut to stop for a terrain fix. The Plan map shows the same estimate as a marker with an uncertainty ring of radius `navigation.errorM`, placed with `project()` (`src/plan/PlanPositionMarker.jsx`). The drawing is in `src/hud/positionMarker.js`, so the minimap (#60) reuses it with its own world-to-screen function.
 - **Unsourced values:** an environment value without an entry in `sources` shows as a dash.
 - **Source tags:** each value shows its tag from `sources` until the shared source-tag component (#62) replaces the inline one.
 

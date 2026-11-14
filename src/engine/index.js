@@ -371,6 +371,26 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     slopeAt(x, z) { return terrainQueries().slopeAt(x, z); },
     /** Line of sight between two { x, y?, z } points (no y = eye height above ground). Available once ready. */
     lineOfSight(a, b, options) { return terrainQueries().lineOfSight(a, b, options); },
+    /**
+     * Project a world point to CSS pixels in the canvas. `visible` means it is
+     * inside the viewport and in front of the camera; `inFront` separates the
+     * two cases for the edge arrow. Available once ready.
+     * @param {number} x east, metres
+     * @param {number} z south, metres
+     * @param {number} [y] height, defaults to ground + 2.2 m
+     */
+    project(x, z, y) {
+      if (!started) return null;
+      const worldY = Number.isFinite(y) ? y : ctx.terrain.meshH(x, z) + 2.2;
+      const p = new THREE.Vector3(x, worldY, z).project(camera);
+      const inFront = p.z < 1;
+      return {
+        x: (p.x + 1) / 2 * container.clientWidth,
+        y: (1 - p.y) / 2 * container.clientHeight,
+        inFront,
+        visible: inFront && Math.abs(p.x) <= 1 && Math.abs(p.y) <= 1,
+      };
+    },
     /** Player position and heading (degrees clockwise from north), and the current mode. */
     /**
      * Who drives the partner astronaut: a partner source (src/engine/partnerSource.js, docs/PARTNER.md).

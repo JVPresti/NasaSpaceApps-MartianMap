@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useMissionStore, setLayer } from '../state/store.js';
 import LayerPanel from './LayerPanel.jsx';
 import PlanChrome from './PlanChrome.jsx';
+import PlanPositionMarker from './PlanPositionMarker.jsx';
 import RoutePanel from './RoutePanel.jsx';
 import SourcesButton from '../sources/SourcesButton.jsx';
 import { useRoutePlanner } from './useRoutePlanner.js';
@@ -82,6 +83,7 @@ export default function PlanMode({ engine, active }) {
 
   return (
     <div className="plan-ui">
+      <PlanPositionMarker engine={engine} />
       <LayerPanel layer={layer} onLayer={setLayer} />
 
       <RoutePanel planner={planner} waypoints={waypoints} onWaypointsChange={setWaypoints} />

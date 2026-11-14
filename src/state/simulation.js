@@ -8,6 +8,7 @@ import { parseShelters } from '../sim/shelters.js';
 import { suitConstantsFromHazards } from '../sim/suitModel.js';
 import { startSuitRunner } from '../sim/suitRunner.js';
 import { legCostSources, startLegCostRunner } from '../sim/legCosts.js';
+import { initNavigation } from '../sim/navigation.js';
 
 const HAZARDS_URL = import.meta.env.BASE_URL + 'data/hazards.json';
 const SHELTERS_URL = import.meta.env.BASE_URL + 'data/shelters.json';
@@ -35,6 +36,7 @@ export function startSimulation(engine, { mock = false } = {}) {
   } catch (e) {
     console.error('mission clock not started:', e);
   }
+  initNavigation({ store: useMissionStore });   // a terrain fix now, fixed error until the drift model (#42); after the clock, for the fix time
 
   const shelters = fetch(SHELTERS_URL)
     .then((r) => { if (!r.ok) throw new Error('shelters.json ' + r.status); return r.json(); })
