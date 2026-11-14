@@ -149,7 +149,9 @@ describe('the route.json waypoints on the real terrain', () => {
   it('has one leg per pair of waypoints, adding up to the planner distance', () => {
     expect(plan.ok).toBe(true);
     expect(r.legs.map((l) => l.to)).toEqual(route.waypoints.slice(1).map((w) => w.name));
-    expect(r.totals.distanceM).toBeCloseTo(plan.distance, 3);
+    // planRoute measures its distance before rounding the returned points to 1 mm, so the
+    // legs (measured on the rounded path) can differ by a few millimetres. 1 cm tolerance.
+    expect(r.totals.distanceM).toBeCloseTo(plan.distance, 2);
   });
 
   it('lands in plausible ranges next to the Apollo EVA numbers in hazards.json', () => {
