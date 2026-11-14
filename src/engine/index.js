@@ -20,6 +20,7 @@ import { createBootPrints } from './bootPrints.js';
 import { createDust, clampDust } from './dust.js';
 import { createShelterHighlight } from './shelterHighlight.js';
 import { validShelter } from './shelterRules.js';
+import { createSlopeZone } from './slopeZone.js';
 import { createWaypointMarkers } from './waypoints.js';
 import { metresPerPixel } from './planView.js';
 import { createUniforms } from './uniforms.js';
@@ -56,7 +57,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
   assertWebGL2();
 
   let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null, waypoints = null;
-  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0 };   // set before boot ends, applied when ready
+  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -243,6 +244,8 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     sys.shelter.set(pending.shelter);
     sys.prints = createBootPrints(ctx); sys.prints.setTier(ctx.tier);
     sys.dust = createDust(ctx); sys.dust.setTier(ctx.tier); sys.dust.set(pending.dust);
+    sys.slopeZone = createSlopeZone(ctx);
+    sys.slopeZone.set(pending.slopeZone);
     if (pending.skyBlend) applySkyBlend(ctx, pending.skyBlend.from, pending.skyBlend.to, pending.skyBlend.t);
     waypoints.set(pending.waypoints);
     waypoints.group.visible = requestedMode === 'plan';
@@ -363,6 +366,14 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       if (list !== null && !(Array.isArray(list) && list.every((w) => w && Number.isFinite(w.x) && Number.isFinite(w.z)))) throw new Error('setWaypoints: expected [{ x, z, name }] or null');
       if (started) waypoints.set(list); else pending.waypoints = list;
     },
+    /**
+     * Red ground patch for the no-go cells from the slope look-ahead (#69).
+     * @param {Array<{ x: number, z: number }> | null} cells
+     */
+    setSlopeZone(cells) {
+      if (cells !== null && !(Array.isArray(cells) && cells.every((c) => c && Number.isFinite(c.x) && Number.isFinite(c.z)))) throw new Error('setSlopeZone: expected [{ x, z }] or null');
+      if (started) sys.slopeZone.set(cells); else pending.slopeZone = cells;
+    },
     /** Metres of ground per CSS pixel in Plan mode, or null when the engine is not ready. */
     getPlanScale() {
       if (!started || ctx.view.mode !== 'orbit') return null;
@@ -432,6 +443,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       for (const t of textures) t.dispose();
       if (sys.cast) sys.cast.rt.dispose();
       if (waypoints) waypoints.dispose();
+      if (sys.slopeZone) sys.slopeZone.dispose();
       if (ctx.terrain && ctx.terrain.shadowTex) ctx.terrain.shadowTex.dispose();
       for (const s of [sys.partner, sys.legs]) if (s && s.mixer) s.mixer.stopAllAction();
       renderer.dispose(); renderer.forceContextLoss();
