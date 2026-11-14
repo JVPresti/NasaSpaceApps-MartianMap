@@ -20,7 +20,7 @@ const LIFT_M = 0.015;
 export function createBootPrints(ctx) {
   const { scene, U, sys, view } = ctx;
   const { meshH } = ctx.terrain;
-  const uniforms = { uSunDir: U.uSunDir, uFogK: U.uFogK, uFadeFar: { value: DRAW_TO_M.high } };
+  const uniforms = { uSunDir: U.uSunDir, uFogK: U.uFogK, uDust: U.uDust, uFadeFar: { value: DRAW_TO_M.high } };   // uDust: storm (#142)
   const material = new THREE.ShaderMaterial({
     uniforms, vertexShader: SH.PRINT_VERT, fragmentShader: SH.PRINT_FRAG,
     transparent: true, depthWrite: false,

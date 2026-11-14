@@ -1,7 +1,8 @@
 // GLSL for the boot prints (bootPrints.js). Each print is a small quad lying on the ground; the fragment shader draws a
 // Z-2 boot sole with tread, as a dent in the regolith: it multiplies the colour underneath (blending 2 x src x dst, so 0.5
 // leaves the ground unchanged), so it matches any ground colour. The wall of the dent that faces the sun is lit and the
-// floor next to the wall on the sun side is in shadow, like the Apollo boot-print photos.
+// floor next to the wall on the sun side is in shadow, like the Apollo boot-print photos. In a storm (uDust, #142) fine dust
+// settles in: the tread and walls lose contrast and the inside gets a little lighter, but the print never disappears.
 export const PRINT_VERT = /* glsl */`
 attribute float aSide;                 // 1 right foot, -1 left foot (mirrors the sole)
 attribute float aSeed;                 // 0..1, small differences between prints
@@ -19,7 +20,7 @@ void main(){
 }
 `;
 export const PRINT_FRAG = /* glsl */`
-uniform float uFogK, uFadeFar;
+uniform float uFogK, uFadeFar, uDust;
 varying vec2 vP; varying vec2 vSun; varying float vSeed; varying vec3 vW;
 // signed distance to the sole outline (negative inside): one rounded sole, narrow at the heel, wider at the toe
 float sole(vec2 p){
@@ -43,10 +44,14 @@ void main(){
   float wall = 1.0 - smoothstep(0.0, 0.12, abs(d));                   // the narrow band around the outline
   float rim = smoothstep(0.02, 0.2, d) * (1.0 - smoothstep(0.2, 0.35, d));   // pushed-up soil just outside
   float k = mix(1.0, floorShade, inside);
-  k *= 1.0 + 0.18 * wall * facing;                                    // lit wall brighter, shaded wall darker
-  k *= 1.0 - 0.18 * inside * smoothstep(-0.25, 0.0, d) * max(-facing, 0.0);   // shadow inside, along the sun-side wall
+  float sunLeft = 1.0 - 0.85 * uDust;                                 // the storm dims the sun (stormLight.js): weaker light and shadow
+  k *= 1.0 + 0.18 * sunLeft * wall * facing;                          // lit wall brighter, shaded wall darker
+  k *= 1.0 - 0.18 * sunLeft * inside * smoothstep(-0.25, 0.0, d) * max(-facing, 0.0);   // shadow inside, along the sun-side wall
   k *= 1.0 + 0.06 * rim;
   k = mix(1.0, k, 0.85 + 0.15 * vSeed);
+  // dust settling in: softer, and a little lighter inside; at most 55 % of the contrast goes, so the trail stays readable
+  k = mix(k, 1.0, 0.55 * uDust);
+  k *= 1.0 + 0.05 * uDust * inside;
   // fade out with distance and in the haze
   float dist = distance(vW, cameraPosition);
   float fade = (1.0 - smoothstep(uFadeFar * 0.6, uFadeFar, dist)) * exp(-uFogK * dist * 2.0);

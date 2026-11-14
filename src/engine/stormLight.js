@@ -1,6 +1,7 @@
 // Storm light (#27): as the dust thickens the sun is dimmed, shadows fade and the light turns redder. This is what a
 // strong Martian dust storm looks like from the ground: in the 2018 global storm Curiosity's photos turned dark and
 // cherry red and needed much longer exposures (tau above 8 at Gale), and at Opportunity (tau 10.8) day turned to night.
+// The haze the scene fades into darkens too, so the view gets dimmer as the dust thickens, not milky (#142).
 // The atmosphere preset (atmosphere.js) sets the light; this module scales it by the dust level on top, from a copy of
 // the preset values taken each time a preset is applied, so the preset itself is never changed.
 //   SIM: the factors below are chosen to read as a heavy storm while the scene stays playable (not full darkness).
@@ -9,8 +10,8 @@
 const AT_FULL = {
   sun: 0.1,          // direct sunlight left at dust 1: shadows almost gone
   ambient: 0.6,      // sky light left (dust scatters light, so the shade gets relatively brighter)
-  sky: 0.6,          // sky brightness
-  inscatter: 0.7,    // colour of the haze
+  sky: 0.45,         // sky brightness
+  inscatter: 0.32,   // the haze everything fades into: darker, so a storm dims the view instead of washing it out (#142)
 };
 const RED = [1.0, 0.82, 0.66];   // red dust passes red light, not blue (JPL, PIA22330)
 
