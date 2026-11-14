@@ -1,7 +1,8 @@
-// Connects the mission store and the engine. Store -> engine: mode, layer, sky, route path, shelter, when they change.
+// Connects the mission store and the engine. Store -> engine: mode, layer, sky, route path, shelter, dust, when they change.
 // Engine -> store: the player's position and heading, 5 times per second (never per frame).
 // For now the position written is the true one; the estimate with its error ring comes with #21 and #42.
 import { useMissionStore } from './store.js';
+import { dustLevelFromTau } from './dustLevel.js';
 
 export const PLAYER_POLL_MS = 200;
 
@@ -18,6 +19,7 @@ export function connectEngine(engine, store = useMissionStore) {
     }
     if (!prev || s.route.path !== prev.route.path) engine.setRoute(s.route.path);
     if (!prev || s.route.shelter !== prev.route.shelter) engine.setShelter(s.route.shelter ?? null);
+    if (!prev || s.environment.dustOpacity !== prev.environment.dustOpacity) engine.setDust(dustLevelFromTau(s.environment.dustOpacity));
   };
   apply(store.getState(), null);
   const unsubscribe = store.subscribe(apply);

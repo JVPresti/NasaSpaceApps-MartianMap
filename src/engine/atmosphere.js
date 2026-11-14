@@ -97,6 +97,7 @@ export function applyPresetData(ctx, p, name, { shadows = true } = {}) {
   if (lp.cone_cos_inner) U.uLampCone.value.set(lp.cone_cos_inner, lp.cone_cos_outer);
   U.uLampRange.value.set(lp.half_distance_m || 4, lp.range_m || 30);
   U.uStars.value = p.sky.stars || 0;
+  if (ctx.sys.dust) ctx.sys.dust.onPreset();   // storm dust scales this light, blended or not (stormLight.js, #27)
   if (shadows) {
     ctx.terrain.computeShadows(TIERS[ctx.tier].shadowRes);
     if (ctx.sys.rocks) ctx.sys.rocks.reset();

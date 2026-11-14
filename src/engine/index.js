@@ -16,6 +16,7 @@ import { createAssets, b64u16, b64u8 } from './assets.js';
 import { buildAssetManifest, ROCK_NAMES } from './assetManifest.js';
 import { decodeTerrainJson, decodeRingJson } from './queries.js';
 import { createRouteGlow, validPath } from './routeGlow.js';
+import { createDust, clampDust } from './dust.js';
 import { createShelterHighlight } from './shelterHighlight.js';
 import { validShelter } from './shelterRules.js';
 import { createWaypointMarkers } from './waypoints.js';
@@ -54,7 +55,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
   assertWebGL2();
 
   let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null, waypoints = null;
-  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null };   // set before boot ends, applied when ready
+  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0 };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -129,6 +130,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     sys.habitat.reground();   // the rebuilt mesh has slightly different heights
     if (sys.routeGlow) sys.routeGlow.rebuild();  // re-drape the route on the new mesh
     if (sys.shelter) sys.shelter.rebuild();
+    if (sys.dust) sys.dust.setTier(name);
   }
 
   // ---------------------------------------------------------------- frame loop (bench lines 826-868)
@@ -151,6 +153,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     U.uTime.value += dt; sys.partner.update(dt); sys.arms.update(dt); sys.legs.update(dt, eyeMode ? ctx.view.moveSpeed : 0); sys.props.update(dt); sys.habitat.update(dt);
     sys.routeGlow.update(dt, eyeMode ? ctx.view.eye : null);
     sys.shelter.update(dt, ctx.view.eye, camera);
+    sys.dust.update(dt);
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
     renderer.render(scene, camera);
@@ -231,6 +234,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     sys.routeGlow.setPath(pending.route);
     sys.shelter = createShelterHighlight(ctx);
     sys.shelter.set(pending.shelter);
+    sys.dust = createDust(ctx); sys.dust.setTier(ctx.tier); sys.dust.set(pending.dust);
     if (pending.skyBlend) applySkyBlend(ctx, pending.skyBlend.from, pending.skyBlend.to, pending.skyBlend.t);
     waypoints.set(pending.waypoints);
     waypoints.group.visible = requestedMode === 'plan';
@@ -316,6 +320,15 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       const clamped = Math.max(0, Math.min(1, t));
       if (started) applySkyBlend(ctx, from, to, clamped);
       else pending.skyBlend = { from, to, t: clamped };
+    },
+    /**
+     * Storm dust (dust.js, #27), 0 = clear (the scene as before) to 1 = global storm: thicker, drifting haze on everything
+     * (visibility about 1 km), dimmer and redder light with fading shadows, and faint wisps near the helmet. Eased, so a
+     * storm builds up. Works on top of any sky preset or blend.
+     */
+    setDust(level) {
+      const v = clampDust(level);
+      if (started) sys.dust.set(v); else pending.dust = v;
     },
     /**
      * Route drawn on the ground as the route glow (routeGlow.js), [[x, z], ...] in metres. null clears it.
