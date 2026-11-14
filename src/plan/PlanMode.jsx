@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMissionStore, setLayer } from '../state/store.js';
+import { radioShadowCells } from '../sim/radio.js';
 import LayerPanel from './LayerPanel.jsx';
 import PlanChrome from './PlanChrome.jsx';
 import RoutePanel from './RoutePanel.jsx';
@@ -20,6 +21,7 @@ export default function PlanMode({ engine, active }) {
   const waypoints = useMissionStore((s) => s.route.waypoints);
   const [routeStatus, setRouteStatus] = useState('loading');
   const [metresPerPixel, setMetresPerPixel] = useState(0);
+  const [radioShadow, setRadioShadow] = useState(false);
   const planner = useRoutePlanner({ waypoints, enabled: active });
 
   const setWaypoints = (list) => {
@@ -77,11 +79,33 @@ export default function PlanMode({ engine, active }) {
     return () => clearInterval(timer);
   }, [engine, active]);
 
+  // Radio shadow is a separate ground overlay, not one of the four shader
+  // layers. It is computed only while the toggle is on and Plan mode is active.
+  useEffect(() => {
+    if (!engine) return undefined;
+    if (!active || !radioShadow) {
+      engine.setRadioShadow(null);
+      return undefined;
+    }
+    const mast = engine.getHabitatMast();
+    if (!mast) return undefined;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      const cells = radioShadowCells({ mast, lineOfSight: engine.lineOfSight });
+      if (!cancelled) engine.setRadioShadow(cells);
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      engine.setRadioShadow(null);
+    };
+  }, [engine, active, radioShadow]);
+
   if (!active) return null;
 
   return (
     <div className="plan-ui">
-      <LayerPanel layer={layer} onLayer={setLayer} />
+      <LayerPanel layer={layer} onLayer={setLayer} radioShadow={radioShadow} onRadioShadow={setRadioShadow} />
 
       <RoutePanel planner={planner} waypoints={waypoints} onWaypointsChange={setWaypoints} engine={engine} />
       <PlanChrome metresPerPixel={metresPerPixel} />

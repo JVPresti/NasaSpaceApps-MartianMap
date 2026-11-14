@@ -6,6 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useMissionStore } from '../state/store.js';
 import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, pickAlert, wrapDeg } from './format.js';
 import ElevationProfile from './ElevationProfile.jsx';
+import RadioLink from './RadioLink.jsx';
 import SlopeAhead from './SlopeAhead.jsx';
 import * as I from './icons.jsx';
 import './hud.css';
@@ -249,6 +250,7 @@ export default function Hud({ engine }) {
       <Clocks />
       <SuitPanel />
       <EnvStrip />
+      <RadioLink engine={engine} />
       <WaypointPanel heightAt={engine?.heightAt} slopeAt={engine?.slopeAt} />
     </div>
   );

@@ -41,9 +41,10 @@ function LayerLegend({ meta }) {
 
 /**
  * Layer switch and its legend. The index is the engine's `uLayer` value.
- * @param {{ layer: number, onLayer: (index: number) => void }} props
+ * @param {{ layer: number, onLayer: (index: number) => void,
+ *   radioShadow: boolean, onRadioShadow: (on: boolean) => void }} props
  */
-export default function LayerPanel({ layer, onLayer }) {
+export default function LayerPanel({ layer, onLayer, radioShadow, onRadioShadow }) {
   const meta = layerMeta(layer);
 
   return (
@@ -69,6 +70,22 @@ export default function LayerPanel({ layer, onLayer }) {
             </button>
           ))}
         </div>
+      </section>
+
+      <section className="plan-section">
+        <h3>Overlays</h3>
+        <div className="layer-list">
+          <button
+            type="button"
+            aria-pressed={radioShadow}
+            className={radioShadow ? 'on' : undefined}
+            onClick={() => onRadioShadow(!radioShadow)}
+          >
+            <span className="layer-index">R</span>
+            <span className="layer-name">Radio shadow</span>
+          </button>
+        </div>
+        <p className="plan-note">Blue-grey cells are out of direct line of sight to the habitat mast.</p>
       </section>
 
       <section className="plan-section">
