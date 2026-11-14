@@ -1,0 +1,24 @@
+# Agent instructions
+
+## Git workflow (mandatory)
+
+Every change reaches `main` through **Issue → Branch → Pull Request → Review → Merge**, as defined in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Never commit, push, or merge directly to `main`, not even for a one-line fix. A commit is only half the job: when you commit, you must also open the pull request.
+
+1. **Issue first.** Create a new issue or pick an existing one and assign it. Title format: `[Bug]`, `[Feature]` or `[Task]` plus a short description.
+2. **Branch** from an up-to-date `main`: `git switch main && git pull && git switch -c <type>/<short-description>`.
+   Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`.
+3. **Commit** on the branch.
+4. **Pull request** against `main`. Title format: `<type>(<scope>): <description>`, for example `feat(layers): add thermal data overlay`. The description links the issue with `Closes #<issue-number>`.
+5. **Review.** One approval from a teammate other than the author. The author cannot approve their own PR.
+6. **Merge** with **Squash and merge** on GitHub, then delete the branch.
+
+Before asking for review: `npm run lint` and `npm run build` must pass, and the PR contains only the changes for its issue. One PR resolves one issue.
+
+## Environment notes (this machine)
+
+`git` and `gh` are installed outside the system PATH:
+
+- Git: `%LOCALAPPDATA%\Programs\PortableGit\cmd\git.exe`
+- GitHub CLI: `%LOCALAPPDATA%\Programs\gh\bin\gh.exe` (authenticated as `JVPresti`, `gh auth setup-git` already configured)
