@@ -190,6 +190,7 @@ describe('EVA restart', () => {
       suit: { ...s.suit, oxygenPct: 55 },
       route: { ...s.route, path: [[0, 0], [10, 10]], distanceM: 14.1 },
       alerts: { dust: { id: 'dust', active: true } },
+      eva: { ...s.eva, phase: 'ended', distanceM: 123, events: [{ type: 'start', eventId: 'dust', atSec: 10 }], summary: { distanceM: 123 } },
     }));
 
     const order = [];
@@ -214,6 +215,7 @@ describe('EVA restart', () => {
     expect(engine.resetState.suit.oxygenPct).toBeNull();
     expect(engine.resetState.route.path).toBeNull();
     expect(engine.resetState.alerts).toEqual({});
+    expect(engine.resetState.eva).toMatchObject({ phase: 'ready', distanceM: 0, events: [], routeChanges: [], summary: null });
 
     const mission = useMissionStore.getState().mission;
     expect(mission.paused).toBe(true);

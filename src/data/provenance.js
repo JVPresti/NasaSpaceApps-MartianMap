@@ -122,6 +122,11 @@ export const STORE_PATHS = Object.freeze({
   ...prefixed('route.legs.', LEG_FIELDS),
   ...prefixed('route.totals.', TOTAL_FIELDS),
 
+  // EVA history and debrief (#43): the frozen summary copied from the store when the astronaut re-entered the HAB
+  'eva.distanceM': { tag: 'DERIVED', source: 'sum of horizontal steps between navigation readings in Walk mode while the mission ran' },
+  'eva.elapsedOutsideSec': { tag: 'DERIVED', source: 'mission clock time between leaving and re-entering the habitat arrival area' },
+  'eva.sampleCount': sim('samples secured in a container this EVA (engine sampling bridge)'),
+
   // environment: MEDA replay, RAD curve and the dust event
   'environment.pressurePa': { ...MEDA, source: 'MEDA pressure, replayed sol', from: { meda: 'pressure' } },
   'environment.tempC': { ...MEDA, source: 'MEDA air temperature, replayed sol', from: { meda: 'air_temperature' } },

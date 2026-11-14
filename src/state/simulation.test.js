@@ -1,12 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import hazardsJson from '../../public/data/hazards.json';
+import sheltersJson from '../../public/data/shelters.json';
+import stopsJson from '../../public/data/stops.json';
 import { createInitialState, pauseMission, resetStore, resumeMission, setMode, useMissionStore } from './store.js';
 import { departRoute, startSimulation } from './simulation.js';
 import { startAtAirlock } from '../plan/routeStart.js';
 import { nextTarget } from '../sim/waypointRunner.js';
 
 const ENGINE = { heightAt: () => 0 };
+const jsonResponse = (data) => ({ ok: true, json: async () => data });
+
+function simulationFetch(sheltersResponse) {
+  return vi.fn((url) => {
+    const href = String(url);
+    if (href.includes('shelters.json')) return sheltersResponse;
+    if (href.includes('hazards.json')) return Promise.resolve(jsonResponse(hazardsJson));
+    if (href.includes('stops.json')) return Promise.resolve(jsonResponse(stopsJson));
+    return Promise.reject(new Error('unexpected fetch: ' + href));
+  });
+}
 
 function installSessionStorage() {
   const values = new Map();
@@ -205,5 +219,65 @@ describe('EVA start at the first switch to Walk (#166)', () => {
     s = useMissionStore.getState();
     expect(s.mission.elapsedSec).toBeCloseTo(2, 6);
     stop();
+  });
+});
+
+describe('startSimulation EVA wiring', () => {
+  it('starts the EVA runner on the first Walk once the real shelters.json HAB loads, then ends on re-entry', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-14T12:00:00Z'));
+    let answerShelters;
+    const sheltersPromise = new Promise((resolve) => { answerShelters = resolve; });
+    vi.stubGlobal('fetch', simulationFetch(sheltersPromise));
+
+    const stop = startSimulation(ENGINE);
+    setMode('walk');   // the EVA, and its statistics, start on the first Walk (#166)
+    useMissionStore.setState((state) => ({ navigation: { ...state.navigation, x: 545.1, z: 574.1 } }));
+    await vi.advanceTimersByTimeAsync(500);
+    // The real HAB is still loading: the runner must not have started from the route waypoint (520, 600).
+    expect(useMissionStore.getState().eva.phase).toBe('ready');
+
+    answerShelters(jsonResponse(sheltersJson));
+    await vi.advanceTimersByTimeAsync(0);
+    const started = useMissionStore.getState();
+    expect(started.eva.phase).toBe('active');
+    expect(started.eva.startedAtSec).not.toBeNull();
+
+    useMissionStore.setState((state) => ({ navigation: { ...state.navigation, x: 535.1, z: 574.1 } }));
+    await vi.advanceTimersByTimeAsync(300);
+
+    const ended = useMissionStore.getState();
+    expect(ended.eva.phase).toBe('ended');
+    expect(ended.mission.paused).toBe(true);
+    expect(ended.eva.summary).toMatchObject({
+      startedAtSec: started.eva.startedAtSec,
+      endedAtSec: ended.eva.endedAtSec,
+      sampleCount: 0,
+      samples: [],
+      doseUgy: null,
+      doseRateUgyH: null,
+    });
+    expect(ended.eva.summary.distanceM).toBeGreaterThan(0);
+    expect(Object.isFrozen(ended.eva.summary)).toBe(true);
+    stop();
+  });
+
+  it('never starts the EVA runner from a late shelter answer after the simulation stopped', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-14T12:00:00Z'));
+    let answerShelters;
+    const sheltersPromise = new Promise((resolve) => { answerShelters = resolve; });
+    vi.stubGlobal('fetch', simulationFetch(sheltersPromise));
+
+    const stop = startSimulation(ENGINE);
+    setMode('walk');
+    stop();
+    answerShelters(jsonResponse(sheltersJson));
+    await vi.advanceTimersByTimeAsync(0);
+
+    useMissionStore.setState((state) => ({ navigation: { ...state.navigation, x: 545.1, z: 574.1 } }));
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(useMissionStore.getState().eva.phase).toBe('ready');
+    expect(useMissionStore.getState().eva.summary).toBeNull();
   });
 });

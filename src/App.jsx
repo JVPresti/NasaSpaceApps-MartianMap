@@ -7,6 +7,7 @@ import ModeSwitch from './components/ModeSwitch.jsx';
 import PauseMenu from './components/PauseMenu.jsx';
 import StartScreen from './components/StartScreen.jsx';
 import { useShortcuts } from './components/useShortcuts.js';
+import DebriefScreen from './debrief/DebriefScreen.jsx';
 import EventBanner from './events/EventBanner.jsx';
 import EventDebug from './events/EventDebug.jsx';
 import Hud from './hud/Hud.jsx';
@@ -79,6 +80,9 @@ function loadReducer(state, action) {
 export default function App() {
   useLanguage();
   const mode = useMissionStore((s) => s.mode);
+  // The EVA runner freezes this once the astronaut re-enters the habitat. Non-null means the EVA is over:
+  // the debrief owns the screen and no menu behind it can resume the mission.
+  const evaSummary = useMissionStore((s) => s.eva.summary);
   const [engine, setEngine] = useState(null);
   const [load, dispatch] = useReducer(loadReducer, undefined, () => INITIAL_LOAD);
   const [loadingDone, setLoadingDone] = useState(false);
@@ -168,7 +172,8 @@ export default function App() {
   /** Start or Resume. In Walk nothing runs until the browser grants the lock; Plan needs no lock. */
   const handleResume = useCallback(async () => {
     const instance = engineRef.current;
-    if (!instance || busyRef.current) return;
+    // The EVA is final once the summary exists: no key, mode change or stale request may resume it behind the debrief.
+    if (!instance || busyRef.current || useMissionStore.getState().eva?.summary) return;
     const attempt = ++resumeSeqRef.current;
     const fromPhase = phaseRef.current;
     const resumeMode = useMissionStore.getState().mode;
@@ -203,8 +208,14 @@ export default function App() {
       // The click itself is the user gesture. If the lock is refused, stay paused and explain.
       const instance = engineRef.current;
       const lock = await requestEvaLock(instance);
-      // A newer mode change owns the interface; its request (or Plan) has already replaced this one.
-      if (attempt !== walkLockSeqRef.current) return;
+      // A newer action (mode change, pause, restart, the end of the EVA) owns the interface. If this late
+      // answer still holds the mouse, release it instead of leaving the pointer captured behind that screen.
+      if (attempt !== walkLockSeqRef.current) {
+        if (lock.ok) {
+          try { instance?.releasePointerLock?.(); } catch { /* the newer screen stays in charge */ }
+        }
+        return;
+      }
       if (useMissionStore.getState().mode !== 'walk') {
         // A late grant must never capture the mouse in Plan. Releasing is harmless when nothing is held.
         try { instance?.releasePointerLock?.(); } catch { /* nothing to release */ }
@@ -255,9 +266,12 @@ export default function App() {
     setPhase(EVA_PHASE.START);
     setOverlay(null);
     setPlanEpoch((value) => value + 1);
+    // A new EVA starts at the spawn: forget the walked progress of the old route. The tracker only resets on a
+    // content change, so an empty path here is explicit rather than relying on the minimap remounting.
+    minimapRoute.setPath(null);
     setNotice(result.ok ? null : result.message);
     if (instance) setQuality(instance.getQuality());
-  }, [setBusyState, setOverlay, setPhase]);
+  }, [minimapRoute, setBusyState, setOverlay, setPhase]);
 
   const handleRetry = useCallback(() => {
     resumeSeqRef.current += 1;
@@ -316,7 +330,21 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [pauseFor]);
 
-  const showTopbar = load.status === 'ready' && phase === EVA_PHASE.PLAYING;
+  // The EVA runner pauses the mission clock at the instant the summary is frozen. Close the interactive EVA here as
+  // well: disable engine input and release the pointer before a lock-change handler can open the pause menu, and
+  // invalidate a resume or Walk lock that was still in flight so it cannot land behind the debrief.
+  useEffect(() => useMissionStore.subscribe((state, previous) => {
+    if (!state.eva.summary || state.eva.summary === previous.eva.summary) return;
+    resumeSeqRef.current += 1;
+    walkLockSeqRef.current += 1;
+    // phaseRef changes synchronously, so a late pointerlockchange sees PAUSED and does not open the menu.
+    setPhase(EVA_PHASE.PAUSED);
+    setOverlay(null);
+    setBusyState(false);
+    pauseEva({ engine: engineRef.current });
+  }), [setBusyState, setOverlay, setPhase]);
+
+  const showTopbar = load.status === 'ready' && !evaSummary && phase === EVA_PHASE.PLAYING;
   // Like the topbar: off while loading, on the start screen and in the pause menu. M goes through the mode
   // button's handler, so it also captures the mouse in Walk (#174).
   useShortcuts(showTopbar, handleModeChange);
@@ -353,15 +381,13 @@ export default function App() {
 
       {load.status === 'ready' && <WalkStopCard active={mode === 'walk'} />}
 
-      {load.status === 'ready' && <SourcesRoot />}
-
       {showTopbar && <p className="hint">{mode === 'walk' ? HINTS.walk : HINTS.plan}</p>}
 
-      {load.status === 'ready' && loadingDone && phase === EVA_PHASE.START && (
+      {load.status === 'ready' && !evaSummary && loadingDone && phase === EVA_PHASE.START && (
         <StartScreen mode={mode} busy={busy} notice={notice} onStart={handleResume} />
       )}
 
-      {load.status === 'ready' && phase === EVA_PHASE.PAUSED && overlay && (
+      {load.status === 'ready' && !evaSummary && phase === EVA_PHASE.PAUSED && overlay && (
         <PauseMenu
           view={overlay}
           mode={mode}
@@ -382,6 +408,19 @@ export default function App() {
           onCancel={handlePauseCancel}
         />
       )}
+
+      {load.status === 'ready' && evaSummary && (
+        <DebriefScreen
+          summary={evaSummary}
+          busy={busy}
+          notice={notice}
+          onRestart={handleRestartConfirm}
+          onSources={openSources}
+        />
+      )}
+
+      {/* Last, so its native dialog is created after the debrief and its top layer sits above it. */}
+      {load.status === 'ready' && <SourcesRoot />}
     </div>
   );
 }
