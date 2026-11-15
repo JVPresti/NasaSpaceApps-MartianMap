@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildCostGrid, heightAt } from './costGrid.js';
-import { combinedTag, legCostSources, routeLegCosts, splitAtWaypoints, startConsumables, startLegCostRunner, workCost } from './legCosts.js';
+import { combinedTag, legCostSources, routeLegCosts, splitAtWaypoints, startConsumables, startLegCostRunner, waypointsForCosts, workCost } from './legCosts.js';
 import { planRoute } from './routePlanner.js';
 import { metabolicPowerW, o2RateGs, suitConstantsFromHazards } from './suitModel.js';
 
@@ -210,6 +210,48 @@ describe('runner on a store', () => {
     expect(store.getState().route.totals.arrivalO2G).toBeCloseTo(full - 0.4 * c.o2UsableG, 6);
     expect(store.getState().sources['route.legs.workSec'].tag).toBe('SIM');
     r.stop();
+  });
+  // R4 (round 1 review): a re-planned path is the walk from where the crew is; it must not carry the work of stops
+  // already reached or left out. The three cases of the reviewer's repro (shelter-legs.mjs).
+  describe('after a re-plan during the EVA', () => {
+    const FULL = [{ name: 'HAB', x: 535, z: 574 }, { name: 'BA', x: 40, z: 30, workSec: 900 }, { name: 'CF', x: 0, z: 0, workSec: 1200 }];
+    const run = (route) => {
+      const store = fakeStore({ route: { legs: [], totals: null, visited: [], skipped: [], shelter: null, ...route }, sources: {} });
+      startLegCostRunner({ store, heightAt: flat, constants: c }).stop();
+      return store.getState().route.totals;
+    };
+
+    it('counts no work on the storm route home, while the shelter is set and the stops are skipped', () => {
+      const totals = run({
+        waypoints: FULL, path: [[300, 300], [420, 440], [535, 574]],
+        visited: ['HAB'], skipped: ['BA', 'CF'], shelter: { id: 'HAB', name: 'HAB · habitat airlock', x: 535, z: 574 },
+      });
+      expect(totals.workSec).toBe(0);
+      expect(totals.timeSec).toBeCloseTo(totals.walkSec, 9);
+      expect(totals.timeSec).toBeLessThan(400);   // 361 m of walking, not 2461 s
+    });
+
+    it('counts no work again on the first mission\'s route home from the stop already reached', () => {
+      const totals = run({
+        waypoints: [{ name: 'HAB', x: 535, z: 574 }, { name: 'S1', x: 493, z: 539, workSec: 300 }],
+        path: [[493, 539], [535, 574]], visited: ['HAB', 'S1'], shelter: { id: 'HAB', x: 535, z: 574 },
+      });
+      expect(totals.workSec).toBe(0);
+    });
+
+    it('keeps the work of the stops still ahead after an off-route re-plan past Bright Angel', () => {
+      const totals = run({ waypoints: FULL, path: [[30, 25], [0, 0]], visited: ['HAB', 'BA'] });
+      expect(totals.workSec).toBe(1200);
+    });
+
+    it('drops the work of a stop the moment it is reached, and leaves the waypoints as they are', () => {
+      const route = { waypoints: FULL, visited: ['HAB', 'BA'], skipped: [], shelter: null };
+      expect(waypointsForCosts(route).map((w) => w.workSec ?? 0)).toEqual([0, 0, 1200]);
+      expect(FULL[1].workSec).toBe(900);
+      const untouched = { waypoints: FULL, visited: ['HAB'], skipped: [], shelter: null };
+      expect(waypointsForCosts(untouched)).toBe(FULL);
+      expect(waypointsForCosts(null)).toEqual([]);
+    });
   });
 });
 

@@ -181,22 +181,45 @@ export function legCostSources(hazards) {
 }
 
 /**
+ * The waypoints to price route.path against, with no work left at a stop the crew has already reached (route.visited)
+ * or that the route now leaves out (route.skipped), and none at all while an event sends the crew to a shelter
+ * (route.shelter): a re-planned path is the walk from where the crew is, so the work of those stops is not in it.
+ * @param {{ waypoints?: Array<object>, visited?: string[], skipped?: string[], shelter?: object | null } | null} route
+ * @returns {Array<object>} the same list when nothing changes
+ */
+export function waypointsForCosts(route) {
+  const waypoints = Array.isArray(route?.waypoints) ? route.waypoints : [];
+  const done = new Set([...(route?.visited ?? []), ...(route?.skipped ?? [])]);
+  const sheltered = Boolean(route?.shelter);
+  if (!sheltered && done.size === 0) return waypoints;
+  let changed = false;
+  const out = waypoints.map((w) => {
+    if (!(w?.workSec > 0) || !(sheltered || done.has(w.name))) return w;
+    changed = true;
+    return { ...w, workSec: 0 };
+  });
+  return changed ? out : waypoints;
+}
+
+/**
  * Keep route.legs and route.totals in step with route.path, route.waypoints and the crew's needs in the store. The
- * waypoints carry the work time at each stop (#247); needs.o2Pct and needs.batteryPct set the O2 and battery at the
- * start (startConsumables).
+ * waypoints carry the work time at each stop (#247), less the work already done or left out (waypointsForCosts);
+ * needs.o2Pct and needs.batteryPct set the O2 and battery at the start (startConsumables).
  * @param {{ store: { getState: Function, setState: Function, subscribe: Function }, heightAt: Function,
  *   constants: object, sources?: object }} options
  * @returns {{ update: () => void, stop: () => void }}
  */
 export function startLegCostRunner({ store, heightAt, constants: c, sources = {} }) {
-  let lastPath, lastWaypoints, lastNeeds;
+  let last = [];
   store.setState((s) => ({ sources: { ...s.sources, ...sources } }));
 
   function update() {
-    const { route: { path, waypoints }, needs } = store.getState();
-    if (path === lastPath && waypoints === lastWaypoints && needs === lastNeeds) return;
-    lastPath = path; lastWaypoints = waypoints; lastNeeds = needs;
-    const r = path && path.length >= 2 ? routeLegCosts(path, waypoints, heightAt, c, startConsumables(needs, c)) : null;
+    const { route, needs } = store.getState();
+    const { path, waypoints, visited, skipped, shelter } = route;
+    const inputs = [path, waypoints, visited, skipped, shelter, needs];
+    if (inputs.every((value, k) => value === last[k])) return;
+    last = inputs;
+    const r = path && path.length >= 2 ? routeLegCosts(path, waypointsForCosts(route), heightAt, c, startConsumables(needs, c)) : null;
     store.setState((s) => ({ route: { ...s.route, legs: r ? r.legs : [], totals: r ? r.totals : null } }));
   }
 
