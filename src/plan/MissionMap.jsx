@@ -253,7 +253,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
       <LayerPlaces places={places} crop={crop} />
       {/* Stops as numbered markers with a label, as on the 3D plan map: HTML, so the text stays sharp at any zoom. The
           numbers are the app's one numbering (#220, src/sim/waypointNumber.js): HAB is 0 and WP1 is 1. */}
-      <ol className="map-markers">
+      <ol className="map-markers map-stops">
         {waypoints.map((w, k) => {
           const [u, v] = toMap(w.x, w.z, crop);
           if (u < -5 || u > 105 || v < -5 || v > 105) return null;

@@ -22,8 +22,10 @@ export default function LayerPreview({ layer }) {
     const button = anchor.current && anchor.current.parentElement;
     if (!button) return undefined;
     const show = () => {
+      // within the panel that holds the buttons, so the card never reaches the map beside it
       const r = button.getBoundingClientRect();
-      setAt({ left: Math.max(GAP_PX, Math.min(r.left, window.innerWidth - CARD_WIDTH_PX - GAP_PX)), top: r.top - GAP_PX });
+      const bounds = button.closest('.table-panel, .plan-panel')?.getBoundingClientRect() ?? { left: GAP_PX, right: window.innerWidth - GAP_PX };
+      setAt({ left: Math.max(bounds.left, Math.min(r.left, bounds.right - CARD_WIDTH_PX)), top: r.top - GAP_PX });
     };
     const hide = () => setAt(null);
     const onFocus = () => { if (button.matches(':focus-visible')) show(); };   // keyboard focus, not a mouse click
