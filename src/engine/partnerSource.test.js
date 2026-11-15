@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertPartnerState, CASE_CLIP, createScriptedPartner, createStaticPartner, HANDOVER_M, HANDOVER_REACH_M } from './partnerSource.js';
+import { assertPartnerState, CASE_CLIP, createScriptedPartner, createStaticPartner, FOLLOW_TIMEOUT_SEC, HANDOVER_M, HANDOVER_REACH_M } from './partnerSource.js';
 import { CREW, PLAYER_COLORS } from './crew.js';
 
 const DT = 1 / 60;
@@ -142,6 +142,62 @@ describe('scripted partner: case hand-over', () => {
     expect(p.command('toggleCase', w)).toBe(true);
     expect(p.command('toggleCase', w)).toBe(false);
     expect(p.command('dance', w)).toBe(false);
+  });
+});
+
+describe('scripted partner: turns, the bend hold and the follow limit (#226)', () => {
+  it('keeps yaw wrapped and never turns faster than the turn rate while the player circles it', () => {
+    const p = createScriptedPartner(), player = { x: 30, z: 30 }, w = world(player);
+    run(p, 1, w);
+    expect(p.command('toggleCase', w)).toBe(true);
+    let angle = 0, prevYaw = null, maxTurn = 0;
+    run(p, 120, w, (s) => {
+      expect(Math.abs(s.yaw)).toBeLessThanOrEqual(Math.PI + 1e-9);   // wrapped every frame: yaw can never build up
+      if (prevYaw !== null) {
+        const d = Math.abs(Math.atan2(Math.sin(s.yaw - prevYaw), Math.cos(s.yaw - prevYaw)));   // the wrapped turn
+        maxTurn = Math.max(maxTurn, d / DT);
+      }
+      prevYaw = s.yaw;
+      angle += 0.6 * DT;   // the player circles the partner just inside the hand-over reach
+      player.x = s.x + Math.sin(angle); player.z = s.z + Math.cos(angle);
+    });
+    expect(maxTurn).toBeLessThanOrEqual(6 * Math.PI * 1.05);   // the exponential turn peaks at |df| * turn ≤ π * 6 rad/s
+  });
+
+  it('stands still briefly after arriving, before the bend starts (#226)', () => {
+    const p = createScriptedPartner(), player = { x: 30, z: 30 }, w = world(player);
+    run(p, 1, w);
+    expect(p.command('toggleCase', w)).toBe(true);
+    let idleFor = 0, actionAt = null, idleAt = null;
+    for (let t = 0; t < 60; t += DT) {
+      const s = p.update(DT, w);
+      if (s.action && actionAt === null) actionAt = t;
+      if (s.gait === 'idle' && idleAt === null) idleAt = t;
+      if (actionAt === null && s.gait === 'idle') idleFor += DT;   // standing time before the bend
+    }
+    expect(actionAt).not.toBeNull();
+    expect(idleAt).not.toBeNull();
+    expect(idleFor).toBeGreaterThanOrEqual(0.25);   // at least a quarter second of standing, then the bend eases in
+    expect(actionAt - idleAt).toBeGreaterThanOrEqual(0.25);
+  });
+
+  it('gives up a follow the player outruns, so the case command works again (#226)', () => {
+    const p = createScriptedPartner(), player = { x: 30, z: 30 }, w = world(player);
+    run(p, 1, w);
+    expect(p.command('toggleCase', w)).toBe(true);
+    for (let t = 0; t < FOLLOW_TIMEOUT_SEC + 5; t += DT) {   // the player walks away the whole time, faster than the partner
+      p.update(DT, w);
+      player.x += 1.0 * DT;
+    }
+    // the follow ended: no bend ever started, and it walks back to the patrol instead of chasing forever
+    let sawAction = false;
+    const back = run(p, 120, w, (s) => { if (s.action) sawAction = true; });
+    expect(sawAction).toBe(false);
+    expect(back.action).toBeNull();
+    expect(back.gait).toBe('walk');   // back on the patrol, moving
+    // F works again
+    const accepted = p.command('toggleCase', w);
+    expect(accepted).toBe(true);
   });
 });
 

@@ -4,6 +4,7 @@ import { useMissionStore } from '../state/store.js';
 import { requestSlopeDetour } from '../state/slopeDetour.js';
 import { positionAlongPath } from './profile.js';
 import { applyPlannedRoute } from '../sim/routeUpdate.js';
+import { truePosition } from '../sim/navigation.js';
 import {
   SLOPE_NO_GO_DEG,
   detourExtra,
@@ -37,7 +38,9 @@ export default function SlopeAhead({ engine }) {
     const timer = setInterval(() => {
       if (!alive) return;
       const state = useMissionStore.getState();
-      if (state.mode !== 'walk' || !Number.isFinite(state.navigation.x) || !Number.isFinite(state.navigation.z) || !Number.isFinite(state.navigation.headingDeg)) {
+      // The warning protects the astronaut where they really are, not where the estimate says (#42).
+      const truth = truePosition(state.navigation);
+      if (state.mode !== 'walk' || !Number.isFinite(truth.x) || !Number.isFinite(truth.z) || !Number.isFinite(state.navigation.headingDeg)) {
         setWarning(null);
         setDetour(null);
         engine.setSlopeZone(null);
@@ -47,7 +50,7 @@ export default function SlopeAhead({ engine }) {
       }
 
       // Use the direction of travel; falling back to the look direction while standing still.
-      const point = { x: state.navigation.x, z: state.navigation.z };
+      const point = { x: truth.x, z: truth.z };
       const previous = lastPointRef.current;
       let bearingDeg = state.navigation.headingDeg;
       if (previous) {
@@ -108,7 +111,8 @@ export default function SlopeAhead({ engine }) {
       setError(catalogs.en['ui.no.waypoint.left.to.route.to']);
       return;
     }
-    const position = positionAlongPath(state.route.path, { x: state.navigation.x, z: state.navigation.z });
+    const truth = truePosition(state.navigation);
+    const position = positionAlongPath(state.route.path, truth);
     const remainingM = position && Number.isFinite(state.route.distanceM) ? Math.max(0, state.route.distanceM - position.distanceM) : 0;
     const requestId = requestRef.current + 1;
     requestRef.current = requestId;
@@ -116,7 +120,7 @@ export default function SlopeAhead({ engine }) {
     setBusy(true);
     setError(null);
     setDetour(null);
-    requestSlopeDetour({ x: state.navigation.x, z: state.navigation.z }, remaining)
+    requestSlopeDetour(truth, remaining)
       .then((result) => {
         if (requestId !== requestRef.current) return;
         if (useMissionStore.getState().route.path !== basePath) {
@@ -143,6 +147,7 @@ export default function SlopeAhead({ engine }) {
   const mapSize = 96;
   const scale = mapSize / (mapRadius * 2);
   const facing = Number.isFinite(warning.bearingDeg) ? warning.bearingDeg : 0;
+  const truth = truePosition(nav);   // the zone is drawn around the true position, the same place the warning computed it
 
   return (
     <section className="hud-slope-warning" aria-label={t('ui.slope.ahead.warning')}>
@@ -156,8 +161,8 @@ export default function SlopeAhead({ engine }) {
         <svg className="hud-slope-map" viewBox={`0 0 ${mapSize} ${mapSize}`} role="img" aria-label={t('ui.no.go.cells.around.the.astronaut')}>
           <rect x="0" y="0" width={mapSize} height={mapSize} className="hud-slope-map-bg" />
           {warning.cells.map((cell, index) => {
-            const dx = (cell.x - nav.x + mapRadius) * scale;
-            const dz = (cell.z - nav.z + mapRadius) * scale;
+            const dx = (cell.x - truth.x + mapRadius) * scale;
+            const dz = (cell.z - truth.z + mapRadius) * scale;
             return <rect key={index} x={dx - cellSize * scale / 2} y={dz - cellSize * scale / 2} width={cellSize * scale} height={cellSize * scale} className="hud-slope-cell" />;
           })}
           <g transform={`translate(${mapSize / 2} ${mapSize / 2}) rotate(${facing})`}>

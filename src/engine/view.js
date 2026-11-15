@@ -7,10 +7,13 @@
 //
 // The input gate and the pointer-lock controller are plain modules (input.js, pointerLock.js), so the
 // pause/menu rules are unit-tested without three.js.
+// The look speed multiplier and the inverted vertical axis (#102) are applied to both locked and drag look.
 import * as THREE from 'three';
 import { addCircle, pushOut, PARTNER_GAP, WALKER_RADIUS } from './collide.js';
 import { createInputGate } from './input.js';
 import { createPointerLock } from './pointerLock.js';
+import { LOOK_DEFAULTS, clampLookSettings } from './lookSettings.js';
+import { walkStep } from './walkInput.js';
 
 // The test bench's start, 70 m south of Cheyava Falls in Neretva Vallis. Only a debug teleport now (__marswalk.cheyavaView,
 // scripts/measure-fps.mjs): the EVA starts at the habitat airlock (spawn.js, placed by the engine once the habitat is down, #166).
@@ -20,12 +23,28 @@ const NEAR = { eye: 0.15, orbit: 5 };
 // Suited walking speeds from public/data/hazards.json: mobility.speed.flat and mobility.speed.jog (both SIM).
 // The test bench used 1.4 and 4.5 m/s, faster than a suited astronaut and outside the suit model's range (#13, #19).
 export const WALK_SPEED = 1.0, JOG_SPEED = 1.5;
-const JOG_BOB_FROM = 1.25;        // m/s: above this the head bob switches to the jogging lope
 const LOOK_LOCKED = 0.0025;       // rad per pixel of mouse movement while the pointer is locked
 const LOOK_DRAG = 0.004;          // rad per pixel while dragging (the bench's value)
+export const LOOK_PITCH_LIMIT = 1.2;   // rad: how far up and down the camera can look
 
 export function createViewState() {
-  return { mode: 'eye', yaw: 0, pitch: 0, eye: new THREE.Vector3(), keys: {}, moveSpeed: 0 };   // eye and yaw: set at the airlock during boot
+  return { mode: 'eye', yaw: 0, pitch: 0, eye: new THREE.Vector3(), keys: {}, moveSpeed: 0, forwardSpeed: 0 };   // eye and yaw: set at the airlock during boot
+}
+
+/**
+ * Applies one mouse-look delta. Locked and drag look share this, so the sensitivity and the inverted
+ * vertical axis behave the same in both (#102). The signature of look() does not change.
+ * @param {{ yaw: number, pitch: number }} view
+ * @param {number} dx horizontal pixels (right positive)
+ * @param {number} dy vertical pixels (down positive)
+ * @param {number} k radians per pixel for this path (LOOK_LOCKED or LOOK_DRAG)
+ * @param {{ sensitivity?: number, invertY?: boolean }} settings
+ */
+export function applyLook(view, dx, dy, k, settings = LOOK_DEFAULTS) {
+  const sensitivity = Number.isFinite(settings?.sensitivity) ? settings.sensitivity : LOOK_DEFAULTS.sensitivity;
+  const invert = settings?.invertY === true ? -1 : 1;
+  view.yaw += dx * k * sensitivity;
+  view.pitch = Math.max(-LOOK_PITCH_LIMIT, Math.min(LOOK_PITCH_LIMIT, view.pitch + dy * k * sensitivity * invert));
 }
 
 /**
@@ -50,7 +69,8 @@ export function createView(ctx, canvas, signal, { onLockChange = () => {}, input
     onChange: (isLocked) => { if (!isLocked) drag = false; onLockChange(isLocked); },
   });
   const locked = () => pointerLock.isLocked();
-  const look = (dx, dy, k) => { view.yaw += dx * k; view.pitch = Math.max(-1.2, Math.min(1.2, view.pitch + dy * k)); };
+  const lookSettings = { ...LOOK_DEFAULTS };
+  const look = (dx, dy, k) => applyLook(view, dx, dy, k, lookSettings);
   const applyControls = () => { controls.enabled = input && view.mode === 'orbit'; };
 
   addEventListener('keydown', (e) => { gate.keyDown(e.code); }, { signal });
@@ -116,6 +136,17 @@ export function createView(ctx, canvas, signal, { onLockChange = () => {}, input
     applyControls();
   }
 
+  /**
+   * Look preference (#102). Copies the clamped values into the state look() reads, so it applies from the
+   * next mouse movement without touching the current pose.
+   * @param {{ sensitivity?: number, invertY?: boolean }} next
+   */
+  function setLookSettings(next) {
+    const s = clampLookSettings(next);
+    lookSettings.sensitivity = s.sensitivity;
+    lookSettings.invertY = s.invertY;
+  }
+
   const fwd = new THREE.Vector3(), right = new THREE.Vector3();
   let bobAmp = 0, bobPhase = 0, camGround = 0, camDuck = 0, groundInit = false;
   const obs = [];   // this frame's obstacles near the walker (collide.js), reused
@@ -124,12 +155,15 @@ export function createView(ctx, canvas, signal, { onLockChange = () => {}, input
     const { arms, rocks, partner, habitat } = sys;
     if (view.mode === 'eye') {
       const eye = view.eye, yaw = view.yaw;
-      const sp = (input ? (gate.isDown('ShiftLeft') || gate.isDown('ShiftRight') ? JOG_SPEED : WALK_SPEED) : 0) * dt, ex = eye.x, ez = eye.z;
+      // One normalised step (#227): no key combination moves faster than the chosen gait, and Shift alone picks the
+      // jog. A sampling clip pins the player (sampling.pinned()): no key movement, moveSpeed 0, no jog bob.
+      const pinned = sys.sampling ? sys.sampling.pinned() : false;
+      const shift = gate.isDown('ShiftLeft') || gate.isDown('ShiftRight');
+      const speed = !input || pinned ? 0 : shift ? JOG_SPEED : WALK_SPEED;
+      const step = speed > 0 ? walkStep((code) => gate.isDown(code), yaw, speed, dt) : { x: 0, z: 0 };
+      const ex = eye.x, ez = eye.z;
+      if (step.x !== 0 || step.z !== 0) { eye.x += step.x; eye.z += step.z; }
       fwd.set(Math.sin(yaw), 0, -Math.cos(yaw)); right.set(-fwd.z, 0, fwd.x);
-      if (gate.isDown('KeyW') || gate.isDown('ArrowUp')) eye.addScaledVector(fwd, sp);
-      if (gate.isDown('KeyS') || gate.isDown('ArrowDown')) eye.addScaledVector(fwd, -sp);
-      if (gate.isDown('KeyD') || gate.isDown('ArrowRight')) eye.addScaledVector(right, sp);
-      if (gate.isDown('KeyA') || gate.isDown('ArrowLeft')) eye.addScaledVector(right, -sp);
       // collisions (#38, collide.js): rocks of 0.35 m and larger, the Cheyava Falls rock and the partner push the walker out, in one solve
       // so a walker squeezed between two of them ends clear of both. Then the habitat walls, last and hard: a blocked step slides along
       // the wall, and no push can shove the walker through one. Also while an arm clip plays: a clip moves only the camera (arms.cam).
@@ -145,12 +179,15 @@ export function createView(ctx, canvas, signal, { onLockChange = () => {}, input
       camGround = !groundInit || Math.abs(gT - camGround) > 1.5 ? gT : camGround + (gT - camGround) * Math.min(1, dt * 12); groundInit = true;
       camDuck += (dT - camDuck) * Math.min(1, dt * 10);
       camera.position.set(cx, camGround + 1.7 - camDuck + cc.drop + dig, cz); camera.rotation.set(-(view.pitch * (1 - cs) + cc.pitch * cs), -yaw, 0, 'YXZ');
-      view.moveSpeed = Math.hypot(eye.x - ex, eye.z - ez) / Math.max(dt, 1e-4);
+      view.moveSpeed = pinned ? 0 : Math.hypot(eye.x - ex, eye.z - ez) / Math.max(dt, 1e-4);
+      view.forwardSpeed = pinned ? 0 : (step.forward || 0);   // signed forward m/s for the legs (#228): negative walking backward, 0 strafing
       // reference head bob: one bounce per step; jogging on Mars is a slow lope (long 2 m strides, bigger bounce). Camera only, no asset involved.
-      const jog = view.moveSpeed > JOG_BOB_FROM, bt = arms.clip ? 0 : view.moveSpeed > 0.1 ? (jog ? 0.045 : 0.012) : 0; bobAmp += (bt - bobAmp) * Math.min(1, dt * 6); bobPhase += view.moveSpeed * dt * Math.PI * 2 / (jog ? 1.0 : 0.5);
+      // The gait is chosen by the Shift key (#227), never by the measured speed.
+      const jog = shift && speed > 0, bt = arms.clip ? 0 : view.moveSpeed > 0.1 ? (jog ? 0.045 : 0.012) : 0; bobAmp += (bt - bobAmp) * Math.min(1, dt * 6); bobPhase += view.moveSpeed * dt * Math.PI * 2 / (jog ? 1.0 : 0.5);
       camera.position.y += Math.abs(Math.sin(bobPhase * 0.5)) * bobAmp * 2 - bobAmp; camera.position.addScaledVector(right, Math.sin(bobPhase * 0.5) * bobAmp * 0.4);
     } else {
       view.moveSpeed = 0;
+      view.forwardSpeed = 0;
       if (input) controls.update();
       const g = groundH(camera.position.x, camera.position.z) + 2; if (camera.position.y < g) camera.position.y = g;
     }
@@ -166,6 +203,7 @@ export function createView(ctx, canvas, signal, { onLockChange = () => {}, input
     view.yaw = pose.yaw;
     view.pitch = 0;
     view.moveSpeed = 0;
+    view.forwardSpeed = 0;
     gate.clear();
     drag = false;
     bobAmp = 0; bobPhase = 0; camGround = 0; camDuck = 0; groundInit = false;
@@ -178,6 +216,7 @@ export function createView(ctx, canvas, signal, { onLockChange = () => {}, input
     setMode,
     update,
     setInputEnabled,
+    setLookSettings,
     reset,
     requestPointerLock: () => pointerLock.request(),
     releasePointerLock: () => pointerLock.release(),

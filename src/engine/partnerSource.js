@@ -17,6 +17,11 @@ export const HANDOVER_M = 1.6;
 /** ...and bends at once, without walking, when the player is already this close (m). */
 export const HANDOVER_REACH_M = 1.7;
 
+/** Stand still this long after arriving before the case bend starts (#226). */
+export const BEND_HOLD_SEC = 0.3;
+/** A follow that has not reached the player after this long gives up and walks back to the patrol (#226). */
+export const FOLLOW_TIMEOUT_SEC = 45;
+
 /** Throws if a state does not match the PartnerState contract. Network sources can use it in their tests. */
 export function assertPartnerState(s) {
   const fail = (m) => { throw new Error('invalid PartnerState: ' + m); };
@@ -65,9 +70,10 @@ export function createScriptedPartner({ id = 'EV2', color = [1, 0.32, 0.03], A =
       const px = world.player.x, pz = world.player.z, dx = p.x - px, dz = p.z - pz, d = Math.hypot(dx, dz) || 1;
       wantCarry = false;
       free = {
-        x: p.x, z: p.z, face: { x: px, z: pz }, follow: true,
+        x: p.x, z: p.z, face: { x: px, z: pz }, follow: true, followT: 0,
         goal: d > HANDOVER_REACH_M ? { x: px + dx / d * HANDOVER_M, z: pz + dz / d * HANDOVER_M } : null,
-        then: () => { free.follow = false; startBend(); },
+        // arrive, stand still briefly, then bend (#226): the renderer eases into the bend pose meanwhile
+        hold: 0, then: () => { free.follow = false; free.hold = BEND_HOLD_SEC; },
       };
     } else { wantCarry = true; startBend(); }
     return true;
@@ -98,13 +104,23 @@ export function createScriptedPartner({ id = 'EV2', color = [1, 0.32, 0.03], A =
     const speed = (1.0 / 1.2) * (1 - 0.45 * stoop);   // one 1 m stride per 1.2 s walk loop; slower when stooped
     let walking = true, x, z, target = null, turn = 6;
     if (free) {   // off the patrol: walk to a goal, then face a point, then act
-      const f = free;
-      if (f.follow && world && world.player) {   // bringing the case: aim at the player as they are now, not as they were (#172)
-        const px = world.player.x, pz = world.player.z, dx = f.x - px, dz = f.z - pz, d = Math.hypot(dx, dz);
-        f.face = { x: px, z: pz };
-        // still walking: re-aim at the HANDOVER_M ring around the player. Already on or inside it (the player walked up): stop
-        // here, never back away. Once stopped it stays stopped and turns to face the player until the bend starts.
-        if (f.goal) f.goal = d > HANDOVER_M ? { x: px + dx / d * HANDOVER_M, z: pz + dz / d * HANDOVER_M } : null;
+      if (free.follow && world && world.player) {   // bringing the case: aim at the player as they are now, not as they were (#172)
+        free.followT += dt;
+        const px = world.player.x, pz = world.player.z, dx = free.x - px, dz = free.z - pz, d = Math.hypot(dx, dz);
+        if (free.followT > FOLLOW_TIMEOUT_SEC) {   // chased long enough: the player outruns the partner, give up and walk back (#226)
+          free = { x: free.x, z: free.z, goal: patrolPoint(), leave: true };
+          wantCarry = true;
+        } else {
+          free.face = { x: px, z: pz };
+          // still walking: re-aim at the HANDOVER_M ring around the player. Already on or inside it (the player walked up): stop
+          // here, never back away. Once stopped it stays stopped and turns to face the player until the bend starts.
+          if (free.goal) free.goal = d > HANDOVER_M ? { x: px + dx / d * HANDOVER_M, z: pz + dz / d * HANDOVER_M } : null;
+        }
+      }
+      const f = free;   // re-read: the give-up may have swapped the task for the walk back
+      if (f.hold > 0 && bendTime === null) {   // the brief stop before the bend (#226)
+        f.hold -= dt;
+        if (f.hold <= 0) { f.hold = 0; startBend(); }
       }
       if (f.goal) {
         const gx = f.goal.x - f.x, gz = f.goal.z - f.z, gd = Math.hypot(gx, gz), st = speed * dt;
@@ -122,7 +138,15 @@ export function createScriptedPartner({ id = 'EV2', color = [1, 0.32, 0.03], A =
     if (bendTime !== null) walking = false;
     stoop += ((duck(x, z) > 0.15 ? 1 : 0) - stoop) * Math.min(1, dt * 5);
     let aligned = true;
-    if (target !== null && bendTime === null) { const df = ((target - yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI; yaw += df * Math.min(1, dt * turn); aligned = Math.abs(df) < 0.12; }
+    if (target !== null && bendTime === null) {
+      // the short way around, whatever yaw has accumulated: JS % keeps the sign, so the old formula turned the
+      // long way once yaw built up past target + 3π (#226). A full turnaround picks one side, not float noise.
+      let df = Math.atan2(Math.sin(target - yaw), Math.cos(target - yaw));
+      if (Math.abs(Math.abs(df) - Math.PI) < 1e-9) df = Math.PI;
+      yaw += df * Math.min(1, dt * turn);
+      aligned = Math.abs(df) < 0.12;
+    }
+    yaw = Math.atan2(Math.sin(yaw), Math.cos(yaw));   // wrap into [-π, π]: long sessions and many turns cannot build yaw up (#226)
     if (free && !free.goal && aligned && free.then) { const fn = free.then; free.then = null; fn(); }
     moving = walking;
     last = { x, z };
