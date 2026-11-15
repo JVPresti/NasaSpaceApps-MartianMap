@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  AIRLOCK_CYCLE_MS, STAGE, beginEgress, beginIngress, canAdvance, completeEgress, completeIngress, inAirlock, isOnSurface,
+  AIRLOCK_CYCLE_MS, AIRLOCK_MIN_DARK_MS, STAGE, beginEgress, beginIngress, canAdvance, completeEgress, completeIngress, inAirlock, isOnSurface,
   isPlanning, runAirlockCycle,
 } from './flow.js';
 import { pauseMission, resetStore, setMode, useMissionStore } from './store.js';
@@ -139,6 +139,17 @@ describe('airlock cycle', () => {
     running = true;
     c.advance(AIRLOCK_CYCLE_MS);
     expect(onDone).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives the move its own frame and time before the end, even after one very long frame', () => {
+    const c = clock();
+    const order = [];
+    runAirlockCycle({ ...c, onDark: () => order.push(['dark', c.now()]), onDone: () => order.push(['done', c.now()]) });
+    c.advance(AIRLOCK_CYCLE_MS * 3, AIRLOCK_CYCLE_MS * 3);   // one frame of three cycle lengths
+    expect(order.map(([name]) => name)).toEqual(['dark']);
+    c.advance(1000);
+    expect(order.map(([name]) => name)).toEqual(['dark', 'done']);
+    expect(order[1][1] - order[0][1]).toBeGreaterThanOrEqual(AIRLOCK_MIN_DARK_MS);
   });
 
   it('never calls back after stop', () => {

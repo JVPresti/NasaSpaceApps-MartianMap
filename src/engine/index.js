@@ -555,7 +555,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       if (!started || !alive) return false;
       setWrist(false);
       placeAtAirlock();
-      viewCtl.reset(airlockExit(sys.habitat.pos, sys.habitat.dir, sys.route.data.waypoints[1]), 'walk');
+      viewCtl.reset(airlockExit(sys.habitat.pos, sys.habitat.dir, sys.route.data.waypoints[1]), 'walk', { keepLock: true });
       viewCtl.setInputEnabled(inputEnabled);
       requestedMode = 'walk';
       return true;

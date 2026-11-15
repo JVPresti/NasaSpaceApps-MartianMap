@@ -615,7 +615,7 @@ export default function App() {
         <PauseMenu
           view={overlay}
           mode={mode}
-          evaBegun={onSurface}
+          evaBegun={!inHabitat}
           busy={busy}
           notice={notice}
           freeLook={freeLook}

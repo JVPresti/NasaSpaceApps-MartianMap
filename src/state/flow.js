@@ -42,6 +42,8 @@ const NEXT = Object.freeze({
 export const AIRLOCK_CYCLE_MS = 2600;
 /** The screen is fully dark from this fraction of the cycle on, so the engine can move the player unseen. */
 export const AIRLOCK_DARK_AT = 0.25;
+/** At least this long between the move (onDark) and the end (onDone), even after one very long frame. */
+export const AIRLOCK_MIN_DARK_MS = 400;
 
 /** True when the simulator may go from `from` to `to`. */
 export function canAdvance(from, to) {
@@ -93,6 +95,7 @@ export const completeIngress = (store = useMissionStore) => advance(store, STAGE
 export function runAirlockCycle({
   durationMs = AIRLOCK_CYCLE_MS,
   darkAt = AIRLOCK_DARK_AT,
+  minDarkMs = AIRLOCK_MIN_DARK_MS,
   now = () => performance.now(),
   schedule = (fn) => requestAnimationFrame(fn),
   cancel = (handle) => cancelAnimationFrame(handle),
@@ -101,17 +104,20 @@ export function runAirlockCycle({
   onDark = () => {},
   onDone = () => {},
 } = {}) {
-  let elapsed = 0, last = now(), handle = null, stopped = false, dark = false, ratio = 0;
+  let elapsed = 0, last = now(), handle = null, stopped = false, dark = false, darkAtMs = 0, ratio = 0;
   const step = () => {
     handle = null;
     if (stopped) return;
     const t = now(), dt = Math.max(0, t - last);
     last = t;
     if (running()) elapsed += dt;
-    ratio = Math.min(1, elapsed / durationMs);
+    // A long frame (a busy machine, a screenshot) can jump past both points at once. The move then still gets its
+    // own frame and some running time before the end, so the player is outside before the EVA starts.
+    if (dark) ratio = Math.min(1, elapsed / durationMs);
+    else ratio = Math.min(darkAt, elapsed / durationMs);
     onProgress(ratio);
-    if (!dark && ratio >= darkAt) { dark = true; onDark(); }
-    if (ratio >= 1) { stopped = true; onDone(); return; }
+    if (!dark && ratio >= darkAt) { dark = true; darkAtMs = elapsed; onDark(); }
+    else if (ratio >= 1 && elapsed - darkAtMs >= minDarkMs) { stopped = true; onDone(); return; }
     handle = schedule(step);
   };
   handle = schedule(step);

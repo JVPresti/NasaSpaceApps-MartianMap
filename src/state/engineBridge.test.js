@@ -105,3 +105,20 @@ describe('engine bridge look settings', () => {
     disconnect();
   });
 });
+
+describe('engine bridge airlock move', () => {
+  it('writes the moved player position on a stage change, before a later subscriber reads it', () => {
+    const engine = { ...fakeEngine(), slopeAt: () => 0, player: { x: 0, z: 0, headingDeg: 0 } };
+    engine.getPlayer = () => engine.player;
+    const disconnect = connectEngine(engine);
+    const seen = [];
+    const unsubscribe = useMissionStore.subscribe((s, prev) => {
+      if (s.stage !== prev.stage) seen.push([useMissionStore.getState().navigation.trueX, useMissionStore.getState().navigation.trueZ]);
+    });
+    engine.player = { x: 534.65, z: 573.51, headingDeg: 323 };   // exitAirlock() moved the player; no poll ran since
+    useMissionStore.setState({ stage: 'egress' });
+    expect(seen).toEqual([[534.65, 573.51]]);
+    unsubscribe();
+    disconnect();
+  });
+});

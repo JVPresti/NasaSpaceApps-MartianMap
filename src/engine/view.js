@@ -321,8 +321,9 @@ export function createView(ctx, canvas, signal, {
    * Return to the spawn pose after a restart (the airlock, spawn.js, #166).
    * @param {{ x: number, z: number, yaw: number }} pose
    * @param {'plan' | 'walk'} mode
+   * @param {{ keepLock?: boolean }} [options] keepLock: move without releasing the pointer lock (the airlock cycle)
    */
-  function reset(pose, mode) {
+  function reset(pose, mode, { keepLock = false } = {}) {
     view.eye.set(pose.x, 0, pose.z);
     view.yaw = pose.yaw;
     view.pitch = 0;
@@ -332,7 +333,7 @@ export function createView(ctx, canvas, signal, {
     drag = false;
     touch.clear(); pad.reset(); publishTouch();
     bobAmp = 0; bobPhase = 0; camGround = 0; camDuck = 0; groundInit = false;
-    pointerLock.release();
+    if (!keepLock) pointerLock.release();   // the airlock move keeps the capture: releasing it would pause the EVA
     setMode(mode);
     update(0);   // snap the camera to the new eye position before the next frame
   }

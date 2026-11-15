@@ -33,9 +33,11 @@ export function connectEngine(engine, store = useMissionStore) {
     if (!prev || s.settings.look !== prev.settings.look) engine.setLookSettings(s.settings.look);
     // a new EVA starts with clean ground: the boot prints of the last one go (#46)
     if (prev && s.mission.startedAtMs !== prev.mission.startedAtMs) engine.clearPrints();
+    // The airlock moved the player (habitat-first flow). Write the new position before any later subscriber, the
+    // simulation's EVA start among them, reads it: on a slow frame the stage can change before the next poll, and an
+    // EVA runner that saw the indoor position first would count it as "outside" and end the EVA on the next tick.
+    if (prev && s.stage !== prev.stage) writePlayer();
   };
-  apply(store.getState(), null);
-  const unsubscribe = store.subscribe(apply);
 
   const pollHabitat = () => {
     const state = store.getState();
@@ -44,13 +46,20 @@ export function connectEngine(engine, store = useMissionStore) {
     if (nearTable !== state.habitat?.nearTable || zone !== state.habitat?.zone) store.setState({ habitat: { nearTable, zone } });
   };
 
-  const timer = setInterval(() => {
-    pollHabitat();
+  function writePlayer() {
     const p = engine.getPlayer(), nav = store.getState().navigation;
     const x = Math.round(p.x * 100) / 100, z = Math.round(p.z * 100) / 100, headingDeg = Math.round(p.headingDeg * 10) / 10;
     if (x === nav.trueX && z === nav.trueZ && headingDeg === nav.headingDeg && nav.slopeDeg !== null) return;   // standing still: no store update, no re-render
     const slopeDeg = Math.round(engine.slopeAt(x, z) * 10) / 10;   // terrain slope under the player, for the HUD (DERIVED from the HiRISE DTM)
     store.setState((s) => ({ navigation: { ...s.navigation, trueX: x, trueZ: z, headingDeg, slopeDeg } }));
+  }
+
+  apply(store.getState(), null);
+  const unsubscribe = store.subscribe(apply);
+
+  const timer = setInterval(() => {
+    pollHabitat();
+    writePlayer();
   }, PLAYER_POLL_MS);
 
   return () => { unsubscribe(); clearInterval(timer); };
