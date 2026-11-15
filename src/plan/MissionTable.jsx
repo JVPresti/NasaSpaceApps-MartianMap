@@ -147,6 +147,17 @@ function stopLabel(waypoint, index) {
   return [waypointNumber(index), sentence(placeName(name))];
 }
 
+/**
+ * What a sampling task's place is for (#352): "for 1 rock sample · 2 photos", the plan's tasks there (routeWhy.taskRole).
+ * Null for any other stop, so the rows of the other goals do not change.
+ * @param {{ tasks?: string[] }} waypoint a route waypoint; a task place lists the ids of its tasks
+ * @param {Array<object>} planTasks route.tasks
+ */
+function taskRoleOf(waypoint, planTasks) {
+  if (!Array.isArray(waypoint?.tasks) || waypoint.tasks.length === 0) return null;
+  return taskRole(planTasks.filter((task) => waypoint.tasks.includes(task.id)));
+}
+
 function Big({ value, unit, label, tone, title }) {
   return (
     <div className="table-big" title={title}>
@@ -160,10 +171,10 @@ function Big({ value, unit, label, tone, title }) {
  * The stops in walking order, each with the distance of the leg that reaches it. While the route on the table is the
  * planned one, each stop also says the work planned there (#247) and why its leg runs where it does (#246), and the
  * stops the objective allows but the plan left out follow, with the reason. A sampling task's place (#352) says the
- * tasks it serves in place of "goal".
+ * tasks it serves in place of "goal", ahead, reached or skipped.
  * @param {{ waypoints: Array<object>, legs: Array<object>, explain?: Array<object>, dropped?: Array<object>,
- *   planTasks?: Array<object> }} props explain, dropped and planTasks: route.explain, route.dropped and route.tasks,
- *   empty when an event re-plan replaced the planned route
+ *   planTasks?: Array<object> }} props explain and dropped: route.explain and route.dropped, empty when an event re-plan
+ *   replaced the planned route; planTasks: route.tasks, which the EVA never changes
  */
 function Stops({ waypoints, legs, explain = [], dropped = [], planStops = [], planLegs = null, done = null, planTasks = [] }) {
   const stops = useStops();
@@ -183,9 +194,9 @@ function Stops({ waypoints, legs, explain = [], dropped = [], planStops = [], pl
             : Number.isFinite(leg?.distanceM) ? `${Math.round(leg.distanceM)} m` : '';
         // the goal of the walk, or a stop kept because it fits the crew's time (D13: route.stops[].required)
         const planned = k > 0 ? planStops.find((entry) => entry.id === (waypoint.stopId ?? waypoint.place)) : null;
-        const tasksHere = Array.isArray(planned?.tasks) ? planTasks.filter((task) => planned.tasks.includes(task.id)) : [];
-        const role = tasksHere.length ? taskRole(tasksHere) : planned ? t(planned.required ? 'table.stop.goal' : 'table.stop.fits') : null;
-        const line = k > 0 && !state ? stopLine({ workSec: leg?.workSec ?? waypoint.workSec, explain: explain[k - 1], role }) : null;
+        const tasks = k > 0 ? taskRoleOf(waypoint, planTasks) : null;   // a sampling task's place names its tasks in every state
+        const role = tasks ?? (planned ? t(planned.required ? 'table.stop.goal' : 'table.stop.fits') : null);
+        const line = k > 0 && !state ? stopLine({ workSec: leg?.workSec ?? waypoint.workSec, explain: explain[k - 1], role }) : sentence(tasks);
         // why the stop is worth the walk, when stops.json says (D10: the sortie's light-toned patch), tagged SIM
         const reason = k > 0 && !state ? stopReason(planned, language) : null;
         return (
@@ -222,9 +233,10 @@ function Stops({ waypoints, legs, explain = [], dropped = [], planStops = [], pl
  * The stop list while an event's shelter route is the route (#265): from where the crew is to the shelter, with the
  * alert that sent them there, and the stops the event route leaves out. The plan approved before the EVA comes back
  * when the event ends.
- * @param {{ event: ReturnType<typeof eventRouteOf> }} props
+ * @param {{ event: ReturnType<typeof eventRouteOf>, planTasks?: Array<object> }} props planTasks: route.tasks, so a
+ *   sampling task's place left out still names its tasks (#352)
  */
-function EventStops({ event, waypoints, leftM = null }) {
+function EventStops({ event, waypoints, leftM = null, planTasks = [] }) {
   const [code, name] = shelterLabel(event.shelter);
   return (
     <ol className="table-stops">
@@ -243,11 +255,13 @@ function EventStops({ event, waypoints, leftM = null }) {
       {event.skipped.map((stop) => {
         const k = waypoints.findIndex((waypoint) => waypoint.name === stop);
         const [skippedCode, label] = k > 0 ? stopLabel(waypoints[k], k) : ['–', placeName(stop)];
+        const tasks = k > 0 ? taskRoleOf(waypoints[k], planTasks) : null;   // a sampling task's place still names its tasks
         return (
           <li key={'skipped-' + stop} className="dropped">
             <code>{skippedCode}</code>
             <span className="table-stop-name">{sentence(translateText(label))}</span>
             <span className="table-stop-dist">{t('table.event.skipped')}</span>
+            {tasks && <small className="table-stop-why">{sentence(tasks)}</small>}
           </li>
         );
       })}
@@ -519,7 +533,9 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
   const limits = planLimits({ totals, budget: planCurrent ? route.budget : null, constants, needs });
   // The forecast radiation alert (D6): switched on for this run and not yet fired.
   const radiationExpected = useMissionStore((s) => !(s.hazards.off ?? []).includes('radiation')) && !alerts?.radiation;
-  const decision = decisionFor({ planner, totals, limits, dust, objective, radiationExpected });
+  // an empty "Collect samples" list (#352): the no-go says to add a task, not that no route was found
+  const noTasks = useMissionStore((s) => s.needs.objective === 'samples' && (s.needs.tasks?.length ?? 0) === 0);
+  const decision = decisionFor({ planner, totals, limits, dust, objective, radiationExpected, noTasks });
   // Each reason is said once: a solo crew held to the radio route under the profile buttons it turns off
   // (RouteProfiles.jsx), whether the plan fits in the tightest-limit line. A no-go takes the place of the plan's reasons:
   // what to change comes first, the crew and risk settings stay in view in the needs panel, and each leg's reason stays
@@ -619,9 +635,9 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
                 {/* the work at each stop (SIM) and why each leg bends (DERIVED) */}
                 {!event && <span><SourceTag path="route.legs.workSec" requireSource={false} /><SourceTag path="route.explain" requireSource={false} /></span>}
               </div>
-              {event ? <EventStops event={event} waypoints={waypoints} leftM={leftM} /> : (
+              {event ? <EventStops event={event} waypoints={waypoints} leftM={leftM} planTasks={route.tasks ?? []} /> : (
                 <Stops waypoints={waypoints} legs={route.legs ?? []} explain={planCurrent ? route.explain ?? [] : []} dropped={planCurrent ? route.dropped ?? [] : []}
-                  planStops={planCurrent ? route.stops ?? [] : []} planLegs={evaBegun ? evaProgress.planLegs : null} done={done} planTasks={planCurrent ? route.tasks ?? [] : []} />
+                  planStops={planCurrent ? route.stops ?? [] : []} planLegs={evaBegun ? evaProgress.planLegs : null} done={done} planTasks={route.tasks ?? []} />
               )}
             </div>
           )}

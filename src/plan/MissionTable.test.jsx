@@ -85,6 +85,34 @@ describe('mission table', () => {
       expect(html).toContain('For 1 rock sample · 8 min work');
     });
 
+    it('names the task at its place in every state of the walk: ahead after a re-plan, reached, skipped by an event', () => {
+      samples();
+      const walking = (route) => useMissionStore.setState((s) => ({ route: { ...s.route, ...route } }));
+      const why = (html) => html.match(/<small class="table-stop-why">([^<]*)/g)?.map((m) => m.replace(/<[^>]+>/g, '')) ?? [];
+      walking({ path: [[-5, -20], [-11, -50]] });   // the path left after a re-plan: no longer the planned profile's
+      expect(why(render({ initialTab: 'route', waypoints: planned, evaBegun: true }))).toEqual(['For 1 rock sample · 8 min work']);
+      walking({ visited: ['HAB', planned[1].name] });
+      expect(why(render({ initialTab: 'route', waypoints: planned, evaBegun: true }))).toEqual(['For 1 rock sample']);
+      walking({ visited: ['HAB'], skipped: [planned[1].name], shelter: { id: 'HAB', name: 'HAB · habitat airlock' } });
+      const event = render({ initialTab: 'route', waypoints: planned, evaBegun: true });
+      expect(event).toMatch(/<li class="dropped"><code>1<\/code><span class="table-stop-name">Bright Angel<\/span><span class="table-stop-dist">[^<]+<\/span><small class="table-stop-why">For 1 rock sample<\/small><\/li>/);
+    });
+
+    it('blanks the figures and asks for a task when the list is empty, on the Route and the Suit step', () => {
+      useMissionStore.setState((s) => ({
+        needs: { ...s.needs, objective: 'samples', tasks: [] },
+        route: { ...s.route, path: null, waypoints: [planned[0]], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, totals: null, planReasons: [{ code: 'no-tasks' }] },
+      }));
+      const failed = { ...planner, status: 'error', error: 'No route found' };
+      const route = render({ initialTab: 'route', waypoints: [planned[0]], planner: failed });
+      expect(route).toContain('<p class="table-note tone-warning">No sampling task yet: add one to plan a route.</p>');
+      expect(route).not.toContain('No route found');
+      expect(route.match(/<b>—<\/b>/g)).toHaveLength(4);
+      const suit = render({ initialTab: 'suit', waypoints: [planned[0]], planner: failed });
+      expect(suit).toContain('No sampling task yet: add one to plan a route.');
+      expect(suit).not.toContain('No route found');
+    });
+
     it('keeps the stop list, and no task control, for the other goals', () => {
       const html = render({ initialTab: 'route' });
       expect(html).toMatch(/<p class="table-label">Stops<\/p>/);
