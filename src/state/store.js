@@ -38,6 +38,9 @@ export function createInitialState() {
     finds: { list: [], seq: 0, activeId: null, routeKey: null },
     view: { layer: 0, sky: 'late_afternoon', skyBlend: 0, slopeGrid: false },   // what the engine draws; #59 demo starts in late-afternoon light
     sources: {},                                    // { 'environment.tempC': { tag: 'DATA' | 'DERIVED' | 'SIM', source } }
+    // #52, written only by src/net/index.js when the link has ?room=. These defaults mean offline. status: 'off' |
+    // 'connecting' | 'open' | 'offline' | 'closed'; me and crew entries: { id, name, color, role, joinedAt }.
+    online: { code: null, status: 'off', me: null, crew: [], offsetMs: 0, rttMs: null, startedAtMs: null, seed: null, closeCode: null },
   };
 }
 
