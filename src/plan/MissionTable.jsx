@@ -18,6 +18,7 @@ import { toggleWaypoint } from '../stops/selection.js';
 import { useStops } from '../stops/useStops.js';
 import { PROFILE_IDS } from '../sim/routeProfiles.js';
 import { eventStartSec } from '../sim/missions.js';
+import { PlanBeat } from '../mission/MissionBeat.jsx';
 import { LAYERS, SLOPE_LIMITS } from './layers.js';
 import LayerLegend from './LayerLegend.jsx';
 import LayerPreview from './LayerPreview.jsx';
@@ -383,6 +384,8 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
         <section className="table-left">
           <h2 className="table-h">{t('ui.cheyava.falls')}</h2>
           <p className="table-text">{t('table.site.text')}</p>
+          {/* The first mission's plan beat (#265, src/mission/MissionBeat.jsx): nothing for the full EVA. */}
+          <PlanBeat evaBegun={evaBegun} />
           {image && (
             <figure className="table-panel table-fill table-photo">
               <img src={imageUrl(image)} alt={image.alt} width={image.width_px} height={image.height_px} />
