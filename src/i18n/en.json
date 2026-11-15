@@ -321,7 +321,6 @@
   "table.layer.zone": "Return zone",
   "table.layer.zone.title": "Where the crew can go and still get home",
   "table.layer.zone.legend": "Return zone",
-  "hud.zone.inside": "Return zone",
   "hud.zone.edge": "Tight return",
   "layers.stop.dropped.time": "dropped: over your time",
   "layers.stop.dropped.o2": "dropped: O2 margin",

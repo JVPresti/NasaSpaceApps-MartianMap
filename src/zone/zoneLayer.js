@@ -12,7 +12,7 @@ export const ZONE_LAYER = {
   decides: 'layers.decides.zone',
   provenance: {
     tag: 'DERIVED', label: 'HiRISE DTM + suit model',
-    source: 'two Dijkstra passes over the HiRISE height grid in 3.8 m x 4 m cells, each step priced with the suit model (walking_metabolic, hazards.json); inside: the margin at the cell after walking there and back stays over 0 min with the 30 min O2 reserve; edge: under the 15 min caution margin (SIM threshold). src/sim/returnZone.js',
+    source: 'two Dijkstra passes over the HiRISE height grid in 3.8 m x 4 m cells, each step priced with the suit model (walking_metabolic, hazards.json); inside: the walk there, the work at a stop and the walk home pass the plan budget checks of missionNeeds.js (the usable time, the O2 margin with the 30 min reserve over the risk floor, the battery reserve); tight: the tighter of the time and O2 margins under the 15 min caution margin (SIM threshold). src/sim/returnZone.js',
   },
   get name() { return t('layers.zone'); },
   get unit() { return t('layers.zone.unit'); },

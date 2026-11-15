@@ -4,8 +4,8 @@ import { zoneStatus } from './zoneStatus.js';
 
 /**
  * The return zone legend's lines on what bounds it: what sets the edge now, and the budget ("Your plan: 30 min, 15 %
- * time reserve · 30 min O2 reserve · 100 % O2 · reach 610 m · 4 m cells"). Inside the legend, so an event banner over
- * the map never hides why the zone shrank.
+ * time reserve · 30 min O2 reserve · 100 % O2 · tight under 15 min · reach 610 m · 4 m cells"). Inside the legend,
+ * so an event banner over the map never hides why the zone shrank.
  */
 export default function ZoneLegendLine() {
   const status = zoneStatus(useReturnZone(true));

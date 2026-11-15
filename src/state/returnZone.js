@@ -41,6 +41,13 @@ export const ZONE_REFRESH = Object.freeze({ moveM: 5, o2G: 2, batteryWh: 1, elap
 
 const finite = (v) => typeof v === 'number' && Number.isFinite(v);
 
+// The event definitions of each objective's mission, built once: zoneInput runs on every store write of a walk.
+const definitionsByObjective = new Map();
+function eventDefinitions(objective) {
+  if (!definitionsByObjective.has(objective)) definitionsByObjective.set(objective, missionEventDefinitions(objective, EVENT_DEFINITIONS));
+  return definitionsByObjective.get(objective);
+}
+
 /** A fresh memo for planOf. Each zone service keeps its own, so two stores never share a plan. */
 const newPlanMemo = () => ({ budget: undefined, waypoints: undefined, fromIndex: -1, value: null });
 
@@ -73,7 +80,7 @@ function hazardKey(hazards) {
  * @param {object} [memo] the caller's planOf memo, kept across calls on the same store
  */
 export function zoneInput(s, habitat, c, memo) {
-  const modifiers = zoneModifiers(s, missionEventDefinitions(s.needs?.objective, EVENT_DEFINITIONS));
+  const modifiers = zoneModifiers(s, eventDefinitions(s.needs?.objective));
   const budget = s.route?.budget;
   const evaLimitSec = finite(budget?.usableSec) ? budget.usableSec : undefined;
   const live = finite(s.suit?.oxygenG) && (s.mode === 'walk' || (s.eva?.phase && s.eva.phase !== 'ready'));

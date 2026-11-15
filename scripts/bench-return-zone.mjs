@@ -25,7 +25,7 @@ const usableSec = OBJECTIVE_DEFAULTS.sortie.timeMin * 60 * (1 - risk.reserveShar
 const plan = { marginFloor: risk.marginFloor, marginFloorSec: c.warningSec, batteryReserveWh: risk.reserveShare * c.batteryWh, stops: [{ x: stop.x, z: stop.z, workSec: stop.work_time_s.value ?? stop.work_time_s }] };
 const windowSec = shelterWindowSec(missionEventDefinitions(FIRST_OBJECTIVE, [radiation]).find((d) => d.id === 'radiation'));
 const atStop = { grid, home, from: { x: stop.x, z: stop.z }, suit: { o2G: c.o2UsableG - 10, batteryWh: c.batteryWh - 5, elapsedSec: 150 }, constants: c, evaLimitSec: usableSec, plan: { ...plan, stops: [] } };
-const full = { grid, home, suit: { o2G: c.o2UsableG, batteryWh: c.batteryWh }, constants: c, evaLimitSec: c.evaLimitSec };
+const full = { grid, home, suit: { o2G: c.o2UsableG, batteryWh: c.batteryWh }, constants: c, evaLimitSec: c.evaMaxSec };
 
 const cases = [
   ['Suit limits only, 4 m cells', full],
