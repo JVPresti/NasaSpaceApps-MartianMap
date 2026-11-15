@@ -13,6 +13,7 @@
     "meda": "node scripts/build-meda-sol.mjs",
     "rad": "node scripts/build-rad.mjs",
     "measure": "node scripts/measure-fps.mjs",
+    "measure:demo": "node scripts/measure-demo.mjs",
     "bench": "node scripts/bench-replan.mjs",
     "prints:eva": "node scripts/eva-prints.mjs",
     "preview": "vite preview",
