@@ -17,10 +17,12 @@ Search the PDF or the DOCX for `[email]` and `[confirm]`. Each one is a fact onl
 
 - `[email]`: each member's email, on the cover. Add them in Google Docs only. Keep emails out of the repository.
 - `[confirm]` after the roles of Andrea and Brayan: their roles are new or changed since last year's report.
-- `[confirm]` in Impact, Presentation and in Brayan's paragraph: the pitch runs at most 4 minutes, with an edited app video in place of a live demo, but the organisers' page still says 3 minutes. A second `[confirm]` in Impact, Presentation asks for the 4-minute script, since #329 has only 3, 5 and 8-minute versions.
-- Appendix B: the watermark line, once #301 is done or not.
+- `[confirm]` in Impact, Presentation: the talk runs at most 4 minutes, with an edited app video in place of a live demo, but the organisers' page still says 3 minutes. A second `[confirm]` there asks for the 4-minute script.
+- Appendix B: whether each SI-generated image now carries a visible watermark.
 - Appendix C: the prior-work statement, after the local lead answers.
-- Appendix D: the Figma link, and whether the repository is public.
+- Appendix D: whether the repository is public, and the video link.
+
+The report is written for judges, not developers, so it names no pull requests, files, functions, branches or commits. Keep it that way when editing.
 
 ## In Google Docs
 

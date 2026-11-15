@@ -39,9 +39,9 @@
     <div class="stack">
       <div class="box"><h3>NASA archives</h3><p>USGS HiRISE DTM 1 m and ortho 25 cm, CTX DEM and mosaic, PDS MEDA and RAD, CCMC DONKI, MMGIS traverse, Mars 2020 raw images, NTRS suit and physiology reports</p></div>
       <div class="arrow">▼ several GB, never in git</div>
-      <div class="box"><h3>Blender and Node scripts</h3><p>One Blender scene exports the terrain mesh and the 751 × 751 height grid. <code>scripts/build-*.mjs</code> write the data files</p></div>
+      <div class="box"><h3>Blender and Node scripts</h3><p>One Blender scene exports the terrain mesh and the 751 × 751 height grid. Node scripts write the data files</p></div>
       <div class="arrow">▼ small static files</div>
-      <div class="box"><h3>Data files</h3><p><code>terrain.json</code>, <code>hazards.json</code>, <code>meda_sol.json</code>, <code>rad.json</code>, <code>shelters.json</code>, <code>traverse.json</code>, <code>stops.json</code>, models and textures. Each value keeps its provenance block</p></div>
+      <div class="box"><h3>Data files</h3><p>Terrain grid, suit and hazard values, weather, radiation, shelters, rover drives, science stops, models and textures. Each value keeps its source</p></div>
     </div>
   </div>
 
@@ -53,7 +53,7 @@
       <div class="box"><h3>Mission store · Zustand 5</h3><p>Route, suit, alerts, navigation, crew needs, EVA log</p></div>
       <div class="arrow">▲ writes ▼ reads</div>
       <div style="display:grid;grid-template-columns:1.55fr 1fr;gap:12px">
-        <div class="box hot"><h3>Simulation · <code>src/sim/</code></h3><p>Plain JavaScript, no React, no three.js. Runs in Web Workers and Node tests</p>
+        <div class="box hot"><h3>Simulation</h3><p>Plain JavaScript, no React, no three.js. Runs in Web Workers and Node tests</p>
           <div class="sim">
             <div><b>Cost grid</b><br>slope, rock, 20° closed</div>
             <div><b>A* planner</b><br>Web Worker</div>
@@ -74,10 +74,10 @@
   <div class="zone">
     <div class="col-title">Hosting</div>
     <div class="stack">
-      <div class="box"><h3>Cloudflare Workers</h3><p>Serves <code>dist/</code> as static assets. A deploy on every merge to main, a preview URL on every pull request</p></div>
-      <div class="arrow">▼ <code>/api/*</code> only</div>
-      <div class="box dash"><h3>Room · Durable Object</h3><p>One per room code: crew seats, poses, markers, samples, the habitat seat's route and go call. Merged into <code>feat/online</code>, UI in open PRs #306 and #308</p></div>
-      <div class="box"><h3>GitHub</h3><p>Issue, branch, pull request, squash merge. CI runs lint, build and 1,000+ Vitest tests on every pull request</p></div>
+      <div class="box"><h3>Cloudflare Workers</h3><p>Serves the built app as static files. Every accepted change deploys, and every proposed change gets a preview link</p></div>
+      <div class="arrow">▼ online play only</div>
+      <div class="box dash"><h3>Room · Durable Object</h3><p>One per room code: crew seats, positions, markers, samples, the habitat seat's route and go call. In development</p></div>
+      <div class="box"><h3>GitHub</h3><p>Changes go in as pull requests. Automatic checks lint, build and run the unit tests</p></div>
     </div>
   </div>
 </div>
