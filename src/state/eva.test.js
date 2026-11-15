@@ -272,7 +272,7 @@ describe('EVA statistics runner', () => {
       route: { ...state.route, path: [[0, 0], [0, 10]], reason: 'Off route: new route from your position' },
     }));
     useMissionStore.setState((state) => ({
-      route: { ...state.route, path: [[0, 0], [-10, 0]], reason: 'Detour: steeper than 25° ahead' },
+      route: { ...state.route, path: [[0, 0], [-10, 0]], reason: 'Detour: steeper than 20° ahead' },
     }));
     useMissionStore.setState((state) => ({
       route: { ...state.route, path: [[0, 0], [5, 5]], reason: 'Radiation alert: solar particle event. Enter the habitat now. (radiation)', shelter: { id: 'HAB', name: 'HAB', x: HAB.x, z: HAB.z } },
