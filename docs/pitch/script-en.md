@@ -70,7 +70,7 @@ P2 in version A, the presenter in version B. The video is being re-recorded from
 - `stakes`: "storms and radiation arrive with little warning" became "a radiation storm can arrive with little warning". Dust storms build over days. For radiation, `docs/VALIDITY.md` (warning lead time row) says a crew at Mars hears the DONKI alert about 22 min after it is issued, and a well-connected event can bring protons in tens of minutes, less than that relay time.
 - `radiation`: "Only the way home is left" moved to 0:56, after the zone has closed.
 - `close`, P2 part, 33 words in 22 s: the data named in plain words, the terrain check, the impact line "Analog field crews could rehearse with it today", and "Scan the code and try it" for the QR code on the close beat. The spec's "and every dataset is listed by name in the app" is cut to fit. The sources list is on screen at the same moment.
-- Chapter 1: "Over twenty degrees is no-go" became "The planner blocks ground steeper than twenty degrees", which is what the planner does (`costGrid.js`). The elevation profile still turns red at 25° (#293), so the cue does not point at it.
+- Chapter 1: "Over twenty degrees is no-go" became "The planner blocks ground steeper than twenty degrees", which is what the planner does (`costGrid.js`). The elevation profile turned red only at 25° when this was written, so the cue does not point at it; #293 moved it to 20°.
 - Chapter 8: "Each reading shows where it comes from", not "every number", because the radio range has no tag yet (#297).
 
 ## Criteria
