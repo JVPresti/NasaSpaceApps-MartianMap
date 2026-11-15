@@ -17,6 +17,8 @@ gamepad keys and a keyboard player is not shown the on-screen stick.
 | Click | Sample the target in reach; the HUD prompt names the step that applies now |
 | P | Photograph the target |
 | E | Stow the sample in the bag |
+| E (in the habitat cabin) | Open plan: the mission table on its Route step. Reads "Make a plan" while there is no route yet and opens the same table |
+| X (in the habitat cabin) | Finish EVA: end it and open the debrief. Dimmed, reading "No EVA in progress", while no EVA runs; X then does nothing |
 | F | Call, fill or return the case |
 | Q (hold 2 s) | Mark a find while pointing at the ground |
 | Y / N | Add the marked find to the route or dismiss it |
@@ -30,7 +32,13 @@ gamepad keys and a keyboard player is not shown the on-screen stick.
 | C | Sources |
 | Esc | Release the pointer and pause |
 
-While the wrist screen is up it owns the keyboard (#231): Q, Y/N, T, G, C, X, L, Shift+L, 0 and M do nothing, and Enter selects the wrist row instead of closing a science card. Esc still pauses and lowers the wrist. R does not raise the wrist while Q is held.
+While the wrist screen is up it owns the keyboard (#231): Q, Y/N, T, G, C, E, X, L, Shift+L, 0 and M do nothing, and Enter selects the wrist row instead of closing a science card. Esc still pauses and lowers the wrist. R does not raise the wrist while Q is held.
+
+**The habitat table (#244).** In the cabin (the main room and the inner hatch) a prompt floats over the planning table
+with both actions, `[E] Open plan` and `[X] Finish EVA`; a row that does not apply now is dimmed. The keys act only
+there, where the prompt shows: not on the steps, the porch, in the airlock or near the habitat outside. While a sample
+is in the scoop, E stows it and Open plan stays dimmed until the scoop is empty. Closing the table (Continue the EVA)
+returns to Walk. The pause menu's End the EVA is a different action: it discards the EVA instead of opening the debrief.
 
 ### Plan
 
@@ -95,10 +103,17 @@ Standard mapping, polled from the browser Gamepad API.
 | Right stick | Look around |
 | Start | Switch between Walk and Plan |
 | LB / RB | Previous / next data layer |
+| A (in the habitat cabin) | Open plan, as E |
+| X (in the habitat cabin) | Finish EVA, as X |
 
 A gamepad press is not a user gesture, so the browser may not grant pointer lock. Walk then uses drag-to-look,
 the same fallback as iOS. To capture the mouse, resume from the pause menu with a click or Enter. The first
 gamepad press also raises a one-line reminder of this mapping; it hides after ten seconds and does not come back.
+The table prompt keeps its E and X key caps for a gamepad too: the app records that a pad was used, not which
+input is active now. A and X are the standard mapping's buttons 0 and 2 (Cross and Square on a PlayStation pad).
+
+Touch has no interact control yet, so a touch player cannot open the plan or finish the EVA from the habitat table
+(a follow-up covers sampling, finds and these two actions).
 
 ## Speed model
 
@@ -112,5 +127,6 @@ so the cap also keeps the suit model inside its validated range.
 
 These tables follow the code paths: src/engine/view.js (Walk keys, look, jog, Plan pan and zoom, rotation off),
 src/engine/touchInput.js (virtual stick and touch look), src/engine/gamepadInput.js (gamepad polling and first-use
-state), src/components/shortcuts.js (M, L, Shift+L, 0), src/engine/planTouch.js (Plan touches) and
-src/App.jsx (Esc, H and the menus). The in-game help is src/components/ControlsHelp.jsx.
+state), src/components/shortcuts.js (M, L, Shift+L, 0), src/state/tableActions.js (E and X, gamepad A and X, at
+the habitat table), src/engine/planTouch.js (Plan touches) and src/App.jsx (Esc, H and the menus). The in-game help
+is src/components/ControlsHelp.jsx.

@@ -17,13 +17,19 @@ describe('ControlsHelp', () => {
 
   it('lists the wrist keys on one row so the start dialog keeps its height (#231)', () => {
     const html = renderToStaticMarkup(<ControlsHelp />);
-    expect(html.match(/class="controls-row"/g)).toHaveLength(24);   // 23 + the X end-EVA row (#244); the wrist keys add none
+    expect(html.match(/class="controls-row"/g)).toHaveLength(24);   // 23 + the habitat table row (E / X, #244); the wrist keys add none
     expect(html).toContain('Wrist screen');
   });
 
   it('lists the walking and mission table keys', () => {
     const caps = keyCaps();
     for (const key of ['W', 'A', 'S', 'D', 'Arrows', 'Mouse', 'Esc', 'H', 'Scroll', 'Drag', 'Double-click']) expect(caps).toContain(key);
+  });
+
+  it('lists the habitat table actions on one row: E opens the plan, X finishes the EVA (#244)', () => {
+    const html = renderToStaticMarkup(<ControlsHelp />);
+    expect(html).toContain('<kbd>E</kbd><span class="controls-or">/</span><kbd>X</kbd>');
+    expect(html).toContain('Habitat table: open plan / finish EVA');
   });
 
   it('lays the groups out in three columns in either language', () => {
@@ -36,5 +42,6 @@ describe('ControlsHelp', () => {
     expect(spanish).toContain('Ambas vistas');
     expect(spanish).toContain('Mesa de misión');
     expect(spanish).not.toContain('menu.help.');
+    expect(spanish).toContain('Mesa del hábitat: abrir plan / terminar EVA');
   });
 });
