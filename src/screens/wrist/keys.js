@@ -12,5 +12,5 @@ export function wristKey(event, open, { qHeld = false } = {}) {
     || event.isComposing || el?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el?.tagName)) return null;
   if (event.code === 'KeyR') return !open && qHeld ? null : 'toggle';
   if (!open) return null;
-  return { BracketLeft: 'previous-page', BracketRight: 'next-page', KeyJ: 'next-row', KeyK: 'previous-row', Enter: 'confirm' }[event.code] ?? null;
+  return { BracketLeft: 'previous-page', BracketRight: 'next-page', KeyJ: 'next-row', KeyK: 'previous-row', Enter: 'confirm', NumpadEnter: 'confirm' }[event.code] ?? null;
 }
