@@ -153,6 +153,15 @@ export const STORE_PATHS = Object.freeze({
   'route.explain': { ...PLANNER, source: 'straight line between the ends of each leg, tested on the HiRISE height map against the 20 degree limit like the planner' },
   'route.explain.extraM': { ...PLANNER, source: 'planned leg length on the HiRISE height map minus its straight line' },
   'route.explain.extraSec': LEG_WALK,
+  // saved routes (#357, src/plan/routeLibrary.js): the risk is the saved plan on the HiRISE height map; the success
+  // record is our own tally of the EVAs that departed on that saved route
+  'routeLibrary.risk.maxSlopeDeg': { ...PLANNER, source: 'steepest grade of the saved route plan, on the HiRISE height map' },
+  'routeLibrary.risk.climbM': { ...PLANNER, source: 'total climb of the saved route plan, on the HiRISE height map' },
+  'routeLibrary.risk.level': sim('risk band of the saved route: under 15° low, 15 to 20° caution, at or over 20° high (the suited walking limits)'),
+  'routeLibrary.record.attempts': sim('EVAs that departed on this saved route (src/state/eva.js)'),
+  'routeLibrary.record.completed': sim('of those EVAs, the ones that reached every waypoint'),
+  'routeLibrary.record.samples': sim('samples secured on EVAs that departed on this saved route'),
+  'routeLibrary.record.distanceM': sim('distance walked on EVAs that departed on this saved route'),
   // the needs the crew sets at the mission table (#265): inputs, not measurements
   'needs.objective': sim('objective chosen by the crew at the mission table'),
   'needs.crew': sim('crew size chosen at the mission table: a solo astronaut stays in radio contact and works 1.5 times as long'),
