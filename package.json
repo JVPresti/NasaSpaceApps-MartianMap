@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:room": "wrangler dev",
     "build": "vite build",
     "lint": "oxlint",
     "test": "vitest run",

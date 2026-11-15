@@ -1,4 +1,5 @@
 import { rm } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
@@ -27,6 +28,11 @@ function excludeFromDist(files) {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), excludeFromDist(NOT_DEPLOYED)],
+  server: {
+    // Online rooms (#52): `npm run dev:room` runs the Worker on 8787. The proxy forwards the browser's
+    // Origin (http://localhost:5173) unchanged, which the Worker accepts as a localhost origin.
+    proxy: { '/api': { target: 'http://localhost:8787', ws: true } },
+  },
   build: {
     // three.js alone is larger than Vite's default 500 kB warning threshold
     chunkSizeWarningLimit: 1500,
@@ -36,5 +42,7 @@ export default defineConfig({
     // Running files one at a time keeps CPU contention from turning those
     // assertions into flaky failures; the whole suite still runs in ~8 s.
     fileParallelism: false,
+    // worker/ imports the Workers runtime module; tests get a small stand-in (worker/test/cloudflare-workers.js)
+    alias: { 'cloudflare:workers': fileURLToPath(new URL('./worker/test/cloudflare-workers.js', import.meta.url)) },
   },
 })
