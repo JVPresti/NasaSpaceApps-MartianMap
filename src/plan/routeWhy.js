@@ -46,8 +46,8 @@ export function legWhy(entry) {
  * @param {{ workSec?: number | null, explain?: object | null }} stop
  * @returns {string | null}
  */
-export function stopLine({ workSec = null, explain = null } = {}) {
-  const parts = [];
+export function stopLine({ workSec = null, explain = null, role = null } = {}) {
+  const parts = role ? [role] : [];
   if (finite(workSec) && workSec > 0) parts.push(t('why.work', { time: shortDuration(workSec) }));
   const why = legWhy(explain);
   if (why) parts.push(why);
@@ -105,6 +105,9 @@ export function planReasonLines(reasons) {
         break;
       case 'stop-missing':
         lines.push(t('why.plan.missing', { stop: reason.name ?? reason.stop }));
+        break;
+      case 'profile-unreachable':
+        lines.push(t('why.plan.profile.unreachable', { profile: t(`profiles.${reason.profile}`) }));
         break;
       case 'profile-over':
         // the stops fit on the reference route, not on the profile the crew chose
