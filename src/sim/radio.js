@@ -7,16 +7,26 @@
  *
  * The planner works without the engine, so it uses {@link gridLineOfSight}: the same test on the planner's height
  * grid (route profiles, #245).
+ *
+ * Source tags (#297): the HUD chip's range and link state are DERIVED, line of sight on the HiRISE height map
+ * (provenance 'radio.link'). The weak range and the antenna height below are our choices (SIM).
  */
 
 import { heightAt } from './costGrid.js';
 
 export const RADIO_STEP_M = 20;
+/**
+ * WEAK past this range from the habitat mast while the mast is in sight. Metres. SIM: our choice. The app does not
+ * simulate signal strength (#74), so the weak state is a plain range band; we found no NASA figure for suit-to-habitat
+ * radio range.
+ */
 export const RADIO_WEAK_RANGE_M = 800;
 export const TILE_WIDTH_M = 1422.506134457525;
 export const TILE_DEPTH_M = 1500;
 
 /**
+ * LOST when the terrain blocks the straight line from the suit to the mast (DERIVED, the test the Radio shadow layer
+ * draws); there is no range limit and no signal model, so a blocked line is no link. WEAK past `weakRangeM` (SIM).
  * @param {{ point: { x: number, z: number }, mast: { x: number, y?: number, z: number },
  *   lineOfSight: (a: object, b: object) => { clear: boolean },
  *   weakRangeM?: number }} input
@@ -54,7 +64,10 @@ export function radioShadowCells({ mast, lineOfSight, stepM = RADIO_STEP_M, widt
   return cells;
 }
 
-/** Height of the suit antenna above the ground: the engine's eye height for `lineOfSight`. Metres. */
+/**
+ * Height of the suit antenna above the ground: the engine's eye height for `lineOfSight`. Metres. SIM: our choice,
+ * the antenna taken at helmet height.
+ */
 export const RADIO_EYE_HEIGHT_M = 1.7;
 /** Spacing of the terrain samples along a line of sight, as in the engine. Metres. */
 export const RADIO_SIGHT_STEP_M = 2;

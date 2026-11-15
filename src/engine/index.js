@@ -798,6 +798,8 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       if (!started || !sys.habitat?.root) return null;
       const root = sys.habitat.root;
       root.updateWorldMatrix(true, false);
+      // the beacon on top of the comms mast, in habitat coordinates (habitat.js). SIM: the mast is a team addition to
+      // the NASA habitat model (docs/credits.md), so its place and height are ours.
       const point = new THREE.Vector3(-1.9, 4.35, 3.4);
       root.localToWorld(point);
       return { x: point.x, y: point.y, z: point.z };
