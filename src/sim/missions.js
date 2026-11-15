@@ -5,8 +5,8 @@
  * the mission. There is no separate mission id in the store.
  * - 'sortie' is the first mission: a 55 m walk to one stop, with the dust storm and the radiation alert brought
  *   forward so a new player meets both in about three minutes of play.
- * - 'cheyava' and 'bright-angel' are the full EVA: the storm at T+480 s and the radiation alert at T+720 s, exactly
- *   as the event files have always run them.
+ * - 'cheyava', 'bright-angel' and 'samples' (#352) are the full EVA: the storm at T+480 s and the radiation alert at
+ *   T+720 s, exactly as the event files have always run them.
  *
  * The event files in src/sim/events/ say what each event is (timeline values, alert, planner request, end). This
  * module says when it starts in each mission (the trigger), and may compress its timeline for the first mission
@@ -106,7 +106,8 @@ const FIRST_BEATS = Object.freeze([
 export const MISSIONS = Object.freeze({
   first: Object.freeze({ id: 'first', objectives: Object.freeze(['sortie']), events: FIRST_EVENTS, beats: FIRST_BEATS }),
   // The full EVA keeps today's screens: no beat lines and no recap.
-  full: Object.freeze({ id: 'full', objectives: Object.freeze(['cheyava', 'bright-angel']), events: FULL_EVENTS, beats: Object.freeze([]) }),
+  // Collecting samples (#352) is a full EVA too: its schedule, no beats.
+  full: Object.freeze({ id: 'full', objectives: Object.freeze(['cheyava', 'bright-angel', 'samples']), events: FULL_EVENTS, beats: Object.freeze([]) }),
 });
 export const MISSION_IDS = Object.freeze(Object.keys(MISSIONS));
 

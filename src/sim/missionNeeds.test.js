@@ -57,7 +57,7 @@ const MAST = { x: -95, y: 5, z: 0 };
 describe('needs', () => {
   it('defaults to the first sortie for a pair, today\'s planner cost, 30 min, full suit', () => {
     expect(DEFAULT_NEEDS).toEqual({ objective: 'sortie', crew: 2, timeMin: 30, o2Pct: 100, batteryPct: 100, risk: 'standard' });
-    expect(OBJECTIVE_DEFAULTS).toEqual({ sortie: { timeMin: 30 }, cheyava: { timeMin: 120 }, 'bright-angel': { timeMin: 120 } });
+    expect(OBJECTIVE_DEFAULTS).toEqual({ sortie: { timeMin: 30 }, cheyava: { timeMin: 120 }, 'bright-angel': { timeMin: 120 }, samples: { timeMin: 120 } });
     expect(riskPricing('standard')).toBeNull();
     expect(normaliseNeeds({ objective: 'nope', crew: 3, timeMin: 5, o2Pct: 150, risk: 'wild' })).toEqual({ ...DEFAULT_NEEDS, timeMin: 10 });
   });

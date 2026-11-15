@@ -314,6 +314,19 @@ describe('the sampling tasks (#352)', () => {
     expect(useMissionStore.getState().needs.tasks).toEqual([rock]);
   });
 
+  it('gives "Collect samples" one rock sample at Bright Angel when chosen with no task, and 2 h (PO Q1)', () => {
+    expect(setNeeds({ objective: 'samples' })).toBe(true);
+    expect(useMissionStore.getState().needs).toMatchObject({ objective: 'samples', timeMin: 120, tasks: [rock] });
+    expect(Object.isFrozen(useMissionStore.getState().needs.tasks[0])).toBe(false);
+    setTasks([rock, photo]);
+    setNeeds({ objective: 'cheyava' });
+    setNeeds({ objective: 'samples' });
+    expect(useMissionStore.getState().needs.tasks.map((t) => t.id)).toEqual(['t1', 't2']);   // the crew's own list stays
+    setTasks([]);
+    setNeeds({ crew: 1 });
+    expect(useMissionStore.getState().needs.tasks).toEqual([]);   // only choosing the goal pre-fills
+  });
+
   it('keeps the tasks across a Restart, and a page load starts with none', () => {
     setTasks([rock, photo]);
     setMode('walk');
