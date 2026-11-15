@@ -2,20 +2,19 @@
 // time and turns a planner request into a new route in the store.
 //
 // Plain JavaScript (no React, no three.js). The browser pieces it needs are
-// `fetch`, `Worker` (through createRoutePlannerClient) and the mission store.
+// `fetch` (through src/data/dataFiles.js), `Worker` (through createRoutePlannerClient) and the mission store.
 import dustStorm from '../sim/events/dust-storm.json';
 import lowOxygenCaution from '../sim/events/low-oxygen-caution.json';
 import lowOxygenWarning from '../sim/events/low-oxygen-warning.json';
 import radiation from '../sim/events/radiation.json';
 import { createEventEngine } from '../sim/eventEngine.js';
-import { buildCostGrid, heightAt } from '../sim/costGrid.js';
+import { HAZARDS_PATH } from '../data/provenance.js';
+import { loadCostGrid, loadDataFile } from '../data/dataFiles.js';
+import { SHELTERS_PATH } from '../sim/shelters.js';
+import { heightAt } from '../sim/costGrid.js';
 import { createRoutePlannerClient } from '../sim/routePlannerClient.js';
 import { suitConstantsFromHazards, walkCost } from '../sim/suitModel.js';
 import { createStoreAdapter, useMissionStore } from './store.js';
-
-const TERRAIN_URL = import.meta.env.BASE_URL + 'marswalk/assets/terrain.json';
-const HAZARDS_URL = import.meta.env.BASE_URL + 'data/hazards.json';
-const SHELTERS_URL = import.meta.env.BASE_URL + 'data/shelters.json';
 
 const EVENT_DEFINITIONS = [dustStorm, radiation, lowOxygenCaution, lowOxygenWarning];
 
@@ -63,18 +62,12 @@ export function createEventStoreAdapter(store, sourcesByPath = EVENT_ENVIRONMENT
 
 let current = null;
 
-function json(response, name) {
-  if (!response.ok) throw new Error(`${name} ${response.status}`);
-  return response.json();
-}
-
 function loadPlanner() {
   return Promise.all([
-    fetch(TERRAIN_URL).then((response) => json(response, 'terrain.json')),
-    fetch(HAZARDS_URL).then((response) => json(response, 'hazards.json')),
-    fetch(SHELTERS_URL).then((response) => json(response, 'shelters.json')),
-  ]).then(async ([terrainJson, hazards, sheltersJson]) => {
-    const grid = buildCostGrid(terrainJson);
+    loadCostGrid(),
+    loadDataFile(HAZARDS_PATH),
+    loadDataFile(SHELTERS_PATH),
+  ]).then(async ([grid, hazards, sheltersJson]) => {
     const client = createRoutePlannerClient();
     await client.setGrid(grid);
     return {

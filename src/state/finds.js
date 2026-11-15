@@ -3,7 +3,8 @@
 // acceptFind adds the find to route.waypoints and re-plans from the player, dismissFind removes it.
 // Accepted finds are ordinary waypoints: arrival, per-leg costs, the elevation profile and the Plan map pick them up.
 // The actions take the store and the planner calls as arguments, so the tests run without a worker.
-import { provenance } from '../data/provenance.js';
+import { loadDataFile } from '../data/dataFiles.js';
+import { HAZARDS_PATH, provenance } from '../data/provenance.js';
 import { waypointKey } from '../plan/routePlan.js';
 import { findLabel, findSources, findWaypointName, insertFindWaypoint, MAX_FINDS } from '../sim/findDetour.js';
 import { applyPlannedRoute } from '../sim/routeUpdate.js';
@@ -11,7 +12,6 @@ import { suitConstantsFromHazards } from '../sim/suitModel.js';
 import { acquirePlannerService, releasePlannerService } from './plannerService.js';
 import { useMissionStore } from './store.js';
 
-const HAZARDS_URL = import.meta.env.BASE_URL + 'data/hazards.json';
 
 // Registry entries for the card's values (#62). The live tags come from findSources once hazards.json is read.
 const suitModel = (source) => ({ tag: 'DERIVED', label: 'Suit model', source });
@@ -186,8 +186,7 @@ export function createFindService({ store = useMissionStore } = {}) {
   };
   const model = () => {
     if (!modelPromise) {
-      modelPromise = fetch(HAZARDS_URL)
-        .then((r) => { if (!r.ok) throw new Error('hazards.json ' + r.status); return r.json(); })
+      modelPromise = loadDataFile(HAZARDS_PATH)
         .then((hazards) => { const constants = suitConstantsFromHazards(hazards); return { constants, sources: findSources(hazards, constants) }; });
       modelPromise.catch(() => { modelPromise = null; });   // a failed fetch can be retried by the next find
     }
