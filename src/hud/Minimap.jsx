@@ -12,7 +12,9 @@ import { truePosition } from '../sim/navigation.js';
 import { loadDataFile } from '../data/dataFiles.js';
 import { SHELTERS_PATH } from '../sim/shelters.js';
 import { loadTraverse } from '../data/traverse.js';
+import { returnZoneService } from '../state/returnZone.js';
 import './minimap.css';
+import '../zone/zone.css';
 
 import { usePoseFrame } from './livePose.js';
 
@@ -73,6 +75,7 @@ export default function Minimap({ tracker }) {
     let imageState = 'loading';
     let shelters = [];
     let traverse = [];
+    let zone = null;
     let lastPath = state.route?.path;
     let lastProgress = null;
     tracker.setPath(lastPath ?? null);   // same route content on remount: keeps the progress
@@ -109,6 +112,7 @@ export default function Minimap({ tracker }) {
         partner: state.crew?.[0] ?? null,
         finds: state.finds?.list,
         traverse,
+        zone,
       });
       drawnHeading.current = Number.isFinite(nav.headingDeg) ? nav.headingDeg : null;
     }
@@ -131,6 +135,7 @@ export default function Minimap({ tracker }) {
     });
 
     const unsubscribeLanguage = subscribeLanguage(() => scheduler.request('language'));
+    const unsubscribeZone = returnZoneService().subscribe((next) => { zone = next; scheduler.request('zone'); });
     const unsubscribe = useMissionStore.subscribe((nextState) => {
       state = nextState;
       if (nextState.route?.path !== lastPath) {
@@ -197,6 +202,7 @@ export default function Minimap({ tracker }) {
       disposed = true;
       unsubscribe();
       unsubscribeLanguage();
+      unsubscribeZone();
       ro?.disconnect();
       window.removeEventListener('resize', requestResize);
       img.onload = null;
@@ -222,6 +228,7 @@ export default function Minimap({ tracker }) {
         <span><i className="hud-map-key hud-map-key-shelter" />{t('ui.refuge')}</span>
         <span><i className="hud-map-key hud-map-key-hazard" />{t('ui.hazard')}</span>
         <span><i className="hud-map-key hud-map-key-hab" />{t('ui.habitat')}</span>
+        <span><i className="hud-map-key hud-map-key-zone" />{t('hud.zone.edge')}</span>
         <span><i className="hud-map-key hud-map-key-partner" />{t('menu.partner')}</span>
 
       </div>

@@ -25,8 +25,8 @@ describe('mission keyboard shortcuts', () => {
     expect(useMissionStore.getState().mode).toBe('walk');
   });
 
-  it('cycles all six layers at the table and the four the ground draws in Walk, both ways with wraparound', () => {
-    for (const [mode, forward, backward] of [['plan', [1, 2, 3, 4, 5, 0], [5, 4, 3, 2, 1, 0]], ['walk', [1, 2, 3, 0], [3, 2, 1, 0]]]) {
+  it('cycles all seven layers at the table and the four the ground draws in Walk, both ways with wraparound', () => {
+    for (const [mode, forward, backward] of [['plan', [1, 2, 3, 4, 5, 6, 0], [6, 5, 4, 3, 2, 1, 0]], ['walk', [1, 2, 3, 0], [3, 2, 1, 0]]]) {
       setMode(mode);
       setLayer(0);
       for (const expected of forward) {

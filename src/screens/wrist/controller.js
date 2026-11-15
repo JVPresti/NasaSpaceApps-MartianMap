@@ -10,6 +10,7 @@ import { setWristKeyOwner } from './ownership.js';
 import { loadDataFile } from '../../data/dataFiles.js';
 import { SHELTERS_PATH } from '../../sim/shelters.js';
 import { WALK_LAYERS, walkRow } from '../../plan/layers.js';
+import { returnZoneService } from '../../state/returnZone.js';
 
 /** Connect after engine.ready; owns one canvas and cleans up before engine disposal. */
 export function connectWrist(engine, store = useMissionStore) {
@@ -18,7 +19,7 @@ export function connectWrist(engine, store = useMissionStore) {
   const g = canvas.getContext('2d');
   // The layers page lists only the layers the ground draws (layers.js WALK_LAYERS): a row is not a store index.
   let pageIndex = 0, row = walkRow(store.getState().view.layer), open = false, painted = '', disposed = false;
-  let shelters = [], resourceVersion = 0, qHeld = false;
+  let shelters = [], resourceVersion = 0, qHeld = false, zone = null;
   const diagnostics = { canvas, snapshot: () => ({ open, page: PAGES[pageIndex], row, draws: Number(canvas.dataset.drawCount ?? 0), engine: engine.getWristState() }) };
   if (import.meta.env.DEV) window.__marswalkWrist = diagnostics;
   engine.setWristScreen(canvas);
@@ -31,7 +32,7 @@ export function connectWrist(engine, store = useMissionStore) {
     if (signature === painted) return;
     painted = signature;
     drawWrist(g, model);
-    if (map) drawWristMap(g, map, engine.getOrthoImage(), shelters);
+    if (map) drawWristMap(g, map, engine.getOrthoImage(), shelters, zone);
     engine.invalidateWristScreen();
     canvas.dataset.drawCount = String(Number(canvas.dataset.drawCount ?? 0) + 1);
     canvas.dataset.page = page;
@@ -83,6 +84,11 @@ export function connectWrist(engine, store = useMissionStore) {
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('blur', onBlur);
   const offLanguage = subscribeLanguage(() => scheduler.request('language'));
+  // the return zone shrinks on the map page as O2 and time drain; resourceVersion repaints it
+  const offZone = returnZoneService(store).subscribe((next) => {
+    zone = next; resourceVersion++;
+    if (open && PAGES[pageIndex] === 'map') scheduler.request('zone');
+  });
   loadDataFile(SHELTERS_PATH)   // shared with the HUD minimap and the planner (#205)
     .then(data => {
       if (disposed) return;
@@ -111,6 +117,7 @@ export function connectWrist(engine, store = useMissionStore) {
     setWristKeyOwner(false);
     window.removeEventListener('keydown', onKey);
     window.removeEventListener('keyup', onKeyUp);
+    offZone();
     window.removeEventListener('blur', onBlur);
     if (import.meta.env.DEV && window.__marswalkWrist === diagnostics) delete window.__marswalkWrist;
     engine.setWristOpen(false); engine.setWristScreen(null);

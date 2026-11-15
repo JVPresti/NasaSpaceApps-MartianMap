@@ -1,0 +1,10 @@
+node v24.22.1 · AMD Ryzen 7 5700X 8-Core Processor · load 2.1 1.6 1.6 · 2026-11-15T15:14:27.905Z
+tile 1423 m x 1500 m (2.13 km²) · usable plan time 1530 s · radiation window 17.5 s
+case | area km² | reach m | limit | ms (3 runs)
+Suit limits only, 4 m cells | 1.768 | 1818 | - | 84, 85, 83
+Suit limits only, grid spacing (step 1) | 1.906 | 1818 | - | 394, 405, 389
+Plan before Begin EVA | 0.324 | 613 | eva | 62, 94, 77
+At the stop, T+150 s | 0.279 | 570 | eva | 44, 44, 48
+Dust storm at the stop | 0.014 | 87 | event | 45, 43, 45
+Radiation alert at the stop, 17.5 s window | 0.000 | 0 | window | 6, 4, 3
+Radiation alert, full EVA 210 s window | 0.011 | 80 | window | 14, 32, 7
