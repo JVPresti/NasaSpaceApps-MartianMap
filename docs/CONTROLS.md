@@ -58,7 +58,8 @@ returns to Walk. The pause menu's End the EVA is a different action: it discards
 | 0 (top row or numeric keypad) | Turn the data layer off |
 | H | Open this controls help; the EVA pauses |
 
-Layers wrap in this order: None, Slope hazard, Elevation, Rock abundance, Outcrop, then None again. The shortcut
+At the mission table, layers wrap in this order: None, Terrain, Rock abundance, Outcrop, Radio shadow, Sky exposure,
+then None again. In Walk the two table-only layers are skipped: None, Terrain, Rock abundance, Outcrop. The shortcut
 rules are in [docs/KEYBOARD_SHORTCUTS.md](KEYBOARD_SHORTCUTS.md): physical key codes, no held-key repeats, and no
 action inside text inputs, selects, editable content or open dialogs.
 

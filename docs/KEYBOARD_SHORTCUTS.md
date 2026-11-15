@@ -10,8 +10,11 @@ Implemented for #101. Include these entries in the controls help from #64:
 | 0 (top row or numeric keypad) | Turn off the data layer. |
 | V | Walk only: hide or show the visor frame and alert ring, for screenshots (#28). |
 
-Layers wrap in this order: None, Slope hazard, Elevation, Rock abundance,
-Outcrop, then None again. Reverse cycling wraps from None to Outcrop.
+At the mission table, layers wrap in this order: None, Terrain, Rock abundance,
+Outcrop, Radio shadow, Sky exposure, then None again. Reverse cycling wraps from
+None to Sky exposure. In Walk only the layers the ground draws take a turn (None,
+Terrain, Rock abundance, Outcrop); a table-only layer still chosen counts as None
+there. The list is `src/plan/layers.js` (`nextLayerIndex`).
 The wrist screen follows the selected layer through the existing store/engine bridge.
 
 Shortcuts use physical key codes, matching WASD. They run only when the engine is
