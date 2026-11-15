@@ -333,6 +333,25 @@ describe('saved routes (#357)', () => {
     expect(useMissionStore.getState().route.manual).toBe(false);
   });
 
+  it("clears the old needs plan's stops, dropped stops, reasons and leg explanations when a saved route loads", () => {
+    empty();
+    useMissionStore.setState(plan);
+    saveCurrentRoute('Ridge');
+    const id = useMissionStore.getState().routeLibrary.list[0].id;
+    // The needs plan that was on the table before: it dropped Bright Angel for lack of time.
+    useMissionStore.setState((s) => ({
+      route: {
+        ...s.route,
+        stops: [{ id: 'cheyava-falls' }],
+        dropped: [{ id: 'bright-angel', reason: 'time' }],
+        planReasons: [{ kind: 'dropped', stop: 'bright-angel', reason: 'time' }],
+        explain: [{ leg: 0, why: 'slope' }],
+      },
+    }));
+    expect(applySavedRoute(id)).toBe(true);
+    expect(useMissionStore.getState().route).toMatchObject({ stops: [], dropped: [], planReasons: [], explain: [] });
+  });
+
   it('deletes one saved route and keeps the library across a restart', () => {
     empty();
     useMissionStore.setState(plan);
