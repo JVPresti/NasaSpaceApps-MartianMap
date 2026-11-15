@@ -1,5 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { computeSkyView, rayDistances, skyViewAt, skyViewFromTangents, SKY_VIEW_DEFAULTS } from './skyView.js';
+import {
+  computeSkyView, decodeSkyViewGrid, rayDistances, sampleSkyView, skyViewAlongPath, skyViewAt, skyViewFromTangents, SKY_VIEW_DEFAULTS,
+} from './skyView.js';
 
 const CELL = 2;
 
@@ -79,5 +83,102 @@ describe('sky view factor', () => {
     const grid = syntheticGrid(5, () => 0);
     expect(() => computeSkyView(grid, { azimuths: 2 })).toThrow();
     expect(() => computeSkyView(grid, { maxDistanceM: 0 })).toThrow();
+    expect(() => computeSkyView(grid, { stride: 3 })).toThrow(/divisor of 4/);
+  });
+
+  it('keeps every stride-th node, edges included, with the full grid values', () => {
+    const grid = syntheticGrid(41, (x, z) => (Math.hypot(x, z) < 12 ? 0 : 10));
+    const full = computeSkyView(grid, SMALL);
+    const coarse = computeSkyView(grid, { ...SMALL, stride: 4 });
+    expect(coarse).toMatchObject({ n: 11, stride: 4 });
+    for (let row = 0; row < coarse.n; row += 1) {
+      for (let col = 0; col < coarse.n; col += 1) {
+        expect(coarse.skyView[row * coarse.n + col]).toBeCloseTo(full.skyView[row * 4 * 41 + col * 4], 6);
+      }
+    }
+  });
+});
+
+/** A sky view file as scripts/build-sky-view.mjs writes it, from plain values. */
+function skyFile(n, size, valueAt, encoding = { min: 0.8, max: 1 }) {
+  const bytes = new Uint8Array(n * n);
+  for (let j = 0; j < n; j += 1) {
+    for (let i = 0; i < n; i += 1) {
+      bytes[j * n + i] = Math.round(((valueAt(i, j) - encoding.min) / (encoding.max - encoding.min)) * 255);
+    }
+  }
+  return { n, width_m: size, depth_m: size, encoding, sky_view_u8_b64: Buffer.from(bytes).toString('base64') };
+}
+
+describe('the coarse sky view grid the app reads', () => {
+  it('decodes the bytes back to sky view, north-west node first', () => {
+    const sky = decodeSkyViewGrid(skyFile(3, 100, (i, j) => (i === 0 && j === 0 ? 0.8 : 1)));
+    expect(sky).toMatchObject({ n: 3, width: 100, depth: 100 });
+    expect(sky.values[0]).toBeCloseTo(0.8, 6);
+    expect(sky.values[8]).toBeCloseTo(1, 6);
+    expect(sky.min).toBeCloseTo(0.8, 6);
+    expect(sky.max).toBeCloseTo(1, 6);
+    expect(sampleSkyView(sky, -50, -50)).toBeCloseTo(0.8, 6);   // x west, z north: the first node
+    expect(sampleSkyView(sky, -25, -50)).toBeCloseTo(0.9, 2);   // halfway to the next node east
+    expect(sampleSkyView(sky, -500, -500)).toBeCloseTo(0.8, 6);   // outside the tile: the edge
+  });
+
+  it('rejects a file that does not hold n x n samples', () => {
+    expect(() => decodeSkyViewGrid({ ...skyFile(3, 100, () => 1), n: 4 })).toThrow(/16/);
+    expect(() => decodeSkyViewGrid({ ...skyFile(3, 100, () => 1), encoding: { min: 1, max: 1 } })).toThrow();
+    expect(() => decodeSkyViewGrid(null)).toThrow();
+  });
+
+  it('measures the mean, the range and the most hidden point along a route, weighted by length', () => {
+    // west half 0.9, east half 1.0 on a 200 m tile with 5 nodes 50 m apart
+    const sky = decodeSkyViewGrid(skyFile(5, 200, (i) => (i <= 1 ? 0.9 : 1)));
+    const west = skyViewAlongPath(sky, [[-100, 0], [-50, 0]]);
+    expect(west.lengthM).toBeCloseTo(50, 6);
+    expect(west.mean).toBeCloseTo(0.9, 2);
+    const east = skyViewAlongPath(sky, [[0, 0], [100, 0]]);
+    expect(east.mean).toBeCloseTo(1, 2);
+    expect(east.min).toBeCloseTo(1, 2);
+    // 50 m at 0.9 and 100 m at 1.0, with a 50 m ramp between them in the middle
+    const across = skyViewAlongPath(sky, [[-100, 0], [-50, 0], [0, 0], [100, 0]]);
+    expect(across.lengthM).toBeCloseTo(200, 6);
+    expect(across.mean).toBeCloseTo((50 * 0.9 + 50 * 0.95 + 100 * 1) / 200, 2);
+    expect(across.min).toBeCloseTo(0.9, 2);
+    expect(across.max).toBeCloseTo(1, 2);
+    expect(across.lowest.x).toBeLessThan(-50);
+  });
+
+  it('has no readout without a route or a grid', () => {
+    const sky = decodeSkyViewGrid(skyFile(3, 100, () => 1));
+    expect(skyViewAlongPath(sky, null)).toBeNull();
+    expect(skyViewAlongPath(sky, [[0, 0]])).toBeNull();
+    expect(skyViewAlongPath(sky, [[0, 0], [0, 0]])).toBeNull();
+    expect(skyViewAlongPath(null, [[0, 0], [10, 0]])).toBeNull();
+  });
+});
+
+describe('public/data/sky_view.json', () => {
+  const json = JSON.parse(readFileSync(fileURLToPath(new URL('../../public/data/sky_view.json', import.meta.url)), 'utf8'));
+  const sky = decodeSkyViewGrid(json);
+  const shelters = JSON.parse(readFileSync(fileURLToPath(new URL('../../public/data/shelters.json', import.meta.url)), 'utf8'));
+
+  it('covers the terrain tile and says where it comes from', () => {
+    expect(sky.width).toBeCloseTo(1422.5, 0);
+    expect(sky.depth).toBe(1500);
+    expect((json.source_n - 1) / json.stride + 1).toBe(json.n);
+    expect(json.tag).toBe('DERIVED');
+    expect(json.provenance.note).toMatch(/isotropic SEP flux above the horizon/);
+  });
+
+  it('spans the narrow range the shelters file measured on the full grid', () => {
+    expect(sky.min).toBeGreaterThan(0.8);
+    expect(sky.min).toBeLessThan(0.85);
+    expect(sky.max).toBeCloseTo(1, 2);
+    expect(sky.min).toBeGreaterThanOrEqual(shelters.sky_view.tile_stats.min - 0.002);
+  });
+
+  it('agrees with the exact sky view at each natural shelter', () => {
+    for (const shelter of shelters.shelters.filter((s) => s.type === 'natural')) {
+      expect(Math.abs(sampleSkyView(sky, shelter.x, shelter.z) - shelter.values.sky_view_factor.value)).toBeLessThan(0.03);
+    }
   });
 });
