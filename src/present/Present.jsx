@@ -255,7 +255,7 @@ export default function Present({ engine, onExit }) {
         const a = p && p.visible ? showValue(chip.show || [0], t, beat.duration) : 0;
         el.style.opacity = a.toFixed(3);
         const card = el.querySelector('.pr-card');
-        if (p && a > 0) shown.push({ el, card, p, below: !!chip.offset });
+        if (p && a > 0) shown.push({ el, card, p, below: !!chip.offset, start: chip.show?.[0] ?? 0 });
         if (card) card.style.translate = `0 ${((1 - a) * 10).toFixed(1)}px`;
         if (chip.live === 'margin' || chip.live === 'area') {
           const big = el.querySelector('.pr-big');
@@ -277,7 +277,7 @@ export default function Present({ engine, onExit }) {
       // Cards beside their points, inside the frame, above the captions and clear of each other (layout.js)
       const cop = layer.parentElement.querySelector('.pr-copy');
       const bottom = cop ? Math.min(dims.h * 0.78, cop.offsetTop - 12) : dims.h * 0.7;
-      const boxes = layoutCards(shown.map(({ card, p, below }) => ({ x: p.x, y: p.y, w: card?.offsetWidth || 0, h: card?.offsetHeight || 0, below })), { w: dims.w, h: dims.h, bottom });
+      const boxes = layoutCards(shown.map(({ card, p, below, start }) => ({ x: p.x, y: p.y, w: card?.offsetWidth || 0, h: card?.offsetHeight || 0, below, start })), { w: dims.w, h: dims.h, bottom });
       shown.forEach(({ el, card }, k) => {
         const b = boxes[k];
         el.style.transform = `translate(${b.pinX.toFixed(1)}px, ${b.pinY.toFixed(1)}px)`;

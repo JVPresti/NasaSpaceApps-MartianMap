@@ -33,4 +33,13 @@ describe('layoutCards', () => {
     const out = layoutCards(items, frame).map((b, k) => box({ x: b.pinX, y: b.pinY, w: items[k].w, h: items[k].h }, b));
     for (let i = 0; i < out.length; i++) for (let j = i + 1; j < out.length; j++) expect(hits(out[i], out[j]), `${i} ${j}`).toBe(false);
   });
+
+  it('keeps a card already on screen in place when a card listed before it appears later', () => {
+    // the plan beat: the bend card shows at 10.5 s, the total's card at 12 s, both near Cheyava Falls
+    const bend = { x: 600, y: 300, w: 300, h: 90, start: 10.5 };
+    const total = { x: 590, y: 305, w: 300, h: 90, start: 12 };
+    const [alone] = layoutCards([bend], frame);
+    const [, withTotal] = layoutCards([total, bend], frame);
+    expect(withTotal).toEqual(alone);
+  });
 });

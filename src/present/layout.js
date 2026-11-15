@@ -8,8 +8,9 @@ const SPACE = 8;     // card to card, px
 const overlaps = (a, b) => a.x < b.x + b.w + SPACE && b.x < a.x + a.w + SPACE && a.y < b.y + b.h + SPACE && b.y < a.y + a.h + SPACE;
 
 /**
- * @param {Array<{ x: number, y: number, w: number, h: number, below?: boolean }>} items pin points and card sizes, in
- *   the order they appear (earlier cards keep their place)
+ * @param {Array<{ x: number, y: number, w: number, h: number, below?: boolean, start?: number }>} items pin points and
+ *   card sizes. start: when the card appears, in seconds. Cards that appeared earlier keep their place, so a new card
+ *   never pushes one already on screen; ties keep the list order.
  * @param {{ w: number, h: number, bottom?: number }} frame bottom: the top of the caption band, px
  * @returns {Array<{ pinX: number, pinY: number, cardX: number, cardY: number }>} the pin inside the frame, and the
  *   card's top-left corner relative to the pin
@@ -17,7 +18,10 @@ const overlaps = (a, b) => a.x < b.x + b.w + SPACE && b.x < a.x + a.w + SPACE &&
 export function layoutCards(items, frame) {
   const bottom = frame.bottom ?? frame.h * 0.7;
   const placed = [];
-  return items.map((it) => {
+  const out = new Array(items.length);
+  const order = [...items.keys()].sort((a, b) => (items[a].start ?? 0) - (items[b].start ?? 0) || a - b);
+  for (const k of order) {
+    const it = items[k];
     const pinX = Math.max(MARGIN, Math.min(frame.w - MARGIN, it.x));
     const pinY = Math.max(MARGIN, Math.min(bottom, it.y));
     // right of the pin, or left of it when the right side would leave the frame
@@ -39,6 +43,7 @@ export function layoutCards(items, frame) {
       }
     }
     placed.push({ x, y, w: it.w, h: it.h });
-    return { pinX, pinY, cardX: x - pinX, cardY: y - pinY };
-  });
+    out[k] = { pinX, pinY, cardX: x - pinX, cardY: y - pinY };
+  }
+  return out;
 }
