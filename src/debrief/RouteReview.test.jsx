@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it } from 'vitest';
+import { provenance } from '../data/provenance.js';
 import { setLanguage } from '../i18n/index.js';
 import { COST_CONSTANTS } from '../sim/costGrid.js';
 import { distanceToPath } from '../sim/offRoute.js';
@@ -196,6 +197,14 @@ describe('route review in the debrief', () => {
     expect(costText({ extraSec: -60, extraO2G: 5, extraM: 30 })).toBe('-1 min · +5 g O2 · +30 m against the plan');
     setLanguage('es');
     expect(summaryLine(review(-130, -3.2))).toBe('1 desvío: 1 costoso. 2 min y 3 g de O2 por debajo del plan.');
+  });
+
+  it('tags the review costs SIM, the weakest of their inputs, and states the rule as "until back within"', () => {
+    expect(provenance.lookup('review.cost').tag).toBe('SIM');
+    expect(provenance.lookup('review.cost').tag).toBe(provenance.lookup('route.legs.timeSec').tag);
+    expect(provenance.lookup('review.verdict').source).toContain(`until back within ${REVIEW_RULES.exitM} m`);
+    const row = renderView(DETOURS).match(/<button[^>]*debrief-review-row[\s\S]*?<\/button>/)[0];
+    expect(row).not.toContain('data-tag="DERIVED"');
   });
 
   it('gives the margin chart the same lowest margin as the headline metric', () => {

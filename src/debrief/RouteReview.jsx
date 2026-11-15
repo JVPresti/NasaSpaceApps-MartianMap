@@ -12,16 +12,17 @@ import { costText, detailText, reasonText, ruleNotes, summaryLine, verdictLabel 
 // debrief's log rows and the mission table's map, markers and legend; debrief.css adds only the track, the verdict
 // colours and the margin strip.
 
-// Where the review's numbers come from (#62). The thresholds are ours (SIM); the costs come from the suit model.
+// Where the review's numbers come from (#62). The thresholds are ours (SIM). The costs are SIM too: the weakest of
+// their inputs, the suit model's O2 and the plan's per-leg costs, which rest on the SIM speed rule (route.legs is SIM).
 const rules = REVIEW_RULES;
 provenance.define({
   'review.verdict': {
     tag: 'SIM',
     label: 'Route review rules',
-    source: `route review (src/sim/routeReview.js): a deviation is more than ${rules.enterM} m from the approved plan for ${rules.minLengthM} m of walking, over back within ${rules.exitM} m; risky at or above the ${rules.slopeLimitDeg}° slope limit (hazards.json slope.no_go) or with the suit margin under the reserve`,
+    source: `route review (src/sim/routeReview.js): a deviation is more than ${rules.enterM} m from the approved plan for ${rules.minLengthM} m of walking, until back within ${rules.exitM} m; risky at or above the ${rules.slopeLimitDeg}° slope limit (hazards.json slope.no_go) or with the suit margin under the reserve`,
   },
   'review.cost': {
-    tag: 'DERIVED',
+    tag: 'SIM',
     label: 'Suit model',
     source: 'mission time and suit O2 over the walked stretch, minus the per-leg suit model costs of the stretch of the approved plan it replaced',
   },
