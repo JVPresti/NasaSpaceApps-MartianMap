@@ -14,6 +14,11 @@
   touch-action: none;
 }
 
+/* The mission table is opaque and covers the whole scene, so the engine stops drawing a canvas nobody sees. */
+.app:has(.table-screen) .engine-view canvas {
+  visibility: hidden;
+}
+
 /* The start screen stands alone over the scene: no top bar, panels or position marker behind it. */
 .app.at-start .plan-ui,
 .app.at-start .plan-position,
