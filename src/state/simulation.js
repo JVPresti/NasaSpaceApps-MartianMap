@@ -21,6 +21,7 @@ import { startSuitRunner } from '../sim/suitRunner.js';
 import { startPartnerRunner } from '../sim/partnerRunner.js';
 import { legCostSources, startLegCostRunner } from '../sim/legCosts.js';
 import { initNavigation } from '../sim/navigation.js';
+import { startNavigationDrift } from '../sim/navigationDrift.js';
 import { startEnvironmentRunner } from '../sim/environmentRunner.js';
 import { MEDA_SOL_PATH, parseMedaSol, parseRad, RAD_PATH } from '../data/medaRad.js';
 
@@ -62,7 +63,7 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
   if (mock) return () => {};
   const slopeDetour = startSlopeDetourService();
   const stopsReady = loadStops().catch((e) => { console.error('stops.json not loaded, arrival radius 5 m:', e); return null; });
-  let stopped = false, suit = null, legs = null, clock = null, eva = null, partner = null, environment = null;
+  let stopped = false, suit = null, legs = null, clock = null, eva = null, partner = null, environment = null, navigation = null;
   const environmentData = Promise.all([
     loadDataFile(MEDA_URL, 'meda_sol.json', parseMedaSol),
     loadDataFile(RAD_URL, 'rad.json', parseRad),
@@ -114,6 +115,13 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     startClock(false);
     if (clock && paused) clock.pause();
     initNavigation({ store });   // a terrain fix at the airlock; after the clock, for the fix time
+    // The navigation drift (#42): the estimate follows the bridge's true position (navigation.trueX/trueZ) from
+    // the first Walk on, and initNavigation's fresh fix re-seeds it.
+    navigation = startNavigationDrift({
+      store,
+      lineOfSight: engine.lineOfSight,
+      getMast: () => (typeof engine.getHabitatMast === 'function' ? engine.getHabitatMast() : null),
+    });
     store.setState((s) => ({ route: departRoute(s.route) }));
     const waypoints = startWaypointRunner({ store });
     stopsReady.then((stops) => { if (stops) waypoints.setStops(stops); });
@@ -154,6 +162,7 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     stopped = true;
     unsubscribe();
     if (clock) clock.stop();
+    if (navigation) { navigation.stop(); navigation = null; }
     slopeDetour.stop();
     if (eva) { eva.events.stop(); eva.offRoute.stop(); eva.waypoints.stop(); if (eva.stats) eva.stats.stop(); }
     if (suit) suit.stop();

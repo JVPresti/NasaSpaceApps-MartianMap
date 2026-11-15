@@ -305,6 +305,7 @@
   "noGoHeading": "Go / no-go",
   "fixTerrain": "terrain fix",
   "fixDR": "dead reckoning",
+  "fixRadio": "radio ranging",
   "fixAgeMinutes": "{minutes} min ago",
   "fixAgeHours": "{hours} h {minutes} min ago",
   "sampleRock": "Take rock chips from {site}",

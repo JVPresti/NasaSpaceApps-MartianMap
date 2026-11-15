@@ -134,7 +134,7 @@ describe('EVA start at the first switch to Walk (#166)', () => {
     const waypoints = startAtAirlock(route.waypoints, files['shelters.json']);
     useMissionStore.setState((s) => ({
       route: { ...s.route, waypoints, path: waypoints.map((w) => [w.x, w.z]), nextIndex: 0, visited: [] },
-      navigation: { ...s.navigation, x: entry.x - 0.4, z: entry.z - 0.5, headingDeg: 323 },   // the engine's spawn
+      navigation: { ...s.navigation, trueX: entry.x - 0.4, trueZ: entry.z - 0.5, headingDeg: 323 },   // the engine's spawn
     }));
   }
 
@@ -264,7 +264,7 @@ describe('startSimulation EVA wiring', () => {
 
     const stop = startSimulation(ENGINE);
     setMode('walk');   // the EVA, and its statistics, start on the first Walk (#166)
-    useMissionStore.setState((state) => ({ navigation: { ...state.navigation, x: 545.1, z: 574.1 } }));
+    useMissionStore.setState((state) => ({ navigation: { ...state.navigation, trueX: 545.1, trueZ: 574.1 } }));
     await vi.advanceTimersByTimeAsync(500);
     // The real HAB is still loading: the runner must not have started from the route waypoint (520, 600).
     expect(useMissionStore.getState().eva.phase).toBe('ready');
@@ -275,7 +275,7 @@ describe('startSimulation EVA wiring', () => {
     expect(started.eva.phase).toBe('active');
     expect(started.eva.startedAtSec).not.toBeNull();
 
-    useMissionStore.setState((state) => ({ navigation: { ...state.navigation, x: 535.1, z: 574.1 } }));
+    useMissionStore.setState((state) => ({ navigation: { ...state.navigation, trueX: 535.1, trueZ: 574.1 } }));
     await vi.advanceTimersByTimeAsync(300);
 
     const ended = useMissionStore.getState();
@@ -307,7 +307,7 @@ describe('startSimulation EVA wiring', () => {
     answerShelters(jsonResponse(sheltersJson));
     await vi.advanceTimersByTimeAsync(0);
 
-    useMissionStore.setState((state) => ({ navigation: { ...state.navigation, x: 545.1, z: 574.1 } }));
+    useMissionStore.setState((state) => ({ navigation: { ...state.navigation, trueX: 545.1, trueZ: 574.1 } }));
     await vi.advanceTimersByTimeAsync(1000);
     expect(useMissionStore.getState().eva.phase).toBe('ready');
     expect(useMissionStore.getState().eva.summary).toBeNull();

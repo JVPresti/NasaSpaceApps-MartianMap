@@ -65,10 +65,12 @@ setMode('plan');
 | `suit.walkbackSec`, `walkbackO2G`, `walkbackTo` | time and O2 (with the 20 % pad) to walk back to the habitat entry in `public/data/shelters.json` along the route. While `route.shelter` is set the walk follows the shelter route forward to the shelter instead. `walkbackTo` is `'habitat'` or `'shelter'` | suit model | #19, #129, #195 |
 | `suit.marginSec`, `o2MarginSec`, `evaMarginSec`, `marginLimit` | margin now: the smaller of the O2 margin (O2 time left minus walkback minus the 30 min reserve) and the EVA margin (`suit.eva_duration_max` minus `mission.elapsedSec` minus the walkback time). `marginLimit` names the smaller one, `'o2'` or `'eva'` | suit model | #19, #195 |
 | `suit.status` | `'nominal'`, `'caution'` (margin under 15 min) or `'warning'` (margin at or under 0) | suit model | #19, used by #26 |
-| `navigation.x`, `z`, `headingDeg` | position estimate; heading clockwise from north | engine bridge now; navigation model later | #6, #21, #42 |
-| `navigation.waypointRangeM`, `waypointBearingDeg` | distance and bearing to the next unvisited waypoint, written in Walk mode | waypoint runner | #61 |
+| `navigation.trueX`, `trueZ` | the TRUE position, rounded to cm, written by the engine bridge only; no interface reads it | engine bridge (`src/state/engineBridge.js`) | #6, #42 |
+| `navigation.x`, `z` | position estimate: the true position plus the drift offset, rounded to cm. This is what the HUD, the Plan map and the minimap show; never the truth | navigation drift runner (`src/sim/navigationDrift.js`) | #21, #42 |
+| `navigation.headingDeg` | heading clockwise from north, from the engine | engine bridge | #6, #21 |
+| `navigation.waypointRangeM`, `waypointBearingDeg` | distance and bearing to the next unvisited waypoint, written in Walk mode **from the estimate** | waypoint runner | #61 |
 | `navigation.slopeDeg` | terrain slope under the player in degrees (DERIVED from the HiRISE DTM), for the HUD | engine bridge | #20 |
-| `navigation.errorM`, `fixMode`, `lastFixSec` | uncertainty radius in metres (the ring on the Plan map), `'terrain fix'` or `'dead reckoning'`, mission time (`mission.elapsedSec`) of last fix. Tagged `SIM` | placeholder in `src/sim/navigation.js` now (a terrain fix at start, fixed 0.4 m); drift model later | #21, #42 |
+| `navigation.errorM`, `fixMode`, `lastFixSec` | uncertainty radius in metres (the ring on the Plan map); `'terrain fix'`, `'dead reckoning'` or `'radio ranging'`; mission time (`mission.elapsedSec`) of the last terrain fix. Tagged `SIM` | navigation drift runner; `initNavigation` seeds a fresh fix at the airlock | #21, #42 |
 | `route.waypoints` | `[{ name, x, z }]` | Plan mode, planner | #17 |
 | `route.path` | `[[x, z], ...]`, the format of `route.json` and `planRoute()` | planner | #16, #23 |
 | `route.nextIndex` | index of the next waypoint | waypoint tracking | #61 |
@@ -156,7 +158,7 @@ await engine.ready;
 | `getSampling()` | `{ phase, holding, target, caseState, caseInReach, actions }` (see [Sampling](#sampling-36)); `null` before `ready`. Runs one aim test, so poll it, never per frame. |
 | `onSampling(listener)` | Sampling events `{ type: 'photo' \| 'collect' \| 'texture' \| 'secured' \| 'sealed' \| 'input', ... }`. Returns an unsubscribe function. Available once ready. |
 | `clearPrints()` | Removes every boot print (`src/engine/bootPrints.js`, #46). The bridge calls it when `mission.startedAtMs` changes, the start of a new EVA. |
-| `getPlayer()` | `{ x, z, headingDeg, mode }`. This is the true position, so only the bridge should read it; the interface reads `navigation`. |
+| `getPlayer()` | `{ x, z, headingDeg, mode }`. This is the true position, so only the bridge reads it: it writes `navigation.trueX` / `trueZ` and the drift model turns them into the estimate the interface reads (`navigation.x` / `z`, #42). |
 | `dispose()` | Stops everything and frees the GPU. |
 
 Options: `inputEnabled: false` starts with gameplay input gated off (the app shell passes this for the start
@@ -295,7 +297,8 @@ A sealed checklist stays ticked until the next photo or scoop starts a new one. 
 
 `src/hud/Hud.jsx` (#20) reads only the store and shows in Walk mode once the scene is ready.
 - **Values shown:** suit (`suit.*`), mission clock (`mission.elapsedSec`, `lmst`), heading and slope (`navigation.*`), the next waypoint (`route.waypoints[route.nextIndex]`, with range, bearing and an ETA at 1 m/s), the environment (`environment.*`) and the most severe active alert (`alerts`).
-- **Navigation (#21):** a line under the environment strip says how the position was estimated, its error and its age, for example `NAV · terrain fix · ±0.4 m · 3 min ago` (`formatNavLine` in `src/hud/format.js`). Past `NAV_FIX_LIMIT_M` (5 m, SIM) it turns amber and asks the astronaut to stop for a terrain fix. The Plan map shows the same estimate as a marker with an uncertainty ring of radius `navigation.errorM`, placed with `project()` (`src/plan/PlanPositionMarker.jsx`). The drawing is in `src/hud/positionMarker.js`, so the minimap (#60) reuses it with its own world-to-screen function.
+- **Navigation (#21, #42):** a line under the environment strip says how the position was estimated, its error and its age, for example `NAV · terrain fix · ±0.4 m · 3 min ago` (`formatNavLine` in `src/hud/format.js`). Past `NAV_FIX_LIMIT_M` (5 m, SIM) it turns amber and asks the astronaut to stop for a terrain fix. The Plan map shows the same estimate as a marker with an uncertainty ring of radius `navigation.errorM`, placed with `project()` (`src/plan/PlanPositionMarker.jsx`). The drawing is in `src/hud/positionMarker.js`, so the minimap (#60) reuses it with its own world-to-screen function.
+- **The drift model (#42):** `src/sim/navigationDrift.js` writes the estimate (`navigation.x` / `z`, `errorM`, `fixMode`, `lastFixSec`) four times per second from the bridge's true position. Dead reckoning grows the error at `DRIFT_RATE_PER_M` (2 %, SIM) of the distance walked; standing still for `FIX_STILL_SEC` (5 s) with the horizon visible in clear air and daylight takes a terrain fix that snaps the estimate under 1 m; radio ranging to the habitat mast bounds the error at `RANGING_BOUND_M` (2 m, SIM) while the true position has line of sight to it, and `fixMode` then reads `radio ranging`. Simulation logic (suit effort, waypoint arrival, off-route replans, event positions, EVA distance, the slope warning) reads the true position; the interface reads only the estimate.
 - **Partner (#70):** a chip under the suit panel shows the partner's suit status dot, range and a bearing arrow relative to the heading (`src/hud/PartnerPanel.jsx`). T opens the detail with O2, battery and a separation bar marked at the caution distance and the limit. The detail opens by itself while the separation or the partner's suit is in caution or warning. The minimap draws the partner as a dot in the suit colour (`src/hud/minimapPartner.js`); without radio line of sight the chip and the dot grey out and read LAST, at the last known position (plan section 4.2).
 - **Unsourced values:** an environment value without an entry in `sources` shows as a dash.
 - **Source tags:** each value shows its tag through the shared `SourceTag` (`src/components/SourceTag.jsx`, #62), in its tag-only, non-interactive form because the HUD never takes the pointer. The tag appears once the value's writer has put it in `sources`.
@@ -323,7 +326,7 @@ Tests: `src/hud/minimapGeometry.test.js` (tile UV with the five real waypoints, 
 `connectEngine(engine)` in `src/state/engineBridge.js` is called by `EngineView` once the engine is ready. It returns a disconnect function.
 
 - **Store to engine:** `mode`, `view.layer`, `view.sky`, `view.skyBlend`, `view.slopeGrid`, `route.path`, `route.shelter` and `environment.dustOpacity` (as the dust level), each when it changes.
-- **Engine to store:** `navigation.x`, `z` and `headingDeg` every 200 ms, skipped while the player stands still. This is the true position until the navigation model (#42) writes the estimate instead; after that, move this write into the navigation module.
+- **Engine to store:** `navigation.trueX`, `trueZ` and `headingDeg` every 200 ms, skipped while the player stands still. This is the TRUE position (#42): the navigation drift runner (`src/sim/navigationDrift.js`) reads it and writes the estimate into `navigation.x` / `z`. Only simulation logic reads `trueX` / `trueZ`; the interface reads the estimate.
 
 ## Unexpected finds (#71)
 
