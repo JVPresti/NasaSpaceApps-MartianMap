@@ -147,8 +147,8 @@ export const CURATED = [
     url: 'https://doi.org/10.5066/P9QJDP48',
     used_in: [
       'public/marswalk/assets/ortho_hi.jpg, ortho_lo.jpg',
-      'public/marswalk/assets/outcrop_mask.jpg, the Outcrop layer: a brightness mask of light-toned ground, so bright dust or sand reads the same as outcrop',
-      'the rock density map in terrain.json, the Rocks layer (DERIVED, an estimate of rock cover)',
+      'public/marswalk/assets/outcrop_mask.jpg, the Outcrop layer (SIM): a brightness mask of light-toned ground, so bright dust, sand or a sunlit slope reads the same as outcrop',
+      'the rock density map in terrain.json, the Rocks layer (SIM, a brightness proxy for rock cover: brightness also follows lithology, dust and sunlit slopes)',
     ],
   },
   {
@@ -235,7 +235,7 @@ export const CURATED = [
     license: 'Cited model. The paper stays under its own copyright',
     license_url: null,
     url: 'https://doi.org/10.1029/2002JE002035',
-    used_in: ['Rock counts per square metre in src/engine/rocks.js and the rock abundance layer'],
+    used_in: ['Rock counts per square metre in src/engine/rocks.js, and the rock sizes for the cover the Rocks layer reads from image brightness (a SIM proxy; the paper does not turn brightness into rock cover)'],
   },
 
   // Weather and dust
