@@ -21,7 +21,7 @@ Table ends at 4:45. Spoken words take 2:24 of it.
 | Row | Slot | Words | Spoken | Status |
 |---|---|---|---|---|
 | D1 · 0:00 | 0:05 | 8 | 0:04 | ok |
-| D2 · 0:05 | 0:20 | 17 | 0:08 | ok |
+| D2 · 0:05 | 0:20 | 19 | 0:09 | ok |
 | D3 · 0:25 | 0:20 | 25 | 0:12 | ok |
 | D4 · 0:45 | 0:10 | 16 | 0:08 | ok |
 | D5 · 0:55 | 0:53 | 53 | 0:25 | ok |
@@ -29,7 +29,7 @@ Table ends at 4:45. Spoken words take 2:24 of it.
 | D7 · 2:03 | 0:11 | 21 | 0:10 | ok |
 |  · 2:14 | end | 0 | 0:00 | ok |
 
-Table ends at 2:14. Spoken words take 1:10 of it.
+Table ends at 2:14. Spoken words take 1:11 of it.
 
 | Row | Slot | Words | Spoken | Status |
 |---|---|---|---|---|
@@ -58,7 +58,7 @@ Table ends at 4:45. Spoken words take 2:28 of it.
 | Row | Slot | Words | Spoken | Status |
 |---|---|---|---|---|
 | D1 · 0:00 | 0:05 | 10 | 0:05 | ok |
-| D2 · 0:05 | 0:20 | 19 | 0:09 | ok |
+| D2 · 0:05 | 0:20 | 22 | 0:11 | ok |
 | D3 · 0:25 | 0:20 | 24 | 0:12 | ok |
 | D4 · 0:45 | 0:10 | 17 | 0:08 | ok |
 | D5 · 0:55 | 0:53 | 50 | 0:24 | ok |
@@ -66,7 +66,7 @@ Table ends at 4:45. Spoken words take 2:28 of it.
 | D7 · 2:03 | 0:11 | 19 | 0:09 | ok |
 |  · 2:14 | end | 0 | 0:00 | ok |
 
-Table ends at 2:14. Spoken words take 1:09 of it.
+Table ends at 2:14. Spoken words take 1:10 of it.
 
 | Row | Slot | Words | Spoken | Status |
 |---|---|---|---|---|

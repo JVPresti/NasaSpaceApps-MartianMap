@@ -27,7 +27,7 @@ Los tiempos corren desde la entrega en 1:23. Teclas, clics y el respaldo de cada
 | Beat | Tiempo de la demo | Texto |
 |---|---|---|
 | D1 | 0:00 | La mesa de misión, sobre el terreno HiRISE de Jezero. |
-| D2 | 0:05 | Capa Terreno, la pendiente. La ruta rodea lo amarillo, y el planificador bloquea lo rojo, más de veinte grados. |
+| D2 | 0:05 | Capa Terreno, la pendiente. El planificador bloquea lo rojo, más de veinte grados, y la mesa cuenta los metros sobre lo amarillo. |
 | D3 | 0:25 | Si la tripulación pide Cheyava Falls, la ruta crece y el plan recalcula tiempo y oxígeno. En vivo caminamos la primera parada, 55 metros. |
 | D4 | 0:45 | Simulo el final de una EVA y salgo con 20 % de oxígeno. El plan dice que sí. |
 | D5 | 0:55 | A la izquierda está el margen, los minutos que me quedan después de volver caminando y guardar la reserva. Se calcula a mi paso. Abajo está la posición. Sin GPS, el error crece al caminar y se corrige al detenerme con horizonte despejado. Ese modelo es nuestro, y dice SIM. |
@@ -57,7 +57,7 @@ Solo si el equipo la elige en el ensayo. Va antes del beat 1 y necesita 20 segun
 | 55 m la primera salida | Mesa de misión en #282 |
 | 20 % de O2 en la demo | Control "O2" de las necesidades de la tripulación en #282, `needs.o2Pct` (SIM). Ver `demo-run-sheet.md` |
 | 1 m/s | `mobility.speed.flat`, SIM |
-| 97 de cada 100 puntos | Acuerdo de clases de pendiente (0-15, 15-25, >25°) entre nuestra malla de 2 m y el DTM HiRISE de Mars Trek: 97.3 % de 564,001 nodos. RMS de altura 0.14 m. Prueba el procesamiento, no la exactitud del DTM. `docs/data/mars-trek-check/README.md` |
+| 0.14 m, catorce centímetros | RMS de altura entre nuestra malla de 2 m y el DTM HiRISE de Mars Trek, en 564,001 nodos. Las clases de pendiente (0-15, 15-25, >25°) coinciden en el 97.3 % de los nodos. Prueba el procesamiento, no la exactitud del DTM. `docs/data/mars-trek-check/README.md` |
 | Opacidad 2018 | tau 8.0, tormenta global medida por Curiosity en Gale (DATA); la subida en 30 s es SIM |
 | Dosis de 2017 | RAD, Curiosity, cráter Gale, evento de septiembre de 2017 (`hazards.json` `sep_2017_profile`); la línea de tiempo comprimida es SIM |
 

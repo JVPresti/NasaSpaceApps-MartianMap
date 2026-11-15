@@ -27,7 +27,7 @@ Times run from the handover at 1:23. Keys, clicks and a fallback for each beat a
 | Beat | Demo time | Text |
 |---|---|---|
 | D1 | 0:00 | The mission table, on HiRISE terrain of Jezero. |
-| D2 | 0:05 | Terrain layer, the slope. The route goes around yellow, and the planner blocks red, over twenty degrees. |
+| D2 | 0:05 | Terrain layer, the slope. The planner blocks red, over twenty degrees, and the table counts the metres on yellow. |
 | D3 | 0:25 | If the crew asks for Cheyava Falls, the route grows and the plan reprices time and oxygen. Live, we walk the first stop, 55 metres. |
 | D4 | 0:45 | I play the end of an EVA and leave with 20 % oxygen. The plan says go. |
 | D5 | 0:55 | On the left is the margin, the minutes I have left after walking home and keeping the reserve. It is priced at my pace. Below is position. With no GPS, the error grows as I walk and resets when I stop with a clear horizon. That model is ours, and it says SIM. |

@@ -22,7 +22,7 @@ Martian Map", Ensenada local event). Built on the first mission of PR #282 and i
 | `video-30s.md` | The 30-second video script and frame-accurate shot list |
 | `deck-global.html`, `out/deck-global.pdf`, `out/deck-global/*.png` | The 7-slide global deck: one self-contained HTML file (fonts and images inlined), its PDF and one PNG per slide |
 | `fallback/stills/` | Real screenshots of the #282 demo, one per beat, for when the live demo fails |
-| `council/` | The judge council: rubric, every round's raw JSON, `log.tsv` |
+| `council/` | The AI reviewer council (Opus 5.5 and Fable 5.2 agents playing judges, not people): rubric, every round's raw JSON, `log.tsv`, timing checks |
 | `src/`, `img/`, `fonts/`, `tools/` | Deck sources and the scripts that build it |
 
 ## Which number is which
