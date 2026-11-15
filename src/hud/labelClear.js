@@ -1,6 +1,6 @@
 // Keeps the waypoint world label out from under the HUD panels (#283). Pure geometry plus a small cache, so the label's
-// frame loop never reads layout: the panel rectangles are measured once and again only after a resize, a panel change
-// or half a second, whichever comes first.
+// frame loop never reads layout. The panel rectangles are measured once and again only after a resize, a panel change
+// or half a second, whichever comes first. The label's own size is measured again when its text changes it.
 
 /**
  * Push `place` ({ x, y }, the label centre in HUD pixels) out of every rectangle it falls inside, along the shorter way,
@@ -23,14 +23,16 @@ export const PANEL_SELECTOR = '.hud .hud-panel, .stop-card-walk, .event-banner-w
 const MAX_AGE_MS = 500;
 
 /**
- * Cached panel rectangles relative to `hud`, plus the label's size. `get()` measures only when the cache is stale.
+ * Cached panel rectangles relative to `hud`, plus the label's size. `get()` measures only when the cache is stale, and
+ * a new waypoint name or range that resizes the label makes it stale.
  * @returns {{ get: (label: HTMLElement) => { rects: object[], w: number, h: number }, invalidate: () => void, dispose: () => void }}
  */
 export function createPanelRects(hud, { now = () => performance.now() } = {}) {
-  let cache = null, at = -Infinity;
+  let cache = null, at = -Infinity, watched = null;
   const invalidate = () => { cache = null; };
   window.addEventListener('resize', invalidate);
-  // a panel shown or hidden: class changes on the HUD and its panels, and the card or the alert mounting in the app
+  const sizer = typeof ResizeObserver === 'function' ? new ResizeObserver(invalidate) : null;
+  // a panel shown or hidden changes a class on the HUD or its panels, or mounts the card or the alert in the app
   const observer = typeof MutationObserver === 'function' ? new MutationObserver(invalidate) : null;
   if (observer) {
     observer.observe(hud, { attributes: true, attributeFilter: ['class'], subtree: true });
@@ -38,6 +40,7 @@ export function createPanelRects(hud, { now = () => performance.now() } = {}) {
   }
   return {
     get(label) {
+      if (sizer && label !== watched) { if (watched) sizer.unobserve(watched); sizer.observe(label); watched = label; cache = null; }
       const t = now();
       if (cache && t - at < MAX_AGE_MS) return cache;
       const origin = hud.getBoundingClientRect();
@@ -51,6 +54,6 @@ export function createPanelRects(hud, { now = () => performance.now() } = {}) {
       return cache;
     },
     invalidate,
-    dispose() { window.removeEventListener('resize', invalidate); if (observer) observer.disconnect(); },
+    dispose() { window.removeEventListener('resize', invalidate); if (observer) observer.disconnect(); if (sizer) sizer.disconnect(); },
   };
 }

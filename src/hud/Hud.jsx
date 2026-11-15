@@ -232,8 +232,8 @@ function WaypointMarker({ engine }) {
       if (!m || !a) return;
       const box = m.parentElement;   // the .hud overlay, inset 0 over the engine container
       const place = t && box ? placeMarker(engine, t, box.clientWidth, box.clientHeight) : null;
-      // a world label behind a HUD panel shows through it and reads as a glitch (#283): move it beside the panel, or hide
-      // it when there is no clear spot (the panel below already names the waypoint and its range)
+      // a world label behind a HUD panel shows through it and reads as a glitch (#283). Move it beside the panel, or hide
+      // it when there is no clear spot, since the panel below already names the waypoint and its range
       if (place?.mode === 'marker' && box && !panels) panels = createPanelRects(box);
       const p = place?.mode === 'marker' ? panels.get(m) : null;
       const clear = p ? clearOfRects(place, p.w, p.h, p.rects) : true;

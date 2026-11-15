@@ -24,7 +24,9 @@
 .hud-panel, .hud-pill, .hud-heading-box {
   background: var(--glass);
   border: 1px solid var(--edge);
-  backdrop-filter: blur(6px);   /* the HUD's own blur, kept from before #232: --blur (14 px) over the 3D view is not measured on the GPU */
+  /* 6 px, not --blur (14 px). This blur runs over the live 3D view every frame, and the 14 px cost there is not
+     measured on a GPU yet. Panels over static pages use --blur. */
+  backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
 
