@@ -70,6 +70,6 @@ describe('zoneChange', () => {
 describe('the zone layer legend', () => {
   it('names the caution margin of hazards.json', () => {
     expect(c.cautionSec).toBe(15 * 60);
-    expect(ZONE_LAYER.swatches[1].detail).toBe('margin under 15 min');
+    expect(ZONE_LAYER.swatches[1].detail).toBe('inside, but under 15 min to spare');
   });
 });

@@ -3,7 +3,7 @@ import { formatNumber, t } from '../../i18n/index.js';
 import { TILE_WIDTH_M, TILE_DEPTH_M, activeHazardZones, niceScaleBar } from '../../hud/minimapGeometry.js';
 import { drawPositionMarker, markerState } from '../../hud/positionMarker.js';
 import { WRIST_CONTENT } from './layout.js';
-import { drawZoneWorld } from '../../zone/zonePaint.js';
+import { ZONE_PALETTE_HUD, drawZoneWorld } from '../../zone/zonePaint.js';
 
 export function mapProjection(rect = WRIST_CONTENT) {
   const scale = Math.min((rect.w - 50) / TILE_WIDTH_M, (rect.h - 32) / TILE_DEPTH_M);
@@ -37,7 +37,7 @@ export function drawWristMap(g, model, image, shelters, zone = null) {
   }
   if (zone) {   // the return zone (src/sim/returnZone.js) over the photo, in the map's metres
     const o = point(0, 0);
-    g.save(); g.translate(o.x, o.y); g.scale(scale, scale); drawZoneWorld(g, zone); g.restore();
+    g.save(); g.translate(o.x, o.y); g.scale(scale, scale); drawZoneWorld(g, zone, ZONE_PALETTE_HUD); g.restore();
   }
   for (const zone of model.zones) {
     const p = point(zone.x, zone.z);

@@ -48,15 +48,22 @@ const click = (selector) => S((sel) => { const el = [...document.querySelectorAl
 const key = async (code) => { await page.keyboard.down(code); await page.keyboard.up(code); };
 const zoneNow = () => S(() => { const z = window.__returnZone; return z ? { kind: z.kind, events: z.events, ...z.stats, bounds: undefined } : null; });
 async function fps(label, seconds = 4) {
-  const samples = [];
+  const samples = [], draws = [];
+  // main-thread tasks over 50 ms while sampling: what the page itself blocks, apart from the GPU
+  await S(() => { window.__longTasks = 0; window.__longTaskMs = 0; window.__lto?.disconnect(); window.__lto = new PerformanceObserver((list) => { for (const e of list.getEntries()) { window.__longTasks += 1; window.__longTaskMs += e.duration; } }); window.__lto.observe({ type: 'longtask' }); });
   for (let k = 0; k < seconds * 2; k += 1) {
     if (await paused()) await resume();
     await sleep(0.5);
-    if (!(await paused())) samples.push(await S(() => window.__marswalk.stats().fps));
+    if (!(await paused())) {
+      samples.push(await S(() => window.__marswalk.stats().fps));
+      draws.push(await S(() => Number(document.querySelector('.hud-map-canvas')?.dataset.lastDrawDurationMs)));
+    }
   }
+  const drawMs = draws.filter(Number.isFinite).sort((a, b) => a - b);
   const sorted = samples.filter(Number.isFinite).sort((a, b) => a - b);
-  report.fps[label] = { min: sorted[0], median: sorted[Math.floor(sorted.length / 2)] };
-  console.log(`  fps ${label}: min ${sorted[0]?.toFixed(1)}, median ${sorted[Math.floor(sorted.length / 2)]?.toFixed(1)}`);
+  const long = await S(() => ({ n: window.__longTasks, ms: Math.round(window.__longTaskMs) }));
+  report.fps[label] = { min: sorted[0], median: sorted[Math.floor(sorted.length / 2)], minimapDrawMsMax: drawMs.at(-1) ?? null, longTasks: long.n, longTaskMs: long.ms };
+  console.log(`  fps ${label}: min ${sorted[0]?.toFixed(1)}, median ${sorted[Math.floor(sorted.length / 2)]?.toFixed(1)}, minimap draw max ${drawMs.at(-1) ?? '-'} ms, long tasks ${long.n} (${long.ms} ms)`);
 }
 async function walkTo(x, z, tolerance = 2, timeoutS = 120) {
   const t0 = Date.now();

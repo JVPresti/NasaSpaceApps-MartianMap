@@ -3,6 +3,14 @@ import { formatNumber, t } from '../i18n/index.js';
 import { shortDuration } from '../plan/tableFormat.js';
 
 const EVENT_NAMES = { 'dust-storm': 'stormLabel', radiation: 'radiationLabel' };
+/** The walk home from where the zone was computed from, seconds; null off the grid. */
+function homeSecFrom(zone) {
+  if (!zone.from || !zone.homeSec) return null;
+  const q = Math.round((zone.from.x - zone.x0) / zone.dx), r = Math.round((zone.from.z - zone.z0) / zone.dz);
+  if (q < 0 || r < 0 || q >= zone.cols || r >= zone.rows) return null;
+  return zone.homeSec[r * zone.cols + q];
+}
+
 const eventName = (id) => (id && EVENT_NAMES[id] ? t(EVENT_NAMES[id]) : id ?? '');
 
 /**
@@ -29,7 +37,10 @@ export function zoneStatus(zone) {
   let limit;
   if (stats.limit === 'window') {
     const left = Math.round(inputs.shelterWithinSec ?? 0);
-    limit = left > 0 ? t('layers.zone.limit.window', { event: eventName(event), sec: left }) : t('layers.zone.limit.window.closed', { event: eventName(event) });
+    const need = homeSecFrom(zone);
+    if (left <= 0) limit = t('layers.zone.limit.window.closed', { event: eventName(event) });
+    else if (Number.isFinite(need) && need > left) limit = t('layers.zone.limit.window.out', { event: eventName(event), need: shortDuration(need), sec: left });
+    else limit = t('layers.zone.limit.window', { event: eventName(event), sec: left });
   } else if (stats.limit === 'event') limit = t('layers.zone.limit.event', { event: eventName(event) });
   else limit = t('layers.zone.limit.' + (stats.limit ?? 'none'));
   return { head, limit, reach: t('layers.zone.reach', { m: formatNumber(Math.round(stats.reachM / 10) * 10, 0) }) };

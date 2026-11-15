@@ -14,6 +14,14 @@ export const ZONE_PALETTE = Object.freeze({
   rim: Object.freeze([255, 106, 43, 255]),
 });
 
+/** The helmet minimap and the wrist: the photo is tinted Mars orange there, so the tight band needs more weight to read. */
+export const ZONE_PALETTE_HUD = Object.freeze({
+  outside: Object.freeze([10, 6, 4, 185]),
+  edge: Object.freeze([255, 106, 43, 125]),
+  inside: Object.freeze([0, 0, 0, 0]),
+  rim: Object.freeze([255, 106, 43, 255]),
+});
+
 const canvases = new WeakMap();
 
 /** One pixel per zone node, cached per zone object. */
@@ -22,7 +30,9 @@ export function zoneCanvas(zone, palette = ZONE_PALETTE) {
   if (!byPalette) { byPalette = new Map(); canvases.set(zone, byPalette); }
   if (byPalette.has(palette)) return byPalette.get(palette);
   const canvas = typeof OffscreenCanvas === 'function' ? new OffscreenCanvas(zone.cols, zone.rows) : Object.assign(document.createElement('canvas'), { width: zone.cols, height: zone.rows });
-  const g = canvas.getContext('2d');
+  // CPU-backed: the minimap and the wrist draw it 10 times a second; a GPU-backed source drawn into a 2D canvas can
+  // cost a read back from the GPU on every paint, which held a walk at 30 fps against 55 without the zone (#309).
+  const g = canvas.getContext('2d', { willReadFrequently: true });
   const image = g.createImageData(zone.cols, zone.rows);
   zoneRgba(zone, palette, image.data);
   g.putImageData(image, 0, 0);
