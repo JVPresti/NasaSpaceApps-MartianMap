@@ -48,8 +48,9 @@ const DWELL = {
   need: 15,            // each of the two needs changed
   profiles: 10,        // the three route profiles compared
   why: 10,             // the why-this-route lines
-  outlook: 8,          // the conditions outlook (Hazards step)
-  goNoGo: 6,           // the go / no-go decision (Suit step)
+  hazards: 6,          // the hazard cards: when each event comes in this mission (Hazards step)
+  outlook: 6,          // the conditions outlook beside go / no-go (Suit step)
+  goNoGo: 4,           // the go / no-go decision (Suit step)
   keys: 6,             // the walk keys card after Begin EVA
   find: 2,             // a look at the find card
   stopLook: 3,         // a look at the stop before sampling
@@ -101,7 +102,7 @@ const SEL = {
   ],
   mapMarkers: '.map-marker-hit',
   whyLines: '.route-why, .table-stop-why',
-  outlook: '.table-outlook, [data-outlook]',
+  outlook: '.outlook-strip',
   keysStart: '.eva-start-dialog .menu-resume',
   menuResume: '.pause-dialog .menu-resume',
   debrief: 'dialog[open] .debrief',
@@ -392,9 +393,10 @@ try {
   // 4. Outlook, go / no-go, Begin EVA, controls ----------------------------------------------------------------------
   begin('go');
   await click(SEL.tab('hazards'));
+  await dwell(DWELL.hazards);
+  await click(SEL.tab('suit'));
   if (!(await exists(SEL.outlook))) skip(`conditions outlook (${SEL.outlook})`);
   await dwell(DWELL.outlook);
-  await click(SEL.tab('suit'));
   await dwell(DWELL.goNoGo);
   await snap('go');
   await click(SEL.tablePrimary);          // Begin EVA
