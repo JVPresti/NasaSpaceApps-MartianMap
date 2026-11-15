@@ -19,12 +19,13 @@
 /* above the rover's image pin (.map-pins, z-index 1, earlier in the map): on Outcrop and Exposure the places are the layer */
 .map-places { z-index: 1; }
 
-/* Near the map's right edge a tag opens to the left of its symbol, and the rover pin's tag to the right near the left
-   edge, so the edge never cuts a tag (mapLayers.tagFlips). The symbol stays on its point. */
+/* Near the map's right edge a tag opens to the left of its symbol, so the edge never cuts it (mapLayers.tagFlips); the
+   symbol stays on its point. Near the left edge the rover pin's tag drops below its dot instead, opening to the right:
+   the rover stood beside a stop, whose own tag takes the row to the right of the dot. */
 .map-marker.flip { transform: translate(calc(-100% + 11px), -50%); }
 .map-marker.flip .map-marker-hit { flex-direction: row-reverse; }
 .map-place.flip { flex-direction: row-reverse; transform: translate(calc(-100% + 7px), -50%); }
-.map-pin.flip .map-pin-hit { right: auto; left: 10px; }
+.map-pin.flip .map-pin-hit { right: auto; left: -6px; top: 10px; transform: none; }
 
 /* Perseverance's drives: the key's second line says what the drives decide (TraverseLayer.jsx) */
 .table-map-traverse-key small { display: block; font-size: 11px; font-weight: 400; color: var(--text-2); }

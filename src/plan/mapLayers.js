@@ -103,7 +103,9 @@ export function acrossLabel(size) {
  * @param {{ candidates?: Array<{ id: string, name: string, waypoint: string, x: number, z: number }>,
  *   stops?: Array<{ id: string }>, dropped?: Array<{ id: string, limit: string }>, waypoints?: Array<{ name: string }>,
  *   shelters?: Array<object> }} data candidates: stops.routeStopCandidates; stops, dropped, waypoints: the store's route
- * @returns {Array<{ id: string, kind: 'candidate' | 'shelter', x: number, z: number, label: string, detail: string, title: string }>}
+ * @returns {Array<{ id: string, kind: 'candidate' | 'shelter', x: number, z: number, label: string, detail: string, title: string,
+ *   opens: 'right' | 'left' }>} opens: the side the tag opens to: a candidate's to the right, as a stop's; a shelter's to the
+ *   left, because shelters sit off the route and a stop's tag beside them takes the row to the right
  */
 export function layerPlaces(layer, { candidates = [], stops = [], dropped = [], waypoints = [], shelters = [] } = {}) {
   if (layer === LAYER.OUTCROP) {
@@ -116,7 +118,7 @@ export function layerPlaces(layer, { candidates = [], stops = [], dropped = [], 
         const label = translateText(c.name);   // the stop's one display name (P8), never its waypoint code
         const limit = why.get(c.id);
         const detail = limit ? t('layers.stop.dropped.' + (['time', 'o2', 'battery'].includes(limit) ? limit : 'unreachable')) : t('layers.stop.other');
-        return { id: c.id, kind: 'candidate', x: c.x, z: c.z, label, detail, title: `${translateText(c.name)}: ${detail}` };
+        return { id: c.id, kind: 'candidate', x: c.x, z: c.z, label, detail, title: `${translateText(c.name)}: ${detail}`, opens: 'right' };
       });
   }
   if (layer === LAYER.EXPOSURE) {
@@ -126,7 +128,7 @@ export function layerPlaces(layer, { candidates = [], stops = [], dropped = [], 
         const sky = s.values.sky_view_factor.value;
         const pct = Math.round((s.values.dose_reduction?.value ?? 1 - sky) * 100);
         const label = t('layers.shelter.tag', { id: s.id, pct });
-        return { id: s.id, kind: 'shelter', x: s.x, z: s.z, label, detail: '', title: t('layers.shelter.title', { name: translateText(s.name), sky: formatNumber(sky, 2), pct }) };
+        return { id: s.id, kind: 'shelter', x: s.x, z: s.z, label, detail: '', title: t('layers.shelter.title', { name: translateText(s.name), sky: formatNumber(sky, 2), pct }), opens: 'left' };
       });
   }
   return [];

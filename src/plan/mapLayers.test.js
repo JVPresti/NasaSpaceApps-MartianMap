@@ -222,7 +222,8 @@ describe('mission table map', () => {
     const { shelters } = readJson('public/data/shelters.json');
     const places = layerPlaces(LAYER.EXPOSURE, { shelters });
     expect(places.map((p) => p.id)).toEqual(['SP1', 'SP2', 'SP3', 'SP4']);   // the habitat is the route's first marker
-    expect(places[0].label).toMatch(/^SP1 · −1[56] % dose$/);
+    expect(places[0].label).toMatch(/^SP1 · −1[56] %$/);   // short: the legend says it is the dose; the title says it in full
+    expect(places.every((p) => p.opens === 'left')).toBe(true);
     expect(places[0].title).toMatch(/sky view 0\.8\d, up to 1[56] % less dose/);
     for (const layer of [LAYER.IMAGE, LAYER.TERRAIN, LAYER.ROCK, LAYER.RADIO]) expect(layerPlaces(layer, { shelters })).toEqual([]);
   });
