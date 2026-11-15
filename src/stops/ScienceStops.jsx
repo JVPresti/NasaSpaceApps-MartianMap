@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { stopForWaypoint } from '../data/stops.js';
 import { useMissionStore } from '../state/store.js';
+import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import { isCloseKey } from './closeKeys.js';
 import { createArrivalTracker } from './content.js';
 import { clearWaypoint, useStopSelection } from './selection.js';
@@ -14,7 +15,7 @@ import { useStops } from './useStops.js';
 function useCloseKeys(open, onClose) {
   useEffect(() => {
     if (!open) return undefined;
-    const onKey = (event) => { if (isCloseKey(event)) onClose(); };
+    const onKey = (event) => { if (isCloseKey(event, { blocked: wristOwnsKeys() })) onClose(); };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
   }, [open, onClose]);

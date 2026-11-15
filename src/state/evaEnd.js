@@ -2,6 +2,7 @@
 // is at the habitat during the EVA (eva.atHabitat, written by eva.js), a prompt floats over the cabin's planning table
 // (engine.setHabitatPrompt, src/engine/habitatPrompt.js) and END_EVA_KEY ends it, which opens the debrief.
 import { subscribeLanguage, t } from '../i18n/index.js';
+import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import { requestEvaEnd } from './eva.js';
 import { useMissionStore } from './store.js';
 
@@ -35,7 +36,7 @@ export function connectEvaEnd(engine, store = useMissionStore, target = globalTh
   const unsubscribeLanguage = subscribeLanguage(() => show(true));
 
   const onKey = (e) => {
-    if (e.code !== END_EVA_CODE || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing(e)) return;
+    if (e.code !== END_EVA_CODE || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing(e) || wristOwnsKeys()) return;   // the wrist owns the keyboard while up (#231)
     if (canEndEva(store.getState()) && requestEvaEnd(store)) e.preventDefault();
   };
   target.addEventListener('keydown', onKey);

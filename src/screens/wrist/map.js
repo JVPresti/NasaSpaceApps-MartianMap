@@ -1,4 +1,5 @@
 // North-up mission overview, using the same HiRISE coordinates and estimate as Plan.
+import { formatNumber, t } from '../../i18n/index.js';
 import { TILE_WIDTH_M, TILE_DEPTH_M, activeHazardZones, niceScaleBar } from '../../hud/minimapGeometry.js';
 import { drawPositionMarker, markerState } from '../../hud/positionMarker.js';
 import { WRIST_CONTENT } from './layout.js';
@@ -31,7 +32,7 @@ export function drawWristMap(g, model, image, shelters) {
   if (image) g.drawImage(image, nw.x, nw.y, TILE_WIDTH_M * scale, TILE_DEPTH_M * scale);
   else {
     g.fillStyle = '#fbf5ee'; g.font = '20px sans-serif'; g.textAlign = 'center';
-    g.fillText('HiRISE image unavailable', r.x + r.w / 2, r.y + 22);
+    g.fillText(t('wrist.map.missing'), r.x + r.w / 2, r.y + 22);
   }
   for (const zone of model.zones) {
     const p = point(zone.x, zone.z);
@@ -57,9 +58,9 @@ export function drawWristMap(g, model, image, shelters) {
   const marker = markerState(model.navigation, point);
   if (marker) drawPositionMarker(g, marker, { label: false });
   g.fillStyle = '#fbf5ee'; g.textAlign = 'left'; g.font = 'bold 18px sans-serif';
-  g.fillText('N ↑', r.x + 8, r.y + 18);
+  g.fillText(t('wrist.map.north'), r.x + 8, r.y + 18);
   g.font = '14px sans-serif';
-  if (image) g.fillText('HiRISE · DATA', r.x + 8, r.y + r.h - 9);
+  if (image) g.fillText(t('wrist.map.source'), r.x + 8, r.y + r.h - 9);
   const bar = niceScaleBar(1 / scale, 1, { targetPx: 55 });
   if (bar) {
     const x = r.x + r.w - bar.px - 10, y = r.y + r.h - 24;
@@ -69,7 +70,7 @@ export function drawWristMap(g, model, image, shelters) {
   }
   if (Number.isFinite(model.navigation.errorM)) {
     g.textAlign = 'right'; g.font = '14px sans-serif';
-    g.fillText('±' + model.navigation.errorM.toFixed(1) + ' m · SIM', r.x + r.w - 8, r.y + 18);
+    g.fillText(t('wrist.map.error', { error: formatNumber(model.navigation.errorM, 1) }), r.x + r.w - 8, r.y + 18);
   }
   g.restore();
 }

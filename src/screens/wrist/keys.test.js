@@ -12,6 +12,11 @@ describe('wrist keyboard ownership', () => {
     }
     for (const code of ['KeyM', 'KeyL', 'Digit0', 'Escape', 'KeyP', 'KeyW']) expect(wristKey({ code }, true)).toBeNull();
   });
+  it('does not raise the wrist in the middle of the Q find gesture, but always lowers it', () => {
+    expect(wristKey({ code: 'KeyR' }, false, { qHeld: true })).toBeNull();
+    expect(wristKey({ code: 'KeyR' }, true, { qHeld: true })).toBe('toggle');
+    expect(wristKey({ code: 'KeyR' }, false, { qHeld: false })).toBe('toggle');
+  });
   it('ignores repeats, modifiers, handled events and typing', () => {
     for (const extra of [{ repeat: true }, { defaultPrevented: true }, { isComposing: true }, { ctrlKey: true }, { metaKey: true }, { altKey: true }, { target: { isContentEditable: true } }, ...['INPUT','TEXTAREA','SELECT'].map(tagName => ({ target: { tagName } }))]) {
       expect(wristKey({ code: 'Enter', ...extra }, true)).toBeNull();

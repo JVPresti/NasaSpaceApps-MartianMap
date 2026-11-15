@@ -22,9 +22,14 @@ gamepad keys and a keyboard player is not shown the on-screen stick.
 | Y / N | Add the marked find to the route or dismiss it |
 | T | Partner detail |
 | G | Slope grid |
-| R | Wrist screen |
+| R | Wrist screen: open or close |
+| [ / ] | Wrist screen up: previous / next page |
+| J / K | Wrist screen up: next / previous row |
+| Enter | Wrist screen up: select the highlighted layer |
 | C | Sources |
 | Esc | Release the pointer and pause |
+
+While the wrist screen is up it owns the keyboard (#231): Q, Y/N, T, G, C, X, L, Shift+L, 0 and M do nothing, and Enter selects the wrist row instead of closing a science card. Esc still pauses and lowers the wrist. R does not raise the wrist while Q is held.
 
 ### Plan
 

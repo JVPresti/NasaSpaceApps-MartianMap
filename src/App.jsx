@@ -28,6 +28,7 @@ import './components/menu.css';
 const HINTS = {
   get walk() { return t('menu.esc.to.pause.wasd.to.walk.shift.to'); },
   get drag() { return t('menu.esc.to.pause.drag.to.look'); },
+  get wrist() { return t('menu.hint.wrist'); },
 };
 
 const SITE = 'ui.neretva.vallis.jezero.crater.mars';
@@ -89,6 +90,7 @@ export default function App() {
   const [engine, setEngine] = useState(null);
   const [load, dispatch] = useReducer(loadReducer, undefined, () => INITIAL_LOAD);
   const [loadingDone, setLoadingDone] = useState(false);
+  const [wristOpen, setWristOpen] = useState(false);
   // The minimap route tracker belongs to the app, not to the minimap: App unmounts the HUD in Plan mode,
   // so a tracker created inside the Minimap effect would lose the walked distance on every mode switch.
   // It resets only when the route content changes (Minimap calls setPath on mount and on route updates).
@@ -447,6 +449,12 @@ export default function App() {
     pauseEva({ engine: engineRef.current });
   }), [setBusyState, setOverlay, setPhase]);
 
+  // The Walk hint follows the wrist screen (#231): while it is up the hint lists its keys instead of the walk keys.
+  useEffect(() => {
+    if (!engine || typeof engine.subscribeWrist !== 'function') return undefined;
+    return engine.subscribeWrist((state) => setWristOpen(state?.open === true));
+  }, [engine]);
+
   const showTopbar = load.status === 'ready' && !evaSummary && phase === EVA_PHASE.PLAYING;
   // Like the topbar: off while loading, on the start screen and in the pause menu. There is no mode button any
   // more (#11: the EVA begins on the mission table and returns to it from the pause menu), but M still goes
@@ -498,7 +506,7 @@ export default function App() {
 
       {load.status === 'ready' && <WalkStopCard active={mode === 'walk'} />}
 
-      {showTopbar && mode === 'walk' && <p className="hint">{freeLook ? HINTS.drag : HINTS.walk}</p>}
+      {showTopbar && mode === 'walk' && <p className="hint">{wristOpen ? HINTS.wrist : freeLook ? HINTS.drag : HINTS.walk}</p>}
 
       {load.status === 'ready' && !evaSummary && loadingDone && phase === EVA_PHASE.START && (
         <StartScreen
