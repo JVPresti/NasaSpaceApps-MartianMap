@@ -280,6 +280,26 @@ async function standing(idleMs) {
   for (const x of [a, b, c]) x.ws.close();
 }
 
+// One player walks at 1 m/s through the real throttle, ticked at 60 per second; the other counts what arrives.
+async function walking(secs = 8) {
+  const room = code();
+  const a = client(room), b = client(room);
+  await Promise.all([a.ready, b.ready]);
+  const t0 = performance.now();
+  const sender = createPoseSender({ send: (m) => { a.send(m); return true; }, read: () => ({ x: (performance.now() - t0) / 1000, z: 0, headingRad: Math.PI / 2, gait: 'walk' }) });
+  const frames = setInterval(() => sender.tick(), 1000 / 60);
+  await sleep(secs * 1000);
+  clearInterval(frames);
+  await sleep(300);
+  const got = b.msgs.filter((m) => m.type === 'p' && m.id === a.id);
+  const gaps = got.slice(1).map((m, i) => m.ct - got[i].ct).sort((x, y) => x - y);
+  const arrive = got.slice(1).map((m, i) => m.at - got[i].at).sort((x, y) => x - y);
+  const rate = got.length / secs;
+  check('walking sends about 5 poses per second, never above 10', rate >= 4.5 && rate <= 5.5 && gaps[0] >= 99,
+    `${got.length} in ${secs} s (${rate.toFixed(2)}/s); send gaps ${gaps[0]}-${gaps[gaps.length - 1]} ms; arrival gaps ${arrive[0].toFixed(0)}-${arrive[arrive.length - 1].toFixed(0)} ms, median ${arrive[arrive.length >> 1].toFixed(0)} ms`);
+  a.ws.close(); b.ws.close();
+}
+
 async function rtt(samples = 20) {
   const room = code();
   const a = client(room);
@@ -390,6 +410,7 @@ if (!only || only === 'hibernate') await hibernation(idle);
 if (!only || only === 'poses') await poses();
 if (!only || only === 'poseflood') await poseFlood();
 if (!only || only === 'standing') await standing(idle);
+if (!only || only === 'walking') await walking();
 if (!only || only === 'rtt') await rtt();
 console.log(`\n${results.length - failed}/${results.length} checks passed`);
 process.exit(failed ? 1 : 0);
