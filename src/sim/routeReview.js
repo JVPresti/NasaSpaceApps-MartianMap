@@ -143,17 +143,24 @@ export function findDeviations(track, path, rules = REVIEW_RULES) {
   return out;
 }
 
-/** Cost per metre of each leg of the plan, by distance along the plan path. null without usable legs. */
+/**
+ * Walking cost per metre of each leg of the plan, by distance along the plan path. null without usable legs.
+ * A leg's timeSec and o2G include the work at the stop it reaches (#247, src/sim/legCosts.js); spread over its metres,
+ * that work would make the plan look dear and a real detour look cheap, so only the walking is priced: walkSec, and
+ * o2G minus workO2G. A leg without the split (an older plan) is all walking.
+ */
 function legRates(legs) {
   const usable = Array.isArray(legs) ? legs.filter((leg) => finite(leg?.distanceM) && leg.distanceM > 0) : [];
   if (usable.length === 0) return null;
   let start = 0;
   return usable.map((leg, index) => {
+    const walkSec = finite(leg.walkSec) ? leg.walkSec : leg.timeSec;
+    const walkO2G = finite(leg.o2G) ? leg.o2G - (finite(leg.workO2G) ? leg.workO2G : 0) : null;
     const range = {
       s0: start,
       s1: index === usable.length - 1 ? Infinity : start + leg.distanceM,
-      timePerM: finite(leg.timeSec) ? leg.timeSec / leg.distanceM : null,
-      o2PerM: finite(leg.o2G) ? leg.o2G / leg.distanceM : null,
+      timePerM: finite(walkSec) ? walkSec / leg.distanceM : null,
+      o2PerM: walkO2G !== null ? walkO2G / leg.distanceM : null,
     };
     start += leg.distanceM;
     return range;

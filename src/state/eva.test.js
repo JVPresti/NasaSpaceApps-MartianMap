@@ -353,11 +353,12 @@ describe('route review inputs (#274)', () => {
     decision: 'go',
     profile: 'fastest',
     waypoints: [{ name: 'HAB', x: HAB.x, z: HAB.z }, { name: 'WP1 · channel floor', x: HAB.x - 100, z: HAB.z }, { name: 'Cheyava Falls', x: HAB.x - 200, z: HAB.z }],
+    // WP1 carries 5 min of work (#247): its leg's timeSec and o2G are walking plus work, walkSec and workO2G apart.
     legs: [
-      { from: 'HAB', to: 'WP1 · channel floor', distanceM: 100, timeSec: 100, o2G: 10, climbM: 1, maxSlopeDeg: 4, o2Pct: 2 },
-      { from: 'WP1 · channel floor', to: 'Cheyava Falls', distanceM: 100, timeSec: 100, o2G: 10, climbM: 1, maxSlopeDeg: 4, o2Pct: 2 },
+      { from: 'HAB', to: 'WP1 · channel floor', distanceM: 100, timeSec: 400, o2G: 25, walkSec: 100, workSec: 300, workO2G: 15, climbM: 1, maxSlopeDeg: 4, o2Pct: 2 },
+      { from: 'WP1 · channel floor', to: 'Cheyava Falls', distanceM: 100, timeSec: 100, o2G: 10, walkSec: 100, workSec: 0, workO2G: 0, climbM: 1, maxSlopeDeg: 4, o2Pct: 2 },
     ],
-    totals: { distanceM: 200, timeSec: 200, o2G: 20, marginSec: 9000, status: 'nominal' },
+    totals: { distanceM: 200, timeSec: 500, o2G: 35, walkSec: 200, workSec: 300, workO2G: 15, marginSec: 9000, status: 'nominal' },
   };
   const setRoute = (patch = {}) => useMissionStore.setState((state) => ({ route: { ...state.route, ...ROUTE, ...patch } }));
   const slope = (slopeDeg) => useMissionStore.setState((state) => ({ navigation: { ...state.navigation, slopeDeg } }));
@@ -434,10 +435,10 @@ describe('route review inputs (#274)', () => {
     expect(plan).toMatchObject({ atSec: 5, decision: 'go', profile: 'fastest', path: PLAN_PATH });
     expect(plan.waypoints.map((w) => w.name)).toEqual(['HAB', 'WP1 · channel floor', 'Cheyava Falls']);
     expect(plan.legs).toEqual([
-      { from: 'HAB', to: 'WP1 · channel floor', distanceM: 100, timeSec: 100, o2G: 10, climbM: 1, maxSlopeDeg: 4 },
-      { from: 'WP1 · channel floor', to: 'Cheyava Falls', distanceM: 100, timeSec: 100, o2G: 10, climbM: 1, maxSlopeDeg: 4 },
+      { from: 'HAB', to: 'WP1 · channel floor', distanceM: 100, timeSec: 400, o2G: 25, walkSec: 100, workSec: 300, workO2G: 15, climbM: 1, maxSlopeDeg: 4 },
+      { from: 'WP1 · channel floor', to: 'Cheyava Falls', distanceM: 100, timeSec: 100, o2G: 10, walkSec: 100, workSec: 0, workO2G: 0, climbM: 1, maxSlopeDeg: 4 },
     ]);
-    expect(plan.totals).toEqual({ distanceM: 200, timeSec: 200, o2G: 20, marginSec: 9000 });
+    expect(plan.totals).toEqual({ distanceM: 200, timeSec: 500, o2G: 35, walkSec: 200, workSec: 300, workO2G: 15, marginSec: 9000 });
     // A detached copy: the store route can change without touching it.
     expect(plan.path).not.toBe(useMissionStore.getState().route.path);
 
@@ -453,7 +454,7 @@ describe('route review inputs (#274)', () => {
     expect(eva().plan.legs).toEqual([]);
     useMissionStore.setState((state) => ({ route: { ...state.route, legs: ROUTE.legs, totals: ROUTE.totals } }));
     expect(eva().plan.legs).toHaveLength(2);
-    expect(eva().plan.totals.timeSec).toBe(200);
+    expect(eva().plan.totals).toMatchObject({ timeSec: 500, walkSec: 200 });
   });
 
   it('records where each route change happened', () => {

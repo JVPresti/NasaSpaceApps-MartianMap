@@ -6,7 +6,7 @@ import { distanceToPath } from '../sim/offRoute.js';
 import { REVIEW_RULES, reviewRoute } from '../sim/routeReview.js';
 import DebriefScreen from './DebriefScreen.jsx';
 import { RouteReviewView } from './RouteReview.jsx';
-import { ruleNotes, summaryLine } from './reviewText.js';
+import { costText, ruleNotes, summaryLine } from './reviewText.js';
 
 afterEach(() => setLanguage('en'));
 
@@ -185,6 +185,17 @@ describe('route review in the debrief', () => {
     expect(spanish).toContain(`terreno de ${REVIEW_RULES.slopeLimitDeg}° o más (arriesgado); una alerta o una nueva ruta del sistema al empezar (forzado); el margen bajo la reserva, o una alerta que empezó mientras estabas fuera de la ruta (arriesgado); un hallazgo o una muestra (valió la pena); si no, costoso.`);
     expect(spanish).toContain('un desvío forzado sigue siendo forzado si el margen baja de la reserva o empieza una segunda alerta durante él');
     expect(text(renderDebrief(FOLLOWED))).toContain('Qué veredicto gana');
+  });
+
+  it('words a total below the plan as under it, and mixed signs as against it, never "-2 min over the plan"', () => {
+    const review = (extraSec, extraO2G) => ({ ok: true, deviations: [{}], counts: { worth: 0, forced: 0, risky: 0, costly: 1 }, totals: { extraSec, extraO2G, extraM: 0 } });
+    expect(summaryLine(review(420, 41))).toBe('1 deviation: 1 costly. +7 min and +41 g O2 over the plan.');
+    expect(summaryLine(review(-130, -3.2))).toBe('1 deviation: 1 costly. 2 min and 3 g O2 under the plan.');
+    expect(summaryLine(review(40, -3.2))).toBe('1 deviation: 1 costly. +40 s and -3 g O2 against the plan.');
+    expect(costText({ extraSec: 60, extraO2G: 5, extraM: 30 })).toBe('+1 min · +5 g O2 · +30 m over the plan');
+    expect(costText({ extraSec: -60, extraO2G: 5, extraM: 30 })).toBe('-1 min · +5 g O2 · +30 m against the plan');
+    setLanguage('es');
+    expect(summaryLine(review(-130, -3.2))).toBe('1 desvío: 1 costoso. 2 min y 3 g de O2 por debajo del plan.');
   });
 
   it('keeps the lowest margin on a forced row', () => {

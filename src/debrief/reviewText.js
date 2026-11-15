@@ -31,8 +31,13 @@ export function summaryLine(review) {
   const head = n === 1 ? t('review.summary.one', { counts }) : t('review.summary.many', { n, counts });
   const { extraSec, extraO2G } = review.totals;
   if (!isNumber(extraSec) || !isNumber(extraO2G)) return head;
-  return head + ' ' + t('review.summary.extra', { time: formatSignedDelta(extraSec), o2: formatSignedGrams(extraO2G) });
+  // Over the plan, under it (a shortcut saved time and O2: no minus signs to read), or mixed (signs shown).
+  if (extraSec >= 0 && extraO2G >= 0) return head + ' ' + t('review.summary.extra', { time: formatSignedDelta(extraSec), o2: formatSignedGrams(extraO2G) });
+  if (extraSec <= 0 && extraO2G <= 0) return head + ' ' + t('review.summary.under', { time: unsigned(formatSignedDelta(-extraSec)), o2: unsigned(formatSignedGrams(-extraO2G)) });
+  return head + ' ' + t('review.summary.against', { time: formatSignedDelta(extraSec), o2: formatSignedGrams(extraO2G) });
 }
+
+const unsigned = (text) => text.replace(/^\+/, '');
 
 /** The label of an event id, from the EVA's own event history, in the interface language. */
 export function eventLabel(eventId, events) {
@@ -65,9 +70,10 @@ export function reasonText(deviation, events = []) {
   }
 }
 
-/** "+3 min · +18 g O2 · +56 m over the plan". */
+/** "+3 min · +18 g O2 · +56 m over the plan", or "… against the plan" when one of them is below the plan. */
 export function costText(cost) {
-  return t('review.cost', { time: formatSignedDelta(cost?.extraSec), o2: formatSignedGrams(cost?.extraO2G), distance: formatSignedMetres(cost?.extraM) });
+  const below = [cost?.extraSec, cost?.extraO2G, cost?.extraM].some((value) => isNumber(value) && value < 0);
+  return t(below ? 'review.cost.against' : 'review.cost', { time: formatSignedDelta(cost?.extraSec), o2: formatSignedGrams(cost?.extraO2G), distance: formatSignedMetres(cost?.extraM) });
 }
 
 /** "Lowest margin 12 min · steepest 23°". */

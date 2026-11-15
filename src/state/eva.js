@@ -123,8 +123,10 @@ function routeSnapshot(route) {
 
 const round = (value, digits) => Math.round(value * 10 ** digits) / 10 ** digits;
 const roundedOrNull = (value, digits) => (isFiniteNumber(value) ? round(value, digits) : null);
-const LEG_KEYS = ['distanceM', 'timeSec', 'o2G', 'climbM', 'maxSlopeDeg'];
-const TOTAL_KEYS = ['distanceM', 'timeSec', 'o2G', 'marginSec'];
+// timeSec and o2G are walking plus the work at the stop a leg reaches (#247); walkSec and workO2G keep the walking
+// apart, which is what the review prices a detour against.
+const LEG_KEYS = ['distanceM', 'timeSec', 'o2G', 'walkSec', 'workSec', 'workO2G', 'climbM', 'maxSlopeDeg'];
+const TOTAL_KEYS = ['distanceM', 'timeSec', 'o2G', 'walkSec', 'workSec', 'workO2G', 'marginSec'];
 const pickNumbers = (source, keys) => Object.fromEntries(keys.map((key) => [key, isFiniteNumber(source?.[key]) ? source[key] : null]));
 
 /**

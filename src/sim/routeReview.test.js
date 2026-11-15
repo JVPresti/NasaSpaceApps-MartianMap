@@ -1,6 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { COST_CONSTANTS } from './costGrid.js';
+import { routeLegCosts } from './legCosts.js';
 import { distanceAlong, findDeviations, REVIEW_RULES, reviewRoute } from './routeReview.js';
+import { suitConstantsFromHazards } from './suitModel.js';
+
+const SUIT = suitConstantsFromHazards(JSON.parse(readFileSync(new URL('../../public/data/hazards.json', import.meta.url), 'utf8')));
 
 // A straight plan east along z = 0: HAB at the origin, WP1 at 200 m, the target at 400 m. Each leg is 200 m, walked at
 // 1 m/s with 0.1 g of O2 per metre in the plan.
@@ -146,6 +151,31 @@ describe('pricing a deviation', () => {
     expect(d.cost.extraSec).toBeNull();
     expect(d.cost.extraO2G).toBeNull();
     expect(d.cost.extraM).toBeGreaterThan(0);
+  });
+
+  it('prices a detour on walking only when the legs carry the work at their stops (#247)', () => {
+    // The plan's own legs from the suit model, on flat ground: 5 min of work at WP1 lands in the leg that reaches it.
+    const flat = () => 0;
+    const withWork = PLAN.waypoints.map((w, i) => (i === 1 ? { ...w, workSec: 300 } : w));
+    const { legs } = routeLegCosts(PLAN.path, withWork, flat, SUIT);
+    expect(legs[0].workSec).toBe(300);
+    expect(legs[0].timeSec).toBeGreaterThan(legs[0].walkSec + 299);
+    // Walked well under the suit model's pace for the plan and burning more O2 per metre than it, so the detour must
+    // cost more time and O2 than the plan stretch it replaced, whatever the work at WP1.
+    const pace = legs[0].walkSec / legs[0].distanceM;
+    const perM = (legs[0].o2G - legs[0].workO2G) / legs[0].distanceM;
+    const track = walk([[0, 0], [150, 0], [180, 30], [195, 0], [400, 0]]).map((p) => ({ ...p, atSec: p.atSec * pace, o2G: 600 - (600 - p.o2G) / O2_PER_M * perM * 1.1 }));
+    const priced = (planLegs) => reviewRoute({ track, plan: { ...PLAN, legs: planLegs } }).deviations[0].cost;
+    const cost = priced(legs);
+    expect(cost.extraSec).toBeGreaterThan(0);
+    expect(cost.extraO2G).toBeGreaterThan(0);
+    expect(cost.plannedSec).toBeCloseTo(cost.plannedM * pace, 6);
+    // The same stretch priced with no work at the stop gives the same numbers: the work is not spread over the metres.
+    const { legs: noWork } = routeLegCosts(PLAN.path, PLAN.waypoints, flat, SUIT);
+    expect(priced(noWork).extraSec).toBeCloseTo(cost.extraSec, 6);
+    expect(priced(noWork).extraO2G).toBeCloseTo(cost.extraO2G, 6);
+    // A plan from before the split (no walkSec / workO2G) is read as all walking, as before.
+    expect(priced(noWork.map(({ walkSec, workSec, workO2G, ...rest }) => rest)).extraSec).toBeCloseTo(cost.extraSec, 6);   // eslint-disable-line no-unused-vars
   });
 });
 
