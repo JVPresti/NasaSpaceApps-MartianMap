@@ -28,5 +28,8 @@ export function bootOnline({ search = globalThis.location?.search, store, load =
     warn('online: ignoring ?room=' + link.invalid + ': a room code is four letters A to Z without I and O');
     return null;
   }
-  return load().then((net) => net.startOnline({ code: link.code, store }));
+  // TEMPORARY (#55): until the join panel's role choice lands, a dev build takes ?role=habitat so the habitat seat can be
+  // tested. Production builds drop this branch (import.meta.env.DEV is false there).
+  const role = import.meta.env.DEV && new URLSearchParams(search || '').get('role') === 'habitat' ? 'habitat' : undefined;
+  return load().then((net) => net.startOnline({ code: link.code, store, ...(role ? { role } : {}) }));
 }
