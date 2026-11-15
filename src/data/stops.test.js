@@ -1,8 +1,11 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { stopHasContent } from '../stops/content.js';
+import { arrivalRadiusM } from '../sim/waypointRunner.js';
 import {
   PROVENANCE_KEYS,
+  allStops,
   arrivedStop,
   hasArrived,
   imageUrl,
@@ -12,6 +15,7 @@ import {
   parseStops,
   routeStopCandidates,
   stopById,
+  stopReason,
   stopForWaypoint,
   workTimeSec,
 } from './stops.js';
@@ -144,7 +148,35 @@ describe('route stops without a card (#265)', () => {
     expect(sortie.position.tag).toBe('SIM');
     expect(sortie.position.provenance.note).toMatch(/55 m of walking/);
     expect(Object.keys(sortie.position.provenance).sort()).toEqual([...PROVENANCE_KEYS].sort());
-    expect(sortie.work_time_s).toMatchObject({ value: 300, unit: 's', tag: 'SIM' });
+    expect(sortie.work_time_s).toMatchObject({ value: 120, unit: 's', tag: 'SIM' });
+    expect(sortie.work_time_s.provenance.note).toMatch(/2 min/);
+    expect(sortie.name).toBe('Light-toned patch');
+  });
+
+  it('says in one SIM line, in English and Spanish, why the sortie stop is worth the walk (D10)', () => {
+    const [sortie] = routeStops;
+    expect(sortie.reason.tag).toBe('SIM');
+    expect(sortie.reason.en).toMatch(/no rover has looked here/);
+    expect(sortie.reason.es).toMatch(/ning\u00fan rover ha mirado aqu\u00ed/);
+    expect(Object.keys(sortie.reason.provenance).sort()).toEqual([...PROVENANCE_KEYS].sort());
+    const candidate = routeStopCandidates(data).find((s) => s.id === 'sortie');
+    expect(stopReason(candidate, 'es')).toBe(sortie.reason.es);
+    expect(stopReason(candidate)).toBe(sortie.reason.en);
+    expect(stopReason(routeStopCandidates(data)[0])).toBeNull();   // a science stop has its card instead
+    const d = copy();
+    d.route_stops[0].reason.es = '';
+    expect(() => parseRouteStops(d)).toThrow(/reason needs es/);
+  });
+
+  it('counts anywhere on the 8 m light-toned patch as reaching the sortie stop, with no card to open', () => {
+    const [sortie] = routeStops;
+    expect(sortie.arrival_radius).toMatchObject({ value: 8, unit: 'm', tag: 'SIM' });
+    expect(sortie.arrival_radius.provenance.note).toMatch(/8 m around the point/);
+    // the waypoint runner takes its radii from loadStops, which now lists the route stops too
+    const every = allStops(data);
+    expect(arrivalRadiusM(every, sortie.waypoint)).toBe(8);
+    expect(arrivalRadiusM(every, 'Cheyava Falls')).toBe(2);
+    expect(stopHasContent(stopForWaypoint(every, sortie.waypoint))).toBe(false);
   });
 
   it('sits about 55 m from the airlock, outside route.json and with no science card', () => {
@@ -161,7 +193,7 @@ describe('route stops without a card (#265)', () => {
     expect(candidates.map((s) => [s.id, s.workSec, s.card])).toEqual([
       ['bright-angel', 900, true],
       ['cheyava-falls', 1200, true],
-      ['sortie', 300, false],
+      ['sortie', 120, false],
     ]);
     expect(candidates.find((s) => s.id === 'cheyava-falls')).toMatchObject({ waypoint: 'Cheyava Falls', x: 0, z: 0 });
   });
@@ -173,6 +205,9 @@ describe('route stops without a card (#265)', () => {
     const e = copy();
     delete e.route_stops[0].work_time_s;
     expect(() => parseRouteStops(e)).toThrow(/work_time_s/);
+    const f = copy();
+    delete f.route_stops[0].arrival_radius;
+    expect(() => parseRouteStops(f)).toThrow(/arrival_radius/);
     expect(parseRouteStops({ stops: [] })).toEqual([]);
   });
 });
@@ -248,7 +283,7 @@ describe('loading', () => {
     const fake = async (url) => { calls.push(url); return { ok: true, json: async () => copy() }; };
     const loaded = await loadStops({ fetch: fake, base: '/' });
     expect(calls).toEqual(['/data/stops.json']);
-    expect(loaded).toHaveLength(2);
+    expect(loaded.map((s) => s.id)).toEqual(['bright-angel', 'cheyava-falls', 'sortie']);
   });
 
   it('throws on an HTTP error', async () => {

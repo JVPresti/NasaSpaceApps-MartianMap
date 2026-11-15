@@ -133,21 +133,66 @@ export function parseRouteStops(data) {
     if (!Number.isFinite(stop.x) || !Number.isFinite(stop.z)) throw new Error(`${where}: needs finite x and z`);
     checkTagged(stop.position, `${where} position`);
     checkProvenance(stop.position.provenance, `${where} position`);
+    const radius = stop.arrival_radius;
+    if (!(radius?.value > 0) || radius.unit !== 'm') throw new Error(`${where}: arrival_radius must be a positive value in m`);
+    checkTagged(radius, `${where} arrival_radius`);
+    checkProvenance(radius.provenance, `${where} arrival_radius`);
     if (stop.work_time_s === undefined) throw new Error(`${where}: needs work_time_s`);
     checkWorkTime(stop.work_time_s, where);
+    checkReason(stop.reason, where);
   }
   return list;
+}
+
+/**
+ * The one line that says why a route stop without a card is worth the walk (round 2, D10): English and Spanish in the
+ * data, as the stop has no i18n key, with its tag and provenance. Optional.
+ */
+function checkReason(reason, where) {
+  if (reason === undefined) return;
+  for (const language of ['en', 'es']) {
+    if (typeof reason?.[language] !== 'string' || !reason[language].trim()) throw new Error(`${where}: reason needs ${language} text`);
+  }
+  checkTagged(reason, `${where} reason`);
+  checkProvenance(reason.provenance, `${where} reason`);
+}
+
+/**
+ * A stop's reason line in a language, or null: route stops carry one (stops.json route_stops[].reason), science stops
+ * have their card instead.
+ * @param {{ reason?: { en: string, es: string } | null } | null} stop a stop, a candidate or a route.stops entry
+ * @param {string} [language] 'en' or 'es'
+ */
+export function stopReason(stop, language = 'en') {
+  const reason = stop?.reason;
+  if (!reason) return null;
+  return reason[language] ?? reason.en ?? null;
+}
+
+/**
+ * Every stop of stops.json in one list: the science stops, then the route stops with an empty card (no text, images
+ * or checklist, so stopHasContent is false and no card opens), so the waypoint runner takes each route stop's arrival
+ * radius and the arrival tracker sees it like any other stop.
+ * @param {object} data parsed `stops.json`
+ * @returns {Array<object>}
+ */
+export function allStops(data) {
+  return [...parseStops(data), ...parseRouteStops(data).map((stop) => ({ text: [], images: [], checklist: [], ...stop }))];
 }
 
 /**
  * Every stop the route generator can choose (src/sim/missionNeeds.js), as plain data for the planner worker: the
  * science stops with a card, then the route stops without one.
  * @param {object} data parsed `stops.json`
- * @returns {Array<{ id: string, name: string, waypoint: string, x: number, z: number, workSec: number, card: boolean }>}
- *   workSec: the work time for a pair of astronauts (#247)
+ * @returns {Array<{ id: string, name: string, waypoint: string, x: number, z: number, workSec: number, card: boolean,
+ *   reason: { en: string, es: string, tag: string } | null }>} workSec: the work time for a pair of astronauts (#247);
+ *   reason: why a stop without a card is worth the walk
  */
 export function routeStopCandidates(data) {
-  const plain = (stop, card) => ({ id: stop.id, name: stop.name, waypoint: stop.waypoint, x: stop.x, z: stop.z, workSec: workTimeSec(stop), card });
+  const reason = (r) => (r ? { en: r.en, es: r.es, tag: r.tag } : null);
+  const plain = (stop, card) => ({
+    id: stop.id, name: stop.name, waypoint: stop.waypoint, x: stop.x, z: stop.z, workSec: workTimeSec(stop), card, reason: reason(stop.reason),
+  });
   return [...parseStops(data).map((s) => plain(s, true)), ...parseRouteStops(data).map((s) => plain(s, false))];
 }
 
@@ -205,14 +250,15 @@ export function imageUrl(image, base = import.meta.env?.BASE_URL ?? '/') {
 }
 
 /**
- * Fetch and check `stops.json`. Without `fetch` the file comes from the shared loader (src/data/dataFiles.js).
+ * Fetch and check `stops.json`: every stop, science and route stops (allStops). Without `fetch` the file comes from
+ * the shared loader (src/data/dataFiles.js).
  * @param {{fetch?: typeof fetch, base?: string, signal?: AbortSignal}} [options]
  * @returns {Promise<Array<object>>}
  */
 export async function loadStops({ fetch: fetchImpl, base = import.meta.env?.BASE_URL ?? '/', signal } = {}) {
-  if (!fetchImpl && !signal) return parseStops(await loadDataFile(STOPS_PATH, base));
+  if (!fetchImpl && !signal) return allStops(await loadDataFile(STOPS_PATH, base));
   fetchImpl ??= globalThis.fetch;
   const response = await fetchImpl(base + STOPS_PATH, signal ? { signal } : undefined);
   if (!response.ok) throw new Error(`stops.json ${response.status}`);
-  return parseStops(await response.json());
+  return allStops(await response.json());
 }

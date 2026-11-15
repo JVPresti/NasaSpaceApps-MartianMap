@@ -632,10 +632,29 @@
  "route_stops": [
   {
    "id": "sortie",
-   "name": "Light-toned patch by the habitat",
+   "name": "Light-toned patch",
    "waypoint": "S1 · light-toned patch",
    "x": 493,
    "z": 539,
+   "reason": {
+    "en": "Light-toned ground like Bright Angel’s on the HiRISE outcrop mask; no rover has looked here, so the science is an assumption.",
+    "es": "Terreno claro como el de Bright Angel en la máscara de afloramientos de HiRISE; ningún rover ha mirado aquí, así que la ciencia es una suposición.",
+    "tag": "SIM",
+    "label": "SIM · why this stop",
+    "provenance": {
+     "mission": null,
+     "instrument": null,
+     "product_id": null,
+     "site": "Neretva Vallis, Jezero crater, next to the Marswalk habitat",
+     "sol_or_date": null,
+     "reference": "Marswalk outcrop mask public/marswalk/assets/outcrop_mask.jpg (from the HiRISE orthomosaic); issue #265",
+     "url": null,
+     "locator": "The position note of this stop: light-toned over the whole 8 m around the point",
+     "data_url": null,
+     "license": "Project text, same license as the repository",
+     "note": "Built from the position note. The brightness is HiRISE data; reading it as rock like Bright Angel’s is our assumption, and no rover image of this spot exists, so the line is SIM."
+    }
+   },
    "position": {
     "tag": "SIM",
     "label": "SIM · first sortie stop",
@@ -653,8 +672,27 @@
      "note": "Our choice of point for the first sortie. It is 55 m of walking from the airlock, about 2 min out and back at 1 m/s: the planner route is the straight line (54.8 m), on ground no steeper than 12.7 deg, 2.9 m lower than the airlock. The spot itself slopes 3.3 deg. The HiRISE outcrop mask is light-toned over the whole 8 m around it (the brightness the Outcrop layer shows), the kind of rock Bright Angel is made of, but no rover has looked at this spot: the science is an assumption. It lies 13 deg off the heading the airlock faces, so the stop is ahead of the crew as they step out, and the habitat mast is in sight."
     }
    },
+   "arrival_radius": {
+    "value": 8,
+    "unit": "m",
+    "tag": "SIM",
+    "label": "SIM",
+    "provenance": {
+     "mission": null,
+     "instrument": null,
+     "product_id": null,
+     "site": "Neretva Vallis, Jezero crater, next to the Marswalk habitat",
+     "sol_or_date": null,
+     "reference": "Issue #61 (arrival radius) and issue #265 (short first mission); outcrop mask public/marswalk/assets/outcrop_mask.jpg, from HiRISE",
+     "url": null,
+     "locator": "Issue #61: \"2 m at a science target, 5 m elsewhere\"; the light-toned ground around the point in the outcrop mask",
+     "data_url": null,
+     "license": "Project text, same license as the repository",
+     "note": "Our choice. The stop is a patch of light-toned ground, not one rock: the outcrop mask is light-toned over the whole 8 m around the point, and a sample anywhere on it is a sample of the patch. So reaching the patch counts as reaching the stop, where a science target that is one rock uses 2 m (issue #61)."
+    }
+   },
    "work_time_s": {
-    "value": 300,
+    "value": 120,
     "unit": "s",
     "tag": "SIM",
     "label": "SIM · work time for a pair",
@@ -669,7 +707,7 @@
      "locator": "section 3.4, scenario 1: \"Reference image match, then the checklist: photo, texture, sample, seal\"; issues #247 and #265",
      "data_url": null,
      "license": "Project text, same license as the repository",
-     "note": "Our estimate for a pair of astronauts: 5 min for one photo and one scoop at the first light-toned patch, a short training stop that keeps the first mission near three minutes of walking. A solo astronaut takes 1.5 times as long (src/sim/missionNeeds.js). Not a NASA figure."
+     "note": "Our estimate for a pair of astronauts: 2 min for one photo and one scoop at the first light-toned patch, the photo and texture steps by one astronaut while the other takes the scoop and seals it. A training stop: with the walk out and back (about 2 min at 1 m/s) the first mission plans about 4 min outside, the time it takes to play. A solo astronaut takes 1.5 times as long (src/sim/missionNeeds.js). Not a NASA figure."
     }
    }
   }
