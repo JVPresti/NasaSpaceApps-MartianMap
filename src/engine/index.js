@@ -223,6 +223,9 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     sys.prints.update(dt);
     sys.sky.update(dt);   // before the dust: a new sky is then scaled by the storm light in the same frame
     sys.dust.update(dt);
+    // A hidden canvas (App.css hides it under the opaque mission table) costs no GPU work: the systems above keep
+    // their time, the shadow pass and the draw wait until it shows again. The quality check skips that time too.
+    if (firstFrame && renderer.domElement.checkVisibility?.({ visibilityProperty: true }) === false) { frames = 0; acc = 0; worst = 0; return; }
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
     if (waypoints?.group.visible) waypoints.update(camera, container.clientHeight);   // fixed-size labels (#198)
