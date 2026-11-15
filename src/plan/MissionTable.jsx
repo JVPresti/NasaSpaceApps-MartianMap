@@ -17,6 +17,7 @@ import { cardImage, stopHasContent } from '../stops/content.js';
 import { toggleWaypoint } from '../stops/selection.js';
 import { useStops } from '../stops/useStops.js';
 import { PROFILE_IDS } from '../sim/routeProfiles.js';
+import { eventStartSec } from '../sim/missions.js';
 import { LAYERS, SLOPE_LIMITS } from './layers.js';
 import LayerLegend from './LayerLegend.jsx';
 import LayerPreview from './LayerPreview.jsx';
@@ -56,7 +57,7 @@ const HAZARDS = [
     get name() { return translateText(dustStorm.label); },
     level: 'warning',
     get levelLabel() { return t('table.hazard.level.warning'); },
-    get when() { return t('table.hazard.when.min', { min: minutes(dustStorm.trigger.atSec) }); },
+    get when() { return t('table.hazard.when.min', { min: minutes(eventStartSec(useMissionStore.getState().needs?.objective, dustStorm.id)) }); },
     get happens() {
       return t('table.hazard.dust.happens', { opacity: num(peak(dustStorm, 'environment.dustOpacity')), sec: dustStorm.timeline.at(-1).atSec });
     },
@@ -72,7 +73,7 @@ const HAZARDS = [
     get name() { return translateText(radiation.label); },
     level: 'warning',
     get levelLabel() { return t('table.hazard.level.warning'); },
-    get when() { return t('table.hazard.when.min', { min: minutes(radiation.trigger.atSec) }); },
+    get when() { return t('table.hazard.when.min', { min: minutes(eventStartSec(useMissionStore.getState().needs?.objective, radiation.id)) }); },
     get happens() { return t('table.hazard.radiation.happens', { rate: num(peak(radiation, 'environment.doseRateUgyH'), 1) }); },
     get alert() { return translateText(radiation.alert.text); },
     get act() { return t('table.hazard.radiation.act'); },
