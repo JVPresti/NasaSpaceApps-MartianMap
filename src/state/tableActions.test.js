@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setLanguage, t } from '../i18n/index.js';
 import { setWristKeyOwner } from '../screens/wrist/ownership.js';
 import { startEvaRunner } from './eva.js';
+import { beginEgress } from './flow.js';
 import { canEndEva, canOpenPlan, connectTableActions, END_EVA_KEY, inCabin, OPEN_PLAN_KEY, tablePrompt } from './tableActions.js';
 import { holdMission, pauseMission, resetStore, setMode, useMissionStore } from './store.js';
 
@@ -170,8 +171,8 @@ describe('the habitat table actions (#244)', () => {
     setMode('walk');
     holdMission();
     expect(rowTexts(engine)).not.toBeNull();
-    useMissionStore.setState({ stage: 'egress' });   // Begin EVA, then Start walking: resumeEva({ holdClock }) holds it
-    holdMission();
+    beginEgress();   // Begin EVA
+    holdMission();   // Start walking: resumeEva({ holdClock }) holds the clock through the cycle
     expect(useMissionStore.getState().mission.held).toBe(true);
     expect(engine.setHabitatPrompt).toHaveBeenLastCalledWith(null);
     target.press('KeyE');

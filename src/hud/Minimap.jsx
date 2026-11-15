@@ -14,6 +14,8 @@ import { SHELTERS_PATH } from '../sim/shelters.js';
 import { loadTraverse } from '../data/traverse.js';
 import './minimap.css';
 
+import { usePoseFrame } from './livePose.js';
+
 const ORTHO_URL = import.meta.env.BASE_URL + 'marswalk/assets/ortho_lo.jpg';
 
 function relevantState(s) {
@@ -49,6 +51,16 @@ function changed(prev, next) {
 export default function Minimap({ tracker }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
+  // The canvas repaints at most 10 times a second with the store's heading. Between paints it turns by the difference to
+  // the engine's heading every frame (#307), so the heading-up map never steps while the player turns.
+  const drawnHeading = useRef(null);
+  usePoseFrame((p) => {
+    const c = canvasRef.current;
+    if (!c || !p || !Number.isFinite(drawnHeading.current) || !Number.isFinite(p.headingDeg)) return;
+    const d = ((p.headingDeg - drawnHeading.current + 540) % 360) - 180;
+    const t = Math.abs(d) < 0.05 ? '' : `rotate(${(-d).toFixed(2)}deg)`;
+    if (c.style.transform !== t) c.style.transform = t;
+  });
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -98,6 +110,7 @@ export default function Minimap({ tracker }) {
         finds: state.finds?.list,
         traverse,
       });
+      drawnHeading.current = Number.isFinite(nav.headingDeg) ? nav.headingDeg : null;
     }
 
     const scheduler = createRedrawScheduler({

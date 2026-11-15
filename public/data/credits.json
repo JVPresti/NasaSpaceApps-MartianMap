@@ -114,7 +114,8 @@
       "source_urls": [],
       "data_urls": [],
       "used_in": [
-        "public/marswalk/assets/ring_gray.jpg (background terrain photo)"
+        "public/marswalk/assets/ring_gray.jpg (background terrain photo)",
+        "public/present/jezero_ctx.jpg (the presentation's fall into Jezero, through NASA Mars Trek tiles, tinted)"
       ],
       "origin": "manual"
     },
@@ -226,6 +227,44 @@
         "public/data/traverse.json: traverse"
       ],
       "origin": "provenance"
+    },
+    {
+      "id": "themis-day-ir-100m",
+      "name": "Mars Odyssey THEMIS day IR controlled global mosaic, 100 m",
+      "kind": "terrain_imagery",
+      "provider": "Arizona State University, served by NASA Mars Trek",
+      "mission": "Mars Odyssey",
+      "instrument": "THEMIS",
+      "credit_line": "NASA/JPL-Caltech/Arizona State University",
+      "citation": "Edwards, C. S. et al. 2011, Mosaicking of global planetary image datasets: 1. Techniques and data processing for Thermal Emission Imaging System (THEMIS) multi-spectral data, JGR Planets 116, E10008",
+      "license": "NASA material, not subject to copyright in the United States. NASA insignia and logos are not public domain (NASA Images and Media Usage Guidelines)",
+      "license_url": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "url": "https://trek.nasa.gov/mars/",
+      "source_urls": [],
+      "data_urls": [],
+      "used_in": [
+        "public/present/jezero_region.jpg (the presentation's view of Jezero crater, tinted)"
+      ],
+      "origin": "manual"
+    },
+    {
+      "id": "viking-mdim21-colour",
+      "name": "Mars Viking MDIM 2.1 colorized global mosaic, 232 m",
+      "kind": "terrain_imagery",
+      "provider": "USGS Astrogeology Science Center, served by NASA Mars Trek",
+      "mission": "Viking",
+      "instrument": "Viking Orbiter cameras",
+      "credit_line": "NASA/JPL/USGS",
+      "citation": null,
+      "license": "NASA material, not subject to copyright in the United States. NASA insignia and logos are not public domain (NASA Images and Media Usage Guidelines)",
+      "license_url": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "url": "https://astrogeology.usgs.gov/search/map/mars_viking_mdim21_colorized_global_mosaic_232m",
+      "source_urls": [],
+      "data_urls": [],
+      "used_in": [
+        "public/present/globe_4k.jpg, globe_2k.jpg (the presentation's globe, scripts/present/build_assets.py)"
+      ],
+      "origin": "manual"
     },
     {
       "id": "bell-2022-mastcam-z",

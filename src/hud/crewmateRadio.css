@@ -1,0 +1,7 @@
+/* EV2's radio line (#288), under the partner chip: the crewmate's last callout. Uses the variables of .hud (hud.css)
+   and --partner from .hud-partner (partner.css). */
+.hud-crew-radio {
+  display: flex; align-items: baseline; gap: 0.5em; padding: 0.35em 0.9em; border-radius: 0.55em;
+  border-left: 0.28em solid var(--partner, #ff9a3c); font-size: 0.9em; line-height: 1.3; white-space: normal;
+}
+.hud-crew-radio-urgent { border-color: var(--caution); border-left-color: var(--partner, #ff9a3c); }

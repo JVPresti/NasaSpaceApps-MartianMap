@@ -1,4 +1,5 @@
 import { t, translateText } from './i18n/index.js';
+import PresentGate from './present/PresentGate.jsx';   // ?present=1, the pitch inside the app (#291)
 import { useLanguage } from './i18n/useLanguage.js';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import EngineView from './components/EngineView.jsx';
@@ -528,8 +529,8 @@ export default function App() {
 
   const playing = load.status === 'ready' && !evaSummary && phase === EVA_PHASE.PLAYING;
   // Only while playing: off while loading, on the start screen and in the pause menu. M goes through the mode handler,
-  // so it also captures the mouse in Walk (#174). Before Begin EVA, M only opens the table (#282, modeGuard.js): the
-  // table's Back to the habitat button is the way back to walking indoors (#260). handleModeChange also refuses every
+  // so it also captures the mouse in Walk (#174). Before Begin EVA, M only opens the table (#282, modeGuard.js), and
+  // the table's Back to the habitat button is the way back to walking indoors (#260). handleModeChange also refuses every
   // switch during the airlock cycle.
   const handleShortcutMode = useCallback((next) => {
     if (!modeSwitchAllowed(next, evaBegunRef.current)) return;
@@ -665,6 +666,7 @@ export default function App() {
       {/* Last, so its native dialog is created after the debrief and its top layer sits above it. Mounted from the
           first frame (#266): Sources is usable on the start screen while the scene still loads. */}
       <SourcesRoot />
+      <PresentGate engine={engine} />
     </div>
   );
 }

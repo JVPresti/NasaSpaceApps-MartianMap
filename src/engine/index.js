@@ -22,12 +22,14 @@ import { subscribeLanguage } from '../i18n/index.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as SH from './shaders.js';
+import { createCinematic } from './cinematic.js';   // the presentation's camera and overlays (#291)
 import { createAssets, b64u16, b64u8 } from './assets.js';
 import { buildAssetManifest, ROCK_NAMES } from './assetManifest.js';
 import { decodeTerrainJson, decodeRingJson } from './queries.js';
 import { createRouteGlow, validPath } from './routeGlow.js';
 import { createBootPrints } from './bootPrints.js';
 import { createDust, clampDust } from './dust.js';
+import { hiddenFrame } from './hiddenFrame.js';
 import { createMissionSky } from './missionSky.js';
 import { createShelterHighlight } from './shelterHighlight.js';
 import { validShelter } from './shelterRules.js';
@@ -211,8 +213,9 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   }
   function renderFrame() {
     const now = performance.now(), ft = now - last; last = now;
-    const dt = Math.min(ft / 1000, 0.1);
+    const dt = sys.cine ? sys.cine.frameDt(ft) : Math.min(ft / 1000, 0.1);   // the presentation can fix the step (#291)
     viewCtl.update(dt);
+    if (sys.cine) sys.cine.apply(dt);
     camera.getWorldDirection(U.uCamDir.value);
     const eyeMode = ctx.view.mode === 'eye';
     if (sys.arms.L) sys.arms.L.g.visible = sys.arms.R.g.visible = eyeMode;   // first-person arms only in Walk
@@ -225,6 +228,9 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     sys.prints.update(dt);
     sys.sky.update(dt);   // before the dust: a new sky is then scaled by the storm light in the same frame
     sys.dust.update(dt);
+    // No draw while App.css hides the canvas under the opaque mission table (hiddenFrame.js, #304)
+    const hidden = hiddenFrame(renderer.domElement, firstFrame);
+    if (hidden) { ({ frames, acc, worst, slowWindows } = hidden); lastStats = hidden.stats; return; }
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
     if (waypoints?.group.visible) waypoints.update(camera, container.clientHeight);   // fixed-size labels (#198)
@@ -243,7 +249,8 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       // auto tier: three slow seconds in a row on High -> Low. The controller serialises this with a
       // user choice made from the pause menu, so the two can never interleave.
       const q = quality.get();
-      if (q.auto && !q.pending && ctx.tier === 'high' && now - booted > 3000) {
+      if (sys.cine) slowWindows = 0;   // never rebuild the terrain under the presentation's meshes (#291)
+      else if (q.auto && !q.pending && ctx.tier === 'high' && now - booted > 3000) {
         slowWindows = (fps < 40 && worst < 250 && !document.hidden) ? slowWindows + 1 : 0;
         if (slowWindows >= 3) {
           slowWindows = 0;
@@ -363,7 +370,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
 
   /** Last one-second measurement. Plain data, safe to poll; the engine never calls back from its frame loop. */
   function stats() {
-    const r = renderer.info.render;
+    const r = lastStats.hidden ? { triangles: 0, calls: 0 } : renderer.info.render;   // a hidden canvas draws nothing (#304)
     return { ...lastStats, tier: ctx.tier, auto: quality.get().auto, gpu: ctx.gpu, triangles: r.triangles, drawCalls: r.calls };
   }
 
@@ -420,7 +427,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       setTier: (name) => quality.request(name),
       walking: (on) => { ctx.view.keys.KeyW = !!on; },
       partnerCommand: (name) => sys.partner.command(name),
-      setPartnerSource: (source) => sys.partner.setSource(source),
+      setPartnerSource: (source) => sys.partner.setSource(source, { chosen: true }),
       partnerState: () => sys.partner.state,
       prints: () => sys.prints.stats(),
       // camera and player pose, for checking speed and that the camera follows the ground smoothly
@@ -822,6 +829,11 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
         visible: inFront && Math.abs(p.x) <= 1 && Math.abs(p.y) <= 1,
       };
     },
+    /** The presentation's camera and scene overlays (cinematic.js, #291), until its release(). Null before ready. */
+    cinematic() {
+      if (!started) return null;
+      return (sys.cine ||= createCinematic(ctx, { render: renderFrame, loop: (on) => renderer.setAnimationLoop(on ? tick : null), release: () => { sys.cine = null; viewCtl.setMode(requestedMode); } }));
+    },
     /** Removes every boot print (bootPrints.js): the start of a new EVA. */
     clearPrints() { if (sys.prints) sys.prints.clear(); },
     /** Player position and heading (degrees clockwise from north), and the current mode. */
@@ -832,7 +844,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     setPartnerSource(source) {
       if (source !== null && !(source && typeof source.update === 'function')) throw new Error('setPartnerSource: expected a partner source with update(dt, world), or null');
       if (!sys.partner) throw new Error('engine is not ready: wait for engine.ready');
-      sys.partner.setSource(source);
+      sys.partner.setSource(source, { chosen: true });   // it comes back when the engine places the crew again (#288)
     },
     /** Scripted actions of the current source: 'toggleCase', 'visitHabitat'. Returns false if the source ignores it. */
     partnerCommand(name) { return sys.partner ? sys.partner.command(name) : false; },

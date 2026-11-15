@@ -76,7 +76,6 @@ describe('flow stages', () => {
     setMode('plan');   // at the mission table
     beginEgress();
     expect(useMissionStore.getState()).toMatchObject({ stage: STAGE.EGRESS, mode: 'walk' });   // the table closes
-    expect(useMissionStore.getState().stage).toBe(STAGE.EGRESS);
     completeEgress();
     expect(useMissionStore.getState().stage).toBe(STAGE.EVA);
     showDebrief();   // X at the table (#244) froze the summary

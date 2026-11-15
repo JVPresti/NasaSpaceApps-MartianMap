@@ -12,7 +12,10 @@ import { crewCss } from './crewColor.js';
 import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import { batteryLevel, formatValue } from './format.js';
 import * as I from './icons.jsx';
+import CrewmateRadio from './CrewmateRadio.jsx';
 import './partner.css';
+import { useRef } from 'react';
+import { usePoseFrame } from './livePose.js';
 
 /** Key that opens and closes the partner detail. T for "team": the engine uses WASD, arrows, Shift, P, E and F. */
 const PARTNER_KEY = 'KeyT';
@@ -69,6 +72,16 @@ export default function PartnerPanel() {
       ageMin: c.link === false && Number.isFinite(c.lastContactSec) ? Math.floor(Math.max(0, (s.mission.elapsedSec ?? 0) - c.lastContactSec) / 60) : null,
     };
   }));
+  // The arrow turns with the camera every frame (#307): the partner's bearing comes from the store, the heading from the engine.
+  const arrow = useRef(null), bearing = useRef(null);
+  const bearingDeg = p ? p.bearingDeg : null;
+  useEffect(() => { bearing.current = bearingDeg; }, [bearingDeg]);
+  usePoseFrame((pose) => {
+    const el = arrow.current;
+    if (!el || !pose || !Number.isFinite(bearing.current) || !Number.isFinite(pose.headingDeg)) return;
+    const t = `rotate(${(((bearing.current - pose.headingDeg + 540) % 360) - 180).toFixed(1)}deg)`;
+    if (el.style.transform !== t) el.style.transform = t;
+  });
   if (!p) return null;
 
   const suit = worst(p.o2Level, p.battLevel);
@@ -84,7 +97,7 @@ export default function PartnerPanel() {
         <span className={'hud-partner-dot hud-partner-dot-' + (p.link ? suit : 'lost')} title={p.link ? t('menu.partner.suit.status', { status: translateText(suit) }) : t('menu.no.radio.link')} />
         <b className="hud-partner-id">{p.id}</b>
         {p.relDeg !== null && (
-          <svg viewBox="0 0 24 24" className="hud-icon hud-partner-arrow" style={{ transform: `rotate(${p.relDeg}deg)` }} aria-hidden="true">
+          <svg ref={arrow} viewBox="0 0 24 24" className="hud-icon hud-partner-arrow" style={{ transform: `rotate(${p.relDeg}deg)` }} aria-hidden="true">
             <path d="M12 3 19 20 12 16 5 20Z" />
           </svg>
         )}
@@ -93,6 +106,7 @@ export default function PartnerPanel() {
         {!p.link && <span className="hud-partner-last" title={t('menu.last.known.position.age', { age: lastSeen })}>{t('menu.last')}</span>}
         {!open && p.link && <kbd className="hud-partner-key" title={t('menu.press.t.for.partner.detail')}>{t('menu.t')}</kbd>}
       </div>
+      <CrewmateRadio />
       {open && (
         <div className="hud-panel hud-partner-detail">
           {!p.link && <div className="hud-partner-nolink">{t('menu.no.link.last.contact')}{lastSeen}<SourceTag path="crew.0.link" /></div>}
