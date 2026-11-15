@@ -15,6 +15,7 @@ import DebriefScreen from './debrief/DebriefScreen.jsx';
 import EventBanner from './events/EventBanner.jsx';
 import EventDebug from './events/EventDebug.jsx';
 import { WalkBeat } from './mission/MissionBeat.jsx';
+import { chooseMission } from './mission/chooseMission.js';
 import Finds from './finds/Finds.jsx';
 import Hud from './hud/Hud.jsx';
 import PlanMode from './plan/PlanMode.jsx';
@@ -22,7 +23,7 @@ import SourcesRoot from './sources/SourcesScreen.jsx';
 import { WalkStopCard } from './stops/ScienceStops.jsx';
 import { createRouteProgress } from './hud/minimapRoute.js';
 import { openSources } from './sources/sourcesStore.js';
-import { pauseMission, resumeMission, setMode, setNeeds, useMissionStore } from './state/store.js';
+import { pauseMission, resumeMission, setMode, useMissionStore } from './state/store.js';
 import { FIRST_OBJECTIVE, FULL_OBJECTIVE } from './sim/missions.js';
 import { EVA_PHASE, PAUSE_VIEW, pauseEva, requestEvaLock, restartEva, resumeEva } from './state/evaSession.js';
 import { continueEva } from './state/eva.js';
@@ -512,8 +513,7 @@ export default function App() {
   // offers drag-to-look. Both actions are disabled until the scene is ready; this guard keeps a stale click harmless.
   const startMission = (objective) => {
     if (load.status !== 'ready') return;
-    setNeeds({ objective });
-    if (useMissionStore.getState().mode !== 'plan') setMode('plan');
+    chooseMission(objective);
     handleResume();
   };
 
