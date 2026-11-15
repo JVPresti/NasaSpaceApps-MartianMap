@@ -5,13 +5,15 @@
 // an entry has no touch control. Plain JavaScript: no DOM, no React, no three.js.
 
 /**
- * How a touch player does an action:
- * - 'button': a button on the touch action bar sends the action's first key (or runs it directly, see `run`);
+ * How a touch player does an action. Every kind names the control that does it, and actions.test.js checks that the
+ * control exists:
+ * - 'button': a button on the touch action bar (src/components/TouchActions.jsx) sends the action's first key, or runs
+ *   it directly (Sample, which has no key);
  * - 'stick': the on-screen stick (src/engine/touchInput.js);
  * - 'gesture': a finger drag or pinch on the scene or the map;
- * - 'dialog': a button inside the dialog that the key works in (the dialog draws it, e.g. the pause menu's Resume);
- * - 'browser': the browser or the system provides it (full screen, reload), nothing to draw.
- * @typedef {'button' | 'stick' | 'gesture' | 'dialog' | 'browser'} TouchKind
+ * - 'dialog': a button that the screen with the key draws itself, e.g. the find card's Add and Dismiss.
+ * Non-button kinds carry `control: { file, has }`: the file that draws the control and a string it must contain.
+ * @typedef {'button' | 'stick' | 'gesture' | 'dialog'} TouchKind
  */
 
 /**
@@ -20,7 +22,6 @@
  * - 'surface': walking on the surface after the airlock (the EVA);
  * - 'cabin': walking in the habitat cabin, where the table prompt shows;
  * - 'wrist': the wrist screen is up;
- * - 'find': a find card waits for an answer (it has its own buttons, so the bar does not repeat them);
  * - 'always': whenever the bar shows.
  * @typedef {'walk' | 'surface' | 'cabin' | 'wrist' | 'always'} ActionContext
  */
@@ -30,67 +31,96 @@
  *   id: string,
  *   codes: string[],
  *   keys?: string[],
+ *   files: string[],
  *   touch: TouchKind,
+ *   control?: { file: string, has: string },
  *   when?: ActionContext,
  *   hold?: boolean,
  *   more?: boolean,
  *   label: string,
- *   note?: string,
  * }} Action
- * `keys` lists KeyboardEvent.key values for handlers that read the key instead of the code (Esc, H, the presentation).
- * `hold` sends keydown on press and keyup on release (Q is held for 2 s). `more` puts the button behind the bar's
- * More toggle instead of the always-visible row. `label` is an i18n key.
+ * `codes` are KeyboardEvent.code values and `keys` KeyboardEvent.key values, for handlers that read the key (Esc, H, the
+ * presentation). `files` are the source files whose handlers listen for these keys: the coverage test pairs each key it
+ * finds in a file with an action of that file, so one screen's Escape cannot pass for another's. `hold` sends keydown on
+ * press and keyup on release (Q is held for 2 s). `more` puts the button behind the bar's More toggle. `label` is an
+ * i18n key.
  */
+
+const BAR = 'src/components/TouchActions.jsx';
+const WALK_KEYS = ['src/components/shortcuts.js'];
 
 /** @type {readonly Action[]} */
 export const ACTIONS = Object.freeze([
   // Walk and look
-  { id: 'walk', codes: ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'], touch: 'stick', label: 'touch.walk' },
-  { id: 'jog', codes: ['ShiftLeft', 'ShiftRight'], touch: 'stick', label: 'touch.jog', note: 'push the stick past 85 %' },
-  { id: 'look', codes: [], touch: 'gesture', label: 'touch.look', note: 'drag any other finger on the scene' },
+  { id: 'walk', codes: ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'], files: ['src/engine/walkInput.js'],
+    touch: 'stick', control: { file: 'src/engine/view.js', has: 'touchstart' }, label: 'touch.walk' },
+  { id: 'jog', codes: ['ShiftLeft', 'ShiftRight'], files: ['src/engine/view.js'],
+    touch: 'stick', control: { file: 'src/engine/touchInput.js', has: 'STICK_JOG_FROM' }, label: 'touch.jog' },
+  { id: 'look', codes: [], files: [], touch: 'gesture', control: { file: 'src/engine/touchInput.js', has: 'consumeLook' }, label: 'touch.look' },
 
   // Both views
-  { id: 'pause', codes: ['Escape'], keys: ['Escape'], touch: 'button', when: 'always', label: 'touch.pause' },
-  { id: 'mode', codes: ['KeyM'], touch: 'button', when: 'walk', label: 'touch.map' },
-  { id: 'help', codes: ['KeyH'], keys: ['h', 'H'], touch: 'dialog', label: 'touch.help', note: 'Controls in the pause menu' },
-  { id: 'layer-next', codes: ['KeyL'], touch: 'button', when: 'walk', more: true, label: 'touch.layer', note: 'Shift+L: the table has a button per layer' },
-  { id: 'layer-off', codes: ['Digit0', 'Numpad0'], touch: 'button', when: 'walk', more: true, label: 'touch.layer.off' },
+  { id: 'pause', codes: ['Escape'], keys: ['Escape'], files: ['src/App.jsx'], touch: 'button', when: 'always', label: 'touch.pause' },
+  { id: 'mode', codes: ['KeyM'], files: WALK_KEYS, touch: 'button', when: 'walk', label: 'touch.map' },
+  { id: 'help', codes: ['KeyH'], keys: ['h', 'H'], files: ['src/App.jsx'], touch: 'dialog', control: { file: 'src/components/PauseMenu.jsx', has: 'onControls' }, label: 'touch.help' },
+  { id: 'layer-next', codes: ['KeyL'], files: WALK_KEYS, touch: 'button', when: 'walk', more: true, label: 'touch.layer' },
+  { id: 'layer-off', codes: ['Digit0', 'Numpad0'], files: WALK_KEYS, touch: 'button', when: 'walk', more: true, label: 'touch.layer.off' },
+  { id: 'visor-frame', codes: ['KeyV'], files: WALK_KEYS, touch: 'button', when: 'surface', more: true, label: 'touch.visor' },
 
   // Habitat cabin (the table prompt, #244)
-  { id: 'open-plan', codes: ['KeyE'], touch: 'button', when: 'cabin', label: 'touch.open.plan', note: 'E also stows a sample on the surface' },
-  { id: 'end-eva', codes: ['KeyX'], touch: 'button', when: 'cabin', label: 'touch.end.eva' },
+  { id: 'open-plan', codes: ['KeyE'], files: ['src/state/tableActions.js'], touch: 'button', when: 'cabin', label: 'touch.open.plan' },
+  { id: 'end-eva', codes: ['KeyX'], files: ['src/state/tableActions.js'], touch: 'button', when: 'cabin', label: 'touch.end.eva' },
 
   // Surface: sampling (#36) and the EVA's tools
-  { id: 'sample', codes: [], touch: 'button', when: 'surface', label: 'touch.sample', note: 'mouse click; a tap on the scene works too' },
-  { id: 'photo', codes: ['KeyP'], touch: 'button', when: 'surface', label: 'touch.photo' },
-  { id: 'stow', codes: ['KeyE'], touch: 'button', when: 'surface', label: 'touch.stow' },
-  { id: 'case', codes: ['KeyF'], touch: 'button', when: 'surface', label: 'touch.case' },
-  { id: 'find', codes: ['KeyQ'], touch: 'button', when: 'surface', hold: true, more: true, label: 'touch.find', note: 'hold 2 s while pointing at the ground' },
-  { id: 'find-accept', codes: ['KeyY'], touch: 'dialog', label: 'touch.find.accept', note: 'Add button on the find card' },
-  { id: 'find-dismiss', codes: ['KeyN'], touch: 'dialog', label: 'touch.find.dismiss', note: 'Dismiss button on the find card' },
-  { id: 'partner', codes: ['KeyT'], touch: 'button', when: 'surface', more: true, label: 'touch.partner' },
-  { id: 'slope-grid', codes: ['KeyG'], touch: 'button', when: 'surface', more: true, label: 'touch.slope' },
-  { id: 'visor-detail', codes: ['KeyI'], touch: 'button', when: 'surface', more: true, label: 'touch.detail' },
-  { id: 'visor-frame', codes: ['KeyV'], touch: 'button', when: 'surface', more: true, label: 'touch.visor' },
-  { id: 'sources', codes: ['KeyC'], touch: 'button', when: 'walk', more: true, label: 'touch.sources' },
+  { id: 'sample', codes: [], files: [], touch: 'button', when: 'surface', label: 'touch.sample' },
+  { id: 'photo', codes: ['KeyP'], files: ['src/engine/sampling.js'], touch: 'button', when: 'surface', label: 'touch.photo' },
+  { id: 'stow', codes: ['KeyE'], files: ['src/engine/sampling.js'], touch: 'button', when: 'surface', label: 'touch.stow' },
+  { id: 'case', codes: ['KeyF'], files: ['src/engine/sampling.js'], touch: 'button', when: 'surface', label: 'touch.case' },
+  { id: 'find', codes: ['KeyQ'], files: ['src/finds/Finds.jsx', 'src/screens/wrist/controller.js'], touch: 'button', when: 'surface', hold: true, more: true, label: 'touch.find' },
+  // Esc while Q is held cancels the find: on touch, the finger sliding off the Hold button cancels it
+  { id: 'find-cancel', codes: ['Escape'], files: ['src/finds/Finds.jsx'], touch: 'gesture', control: { file: BAR, has: 'onPointerLeave' }, label: 'touch.find' },
+  { id: 'find-accept', codes: ['KeyY'], files: ['src/finds/Finds.jsx'], touch: 'dialog', control: { file: 'src/finds/Finds.jsx', has: 'service.accept(f.id)' }, label: 'touch.find.accept' },
+  { id: 'find-dismiss', codes: ['KeyN', 'Escape'], files: ['src/finds/Finds.jsx'], touch: 'dialog', control: { file: 'src/finds/Finds.jsx', has: 'service.dismiss(f.id)' }, label: 'touch.find.dismiss' },
+  { id: 'partner', codes: ['KeyT'], files: ['src/hud/PartnerPanel.jsx'], touch: 'button', when: 'surface', more: true, label: 'touch.partner' },
+  { id: 'slope-grid', codes: ['KeyG'], files: ['src/state/slopeGrid.js'], touch: 'button', when: 'surface', more: true, label: 'touch.slope' },
+  { id: 'visor-detail', codes: ['KeyI'], files: ['src/hud/visorMode.js'], touch: 'button', when: 'surface', more: true, label: 'touch.detail' },
+  { id: 'sources', codes: ['KeyC'], files: ['src/sources/SourcesScreen.jsx', 'src/sources/sourcesStore.js'], touch: 'button', when: 'walk', more: true, label: 'touch.sources' },
 
   // Wrist screen (#231)
-  { id: 'wrist', codes: ['KeyR'], touch: 'button', when: 'surface', label: 'touch.wrist' },
-  { id: 'wrist-previous-page', codes: ['BracketLeft'], touch: 'button', when: 'wrist', label: 'touch.wrist.page.previous' },
-  { id: 'wrist-next-page', codes: ['BracketRight'], touch: 'button', when: 'wrist', label: 'touch.wrist.page.next' },
-  { id: 'wrist-previous-row', codes: ['KeyK'], touch: 'button', when: 'wrist', label: 'touch.wrist.row.previous' },
-  { id: 'wrist-next-row', codes: ['KeyJ'], touch: 'button', when: 'wrist', label: 'touch.wrist.row.next' },
-  { id: 'wrist-confirm', codes: ['Enter', 'NumpadEnter'], keys: ['Enter'], touch: 'button', when: 'wrist', label: 'touch.wrist.select' },
+  { id: 'wrist', codes: ['KeyR'], files: ['src/screens/wrist/keys.js'], touch: 'button', when: 'surface', label: 'touch.wrist' },
+  { id: 'wrist-previous-page', codes: ['BracketLeft'], files: ['src/screens/wrist/keys.js'], touch: 'button', when: 'wrist', label: 'touch.wrist.page.previous' },
+  { id: 'wrist-next-page', codes: ['BracketRight'], files: ['src/screens/wrist/keys.js'], touch: 'button', when: 'wrist', label: 'touch.wrist.page.next' },
+  { id: 'wrist-previous-row', codes: ['KeyK'], files: ['src/screens/wrist/keys.js'], touch: 'button', when: 'wrist', label: 'touch.wrist.row.previous' },
+  { id: 'wrist-next-row', codes: ['KeyJ'], files: ['src/screens/wrist/keys.js'], touch: 'button', when: 'wrist', label: 'touch.wrist.row.next' },
+  { id: 'wrist-confirm', codes: ['Enter', 'NumpadEnter'], keys: ['Enter'], files: ['src/screens/wrist/keys.js'], touch: 'button', when: 'wrist', label: 'touch.wrist.select' },
 
-  // Dialogs and the presentation: the keys work inside a dialog that draws its own buttons
-  { id: 'dialog-focus', codes: ['Tab'], keys: ['Tab'], touch: 'dialog', label: 'touch.dialog.focus', note: 'focus moves by tapping; Tab only wraps keyboard focus' },
-  { id: 'present-next', codes: ['ArrowRight', 'PageDown', 'Space', 'Enter'], keys: ['ArrowRight', 'PageDown', ' ', 'Enter', 'Spacebar'], touch: 'dialog', label: 'touch.present.next', note: 'tap, swipe left or the Next button' },
-  { id: 'present-back', codes: ['ArrowLeft', 'PageUp'], keys: ['ArrowLeft', 'PageUp'], touch: 'dialog', label: 'touch.present.back', note: 'swipe right or the Back button' },
-  { id: 'present-language', codes: ['KeyL'], keys: ['l', 'L'], touch: 'dialog', label: 'touch.present.language', note: 'Language button' },
-  { id: 'table-step', codes: ['ArrowLeft', 'ArrowRight'], keys: ['ArrowLeft', 'ArrowRight'], touch: 'dialog', label: 'touch.table.step', note: 'tap a step tab' },
+  // Screens that draw their own buttons for their keys
+  { id: 'dialog-keys', codes: ['Tab', 'Enter', 'Escape'], keys: ['Tab', 'Enter', 'Escape'], files: ['src/components/Modal.jsx'],
+    touch: 'dialog', control: { file: 'src/components/Modal.jsx', has: 'so the dialog is never left without a button to press' }, label: 'touch.dialog.focus' },
+  { id: 'sources-close', codes: ['Escape', 'Tab'], keys: ['Escape', 'Tab'], files: ['src/sources/SourcesScreen.jsx'],
+    touch: 'dialog', control: { file: 'src/sources/SourcesScreen.jsx', has: 'className="sources-close" onClick={onClose}' }, label: 'touch.dialog.focus' },
+  { id: 'card-close', codes: ['Enter', 'NumpadEnter', 'Escape'], files: ['src/stops/closeKeys.js'],
+    touch: 'dialog', control: { file: 'src/stops/StopCard.jsx', has: 'className="stop-close" onClick={onClose}' }, label: 'touch.dialog.focus' },
+  { id: 'map-popup-close', codes: ['Escape'], keys: ['Escape'], files: ['src/plan/MissionMap.jsx', 'src/plan/TraverseLayer.jsx'],
+    touch: 'dialog', control: { file: 'src/plan/MissionMap.jsx', has: 'className="map-pop-close"' }, label: 'touch.dialog.focus' },
+  { id: 'tooltip-close', codes: ['Escape'], keys: ['Escape'], files: ['src/components/SourceTag.jsx'],
+    touch: 'gesture', control: { file: 'src/components/SourceTag.jsx', has: 'a tap opens and closes the details' }, label: 'touch.dialog.focus' },
+  // A waypoint's x or z field: Enter commits, Esc restores. The on-screen keyboard's Done key and a tap outside both blur
+  // the field, which commits it; restoring is retyping the old value.
+  { id: 'waypoint-field', codes: ['Enter', 'Escape'], keys: ['Enter', 'Escape'], files: ['src/plan/RoutePanel.jsx'],
+    touch: 'gesture', control: { file: 'src/plan/RoutePanel.jsx', has: 'onBlur' }, label: 'touch.dialog.focus' },
+  { id: 'table-step', codes: ['ArrowLeft', 'ArrowRight'], keys: ['ArrowLeft', 'ArrowRight'], files: ['src/plan/MissionTable.jsx'],
+    touch: 'dialog', control: { file: 'src/plan/MissionTable.jsx', has: 'table-tab-' }, label: 'touch.table.step' },
 
-  // Browser keys the app leaves alone
-  { id: 'browser', codes: ['F5', 'F11', 'F12'], keys: ['F5', 'F11', 'F12'], touch: 'browser', label: 'touch.browser', note: 'reload, full screen and devtools belong to the browser; the pause menu has a Full screen button' },
+  // The presentation (?present=1, src/present/control.js). Its touch controls arrive with #373 (swipe) and the on-screen
+  // Back, Exit and Language buttons after it; until then actions.test.js lists them as pending, by name.
+  { id: 'present-next', codes: ['ArrowRight', 'PageDown', 'Space', 'Enter'], keys: ['ArrowRight', 'PageDown', ' ', 'Enter', 'Spacebar'], files: ['src/present/control.js'],
+    touch: 'dialog', control: { file: 'src/present/Present.jsx', has: 'data-present-action="next"' }, label: 'touch.present.next' },
+  { id: 'present-back', codes: ['ArrowLeft', 'PageUp'], keys: ['ArrowLeft', 'PageUp'], files: ['src/present/control.js'],
+    touch: 'dialog', control: { file: 'src/present/Present.jsx', has: 'data-present-action="back"' }, label: 'touch.present.back' },
+  { id: 'present-exit', codes: ['Escape'], keys: ['Escape'], files: ['src/present/control.js'],
+    touch: 'dialog', control: { file: 'src/present/Present.jsx', has: 'data-present-action="exit"' }, label: 'touch.present.exit' },
+  { id: 'present-language', codes: ['KeyL'], keys: ['l', 'L'], files: ['src/present/control.js'],
+    touch: 'dialog', control: { file: 'src/present/Present.jsx', has: 'data-present-action="language"' }, label: 'touch.present.language' },
 ]);
 
 /** Bar action ids that follow a sampling input, and the input's name in the engine's sampling status. */

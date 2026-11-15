@@ -58,15 +58,18 @@
   border-color: rgba(255, 240, 225, 0.9);
 }
 
-/* The pause and map buttons sit top right, where the thumb does not rest and the HUD keeps its corner free. */
-.touch-action-pause,
-.touch-action-mode {
-  position: fixed;
-  top: calc(10px + env(safe-area-inset-top, 0px));
-  min-width: 64px;
+/* On a phone or a tablet the pause and map buttons sit top right, where the thumb does not rest; hudMobile.css keeps that
+   corner free. A touchscreen laptop keeps the desktop HUD, so there they stay in the bottom-right group. */
+@media (pointer: coarse) {
+  .touch-action-pause,
+  .touch-action-mode {
+    position: fixed;
+    top: calc(10px + env(safe-area-inset-top, 0px));
+    min-width: 64px;
+  }
+  .touch-action-pause { right: calc(10px + env(safe-area-inset-right, 0px)); }
+  .touch-action-mode { right: calc(84px + env(safe-area-inset-right, 0px)); }
 }
-.touch-action-pause { right: calc(10px + env(safe-area-inset-right, 0px)); }
-.touch-action-mode { right: calc(84px + env(safe-area-inset-right, 0px)); }
 
 /* The beat line and the wrist hint (App.css .hint) move clear of the stick and the bar on a phone. */
 @media (pointer: coarse) and (max-width: 600px) {

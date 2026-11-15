@@ -10,6 +10,8 @@
 @media (pointer: coarse) {
   /* H and I are keyboard hints; on a touch screen the pause menu has Controls and the bar has All gauges */
   .hud-keys { display: none; }
+  /* a tablet keeps the desktop layout; the LMST pill drops below the bar's Map and Pause in the top-right corner */
+  .hud-lmst { top: calc(var(--u) * 5.2 + 56px); }
 }
 
 @media (pointer: coarse) and (max-width: 600px) {

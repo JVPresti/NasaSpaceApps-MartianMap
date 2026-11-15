@@ -26,6 +26,7 @@ const BASE_STYLE = {
  */
 export default function TouchStick({ engine }) {
   const [stick, setStick] = useState(null);
+  const [coarse] = useState(coarsePointer);   // read once: the stick re-renders on every finger move
 
   useEffect(() => {
     const subscribe = engine?.subscribeTouch;
@@ -38,7 +39,7 @@ export default function TouchStick({ engine }) {
 
   // On a touch screen the stick shows at rest from the start, so a phone player sees where to walk from (#365);
   // elsewhere it appears on the first touch (#103). The engine's hit circle is there either way.
-  if (!stick?.visible && !coarsePointer()) return null;
+  if (!stick?.visible && !coarse) return null;
 
   const knobX = Number.isFinite(stick?.knobX) ? stick.knobX : 0;
   const knobY = Number.isFinite(stick?.knobY) ? stick.knobY : 0;

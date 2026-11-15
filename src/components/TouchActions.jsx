@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { touchBarActions } from '../input/actions.js';
 import { coarsePointer, fullscreen } from '../input/device.js';
@@ -18,15 +18,25 @@ function subscribeCoarse(onChange) {
   return () => mq.removeEventListener?.('change', onChange);
 }
 
-/** True on a coarse primary pointer, or once the engine saw a touch on the scene (a touchscreen laptop). */
+/**
+ * True on a coarse primary pointer. On a touchscreen laptop (fine primary pointer) the bar shows after a touch on the
+ * scene and hides again when the mouse moves, so a mouse player never keeps it.
+ */
 function useTouchBar(engine) {
   const coarse = useSyncExternalStore(subscribeCoarse, () => coarsePointer(), () => coarsePointer());
   const [touched, setTouched] = useState(false);
   useEffect(() => {
-    if (coarse || touched || typeof engine?.subscribeTouch !== 'function') return undefined;
+    if (coarse || typeof engine?.subscribeTouch !== 'function') return undefined;
     const off = engine.subscribeTouch((s) => { if (s?.visible) setTouched(true); });
-    return typeof off === 'function' ? off : undefined;
-  }, [engine, coarse, touched]);
+    const onMouse = (e) => { if (e.pointerType === 'mouse' && (e.movementX || e.movementY || e.type === 'pointerdown')) setTouched(false); };
+    window.addEventListener('pointermove', onMouse, true);
+    window.addEventListener('pointerdown', onMouse, true);
+    return () => {
+      if (typeof off === 'function') off();
+      window.removeEventListener('pointermove', onMouse, true);
+      window.removeEventListener('pointerdown', onMouse, true);
+    };
+  }, [engine, coarse]);
   return coarse || touched;
 }
 
@@ -42,6 +52,7 @@ export default function TouchActions({ engine, wristOpen }) {
   const now = useMissionStore(useShallow((s) => ({ mode: s.mode, stage: s.stage, actions: s.sampling?.status?.actions ?? null })));
   const inCabin = useInCabin(engine);
   const [more, setMore] = useState(false);
+  const held = useRef(false);
   const [fs] = useState(fullscreen);
   const [isFull, setFull] = useState(() => fs.active());
   useEffect(() => {
@@ -59,18 +70,31 @@ export default function TouchActions({ engine, wristOpen }) {
   const main = all.filter((a) => !SAMPLING_IDS.has(a.id));
 
   const button = (a) => {
+    // A tap acts on click: the browser fires it when the finger lifts on the button. The More menu closes after one of
+    // its actions, so it never covers the card or the view the action opened.
     const press = (e) => {
       e.preventDefault();
       if (a.id === 'sample') { engine?.sampleAct?.('click'); return; }
       sendKey(a.id, 'keydown');
-      if (!a.hold) { sendKey(a.id, 'keyup'); if (a.more) setMore(false); }
+      sendKey(a.id, 'keyup');
+      if (a.more) setMore(false);
     };
-    // the More menu closes after one of its actions, so it never covers the card or the view the action opened
-    const release = () => { if (a.hold) { sendKey(a.id, 'keyup'); if (a.more) setMore(false); } };
-    // A hold action (Q, 2 s) presses on pointerdown and lets go on pointerup; the rest act on a click, so a finger
-    // that slides off the button does nothing.
+    // A hold action (Q, held 2 s) sends keydown when the finger goes down and one keyup when it lifts, is cancelled or
+    // slides off the button; the first of those three ends the hold.
+    const hold = (e) => {
+      e.preventDefault();
+      if (held.current) return;
+      held.current = true;
+      sendKey(a.id, 'keydown');
+    };
+    const release = () => {
+      if (!held.current) return;
+      held.current = false;
+      sendKey(a.id, 'keyup');
+      if (a.more) setMore(false);
+    };
     const handlers = a.hold
-      ? { onPointerDown: press, onPointerUp: release, onPointerCancel: release, onPointerLeave: release, onContextMenu: (e) => e.preventDefault() }
+      ? { onPointerDown: hold, onPointerUp: release, onPointerCancel: release, onPointerLeave: release, onContextMenu: (e) => e.preventDefault() }
       : { onClick: press };
     return (
       <button key={a.id} type="button" className={`touch-action touch-action-${a.id}`} data-action={a.id} {...handlers}>

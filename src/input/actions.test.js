@@ -1,17 +1,37 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { ACTIONS, action, boundCodes, codeOf, keyForCode, touchBarActions } from './actions.js';
+import { ACTIONS, action, codeOf, keyForCode, touchBarActions } from './actions.js';
 import { sendKey } from './sendKey.js';
 
 const SRC = join(import.meta.dirname, '..');
 
-/** Keys bound in src that are not player actions, each with the reason. */
+/**
+ * Keys a file listens for that are not player actions, by `file:key`, each with the reason. Reviewed by hand: adding a
+ * line here is a decision, not a fix for a failing test.
+ */
 const NOT_ACTIONS = {
-  '`': 'EventDebug: the developer event panel, only with ?events=debug',
+  'src/events/EventDebug.jsx:`': 'the developer event panel, only in development or with ?debug=1',
+  'src/events/EventDebug.jsx:Escape': 'closes the developer event panel, which has its own toggle button',
+  'src/present/control.js:F5': 'the presentation passes it to the browser: reload',
+  'src/present/control.js:F11': 'the presentation passes it to the browser; a phone has no F11, and Walk has Full screen in the More menu',
+  'src/present/control.js:F12': 'the presentation passes it to the browser: developer tools, not needed on a phone',
+};
+
+/**
+ * Actions whose touch control has not landed yet, by id, each with the reason. Empty this as each control lands; the
+ * test fails if an entry here has its control already, so the list cannot go stale.
+ */
+const PENDING = {
+  'present-next': 'tap and swipe arrive with #373; the touch row in the PR checklist tracks it',
+  'present-back': 'swipe arrives with #373; the on-screen Back button follows once it merges',
+  'present-exit': 'the on-screen Exit button follows once #373 merges',
+  'present-language': 'the on-screen Language button follows once #373 merges',
 };
 
 const KEY_CODE = /^(Key[A-Z]|Digit\d|Numpad\w+|Arrow(Up|Down|Left|Right)|Bracket(Left|Right)|Shift(Left|Right)|Escape|Enter|Tab|Space|Spacebar|Page(Up|Down)|F\d{1,2})$/;
+const ROOT = join(SRC, '..');
+const rel = (path) => relative(ROOT, path).split(sep).join('/');
 
 function sources(dir, out = []) {
   for (const name of readdirSync(dir)) {
@@ -22,41 +42,58 @@ function sources(dir, out = []) {
   return out;
 }
 
-/** Every key a handler in src compares against: quoted key codes anywhere, and `key === '<x>'` values. */
+/** Every (file, key) pair a handler in src compares against: quoted key codes, and `e.key === '<x>'` values. */
 function keysInSource() {
-  const found = new Map();
-  const add = (value, file) => { if (!found.has(value)) found.set(value, file); };
+  const pairs = new Set();
   for (const file of sources(SRC)) {
     if (file.includes(join('src', 'input'))) continue;   // the list itself
-    const text = readFileSync(file, 'utf8');
-    for (const m of text.matchAll(/'([^'\n]{1,12})'/g)) if (KEY_CODE.test(m[1])) add(m[1], file);
-    for (const m of text.matchAll(/\b(?:e|ev|event)\.key\s*[!=]==?\s*'([^']+)'/g)) add(m[1], file);
-    for (const m of text.matchAll(/\bk\s*[!=]==?\s*'(.)'/g)) add(m[1], file);   // src/present/control.js reads e.key into k
-    for (const m of text.matchAll(/TOGGLE_KEY\s*=\s*'([^']+)'/g)) add(m[1], file);
+    const text = readFileSync(file, 'utf8'), name = rel(file);
+    for (const m of text.matchAll(/'([^'\n]{1,12})'/g)) if (KEY_CODE.test(m[1])) pairs.add(`${name}:${m[1]}`);
+    for (const m of text.matchAll(/\b(?:e|ev|event)\.key\s*[!=]==?\s*'([^']+)'/g)) pairs.add(`${name}:${m[1]}`);
+    for (const m of text.matchAll(/\bk\s*[!=]==?\s*'(.)'/g)) pairs.add(`${name}:${m[1]}`);   // src/present/control.js reads e.key into k
+    for (const m of text.matchAll(/TOGGLE_KEY\s*=\s*'([^']+)'/g)) pairs.add(`${name}:${m[1]}`);
   }
-  return found;
+  return pairs;
+}
+
+/** True when an action of `file` binds `key`, as a code or a key value (a letter in either case). */
+function bound(file, key) {
+  return ACTIONS.some((a) => a.files.includes(file)
+    && [...a.codes, ...(a.keys ?? [])].some((k) => k === key || k.toLowerCase() === key.toLowerCase()));
 }
 
 describe('the action list (#365)', () => {
-  const covered = new Set([...boundCodes(), ...ACTIONS.flatMap((a) => a.keys ?? [])]);
-  const lower = new Set([...covered].map((k) => k.toLowerCase()));
-
-  it('has an entry for every key a handler in src listens for', () => {
-    const missing = [];
-    for (const [key, file] of keysInSource()) {
-      if (covered.has(key) || lower.has(key.toLowerCase()) || key in NOT_ACTIONS) continue;
-      missing.push(`${key} (${file.slice(SRC.length + 1)})`);
-    }
+  it('pairs every key a file listens for with an action of that file', () => {
+    const pairs = keysInSource();
+    expect(pairs.size).toBeGreaterThan(20);   // the scan finds the handlers at all
+    const missing = [...pairs].filter((p) => {
+      const i = p.lastIndexOf(':');
+      return !bound(p.slice(0, i), p.slice(i + 1)) && !(p in NOT_ACTIONS);
+    });
     expect(missing).toEqual([]);
   });
 
-  it('gives every action a touch control', () => {
+  it('names only files that exist, and every exemption still matches a key in its file', () => {
+    for (const a of ACTIONS) for (const f of a.files) expect(existsSync(join(ROOT, f)), `${a.id}: ${f}`).toBe(true);
+    const pairs = keysInSource();
+    for (const p of Object.keys(NOT_ACTIONS)) expect(pairs.has(p), p).toBe(true);
+  });
+
+  it('gives every action a touch control that exists, or a pending reason', () => {
     for (const a of ACTIONS) {
-      expect(['button', 'stick', 'gesture', 'dialog', 'browser'], a.id).toContain(a.touch);
-      if (a.touch === 'button') expect(a.when, a.id).toBeTruthy();
-      else expect(a.note ?? a.touch, a.id).toBeTruthy();
+      expect(['button', 'stick', 'gesture', 'dialog'], a.id).toContain(a.touch);
       expect(a.label, a.id).toMatch(/^touch\./);
+      if (a.touch === 'button') {
+        expect(a.when, a.id).toBeTruthy();
+        continue;
+      }
+      expect(a.control?.file && a.control?.has, `${a.id} names no control`).toBeTruthy();
+      const path = join(ROOT, a.control.file);
+      const has = existsSync(path) && readFileSync(path, 'utf8').includes(a.control.has);
+      if (a.id in PENDING) expect(has, `${a.id} is listed as pending but its control exists: remove it from PENDING`).toBe(false);
+      else expect(has, `${a.id}: ${a.control.file} has no "${a.control.has}"`).toBe(true);
     }
+    for (const id of Object.keys(PENDING)) expect(() => action(id)).not.toThrow();
   });
 
   it('puts every button action on the bar in at least one situation', () => {

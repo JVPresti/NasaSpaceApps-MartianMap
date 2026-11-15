@@ -3,10 +3,11 @@
 //
 //   node scripts/qa-mobile.mjs http://localhost:5173/ --out ~/.cache/marswalk-mobile/shots
 //
-// QA_GPU=1 uses a headed Chrome on the WSLg X server, which renders on the GPU (see the team's GPU Chrome notes);
-// without it the browser is headless and falls back to SwiftShader, which is slow but works on any machine.
-// CHROME sets the browser executable.
-import { mkdirSync } from 'node:fs';
+// CHROME sets the browser executable; without it the newest Playwright Chromium in ~/.cache/ms-playwright is used.
+// The browser is headless by default and renders with SwiftShader, which is slow but works on any machine.
+// QA_GPU=1 runs a headed Chrome off screen instead, for a machine with a display and a GPU. On WSL2 the X server is WSLg
+// and Mesa needs its d3d12 driver: set QA_GALLIUM=d3d12 (on Linux with a native GPU, leave it unset).
+import { existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
 
@@ -25,16 +26,28 @@ export const MIN_TARGET_PX = 44;
 export async function launch() {
   const gpu = process.env.QA_GPU === '1';
   if (gpu) {
-    process.env.GALLIUM_DRIVER = 'd3d12';
+    if (process.env.QA_GALLIUM) process.env.GALLIUM_DRIVER = process.env.QA_GALLIUM;
     process.env.DISPLAY ||= ':0';
   }
-  const executablePath = process.env.CHROME
-    || (process.env.HOME + '/.cache/ms-playwright/chromium-1247/chrome-linux64/chrome');
+  const executablePath = process.env.CHROME || playwrightChromium();
+  if (!executablePath) throw new Error('No browser: set CHROME to a Chrome or Chromium executable');
   const args = ['--no-sandbox', '--mute-audio', '--autoplay-policy=no-user-gesture-required',
     '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'];
   if (gpu) args.push('--ozone-platform=x11', '--use-gl=angle', '--use-angle=gl', '--ignore-gpu-blocklist',
     '--window-position=-4000,-4000', '--window-size=1366,1100');
   return puppeteer.launch({ executablePath, headless: !gpu, defaultViewport: null, args, protocolTimeout: 240_000 });
+}
+
+/** The newest full Chromium that Playwright installed, or null. */
+function playwrightChromium() {
+  const root = join(process.env.HOME || '', '.cache/ms-playwright');
+  if (!existsSync(root)) return null;
+  const builds = readdirSync(root).filter((d) => /^chromium-\d+$/.test(d)).sort((a, b) => Number(b.slice(9)) - Number(a.slice(9)));
+  for (const d of builds) {
+    const exe = join(root, d, 'chrome-linux64', 'chrome');
+    if (existsSync(exe)) return exe;
+  }
+  return null;
 }
 
 /** Sets a phone viewport with touch emulation on an open page (CDP, so `pointer: coarse` matches). */
