@@ -7,7 +7,7 @@ import { departRoute } from '../state/simulation.js';
 import { buildCostGrid, cellCost, heightAt } from './costGrid.js';
 import {
   checkNeeds, CREW_SETTINGS, DEFAULT_NEEDS, normaliseNeeds, OBJECTIVE_DEFAULTS, OBJECTIVE_IDS, OBJECTIVES, planFromNeeds, RISK_IDS,
-  RISK_SETTINGS, riskPricing, siteStart,
+  RISK_SETTINGS, riskPricing, siteStart, TIME_RANGE_MIN, timeRangeMin,
 } from './missionNeeds.js';
 import { planProfiles, pricedProfileGrid, ROUTE_PROFILES } from './routeProfiles.js';
 import { suitConstantsFromHazards } from './suitModel.js';
@@ -42,8 +42,8 @@ function flatGrid(n, slope = () => 0) {
 }
 
 // 200 m square. The habitat on the west edge, the sortie stop 20 m east of it, Cheyava Falls 170 m east and Bright
-// Angel 30 m south of the falls. Pair, required only: 170 s out, 1200 s of work, 170 s back = 25.7 min. With Bright
-// Angel (inserted before the falls): 203 s out, 2100 s of work, 203 s back = 41.8 min.
+// Angel 30 m south of the falls, 172.6 m from the habitat. Pair, required only: 170 s out, 1200 s of work, 170 s back
+// = 25.7 min. With Bright Angel first, as the goal text has it: 203 s out, 2100 s of work, 203 s back = 41.8 min.
 const STOPS = [
   { id: 'sortie', name: 'Sortie', waypoint: 'S1 · patch', x: -70, z: 0, workSec: 300 },
   { id: 'cheyava-falls', name: 'Cheyava Falls', waypoint: 'Cheyava Falls', x: 80, z: 0, workSec: 1200 },
@@ -62,6 +62,15 @@ describe('needs', () => {
     expect(normaliseNeeds({ objective: 'nope', crew: 3, timeMin: 5, o2Pct: 150, risk: 'wild' })).toEqual({ ...DEFAULT_NEEDS, timeMin: 10 });
   });
 
+  it('takes the longest time from the 8 h EVA limit in hazards.json, and caps the plan there (N22)', () => {
+    const hazards = readJson('public/data/hazards.json');
+    expect(TIME_RANGE_MIN[1]).toBe(hazards.values['suit.eva_duration_max'].value * 60);
+    expect(timeRangeMin(constants)).toEqual([10, constants.evaMaxSec / 60]);
+    const short = { ...constants, evaMaxSec: 3600 };
+    const plan = planFromNeeds({ objective: 'sortie', timeMin: 300 }, { ...site(), constants: short });
+    expect(plan.budget.availableSec).toBe(3600);
+  });
+
   it('checks an update: unknown keys and values throw, numbers are clamped to their range', () => {
     expect(checkNeeds({ timeMin: 900, o2Pct: 0 })).toEqual({ timeMin: 480, o2Pct: 1 });
     expect(() => checkNeeds({ crew: 3 })).toThrow(/crew/);
@@ -76,10 +85,10 @@ describe('each input changes the plan as stated', () => {
   it('objective: chooses the required and optional stops', () => {
     expect(ids(planFromNeeds({ objective: 'sortie' }, site()))).toEqual(['sortie']);
     expect(ids(planFromNeeds({ objective: 'cheyava', timeMin: 120 }, site()))).toEqual(['bright-angel', 'cheyava-falls']);
-    // the falls go where they add the least walking: on the way, 27 m more, rather than 30 m on and back
+    // the survey reaches Bright Angel, then the falls past it; the sample takes Bright Angel on the way to the falls
     const survey = planFromNeeds({ objective: 'bright-angel', timeMin: 120 }, site());
-    expect(ids(survey)).toEqual(['cheyava-falls', 'bright-angel']);
-    expect(survey.stops.map((s) => s.required)).toEqual([false, true]);
+    expect(ids(survey)).toEqual(['bright-angel', 'cheyava-falls']);
+    expect(survey.stops.map((s) => s.required)).toEqual([true, false]);
     expect(planFromNeeds({ objective: 'cheyava', timeMin: 120 }, site()).stops.map((s) => s.required)).toEqual([false, true]);
   });
 
@@ -96,7 +105,9 @@ describe('each input changes the plan as stated', () => {
     expect(dropped).toMatchObject({ id: 'bright-angel', limit: 'time', workSec: 900 });
     // with Bright Angel: 41.8 min against 34 min (40 min less the 15 % standard reserve)
     expect(dropped.overSec / 60).toBeCloseTo(41.8 - 34, 0);
-    expect(dropped.extraWalkSec).toBeGreaterThan(0);
+    // by Bright Angel to the falls, 32.6 m more each way: the walk out and the walk home together
+    expect(dropped.extraM).toBeCloseTo(65.2, 0);
+    expect(dropped.extraWalkSec).toBeCloseTo(65, -1);
     expect(tight.reasons.find((r) => r.code === 'stop-dropped')).toMatchObject({ stop: 'bright-angel', limit: 'time' });
   });
 
@@ -216,15 +227,72 @@ describe('each input changes the plan as stated', () => {
   });
 });
 
+describe('one set of stops whatever profile the table chose (P7)', () => {
+  // A 15 degree band (open ground) 10 m wide across the middle, with a way round from z = 42: the fastest profile
+  // walks across it (170 m), the gentlest, which cubes the slope, goes round (about 200 m).
+  const grid = flatGrid(101, (i, j) => (Math.abs(i - 50) <= 2 && j <= 70 ? 15 : 0));
+  const falls = STOPS.filter((s) => s.id !== 'bright-angel');
+  const plan = (profile, timeMin) => planFromNeeds({ objective: 'cheyava', timeMin, profile }, { ...site(grid, { mast: MAST }), stops: falls });
+
+  it('chooses the stops on the reference route and budgets the route the table chose', () => {
+    const fastest = plan('fastest', 120);
+    const gentlest = plan('gentlest', 120);
+    expect(gentlest.referenceProfile).toBe('fastest');
+    expect(gentlest.profile).toBe('gentlest');
+    expect(gentlest.waypoints).toEqual(fastest.waypoints);
+    expect(fastest.route.distance).toBeCloseTo(170, 0);
+    expect(gentlest.route.distance).toBeGreaterThan(180);
+    expect(gentlest.budget.walkSec).toBeGreaterThan(fastest.budget.walkSec);
+  });
+
+  it('says when the stops fit on the reference route but not on the profile chosen', () => {
+    // 30.8 min less the 15 % reserve: 26.2 min; across the band the plan takes 25.7 min, round it about 26.6 min
+    expect(plan('fastest', 30.8).fits).toBe(true);
+    const over = plan('gentlest', 30.8);
+    expect(over.fits).toBe(false);
+    expect(over.budget).toMatchObject({ fits: false, limit: 'time' });
+    expect(over.reasons.at(-1)).toMatchObject({ code: 'profile-over', profile: 'gentlest', reference: 'fastest', limit: 'time' });
+  });
+
+  it('keeps a solo crew\'s reference on the radio route it walks', () => {
+    const solo = planFromNeeds({ objective: 'cheyava', crew: 1, timeMin: 120, profile: 'gentlest' }, site(undefined, { mast: MAST }));
+    expect(solo).toMatchObject({ profile: 'radio', referenceProfile: 'radio' });
+  });
+});
+
+describe('stop order (P8)', () => {
+  it('walks each objective\'s stops in the order its goal text gives: Bright Angel, then Cheyava Falls', () => {
+    expect(OBJECTIVES.cheyava.order).toEqual(['bright-angel', 'cheyava-falls']);
+    expect(OBJECTIVES['bright-angel'].order).toEqual(['bright-angel', 'cheyava-falls']);
+    expect(ids(planFromNeeds({ objective: 'bright-angel', timeMin: 120 }, site()))).toEqual(['bright-angel', 'cheyava-falls']);
+    expect(ids(planFromNeeds({ objective: 'cheyava', timeMin: 120 }, site()))).toEqual(['bright-angel', 'cheyava-falls']);
+    // whatever the geometry: with the falls moved next to the habitat the order stays
+    const nearFalls = STOPS.map((s) => (s.id === 'cheyava-falls' ? { ...s, x: -60, z: 0 } : s));
+    expect(ids(planFromNeeds({ objective: 'cheyava', timeMin: 120 }, { ...site(), stops: nearFalls }))).toEqual(['bright-angel', 'cheyava-falls']);
+  });
+
+  it('does not depend on the profile or the risk', () => {
+    const orders = new Set();
+    for (const profile of ['fastest', 'gentlest', 'radio']) {
+      for (const risk of RISK_IDS) {
+        orders.add(ids(planFromNeeds({ objective: 'cheyava', timeMin: 240, profile, risk }, site(undefined, { mast: MAST }))).join('>'));
+      }
+    }
+    expect([...orders]).toEqual(['bright-angel>cheyava-falls']);
+  });
+});
+
 describe('the planned waypoints', () => {
   const plan = planFromNeeds({ objective: 'cheyava', timeMin: 120 }, site());
 
   it('start at the habitat and carry each stop\'s work time and card link', () => {
     expect(plan.waypoints[0]).toEqual({ name: 'HAB', x: -90, z: 0 });
     expect(plan.waypoints.slice(1)).toEqual([
-      { name: 'WP3 · Bright Angel outcrop', x: 80, z: 30, workSec: 900, stopId: 'bright-angel', required: false },
-      { name: 'Cheyava Falls', x: 80, z: 0, workSec: 1200, stopId: 'cheyava-falls', required: true },
+      { name: 'WP3 · Bright Angel outcrop', label: 'Bright Angel', x: 80, z: 30, workSec: 900, stopId: 'bright-angel', required: false },
+      { name: 'Cheyava Falls', label: 'Cheyava Falls', x: 80, z: 0, workSec: 1200, stopId: 'cheyava-falls', required: true },
     ]);
+    // one display name per stop: route.stops[k].name is the waypoint's label
+    expect(plan.stops.map((s) => s.name)).toEqual(plan.waypoints.slice(1).map((w) => w.label));
     expect(plan.weights).toMatchObject({ slopeLimitDeg: 20, slopePenaltyDeg: 9, rockWeight: 0.6, reserveShare: 0.15, workFactor: 1 });
   });
 
@@ -239,7 +307,9 @@ describe('the planned waypoints', () => {
   it('report a stop missing from the candidates, and no plan without its required stop', () => {
     const none = planFromNeeds({ objective: 'sortie' }, { ...site(), stops: STOPS.filter((s) => s.id !== 'sortie') });
     expect(none.ok).toBe(false);
-    expect(none.reasons).toEqual([{ code: 'stop-missing', stop: 'sortie' }, { code: 'no-stops' }]);
+    expect(none.reasons).toEqual([{ code: 'stop-missing', stop: 'sortie', name: 'Sortie' }, { code: 'no-stops' }]);
+    const noFalls = planFromNeeds({ objective: 'cheyava' }, { ...site(), stops: STOPS.filter((s) => s.id !== 'cheyava-falls') });
+    expect(noFalls.reasons[0]).toEqual({ code: 'stop-missing', stop: 'cheyava-falls', name: 'Cheyava Falls' });
   });
 });
 
@@ -282,7 +352,12 @@ describe('on the real terrain', () => {
     expect(plan.route.distance).toBeGreaterThan(50);
     expect(plan.route.distance).toBeLessThan(60);
     expect((plan.budget.walkSec + plan.budget.returnSec) / 60).toBeLessThan(2.5);
-    expect(plan.budget.workSec).toBe(300);
+    // D10: 2 min of work, so about 4 min outside in all
+    expect(plan.budget.workSec).toBe(120);
+    expect(plan.budget.usedSec / 60).toBeGreaterThan(3.5);
+    expect(plan.budget.usedSec / 60).toBeLessThan(4.5);
+    expect(plan.stops[0]).toMatchObject({ id: 'sortie', name: 'Light-toned patch', reason: { tag: 'SIM' } });
+    expect(plan.stops[0].reason.en).toMatch(/no rover has looked here/);
   });
 
   // The two contrasting plans of the PR (8-minute plan, section A): both GO, with different stops and lines.
@@ -332,6 +407,18 @@ describe('on the real terrain', () => {
     expect(ids(plan)).toEqual(['cheyava-falls']);
     expect(plan.reasons.at(-1)).toMatchObject({ code: 'required-over', limit: 'time' });
     expect(plan.reasons.at(-1).overSec / 60).toBeGreaterThan(40);
+  });
+
+  it('compares the same stops in every profile column whichever profile is chosen (P7, the commander\'s case)', () => {
+    const columns = (profile) => {
+      const plan = planFromNeeds({ objective: 'cheyava', crew: 2, timeMin: 240, profile }, real);
+      const planned = planProfiles(grid, plan.waypoints, { mast, cache: real.cache, pricing: plan.pricing, constants });
+      return { stops: ids(plan), columns: Object.fromEntries(Object.entries(planned).map(([id, p]) => [id, [p.distance, p.path.length]])) };
+    };
+    const fastest = columns('fastest');
+    expect(fastest.stops).toEqual(['bright-angel', 'cheyava-falls']);
+    expect(columns('gentlest')).toEqual(fastest);
+    expect(columns('radio')).toEqual(fastest);
   });
 
   it('keeps today\'s cost for the default needs, so the standard grids are the route profiles of #245', () => {

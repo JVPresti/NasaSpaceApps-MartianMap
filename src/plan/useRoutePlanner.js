@@ -5,7 +5,7 @@ import { routeStopCandidates, STOPS_PATH } from '../data/stops.js';
 import { parseTraverse, TRAVERSE_PATH } from '../data/traverse.js';
 import { heightAt } from '../sim/costGrid.js';
 import { startConsumables } from '../sim/legCosts.js';
-import { needsKey, planSources, riskPricing, siteStart } from '../sim/missionNeeds.js';
+import { needsKey, riskPricing, siteStart } from '../sim/missionNeeds.js';
 import { mastKey, profileSources, summariseProfiles } from '../sim/routeProfiles.js';
 import { createRoutePlannerClient } from '../sim/routePlannerClient.js';
 import { SHELTERS_PATH } from '../sim/shelters.js';
@@ -151,7 +151,8 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
         clientRef.current = client;
         heightAtRef.current = (x, z) => heightAt(grid, x, z);
         constantsRef.current = suitConstantsFromHazards(hazards);
-        sourcesRef.current = { ...profileSources(hazards), ...planSources(hazards) };
+        // the plan's fields (route.stops, route.budget, route.explain ...) resolve from the registry, src/data/provenance.js
+        sourcesRef.current = profileSources(hazards);
         siteRef.current = buildSite(routeJson, sheltersJson, stopsJson, traverseJson, constantsRef.current);
         setState({ status: 'ready', error: null });
         setDataReady(true);

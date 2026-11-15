@@ -11,31 +11,39 @@
  * - crew: a solo astronaut must stay in radio contact (the radio-contact profile is forced) and works 1.5 times as
  *   long at each stop; a pair shares the work (the stops.json work times are for a pair).
  * - timeMin, o2Pct, batteryPct: the budget. Optional stops are added in the objective's order while the plan still fits,
- *   each priced with findDetour (rankInsertions, priceDetour) and checked with routeLegCosts.
+ *   each checked with routeLegCosts on the planned route, walk out, work and walk home together.
  * - risk: the slope penalty, the rock weight, the reserve kept out of the budget and the oxygen margin required;
  *   cautious also prefers ground Perseverance drove. The 20 degree suited limit never moves (#242: 17 degrees leaves
  *   no route), because every profile grid shares the base grid's closed cells.
- * - profile: the terrain preference the crew chose at the table (#245, routeProfiles.js).
+ * - profile: the terrain preference the crew chose at the table (#245, routeProfiles.js). It sets the route walked and
+ *   the budget of that route, never the stops: they are chosen on one reference route (the fastest, or the radio route
+ *   a solo crew must walk), so the three profile columns always compare the same stops (round 1 review, P7).
+ *
+ * Stop order (P8, the product owner's call): each objective walks its stops in one fixed order, the order its goal
+ * text gives (OBJECTIVES order): Bright Angel on the way, then Cheyava Falls, as Perseverance came down Neretva Vallis.
+ * The order never depends on the profile, the risk or the time. Only a stop an objective does not list is placed by
+ * straight-line distance from the airlock, nearest first.
  *
  * Output is machine-readable: codes and numbers, never sentences (the mission table translates them).
  *
  * Plain JavaScript with no React and no three.js: it runs in the planner worker and in tests.
  */
 import { COST_CONSTANTS, heightAt } from './costGrid.js';
-import { insertFindWaypoint, priceDetour, rankInsertions } from './findDetour.js';
-import { legCostSources, routeLegCosts, startConsumables } from './legCosts.js';
+import { routeLegCosts, startConsumables } from './legCosts.js';
 import { DEFAULT_PROFILE, planOnProfile, pricedProfileGrid, PROFILE_IDS, ROUTE_PROFILES } from './routeProfiles.js';
 
 /**
- * What each objective visits, by stop id (stops.json). Optional stops are added in this order while the plan fits.
+ * What each objective visits, by stop id (stops.json). Optional stops are added in the `optional` order while the plan
+ * fits; `order` is the walking order of whatever is kept, as the goal text gives it.
  * - sortie: the short first mission (#265), one light-toned patch 55 m from the airlock.
- * - cheyava: sample Cheyava Falls; Bright Angel, 51 m short of it on the way, if there is time.
+ * - cheyava: sample Cheyava Falls; Bright Angel on the way, if there is time.
  * - bright-angel: survey the Bright Angel outcrop; Cheyava Falls, 51 m past it, if there is time.
  */
+const FULL_EVA_ORDER = Object.freeze(['bright-angel', 'cheyava-falls']);
 export const OBJECTIVES = Object.freeze({
-  sortie: Object.freeze({ required: Object.freeze(['sortie']), optional: Object.freeze([]) }),
-  cheyava: Object.freeze({ required: Object.freeze(['cheyava-falls']), optional: Object.freeze(['bright-angel']) }),
-  'bright-angel': Object.freeze({ required: Object.freeze(['bright-angel']), optional: Object.freeze(['cheyava-falls']) }),
+  sortie: Object.freeze({ required: Object.freeze(['sortie']), optional: Object.freeze([]), order: Object.freeze(['sortie']) }),
+  cheyava: Object.freeze({ required: Object.freeze(['cheyava-falls']), optional: Object.freeze(['bright-angel']), order: FULL_EVA_ORDER }),
+  'bright-angel': Object.freeze({ required: Object.freeze(['bright-angel']), optional: Object.freeze(['cheyava-falls']), order: FULL_EVA_ORDER }),
 });
 export const OBJECTIVE_IDS = Object.freeze(Object.keys(OBJECTIVES));
 
@@ -67,8 +75,21 @@ export const RISK_SETTINGS = Object.freeze({
 });
 export const RISK_IDS = Object.freeze(Object.keys(RISK_SETTINGS));
 
-/** Time available: from 10 min to the 8 h xEMU EVA limit (hazards.json suit.eva_duration_max). Minutes. */
+/**
+ * Time available: from 10 min to the 8 h xEMU EVA limit, hazards.json suit.eva_duration_max (missionNeeds.test.js
+ * fails if the two drift apart). With the hazards loaded, read the range from {@link timeRangeMin}; planFromNeeds
+ * caps the time at constants.evaMaxSec. Minutes.
+ */
 export const TIME_RANGE_MIN = Object.freeze([10, 480]);
+
+/**
+ * The time range from the suit constants: 10 min to suit.eva_duration_max.
+ * @param {{ evaMaxSec: number }} constants from suitConstantsFromHazards
+ * @returns {[number, number]} minutes
+ */
+export function timeRangeMin(constants) {
+  return [TIME_RANGE_MIN[0], finite(constants?.evaMaxSec) ? constants.evaMaxSec / 60 : TIME_RANGE_MIN[1]];
+}
 /** O2 and battery at the start, percent of the primary tank and battery. */
 export const CONSUMABLE_RANGE_PCT = Object.freeze([1, 100]);
 
@@ -151,9 +172,30 @@ export function siteStart(anchors) {
   return { name: hab.name, x: hab.x, z: hab.z };
 }
 
-/** A candidate stop as a route waypoint: the stops.json waypoint name (stopForWaypoint links it to its card). */
+/**
+ * A candidate stop as a route waypoint. `name` is the stops.json waypoint name, the key the card, the waypoint runner
+ * and the event runner link by (stopForWaypoint, route.visited); `label` is the stop's one display name (stops.json
+ * name). The table and the map number the waypoints by position (waypointNumber) and show `label`, never the code
+ * inside `name`.
+ */
 function stopWaypoint(stop, workFactor, required) {
-  return { name: stop.waypoint, x: stop.x, z: stop.z, workSec: Math.round(stop.workSec * workFactor), stopId: stop.id, required };
+  return { name: stop.waypoint, label: stop.name, x: stop.x, z: stop.z, workSec: Math.round(stop.workSec * workFactor), stopId: stop.id, required };
+}
+
+/** A readable name for a stop id the candidates do not have (a stops.json error): 'cheyava-falls' -> 'Cheyava Falls'. */
+function nameFromId(id) {
+  return String(id).split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
+
+/**
+ * The stops in walking order after the start: the objective's order, then any stop it does not list, nearest the start
+ * first by straight-line distance (ties by id).
+ */
+function walkingOrder(start, stops, order = []) {
+  const rank = (w) => (order.includes(w.stopId) ? order.indexOf(w.stopId) : order.length);
+  const distance = (w) => Math.hypot(w.x - start.x, w.z - start.z);
+  const byOrder = (a, b) => rank(a) - rank(b) || distance(a) - distance(b) || String(a.stopId).localeCompare(String(b.stopId));
+  return [start, ...stops.slice().sort(byOrder)];
 }
 
 /**
@@ -196,9 +238,9 @@ function checkBudget(totals, budget) {
  *   shared with routeProfiles.planProfiles so the comparison reuses the routes searched here
  * @returns {{
  *   ok: boolean, fits: boolean, needs: object, waypoints: Array<object>, stops: Array<object>, dropped: Array<object>,
- *   profile: string, requestedProfile: string, pricing: object | null, weights: object, budget: object,
- *   reasons: Array<object>, route: object | null, totals: object | null
- * }}
+ *   profile: string, requestedProfile: string, referenceProfile: string, pricing: object | null, weights: object,
+ *   budget: object, reasons: Array<object>, route: object | null, totals: object | null
+ * }} profile: the route walked and budgeted; referenceProfile: the route the stops were chosen on
  */
 export function planFromNeeds(needs, site) {
   const n = normaliseNeeds(needs);
@@ -212,23 +254,29 @@ export function planFromNeeds(needs, site) {
   const reasons = [];
 
   // Profile: the crew's choice, or radio contact for a solo crew; without the habitat mast there is no radio route.
+  const profileOf = (id) => ROUTE_PROFILES.find((p) => p.id === id);
   const requestedProfile = PROFILE_IDS.includes(needs?.profile) ? needs.profile : DEFAULT_PROFILE;
   let profileId = crew.profile ?? requestedProfile;
   if (crew.profile) reasons.push({ code: 'solo-radio', requested: requestedProfile });
-  let priced = pricedProfileGrid(grid, ROUTE_PROFILES.find((p) => p.id === profileId), { mast, pricing, traverse, cache });
+  let priced = pricedProfileGrid(grid, profileOf(profileId), { mast, pricing, traverse, cache });
   if (!priced) {
     const fallback = requestedProfile === profileId ? DEFAULT_PROFILE : requestedProfile;
     reasons.push({ code: 'radio-unavailable', profile: fallback });
     profileId = fallback;
-    priced = pricedProfileGrid(grid, ROUTE_PROFILES.find((p) => p.id === profileId), { mast, pricing, traverse, cache });
+    priced = pricedProfileGrid(grid, profileOf(profileId), { mast, pricing, traverse, cache });
   }
+  // The stops are chosen on one reference route, whatever the table chose: the radio route a solo crew walks, the
+  // fastest otherwise. A click on another profile then changes the route walked and its budget, never the stops.
+  const referenceProfile = crew.profile && profileId === crew.profile ? crew.profile : DEFAULT_PROFILE;
+  const reference = referenceProfile === profileId ? priced : pricedProfileGrid(grid, profileOf(referenceProfile), { mast, pricing, traverse, cache });
   if (crew.workFactor !== 1) reasons.push({ code: 'solo-work', factor: crew.workFactor });
   if (pricing) {
     reasons.push({ code: 'risk', risk: n.risk, slopePenaltyDeg: risk.slopePenaltyDeg, rockWeight: risk.rockWeight, traverseDiscount: risk.traverseDiscount, reserveShare: risk.reserveShare });
   }
 
   const { o2StartG, batteryStartWh } = startConsumables(n, c);
-  const availableSec = n.timeMin * 60;
+  // The time available never passes the xEMU EVA limit (hazards.json suit.eva_duration_max).
+  const availableSec = Math.min(n.timeMin * 60, c.evaMaxSec);
   const reserveSec = availableSec * risk.reserveShare;
   const budget = {
     availableSec,
@@ -241,27 +289,31 @@ export function planFromNeeds(needs, site) {
     batteryReserveWh: risk.reserveShare * c.batteryWh,
   };
   const h = (x, z) => heightAt(grid, x, z);
-  const evaluate = (chain) => {
-    const route = planOnProfile(priced, chain, cache);
+  const evaluate = (chain, on) => {
+    const route = planOnProfile(on, chain, cache);
     if (!route.ok) return { ok: false, route };
     const costs = routeLegCosts(route.path, chain, h, c, { o2StartG, batteryStartWh });
     return { ok: true, route, totals: costs.totals, check: checkBudget(costs.totals, budget) };
   };
+  // What a stop adds: the walk out and home together (the walk home retraces the path), and its work.
+  const walking = (e) => e.totals.walkSec + (e.totals.roundTrip ? 0 : e.totals.returnTimeSec);
+  const walked = (e) => e.totals.distanceM + (e.totals.roundTrip ? 0 : e.totals.returnDistanceM);
 
-  // Required stops, each where it adds the least straight-line walking.
   const byId = new Map((site.stops ?? []).map((s) => [s.id, s]));
-  let chain = [start];
+  const nameOf = (id) => byId.get(id)?.name ?? nameFromId(id);
+  const kept = [];
   for (const id of objective.required) {
     const stop = byId.get(id);
-    if (!stop) { reasons.push({ code: 'stop-missing', stop: id }); continue; }
-    const [{ k }] = rankInsertions(chain, stop);
-    chain = insertFindWaypoint(chain, stopWaypoint(stop, crew.workFactor, true), k + 1, 1);
+    if (!stop) { reasons.push({ code: 'stop-missing', stop: id, name: nameOf(id) }); continue; }
+    kept.push(stopWaypoint(stop, crew.workFactor, true));
   }
+  let chain = walkingOrder(start, kept, objective.order);
 
   const result = (fields) => ({
     needs: n,
     profile: profileId,
     requestedProfile,
+    referenceProfile,
     pricing,
     weights: {
       slopeLimitDeg: COST_CONSTANTS.SLOPE_LIMIT_DEG,
@@ -273,56 +325,58 @@ export function planFromNeeds(needs, site) {
     },
     reasons,
     ...fields,
-    stops: fields.waypoints.slice(1).map((w) => ({ id: w.stopId, name: byId.get(w.stopId)?.name ?? w.name, waypoint: w.name, x: w.x, z: w.z, workSec: w.workSec, required: w.required })),
+    stops: fields.waypoints.slice(1).map((w) => ({
+      id: w.stopId, name: w.label, waypoint: w.name, x: w.x, z: w.z, workSec: w.workSec, required: w.required, reason: byId.get(w.stopId)?.reason ?? null,
+    })),
   });
-
-  if (chain.length < 2) {
-    reasons.push({ code: 'no-stops' });
+  const failed = (code) => {
+    reasons.push(code === 'no-stops' ? { code } : { code, stops: objective.required.slice(), names: objective.required.map(nameOf) });
     return result({ ok: false, fits: false, waypoints: chain, dropped: [], budget: { ...budget, fits: false, limit: null }, route: null, totals: null });
-  }
-  let current = evaluate(chain);
-  if (!current.ok) {
-    reasons.push({ code: 'unreachable', stops: objective.required.slice() });
-    return result({ ok: false, fits: false, waypoints: chain, dropped: [], budget: { ...budget, fits: false, limit: null }, route: null, totals: null });
-  }
+  };
 
-  // Optional stops in the objective's order: priced at their cheapest insertion, kept while the plan still fits.
+  if (chain.length < 2) return failed('no-stops');
+  let current = evaluate(chain, reference);
+  if (!current.ok) return failed('unreachable');
+
+  // Optional stops in the objective's order, each kept while the plan with it still fits on the reference route.
   const dropped = [];
   for (const id of objective.optional) {
     const stop = byId.get(id);
-    if (!stop) { reasons.push({ code: 'stop-missing', stop: id }); continue; }
+    if (!stop) { reasons.push({ code: 'stop-missing', stop: id, name: nameOf(id) }); continue; }
     const waypoint = stopWaypoint(stop, crew.workFactor, false);
-    const detour = priceDetour(priced.grid, { position: start, waypoints: chain, nextIndex: 1, find: waypoint, constants: c });
-    if (!detour.ok) {
-      dropped.push({ id, name: stop.name, limit: 'unreachable', overSec: null, marginShortSec: null, batteryShortWh: null, extraWalkSec: null, extraM: null, workSec: waypoint.workSec });
-      reasons.push({ code: 'stop-dropped', stop: id, limit: 'unreachable' });
-      continue;
-    }
-    const candidate = insertFindWaypoint(chain, waypoint, detour.insertIndex, 1);
-    const tried = evaluate(candidate);
-    const numbers = { extraWalkSec: detour.extraSec, extraM: detour.extraM, workSec: waypoint.workSec };
+    const candidate = walkingOrder(start, [...chain.slice(1), waypoint], objective.order);
+    const tried = evaluate(candidate, reference);
     if (tried.ok && tried.check.fits) {
+      reasons.push({ code: 'stop-added', stop: id, name: stop.name, extraWalkSec: walking(tried) - walking(current), extraM: walked(tried) - walked(current), workSec: waypoint.workSec });
       chain = candidate;
       current = tried;
-      reasons.push({ code: 'stop-added', stop: id, ...numbers });
       continue;
     }
-    const limit = tried.ok ? tried.check.limit : 'unreachable';
-    const over = tried.ok
-      ? { overSec: Math.max(0, tried.check.overSec), marginShortSec: tried.check.marginShortSec, batteryShortWh: tried.check.batteryShortWh }
-      : { overSec: null, marginShortSec: null, batteryShortWh: null };
-    dropped.push({ id, name: stop.name, limit, ...over, ...numbers });
-    reasons.push({ code: 'stop-dropped', stop: id, limit, ...over, ...numbers });
+    const entry = tried.ok
+      ? {
+        limit: tried.check.limit, overSec: Math.max(0, tried.check.overSec), marginShortSec: tried.check.marginShortSec,
+        batteryShortWh: tried.check.batteryShortWh, extraWalkSec: walking(tried) - walking(current), extraM: walked(tried) - walked(current),
+      }
+      : { limit: 'unreachable', overSec: null, marginShortSec: null, batteryShortWh: null, extraWalkSec: null, extraM: null };
+    dropped.push({ id, name: stop.name, ...entry, workSec: waypoint.workSec });
+    reasons.push({ code: 'stop-dropped', stop: id, name: stop.name, ...entry, workSec: waypoint.workSec });
   }
 
-  const { check, totals } = current;
+  // The route walked: the profile in use on the same stops. Its budget is the plan's verdict.
+  const walkedPlan = reference === priced ? current : evaluate(chain, priced);
+  if (!walkedPlan.ok) {
+    reasons.push({ code: 'profile-unreachable', profile: profileId });
+    return result({ ok: false, fits: false, waypoints: chain, dropped, budget: { ...budget, fits: false, limit: null }, route: null, totals: null });
+  }
+  const { check, totals } = walkedPlan;
+  const over = { limit: check.limit, limits: check.limits, overSec: Math.max(0, check.overSec), marginShortSec: check.marginShortSec, batteryShortWh: check.batteryShortWh };
   if (check.fits) {
     reasons.push({ code: 'fits', spareSec: -check.overSec });
+  } else if (!current.check.fits) {
+    reasons.push({ code: 'required-over', stops: objective.required.slice(), names: objective.required.map(nameOf), ...over });
   } else {
-    reasons.push({
-      code: 'required-over', stops: objective.required.slice(), limit: check.limit, limits: check.limits,
-      overSec: Math.max(0, check.overSec), marginShortSec: check.marginShortSec, batteryShortWh: check.batteryShortWh,
-    });
+    // the stops fit on the reference route, not on the profile chosen at the table
+    reasons.push({ code: 'profile-over', profile: profileId, reference: referenceProfile, ...over });
   }
 
   return result({
@@ -344,7 +398,7 @@ export function planFromNeeds(needs, site) {
       fits: check.fits,
       limit: check.limit,
     },
-    route: current.route,
+    route: walkedPlan.route,
     totals,
   });
 }
@@ -353,27 +407,4 @@ export function planFromNeeds(needs, site) {
 export function needsKey(needs) {
   const n = normaliseNeeds(needs);
   return NEEDS_KEYS.map((k) => n[k]).join('|');
-}
-
-/**
- * Source entries for the plan's fields in the store (route.stops, route.dropped, route.planReasons, route.budget,
- * route.weights, route.explain) and for the needs the crew sets. Time and O2 take the tags legCostSources gives
- * route.totals, so the budget carries the same tags as the route panel.
- * @param {object} hazards public/data/hazards.json
- * @returns {Record<string, { tag: string, source: string }>}
- */
-export function planSources(hazards) {
-  const legs = legCostSources(hazards);
-  return {
-    'route.stops': { tag: 'SIM', source: 'stops chosen from stops.json by the objective, then kept while the plan fits the time, O2 and battery (src/sim/missionNeeds.js)' },
-    'route.dropped': { tag: 'SIM', source: 'optional stops left out: with them the plan goes over the time less the reserve, under the O2 margin floor or under the battery reserve' },
-    'route.planReasons': { tag: 'SIM', source: 'why the plan is what it is: the crew rules, the risk setting and each stop added or dropped (src/sim/missionNeeds.js)' },
-    'route.weights': { tag: 'SIM', source: 'risk setting: slope penalty, rock weight, rover-ground discount and reserve are our choice; the 20 degree limit is NASA\'s suited walking limit and never moves' },
-    'route.budget': { tag: 'SIM', source: 'time available set by the crew, less the risk reserve; the walk out, the work at the stops and the walk home from the suit model' },
-    'route.budget.usedSec': { ...legs['route.totals.timeSec'] },
-    'route.budget.marginSec': { ...legs['route.totals.marginSec'] },
-    'route.explain': { tag: 'DERIVED', source: 'straight line between the ends of each leg, tested on the HiRISE height map against the 20 degree limit like the planner (isSegmentClear)' },
-    'route.explain.extraM': { tag: 'DERIVED', source: 'planned leg length on the HiRISE height map minus its straight line' },
-    'route.explain.extraSec': { ...legs['route.legs.walkSec'] },
-  };
 }
