@@ -101,6 +101,37 @@ describe('taskProgress', () => {
     expect(rows[1].place).toMatchObject({ x: null, z: null });
   });
 
+  it('counts the kept tasks first: a left-out task at the same place never takes the photo a kept task needs', () => {
+    const tasks = [
+      task('t1', 'rock', 1, BRIGHT_ANGEL),
+      task('t2', 'photo', 3, BRIGHT_ANGEL, { kept: false, drop: { limit: 'time' } }),
+      task('t3', 'photo', 1, BRIGHT_ANGEL),
+    ];
+    const rows = taskProgress(tasks, { photoLog: [{ ...photo(-11, -50, 100), site: 'Bright Angel' }] });
+    expect(rows.map((r) => r.id)).toEqual(['t1', 't2', 't3']);   // still in list order
+    expect(rows[2]).toMatchObject({ kept: true, here: 1, state: 'done', atSec: 100 });
+    expect(rows[1]).toMatchObject({ kept: false, here: 0, elsewhere: 0, state: 'open' });
+    expect(tasksAt(rows, { x: -11, z: -49 }).filter((r) => r.kept).map((r) => `${r.id}:${r.here}/${r.count}`)).toEqual(['t1:0/1', 't3:1/1']);
+  });
+
+  it('counts the kept tasks first in the second pass too: a scoop just outside a kept place is that task\'s, not a left-out one\'s', () => {
+    const P2 = { ...P1, key: 'P2', label: 'P2', x: 300, z: 0, waypoint: 'P2 · task point' };
+    const P3 = { ...P1, key: 'P3', label: 'P3', x: 100, z: 0, waypoint: 'P3 · task point' };
+    const tasks = [
+      task('t1', 'rock', 1, { ...P1, x: 0, z: 0 }),
+      task('t2', 'soil', 1, P2, { kept: false, drop: { limit: 'time' } }),
+      task('t3', 'soil', 1, P3),
+    ];
+    // 11 m from P3, past its 8 + 2 m
+    const rows = taskProgress(tasks, { samples: [sample(1, 'ground', 111, 0, 200)] });
+    expect(rows[2]).toMatchObject({ kept: true, here: 0, elsewhere: 1, state: 'elsewhere', atSec: 200 });
+    expect(rows[1]).toMatchObject({ kept: false, here: 0, elsewhere: 0, state: 'open' });
+    // a record at the left-out task's own place, with no kept task short of one, is still the left-out task's
+    const atP2 = taskProgress(tasks, { samples: [sample(1, 'ground', 111, 0, 200), sample(2, 'ground', 301, 0, 210)] });
+    expect(atP2[1]).toMatchObject({ here: 1, state: 'done' });
+    expect(atP2[2]).toMatchObject({ elsewhere: 1, state: 'elsewhere' });
+  });
+
   it('is empty without tasks', () => {
     expect(taskProgress([], { samples: [sample(1, 'rock', 0, 0, 1)] })).toEqual([]);
     expect(taskProgress(undefined, undefined)).toEqual([]);

@@ -14,6 +14,8 @@
  * has two passes, and each record counts once:
  *   1. tasks in list order take the unused matching records at their place, oldest first, up to their count (`here`);
  *   2. tasks still short take unused matching records anywhere, oldest first, up to what is missing (`elsewhere`).
+ * The tasks the plan kept go through both passes first, then the tasks it left out, so a left-out task never takes a
+ * record from a kept one.
  * A task is 'done' with all its items at the place, 'elsewhere' when the count is complete only with records from
  * elsewhere, and 'open' otherwise. Nothing holds the crew at a place: an open task simply stays open.
  *
@@ -98,20 +100,26 @@ export function taskProgress(tasks, sampling = {}) {
     elsewhere: [],
   }));
 
-  // Pass 1: at the place first, every task in list order.
-  for (const row of rows) {
-    for (const item of pool(row.task.what)) {
-      if (row.here.length >= row.count) break;
-      if (!item.used && atPlace(row.place, row.site, item.record)) { item.used = true; row.here.push(item.record); }
+  const count = (group) => {
+    // Pass 1: at the place first, every task of the group in list order.
+    for (const row of group) {
+      for (const item of pool(row.task.what)) {
+        if (row.here.length >= row.count) break;
+        if (!item.used && atPlace(row.place, row.site, item.record)) { item.used = true; row.here.push(item.record); }
+      }
     }
-  }
-  // Pass 2: what is still missing, from anywhere.
-  for (const row of rows) {
-    for (const item of pool(row.task.what)) {
-      if (row.here.length + row.elsewhere.length >= row.count) break;
-      if (!item.used) { item.used = true; row.elsewhere.push(item.record); }
+    // Pass 2: what is still missing, from anywhere.
+    for (const row of group) {
+      for (const item of pool(row.task.what)) {
+        if (row.here.length + row.elsewhere.length >= row.count) break;
+        if (!item.used) { item.used = true; row.elsewhere.push(item.record); }
+      }
     }
-  }
+  };
+  // The tasks the plan kept count first, both passes, then the ones it left out: a left-out task never takes a record a
+  // kept one could count. The rows still come back in list order.
+  count(rows.filter((row) => row.task.kept !== false));
+  count(rows.filter((row) => row.task.kept === false));
 
   return rows.map(({ task, place, count, here, elsewhere }) => {
     const counted = [...here, ...elsewhere];
