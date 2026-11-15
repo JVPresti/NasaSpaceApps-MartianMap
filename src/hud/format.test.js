@@ -3,10 +3,14 @@ import { batteryLevel, bearingDeg, cardinal, formatEva, formatMinutes, formatVal
 import { NAV_FIX_LIMIT_M, formatFixAge, formatNavError, formatNavLine, navFixPrompt, needsFix } from './format.js';
 
 describe('formatting', () => {
-  it('formats the EVA time as h:mm and shows dashes when unknown', () => {
-    expect(formatEva(103 * 60)).toBe('1:43');
-    expect(formatEva(59)).toBe('0:00');
-    expect(formatEva(null)).toBe('–:––');
+  it('formats the EVA time as h:mm:ss, the debrief format without T+, and shows dashes when unknown', () => {
+    expect(formatEva(103 * 60)).toBe('1:43:00');
+    expect(formatEva(104.9)).toBe('0:01:44');
+    expect(formatEva(59)).toBe('0:00:59');
+    expect(formatEva(0)).toBe('0:00:00');
+    expect(formatEva(3 * 3600 + 5)).toBe('3:00:05');
+    expect(formatEva(null)).toBe('–:––:––');
+    expect(formatEva(-1)).toBe('–:––:––');
   });
   it('shows a dash for unknown values, never 0', () => {
     expect(formatValue(null)).toBe('–');

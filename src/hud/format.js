@@ -12,18 +12,21 @@ export const ETA_SPEED_MS = 1.0;
 const dash = '–';
 const num = (v) => typeof v === 'number' && Number.isFinite(v);
 
-/** 'h:mm' for an elapsed time in seconds, '–:––' when unknown. */
+/**
+ * 'h:mm:ss' for an elapsed time in seconds, '–:––:––' when unknown: the EVA clock of the visor pill and the mission table's
+ * header. The seconds show it running (a first mission lasts minutes and its events are timed in seconds), and it is the
+ * debrief's format without the 'T+' (src/debrief/format.js formatMissionTime).
+ */
 export function formatEva(sec) {
-  if (!num(sec) || sec < 0) return dash + ':' + dash + dash;
-  const m = Math.floor(sec / 60);
-  return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0');
+  if (!num(sec) || sec < 0) return dash + ':' + dash + dash + ':' + dash + dash;
+  const s = Math.floor(sec), pad = (n) => String(n).padStart(2, '0');
+  return Math.floor(s / 3600) + ':' + pad(Math.floor((s % 3600) / 60)) + ':' + pad(s % 60);
 }
 
 /** Rounded value as text, or a dash when the value is not known yet (the store uses null for that). */
 export function formatValue(v, digits = 0) {
   return num(v) ? formatNumber(v, digits) : dash;
 }
-
 /** Whole minutes from seconds, rounded, with a sign when asked: '+41', '-3'. */
 export function formatMinutes(sec, { signed = false } = {}) {
   if (!num(sec)) return dash;
