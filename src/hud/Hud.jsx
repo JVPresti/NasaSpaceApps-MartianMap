@@ -2,7 +2,7 @@ import { t, formatNumber } from '../i18n/index.js';
 // Helmet HUD (issue #20): what the astronaut reads while walking. Every value comes from the mission store; the store
 // changes a few times per second (suit 4 Hz, position 5 Hz), so these components re-render at that rate, never per frame.
 // Layout follows the v3 "Caminar · Normal" mockup; final Figma measurements come later (#11).
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
@@ -14,6 +14,9 @@ import RadioLink from './RadioLink.jsx';
 import LayerChip from './LayerChip.jsx';
 import SlopeAhead from './SlopeAhead.jsx';
 import * as I from './icons.jsx';
+import { clearOfRects, createPanelRects } from './labelClear.js';
+import { applyVisorClasses, isDetailToggle, samplingInProgress } from './visorMode.js';
+import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import NavLine from './NavLine.jsx';
 import Minimap from './Minimap.jsx';
 import './hud.css';
@@ -222,21 +225,26 @@ function WaypointMarker({ engine }) {
 
   useEffect(() => {
     if (!engine || !hasTarget) return undefined;
-    let frame = 0;
+    let frame = 0, panels = null;
     const draw = () => {
       frame = requestAnimationFrame(draw);
       const m = marker.current, a = arrow.current, t = target.current;
       if (!m || !a) return;
       const box = m.parentElement;   // the .hud overlay, inset 0 over the engine container
       const place = t && box ? placeMarker(engine, t, box.clientWidth, box.clientHeight) : null;
-      m.style.visibility = place?.mode === 'marker' ? 'visible' : 'hidden';
+      // a world label behind a HUD panel shows through it and reads as a glitch (#283). Move it beside the panel, or hide
+      // it when there is no clear spot, since the panel below already names the waypoint and its range
+      if (place?.mode === 'marker' && box && !panels) panels = createPanelRects(box);
+      const p = place?.mode === 'marker' ? panels.get(m) : null;
+      const clear = p ? clearOfRects(place, p.w, p.h, p.rects) : true;
+      m.style.visibility = place?.mode === 'marker' && clear ? 'visible' : 'hidden';
       a.style.visibility = place?.mode === 'edge' ? 'visible' : 'hidden';
       if (!place) return;
       const el = place.mode === 'marker' ? m : a;
       el.style.transform = `translate(${place.x}px, ${place.y}px) translate(-50%, -50%)` + (place.mode === 'edge' ? ` rotate(${place.angle}deg)` : '');
     };
     draw();
-    return () => cancelAnimationFrame(frame);
+    return () => { cancelAnimationFrame(frame); if (panels) panels.dispose(); };
   }, [engine, hasTarget]);
 
   if (!info) return null;
@@ -259,6 +267,51 @@ function WaypointMarker({ engine }) {
   );
 }
 
+// I shows every instrument (#283). By default the visor keeps what a walk needs: heading, EVA clock, suit and margin,
+// next waypoint, partner and minimap. The full set adds the environment strip, the navigation and radio lines, the
+// sampling checklist, local solar time and the source tag of each reading. A panel that is warning stays visible.
+function useHudDetail() {
+  const [detail, setDetail] = useState(false);
+  useEffect(() => {
+    const onKey = (e) => {
+      if (isDetailToggle(e, { wristOwnsKeys: wristOwnsKeys(), dialogOpen: !!document.querySelector('dialog[open]') })) setDetail((v) => !v);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  return detail;
+}
+
+/**
+ * The two keys a first-time player needs to find everything else. It also owns the visor's mode classes on the .hud
+ * element: hud-detail while I is on, hud-sampling-on while a rock or the soil is in view or a sample is under way (the
+ * checklist also shows while a science card is open, see hud.css).
+ */
+function KeyHint({ engine }) {
+  const ref = useRef(null);
+  // hud-wrist while the wrist screen is up (#286): the waypoint panel folds to its header row (hud.css)
+  useEffect(() => {
+    const hud = ref.current && ref.current.closest('.hud');
+    if (!hud || !engine || typeof engine.subscribeWrist !== 'function') return undefined;
+    const off = engine.subscribeWrist((state) => hud.classList.toggle('hud-wrist', state?.open === true));
+    return () => { if (typeof off === 'function') off(); hud.classList.remove('hud-wrist'); };
+  }, [engine]);
+  const detail = useHudDetail();
+  const sampling = useMissionStore(samplingInProgress);
+  useLayoutEffect(() => {
+    const hud = ref.current && ref.current.closest('.hud');
+    if (!hud) return undefined;
+    applyVisorClasses(hud.classList, { detail, sampling });
+    return () => hud.classList.remove('hud-detail', 'hud-sampling-on');
+  }, [detail, sampling]);
+  return (
+    <div className="hud-keys" aria-hidden="true" ref={ref}>
+      <span><kbd>H</kbd>{t('ui.hud.keys.controls')}</span>
+      <span><kbd>I</kbd>{t(detail ? 'ui.hud.keys.fewer' : 'ui.hud.keys.instruments')}</span>
+    </div>
+  );
+}
+
 /**
  * The whole visor HUD. Rendered by App in Walk mode once the scene is ready. Alerts show in App's event banner, under
  * the heading box (src/events/events.css), so the HUD has no alert strip of its own.
@@ -271,6 +324,7 @@ export default function Hud({ engine, minimapRoute }) {
       <WaypointMarker engine={engine} />
       <SlopeAhead engine={engine} />
       <Clocks />
+      <KeyHint engine={engine} />
       <SuitPanel />
       <PartnerPanel />
       <LayerChip />
