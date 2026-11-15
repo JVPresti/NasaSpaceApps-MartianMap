@@ -5,6 +5,8 @@ import { MISSION_SOURCES, missionSourcePath } from '../sim/missions.js';
 
 /** Registry path of the storm opacity while the first mission plays it: the event banner's tag and caption. */
 export const FIRST_STORM_TAU_PATH = missionSourcePath('first', 'dust-storm') + '.tau';
+/** Registry path of the sortie stop's reason line at the stop (stops.json route_stops[].reason). */
+export const FIRST_STOP_REASON_PATH = 'missions.first.stop.reason';
 
 const tau = provenance.lookup('environment.dustOpacity');
 
@@ -16,6 +18,12 @@ provenance.define({
     short: 'Dust storm model',
     source: `${tau?.source ?? 'dust storm event'}; first mission: the ramp compressed from 90 s to 30 s`,
     caption: tau?.caption ?? null,
+  },
+  [FIRST_STOP_REASON_PATH]: {
+    tag: 'SIM',
+    label: 'SIM · first sortie stop',
+    short: 'SIM',
+    source: 'why the sortie stop: light-toned ground on the HiRISE outcrop mask, the kind of rock Bright Angel is made of; no rover has looked here, so the science is our assumption (public/data/stops.json route_stops)',
   },
 });
 

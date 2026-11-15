@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { catalogs, setLanguage } from '../i18n/index.js';
 import { MISSIONS } from '../sim/missions.js';
 import { resetStore, setNeeds, useMissionStore } from '../state/store.js';
-import { MissionRecap, PlanBeat, WalkBeat } from './MissionBeat.jsx';
+import { MissionRecap, PlanBeat, StopBanner, WalkBeat } from './MissionBeat.jsx';
 
 // Render a populated mission snapshot in SSR (Zustand normally uses the creation-time state).
 vi.mock('../state/store.js', async (importOriginal) => {
@@ -80,6 +80,23 @@ describe('beat lines (#265)', () => {
     expect(walk()).toBe('');
     useMissionStore.setState((state) => ({ sampling: { ...state.sampling, count: 0 }, navigation: { ...state.navigation, x: 520, z: 560 } }));
     expect(walk()).toContain('data-beat="walk"');   // 34 m from the stop
+  });
+
+  it('says why the stop is worth the walk at the stop, tagged SIM, until a sample is secured (D10)', () => {
+    const stops = [{ id: 'sortie', name: 'Light-toned patch', reason: { en: 'Light-toned ground; no rover has looked here.', es: 'Terreno claro; ningún rover ha mirado aquí.', tag: 'SIM' } }];
+    useMissionStore.setState((state) => ({
+      mode: 'walk',
+      route: { ...state.route, waypoints: [{ name: 'HAB', x: 535, z: 574 }, { name: 'S1', x: 493, z: 539, stopId: 'sortie' }] },
+      navigation: { ...state.navigation, x: 495, z: 540 },
+    }));
+    const html = renderToStaticMarkup(<StopBanner evaBegun={true} stops={stops} />);
+    expect(html).toMatch(/class="event-banner info event-banner-walk mission-stop"/);
+    expect(html).toContain('no rover has looked here');
+    expect(html).toMatch(/data-tag="SIM"/);
+    setLanguage('es');
+    expect(renderToStaticMarkup(<StopBanner evaBegun={true} stops={stops} />)).toContain('ningún rover ha mirado aquí');
+    useMissionStore.setState((state) => ({ sampling: { ...state.sampling, count: 1 } }));
+    expect(renderToStaticMarkup(<StopBanner evaBegun={true} stops={stops} />)).toBe('');
   });
 
   it('shows no beat line and no recap for the full EVA', () => {

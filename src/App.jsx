@@ -14,7 +14,7 @@ import { useShortcuts } from './components/useShortcuts.js';
 import DebriefScreen from './debrief/DebriefScreen.jsx';
 import EventBanner from './events/EventBanner.jsx';
 import EventDebug from './events/EventDebug.jsx';
-import { WalkBeat } from './mission/MissionBeat.jsx';
+import { StopBanner, WalkBeat } from './mission/MissionBeat.jsx';
 import { chooseMission } from './mission/chooseMission.js';
 import Finds from './finds/Finds.jsx';
 import Hud from './hud/Hud.jsx';
@@ -553,6 +553,8 @@ export default function App() {
       )}
       {/* Plan mode places the banner in its own alert region; Walk puts it under the heading box, the HUD's only alert. */}
       {load.status === 'ready' && mode === 'walk' && <EventBanner className="event-banner-walk" />}
+      {/* The first mission's science stop (D10): why it is worth the walk, in the banner's place before any alert. */}
+      {playing && mode === 'walk' && <StopBanner evaBegun={evaBegun} />}
       {load.status === 'ready' && DEBUG_EVENTS && <EventDebug />}
 
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={translateText(SITE)} onRetry={handleRetry} />

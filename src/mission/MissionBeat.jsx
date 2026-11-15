@@ -1,4 +1,8 @@
-import { t } from '../i18n/index.js';
+import { getLanguage, t, translateText } from '../i18n/index.js';
+import { stopReason } from '../data/stops.js';
+import SourceTag from '../plan/SourceTag.jsx';
+import { useStops } from '../stops/useStops.js';
+import { FIRST_STOP_REASON_PATH } from './sources.js';
 import { atStopOf, currentBeat, missionForObjective } from '../sim/missions.js';
 import { useMissionStore } from '../state/store.js';
 
@@ -30,6 +34,29 @@ export function WalkBeat({ evaBegun }) {
   const beat = useBeat(evaBegun);
   if (!beat || beat.id === 'plan') return null;
   return <p className="hint mission-beat" role="status" data-beat={beat.id}>{t(beat.text)}</p>;
+}
+
+/**
+ * Why the science stop is worth the walk (D10), at the stop until a sample is secured: the stop's one-line reason from
+ * stops.json (route_stops[].reason, SIM), in the event banner's place and style, which no alert holds before the storm.
+ * The beat line at the bottom says what to do there. No card and no images: no rover has looked at this ground.
+ * @param {{ evaBegun: boolean, stops?: Array<object> }} props stops: the parsed stops.json list (loaded when left out)
+ */
+export function StopBanner({ evaBegun, stops: given }) {
+  const beat = useBeat(evaBegun);
+  const loaded = useStops();
+  if (beat?.id !== 'stop') return null;
+  const stop = (given ?? loaded).find((entry) => entry.id === beat.stop);
+  const reason = stopReason(stop, getLanguage());
+  if (!reason) return null;
+  return (
+    <div className="event-banner info event-banner-walk mission-stop" role="status" data-stop={stop.id}>
+      <div className="event-banner-main">
+        <span className="event-level">{translateText(stop.name)}</span>
+        <span className="event-text">{reason} <SourceTag path={FIRST_STOP_REASON_PATH} source={null} interactive={false} requireSource={false} /></span>
+      </div>
+    </div>
+  );
 }
 
 /**
