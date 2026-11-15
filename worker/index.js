@@ -13,8 +13,9 @@ const text = (status, body, headers = {}) =>
 
 /**
  * A browser always sends Origin on a WebSocket upgrade. Allowed: the request's own host (production, every
- * preview host and `wrangler dev`), and localhost on any port (the Vite dev server proxies /api with the
- * browser's http://localhost:5173 Origin). Missing or anything else: refused.
+ * preview host and `wrangler dev`), and, only when the Worker itself runs on localhost, a localhost Origin on
+ * any port (the Vite dev server proxies /api with the browser's http://localhost:5173 Origin). A page served
+ * from someone's localhost cannot open production or preview rooms. Missing or anything else: refused.
  */
 export function originAllowed(request) {
   const origin = request.headers.get('Origin');
@@ -22,8 +23,9 @@ export function originAllowed(request) {
   let url;
   try { url = new URL(origin); } catch { return false; }
   if (url.protocol !== 'https:' && url.protocol !== 'http:') return false;
-  if (url.host === new URL(request.url).host) return true;
-  return LOCAL_HOSTS.has(url.hostname);
+  const target = new URL(request.url);
+  if (url.host === target.host) return true;
+  return LOCAL_HOSTS.has(url.hostname) && LOCAL_HOSTS.has(target.hostname);
 }
 
 /**

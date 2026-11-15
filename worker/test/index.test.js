@@ -75,12 +75,14 @@ describe('worker entry', () => {
     }
   });
 
-  it('allows the same host, preview hosts and localhost on any port', () => {
+  it('allows the same host, preview hosts, and localhost on any port only for a local worker', () => {
     const allowed = (origin, url) => originAllowed(request('/api/room/ABCD', { origin, url }));
     expect(allowed(HOST, HOST)).toBe(true);
     expect(allowed('https://abc123-martian-map.example.workers.dev', 'https://abc123-martian-map.example.workers.dev')).toBe(true);
     expect(allowed('http://localhost:5173', 'http://localhost:8787')).toBe(true);
-    expect(allowed('http://127.0.0.1:4173', HOST)).toBe(true);
+    expect(allowed('http://127.0.0.1:4173', 'http://127.0.0.1:8787')).toBe(true);
+    expect(allowed('http://127.0.0.1:4173', HOST)).toBe(false);
+    expect(allowed('http://localhost:5173', HOST)).toBe(false);
     expect(allowed('http://localhost:8787', 'http://localhost:8787')).toBe(true);
     expect(allowed('https://other.workers.dev', HOST)).toBe(false);
   });
