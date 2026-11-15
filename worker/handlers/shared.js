@@ -1,6 +1,9 @@
 // Shared state handlers for the Room (#54, docs/IMPLEMENTATION_PLAN.md 9.3 and 9.4): markers, the sample log and the
 // tool case. Each handler writes SQLite and replies in the same synchronous turn, with no await between the write and
 // the reply, so no other message can run in between and the write commits atomically.
+//
+// rowsWritten: 0 means ON CONFLICT DO NOTHING wrote nothing (the row was there). The real storage counts index writes
+// too, so a new marker (UNIQUE client_id) or sample (TEXT primary key) reads 2 there, not 1; the handlers test > 0.
 import { MARKER_KINDS, MAX_MARKERS, MSG, ROLE } from '../../src/net/protocol.js';
 
 const CASE_KEY = 'case_holder';
@@ -57,19 +60,19 @@ export const SHARED_HANDLERS = {
     );
     const row = markerByCid(room, msg.cid);
     if (!row) return;   // the room is at MAX_MARKERS
-    if (cursor.rowsWritten === 1) room.broadcast(markerOut(row));
+    if (cursor.rowsWritten > 0) room.broadcast(markerOut(row));
     else room.sendTo(ws, markerOut(row));
   },
 
   /**
-   * smp: the first insert of a sample id wins. rowsWritten on the insert's own cursor decides: 1 broadcasts the winner
+   * smp: the first insert of a sample id wins. rowsWritten on the insert's own cursor decides: above 0 broadcasts the winner
    * to everyone; 0 tells only the sender who has it. A resend by the winner (an offline claim sent again) gets ok:true
    * back, to the sender only.
    */
   [MSG.SAMPLE](room, ws, msg, me, now) {
     if (me.role !== ROLE.SURFACE) return;
     const cursor = room.sql.exec('INSERT INTO samples (sample_id, author, at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING', msg.sid, me.id, now);
-    if (cursor.rowsWritten === 1) {
+    if (cursor.rowsWritten > 0) {
       room.broadcast({ type: MSG.SAMPLE, sid: msg.sid, by: me.id, at: now, ok: true });
       return;
     }

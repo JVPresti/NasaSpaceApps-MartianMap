@@ -96,14 +96,14 @@ describe('samples', () => {
     expect(c.messages('smp')).toHaveLength(1);
   });
 
-  it('rowsWritten on the insert cursor decides the winner', () => {
+  it('rowsWritten on the insert cursor decides the winner (2 with the primary key index, 0 on conflict)', () => {
     const a = join('a');
     const exec = storage.sql.exec;
     const seen = [];
     storage.sql.exec = (q, ...b) => { const cur = exec(q, ...b); if (q.startsWith('INSERT INTO samples')) seen.push(cur.rowsWritten); return cur; };
     send(a, { type: 'smp', sid: 's1' });
     send(join('b'), { type: 'smp', sid: 's1' });
-    expect(seen).toEqual([1, 0]);
+    expect(seen).toEqual([2, 0]);
   });
 
   it('a resend by the winner is ok:true to the sender only', () => {
