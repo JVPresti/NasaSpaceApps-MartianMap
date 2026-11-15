@@ -4,13 +4,14 @@ import { provenance } from '../data/provenance.js';
 import SourceTag from '../plan/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
 import { missionForObjective } from '../sim/missions.js';
-import { stormTauPath } from '../mission/sources.js';
+import { radiationRatePath, stormTauPath } from '../mission/sources.js';
 import './events.css';
 
 const ORDER = { danger: 4, warning: 3, caution: 2, info: 1 };
 
 // Registry paths whose entry gives both the caption and the tag of an event value (#196). The tag ignores the live
-// store entry (source={null}), so the words and the tag always come from the same registry entry.
+// store entry (source={null}), so the words and the tag always come from the same registry entry. The radiation rate
+// switches to the SIM step entry while one of our steps shows (radiationRatePath, #295).
 export const EVENT_VALUE_PATHS = Object.freeze({
   'dust-storm': 'environment.dustOpacity',
   radiation: 'events.radiation.doseRateUgyH',
@@ -70,7 +71,12 @@ export default function EventBanner({ className = '' }) {
           <EventValue path={stormTauPath(missionId, EVENT_VALUE_PATHS['dust-storm'])}>τ {formatNumber(environment.dustOpacity, 2)}</EventValue>
         )}
         {alert.eventId === 'radiation' && (
-          <EventValue path={EVENT_VALUE_PATHS.radiation}>{formatNumber(environment.doseRateUgyH, 1)}{t('ui.gy.h')}{formatNumber(environment.doseUgy, 1)} {t('ui.gy')}</EventValue>
+          <>
+            {/* A rate RAD measured is DATA, one of our steps between them SIM (#295). */}
+            <EventValue path={radiationRatePath(environment.doseRateUgyH, EVENT_VALUE_PATHS.radiation)}>{formatNumber(environment.doseRateUgyH, 1)}{t('ui.gy.h')}</EventValue>
+            {/* The dose this EVA carries its own DERIVED tag: the rates over the minutes the event plays, not the 2017 dose. */}
+            <span>{formatNumber(environment.doseUgy, 1)} {t('ui.gy')}<SourceTag path="environment.doseUgy" interactive={false} /></span>
+          </>
         )}
         {String(alert.eventId).startsWith('low-oxygen') && (
           <span>{t('ui.margin')}{formatMargin(suit.marginSec)}{t('ui.30.min.reserve.hazards.json')}<SourceTag path="suit.marginSec" interactive={false} />
