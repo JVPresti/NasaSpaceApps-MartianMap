@@ -25,19 +25,32 @@ describe('mission keyboard shortcuts', () => {
     expect(useMissionStore.getState().mode).toBe('walk');
   });
 
-  it('cycles all five layers forwards and backwards with wraparound in either mode', () => {
-    for (const mode of ['plan', 'walk']) {
+  it('cycles all six layers at the table and the four the ground draws in Walk, both ways with wraparound', () => {
+    for (const [mode, forward, backward] of [['plan', [1, 2, 3, 4, 5, 0], [5, 4, 3, 2, 1, 0]], ['walk', [1, 2, 3, 0], [3, 2, 1, 0]]]) {
       setMode(mode);
       setLayer(0);
-      for (const expected of [1, 2, 3, 4, 0]) {
+      for (const expected of forward) {
         press('KeyL');
         expect(useMissionStore.getState().view.layer).toBe(expected);
       }
-      for (const expected of [4, 3, 2, 1, 0]) {
+      for (const expected of backward) {
         press('KeyL', { shiftKey: true });
         expect(useMissionStore.getState().view.layer).toBe(expected);
       }
     }
+  });
+
+  it('moves on from a table-only layer in Walk to a layer the ground draws', () => {
+    setMode('walk');
+    setLayer(4);   // radio shadow, chosen at the table
+    press('KeyL');
+    expect(useMissionStore.getState().view.layer).toBe(1);
+    setLayer(5);   // exposure
+    press('KeyL', { shiftKey: true });
+    expect(useMissionStore.getState().view.layer).toBe(3);
+    setLayer(5);
+    press('Digit0');
+    expect(useMissionStore.getState().view.layer).toBe(0);
   });
 
   it.each(['Digit0', 'Numpad0'])('%s switches the current layer off', (code) => {

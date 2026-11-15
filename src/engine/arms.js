@@ -7,7 +7,8 @@ import { cloneSkinned } from './skinned.js';
 import { swingPhase } from './gait.js';
 import { SCREEN_CENTRE_Y_M, TAP_SECONDS, clampWristPointer, fingerHover, layerRowPointer, wristPixelToLocal } from './wrist.js';
 
-export const LAYER_NAMES = ['VISIBLE', 'SLOPE HAZARD', 'ELEVATION', 'ROCK ABUNDANCE', 'OUTCROP'];
+// The built-in list for a consumer without the wrist app: the layers the ground draws (WALK_LAYERS in src/plan/layers.js).
+export const LAYER_NAMES = ['VISIBLE', 'TERRAIN', 'ROCK ABUNDANCE', 'OUTCROP'];
 
 export function createArms(ctx) {
   const { scene, camera, U, assets, sys, view, gait } = ctx;

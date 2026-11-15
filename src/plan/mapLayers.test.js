@@ -1,8 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { acrossLabel, clampCrop, layerColour, mapCrop, marsColour, paintMap, slopeGrid, toMap, zoomCrop } from './mapLayers.js';
+import { radioShadowMask } from '../sim/radio.js';
+import { LAYERS } from './layers.js';
+import {
+  LAYER, acrossLabel, clampCrop, contourLine, layerColour, mapCrop, marsColour, paintMap, slopeGrid, toMap, zoomCrop,
+} from './mapLayers.js';
 
 const tile = { width: 1422.5, depth: 1500 };
 const route = [{ x: 535, z: 574 }, { x: 330, z: 300 }, { x: 150, z: 120 }, { x: -40, z: -60 }, { x: 0, z: 0 }];
+
+/** A tiny terrain as costGrid.decodeTerrain returns it, with a density grid. */
+function terrainOf(n, size, heightAt, densityAt = () => 128) {
+  const heights = new Float32Array(n * n);
+  for (let j = 0; j < n; j += 1) for (let i = 0; i < n; i += 1) heights[j * n + i] = heightAt(i, j);
+  const density = new Uint8Array(4 * 4);
+  for (let r = 0; r < 4; r += 1) for (let c = 0; c < 4; c += 1) density[r * 4 + c] = densityAt(c, r);
+  return { n, width: size, depth: size, heights, range: Math.max(...heights) || 1, density, densityN: 4 };
+}
+
+const ortho = { w: 2, h: 2, data: new Uint8ClampedArray(16).fill(128) };
+const alpha = (out) => [...out].filter((value, k) => k % 4 === 3);
+const pixel = (out, size, px, py) => [...out.slice((py * size + px) * 4, (py * size + px) * 4 + 3)];
 
 describe('mission table map', () => {
   it('frames the whole route in a square inside the tile', () => {
@@ -33,11 +50,41 @@ describe('mission table map', () => {
     expect(clampCrop({ x0: 5000, z0: -5000, size: 300 }, tile)).toEqual({ x0: tile.width / 2 - 300, z0: -tile.depth / 2, size: 300 });
   });
 
-  it('uses the terrain shader colours and slope limits', () => {
+  it('numbers its layers as layers.js does', () => {
+    expect(Object.entries(LAYER).map(([, index]) => LAYERS[index].id)).toEqual(['none', 'slope', 'rock', 'outcrop', 'radio', 'exposure']);
+  });
+
+  it('uses the terrain shader colours and slope limits, with the caution band where the table asks', () => {
     expect(marsColour(0)).toEqual([0.068, 0.042, 0.021]);
-    expect(layerColour(1, { slope: 10 })[3]).toBe(0);
-    expect(layerColour(1, { slope: 20 }).slice(0, 3)).toEqual([0.95, 0.6, 0.1]);
-    expect(layerColour(1, { slope: 30 }).slice(0, 3)).toEqual([0.9, 0.08, 0.05]);
+    expect(layerColour(LAYER.TERRAIN, { slope: 10 })[3]).toBe(0);
+    expect(layerColour(LAYER.TERRAIN, { slope: 20 }).slice(0, 3)).toEqual([0.95, 0.6, 0.1]);
+    expect(layerColour(LAYER.TERRAIN, { slope: 30 }).slice(0, 3)).toEqual([0.9, 0.08, 0.05]);
+    expect(layerColour(LAYER.TERRAIN, { slope: 13 })[3]).toBe(0);
+    expect(layerColour(LAYER.TERRAIN, { slope: 13 }, { cautionDeg: 12 }).slice(0, 3)).toEqual([0.95, 0.6, 0.1]);   // cautious risk
+    expect(layerColour(LAYER.TERRAIN, { slope: 19 }, { cautionDeg: 20 })[3]).toBe(0);   // bold: no caution band
+  });
+
+  it('colours rocks from the abundance it is given, and the table-only layers from their grids', () => {
+    expect(layerColour(LAYER.ROCK, { rock: 0.08 }).slice(0, 3)).toEqual(layerColour(LAYER.ROCK, { rock: 0 }).slice(0, 3));
+    layerColour(LAYER.ROCK, { rock: 1 }).slice(0, 3).forEach((value, k) => expect(value).toBeCloseTo([1, 0.75, 0.1][k], 6));
+    expect(layerColour(LAYER.OUTCROP, { mask: 0 })[3]).toBe(0);
+    expect(layerColour(LAYER.OUTCROP, { mask: 1 })[3]).toBeCloseTo(0.6);
+    expect(layerColour(LAYER.RADIO, { shadow: false })[3]).toBe(0);
+    expect(layerColour(LAYER.RADIO, { shadow: true })[3]).toBeGreaterThan(0);
+    expect(layerColour(LAYER.EXPOSURE, { sky: null })[3]).toBe(0);   // grid not loaded yet: nothing drawn
+    const open = layerColour(LAYER.EXPOSURE, { sky: 1 });
+    const sheltered = layerColour(LAYER.EXPOSURE, { sky: 0.81 });
+    open.slice(0, 3).forEach((value, k) => expect(value).toBeCloseTo([0.9, 0.2, 0.1][k], 6));   // the red end of the ramp: open sky, the most dose
+    sheltered.slice(0, 3).forEach((value, k) => expect(value).toBeCloseTo([0.1, 0.3, 0.9][k], 6));
+    expect(layerColour(LAYER.EXPOSURE, { sky: 0.5 }).slice(0, 3)).toEqual(sheltered.slice(0, 3));   // clamped to the range
+  });
+
+  it('draws a contour line only near a multiple of 5 m', () => {
+    expect(contourLine(10, 30, 1)).toBeCloseTo(1, 6);
+    expect(contourLine(12.5, 30, 1)).toBe(0);
+    expect(contourLine(10.2, 30, 1)).toBeGreaterThan(0);   // within about 1.5 pixels of the line at 1 m per pixel
+    expect(contourLine(10.2, 30, 0.05)).toBe(0);           // zoomed in, the same 0.2 m is many pixels away
+    expect(contourLine(12.5, 0, 1)).toBe(0);               // flat ground: no division by zero
   });
 
   it('measures slope on the height grid and paints every pixel', () => {
@@ -45,9 +92,61 @@ describe('mission table map', () => {
     const heights = new Float32Array([0, 1, 2, 0, 1, 2, 0, 1, 2]);   // rises 1 m per 1 m to the east
     const slopes = slopeGrid({ n, width: 2, depth: 2, heights });
     expect(slopes[4]).toBeCloseTo(45, 5);
-    const ortho = { w: 2, h: 2, data: new Uint8ClampedArray(16).fill(128) };
-    const out = paintMap(new Uint8ClampedArray(4 * 4 * 4), 4, { x0: -1, z0: -1, size: 2 }, 1,
-      { ortho, mask: null, terrain: { n, width: 2, depth: 2, heights, range: 2 }, slopes });
-    expect([...out].filter((value, k) => k % 4 === 3).every((a) => a === 255)).toBe(true);
+    const terrain = { n, width: 2, depth: 2, heights, range: 2, density: new Uint8Array(1), densityN: 1 };
+    for (const layer of Object.values(LAYER)) {
+      const out = paintMap(new Uint8ClampedArray(4 * 4 * 4), 4, { x0: -1, z0: -1, size: 2 }, layer, { ortho, mask: null, terrain, slopes });
+      expect(alpha(out).every((a) => a === 255)).toBe(true);
+    }
+  });
+
+  it('paints rocks from the planner density grid, not from the image brightness', () => {
+    // west half of the density grid bare (byte 0), east half rocky (255); the image is one grey everywhere
+    const terrain = terrainOf(5, 40, () => 0, (c) => (c < 2 ? 0 : 255));
+    const slopes = slopeGrid(terrain);
+    const out = paintMap(new Uint8ClampedArray(8 * 8 * 4), 8, { x0: -20, z0: -20, size: 40 }, LAYER.ROCK, { ortho, mask: null, terrain, slopes });
+    const west = pixel(out, 8, 1, 4);
+    const east = pixel(out, 8, 6, 4);
+    expect(east[0]).toBeGreaterThan(west[0]);   // rocky ground towards the yellow end
+    expect(west[2]).toBeGreaterThan(east[2]);   // bare ground towards the blue end
+  });
+
+  it('paints the radio shadow behind a ridge and leaves the rest of the ground clear', () => {
+    // a 30 m wall at x = 0 hides the east half from a mast in the west
+    const n = 41;
+    const terrain = terrainOf(n, 80, (i) => (i === 20 ? 30 : 0));
+    const slopes = slopeGrid(terrain);
+    const radio = radioShadowMask(terrain, { x: -30, y: 3, z: 0 }, 4);
+    const size = 16;
+    const plain = paintMap(new Uint8ClampedArray(size * size * 4), size, { x0: -40, z0: -40, size: 80 }, LAYER.IMAGE, { ortho, mask: null, terrain, slopes });
+    const out = paintMap(new Uint8ClampedArray(size * size * 4), size, { x0: -40, z0: -40, size: 80 }, LAYER.RADIO, { ortho, mask: null, terrain, slopes, radio });
+    expect(pixel(out, size, 3, 8)).toEqual(pixel(plain, size, 3, 8));         // in sight of the mast: untouched
+    expect(pixel(out, size, 13, 8)).not.toEqual(pixel(plain, size, 13, 8));   // behind the wall: tinted
+    // without a mast there is no mask, and the layer leaves the image as it is
+    const none = paintMap(new Uint8ClampedArray(size * size * 4), size, { x0: -40, z0: -40, size: 80 }, LAYER.RADIO, { ortho, mask: null, terrain, slopes });
+    expect([...none]).toEqual([...plain]);
+  });
+
+  it('paints the sky view where the grid is loaded', () => {
+    const terrain = terrainOf(5, 40, () => 0);
+    const slopes = slopeGrid(terrain);
+    const sky = { n: 2, width: 40, depth: 40, values: new Float32Array([0.81, 1, 0.81, 1]) };
+    const size = 8;
+    const out = paintMap(new Uint8ClampedArray(size * size * 4), size, { x0: -20, z0: -20, size: 40 }, LAYER.EXPOSURE, { ortho, mask: null, terrain, slopes, sky });
+    expect(pixel(out, size, 0, 4)[2]).toBeGreaterThan(pixel(out, size, 7, 4)[2]);   // sheltered west: blue end
+    expect(pixel(out, size, 7, 4)[0]).toBeGreaterThan(pixel(out, size, 0, 4)[0]);   // open east: red end
+  });
+
+  it('adds the 5 m contours to the Terrain layer', () => {
+    // a walkable ramp to the east, 1 m every 10 m (6 degrees): a contour every 50 m, at pixels 4.5, 9.5... of 10 m each
+    const n = 41;
+    const terrain = terrainOf(n, 400, (i) => i);
+    const slopes = slopeGrid(terrain);
+    const size = 40;
+    const crop = { x0: -200, z0: -200, size: 400 };
+    const plain = paintMap(new Uint8ClampedArray(size * size * 4), size, crop, LAYER.IMAGE, { ortho, mask: null, terrain, slopes });
+    const out = paintMap(new Uint8ClampedArray(size * size * 4), size, crop, LAYER.TERRAIN, { ortho, mask: null, terrain, slopes });
+    const brighter = (px) => pixel(out, size, px, 20)[0] - pixel(plain, size, px, 20)[0];
+    expect(brighter(4)).toBeGreaterThan(20);   // beside the 5 m contour
+    expect(brighter(7)).toBe(0);               // halfway between contours, walkable ground: clear
   });
 });

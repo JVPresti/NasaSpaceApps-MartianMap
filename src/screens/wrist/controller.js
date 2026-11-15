@@ -9,13 +9,15 @@ import { wristKey } from './keys.js';
 import { setWristKeyOwner } from './ownership.js';
 import { loadDataFile } from '../../data/dataFiles.js';
 import { SHELTERS_PATH } from '../../sim/shelters.js';
+import { WALK_LAYERS, walkRow } from '../../plan/layers.js';
 
 /** Connect after engine.ready; owns one canvas and cleans up before engine disposal. */
 export function connectWrist(engine, store = useMissionStore) {
   const canvas = document.createElement('canvas');
   canvas.width = WRIST_WIDTH; canvas.height = WRIST_HEIGHT;
   const g = canvas.getContext('2d');
-  let pageIndex = 0, row = store.getState().view.layer, open = false, painted = '', disposed = false;
+  // The layers page lists only the layers the ground draws (layers.js WALK_LAYERS): a row is not a store index.
+  let pageIndex = 0, row = walkRow(store.getState().view.layer), open = false, painted = '', disposed = false;
   let shelters = [], resourceVersion = 0, qHeld = false;
   const diagnostics = { canvas, snapshot: () => ({ open, page: PAGES[pageIndex], row, draws: Number(canvas.dataset.drawCount ?? 0), engine: engine.getWristState() }) };
   if (import.meta.env.DEV) window.__marswalkWrist = diagnostics;
@@ -62,12 +64,12 @@ export function connectWrist(engine, store = useMissionStore) {
       }
     } else if (action.endsWith('page')) {
       pageIndex = (pageIndex + (action === 'next-page' ? 1 : PAGES.length - 1)) % PAGES.length;
-      row = PAGES[pageIndex] === 'layers' ? state.view.layer : 0;
+      row = PAGES[pageIndex] === 'layers' ? walkRow(state.view.layer) : 0;
     } else if (action.endsWith('row')) {
       const count = rowCount(PAGES[pageIndex]);
       row = (row + (action === 'next-row' ? 1 : count - 1)) % count;
     } else if (action === 'confirm') {
-      if (PAGES[pageIndex] === 'layers') setLayer(row);
+      if (PAGES[pageIndex] === 'layers') setLayer(WALK_LAYERS[row].index);
       engine.setWristPointer({ ...rowTarget(PAGES[pageIndex], row), pressed: true });
     }
     if (open) {

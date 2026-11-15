@@ -5,8 +5,16 @@
 // Image frame: column = (x / width + 0.5) * w, row = (z / depth + 0.5) * h, as the terrain shader samples the ortho.
 // The colours repeat the terrain shader (src/engine/shaders.js, TERRAIN_FRAG) so a layer looks the same in both.
 
-import { SLOPE_LIMITS } from './layers.js';
+import { EXPOSURE_RANGE, SLOPE_LIMITS } from './layers.js';
 import { t } from '../i18n/index.js';
+import { rockAbundanceAt, sampleHeights } from '../sim/costGrid.js';
+import { inRadioShadow } from '../sim/radio.js';
+import { sampleSkyView } from '../sim/skyView.js';
+
+/** Layer indices of src/plan/layers.js, as in the store's `view.layer` and the engine's `uLayer`. */
+export const LAYER = Object.freeze({ IMAGE: 0, TERRAIN: 1, ROCK: 2, OUTCROP: 3, RADIO: 4, EXPOSURE: 5 });
+/** Spacing of the Terrain layer's contour lines, as in the terrain shader. Metres. */
+export const CONTOUR_STEP_M = 5;
 
 /**
  * The square of ground the map shows: every point (route and stops) with a margin, clamped inside the tile.
@@ -88,32 +96,57 @@ export function marsColour(g) {
 const mix = (a, b, t) => a + (b - a) * t;
 const smooth = (e0, e1, x) => { const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
 
+/** The four-stop ramp of the Exposure layer (layers.js gradient), the one the old Elevation layer used. t: 0 to 1. */
+function ramp4(t) {
+  let r = mix(0.1, 0.2, smooth(0, 0.35, t)), gg = mix(0.3, 0.85, smooth(0, 0.35, t)), b = mix(0.9, 0.5, smooth(0, 0.35, t));
+  const s2 = smooth(0.35, 0.7, t); r = mix(r, 0.98, s2); gg = mix(gg, 0.85, s2); b = mix(b, 0.2, s2);
+  const s3 = smooth(0.7, 1, t); r = mix(r, 0.9, s3); gg = mix(gg, 0.2, s3); b = mix(b, 0.1, s3);
+  return [r, gg, b];
+}
+
 /**
- * Overlay colour and opacity of a data layer at one point, as in the terrain shader.
- * @param {number} layer 0 photo, 1 slope, 2 elevation, 3 rock abundance, 4 outcrop
- * @param {{ g: number, slope: number, height: number, relief: number, mask: number }} sample
+ * Overlay colour and opacity of a data layer at one point. The layers the ground also draws (Terrain, Rocks, Outcrop)
+ * repeat the terrain shader; Radio shadow and Exposure are drawn on the table only.
+ * @param {number} layer an index of LAYER
+ * @param {{ slope?: number, rock?: number, mask?: number, shadow?: boolean, sky?: number | null }} sample
+ *   slope in degrees; rock: abundance 0.08 to 1 from the planner's density grid; mask: outcrop mask 0 to 1; shadow: the
+ *   habitat mast cannot see this point; sky: sky view 0 to 1, null when the grid is not loaded
+ * @param {{ cautionDeg?: number }} [options] cautionDeg: where the Terrain layer's caution band starts (layers.cautionDeg)
  * @returns {[number, number, number, number]} linear RGB and alpha
  */
-export function layerColour(layer, { g, slope, height, relief, mask }) {
-  if (layer === 1) {
+export function layerColour(layer, { slope, rock, mask, shadow, sky } = {}, { cautionDeg = SLOPE_LIMITS.caution } = {}) {
+  if (layer === LAYER.TERRAIN) {
     // Walkable ground stays clear on the table map, so the caution and no-go bands read at a glance.
     if (slope > SLOPE_LIMITS.noGo) return [0.9, 0.08, 0.05, 0.6];
-    if (slope > SLOPE_LIMITS.caution) return [0.95, 0.6, 0.1, 0.45];
+    if (slope > cautionDeg) return [0.95, 0.6, 0.1, 0.45];
     return [0, 0, 0, 0];
   }
-  if (layer === 2) {
-    const t = Math.min(1, Math.max(0, height / relief));
-    let r = mix(0.1, 0.2, smooth(0, 0.35, t)), gg = mix(0.3, 0.85, smooth(0, 0.35, t)), b = mix(0.9, 0.5, smooth(0, 0.35, t));
-    const s2 = smooth(0.35, 0.7, t); r = mix(r, 0.98, s2); gg = mix(gg, 0.85, s2); b = mix(b, 0.2, s2);
-    const s3 = smooth(0.7, 1, t); r = mix(r, 0.9, s3); gg = mix(gg, 0.2, s3); b = mix(b, 0.1, s3);
-    return [r, gg, b, 0.5];
-  }
-  if (layer === 3) {
-    const d = Math.min(1, Math.max(0.08, 0.08 + ((g - 0.25) / 0.55) * 0.92));
+  if (layer === LAYER.ROCK) {
+    const d = Math.min(1, Math.max(0.08, rock));
     return [mix(0.15, 1, d), mix(0.2, 0.75, d), mix(0.6, 0.1, d), 0.55];
   }
-  if (layer === 4) return [0.3, 0.9, 0.95, smooth(0.05, 0.45, mask) * 0.6];
+  if (layer === LAYER.OUTCROP) return [0.3, 0.9, 0.95, smooth(0.05, 0.45, mask) * 0.6];
+  if (layer === LAYER.RADIO) return shadow ? [0.357, 0.561, 0.749, 0.55] : [0, 0, 0, 0];
+  if (layer === LAYER.EXPOSURE) {
+    if (!Number.isFinite(sky)) return [0, 0, 0, 0];
+    const [r, gg, b] = ramp4(Math.min(1, Math.max(0, (sky - EXPOSURE_RANGE.min) / (EXPOSURE_RANGE.max - EXPOSURE_RANGE.min))));
+    return [r, gg, b, 0.45];
+  }
   return [0, 0, 0, 0];
+}
+
+/**
+ * Strength (0 to 1) of a contour line at one pixel, as the terrain shader draws its 5 m contours: full on the contour,
+ * fading out over about 1.5 pixels.
+ * @param {number} height metres
+ * @param {number} slopeDeg slope at the point, which sets how fast the height changes across a pixel
+ * @param {number} metresPerPixel
+ * @returns {number}
+ */
+export function contourLine(height, slopeDeg, metresPerPixel) {
+  const c = height / CONTOUR_STEP_M;
+  const width = Math.max(1e-4, (Math.tan((Math.min(slopeDeg, 89) * Math.PI) / 180) * metresPerPixel * 1.4) / CONTOUR_STEP_M);
+  return 1 - smooth(0, 1.5, Math.abs(c - Math.floor(c + 0.5)) / width);
 }
 
 /** Slope in degrees at every node of the height grid (central differences, one-sided at the edges). */
@@ -143,12 +176,14 @@ const toSrgb = (c) => {
  * @param {{ x0: number, z0: number, size: number }} crop
  * @param {number} layer
  * @param {{ ortho: { w: number, h: number, data: Uint8ClampedArray }, mask?: { w: number, h: number, data: Uint8ClampedArray } | null,
- *   terrain: { n: number, width: number, depth: number, heights: Float32Array, range: number }, slopes: Float32Array }} data
- *   ortho and mask: RGBA pixels of the grayscale images (the red channel is read)
+ *   terrain: { n: number, width: number, depth: number, heights: Float32Array, range: number, density: Uint8Array, densityN: number },
+ *   slopes: Float32Array, radio?: object | null, sky?: object | null }} data
+ *   ortho and mask: RGBA pixels of the grayscale images (the red channel is read); terrain: costGrid.decodeTerrain, whose
+ *   density grid is the one the planner prices; radio: radio.radioShadowMask for the habitat mast; sky: skyView.decodeSkyViewGrid
+ * @param {{ cautionDeg?: number }} [options] passed to layerColour
  */
-export function paintMap(out, size, crop, layer, { ortho, mask, terrain, slopes }) {
+export function paintMap(out, size, crop, layer, { ortho, mask, terrain, slopes, radio = null, sky = null }, options = {}) {
   const { n, width, depth, heights } = terrain;
-  const relief = terrain.range;
   const metres = crop.size / size;
   for (let py = 0; py < size; py += 1) {
     const z = crop.z0 + (py + 0.5) * metres;
@@ -167,11 +202,20 @@ export function paintMap(out, size, crop, layer, { ortho, mask, terrain, slopes 
       if (layer > 0) {
         const gi = Math.min(n - 1, Math.max(0, Math.round(u * (n - 1))));
         const node = gj * n + gi;
-        const m = mask ? mask.data[(my * mask.w + Math.min(mask.w - 1, Math.max(0, Math.floor(u * mask.w)))) * 4] / 255 : 0;
-        const [lr, lg, lb, a] = layerColour(layer, { g, slope: slopes[node], height: heights[node], relief, mask: m });
+        const sample = { slope: slopes[node] };
+        if (layer === LAYER.ROCK) sample.rock = rockAbundanceAt(terrain, x, z);
+        else if (layer === LAYER.OUTCROP) sample.mask = mask ? mask.data[(my * mask.w + Math.min(mask.w - 1, Math.max(0, Math.floor(u * mask.w)))) * 4] / 255 : 0;
+        else if (layer === LAYER.RADIO) sample.shadow = radio ? inRadioShadow(radio, x, z) : false;
+        else if (layer === LAYER.EXPOSURE) sample.sky = sky ? sampleSkyView(sky, x, z) : null;
+        const [lr, lg, lb, a] = layerColour(layer, sample, options);
         if (a > 0) {
           const lum = 0.35 + (r + gg + b) * 0.6;
           r = mix(r, lr * lum, a); gg = mix(gg, lg * lum, a); b = mix(b, lb * lum, a);
+        }
+        if (layer === LAYER.TERRAIN) {
+          // 5 m contours, the part of the old Elevation layer that still reads; a bilinear height keeps the lines smooth
+          const line = contourLine(sampleHeights(heights, n, u * (n - 1), v * (n - 1)), slopes[node], metres);
+          if (line > 0) { const w = line * 0.6; r = mix(r, 1, w); gg = mix(gg, 1, w); b = mix(b, 1, w); }
         }
       }
       const k = (py * size + px) * 4;

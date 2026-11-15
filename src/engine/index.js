@@ -6,7 +6,7 @@ import { subscribeLanguage } from '../i18n/index.js';
 //   const engine = createEngine(container, { assetBase, mode, onStatus, onProgress, onError });
 //   await engine.ready;          // resolves after the first frame is actually rendered, rejects on failure
 //   engine.setMode('plan' | 'walk');
-//   engine.setLayer(0..4); engine.setSky('clear_day'); engine.setRoute([[x, z], ...]);
+//   engine.setLayer(0..5); engine.setSky('clear_day'); engine.setRoute([[x, z], ...]);
 //   engine.setSkyTime(17.75 | null); engine.getSun();   // sky and Sun from the mission clock (#73), missionSky.js
 //   engine.habitatZoneAt(x, z); engine.setHabitatPrompt({ rows } | null); engine.inHabitatCabin();   // the habitat and its table prompt (#244)
 //   engine.requestPointerLock(); engine.releasePointerLock(); engine.setInputEnabled(false);
@@ -64,7 +64,9 @@ import { createLoadLifecycle } from './lifecycle.js';
 import { createProgressTracker } from './progress.js';
 import { assertWebGL2, rendererFailure } from './webgl.js';
 
-export const LAYERS = ['none', 'slope hazard', 'elevation', 'rock abundance', 'outcrop'];
+// The layers of src/plan/layers.js, in `view.layer` order. The ground draws 1 to 3; radio shadow and exposure are drawn
+// on the mission table only, so the ground stays plain for them (TERRAIN_FRAG in shaders.js).
+export const LAYERS = ['none', 'terrain', 'rock abundance', 'outcrop', 'radio shadow', 'exposure'];
 export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
 
 /**
@@ -294,8 +296,10 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     ]);
     if (!alive) return;
     ctx.orthoCache[ctx.tier] = ortho; U.tRing.value = ring;
+    // the rock abundance layer reads the density grid of terrain.json, the one the route planner prices (costGrid.rockAbundanceAt)
+    const density = new THREE.DataTexture(ctx.T.dens, ctx.T.dn, ctx.T.dn, THREE.RedFormat, THREE.UnsignedByteType); density.needsUpdate = true;
     ctx.terrain.material = new THREE.ShaderMaterial({
-      uniforms: { ...U, tOrtho: { value: ortho }, tNrmAo: { value: nrm }, tMask: { value: mask }, tGravel: { value: gravel }, tSlab: { value: slab } },
+      uniforms: { ...U, tOrtho: { value: ortho }, tNrmAo: { value: nrm }, tMask: { value: mask }, tGravel: { value: gravel }, tSlab: { value: slab }, tDensity: { value: density } },
       vertexShader: SH.TERRAIN_VERT, fragmentShader: SH.TERRAIN_FRAG,
     });
 
@@ -574,7 +578,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       if (waypoints) waypoints.set(null);
       return true;
     },
-    /** Data layer drawn on the terrain: 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop. */
+    /** Data layer drawn on the terrain: 0 none, 1 terrain (slope and contours), 2 rock abundance, 3 outcrop; 4 and 5 are table-only (plain ground). */
     /**
      * Data for the habitat's wall screens and planning table (habitatScreens.js, #47): the plain object built by
      * habitatScreenData() in src/state/habitatScreens.js. The screens redraw from it while someone is near them.
