@@ -443,15 +443,15 @@ events still play. The full script, the budget per segment, which feature shows 
 | # | Segment | Budget | What it proves |
 | --- | --- | --- | --- |
 | 1 | Start screen, the first sortie | 0:15 | One click to the product |
-| 2 | Table: site and layers, one decision per layer | 1:15 | A layered, integrated view from several missions |
-| 3 | Crew's needs → route; two inputs; why the route bends; Cheyava Falls card | 1:15 | Plan a Marswalk; a route that avoids obstacles and says why |
-| 4 | Outlook, go / no-go, Begin EVA, controls | 0:30 | Conditions and safety before leaving |
-| 5 | Walk out: visor HUD, minimap, mark a find | 1:00 | An interface for the surface; no GPS assumed |
-| 6 | Stop and sample | 0:45 | Science along the way |
-| 7 | Dust storm and its re-plan on the map | 0:30 | Atmospheric data driving a safety decision |
-| 8 | Radiation alert and the walk back | 0:50 | Radiation and space weather; ALARA |
-| 9 | Habitat table: Open plan, Finish EVA | 0:20 | The habitat display |
-| 10 | Debrief: the walked route against the plan, the beat recap | 0:40 | What happened, judged against the plan |
+| 2 | Table: the goal set to Cheyava Falls, one decision per layer on its 934 m route | 1:05 | A layered, integrated view from several missions |
+| 3 | Two contrasting plans from the crew's needs, why the route bends, the Cheyava Falls card | 0:55 | Plan a Marswalk; a route that avoids obstacles and says why |
+| 4 | Hazards, outlook, go / no-go, Begin EVA, keys, help | 0:35 | Conditions and safety before leaving |
+| 5 | Walk out: visor HUD, wrist, slope grid, visor frame, mark a find | 1:35 | An interface for the surface; no GPS assumed |
+| 6 | The science stop and a sample | 0:20 | Science along the way |
+| 7 | Dust storm and its re-plan on the map | 0:20 | Atmospheric data driving a safety decision |
+| 8 | Radiation alert, the walk back, the hand-over to the partner | 1:10 | Radiation and space weather; ALARA; working in pairs |
+| 9 | Habitat: settings and language, Open plan, Finish EVA | 0:20 | The habitat display |
+| 10 | Debrief: the walked route against the plan, the beat recap | 0:45 | What happened, judged against the plan |
 | 11 | Sources | 0:10 | Every number has a mission and a date |
 | | **Total** | **7:30** | |
 
