@@ -4,6 +4,7 @@ import { pauseMission, useMissionStore } from '../state/store.js';
 import { connectEngine } from '../state/engineBridge.js';
 import { connectSampling } from '../state/sampling.js';
 import { connectSlopeGridKey } from '../state/slopeGrid.js';
+import { connectHabitatScreens } from '../state/habitatScreens.js';
 import { startSimulation } from '../state/simulation.js';
 
 const ASSET_BASE = import.meta.env.BASE_URL + 'marswalk/';
@@ -39,7 +40,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
 
     let engine;
     let live = true;
-    let disconnect = null, stopSimulation = null, disconnectSampling = null, disconnectSlopeGridKey = null;
+    let disconnect = null, stopSimulation = null, disconnectSampling = null, disconnectSlopeGridKey = null, disconnectHabitatScreens = null;
     const mock = new URLSearchParams(window.location.search).get('mock') === '1';
     const current = () => live && (engine === undefined || engineRef.current === engine);
 
@@ -83,6 +84,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
         disconnect = connectEngine(engine);
         disconnectSampling = connectSampling(engine);   // checklist, sample count and the sampling prompt (#36)
         disconnectSlopeGridKey = connectSlopeGridKey();   // G: slope grid on the ground in Walk mode (#50)
+        disconnectHabitatScreens = connectHabitatScreens(engine);   // the habitat's wall screens and planning table (#47)
         startCurrentSimulation();
         pauseMission();   // the start screen is a real pause, including ?mock=1 where nothing starts
         callbacks.current.onEngine?.(engine, {
@@ -105,6 +107,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
       if (disconnect) disconnect();
       if (disconnectSampling) disconnectSampling();
       if (disconnectSlopeGridKey) disconnectSlopeGridKey();
+      if (disconnectHabitatScreens) disconnectHabitatScreens();
       engine.dispose();
     };
   }, []);

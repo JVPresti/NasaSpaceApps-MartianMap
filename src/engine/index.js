@@ -72,7 +72,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   let inputEnabled = inputEnabledOption !== false;
   let pendingLock = null, pendingLockResolve = null;
   let pendingReset = false;
-  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false };   // set before boot ends, applied when ready
+  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false, habitatScreens: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -283,6 +283,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     status('Loading the habitat…');
     U.uRelief.value = tj.range_m; sys.route.data = await assets.json('route.json'); if (!alive) return;
     await sys.habitat.init(); if (!alive) return;
+    if (pending.habitatScreens) sys.habitat.screens.setData(pending.habitatScreens);
     placeAtAirlock();   // the player shows at the airlock on the Plan map too
 
     if (!alive) return;
@@ -457,6 +458,13 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       return true;
     },
     /** Data layer drawn on the terrain: 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop. */
+    /**
+     * Data for the habitat's wall screens and planning table (habitatScreens.js, #47): the plain object built by
+     * habitatScreenData() in src/state/habitatScreens.js. The screens redraw from it while someone is near them.
+     */
+    setHabitatScreens(data) {
+      if (sys.habitat && sys.habitat.screens && sys.habitat.root) sys.habitat.screens.setData(data); else pending.habitatScreens = data;
+    },
     setLayer(n) {
       if (!Number.isInteger(n) || n < 0 || n >= LAYERS.length) throw new Error('setLayer: expected 0-' + (LAYERS.length - 1) + ', got ' + n);
       U.uLayer.value = n;

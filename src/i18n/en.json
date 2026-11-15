@@ -463,5 +463,11 @@
   "menu.auto.tier": "Auto ({tier})",
   "menu.nominal": "nominal",
   "quality.high": "high",
-  "quality.low": "low"
+  "quality.low": "low",
+  "habitat.margin": "MARGIN",
+  "habitat.range": "RANGE",
+  "habitat.effort": "EFFORT",
+  "habitat.dose": "DOSE",
+  "habitat.noData": "no data",
+  "habitat.cabin.note": "cabin values fixed: SIM, not simulated"
 }
