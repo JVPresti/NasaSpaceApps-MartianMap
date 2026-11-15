@@ -399,7 +399,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       setTier: (name) => quality.request(name),
       walking: (on) => { ctx.view.keys.KeyW = !!on; },
       partnerCommand: (name) => sys.partner.command(name),
-      setPartnerSource: (source) => sys.partner.setSource(source),
+      setPartnerSource: (source) => sys.partner.setSource(source, { chosen: true }),
       partnerState: () => sys.partner.state,
       prints: () => sys.prints.stats(),
       // camera and player pose, for checking speed and that the camera follows the ground smoothly
@@ -793,7 +793,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     setPartnerSource(source) {
       if (source !== null && !(source && typeof source.update === 'function')) throw new Error('setPartnerSource: expected a partner source with update(dt, world), or null');
       if (!sys.partner) throw new Error('engine is not ready: wait for engine.ready');
-      sys.partner.setSource(source);
+      sys.partner.setSource(source, { chosen: true });   // it comes back when the engine places the crew again (#288)
     },
     /** Scripted actions of the current source: 'toggleCase', 'visitHabitat'. Returns false if the source ignores it. */
     partnerCommand(name) { return sys.partner ? sys.partner.command(name) : false; },
