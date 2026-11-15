@@ -141,5 +141,18 @@ export function videoFrame(t, beatSec, fileSec, { hold = false } = {}) {
   return { time, playing, opacity: Math.min(fadeIn, fadeOut) };
 }
 
+/**
+ * How the playing demo video follows the beat clock. `drift` is the clock's time minus the video's, in seconds. A seek
+ * is a jump on screen, so a small drift is closed by playing a little faster or slower, which nobody sees, and only a
+ * large one (entering the beat, a long stall) seeks (#406).
+ * @param {number} drift
+ * @returns {{ seek: boolean, rate: number }}
+ */
+export function videoSync(drift) {
+  if (!Number.isFinite(drift) || Math.abs(drift) > 1.5) return { seek: true, rate: 1 };
+  if (Math.abs(drift) < 0.08) return { seek: false, rate: 1 };
+  return { seek: false, rate: Math.max(0.9, Math.min(1.1, 1 + drift * 0.4)) };
+}
+
 /** The play state's words, beside the slide number. */
 export const playLabel = (playing, lang) => (playing ? (lang === 'es' ? 'En curso' : 'Playing') : (lang === 'es' ? 'En pausa' : 'Paused'));

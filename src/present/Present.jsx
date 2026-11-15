@@ -20,7 +20,7 @@ import { createGlobe } from './globe.js';
 import { createProjector } from './project.js';
 import { layoutCards } from './layout.js';
 import { decodeLast, fill, marginAt, clockAt, areaAt, resolvePlace, trackNumber, astronautAt } from './data.js';
-import { createHoldTimer, createPlayer, playLabel, pointerStep, slideTarget, videoFrame, fallbackStep, presentKey, queryWithoutPresent, restoreEngine as restoreFromStore } from './control.js';
+import { createHoldTimer, createPlayer, playLabel, pointerStep, slideTarget, videoFrame, videoSync, fallbackStep, presentKey, queryWithoutPresent, restoreEngine as restoreFromStore } from './control.js';
 import './present.css';
 
 const BASE = (import.meta.env.BASE_URL || '/') + 'present/';
@@ -341,10 +341,15 @@ export default function Present({ engine, onExit }) {
       v.style.opacity = f.opacity.toFixed(3);
       if (opts.record || !f.playing || pausedRef.current) {
         if (!v.paused) v.pause();
+        if (v.playbackRate !== 1) v.playbackRate = 1;
         if (Math.abs(v.currentTime - f.time) > (opts.record ? 1e-3 : 0.1) && !v.seeking) v.currentTime = f.time;
         return f.opacity;
       }
-      if (Math.abs(v.currentTime - f.time) > 0.5) v.currentTime = f.time;   // entering the beat, or after a stall
+      // A seek is a jump on screen: a small drift from the beat clock changes the playback rate a little, and only a
+      // large one (entering the beat, a long stall) seeks (control.js videoSync, #406)
+      const sync = videoSync(f.time - v.currentTime);
+      if (sync.seek && !v.seeking) v.currentTime = f.time;
+      if (v.playbackRate !== sync.rate) v.playbackRate = sync.rate;
       if (v.paused) v.play().catch(() => {});
       return f.opacity;
     }

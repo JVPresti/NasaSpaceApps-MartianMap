@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createInitialState } from '../state/store.js';
 import { dustLevelFromTau } from '../state/dustLevel.js';
-import { ENGINE_TIMEOUT_MS, createHoldTimer, createPlayer, playLabel, pointerStep, slideTarget, videoFrame, fallbackStep, presentHrefFor, presentKey, queryWithoutPresent, restoreEngine } from './control.js';
+import { ENGINE_TIMEOUT_MS, createHoldTimer, createPlayer, playLabel, pointerStep, slideTarget, videoFrame, videoSync, fallbackStep, presentHrefFor, presentKey, queryWithoutPresent, restoreEngine } from './control.js';
 
 const key = (k, mods = {}) => ({ key: k, altKey: false, ctrlKey: false, metaKey: false, ...mods });
 
@@ -178,6 +178,30 @@ describe('videoFrame: the demo plays, holds its last frame, then fades', () => {
 
   it('falls back to the beat length while the file\'s length is unknown', () => {
     expect(videoFrame(5, 90, NaN)).toMatchObject({ time: 5, playing: true });
+  });
+});
+
+describe('videoSync: the video follows the beat clock without a jump', () => {
+  it('leaves a video that is on time alone', () => {
+    expect(videoSync(0)).toEqual({ seek: false, rate: 1 });
+    expect(videoSync(-0.05)).toEqual({ seek: false, rate: 1 });
+  });
+
+  it('closes a small drift with the playback rate, never with a seek', () => {
+    const behind = videoSync(0.6);    // the video is 0.6 s behind the clock: play a little faster
+    expect(behind.seek).toBe(false);
+    expect(behind.rate).toBeGreaterThan(1);
+    expect(behind.rate).toBeLessThanOrEqual(1.1);
+    const ahead = videoSync(-0.6);
+    expect(ahead.seek).toBe(false);
+    expect(ahead.rate).toBeLessThan(1);
+    expect(ahead.rate).toBeGreaterThanOrEqual(0.9);
+  });
+
+  it('seeks only for a large drift: entering the beat, or after a long stall', () => {
+    expect(videoSync(40)).toEqual({ seek: true, rate: 1 });
+    expect(videoSync(-73)).toEqual({ seek: true, rate: 1 });
+    expect(videoSync(NaN).seek).toBe(true);
   });
 });
 
