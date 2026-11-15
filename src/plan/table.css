@@ -317,8 +317,8 @@ button.table-stop-name {
 }
 
 /* the Route step's verdict, above its numbers (#341) */
-.table-route-decision { margin: 2px 0 10px; font-size: 28px; }
-.route-eva-parts { margin-top: 8px; }
+.table-route-decision { margin-left: 10px; font: 600 20px/1 var(--font-display); vertical-align: -2px; }
+.route-eva-parts { margin-top: 6px; }
 
 /* the plan being approved, one line above the decision's reason (P9) */
 .decision-plan { display: block; margin-bottom: 4px; color: var(--dim); }

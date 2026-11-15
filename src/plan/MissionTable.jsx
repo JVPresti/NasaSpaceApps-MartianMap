@@ -655,16 +655,18 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
         <section className="table-right">
           <div className="table-panel">
             <div className="table-panel-head">
-              <p className="table-label">{t('table.tab.route')}</p>
+              <p className="table-label">
+                {t('table.tab.route')}
+                {/* The verdict on the step where the route is chosen, the same one the Suit step shows (#341) */}
+                {!event && !evaBegun && decision.reason !== 'planning' && (
+                  <b className={'table-route-decision' + (decision.tone ? ' tone-' + decision.tone : '')}>{decision.title}</b>
+                )}
+              </p>
               {/* no re-plan through the stops while an event's route leads to a shelter (B1) */}
               <button type="button" className="table-link" onClick={planner.replan} disabled={planner.status === 'planning' || Boolean(route.shelter)}>
                 {planner.status === 'planning' ? t('table.planning') : t('table.replan')}
               </button>
             </div>
-            {/* The verdict on the step where the route is chosen, the same one the Suit step shows (#341) */}
-            {!event && !evaBegun && decision.reason !== 'planning' && (
-              <p className={'table-decision table-route-decision' + (decision.tone ? ' tone-' + decision.tone : '')}>{decision.title}</p>
-            )}
             <div className="table-grid2">
               <Big value={cardMetrics.distance} unit="km" label={t('ui.distance')} />
               {/* Walk out plus the work at the stops (#247): planned time, not played in real time */}
