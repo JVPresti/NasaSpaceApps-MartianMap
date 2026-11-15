@@ -8,10 +8,15 @@
  * Plain JavaScript: the store is any object with getState / setState (the Zustand store in src/state/store.js),
  * and the terrain is a heightAt(x, z) function (the engine's query). No React, no three.js.
  */
-import { createSuitState, pathHome, stepSuit, suitReadout, walkCost } from './suitModel.js';
+import { createSuitState, pathHome, pathToShelter, stepSuit, suitReadout, walkCost } from './suitModel.js';
 import { DEFAULT_HABITAT } from './replan.js';
 
 export const SUIT_TICK_MS = 250;
+
+const shelterOf = (route) => {
+  const sh = route?.shelter;
+  return sh && Number.isFinite(sh.x) && Number.isFinite(sh.z) ? sh : null;
+};
 
 /**
  * @param {{ store: { getState: Function, setState: Function }, heightAt: (x: number, z: number) => number,
@@ -23,7 +28,7 @@ export function startSuitRunner({ store, heightAt, constants: c, habitat = DEFAU
   let suit = createSuitState(c);
   let last = null;                    // { t, x, z } at the previous tick
   let speed = 0, gradient = 0;        // smoothed over about a second: positions arrive at 5 Hz and ticks at 4 Hz
-  let walkback = { timeSec: 0, o2G: 0, distanceM: 0 }, walkbackKey = '';
+  let walkback = { timeSec: 0, o2G: 0, distanceM: 0 }, walkbackKey = '', walkbackTo = 'habitat';
 
   store.setState((s) => ({ sources: { ...s.sources, ...c.sources } }));
 
@@ -41,12 +46,20 @@ export function startSuitRunner({ store, heightAt, constants: c, habitat = DEFAU
     }
     last = { t, x: nav.x, z: nav.z };
 
-    // walkback: recompute when the player moved a metre or the route changed
-    const key = Math.round(nav.x) + ',' + Math.round(nav.z) + ',' + (s.route.path ? s.route.path.length + ':' + s.route.path[0] : 'none');
-    if (key !== walkbackKey) { walkbackKey = key; walkback = walkCost(pathHome(nav, s.route.path, habitat), heightAt, c); }
+    // walkback: recompute when the player moved a metre or the route changed. During an event the route leads from
+    // the player to route.shelter, so the walkback follows it forward to the shelter instead of back to its start.
+    const shelter = shelterOf(s.route);
+    const key = Math.round(nav.x) + ',' + Math.round(nav.z) + ',' + (s.route.path ? s.route.path.length + ':' + s.route.path[0] : 'none')
+      + ',' + (shelter ? shelter.x + ':' + shelter.z : 'home');
+    if (key !== walkbackKey) {
+      walkbackKey = key;
+      walkbackTo = shelter ? 'shelter' : 'habitat';
+      const path = shelter ? pathToShelter(nav, s.route.path, shelter) : pathHome(nav, s.route.path, habitat);
+      walkback = walkCost(path, heightAt, c);
+    }
 
-    const r = suitReadout(suit, walkback, c);
-    store.setState((st) => ({ suit: { ...st.suit, ...r } }));
+    const r = suitReadout(suit, walkback, c, { elapsedSec: s.mission.elapsedSec });
+    store.setState((st) => ({ suit: { ...st.suit, ...r, walkbackTo } }));
   }
 
   const timer = si(tick, SUIT_TICK_MS);

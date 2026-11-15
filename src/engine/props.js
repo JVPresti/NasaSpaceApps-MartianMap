@@ -37,7 +37,11 @@ export function createProps(ctx) {
         if (this.spillT > 0.55 && this.pending) { this.caseContent = this.pending; this.pending = null; }   // the sample has landed: show it in the case
         if (this.spillT > 0.9) this.spill.visible = false; }
       if (this.tcase) this.tcase.traverse(o => { if (o.name === 'CaseSoil' || o.name === 'CaseRocks') o.visible = o.name === this.caseContent; });
-      if (!this.scoop) return; this.scoop.visible = sys.arms.state === 'tool'; if (sys.arms.state !== 'tool') this.content = null;
+      if (!this.scoop) return;
+      const state = sys.arms.state;
+      this.scoop.visible = state === 'tool';
+      // the wrist app (#67) hides the scoop while the wrist is up but keeps the sample: closing restores the tool hold
+      if (state !== 'tool' && state !== 'screen') this.content = null;
       if (sys.arms.clip) { const t = sys.arms.clip.time; if (sys.arms.clipName === 'collect_ground' && t >= 2.7) this.content = 'ScoopSoil'; if (sys.arms.clipName === 'collect_rock' && t >= 1.75) this.content = 'ScoopRocks'; if (sys.arms.clipName === 'stow_sample' && t >= 1.1) this.content = null; if (sys.arms.clipName === 'pour_sample' && t >= 1.3 && this.content) { this.startSpill(this.content); if (!sys.partner.carrying) this.pending = this.content === 'ScoopSoil' ? 'CaseSoil' : 'CaseRocks'; this.content = null; } }
       this.scoop.traverse(o => { if (o.name === 'ScoopSoil' || o.name === 'ScoopRocks') o.visible = o.name === this.content; });
       this.tcase.visible = sys.partner.root.visible && !!this.hand; if (!this.tcase.visible) return;

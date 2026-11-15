@@ -27,6 +27,40 @@ const ROUTE_SOURCES = {
   'route.etaSec': { tag: 'DERIVED', source: 'suit model · hazards.json' },
 };
 
+// Sources for the environment values the event timelines write (#189). The HUD shows an environment value only once
+// its path has a source, so every event write registers one.
+export const EVENT_ENVIRONMENT_SOURCES = Object.freeze({
+  'environment.dustOpacity': Object.freeze({
+    tag: 'DERIVED',
+    label: 'Dust storm model',
+    source: 'dust storm event: tau from clear season 0.45 (Jezero) to the 2018 global storm 8.0 (Gale, not Jezero), hazards.json; ramp timing SIM',
+  }),
+  'environment.doseRateUgyH': Object.freeze({
+    tag: 'DATA',
+    label: 'RAD · Curiosity (Gale)',
+    source: 'radiation event: RAD B dose rate of the September 2017 solar particle event, hazards.json models.sep_2017_profile',
+  }),
+});
+
+/**
+ * The event engine's store adapter, with a source written next to every environment value an event sets.
+ * @param {typeof useMissionStore} store
+ * @param {Record<string, object>} [sourcesByPath]
+ */
+export function createEventStoreAdapter(store, sourcesByPath = EVENT_ENVIRONMENT_SOURCES) {
+  const adapter = createStoreAdapter(store);
+  return {
+    ...adapter,
+    set(path, value) {
+      adapter.set(path, value);
+      const source = sourcesByPath[path];
+      if (source && store.getState().sources[path] !== source) {
+        store.setState((state) => ({ sources: { ...state.sources, [path]: source } }));
+      }
+    },
+  };
+}
+
 let current = null;
 
 function json(response, name) {
@@ -169,7 +203,7 @@ export function startEventRunner({ store = useMissionStore, setInterval: si = se
 
   const engine = createEventEngine({
     events: EVENT_DEFINITIONS,
-    store: createStoreAdapter(store),
+    store: createEventStoreAdapter(store),
     getMissionTime: missionTime,
     requestReplan,
     log,

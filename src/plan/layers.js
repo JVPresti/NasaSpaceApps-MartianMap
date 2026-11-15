@@ -1,14 +1,20 @@
 import { t, formatNumber } from '../i18n/index.js';
+import { COST_CONSTANTS } from '../sim/costGrid.js';
 /**
  * Plan-mode layer metadata: names, thresholds, colours and units.
  *
  * The colours and thresholds mirror `uLayer` in `src/engine/shaders.js`
- * (TERRAIN_FRAG). The slope limits (15 and 25 degrees) are the mobility limits
- * recorded in the project plan and used by the cost grid.
+ * (TERRAIN_FRAG). The slope limits come from `COST_CONSTANTS` in
+ * `src/sim/costGrid.js`, which the shader and the route planner also read, and
+ * which `costGrid.test.js` checks against `slope.caution` and `slope.no_go` in
+ * `public/data/hazards.json`.
  */
 
 /** Slope thresholds in degrees. */
-export const SLOPE_LIMITS = Object.freeze({ caution: 15, noGo: 25 });
+export const SLOPE_LIMITS = Object.freeze({
+  caution: COST_CONSTANTS.SLOPE_CAUTION_DEG,
+  noGo: COST_CONSTANTS.SLOPE_LIMIT_DEG,
+});
 
 /** @typedef {{ id: string, index: number, name: string, unit: string, summary: string,
  *   source: string, swatches?: Array<{ color: string, label: string, detail?: string }>,
@@ -29,12 +35,12 @@ export const LAYERS = [
     index: 1,
     get name() { return t('ui.slope.hazard'); },
     get unit() { return t('ui.degrees'); },
-    get summary() { return t('ui.slope.from.the.hirise.1.m.dem.suit'); },
+    get summary() { return t('ui.slope.from.the.hirise.1.m.dem.suit', SLOPE_LIMITS); },
     get source() { return t('ui.derived.hirise.dtm.limits.in.hazards.json'); },
     swatches: [
-      { color: '#33cc66', label: '0–15°', get detail() { return t('ui.walkable'); } },
-      { color: '#f2991a', label: '15–25°', get detail() { return t('caution'); } },
-      { color: '#e6140d', label: '>25°', get detail() { return t('walkableNoGo'); } },
+      { color: '#33cc66', label: `0–${SLOPE_LIMITS.caution}°`, get detail() { return t('ui.walkable'); } },
+      { color: '#f2991a', label: `${SLOPE_LIMITS.caution}–${SLOPE_LIMITS.noGo}°`, get detail() { return t('caution'); } },
+      { color: '#e6140d', label: `>${SLOPE_LIMITS.noGo}°`, get detail() { return t('walkableNoGo'); } },
     ],
   },
   {

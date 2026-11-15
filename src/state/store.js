@@ -32,6 +32,10 @@ export function createInitialState() {
     // `summary` is then a frozen snapshot with the outside time, distance, minima, events, route changes, samples and
     // current radiation reading. The HAB entry is the one in shelters.json, not the HAB route waypoint.
     eva: createInitialEvaState(),
+    // #71, written by src/state/finds.js: points the player marked by pointing, at most MAX_FINDS (src/sim/findDetour.js).
+    // list: [{ id, label, x, z, status: 'pricing' | 'priced' | 'error' | 'accepted', detour, error }]; activeId: the find
+    // the decision card shows; routeKey: waypointKey of the waypoints a Walk re-plan already routed, so Plan does not start over.
+    finds: { list: [], seq: 0, activeId: null, routeKey: null },
     view: { layer: 0, sky: 'late_afternoon', skyBlend: 0, slopeGrid: false },   // what the engine draws; #59 demo starts in late-afternoon light
     sources: {},                                    // { 'environment.tempC': { tag: 'DATA' | 'DERIVED' | 'SIM', source } }
   };

@@ -6,7 +6,7 @@ describe('boot prints over a whole EVA', () => {
   it('keeps every outbound print of the player after 2 hours next to the patrolling partner', () => {
     const r = simulateEva({ hours: 2 });
     expect(r.backStartedMin).toBeLessThan(120);
-    expect(r.outbound.prints).toBeGreaterThan(1800);              // 944 m of route at one print per 0.5 m
+    expect(r.outbound.prints).toBeGreaterThan(1700);              // 895 m of route at one print per 0.5 m
     expect(r.outbound.stillThere).toBe(r.outbound.prints);
     expect(r.player.kept).toBeLessThan(r.player.capacity);      // the player's ring never wrapped
     expect(r.partner.kept).toBeLessThan(r.partner.offered / 10); // the patrol line does not keep stacking prints

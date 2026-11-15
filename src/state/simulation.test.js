@@ -60,8 +60,9 @@ describe('startSimulation clock wiring', () => {
 
     const stop = startSimulation(ENGINE);
     const mission = useMissionStore.getState().mission;
-    // stops.json, hazards.json and shelters.json are requested in parallel; the clock does not wait for any of them.
-    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    // stops.json, hazards.json, shelters.json, meda_sol.json and rad.json are requested in parallel; the clock does
+    // not wait for any of them.
+    expect(fetchSpy).toHaveBeenCalledTimes(5);
     expect(mission.startedAtMs).not.toBeNull();
     expect(mission.sol).toBe(1210);
     expect(mission.lmst).toBe('17:45');
@@ -218,6 +219,37 @@ describe('EVA start at the first switch to Walk (#166)', () => {
     vi.advanceTimersByTime(2000);
     s = useMissionStore.getState();
     expect(s.mission.elapsedSec).toBeCloseTo(2, 6);
+    stop();
+  });
+
+  it('replays MEDA weather and sums the RAD dose from the first Walk, with a source for each value (#189)', async () => {
+    vi.useFakeTimers();
+    const withEnvironment = {
+      ...files,
+      'meda_sol.json': read('../../public/data/meda_sol.json'),
+      'rad.json': read('../../public/data/rad.json'),
+    };
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      const name = Object.keys(withEnvironment).find((key) => String(url).endsWith(key));
+      return Promise.resolve(name ? { ok: true, json: () => Promise.resolve(withEnvironment[name]) } : { ok: false, status: 404 });
+    }));
+    planned();
+    const stop = startSimulation(ENGINE);
+    await flush();
+    vi.advanceTimersByTime(5000);
+    expect(useMissionStore.getState().environment.tempC).toBeNull();   // Plan mode: no EVA yet
+
+    setMode('walk');
+    await flush();
+    vi.advanceTimersByTime(360000);   // 6 min of EVA
+    const s = useMissionStore.getState();
+    expect(Number.isFinite(s.environment.tempC)).toBe(true);
+    expect(Number.isFinite(s.environment.windMs)).toBe(true);
+    expect(s.environment.dustOpacity).toBe(0.45);
+    expect(s.environment.doseUgy).toBeCloseTo(8.75 * 0.1, 1);   // 6 min at the RAD background, 8.75 µGy/h
+    for (const path of ['environment.tempC', 'environment.windMs', 'environment.dustOpacity', 'environment.doseUgy']) {
+      expect(s.sources[path]?.tag).toMatch(/^(DATA|DERIVED)$/);
+    }
     stop();
   });
 });

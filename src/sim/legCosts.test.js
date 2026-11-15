@@ -83,6 +83,13 @@ describe('totals and the margin at the habitat', () => {
     expect(t.status).toBe('nominal');
   });
 
+  it('caps the margin at the end of the plan at the EVA time left after the walk out and back (#195)', () => {
+    const short = { ...c, evaMaxSec: 3600 };
+    const t = routeLegCosts(wps.map((w) => [w.x, w.z]), wps, hills, short).totals;
+    expect(t.marginSec).toBeCloseTo(3600 - t.timeSec - t.returnTimeSec, 6);
+    expect(r.totals.marginSec).toBeLessThan(c.evaMaxSec);
+  });
+
   it('adds no walk home to a round trip', () => {
     const loop = [...wps, wps[0]];
     const t = routeLegCosts(loop.map((w) => [w.x, w.z]), loop, hills, c).totals;
@@ -111,6 +118,12 @@ describe('tags from hazards.json', () => {
     expect(s['route.legs.o2G'].tag).toBe('SIM');
     expect(s['route.legs.batteryPct'].tag).toBe('SIM');
     expect(s['route.totals.marginSec'].tag).toBe('SIM');
+  });
+
+  it('tags the margin at the end of the plan like the HUD margin now (#195)', () => {
+    const s = legCostSources(hazards);
+    expect(s['route.totals.marginSec'].tag).toBe(c.sources['suit.marginSec'].tag);
+    expect(s['route.totals.marginSec'].label).toBe(c.sources['suit.marginSec'].label);
   });
 });
 

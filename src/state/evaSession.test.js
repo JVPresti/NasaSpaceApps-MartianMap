@@ -168,6 +168,55 @@ describe('EVA pause and resume', () => {
     const result = await resumeEva({ engine, mode: 'walk' });
     expect(result.ok).toBe(false);
     expect(result.message).toMatch(/not available/i);
+    expect(result.lockFailed).toBe(true);
+    expect(useMissionStore.getState().mission.paused).toBe(true);
+    expect(engine.inputEnabled).toBe(false);
+  });
+});
+
+describe('EVA without mouse capture (#197)', () => {
+  it('flags a refused lock so the menus can offer drag-to-look', async () => {
+    const engine = fakeEngine({ lock: false });
+    pauseEva({ engine });
+    const result = await resumeEva({ engine, mode: 'walk' });
+    expect(result).toMatchObject({ ok: false, lockFailed: true });
+    expect(result.message).toMatch(/continue without mouse capture/i);
+  });
+
+  it('resumes Walk with drag-to-look after a refusal, without a second lock request', async () => {
+    const engine = fakeEngine({ lock: false });
+    pauseEva({ engine });
+    await resumeEva({ engine, mode: 'walk' });
+    expect(engine.requested).toBe(1);
+    expect(useMissionStore.getState().mission.paused).toBe(true);
+
+    await expect(resumeEva({ engine, mode: 'walk', capture: false })).resolves.toEqual({ ok: true, message: null });
+    expect(engine.requested).toBe(1);
+    expect(engine.inputEnabled).toBe(true);
+    expect(useMissionStore.getState().mission.paused).toBe(false);
+  });
+
+  it('resumes Walk without capture when the engine has no lock API at all', async () => {
+    const engine = { inputEnabled: false, setInputEnabled(value) { engine.inputEnabled = value; } };
+    pauseEva({ engine });
+    await expect(resumeEva({ engine, mode: 'walk', capture: false })).resolves.toMatchObject({ ok: true });
+    expect(engine.inputEnabled).toBe(true);
+    expect(useMissionStore.getState().mission.paused).toBe(false);
+  });
+
+  it('cancels a lock request still in flight so a late grant cannot capture the drag pointer', async () => {
+    const engine = fakeEngine({ lock: 'deferred' });
+    pauseEva({ engine });
+    const releasedBefore = engine.released;
+    await resumeEva({ engine, mode: 'walk', capture: false });
+    expect(engine.requested).toBe(0);
+    expect(engine.released).toBe(releasedBefore + 1);
+  });
+
+  it('pauses the same way after a drag-to-look resume', async () => {
+    const engine = fakeEngine({ lock: false });
+    await resumeEva({ engine, mode: 'walk', capture: false });
+    pauseEva({ engine });
     expect(useMissionStore.getState().mission.paused).toBe(true);
     expect(engine.inputEnabled).toBe(false);
   });

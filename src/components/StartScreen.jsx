@@ -5,8 +5,10 @@ import Modal from './Modal.jsx';
 /**
  * The post-loading start screen. It is a modal dialog, so the scene and top bar behind it are inert.
  * Start captures the mouse in the click itself; the app resumes the mission only after the lock is real.
+ * After a refused capture in Walk it also offers drag-to-look (#197); once chosen, Start skips the capture.
  */
-export default function StartScreen({ mode = 'walk', busy, notice, onStart }) {
+export default function StartScreen({ mode = 'walk', busy, notice, freeLook = false, lockFailed = false, onStart, onStartWithoutCapture }) {
+  const capture = mode === 'walk' && !freeLook;
   return (
     <Modal labelledBy="start-title" className="start-dialog" onCancel={() => {}}>
       <div className="dialog-body">
@@ -23,13 +25,18 @@ export default function StartScreen({ mode = 'walk', busy, notice, onStart }) {
 
         <div className="dialog-actions">
           <button type="button" className="ui-button primary" onClick={onStart} disabled={busy} data-autofocus="true">
-            {busy ? (mode === 'plan' ? t('menu.opening') : t('menu.capturing.the.mouse')) : mode === 'plan' ? t('menu.start.in.plan.view') : t('menu.start.eva')}
+            {busy ? (capture ? t('menu.capturing.the.mouse') : t('menu.opening')) : mode === 'plan' ? t('menu.start.in.plan.view') : t('menu.start.eva')}
           </button>
+          {capture && lockFailed && (
+            <button type="button" className="ui-button ghost" onClick={onStartWithoutCapture} disabled={busy}>
+              {t('menu.continue.without.mouse.capture')}
+            </button>
+          )}
         </div>
         <p className="dialog-footnote">
           {mode === 'plan'
             ? t('menu.plan.view.resumes.without.capturing.the.mouse.the')
-            : t('menu.start.captures.the.mouse.for.looking.around.the')}
+            : freeLook ? t('menu.drag.to.look.start') : t('menu.start.captures.the.mouse.for.looking.around.the')}
         </p>
       </div>
     </Modal>

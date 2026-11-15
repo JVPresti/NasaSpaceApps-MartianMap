@@ -28,11 +28,14 @@ export default function PauseMenu({
   mode,
   busy,
   notice,
+  freeLook = false,
+  lockFailed = false,
   focusToken,
   quality,
   qualityBusy,
   qualityError,
   onResume,
+  onResumeWithoutCapture,
   onRestartRequest,
   onRestartConfirm,
   onControls,
@@ -61,6 +64,7 @@ export default function PauseMenu({
 
   const selected = quality && !quality.pending ? (quality.auto ? 'auto' : quality.tier) : null;
   const qualityDisabled = !quality || qualityBusy || quality.pending;
+  const capture = mode === 'walk' && !freeLook;
 
   return (
     <Modal
@@ -89,8 +93,13 @@ export default function PauseMenu({
               onClick={onResume}
               disabled={busy}
             >
-              {busy ? (mode === 'plan' ? t('menu.resuming') : t('menu.capturing.the.mouse')) : t('resume')}
+              {busy ? (capture ? t('menu.capturing.the.mouse') : t('menu.resuming')) : t('resume')}
             </button>
+            {capture && lockFailed && (
+              <button type="button" className="ui-button ghost" onClick={onResumeWithoutCapture} disabled={busy}>
+                {t('menu.continue.without.mouse.capture')}
+              </button>
+            )}
             <button type="button" className="ui-button ghost" onClick={onRestartRequest} disabled={busy}>{t('menu.restart.eva')}</button>
             <button type="button" className="ui-button ghost" onClick={onControls} disabled={busy}>{t('menu.controls')}</button>
             <button type="button" className="ui-button ghost" onClick={onSources} disabled={busy}>{t('ui.sources.188')}</button>
@@ -132,6 +141,7 @@ export default function PauseMenu({
           </div>
 
           {mode === 'plan' && <p className="dialog-footnote">{t('menu.plan.resumes.without.capturing.the.mouse')}</p>}
+          {mode === 'walk' && freeLook && <p className="dialog-footnote">{t('menu.drag.to.look.pause')}</p>}
         </div>
       )}
 

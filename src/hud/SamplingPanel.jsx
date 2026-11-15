@@ -22,7 +22,7 @@ function describe(x) {
   return what + ' · ' + (INTO[x.into] || '') + (x.sealed ? t('ui.sealed') : '');
 }
 
-function SamplingChecklist() {
+export function SamplingChecklist() {
   const s = useMissionStore(useShallow((st) => {
     const sp = st.sampling, c = sp.checklist;
     return { count: sp.count, photo: c.photo, texture: c.texture, sample: c.sample, seal: c.seal, last: describe(sp.samples[sp.samples.length - 1]) };
@@ -62,6 +62,16 @@ function SamplingPrompt() {
 function PhotoFlash() {
   const photos = useMissionStore((st) => st.sampling.photos);
   return photos ? <div key={photos} className="hud-photo-flash" aria-hidden="true" /> : null;
+}
+
+/** The crosshair, its prompt and the shutter flash: centred on the view, outside the HUD's right column. */
+export function SamplingCrosshair() {
+  return (
+    <>
+      <PhotoFlash />
+      <SamplingPrompt />
+    </>
+  );
 }
 
 export default function SamplingPanel() {

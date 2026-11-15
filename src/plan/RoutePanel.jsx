@@ -6,6 +6,7 @@ import RouteLegs from './RouteLegs.jsx';
 import { fixed as num, minutesFixed as min, routeMetrics } from './routePlan.js';
 import SourceTag from './SourceTag.jsx';
 import WaypointName from '../stops/WaypointName.jsx';
+import { waypointNumber } from '../sim/waypointNumber.js';
 
 function WaypointRow({ waypoint, index, onCommit }) {
   const [x, setX] = useState(String(Math.round(waypoint.x)));
@@ -35,7 +36,7 @@ function WaypointRow({ waypoint, index, onCommit }) {
 
   return (
     <li className="route-waypoint">
-      <span className="waypoint-number">{index + 1}</span>
+      <span className="waypoint-number">{waypointNumber(index)}</span>
       {/* A waypoint with a science stop opens its card (#66). */}
       <WaypointName name={waypoint.name} />
       <label>
@@ -94,7 +95,7 @@ function DecisionReason({ planner, route }) {
 
   return (
     <div className={'decision-reason margin-' + totals.status}>
-      <p className="decision-margin">{t('ui.margin')}<b>{min(totals.marginSec)}</b>
+      <p className="decision-margin">{t('ui.margin.at.end.of.plan')}<b>{min(totals.marginSec)}</b>
         <span className="unit">{t('ui.min')}</span>{t('ui.over.the.30.min.reserve')}<SourceTag path="route.totals.marginSec" />
       </p>
       <p className="decision-detail">{t('ui.back.at.the.habitat.o2')}<b>{num(totals.arrivalO2Pct)}</b>

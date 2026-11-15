@@ -53,7 +53,7 @@ describe('merged route panel', () => {
   });
 
   it('gives go / no-go its reason from the oxygen margin', () => {
-    expect(text).toContain('Margin 242.8 min over the 30 min reserve');
+    expect(text).toContain('Margin at end of plan 242.8 min over the 30 min reserve');
     expect(text).toContain('Walk home 22.3 min');
     expect(text).toContain('Skipped: WP2 · dune field edge');
     expect(html).toContain('margin-nominal');

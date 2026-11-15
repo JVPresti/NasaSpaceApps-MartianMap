@@ -147,15 +147,15 @@ describe('the five waypoints in route.json', () => {
     expect(measurePath(grid, result.path).distance).toBe(result.distance);
   });
 
-  it('reaches every waypoint, or its walkable edge for the outcrop', () => {
+  it('reaches every waypoint', () => {
     const result = planRoute(grid, routeJson.waypoints);
     const nearest = routeJson.waypoints.map((waypoint) =>
       Math.min(...result.path.map(([x, z]) => Math.hypot(x - waypoint.x, z - waypoint.z))),
     );
-    // WP3 is the Bright Angel outcrop, too steep to stand on: the route stops
-    // at the walkable edge within the 20 m goal radius.
+    // WP3 is the stance point below the Bright Angel outcrop, on walkable
+    // ground since #192, so the route ends on it instead of a walkable edge.
     for (const distance of nearest) {
-      expect(distance).toBeLessThanOrEqual(20);
+      expect(distance).toBeLessThan(1e-6);
     }
   });
 });

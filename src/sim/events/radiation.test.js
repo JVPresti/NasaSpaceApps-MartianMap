@@ -17,11 +17,19 @@ describe('radiation alert event data', () => {
     expect(Math.max(...rates)).toBeCloseTo(peak, 1);
   });
 
-  it('accumulates dose monotonically and ends at the habitat', () => {
-    const doses = radiation.timeline.map((entry) => entry.set['environment.doseUgy']);
-    for (let index = 1; index < doses.length; index += 1) {
-      expect(doses[index]).toBeGreaterThan(doses[index - 1]);
+  it('sets only the rate, so the environment runner owns the dose total (#189)', () => {
+    for (const entry of radiation.timeline) expect(entry.set).not.toHaveProperty(['environment.doseUgy']);
+    expect(radiation.endSet).not.toHaveProperty(['environment.doseUgy']);
+    // The rates held between timeline steps add up to about 4.8 µGy over the 12-minute event.
+    let dose = 0;
+    for (let index = 1; index < radiation.timeline.length; index += 1) {
+      const previous = radiation.timeline[index - 1];
+      dose += (previous.set['environment.doseRateUgyH'] * (radiation.timeline[index].atSec - previous.atSec)) / 3600;
     }
+    expect(dose).toBeCloseTo(4.84, 2);
+  });
+
+  it('ends at the habitat', () => {
     expect(radiation.planner).toEqual({ action: 'replan', target: 'habitat' });
     expect(radiation.end).toEqual({ type: 'area', x: 535.1, z: 574.1, radius: 25 });
   });

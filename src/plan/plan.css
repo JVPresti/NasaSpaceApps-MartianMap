@@ -227,13 +227,14 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-1);
   margin-bottom: var(--space-2);
   font-size: var(--text-m);
   font-weight: 600;
 }
 
 .legend-unit {
+  white-space: nowrap;
   font-size: var(--text-xs);
   font-weight: 500;
   color: var(--unit);
@@ -831,22 +832,45 @@
   }
 }
 
-/* Short screens (1366 x 768 and similar): tighter vertical rhythm so the whole route panel, including the
-   per-leg total and an event's skipped list, fits without scrolling. */
+/* Short screens (1366 x 768 and similar): tighter vertical rhythm so both panels fit without scrolling. At
+   1366 x 768 the layer panel shows the slope legend, its source line and the tile facts, and the route panel shows
+   the Waypoints row under an open cost table (#202). The radio shadow note collapses to the button's tooltip and
+   screen-reader description. Both panels still scroll if a longer translation or event list overflows. */
 @media (max-height: 820px) {
   .plan-panel-head { padding-bottom: var(--space-2); }
   .route-metrics { margin-top: var(--space-2); gap: 6px; }
-  .route-metric { padding: 6px 10px; }
-  .route-decision-block { margin-top: var(--space-2); padding: 10px; }
+  .route-metric { padding: 4px 10px; }
+  .route-panel .metric-value { font-size: 16px; line-height: 1.15; }
+  .route-panel .elevation-profile { margin-top: var(--space-2); }
+  .route-panel .elevation-profile svg { max-height: 80px; }
+  .route-decision-block { margin-top: var(--space-2); padding: var(--space-2) 10px; }
   .decision-reason { margin-top: 6px; }
   .route-actions { margin-top: 10px; }
   .route-actions button { min-height: 32px; }
   .route-skipped { margin-top: 6px; }
-  .plan-disclosure { margin-top: 10px; }
-  .plan-disclosure summary { padding: 10px 0 6px; }
+  .plan-disclosure { margin-top: 6px; }
+  .plan-disclosure summary { padding: var(--space-2) 0 var(--space-1); }
   .legs-table th,
   .legs-table td { padding-top: 2px; padding-bottom: 2px; line-height: 1.15; }
-  .layer-list button { min-height: 32px; }
+
+  .plan-left .plan-section { padding-top: 10px; }
+  .plan-left .plan-section h3 { margin-bottom: var(--space-1); }
+  .layer-list { gap: 2px; }
+  .layer-list button { min-height: 28px; padding-top: 3px; padding-bottom: 3px; }
+  .plan-left .plan-note {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .layer-legend { padding: var(--space-2) 10px; }
+  .legend-head { margin-bottom: 6px; }
+  .legend-swatches { gap: 3px; }
+  .legend-summary { margin-top: 6px; line-height: 1.35; }
+  .legend-source { margin-top: var(--space-1); }
+  .plan-panel-foot { margin-top: 10px; padding-top: var(--space-2); }
 }
 
 @media (max-width: 1100px) {
