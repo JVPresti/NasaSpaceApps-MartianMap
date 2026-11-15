@@ -60,3 +60,19 @@ describe('event banner captions and tags (#196)', () => {
     expect(eventCaption(EVENT_VALUE_PATHS.radiation)).toMatch(/septiembre de 2017/);
   });
 });
+
+describe('event banner order', () => {
+  const alert = (eventId, level, startedAtSec) => ({ active: true, eventId, level, text: eventId + ' alert', startedAtSec });
+
+  it('shows the newest of two alerts of one level, and counts the other (#265)', () => {
+    useMissionStore.setState({ alerts: { 'dust-storm': alert('dust-storm', 'warning', 75), radiation: alert('radiation', 'warning', 95) } });
+    const html = text(renderToStaticMarkup(<EventBanner />));
+    expect(html).toMatch(/^ ?warning radiation alert/);
+    expect(html).toMatch(/1 more alert/);
+  });
+
+  it('still puts a more severe alert above a newer one', () => {
+    useMissionStore.setState({ alerts: { 'dust-storm': alert('dust-storm', 'warning', 75), 'low-oxygen-caution': alert('low-oxygen-caution', 'caution', 95) } });
+    expect(text(renderToStaticMarkup(<EventBanner />))).toMatch(/^ ?warning dust-storm alert/);
+  });
+});

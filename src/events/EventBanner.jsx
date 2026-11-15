@@ -45,9 +45,11 @@ export default function EventBanner({ className = '' }) {
   const suit = useMissionStore((s) => s.suit);
   const route = useMissionStore((s) => s.route);
 
+  // The most severe alert first; between alerts of one level the newest, so a radiation alert that starts during the
+  // dust storm is the one read (#265), with the storm counted in "+1 more alert".
   const active = Object.values(alerts)
     .filter((alert) => alert && alert.active)
-    .sort((a, b) => (ORDER[b.level] ?? 0) - (ORDER[a.level] ?? 0));
+    .sort((a, b) => ((ORDER[b.level] ?? 0) - (ORDER[a.level] ?? 0)) || ((b.startedAtSec ?? 0) - (a.startedAtSec ?? 0)));
 
   if (active.length === 0) return null;
   const alert = active[0];
