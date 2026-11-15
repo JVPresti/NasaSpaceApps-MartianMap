@@ -3,13 +3,15 @@
  * only when the link has a valid ?room= code, so the offline build never contains it.
  *
  * startOnline({ code, store }) creates the player identity, connects to the room, runs the clock and writes
- * the `online` slice of the mission store (docs/STATE_AND_ENGINE.md). sharedState.js writes the `shared` slice. It returns
- * { send, on, addMarker, stop, ... }.
+ * the `online` slice of the mission store (docs/STATE_AND_ENGINE.md), and syncs poses with the other players
+ * (src/net/poseSync.js). sharedState.js writes the `shared` slice. It returns { send, on, addMarker, stop, poses, ... }.
  */
 import { createClock } from './clock.js';
 import { getPlayerId, getPlayerName, getPreferredColor, setPreferredColor } from './identity.js';
 import { MSG, PROTOCOL_VERSION, ROLE, ROLES, normalizeRoomCode } from './protocol.js';
 import { connectRoom } from './room.js';
+import { startPoseSync } from './poseSync.js';
+import { getCurrentEngine } from '../state/currentEngine.js';
 import { createSharedState } from './sharedState.js';
 import { installSharedHooks } from '../state/sharedHooks.js';
 
@@ -20,7 +22,7 @@ export const OFFLINE_STATE = Object.freeze({
   code: null, status: 'off', me: null, crew: [], offsetMs: 0, rttMs: null, startedAtMs: null, seed: null, closeCode: null,
 });
 
-export function startOnline({ code, store, role = ROLE.SURFACE, color, connect = connectRoom, ...connectOptions }) {
+export function startOnline({ code, store, role = ROLE.SURFACE, color, connect = connectRoom, getEngine = getCurrentEngine, poseHz, ...connectOptions }) {
   const roomCode = normalizeRoomCode(code);
   if (!roomCode) throw new Error('startOnline: bad room code ' + code);
   if (!ROLES.includes(role)) throw new Error('startOnline: role must be surface or habitat');
@@ -63,11 +65,18 @@ export function startOnline({ code, store, role = ROLE.SURFACE, color, connect =
   const shared = createSharedState({ store, room, playerId: id, ...(connectOptions.timers ? { timers: connectOptions.timers } : {}), ...(connectOptions.now ? { now: connectOptions.now } : {}) });
   const uninstall = installSharedHooks({ claimSample: shared.claimSample, mayCallCase: shared.mayCallCase });
 
+  // Poses and telemetry (#53): remote suits through the engine's partner sources, ours to the room.
+  const poses = startPoseSync({
+    room, store, getEngine, hz: poseHz,
+    ...(connectOptions.timers ? { timers: connectOptions.timers } : {}), ...(connectOptions.now ? { now: connectOptions.now } : {}),
+  });
+
   return {
     code: roomCode,
     id,
     room,
     clock,
+    poses,
     send: (msg) => room.send(msg),
     on: (type, fn) => room.on(type, fn),
     serverNow: () => clock.serverNow(),
@@ -78,6 +87,7 @@ export function startOnline({ code, store, role = ROLE.SURFACE, color, connect =
     addMarker: (marker) => shared.addMarker(marker),
     stop() {
       for (const off of offs) off();
+      poses.stop();
       uninstall();
       shared.stop();
       clock.stop();

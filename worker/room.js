@@ -10,6 +10,7 @@ import {
   STALE_MS, decode, encode, utf8ByteLength, validate,
 } from '../src/net/protocol.js';
 import { createTokenBucket } from '../src/net/rateLimit.js';
+import { POSE_HANDLERS } from './handlers/poses.js';
 import { SHARED_HANDLERS, releaseCaseOf, sharedWelcome } from './handlers/shared.js';
 
 const SCHEMA = [
@@ -24,11 +25,12 @@ function randomUint32() {
 
 /**
  * Handlers for seated sockets, by message type. Each gets (room, ws, msg, me, now) where msg has passed the
- * protocol validator and me is the sender's crew entry. Later pieces add:
- * M2 `p` and `tel` (relay to the others with the sender's id), M4 `rt` and `go`. M3 `mk`, `smp` and `case`
- * (SQLite, then broadcast) are in handlers/shared.js. A type without a handler is ignored.
+ * protocol validator and me is the sender's crew entry. M2 `p` and `tel` (relay to the others with the sender's id)
+ * are in handlers/poses.js, M3 `mk`, `smp` and `case` (SQLite, then broadcast) in handlers/shared.js. M4 adds `rt`
+ * and `go`. A type without a handler is ignored.
  */
 export const HANDLERS = {
+  ...POSE_HANDLERS,
   [MSG.START](room, _ws, _msg, _me, now) {
     room.broadcast({ type: MSG.START, ...room.startMission(now) });
   },

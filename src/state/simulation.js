@@ -144,8 +144,9 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     suitData.then(({ constants, habitat }) => {
       if (stopped) return;
       suit = startSuitRunner({ store, heightAt: engine.heightAt, constants, habitat });   // full O2 and battery
-      // the partner's suit and the separation limit (#70), read only through the partner source
-      if (engine.getPartner) partner = startPartnerRunner({ store, readPartner: engine.getPartner, heightAt: engine.heightAt, lineOfSight: engine.lineOfSight, constants, habitat });
+      // the partner's suit and the separation limit (#70), read only through the partner sources; every remote
+      // suit gets its own crew entry online (#53)
+      if (engine.getPartner) partner = startPartnerRunner({ store, readPartner: engine.getPartner, readPartners: engine.getPartners, heightAt: engine.heightAt, lineOfSight: engine.lineOfSight, constants, habitat });
     }, () => {});
   }
 
