@@ -41,9 +41,9 @@ Help text: "What did you develop? How does it address the challenge? Why is it i
 
 > On Mars, the question isn't where you can go. It's where you can go and still get home.
 >
-> Marswalk answers it for one real place: a 1.4 by 1.5 km patch of Neretva Vallis in Jezero crater, around Cheyava Falls, the rock where Perseverance found a potential biosignature. An EVA planner has to budget oxygen before picking a route, and Marswalk shows that budget on the real ground. From NASA's HiRISE terrain model we build a slope map that blocks ground steeper than NASA's 20° suited walking limit. A shortest-path planner (A*) routes the astronaut through it, and we cost every leg in minutes and grams of oxygen: the 771 g tank of NASA's xEMU suit design, a walking model calibrated to NASA suited tests, and Apollo's 30-minute reserve. Then you walk the route in first person. A dust storm, a solar storm built from the September 2017 event Curiosity measured, or a low-oxygen warning re-plans the route back to the habitat. Every number on screen says whether a NASA mission measured it, we calculated it, or we assumed it. We checked all 109 against their sources and list the 16 we got wrong.
+> Marswalk answers it for one real place: a 1.4 by 1.5 km patch of Neretva Vallis in Jezero crater, around Cheyava Falls, the rock where Perseverance found a potential biosignature. An EVA planner has to budget oxygen before picking a route, and Marswalk shows that budget on real ground. From NASA's HiRISE terrain model we build a slope map that blocks ground steeper than NASA's 20° suited walking limit. A shortest-path planner (A*) routes the astronaut through it, and we cost every leg in minutes and grams of oxygen: the 771 g tank of NASA's xEMU suit design, a walking model calibrated to NASA suited tests, and Apollo's 30-minute reserve. Then you walk it in first person. A dust storm, a solar storm built from the September 2017 event Curiosity measured, or a low-oxygen warning re-plans the route home. Almost every number on screen says whether a NASA mission measured it, we calculated it, or we assumed it. We traced 109 to their sources, could not open the paper behind 3, and list the 16 we got wrong.
 
-194 words.
+196 words.
 
 ## Project Demonstration
 
@@ -120,11 +120,13 @@ Paste everything inside the box. The form takes rich text, so the headings survi
 >
 > **Use of SI**
 >
-> we built Marswalk with SI tools and reviewed their output. We used an AI assistant to compare challenges and talk through the concept on 13 November. AI coding agents (Claude Code) wrote most of the code from our issues, and every change went through a reviewed pull request with tests. AI research agents found and opened the NASA reports and papers behind our numbers, and an audit run with AI agents and reviewed by us checked all 109 numbers on screen against their sources (docs/VALIDITY.md). Language models helped write the docs and the Spanish translation. The start screen video, its poster and the three hazard illustrations were generated with Higgsfield. They are artwork, not mission images, contain no NASA marks, and are captioned or credited as AI-generated. No SI model runs inside the app. The terrain, the weather, the radiation and the rover data are NASA measurements, and the route planner is plain A* on the HiRISE height grid.
+> we built Marswalk with SI tools and reviewed their output. We used an AI assistant to compare challenges and talk through the concept on 13 November. AI coding agents (Claude Code) wrote most of the code from our issues. Almost every change reached main through a pull request that CI checked with lint, build and our test suite, and teammates reviewed 41 of the 134 pull requests merged by 15 November. AI research agents found and opened the NASA reports and papers behind our numbers. An audit run with AI agents and reviewed by us traced 109 numbers to their sources, and 3 of them come from a paper we could not open (docs/VALIDITY.md). Language models helped write the docs and the Spanish translation. The start screen video, its poster and the three hazard illustrations were generated with Higgsfield. They are artwork, not mission images. None shows a NASA logo, flag or mission identifier, and each is captioned or credited as AI-generated. No SI model runs inside the app. The terrain, the weather, the radiation and the rover data are NASA measurements, and the route planner is plain A* on the HiRISE height grid.
 >
 > **Prior work**
 >
-> before the hackathon started at 9:00 am on 14 November, our graphics team prepared assets on 12 and 13 November: the HiRISE and CTX terrain tile of Neretva Vallis cut for Blender (heights, orthophotos, the first waypoint list and the rock layout), the NASA Z-2 suit rigged and animated, the habitat built on NASA's Habitat Demonstration Unit, two props, and a three.js test bench that loads them. They arrived in one commit at 9:49 am on 14 November (`9fb29fc`), and `docs/marswalk-assets/README.md` dates each pass. During the event we ported the app's rendering engine from that test bench, and wrote everything else: the route planner and cost grid, the suit and oxygen model, the event engine, the dust storm, radiation and low-oxygen events, the shelters, the source tags on every number, the HUD and Plan mode, and the MEDA, RAD, DONKI and Perseverance traverse and image pipelines. We chose the challenge and the concept on 13 November, with help from an AI assistant. We told our local lead about this before submitting. [Edit this last sentence to match what the local lead said.]
+> before the hackathon started at 9:00 am on 14 November, our graphics team prepared assets on 12 and 13 November: the HiRISE and CTX terrain tile of Neretva Vallis cut for Blender (heights, orthophotos, the first waypoint list and the rock layout), the NASA Z-2 suit rigged and animated, the habitat built on NASA's Habitat Demonstration Unit, two props, and a three.js test bench that loads them. They arrived in one commit at 9:49 am on 14 November (`9fb29fc`), and `docs/marswalk-assets/README.md` dates each pass. During the event we ported the app's rendering engine from that test bench, and wrote everything else: the route planner and cost grid, the suit and oxygen model, the event engine, the dust storm, radiation and low-oxygen events, the shelters, the source tags on every number, the HUD and Plan mode, and the MEDA, RAD, DONKI and Perseverance traverse and image pipelines. We chose the challenge and the concept on 13 November, with help from an AI assistant.
+
+**Fernando to confirm before pasting the prior-work paragraph.** It stops at what is true today. Once the local lead has answered, add one sentence at its end that says so, for example "We told our local lead before submitting." Do not add it before it is true.
 
 ## Use of Super Intelligence (SI)
 
@@ -132,7 +134,7 @@ The form answer is not shown to judges. Tick the boxes listed in `docs/RULES.md`
 
 ## NASA Data
 
-Help text: "In order to be eligible for a Global Award, you must use NASA data or resources. ... Please list all NASA data or resources used in your project."
+The Project Submission Guide: "To be eligible for a Global Award, you must use at least one NASA data or resource."
 
 The form takes one link per row, with link text. Add these rows.
 
