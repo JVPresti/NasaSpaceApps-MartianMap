@@ -1,8 +1,8 @@
-import { t, translateText, formatUnit } from '../i18n/index.js';
 // Ported from docs/marswalk-assets/testbench-reference/main.js (lines 658-782).
 import * as THREE from 'three';
 import * as SH from './shaders.js';
 import { HAB_ZONES, HAB_SOLIDS, habZone, habCanStand, habSlideWorld } from './collide.js';
+import { createHabitatScreens } from './habitatScreens.js';
 
 export function createHabitat(ctx) {
   const { scene, camera, U, assets, sys, view, T } = ctx;
@@ -25,58 +25,12 @@ export function createHabitat(ctx) {
       const d = Math.min(Math.abs(l.x - 7.05), Math.abs(l.x - 2.45)), t = Math.min(1, Math.max(0, (d - 0.55) / 0.85)); return 0.42 * (1 - t * t * (3 - 2 * t)); },
     update(dt) {
       if (this.lights) { const on = U.uLamp.value.x > 0; for (const l of this.lights) l.visible = on; U.uHabGlow.value.set(1.0, 0.84, 0.62).multiplyScalar(on ? 0.16 : 0); }
-      if (this.screens.mat && camera.position.distanceToSquared(this.pos) < 200 && (this.screens.t += dt || 0.016) > 0.25) { this.screens.t = 0; this.screens.draw(); }   // the wall screens refresh 4 times a second, only when someone is near
+      this.screens.update(dt || 0.016, camera.position.distanceToSquared(this.pos) < 200);   // the wall screens refresh 4 times a second, only when someone is near (habitatScreens.js)
       if (!this.hatch) return; const l = this.local(view.eye.x, view.eye.z, this._l), pl = sys.partner.root ? this.local(sys.partner.root.position.x, sys.partner.root.position.z, { x: 0, v: 0 }) : null, near = (view.mode === 'eye' && l.x > 3.0 && l.x < 11.5 && Math.abs(l.v) < 3.0) || (pl && sys.partner.root.visible && pl.x > 3.0 && pl.x < 11.6 && Math.abs(pl.v) < 2.0);   // reference: the hatch opens when a walker is near
       this.open += ((near ? 1 : 0) - this.open) * Math.min(1, (dt || 0.016) * 3); this.hatch.rotation.y = 1.65 * this.open;
     },
-    // Wall screens (reference content). The five screen faces are one mesh, 'HabitatScreens', whose UVs point into a 1024 px
-    // canvas; each screen has its own cell (same numbers as habitat.json "screens"). Draw anything into the cell and it shows up.
-    screens: { t: 1, mat: null, clock: 0,
-      CELLS: { life: [0, 0, 512, 341], eva: [512, 0, 512, 341], weather: [0, 341, 512, 341], airlock: [512, 341, 512, 282], door: [0, 682, 512, 341] },
-      init() { this.canvas = document.createElement('canvas'); this.canvas.width = this.canvas.height = 1024; this.g = this.canvas.getContext('2d');
-        this.tex = new THREE.CanvasTexture(this.canvas); this.tex.flipY = false; this.tex.colorSpace = THREE.SRGBColorSpace; this.tex.generateMipmaps = false; this.tex.minFilter = THREE.LinearFilter;
-        this.mat = new THREE.MeshBasicMaterial({ map: this.tex, toneMapped: false, side: THREE.DoubleSide }); },
-      draw() { const g = this.g, T = (this.clock += 0.25), C = this.CELLS, F = (px, b) => (b ? 'bold ' : '') + px + 'px ui-monospace, Menlo, Consolas, monospace';
-        const frame = (c, title, fg, bg) => { const [x, y, w, h] = c; g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip(); g.translate(x, y); g.fillStyle = bg; g.fillRect(0, 0, w, h);
-          g.fillStyle = fg; g.globalAlpha = 0.16; g.fillRect(0, 0, w, 46); g.globalAlpha = 1; g.font = F(26, true); g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillText(translateText(title), 16, 24, w - 32);
-          g.strokeStyle = fg; g.globalAlpha = 0.5; g.lineWidth = 2; g.strokeRect(5, 5, w - 10, h - 10); g.globalAlpha = 1; return [w, h]; };
-        const bar = (x, y, w, label, val, unit, frac, fg, warn) => { g.font = F(20); g.fillStyle = fg; g.textAlign = 'left'; g.fillText(translateText(label), x, y); g.textAlign = 'right'; g.fillText(formatUnit(Number(val), unit, String(val).split('.')[1]?.length ?? 0), x + w, y);
-          g.globalAlpha = 0.22; g.fillRect(x, y + 14, w, 12); g.globalAlpha = 1; g.fillStyle = warn || fg; g.fillRect(x, y + 14, w * Math.min(1, Math.max(0, frac)), 12); };
-        const trace = (x, y, w, h, fg, fn) => { g.strokeStyle = fg; g.lineWidth = 2.5; g.beginPath(); for (let i = 0; i <= w; i += 4) { const yy = y + h / 2 - fn(i / w) * h / 2; if (i) g.lineTo(x + i, yy); else g.moveTo(x + i, yy); } g.stroke(); };
-        const wob = (k, a) => Math.sin(T * 0.7 + k * 2.1) * a, blink = Math.floor(T * 2) % 2 === 0, storm = /storm|dust/.test(ctx.presetName), night = /night/.test(ctx.presetName);
-        // 1. life support (blue screen left of the sample cabinet)
-        frame(C.life, t('ui.life.support'), '#8fe9ff', '#03222b');
-        bar(20, 78, 300, 'O2', (20.9 + wob(1, 0.1)).toFixed(1), '%', 0.84 + wob(1, 0.01), '#8fe9ff'); bar(20, 130, 300, 'CO2', (0.04 + wob(2, 0.005)).toFixed(3), '%', 0.12 + wob(2, 0.02), '#8fe9ff');
-        bar(20, 182, 300, t('pressure'), (70.3 + wob(3, 0.2)).toFixed(1), 'kPa', 0.70 + wob(3, 0.01), '#8fe9ff'); bar(20, 234, 300, t('cabin'), (21.5 + wob(4, 0.3)).toFixed(1), 'C', 0.55 + wob(4, 0.02), '#8fe9ff');
-        g.fillStyle = '#7dff9a'; g.beginPath(); g.arc(420, 120, 44, 0, 7); g.fill(); g.fillStyle = '#03222b'; g.font = F(22, true); g.textAlign = 'center'; g.fillText(t('ok'), 420, 121);
-        g.fillStyle = '#8fe9ff'; g.font = F(17); g.fillText(t('scrubber'), 420, 190); trace(350, 205, 140, 60, '#8fe9ff', u => Math.sin(u * 14 + T * 2) * 0.5 + Math.sin(u * 5 - T) * 0.3);
-        g.textAlign = 'left'; g.font = F(17); g.fillText(t('waterPower') + (storm ? '61' : '94') + ' %', 20, 305); g.restore();
-        // 2. EVA team (blue screen by the shelves)
-        frame(C.eva, t('ui.eva.team'), '#8fe9ff', '#03222b');
-        [['EV1', 0, 91, 78], ['EV2', 1, 88, 84]].forEach(([nm, k, o2, bat]) => { const y = 70 + k * 125; g.fillStyle = '#ffffff'; g.font = F(24, true); g.textAlign = 'left'; g.fillText(nm, 20, y + 6);
-          bar(90, y, 190, t('suitO2'), o2, '%', o2 / 100, '#8fe9ff'); bar(90, y + 50, 190, t('battery'), bat, '%', bat / 100, '#8fe9ff');
-          const bpm = 72 + k * 9 + Math.round(wob(5 + k, 3)); g.fillStyle = '#7dff9a'; g.font = F(20); g.textAlign = 'right'; g.fillText(bpm + ' bpm', 492, y);
-          trace(300, y + 14, 192, 64, '#7dff9a', u => { const ph = (u * 3 + T * 0.9 + k * 0.4) % 1; return ph < 0.06 ? ph * 14 : ph < 0.12 ? 0.84 - (ph - 0.06) * 26 : ph < 0.16 ? -0.72 + (ph - 0.12) * 18 : 0; }); });
-        g.fillStyle = '#8fe9ff'; g.font = F(17); g.textAlign = 'left'; const mm = Math.floor(T / 60), ss = Math.floor(T % 60); g.fillText('NERETVA VALLIS   T+' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0'), 20, 315); g.restore();
-        // 3. weather and alerts (amber screen by the ladder)
-        frame(C.weather, t('weather'), '#ffc56b', '#2b1a03');
-        bar(20, 78, 250, t('ui.dust.tau'), storm ? '2.8' : '0.6', '', storm ? 0.93 : 0.2, '#ffc56b', storm ? '#ff5a3c' : null); bar(20, 130, 250, t('wind'), storm ? '24' : '6', 'm/s', storm ? 0.8 : 0.2, '#ffc56b', storm ? '#ff5a3c' : null);
-        bar(20, 182, 250, t('temperature'), night ? '-78' : '-23', 'C', night ? 0.15 : 0.5, '#ffc56b'); bar(20, 234, 250, t('radiation'), '0.7', 'mSv/d', 0.3, '#ffc56b');
-        g.strokeStyle = '#ffc56b'; g.lineWidth = 2; for (const r of [30, 60, 90]) { g.globalAlpha = 0.5; g.beginPath(); g.arc(395, 170, r, 0, 7); g.stroke(); } g.globalAlpha = 1;
-        const sa = T * 1.2; g.beginPath(); g.moveTo(395, 170); g.lineTo(395 + Math.cos(sa) * 90, 170 + Math.sin(sa) * 90); g.stroke();
-        g.fillStyle = storm ? '#ff5a3c' : '#ffc56b'; for (let k = 0; k < (storm ? 9 : 3); k++) { const a = k * 2.4 + 1, r = 25 + (k * 37 % 60); g.globalAlpha = 0.35 + 0.65 * Math.max(0, Math.cos(sa - a)); g.beginPath(); g.arc(395 + Math.cos(a) * r, 170 + Math.sin(a) * r, storm ? 9 : 5, 0, 7); g.fill(); } g.globalAlpha = 1;
-        if (storm && blink) { g.fillStyle = '#ff5a3c'; g.fillRect(14, 286, 484, 40); g.fillStyle = '#2b1a03'; } else g.fillStyle = storm ? '#ff5a3c' : '#7dff9a';
-        g.font = F(22, true); g.textAlign = 'center'; g.fillText(storm ? t('ui.dust.storm.eva.hold') : t('ui.eva.window.open'), 256, 307); g.restore();
-        // 4. airlock status (blue screen inside the airlock)
-        frame(C.airlock, t('airlock'), '#8fe9ff', '#03222b'); const op = sys.habitat.open > 0.5;
-        bar(20, 82, 472, t('chamber'), op ? '0.7' : '70.3', 'kPa', op ? 0.02 : 0.70, '#8fe9ff');
-        g.font = F(24, true); g.textAlign = 'left'; g.fillStyle = op ? '#ffc56b' : '#7dff9a'; g.fillText(t('outerHatch') + (op ? t('ui.open') : t('habitat.sealed')), 20, 160); g.fillStyle = '#7dff9a'; g.fillText(t('ui.inner.hatch.open'), 20, 200);
-        g.fillStyle = '#8fe9ff'; g.font = F(18); g.fillText(op ? t('ui.vented.to.mars.ambient') : t('ui.equalised.with.cabin'), 20, 245); g.restore();
-        // 5. hatch control panel (beside the inner hatch)
-        frame(C.door, t('hatch'), '#8fe9ff', '#062a33');
-        g.fillStyle = op ? '#ffc56b' : '#7dff9a'; g.globalAlpha = blink || !op ? 1 : 0.4; g.beginPath(); g.arc(110, 190, 62, 0, 7); g.fill(); g.globalAlpha = 1; g.fillStyle = '#062a33'; g.font = F(24, true); g.textAlign = 'center'; g.fillText(op ? t('ui.wait') : t('ui.safe'), 110, 191);
-        [[t('ui.cycle'), 80], [t('ui.open'), 165], [t('ui.lock'), 250]].forEach(([t, y]) => { g.strokeStyle = '#8fe9ff'; g.lineWidth = 3; g.strokeRect(230, y, 250, 64); g.fillStyle = '#8fe9ff'; g.font = F(26, true); g.fillText(translateText(t), 355, y + 33); }); g.restore();
-        this.tex.needsUpdate = true; } },
+    // Wall screens and planning table: drawn from mission data by habitatScreens.js (#47); created in createHabitat below.
+    screens: null,
     root: null, pos: new THREE.Vector3(1e9, 0, 1e9), clear: 12,
     // Sit the habitat back on the terrain after a tier change rebuilt the mesh (meshH changes with the grid).
     // Same height rule as init; the spot and heading do not change. Not in the bench, which left it floating.
@@ -115,15 +69,10 @@ export function createHabitat(ctx) {
           lib[it.model].traverse(o => { if (o.isMesh) { o.frustumCulled = false; o.material = o.material.map ? new THREE.ShaderMaterial({ uniforms: { uInterior: U.uInterior, uHabInv: U.uHabInv, tVol: U.tVol, tMap: { value: o.material.map } }, vertexShader: SH.INTERIOR_TEX_VERT, fragmentShader: SH.INTERIOR_TEX_FRAG, side: THREE.DoubleSide }) : /glass/.test(o.name) ? glassMat : furnMat; if (/glass/.test(o.name)) o.renderOrder = 3; } }); }
         const f = lib[it.model].clone(true); f.position.set(...it.position); if (it.scale) f.scale.setScalar(it.scale); f.rotation.y = it.rotation_y_deg * Math.PI / 180; gltf.scene.add(f); if (it.blocks) this.BLOCKS.push(...[].concat(it.blocks));
       }
-      this.screens.init(); ig.scene.traverse(o => { if (o.isMesh) { o.material = /Screens/.test(o.name) ? this.screens.mat : inMat; o.frustumCulled = false; } }); gltf.scene.add(ig.scene);
+      ig.scene.traverse(o => { if (o.isMesh) { o.material = /Screens/.test(o.name) ? this.screens.mat : inMat; o.frustumCulled = false; } }); gltf.scene.add(ig.scene);
       this.hatch = gltf.scene.getObjectByName('HabitatHatch');
-      // planning table top: the EVA map (reference). Terrain photo tinted like a display, route and waypoints from route.json.
-      const mc = document.createElement('canvas'); mc.width = mc.height = 512; const g3 = mc.getContext('2d'), W2 = sys.route.data.waypoints, src = ctx.orthoCache.low ? ctx.orthoCache.low.image : (ctx.orthoCache.high && ctx.orthoCache.high.image);
-      g3.fillStyle = '#04161b'; g3.fillRect(0, 0, 512, 512); if (src) { g3.globalAlpha = 0.85; g3.drawImage(src, 0, 0, 512, 512); g3.globalAlpha = 1; g3.globalCompositeOperation = 'multiply'; g3.fillStyle = '#39c4d8'; g3.fillRect(0, 0, 512, 512); g3.globalCompositeOperation = 'source-over'; }
-      g3.strokeStyle = 'rgba(120,230,255,.25)'; g3.lineWidth = 1; for (let k = 1; k < 8; k++) { g3.beginPath(); g3.moveTo(k * 64, 0); g3.lineTo(k * 64, 512); g3.moveTo(0, k * 64); g3.lineTo(512, k * 64); g3.stroke(); }
-      const mp = w => [(w.x / T.W + 0.5) * 512, (w.z / T.H + 0.5) * 512]; g3.strokeStyle = '#ffd24a'; g3.lineWidth = 4; g3.setLineDash([10, 6]); g3.beginPath(); W2.forEach((w, i) => { const [px, py] = mp(w); if (i) g3.lineTo(px, py); else g3.moveTo(px, py); }); g3.stroke(); g3.setLineDash([]);
-      W2.forEach((w, i) => { const [px, py] = mp(w); g3.fillStyle = i === 0 ? '#7dff9a' : '#ffffff'; g3.beginPath(); g3.arc(px, py, i === 0 ? 9 : 6, 0, 7); g3.fill(); });
-      const mt = new THREE.CanvasTexture(mc); mt.colorSpace = THREE.SRGBColorSpace; const disc = new THREE.Mesh(new THREE.CircleGeometry(0.535, 48), new THREE.MeshBasicMaterial({ map: mt, toneMapped: false })); disc.rotation.x = -Math.PI / 2; disc.position.set(0, 1.10 + 0.966, 0); gltf.scene.add(disc);
+      // planning table top: the EVA map, drawn from the store's route by habitatScreens.js (#47); route.json's waypoints until data arrives
+      const disc = this.screens.table.mesh; disc.position.set(0, 1.10 + 0.966, 0); gltf.scene.add(disc); this.screens.table.drawPlaceholder();
       // night lights (reference): a warm work light over the outer hatch and a red beacon on the comms mast
       const gc = document.createElement('canvas'); gc.width = gc.height = 64; const g2 = gc.getContext('2d'), gr = g2.createRadialGradient(32, 32, 0, 32, 32, 32);
       gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,.5)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g2.fillStyle = gr; g2.fillRect(0, 0, 64, 64);
@@ -135,5 +84,6 @@ export function createHabitat(ctx) {
       scene.add(this.root); sys.cast.on[2] = true; U.uCastC.value[2].set(best.x + d.x * 1.5, best.y + 3.5, best.z + d.z * 1.5); sys.cast.dirty = true; sys.rocks.reset();
     },
   };
+  habitat.screens = createHabitatScreens(ctx);
   return habitat;
 }
