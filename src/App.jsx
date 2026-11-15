@@ -9,6 +9,7 @@ import StartScreen from './components/StartScreen.jsx';
 import TouchStick from './components/TouchStick.jsx';
 import VisorFrame from './components/VisorFrame.jsx';
 import { cycleLayer } from './components/shortcuts.js';
+import { modeSwitchAllowed } from './components/modeGuard.js';
 import { useShortcuts } from './components/useShortcuts.js';
 import DebriefScreen from './debrief/DebriefScreen.jsx';
 import EventBanner from './events/EventBanner.jsx';
@@ -306,7 +307,10 @@ export default function App() {
   const handleGamepadAction = useCallback((action) => {
     if (phaseRef.current !== EVA_PHASE.PLAYING || busyRef.current) return;
     if (action === 'mode') {
-      handleModeChange(useMissionStore.getState().mode === 'walk' ? 'plan' : 'walk', { capture: false });
+      const next = useMissionStore.getState().mode === 'walk' ? 'plan' : 'walk';
+      // As M (handleShortcutMode): before the EVA has begun, Start must not leave the table past the Go / No-go check.
+      if (!modeSwitchAllowed(next, evaBegunRef.current)) return;
+      handleModeChange(next, { capture: false });
     } else if (action === 'layer-prev') cycleLayer(-1);
     else if (action === 'layer-next') cycleLayer(1);
   }, [handleModeChange]);
@@ -484,7 +488,7 @@ export default function App() {
   // through the same handler, so it also captures the mouse in Walk (#174).
   // Before the EVA has begun, M must not leave the table: Begin EVA is the only way out, behind the Go / No-go check.
   const handleShortcutMode = useCallback((next) => {
-    if (next === 'walk' && !evaBegunRef.current) return;
+    if (!modeSwitchAllowed(next, evaBegunRef.current)) return;
     handleModeChange(next);
   }, [handleModeChange]);
   useShortcuts(playing, handleShortcutMode);
