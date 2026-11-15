@@ -192,3 +192,7 @@ body.mw-recording, body.mw-recording * { cursor: none !important; }
 .pr-pin.home .pr-text { margin: 0; font: 600 clamp(20px, 1.7vw, 32px)/1 var(--font-display); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); }
 .pr-pin.home .pr-card .pr-tag { display: none; }
 .pr-pin.home .pr-dot { background: transparent; border: 2px solid var(--ink); }
+
+/* #318 hides the engine canvas while the mission table is mounted, and the table stays mounted (hidden) under the
+   presentation, so the terrain went black. The presentation draws through that canvas: keep it visible. */
+body.mw-presenting .app:has(.table-screen) .engine-view canvas { visibility: visible; }
