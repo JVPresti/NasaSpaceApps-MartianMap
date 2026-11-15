@@ -38,11 +38,13 @@ describe('shelters.json', () => {
     }
   });
 
-  it('tags the natural sky view and dose reduction as DERIVED and states the assumption', () => {
+  it('tags the natural sky view DERIVED and its dose reduction SIM, an upper bound beside the RAD measurement', () => {
     for (const shelter of shelters.filter((s) => s.type === 'natural')) {
       const { sky_view_factor: svf, dose_reduction: cut } = shelter.values;
       expect(svf.tag).toBe('DERIVED');
-      expect(cut.tag).toBe('DERIVED');
+      expect(cut.tag).toBe('SIM');
+      expect(cut.provenance.note).toMatch(/^Upper bound from geometry/);
+      expect(cut.provenance.note).toMatch(/Ehresmann et al\. 2021, JGR Planets 126, doi 10\.1029\/2021JE006851/);
       expect(cut.value).toBeCloseTo(1 - svf.value, 3);
       expect(svf.provenance.note).toMatch(/isotropic SEP flux above the horizon/);
       expect(svf.value).toBeLessThanOrEqual(1 - data.sky_view.selection.minDoseReduction);

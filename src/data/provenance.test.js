@@ -180,6 +180,42 @@ describe('tags that agree with their writers (#196)', () => {
     expect(ev.site).toMatch(/not Jezero/);
     expect(r.lookup('environment.doseRateUgyH').reference).toMatch(/Hassler/);
   });
+
+  it('keeps DATA for the two rates RAD measured and tags the event file\'s other steps SIM (#295)', () => {
+    const r = loaded();
+    const v = files.hazards.values;
+    const measured = [v['radiation.sep_2017.dose_rate_before'].value / 24, v['radiation.sep_2017.dose_rate_peak'].value / 24];
+    const steps = readJson('src/sim/events/radiation.json').timeline.map((k) => ({ rate: k.set['environment.doseRateUgyH'], tag: k.tag ?? 'DATA' }));
+    for (const { rate, tag } of steps) {
+      // an untagged step is a measured rate (to the 0.01 µGy/h the file keeps); a SIM step is none of them
+      expect(measured.some((m) => Math.abs(m - rate) < 0.005)).toBe(tag === 'DATA');
+    }
+    expect(steps.filter((s) => s.tag === 'SIM').map((s) => s.rate)).toEqual([20, 12]);
+    expect(r.lookup('events.radiation.doseRateUgyH.step')).toMatchObject({ tag: 'SIM' });
+    // the HUD background and the event rates come from two detectors; both entries say so
+    for (const path of ['environment.doseRateUgyH', 'events.radiation.doseRateUgyH']) expect(r.lookup(path).note).toMatch(/change of detector/);
+  });
+
+  it('gives the dose this EVA its method and the real event\'s dose as a DATA fact (#295)', () => {
+    const r = loaded();
+    const real = files.hazards.values['radiation.sep_2017.event_dose'];
+    const hours = files.hazards.values['radiation.sep_2017.duration'].value;
+    const event = r.lookup('events.radiation.eventDoseUgy');
+    expect(event).toMatchObject({ tag: 'DATA', mission: 'MSL' });
+    expect(event.reference).toMatch(/Zeitlin et al. 2018/);
+    expect(event.source).toContain(`${real.value} µGy`);
+    const dose = r.lookup('environment.doseUgy');
+    expect(dose.tag).toBe('DERIVED');
+    expect(dose.source).toMatch(/minutes the event plays/);
+    expect(dose.note).toContain(`${real.value} µGy`);
+    expect(dose.note).toContain(`${hours} h`);
+    // the debrief's reading note quotes the same figures in both languages
+    for (const lang of ['en', 'es']) {
+      const note = readJson(`src/i18n/${lang}.json`)['debrief.notes.dose'];
+      expect(note).toContain(`${real.value} µGy`);
+      expect(note).toContain(`${hours} h`);
+    }
+  });
 });
 
 describe('store coverage', () => {

@@ -106,14 +106,14 @@
             "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
             "data_url": "https://www.uahirise.org/dtm/",
             "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
-            "note": "Sky view 0.850 of the upper hemisphere at 1 m above the ground (72 azimuths, rays to 400 m), against 1.000 on open flat ground and a tile median of 0.927. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+            "note": "Sky view 0.850 of the upper hemisphere at 1 m above the ground (72 azimuths, rays to 400 m), against 1.000 on open flat ground and a tile median of 0.927. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky. The one measurement on Mars found a far smaller cut: Curiosity's RAD beside Butte M12, with 19 % of the sky blocked, measured about 4 % less dose, about a fifth of the blocked share (Ehresmann et al. 2021, JGR Planets 126, doi 10.1029/2021JE006851)."
           }
         },
         "dose_reduction": {
           "value": 0.15,
           "unit": "fraction of the open-ground SEP dose",
-          "tag": "DERIVED",
-          "label": "HiRISE DEM · sky view",
+          "tag": "SIM",
+          "label": "HiRISE DEM · sky view · upper bound",
           "provenance": {
             "mission": "MRO",
             "instrument": "HiRISE",
@@ -125,7 +125,7 @@
             "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
             "data_url": "https://www.uahirise.org/dtm/",
             "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
-            "note": "1 - sky view factor. Applied to the September 2017 event (544 µGy (water), above background, RAD in Gale crater, hazards.json radiation.sep_2017.event_dose) it would save at most 82 µGy. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+            "note": "Upper bound from geometry, tagged SIM: 1 - sky view factor, which takes the share of the sky the terrain hides as the share of the dose it removes. The sky view is DERIVED from the terrain; that step is our assumption, not a measurement. Applied to the September 2017 event (544 µGy (water), above background, RAD in Gale crater, hazards.json radiation.sep_2017.event_dose) it would save at most 82 µGy. Scaled by the ratio RAD measured (4 % less dose for 19 % of the sky blocked, galactic cosmic rays) it would be a 3.2 % cut, about 17 µGy, likely less for a solar event, and under the 12 % minimum for a safe point. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky. The one measurement on Mars found a far smaller cut: Curiosity's RAD beside Butte M12, with 19 % of the sky blocked, measured about 4 % less dose, about a fifth of the blocked share (Ehresmann et al. 2021, JGR Planets 126, doi 10.1029/2021JE006851)."
           }
         },
         "route_from_hab": {
@@ -177,14 +177,14 @@
             "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
             "data_url": "https://www.uahirise.org/dtm/",
             "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
-            "note": "Sky view 0.844 of the upper hemisphere at 1 m above the ground (72 azimuths, rays to 400 m), against 1.000 on open flat ground and a tile median of 0.927. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+            "note": "Sky view 0.844 of the upper hemisphere at 1 m above the ground (72 azimuths, rays to 400 m), against 1.000 on open flat ground and a tile median of 0.927. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky. The one measurement on Mars found a far smaller cut: Curiosity's RAD beside Butte M12, with 19 % of the sky blocked, measured about 4 % less dose, about a fifth of the blocked share (Ehresmann et al. 2021, JGR Planets 126, doi 10.1029/2021JE006851)."
           }
         },
         "dose_reduction": {
           "value": 0.156,
           "unit": "fraction of the open-ground SEP dose",
-          "tag": "DERIVED",
-          "label": "HiRISE DEM · sky view",
+          "tag": "SIM",
+          "label": "HiRISE DEM · sky view · upper bound",
           "provenance": {
             "mission": "MRO",
             "instrument": "HiRISE",
@@ -196,7 +196,7 @@
             "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
             "data_url": "https://www.uahirise.org/dtm/",
             "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
-            "note": "1 - sky view factor. Applied to the September 2017 event (544 µGy (water), above background, RAD in Gale crater, hazards.json radiation.sep_2017.event_dose) it would save at most 85 µGy. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+            "note": "Upper bound from geometry, tagged SIM: 1 - sky view factor, which takes the share of the sky the terrain hides as the share of the dose it removes. The sky view is DERIVED from the terrain; that step is our assumption, not a measurement. Applied to the September 2017 event (544 µGy (water), above background, RAD in Gale crater, hazards.json radiation.sep_2017.event_dose) it would save at most 85 µGy. Scaled by the ratio RAD measured (4 % less dose for 19 % of the sky blocked, galactic cosmic rays) it would be a 3.3 % cut, about 18 µGy, likely less for a solar event, and under the 12 % minimum for a safe point. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky. The one measurement on Mars found a far smaller cut: Curiosity's RAD beside Butte M12, with 19 % of the sky blocked, measured about 4 % less dose, about a fifth of the blocked share (Ehresmann et al. 2021, JGR Planets 126, doi 10.1029/2021JE006851)."
           }
         },
         "route_from_hab": {
@@ -248,14 +248,14 @@
             "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
             "data_url": "https://www.uahirise.org/dtm/",
             "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
-            "note": "Sky view 0.845 of the upper hemisphere at 1 m above the ground (72 azimuths, rays to 400 m), against 1.000 on open flat ground and a tile median of 0.927. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+            "note": "Sky view 0.845 of the upper hemisphere at 1 m above the ground (72 azimuths, rays to 400 m), against 1.000 on open flat ground and a tile median of 0.927. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky. The one measurement on Mars found a far smaller cut: Curiosity's RAD beside Butte M12, with 19 % of the sky blocked, measured about 4 % less dose, about a fifth of the blocked share (Ehresmann et al. 2021, JGR Planets 126, doi 10.1029/2021JE006851)."
           }
         },
         "dose_reduction": {
           "value": 0.155,
           "unit": "fraction of the open-ground SEP dose",
-          "tag": "DERIVED",
-          "label": "HiRISE DEM · sky view",
+          "tag": "SIM",
+          "label": "HiRISE DEM · sky view · upper bound",
           "provenance": {
             "mission": "MRO",
             "instrument": "HiRISE",
@@ -267,7 +267,7 @@
             "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
             "data_url": "https://www.uahirise.org/dtm/",
             "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
-            "note": "1 - sky view factor. Applied to the September 2017 event (544 µGy (water), above background, RAD in Gale crater, hazards.json radiation.sep_2017.event_dose) it would save at most 85 µGy. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+            "note": "Upper bound from geometry, tagged SIM: 1 - sky view factor, which takes the share of the sky the terrain hides as the share of the dose it removes. The sky view is DERIVED from the terrain; that step is our assumption, not a measurement. Applied to the September 2017 event (544 µGy (water), above background, RAD in Gale crater, hazards.json radiation.sep_2017.event_dose) it would save at most 85 µGy. Scaled by the ratio RAD measured (4 % less dose for 19 % of the sky blocked, galactic cosmic rays) it would be a 3.3 % cut, about 18 µGy, likely less for a solar event, and under the 12 % minimum for a safe point. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky. The one measurement on Mars found a far smaller cut: Curiosity's RAD beside Butte M12, with 19 % of the sky blocked, measured about 4 % less dose, about a fifth of the blocked share (Ehresmann et al. 2021, JGR Planets 126, doi 10.1029/2021JE006851)."
           }
         },
         "route_from_hab": {
@@ -319,14 +319,14 @@
             "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
             "data_url": "https://www.uahirise.org/dtm/",
             "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
-            "note": "Sky view 0.846 of the upper hemisphere at 1 m above the ground (72 azimuths, rays to 400 m), against 1.000 on open flat ground and a tile median of 0.927. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+            "note": "Sky view 0.846 of the upper hemisphere at 1 m above the ground (72 azimuths, rays to 400 m), against 1.000 on open flat ground and a tile median of 0.927. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky. The one measurement on Mars found a far smaller cut: Curiosity's RAD beside Butte M12, with 19 % of the sky blocked, measured about 4 % less dose, about a fifth of the blocked share (Ehresmann et al. 2021, JGR Planets 126, doi 10.1029/2021JE006851)."
           }
         },
         "dose_reduction": {
           "value": 0.154,
           "unit": "fraction of the open-ground SEP dose",
-          "tag": "DERIVED",
-          "label": "HiRISE DEM · sky view",
+          "tag": "SIM",
+          "label": "HiRISE DEM · sky view · upper bound",
           "provenance": {
             "mission": "MRO",
             "instrument": "HiRISE",
@@ -338,7 +338,7 @@
             "locator": "docs/marswalk-assets/README.md, Coordinates and assets sections",
             "data_url": "https://www.uahirise.org/dtm/",
             "license": "HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).",
-            "note": "1 - sky view factor. Applied to the September 2017 event (544 µGy (water), above background, RAD in Gale crater, hazards.json radiation.sep_2017.event_dose) it would save at most 84 µGy. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky."
+            "note": "Upper bound from geometry, tagged SIM: 1 - sky view factor, which takes the share of the sky the terrain hides as the share of the dose it removes. The sky view is DERIVED from the terrain; that step is our assumption, not a measurement. Applied to the September 2017 event (544 µGy (water), above background, RAD in Gale crater, hazards.json radiation.sep_2017.event_dose) it would save at most 84 µGy. Scaled by the ratio RAD measured (4 % less dose for 19 % of the sky blocked, galactic cosmic rays) it would be a 3.2 % cut, about 18 µGy, likely less for a solar event, and under the 12 % minimum for a safe point. Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky. The one measurement on Mars found a far smaller cut: Curiosity's RAD beside Butte M12, with 19 % of the sky blocked, measured about 4 % less dose, about a fifth of the blocked share (Ehresmann et al. 2021, JGR Planets 126, doi 10.1029/2021JE006851)."
           }
         },
         "route_from_hab": {

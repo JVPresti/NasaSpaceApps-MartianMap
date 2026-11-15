@@ -126,8 +126,15 @@ describe('map layers', () => {
       expect(layer.source.startsWith(entry.tag), layer.id).toBe(true);   // the legend's tag and the layer's source agree
       expect(entry.source.length, layer.id).toBeGreaterThan(30);
     }
-    expect(provenance.lookup('map.layer.rock').tag).toBe('DERIVED');
-    expect(provenance.lookup('map.layer.outcrop').tag).toBe('DERIVED');
+    // Rocks and Outcrop read the HiRISE image's brightness as rock cover and as outcrop: our step, so SIM (#311)
+    for (const id of ['rock', 'outcrop']) {
+      const entry = provenance.lookup('map.layer.' + id);
+      expect(entry.tag, id).toBe('SIM');
+      expect(entry.label, id).toMatch(/brightness/);
+      expect(entry.source, id).toMatch(/dust/);
+    }
+    expect(provenance.lookup('map.layer.rock').source).toMatch(/proxy for rock cover/);
+    expect(provenance.lookup('map.layer.none').tag).toBe('DATA');   // the HiRISE image itself
   });
 
   it('states the source resolution separately from the displayed resolution (#250)', () => {

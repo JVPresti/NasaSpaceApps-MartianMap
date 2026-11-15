@@ -26,7 +26,7 @@ export function createInitialState() {
       startedAtMs: null, elapsedSec: 0, paused: false, held: false, sol: null, lmst: null,
       anchorMs: null, timeScale: 1, initialSol: null, initialLmst: null, longitudeDeg: null, sky: null,
     },
-    suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
+    suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, marginLimit: null, status: null },
     navigation: { x: null, z: null, trueX: null, trueZ: null, headingDeg: null, slopeDeg: null, waypointRangeM: null, waypointBearingDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // x/z: the estimate the HUD shows (#42); trueX/trueZ: the true position, engine bridge only
     // stops, dropped, planReasons, budget, weights: the plan from the crew's needs (src/sim/missionNeeds.js, written by
     // src/plan/useRoutePlanner.js): stops chosen in walking order, stops dropped and why, the plan's reason codes, the

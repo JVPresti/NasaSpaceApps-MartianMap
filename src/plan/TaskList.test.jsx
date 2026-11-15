@@ -124,7 +124,7 @@ describe('sampling task list', () => {
     const warning = rowOf(html, 0);
     expect(warning).toContain('table-note tone-caution');
     expect(text(warning)).toContain('Little rock cover here: 0.08 on the Rocks layer, under 0.2. A loose rock within reach is unlikely. The layer is a brightness proxy, not a count of rocks.');
-    expect(warning).toContain('src-tag-derived');
+    expect(warning).toContain('src-tag-sim');   // the Rocks layer is a SIM proxy since #311
     expect(rowOf(html, 1)).not.toContain('Little rock cover');
     mock.grid = rockyGrid(255);
     expect(render([rock])).not.toContain('Little rock cover');

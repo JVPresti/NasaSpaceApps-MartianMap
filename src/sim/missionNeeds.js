@@ -65,9 +65,10 @@ export const CREW_SETTINGS = Object.freeze({
 export const CREW_SIZES = Object.freeze([1, 2]);
 
 /**
- * Risk tolerance. Our choice (SIM), standard being today's planner (costGrid.js COST_CONSTANTS):
- * - slopePenaltyDeg: the slope divisor of the cost, smaller is dearer slope (7 deg cautious, 9 standard, 12 bold);
- * - rockWeight: the weight of rock abundance (1 cautious, 0.6 standard, 0.3 bold);
+ * Risk tolerance. Our choice (SIM), standard being today's planner (costGrid.js COST_CONSTANTS). No source sets any of
+ * these numbers; the slope divisor and the rock weight decide which route the planner picks (#311):
+ * - slopePenaltyDeg: the slope divisor of the cost, smaller is dearer slope (7 deg cautious, 9 standard, 12 bold). SIM;
+ * - rockWeight: the weight of rock abundance, itself a brightness proxy (1 cautious, 0.6 standard, 0.3 bold). SIM;
  * - traverseDiscount: ground Perseverance drove costs this share of other ground (0.8 cautious: the rover crossed it,
  *   so it is known to be passable; 1 elsewhere);
  * - reserveShare: share of the time available kept out of the plan, also the battery kept at the end (25 %, 15 %, 5 %);

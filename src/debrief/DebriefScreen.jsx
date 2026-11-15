@@ -197,7 +197,8 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
 
         <section className="debrief-notes" aria-labelledby="debrief-notes-title">
           <h3 id="debrief-notes-title" className="debrief-section-title">{t('debrief.notes.title')}</h3>
-          <p>{t('debrief.notes.dose')}</p>
+          {/* ends on the real 2017 event's dose, a RAD measurement, so its tag is DATA (#295) */}
+          <p>{t('debrief.notes.dose')}<SourceTag path="events.radiation.eventDoseUgy" variant="tag" interactive={false} /></p>
           <p>{t('debrief.notes.battery')}</p>
           <ReviewNotes reserveSec={reserveSec} />
         </section>

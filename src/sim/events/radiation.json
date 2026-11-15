@@ -5,10 +5,10 @@
   "timeline": [
     { "atSec": 0, "set": { "environment.doseRateUgyH": 10.0 } },
     { "atSec": 90, "set": { "environment.doseRateUgyH": 10.0 } },
-    { "atSec": 150, "set": { "environment.doseRateUgyH": 20.0 } },
+    { "atSec": 150, "set": { "environment.doseRateUgyH": 20.0 }, "tag": "SIM" },
     { "atSec": 210, "set": { "environment.doseRateUgyH": 29.92 } },
     { "atSec": 570, "set": { "environment.doseRateUgyH": 29.92 } },
-    { "atSec": 690, "set": { "environment.doseRateUgyH": 12.0 } },
+    { "atSec": 690, "set": { "environment.doseRateUgyH": 12.0 }, "tag": "SIM" },
     { "atSec": 720, "set": { "environment.doseRateUgyH": 10.0 } }
   ],
   "alert": {
@@ -18,5 +18,5 @@
   "planner": { "action": "replan", "target": "habitat" },
   "end": { "type": "area", "x": 535.1, "z": 574.1, "radius": 25 },
   "endSet": { "environment.doseRateUgyH": 10.0 },
-  "notes": "Peak window of the September 2017 event in hazards.json models.sep_2017_profile: background 240 uGy/day (10 uGy/h) and peak 718 uGy/day (29.92 uGy/h), RAD B detector in Gale crater, not Jezero. The 12-minute duration is a SIM compression for one EVA; the accumulated dose uses the real rates: the environment runner (src/sim/environmentRunner.js) sums environment.doseRateUgyH into environment.doseUgy over mission time, so the event sets only the rate. Shelter is the habitat, the only full-protection shelter in public/data/shelters.json. When it starts, and how fast this timeline runs, comes from the mission the crew's objective defines (src/sim/missions.js, #265): T+720 s and this 12-minute timeline in the full EVA; in the first mission T+95 s at the earliest, 15 s after the storm and outside the 25 m end area, with the timeline compressed to 1 minute (SIM)."
+  "notes": "Peak window of the September 2017 event in hazards.json models.sep_2017_profile. Two rates are RAD measurements (Zeitlin et al. 2018, Table 1, B detector, dose in water, Gale crater, not Jezero): 240 uGy/day before the event (10 uGy/h) and the 718 uGy/day peak (29.92 uGy/h). The steps tagged SIM, 20 uGy/h on the way up and 12 uGy/h on the way down, are our choice, as are the times of every step and the staircase shape (the engine holds each value until the next step) (#295). Outside the event the HUD rate is the RAD background of Hassler et al. 2014, 8.75 uGy/h, from the E detector (tissue-like): the step from 8.75 to 10 uGy/h at the start is a change of detector, not a rise in radiation. The 12-minute duration is a SIM compression for one EVA. The environment runner (src/sim/environmentRunner.js) sums environment.doseRateUgyH into environment.doseUgy over mission time, so the event sets only the rate and the dose this EVA is these rates over the minutes the event plays; the real event added 544 uGy (B detector, water) over about 57 h (hazards.json radiation.sep_2017.event_dose). Shelter is the habitat, the only full-protection shelter in public/data/shelters.json. When it starts, and how fast this timeline runs, comes from the mission the crew's objective defines (src/sim/missions.js, #265): T+720 s and this 12-minute timeline in the full EVA; in the first mission T+95 s at the earliest, 15 s after the storm and outside the 25 m end area, with the timeline compressed to 1 minute (SIM)."
 }

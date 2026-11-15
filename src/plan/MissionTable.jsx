@@ -407,14 +407,24 @@ function limitTone(limit, go, cautionSec = 15 * 60) {
 }
 
 /**
- * What is left when the walk ends back at the airlock, and the oxygen margin over the reserve, each in the tone of its
+ * What is left when the walk ends back at the airlock, and the plan's margin over the reserve, each in the tone of its
  * own limit (src/plan/limits.js).
+ *
+ * The margin is the plan's, at the end of the plan, and is priced at the flat planning walk rate. The visor's margin
+ * now is a different question (where the crew is, at the current burn rate), so it is named apart (#323): the caption
+ * names the limit that sets this figure, and the other limit's margin is given beside it, which is how the two
+ * numbers are told apart.
  * @param {{ totals: object | null, limits: object | null, go: boolean }} props
  */
 function ReturnPanel({ totals, limits, go }) {
   const tot = totals;
   const marginMin = tot ? Math.round(tot.marginSec / 60) : null;
   const o2Tone = tot ? limitTone(limits?.o2 ?? (tot.status === 'warning' ? { ok: false } : null), go) : null;
+  const limit = tot?.marginLimit === 'eva' ? 'eva' : 'o2';
+  const otherLimit = limit === 'eva' ? 'o2' : 'eva';
+  const other = limit === 'eva' ? tot?.o2MarginSec : tot?.evaMarginSec;
+  const otherMin = Number.isFinite(other) ? Math.round(other / 60) : null;
+  const signed = (value) => `${value >= 0 ? '+' : ''}${value}`;
   return (
     <div className="table-panel return-panel">
       <p className="table-label">{t('table.return.title')}</p>
@@ -422,10 +432,10 @@ function ReturnPanel({ totals, limits, go }) {
         <Ring value={tot?.arrivalO2Pct} label={t('table.return.oxygen.left')} shortLabel={(pct) => t('table.return.oxygen.short', { pct })} tone={o2Tone ?? 'ok'} />
         <Ring value={tot?.arrivalBatteryPct} label={t('table.return.battery.left')} shortLabel={(pct) => t('table.return.battery.short', { pct })} tone={tot ? limitTone(limits?.battery, go) : 'ok'} />
       </div>
-      <div className="return-margin">
-        <b className={o2Tone && o2Tone !== 'muted' ? 'tone-' + o2Tone : undefined}>{tot ? `${marginMin >= 0 ? '+' : ''}${marginMin}` : '–'}<small>min</small></b>
-        {/* route.totals.marginSec is capped at the 8 h EVA limit (#208); the tag's details say so. */}
-        <span>{t('table.return.margin')}<SourceTag path="route.totals.marginSec" /></span>
+      <div className="return-margin" title={t('table.return.margin.title')}>
+        <b className={o2Tone && o2Tone !== 'muted' ? 'tone-' + o2Tone : undefined}>{tot ? signed(marginMin) : '–'}<small>min</small></b>
+        <span>{t('table.return.margin.plan')} · {t('limit.' + limit)}<SourceTag path="route.totals.marginSec" /></span>
+        {otherMin !== null && <span className="return-margin-note">{t('table.return.margin.other', { limit: t('limit.' + otherLimit), min: signed(otherMin) })}</span>}
       </div>
     </div>
   );

@@ -1,8 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { routeStopCandidates } from '../data/stops.js';
+import { startAtAirlock } from '../plan/routeStart.js';
 import { buildCostGrid, heightAt } from './costGrid.js';
 import { combinedTag, legCostSources, routeLegCosts, splitAtWaypoints, startConsumables, startLegCostRunner, waypointsForCosts, workCost } from './legCosts.js';
+import { DEFAULT_NEEDS, OBJECTIVE_DEFAULTS, planFromNeeds, siteStart } from './missionNeeds.js';
 import { planRoute } from './routePlanner.js';
 import { metabolicPowerW, o2RateGs, suitConstantsFromHazards } from './suitModel.js';
 
@@ -79,14 +82,18 @@ describe('totals and the margin at the habitat', () => {
     expect(t.returnO2G).toBeGreaterThan(t.o2G);   // the pad, whatever the hills do
     expect(t.arrivalO2G).toBeCloseTo(c.o2UsableG - t.o2G - t.returnO2G, 9);
     const rate = o2RateGs(metabolicPowerW(c.speedFlat, 0, c), c);
-    expect(t.marginSec).toBeCloseTo(t.arrivalO2G / rate - c.reserveSec, 6);
+    expect(t.o2MarginSec).toBeCloseTo(t.arrivalO2G / rate - c.reserveSec, 6);
+    expect(t.marginSec).toBeCloseTo(Math.min(t.o2MarginSec, t.evaMarginSec), 9);
+    expect(t.marginLimit).toBe('o2');   // the tank, not the clock, leaves the less room
     expect(t.status).toBe('nominal');
   });
 
   it('caps the margin at the end of the plan at the EVA time left after the walk out and back (#195)', () => {
     const short = { ...c, evaMaxSec: 3600 };
     const t = routeLegCosts(wps.map((w) => [w.x, w.z]), wps, hills, short).totals;
-    expect(t.marginSec).toBeCloseTo(3600 - t.timeSec - t.returnTimeSec, 6);
+    expect(t.evaMarginSec).toBeCloseTo(3600 - t.timeSec - t.returnTimeSec, 6);
+    expect(t.marginSec).toBeCloseTo(t.evaMarginSec, 9);
+    expect(t.marginLimit).toBe('eva');
     expect(r.totals.marginSec).toBeLessThan(c.evaMaxSec);
   });
 
@@ -100,6 +107,33 @@ describe('totals and the margin at the habitat', () => {
   it('turns warning when the tank cannot cover a long route and the walk home', () => {
     const far = [{ x: 0, z: 0 }, { x: 9000, z: 0 }];
     expect(routeLegCosts(far.map((w) => [w.x, w.z]), far, flat, c).totals.status).toBe('warning');
+  });
+});
+
+describe('the limit that binds the Cheyava Falls plan (#323)', () => {
+  // The plan as the table makes it: the objective's stops from stops.json, on the real terrain, from the airlock.
+  const site = () => ({
+    grid: buildCostGrid(readJson('public/marswalk/assets/terrain.json')),
+    start: siteStart(startAtAirlock(readJson('public/marswalk/assets/route.json').waypoints, readJson('public/data/shelters.json'))),
+    stops: routeStopCandidates(readJson('public/data/stops.json')),
+    constants: c,
+    cache: new Map(),
+  });
+
+  it('names O2 as the binding limit, and keeps both margins so the two numbers on screen can differ by name', () => {
+    // The table's default for that goal: 2 h (setNeeds applies OBJECTIVE_DEFAULTS), so Bright Angel is added on the way.
+    const plan = planFromNeeds({ ...DEFAULT_NEEDS, objective: 'cheyava', timeMin: OBJECTIVE_DEFAULTS.cheyava.timeMin }, site());
+    const t = plan.totals;
+    expect(plan.ok).toBe(true);
+    expect(t).not.toBeNull();
+    expect(plan.waypoints.map((w) => w.name)).toEqual(['HAB', 'WP3 · Bright Angel outcrop', 'Cheyava Falls']);
+    expect(t.marginLimit).toBe('o2');
+    expect(t.o2MarginSec).toBeLessThan(t.evaMarginSec);
+    expect(t.marginSec).toBe(t.o2MarginSec);
+    // The Cheyava Falls plan from the airlock in 2 h: about 222 min of O2 margin and 404 min on the 8 h EVA clock.
+    // These figures are the pin: a change to the pricing or to the plan's definition has to move them on purpose.
+    expect(t.o2MarginSec / 60).toBeCloseTo(222.3, 0);
+    expect(t.evaMarginSec / 60).toBeCloseTo(403.6, 0);
   });
 });
 

@@ -1,7 +1,7 @@
 import { tagFlips, toMap } from './mapLayers.js';
 
 // The places some layers mark on the table map (mapLayers.layerPlaces, useLayerPlaces.js): the candidate stops the
-// route does not visit on Outcrop, with why, and the natural shelters on Exposure, with their dose cut. Same tags as the
+// route does not visit on Outcrop, with why, and the natural shelters on Exposure, with the sky they hide. Same tags as the
 // stop markers, a smaller symbol, so they never read as a stop of the route. They sit above the rover's image pin: on
 // these two layers the places are what the layer shows. Styles: mapLayers.css.
 

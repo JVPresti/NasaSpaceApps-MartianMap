@@ -66,6 +66,10 @@ const prefixed = (prefix, fields) => Object.fromEntries(Object.entries(fields).m
 
 const MEDA = { tag: 'DATA', label: 'MEDA · Perseverance', short: 'MEDA · Perseverance' };
 const RAD = { tag: 'DATA', label: 'RAD · Curiosity (Gale)', short: 'RAD · Curiosity', site: 'Gale crater, not Jezero' };
+// RAD reports dose with two detectors (#295). The HUD's background is the E detector and the radiation event's rates are
+// the B detector, so the rate steps up when the event starts before any particle arrives. The note says why.
+const RAD_DETECTORS = 'Two RAD detectors: outside the radiation event the rate is the E detector, tissue-like (Hassler et al. 2014, 8.75 µGy/h); the event\'s rates are the B detector, dose in water (Zeitlin et al. 2018, 10 µGy/h before the event). The step between 8.75 and 10 µGy/h when the event starts or ends is a change of detector, not a change in radiation';
+const EVENT_DOSE_NOTE = 'Not the dose of the 2017 event: the EVA plays its 57 h in 12 min, or 1 min in the first mission. The real event added 544 µGy in water over about 57 h (Zeitlin et al. 2018, B detector, hazards.json radiation.sep_2017.event_dose)';
 
 /**
  * Declared entries for every path a writer puts in the store's `sources` map (docs/STATE_AND_ENGINE.md).
@@ -107,6 +111,14 @@ export const STORE_PATHS = Object.freeze({
   'crew.0.link': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'radio line of sight between the two suits on the HiRISE height map', from: HIRISE },
   'crew.0.separationLimitM': sim('our rule: 100 m from the pair-walk mockup, caution from 80 m; hazards.json has no separation value'),
 
+  // the HUD's radio link to the habitat (src/hud/RadioLink.jsx, #74, #297). Not a store value: the chip computes it and
+  // shows this tag, one for its range and its state. The weak range is RADIO_WEAK_RANGE_M in src/sim/radio.js (SIM).
+  'radio.link': {
+    tag: 'DERIVED', label: 'HiRISE DTM',
+    source: 'radio link to the habitat mast: line of sight on the HiRISE height map from 1.7 m above the ground to the mast, as the Radio shadow layer, lost where the terrain blocks it; range is the horizontal distance to the mast; weak past 800 m is our threshold (SIM), we found no NASA figure for suit-to-habitat radio range',
+    from: HIRISE,
+  },
+
   // navigation (#42): trueX/trueZ is the simulated truth from the engine, x/z the estimate the drift model shows
   'navigation.x': sim('simulated position estimate: true position plus the drift offset (src/sim/navigationDrift.js)'),
   'navigation.z': sim('simulated position estimate: true position plus the drift offset (src/sim/navigationDrift.js)'),
@@ -130,7 +142,9 @@ export const STORE_PATHS = Object.freeze({
   'route.nextIndex': sim('first waypoint not visited yet'),
   'route.visited': sim('waypoints already reached in Walk mode'),
   'route.reason': sim('why the re-planner changed the route'),
-  'route.shelter': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'shelters.json: sky view ray cast on the HiRISE height grid', from: HIRISE },
+  // The place is DERIVED (habitat placement, or sky view ray cast on the HiRISE grid); a natural point's dose cut is a
+  // SIM upper bound (shelters.json dose_reduction, #296)
+  'route.shelter': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'shelters.json: the habitat airlock, or a natural point from the sky view ray cast on the HiRISE height grid, whose dose cut is a SIM upper bound', from: HIRISE },
   'route.decision': sim('go or no-go chosen by the crew'),
   'route.skipped': sim('waypoints the event route leaves out'),
   // route profiles compared on the mission table (#245, src/sim/routeProfiles.js); time and oxygen as route.totals
@@ -139,15 +153,15 @@ export const STORE_PATHS = Object.freeze({
   'route.profiles.steepestSlopeDeg': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'slope of the HiRISE height map, sampled every metre along the route', from: HIRISE },
   'route.profiles.overCautionM': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'route length on HiRISE slopes over the 15 degree caution limit', from: HIRISE },
   'route.profiles.shadowShare': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'line of sight on the HiRISE height map from the suit to the habitat mast', from: HIRISE },
-  'route.profiles.weights': sim('profile weights are our choice: slope cubed for the gentlest, three times the cost out of sight of the mast for radio contact'),
+  'route.profiles.weights': sim('profile weights are our choice: slope cubed for the gentlest, three times the cost out of sight of the mast for radio contact; under them, the slope divisor and rock weight of the risk setting, also our choice, on a brightness proxy for rock cover'),
   'route.profiles.timeSec': LEG_TIME,
   'route.profiles.o2G': LEG_O2,
   // the route from the crew's needs (src/sim/missionNeeds.js): stops, budget and reasons rest on our work times, rules
   // and risk settings (SIM); the per-leg explanation is the planner on the HiRISE height map (#246)
   'route.stops': sim('stops chosen from stops.json by the objective, then kept while the plan fits the time, O2 and battery'),
   'route.dropped': sim('optional stops left out: with them the plan goes over the time less the reserve, under the O2 margin floor or under the battery reserve'),
-  'route.planReasons': sim('why the plan is what it is: the crew rules, the risk setting and each stop added or dropped'),
-  'route.weights': sim('risk setting: slope penalty, rock weight, rover-ground discount and reserve are our choice; the 20 degree limit is NASA\'s suited walking limit and never moves'),
+  'route.planReasons': sim('why the plan is what it is: the crew rules, the risk setting (its slope and rock weights are our choice, no source sets them) and each stop added or dropped'),
+  'route.weights': sim('risk setting: slope penalty, rock weight, rover-ground discount and reserve are our choice, no source sets them; the rock weight prices a brightness proxy for rock cover; the 20 degree limit is NASA\'s suited walking limit and never moves'),
   'route.budget': sim('time available set by the crew, less the risk reserve; the walk out, the work at the stops and the walk home from the suit model'),
   'route.budget.usedSec': LEG_TIME,
   'route.budget.marginSec': LEG_MARGIN,
@@ -169,7 +183,7 @@ export const STORE_PATHS = Object.freeze({
   'needs.timeMin': sim('time available for the EVA, set by the crew'),
   'needs.o2Pct': sim('suit O2 at the start, set by the crew as a share of the xEMU primary tank'),
   'needs.batteryPct': sim('suit battery at the start, set by the crew as a share of the xEMU battery'),
-  'needs.risk': sim('risk tolerance chosen by the crew: slope penalty, rock weight, reserve and rover-ground preference'),
+  'needs.risk': sim('risk tolerance chosen by the crew: slope penalty, rock weight, reserve and rover-ground preference, each value our choice'),
   // sampling tasks of the "Collect samples" goal (#352, src/sim/sampleTasks.js)
   'needs.tasks': sim('sampling tasks set by the crew: what to collect (a photo record, a soil or a rock sample), where (a stop of stops.json or a point on the map) and how many'),
   'route.tasks': sim('sampling tasks routed by the planner: each place inserted where it adds the least walking; the first task always kept, each later one kept while the plan still fits the time, O2 and battery'),
@@ -203,8 +217,13 @@ export const STORE_PATHS = Object.freeze({
   'environment.windMs': { ...MEDA, source: 'MEDA wind speed, replayed sol', from: { meda: 'wind_speed' } },
   'environment.windDirDeg': { ...MEDA, source: 'MEDA wind direction, replayed sol', from: { meda: 'wind_direction' } },
   'environment.rhPct': { ...MEDA, source: 'MEDA relative humidity, replayed sol', from: { meda: 'relative_humidity' } },
-  'environment.doseRateUgyH': { ...RAD, source: 'RAD surface dose rate', from: { rad: 'background' } },
-  'environment.doseUgy': { ...RAD, tag: 'DERIVED', source: 'dose this EVA: the RAD dose rate summed over mission time', from: { rad: 'background' } },
+  'environment.doseRateUgyH': { ...RAD, source: 'RAD surface dose rate', note: RAD_DETECTORS, from: { rad: 'background' } },
+  'environment.doseUgy': {
+    ...RAD, tag: 'DERIVED',
+    source: 'dose this EVA: the dose rate summed over mission time, the RAD background and, during the radiation event, its rates over the minutes the event plays in this EVA',
+    note: EVENT_DOSE_NOTE,
+    from: { rad: 'background' },
+  },
   // The dust storm event (src/sim/events/dust-storm.json) ramps tau from the Jezero clear season (0.45, Perseverance)
   // to the 2018 global storm Curiosity measured in Gale crater (8.0). The ramp shape and timing are ours, so the
   // values in between are DERIVED. The event banner prints `caption` next to this tag (#196).
@@ -215,12 +234,25 @@ export const STORE_PATHS = Object.freeze({
     from: { hazards: ['dust.tau.gale_global_storm_2018', 'dust.tau.clear_season', 'dust.event.ramp_duration'] },
   },
   // The radiation event (src/sim/events/radiation.json) plays the September 2017 solar particle event from
-  // hazards.json models.sep_2017_profile, not the background rate above. The event banner shows this entry (#196).
+  // hazards.json models.sep_2017_profile, not the background rate above. The event banner shows this entry (#196) for
+  // the two rates RAD measured, and the SIM entry below for the steps the event file tags SIM (#295).
   'events.radiation.doseRateUgyH': {
     tag: 'DATA', label: 'RAD · Curiosity (Gale)', short: 'RAD · Curiosity',
-    source: 'radiation event: RAD B dose rate of the September 2017 solar particle event, hazards.json models.sep_2017_profile; the 12 min timeline is SIM',
+    source: 'radiation event: a dose rate RAD measured in the September 2017 solar particle event, 10 µGy/h before it and 29.92 µGy/h at its peak (240 and 718 µGy/day, B detector, dose in water), hazards.json models.sep_2017_profile; the steps between them and the timeline that plays them are SIM',
     caption: 'September 2017 solar particle event · RAD · Curiosity · Gale crater, not Jezero',
+    note: RAD_DETECTORS,
     from: { hazards: ['model:sep_2017_profile'] },
+  },
+  'events.radiation.doseRateUgyH.step': {
+    tag: 'SIM', label: 'Radiation event step', short: 'Radiation event step',
+    source: 'radiation event: a step between the two rates RAD measured, 10 and 29.92 µGy/h (Zeitlin et al. 2018); 20 µGy/h on the way up and 12 µGy/h on the way down are our choice, as are the times of the steps and the shape of the ramp',
+    caption: 'our step between RAD\'s September 2017 rates · Gale crater, not Jezero',
+  },
+  // What the real event delivered, for the debrief's reading notes beside the dose this EVA (#295).
+  'events.radiation.eventDoseUgy': {
+    tag: 'DATA', label: 'RAD · Curiosity (Gale)', short: 'RAD · Curiosity',
+    source: 'dose the September 2017 solar particle event added at Gale crater: 544 µGy in water (B detector) from its onset to the shock about 57 h later, hazards.json radiation.sep_2017.event_dose',
+    from: { hazards: ['radiation.sep_2017.event_dose'] },
   },
 });
 

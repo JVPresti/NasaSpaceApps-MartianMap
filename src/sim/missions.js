@@ -302,7 +302,7 @@ export const MISSION_SOURCES = Object.freeze({
   }),
   [missionSourcePath('first', 'radiation')]: Object.freeze({
     tag: 'SIM', label: 'First mission timing', short: 'SIM · first mission',
-    source: 'first mission: the radiation alert starts 15 s after the storm, or sooner when the crew nears the habitat (by T+255 s at the latest); the 12-minute RAD profile compressed to 1 minute; plays at least 20 s. Dose rates from hazards.json (RAD, Gale)',
+    source: 'first mission: the radiation alert starts 15 s after the storm, or sooner when the crew nears the habitat (by T+255 s at the latest); the 12-minute RAD profile compressed to 1 minute; plays at least 20 s. Start and peak dose rates from hazards.json (RAD, Gale), our steps between them',
   }),
   [missionSourcePath('full', 'dust-storm')]: Object.freeze({
     tag: 'SIM', label: 'Scripted event time', short: 'SIM · scripted',
@@ -310,6 +310,6 @@ export const MISSION_SOURCES = Object.freeze({
   }),
   [missionSourcePath('full', 'radiation')]: Object.freeze({
     tag: 'SIM', label: 'Scripted event time', short: 'SIM · scripted',
-    source: 'full EVA: the radiation alert starts at T+720 s (scripted); the September 2017 RAD profile compressed to 12 minutes',
+    source: 'full EVA: the radiation alert starts at T+720 s (scripted); the September 2017 RAD profile compressed to 12 minutes, its measured start and peak rates with our steps between them',
   }),
 });
