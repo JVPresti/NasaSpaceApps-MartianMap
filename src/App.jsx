@@ -546,7 +546,9 @@ export default function App() {
           evaBegun={evaBegun}
           onBeginEva={handleBeginEva}
           onControls={() => openControls(false)}
-          initialTab={planTab}
+          // During the EVA the table opens on its Route step, where an event's re-plan to the habitat shows on the map
+          // (#265: the storm and radiation beats say "M: open plan"); before Begin EVA it starts at the Site step.
+          initialTab={planTab ?? (evaBegun ? 'route' : undefined)}
         />
       )}
       {/* Plan mode places the banner in its own alert region; Walk puts it under the heading box, the HUD's only alert. */}
