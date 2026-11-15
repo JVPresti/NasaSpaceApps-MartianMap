@@ -322,7 +322,8 @@ export default function Present({ engine, onExit }) {
       if (!v) return 0;
       const on = !!beat.video && !videoFailedRef.current;
       if (!on) { v.style.opacity = '0'; if (!v.paused) v.pause(); return 0; }
-      const f = videoFrame(t, beat.duration, v.duration);   // control.js: plays, then holds the last frame, then fades
+      // control.js: plays, then holds the last frame, then fades into the next beat; after a takeover it stays up
+      const f = videoFrame(t, beat.duration, v.duration, { hold: !opts.record && !timeline.autoplay });
       v.style.opacity = f.opacity.toFixed(3);
       if (opts.record || !f.playing) {
         if (!v.paused) v.pause();
@@ -581,10 +582,11 @@ export default function Present({ engine, onExit }) {
         )}
       </div>
       {!opts.record && (
-        <div className="pr-progress" aria-hidden="true">
-          {beats.map((b, i) => <span key={b.id} className={i === index ? 'on' : i < index ? 'past' : ''} />)}
-          <span className="pr-mode" data-mode={pilotMode}>{pilotLabel(pilotMode, lang)}</span>
-          <span className="pr-lang">{lang.toUpperCase()}</span>
+        <div className="pr-progress">
+          {beats.map((b, i) => <span key={b.id} aria-hidden="true" className={i === index ? 'on' : i < index ? 'past' : ''} />)}
+          {/* read out, so a screen reader hears the takeover: the ticks and the language code stay decorative */}
+          <span className="pr-mode" role="status" data-mode={pilotMode}>{pilotLabel(pilotMode, lang)}</span>
+          <span className="pr-lang" aria-hidden="true">{lang.toUpperCase()}</span>
         </div>
       )}
       {waiting && !still && <p className="pr-wait">{tx(UI.loading)}</p>}
