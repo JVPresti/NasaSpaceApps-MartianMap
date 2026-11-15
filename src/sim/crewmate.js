@@ -54,6 +54,8 @@ export const CREWMATE = Object.freeze({
   BRISK_MS: 1.5,        // catching up, the player's jog: a player who keeps jogging still pulls away
   STILL_MS: 0.2,        // the player counts as stopped below this speed ...
   STILL_SEC: 1.0,       // ... for this long
+  PLANTED_M: 2,         // ... or is less than this from where they stood PLANTED_SEC ago (swaying, looking round,
+  PLANTED_SEC: 6,       //     creeping under 0.33 m/s), and walking again past 2.5 m
   SIDE_M: 2,            // EVA start: this far to the player's right (spawn.js PARTNER_SIDE_M)
   TELEPORT_M: 4,        // a player jump larger than this in one frame is the engine moving the crew (airlock, restart)
   OFF_ROUTE_M: 8,       // the player is farther than this from the route: follow their trail instead ...
@@ -66,6 +68,8 @@ export const CREWMATE = Object.freeze({
   SLOPE_LOOK_M: 15,     // how far ahead along the route it looks for one
   SLOPE_SIDE_M: 1.5,    // the side step off the line on that stretch
   PASS_SIDE_M: 1.8,     // passing the player to lead the way: this far to the side, clear of the 0.9 m gap
+  SIDE_EASE_MS: 0.6,    // the lead's side offset changes at most this fast
+  ARRIVE_BEHIND_M: 2.5, // a lead point this close behind it counts as reached
   CALL_GAP_SEC: 20,     // at most one callout per this many seconds, unless urgent
   CALL_KEEP_SEC: 15,    // a callout that waited this long is dropped
   CHECK_AT_SEC: 15,     // the radio check, this long into the EVA
@@ -140,7 +144,7 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
     lastP: null, vp: 0, stillFor: 0, clock: 0, evaClock: 0, phase: null,
     carrying: true, bend: null, hold: 0, holdCarry: true, holdFace: null,   // bend: { t, carryAfter }
     path: null, pathRef: null, crumbs: [], trail: null, own: null, along: null, vAlong: 0,           // own: { ref, s } the crewmate's last place on a track
-    latches: {}, flips: [],
+    latches: {}, flips: [], bands: {}, passSign: 0, side: 0, sideAt: null, vTo: 0, leadT: null, leadIdle: false, trace: [], planted: false,
     stopId: null, stopSpot: null, spotFor: null, done: new Map(),
     handover: null,
     chain: -1, chainArrived: false, joinX: null, homeLead: false, lowOwn: false, leftHome: false,
@@ -200,7 +204,7 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
     m.placed = true; m.chain = -1; m.homeLead = false; m.leftHome = false; m.stopId = null; m.stopSpot = null; m.handover = null; m.hold = 0;
     if (m.bend) { m.carrying = m.bend.carryAfter; m.bend = null; }
     m.carrying = true;   // the case comes along with a crew the engine moved
-    m.crumbs = [[P.x, P.z]]; m.trail = null; m.own = null; m.latches = {};
+    m.crumbs = [[P.x, P.z]]; m.trail = null; m.own = null; m.latches = {}; m.bands = {}; m.passSign = 0;
     m.standbyFace = { x: m.x + fx * 10, z: m.z + fz * 10 };
   }
 
@@ -291,7 +295,7 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
    * While following it keeps gapM behind a walking player and eases in to waitM behind a stopped one.
    */
   function follow(P, { gapM, stopM, startM, waitM }) {
-    const still = m.stillFor >= R.STILL_SEC, t = track(P);
+    const still = m.stillFor >= R.STILL_SEC || m.planted, t = track(P);
     let d = dist(me(), P), pe = null, sP = 0, dir = 1;
     if (t) {
       pe = ownPlace(t); sP = t.kind === 'trail' ? t.tr.length : t.tr.project(P.x, P.z).s;
@@ -300,7 +304,8 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
       const dirName = 'dir:' + t.kind, curDir = latched(dirName, sP >= pe.s ? 1 : -1);
       dir = latch(dirName, (sP - pe.s) * curDir < -R.BACK_M && dist(me(), P) > startM ? -curDir : curDir);
       // on the track, the gap is measured along it: a player rounding a corner is no closer than before
-      if (pe.d < 3) d = Math.max(d, (sP - pe.s) * dir);
+      // (not on a stopped player's trail: their swaying lengthens it without taking them anywhere)
+      if (!band('follow:offTrack', pe.d, 4, 3) && !(still && t.kind === 'trail')) d = Math.max(d, (sP - pe.s) * dir);
       // the player's progress along the track, smoothed: walking sideways off the route is no progress
       const a = m.along;
       if (a && a.ref === t.tr && a.kind === t.kind) { const dt = m.clock - a.t; if (dt > 0) m.vAlong += (((sP - a.s) * dir) / dt - m.vAlong) * Math.min(1, dt * 3); }
@@ -315,8 +320,8 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
     if (state === 'wait' || !t) return hold(P);
     if (t.kind === 'route') checkSlope(t.tr, pe.s, dir);
     // speed from the gap along the track and the player's progress along it, so it never walks past their place
-    const gapAlong = (sP - pe.s) * dir, far = Math.max(d, gapAlong);
-    if (gapAlong < 0.5) return hold(P);   // level with the player's place or ahead of it: stand and let them lead
+    const gapAlong = still && t.kind === 'trail' ? Math.min((sP - pe.s) * dir, d) : (sP - pe.s) * dir, far = Math.max(d, gapAlong);
+    if (band('follow:level', gapAlong, 0.5, 1.0)) return hold(P);   // level with the player's place or ahead of it (until 1 m behind): stand and let them lead
     const speed = still
       ? clamp(0.6 * (Math.min(far, gapAlong + 1) - waitM), 0, far > R.START_M ? R.BRISK_MS : R.WALK_MS)
       : clamp(Math.max(0, m.vAlong) + 0.6 * (gapAlong - gapM), 0, R.BRISK_MS);
@@ -324,29 +329,89 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
     return go(aim.x, aim.z, speed, P);
   }
 
+  // a boolean with a dead band: on once v passes `on`, off again only once it is back past `off`, so a value lingering
+  // at one threshold cannot flip it every frame
+  function band(name, v, on, off) {
+    const b = m.bands, was = !!b[name];
+    b[name] = was ? (on > off ? v > off : v < off) : (on > off ? v >= on : v <= on);
+    return b[name];
+  }
+
+  // passing the player: the side it is already on (left of the walking direction lx, lz when positive), kept for the
+  // whole pass, so it never cuts across in front of them
+  function passSide(P, lx, lz) {
+    if (!m.passSign) m.passSign = (m.x - P.x) * lx + (m.z - P.z) * lz >= 0 ? 1 : -1;
+    return m.passSign;
+  }
+
+  // the side offset of the lead, eased toward `want` at SIDE_EASE_MS: the end of a pass or a slope stretch is a curve, not a cut
+  // `own` is where it stands now on the same side axis: a lead that starts, or a pass that starts, eases from there
+  function easeSide(want, own, restart) {
+    const stale = m.sideAt === null || m.clock - m.sideAt > 0.5;
+    const dt = stale ? 0 : m.clock - m.sideAt;
+    if (stale || restart) m.side = own;
+    m.sideAt = m.clock; m.side += clamp(want - m.side, -R.SIDE_EASE_MS * dt, R.SIDE_EASE_MS * dt);
+    return m.side;
+  }
+  // a lead point within ARRIVE_BEHIND_M behind it, or that close while the player stops: it is there, it does not turn back
+  const leadGo = (g, speed, P) => {
+    const gx = g.x - m.x, gz = g.z - m.z, gd = hypot(gx, gz);
+    if (gd < R.ARRIVE_BEHIND_M && (m.leadIdle || gx * Math.sin(m.yaw) + gz * Math.cos(m.yaw) < 0)) return hold(P);
+    return go(g.x, g.z, speed, P);
+  };
+  // the player's progress toward the target, smoothed (m.vTo), from `left`, the way still to go (along the route when it
+  // leads there): swaying in place or walking sideways is no progress. Under 0.3 m/s (0.5 m/s to count again) the
+  // player is not coming: m.leadIdle.
+  function leadProgress(left, kind) {
+    const q = m.leadT, dt = q ? m.clock - q.t : 0;
+    if (q && q.kind === kind && dt > 0 && dt < 0.5) m.vTo += ((q.d - left) / dt - m.vTo) * Math.min(1, dt * 3);
+    else if (!q || q.kind !== kind || dt >= 0.5) m.vTo = q && q.kind !== kind ? m.vTo : 0;
+    m.leadT = { d: left, t: m.clock, kind };
+    m.leadIdle = band('lead:idle', m.vTo, 0.3, 0.5);
+  }
+
   // lead the way to a target (the shelter, or home), leadM ahead of the player; it waits for them past FAR_M
   function lead(P, target, leadM) {
     const d = dist(me(), P), path = m.path;
     const dEnd = path ? dist(path.end, target) : Infinity, dStart = path ? dist(path.start, target) : Infinity;
-    if (path && Math.min(dEnd, dStart) < 40 && path.project(P.x, P.z).d <= R.OFF_ROUTE_M) {
+    // the route leads there (it ends within 40 m of the target) and the player walks it: the route, else straight on.
+    // Both with a dead band: the route again only once the player is back within ON_ROUTE_M.
+    const routeEnds = path && band('lead:ends', Math.min(dEnd, dStart), 40, 45);
+    const off = path ? path.project(P.x, P.z).d : Infinity;
+    const onRoute = routeEnds && !band('lead:off', off, R.OFF_ROUTE_M, R.ON_ROUTE_M);
+    if (onRoute) {
       const dir = dEnd <= dStart ? 1 : -1, t = { kind: 'route', tr: path }, pp = path.project(P.x, P.z);
-      if ((dir > 0 ? path.length - pp.s : pp.s) < 10) return null;   // nearly there: fall in behind and go in after them
+      leadProgress(dir > 0 ? path.length - pp.s : pp.s, 'route');
+      // nearly there (10 m to go, 14 m to lead again): fall in behind and go in after them
+      if (band('lead:near', dir > 0 ? path.length - pp.s : pp.s, 10, 14)) { m.passSign = 0; return null; }
       const pe = ownPlace(t);
       const rel = (pe.s - pp.s) * dir;                     // how far ahead of the player along the route
       const cur = latched('lead', 'lead');
       if (latch('lead', cur === 'lead' ? (rel > 0 && d > R.FAR_M ? 'wait' : 'lead') : (d < R.LEAD_RESUME_M || rel <= 0 ? 'lead' : 'wait')) === 'wait') return hold(P);
       checkSlope(path, pe.s, dir);
-      const passing = rel < leadM - 1;                     // beside or behind: pass on the left at a brisk walk
-      const speed = passing ? R.BRISK_MS : clamp(m.vp + 0.6 * (leadM - rel), 0, R.BRISK_MS);
-      const aim = pursuit(path, pe.s, dir, passing ? R.PASS_SIDE_M : slopeSide(pe.s));
-      return go(aim.x, aim.z, speed, P);
+      // beside or behind: pass at a brisk walk, PASS_SIDE_M to the side of the player it is on (until 0.5 m short of leadM)
+      const passing = band('lead:pass', rel, leadM - 1, leadM - 0.5);
+      const a = path.at(pe.s), lx = a.tz * dir, lz = -a.tx * dir, starts = passing && !m.passSign;
+      let side = slopeSide(pe.s);
+      if (passing) side = ((P.x - pp.x) * lx + (P.z - pp.z) * lz) + passSide(P, lx, lz) * R.PASS_SIDE_M;
+      else m.passSign = 0;
+      const speed = passing ? R.BRISK_MS : clamp(Math.max(0, m.vTo) + 0.6 * (leadM - rel), 0, R.BRISK_MS);
+      const aim = pursuit(path, pe.s, dir, easeSide(side, (m.x - a.x) * lx + (m.z - a.z) * lz, starts));
+      return leadGo(aim, speed, P);
     }
-    // no route that ends there: toward the target, leadM ahead of the player
+    // no route that ends there, or the player is off it: toward the target, leadM ahead of the player
     const tx = target.x - P.x, tz = target.z - P.z, l = hypot(tx, tz) || 1, k = Math.min(leadM, l);
-    const gx = P.x + tx / l * k, gz = P.z + tz / l * k;
+    leadProgress(l, 'direct');
+    const ux = tx / l, uz = tz / l, rel = (m.x - P.x) * ux + (m.z - P.z) * uz;
+    let side = 0;
+    const passing = band('lead:pass', rel, leadM - 1, leadM - 0.5), starts = passing && !m.passSign;
+    if (passing) side = passSide(P, uz, -ux) * R.PASS_SIDE_M;
+    else m.passSign = 0;
+    side = easeSide(side, (m.x - P.x) * uz - (m.z - P.z) * ux, starts);
+    const gx = P.x + ux * k + uz * side, gz = P.z + uz * k - ux * side;
     const cur = latched('lead', 'lead'), ahead = dist(me(), target) < dist(P, target);
     if (latch('lead', cur === 'lead' ? (ahead && d > R.FAR_M ? 'wait' : 'lead') : (d < R.LEAD_RESUME_M || !ahead ? 'lead' : 'wait')) === 'wait') return hold(P);
-    return go(gx, gz, R.BRISK_MS, P);
+    return leadGo({ x: gx, z: gz }, R.BRISK_MS, P);
   }
 
   // the walk in and out of the habitat behind the player: up the steps and into the cabin, or back out, never passing them
@@ -507,7 +572,7 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
     const jumped = m.lastP && hypot(P.x - m.lastP.x, P.z - m.lastP.z) > R.TELEPORT_M;
     if (!m.placed || jumped || (sense.phase === 'pre' && dist(P, me()) > 25)) {
       place(world, sense);
-      m.lastP = { x: P.x, z: P.z }; m.vp = 0; m.stillFor = 0;
+      m.lastP = { x: P.x, z: P.z }; m.vp = 0; m.stillFor = 0; m.trace = []; m.planted = false;
     }
     if (sense.phase !== m.phase) { if (sense.phase === 'eva' || sense.phase === 'pre') resetMission(); m.phase = sense.phase; }
     if (sense.path !== m.pathRef) { m.pathRef = sense.path; m.path = makePath(sense.path); m.slope = null; if (m.own && m.own.kind === 'route') m.own = null; delete m.latches['dir:route']; }
@@ -519,7 +584,13 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
     m.clock += dt;
     if (sense.phase === 'eva') m.evaClock += dt;
     m.vp += (step / dt - m.vp) * Math.min(1, dt * 3);
-    m.stillFor = m.vp < R.STILL_MS ? m.stillFor + dt : 0;
+    // stopped below STILL_MS, walking again only above 1.5 times that: a player shuffling at the threshold stays stopped
+    m.stillFor = m.vp < R.STILL_MS ? m.stillFor + dt : m.vp > R.STILL_MS * 1.5 || m.stillFor === 0 ? 0 : m.stillFor;
+    // where the player stood PLANTED_SEC ago, from a sample every 0.25 s
+    if (!m.trace.length || m.clock - m.trace[m.trace.length - 1].t >= 0.25) m.trace.push({ x: P.x, z: P.z, t: m.clock });
+    while (m.trace.length > 1 && m.clock - m.trace[1].t >= R.PLANTED_SEC) m.trace.shift();
+    const old = m.trace[0];
+    m.planted = m.clock - old.t >= R.PLANTED_SEC && band('planted', hypot(P.x - old.x, P.z - old.z), R.PLANTED_M, R.PLANTED_M + 0.5);
     addCrumb(P);
 
     // EV2's own suit: a low margin latches until the next EVA

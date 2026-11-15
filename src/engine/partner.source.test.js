@@ -25,8 +25,8 @@ describe('partner renderer: who drives the partner', () => {
     expect(partner.source).toBe(chosen);
     partner.setSource(null, { chosen: true });                        // null hides it (a crew of one, #282) ...
     expect(partner.source).toBeNull();
-    partner.setSource(scripted);                                      // ... until the engine places the crew again
-    expect(partner.source).toBe(chosen);
+    partner.setSource(scripted);                                      // ... and clears the choice: a restart brings the engine's own
+    expect(partner.source).toBe(scripted);
   });
 
   it('gives a source the habitat zone and the walker collision in its world', () => {

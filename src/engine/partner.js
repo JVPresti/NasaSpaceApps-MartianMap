@@ -50,10 +50,11 @@ export function createPartner(ctx) {
      * @param {object | null} source a partner source; null hides the partner
      * @param {{ chosen?: boolean }} [options] chosen: set through engine.setPartnerSource. The engine places the crew
      *   again at the EVA start and on a restart and sets its scripted partner then; a source the app chose comes back
-     *   instead (the crewmate, #288). A chosen null hides the partner until that next placement.
+     *   instead (the crewmate, #288). A chosen null hides the partner and clears the choice, so the next placement
+     *   brings the engine's own partner back (a crew of one in #282 decides that).
      */
     setSource(source, { chosen = false } = {}) {
-      if (chosen && source) this.chosen = source;
+      if (chosen) this.chosen = source;
       else if (!chosen && this.chosen) source = this.chosen;
       this.source = source;
       if (source && source.color) this.uPlayer.value.set(...source.color);

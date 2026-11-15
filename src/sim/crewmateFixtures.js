@@ -1,7 +1,7 @@
 /**
  * Test fixtures for the crewmate (src/sim/crewmate.js, #288): a partner-source world with the real walker collisions
  * of src/engine/collide.js, a habitat placed like the engine places it, and a scripted player track.
- * Used by crewmate.test.js and crewmate.mission.test.js only.
+ * Used by the crewmate tests only.
  */
 import { addCircle, habCanStand, habSlideWorld, habZone, PARTNER_GAP, pushOut, WALKER_RADIUS } from '../engine/collide.js';
 
@@ -123,6 +123,27 @@ export function reversals(frames, { deg = 90, windowSec = 2, pauseSec = 8, minSp
   }
   return out;
 }
+
+/**
+ * Heading jitter: how often the turn changes direction. The yaw rate is taken over stepSec windows, and only turns
+ * faster than minDegS count, so the slow turn to keep facing a swaying player does not. A turn left followed by a
+ * turn right is one flip. Independent of the frame rate.
+ */
+export function yawFlips(frames, { minDegS = 30, stepSec = 0.1 } = {}) {
+  if (frames.length < 3) return 0;
+  const dt = frames[1].t - frames[0].t, k = Math.max(1, Math.round(stepSec / dt));
+  let flips = 0, last = 0;
+  for (let i = k; i < frames.length; i += k) {
+    const a = frames[i - k], b = frames[i], d = Math.atan2(Math.sin(b.yaw - a.yaw), Math.cos(b.yaw - a.yaw));
+    if (Math.abs(d) * 180 / Math.PI / (b.t - a.t) < minDegS) continue;
+    if (last && Math.sign(d) !== last) flips++;
+    last = Math.sign(d);
+  }
+  return flips;
+}
+
+/** Walk and idle toggles: how often the gait changes. */
+export const gaitToggles = (frames) => frames.reduce((n, f, i) => n + (i > 0 && f.gait !== frames[i - 1].gait ? 1 : 0), 0);
 
 /**
  * A recorded player walk: the track sampled at 10 Hz and rounded to the centimetre, as the engine bridge writes
