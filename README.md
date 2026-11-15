@@ -38,12 +38,12 @@ Every number on screen carries one of three tags, except the radio range, which 
 
 We checked 109 numbers against their primary sources: 79 match, 11 are our stated assumptions, 16 had a wrong value, tag or wording, and 3 come from a paper we could not open. Each problem has an issue. The table is [docs/VALIDITY.md](docs/VALIDITY.md).
 
-Walking runs in real time. The hazards do not: the dust storm builds in 90 seconds where the real one took up to a sol, and the radiation event squeezes 57 hours of the September 2017 solar storm into 12 minutes at its measured dose rates.
+Walking runs in real time. The hazards do not. The dust storm builds in 90 seconds where the real one took up to a sol, and the radiation event squeezes 57 hours of the September 2017 solar storm into 12 minutes at its measured dose rates.
 
 Three limits apply everywhere:
 
 - The weather and the solar storm come from past days, never live data.
-- Radiation was measured by Curiosity in Gale crater. No instrument has measured it at Jezero, and the visor says so.
+- Curiosity measured the radiation in Gale crater. No instrument has measured it at Jezero, and the visor says so.
 - The terrain comes from a 1 m HiRISE model resampled to a 2 m grid. It does not see small rocks, so a route is advice, not a safety certificate.
 
 ### Sources
@@ -65,9 +65,9 @@ Los Frijolitos Espaciales Refritos Nueva Generación. Areas follow who wrote wha
 
 ### Use of SI and prior work
 
-We built Marswalk with SI tools (the 2026 rules' word for AI). We used an AI assistant to compare challenges and talk through the concept on 13 November. AI coding agents wrote most of the code from our issues. Almost every change reached `main` through a pull request that CI checked with lint, build and our test suite, and teammates reviewed 41 of the 134 pull requests merged by 15 November. AI research agents found the NASA reports and papers, and an audit run with AI agents and reviewed by us traced 109 numbers to them. The start screen video, its poster and the three hazard illustrations were generated with Higgsfield. They are artwork, not mission images, and none shows a NASA logo or flag. No SI model runs inside the app: the planner is A* and the suit model is a formula.
+We built Marswalk with SI tools (the 2026 rules' word for AI). We used an AI assistant to compare challenges and talk through the concept on 13 November. AI coding agents wrote most of the code from our issues. Almost every change reached `main` through a pull request that CI checked with lint, build and our test suite, and a teammate other than the author reviewed 38 of the 134 pull requests merged by 15 November. AI research agents found the NASA reports and papers, and an audit run with AI agents and reviewed by us traced 109 numbers to them. We generated the start screen video, its poster and the three hazard illustrations with Higgsfield. They are artwork, not mission images, and none shows a NASA logo or flag. No SI model runs inside the app. The planner is A* and the suit model is a formula.
 
-Before the event started, on 12 and 13 November, our graphics team prepared the HiRISE and CTX terrain tile, the rigged Z-2 suit, the habitat, two props and a three.js test bench. The app's rendering engine was ported from that test bench during the event. Everything else was written during the event. The full disclosure, the prior-work statement and our reading of the NASA insignia rules are in [docs/RULES.md](docs/RULES.md).
+Before the event started, on 12 and 13 November, our graphics team prepared the HiRISE and CTX terrain tile, the rigged Z-2 suit, the habitat, two props and a three.js test bench. During the event we ported the app's rendering engine from that test bench and wrote everything else. The full disclosure, the prior-work statement and our reading of the NASA insignia rules are in [docs/RULES.md](docs/RULES.md).
 
 ## For developers
 
@@ -79,7 +79,7 @@ Every pull request gets its own preview link, posted as a comment on the pull re
 
 ## Contributing
 
-All changes go through an issue and a reviewed pull request. Nobody pushes directly to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and the naming conventions.
+The workflow in [CONTRIBUTING.md](CONTRIBUTING.md) is issue, branch, pull request, review, then squash merge, and it has the naming conventions. Six commits on the morning of 14 November went straight to `main`: the repository setup, the Vite template, two commits that added agent skills, and two merges, one of which brought in the pre-event assets. Since 10:02 am that day, every change has reached `main` through a pull request that CI checks with lint, build and tests. A teammate other than the author reviewed 38 of the 134 pull requests merged by 15 November.
 
 ## Testing
 
