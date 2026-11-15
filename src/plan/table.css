@@ -539,6 +539,7 @@ button.table-stop-name {
   background: rgba(10, 13, 17, 0.8);
 }
 .table-map-traverse-key i { width: 18px; height: 0; border-top: 2px dashed #f4f1ea; }
+button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggle's swatch matches the dashed drive line */
 
 .map-markers { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; pointer-events: none; }
 .map-marker-hit { display: flex; align-items: center; gap: 4px; padding: 0; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; pointer-events: auto; }
@@ -691,7 +692,7 @@ button.table-stop-name {
   border: 1px solid rgba(255, 255, 255, 0.24);
   cursor: pointer;
 }
-.table-overlay-toggle i { flex: none; width: 14px; height: 0; border-top: 2px dashed currentColor; }
+.table-overlay-toggle i { flex: none; width: 14px; height: 0; border-top: 2px solid currentColor; }
 .table-layers .table-overlay-toggle.on { color: var(--ink); background: rgba(10, 13, 17, 0.6); border-color: #f4f1ea; }
 .table-overlay-toggle.on i { border-color: #f4f1ea; }
 .table-layers .table-overlay-toggle:hover { background: rgba(255, 255, 255, 0.08); }
