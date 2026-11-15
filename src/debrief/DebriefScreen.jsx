@@ -12,6 +12,8 @@ import {
   routeDistanceChange,
   routeKindLabel,
 } from './format.js';
+import RouteReview, { ReviewNotes } from './RouteReview.jsx';
+import { useReserveSec } from './useReserveSec.js';
 import './debrief.css';
 
 /** The tag chip stays small next to a large metric value and is not interactive inside the modal. */
@@ -66,7 +68,8 @@ function MissionLogEntry({ entry }) {
 }
 
 /**
- * The end-of-EVA debrief (#43). It reads one frozen `eva.summary` snapshot and shows the metrics, then the whole
+ * The end-of-EVA debrief (#43). It reads one frozen `eva.summary` snapshot and shows the metrics, the route review
+ * (#274: the walked track against the approved plan, with a verdict per deviation, RouteReview.jsx), then the whole
  * mission log in mission time: every event start and end, and every route change with its reason and distance.
  *
  * The screen is a native modal, like the start screen and the pause menu. Esc is deliberately inert: the EVA has
@@ -80,9 +83,12 @@ function MissionLogEntry({ entry }) {
  *   onContinue: () => void,
  *   onRestart: () => void,
  *   onSources: () => void,
- * }} props
+ *   reserveSec?: number | null,
+ * }} props reserveSec: the suit reserve for the review rules; read from hazards.json when left out
  */
-export default function DebriefScreen({ summary, busy = false, notice = null, onContinue, onRestart, onSources }) {
+export default function DebriefScreen({ summary, busy = false, notice = null, onContinue, onRestart, onSources, reserveSec: reserveOverride }) {
+  const loadedReserveSec = useReserveSec();
+  const reserveSec = reserveOverride === undefined ? loadedReserveSec : reserveOverride;
   const log = buildMissionLog(summary);
   const samples = sampleDetail(summary.samples);
   const hasWindow = Number.isFinite(summary.startedAtSec) && Number.isFinite(summary.endedAtSec);
@@ -147,6 +153,8 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
           </div>
         </dl>
 
+        <RouteReview summary={summary} />
+
         <section className="debrief-log-section" aria-labelledby="debrief-log-title">
           <h3 id="debrief-log-title" className="debrief-section-title">Mission log</h3>
           {log.length > 0 ? (
@@ -168,6 +176,7 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
           <p>
             Battery shows the lowest remaining charge predicted by the suit model. A dash means no reading was available.
           </p>
+          <ReviewNotes reserveSec={reserveSec} />
         </section>
 
         {notice && <p className="dialog-notice" role="alert">{notice}</p>}

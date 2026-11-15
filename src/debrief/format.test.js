@@ -6,10 +6,15 @@ import {
   formatDuration,
   formatMissionTime,
   formatPercent,
+  formatMinutes,
   formatSamples,
+  formatSignedDelta,
+  formatSignedGrams,
+  formatSignedMetres,
   formatSignedMinutes,
   routeDistanceChange,
   routeKindLabel,
+  waypointCode,
 } from './format.js';
 
 describe('debrief formats', () => {
@@ -58,6 +63,25 @@ describe('debrief formats', () => {
     expect(routeDistanceChange({ before: null, after: { distanceM: 388 } })).toBe('— → 388 m');
     expect(routeDistanceChange({ before: { distanceM: 412 }, after: null })).toBe('412 m → —');
     expect(routeDistanceChange({ before: null, after: null })).toBeNull();
+  });
+
+  it('signs the route review costs and names stops by their map code (#274)', () => {
+    expect(formatSignedDelta(40)).toBe('+40 s');
+    expect(formatSignedDelta(420)).toBe('+7 min');
+    expect(formatSignedDelta(-130)).toBe('-2 min');
+    expect(formatSignedDelta(0.2)).toBe('0 s');
+    expect(formatSignedDelta(null)).toBe('—');
+    expect(formatSignedGrams(41.4)).toBe('+41 g');
+    expect(formatSignedGrams(-5.2)).toBe('-5 g');
+    expect(formatSignedGrams(0.3)).toBe('0 g');
+    expect(formatSignedMetres(120.2)).toBe('+120 m');
+    expect(formatMinutes(720)).toBe('12 min');
+    expect(formatMinutes(-180)).toBe('-3 min');
+    expect(formatMinutes(-10)).toBe('0 min');
+    expect(formatMinutes(null)).toBe('—');
+    expect(waypointCode('WP2 · dune field edge', 2)).toBe('WP2');
+    expect(waypointCode('Cheyava Falls', 4)).toBe('Cheyava Falls');
+    expect(waypointCode('HAB', 0)).toBe('HAB');
   });
 });
 

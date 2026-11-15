@@ -63,6 +63,41 @@ export function formatSamples(count) {
   return count + (count === 1 ? ' sample' : ' samples');
 }
 
+/** A margin in whole minutes, no sign for a positive value: '12 min', '-3 min'. Route review reasons (#274). */
+export function formatMinutes(sec) {
+  if (!isNumber(sec)) return DASH;
+  const minutes = Math.round(sec / 60);
+  return (minutes === 0 ? 0 : minutes) + ' min';
+}
+
+/** A signed time difference: seconds under a minute, whole minutes above. '+40 s', '+7 min', '-2 min', '0 s'. */
+export function formatSignedDelta(sec) {
+  if (!isNumber(sec)) return DASH;
+  const sign = sec > 0 ? '+' : '-';
+  const seconds = Math.round(Math.abs(sec));
+  if (seconds === 0) return '0 s';
+  return seconds < 60 ? sign + seconds + ' s' : sign + Math.round(seconds / 60) + ' min';
+}
+
+function signedWhole(value, unit) {
+  if (!isNumber(value)) return DASH;
+  const rounded = Math.round(value);
+  if (rounded === 0) return '0 ' + unit;
+  return (rounded > 0 ? '+' : '-') + Math.abs(rounded) + ' ' + unit;
+}
+
+/** A signed O2 difference in whole grams: '+41 g', '-5 g'. */
+export const formatSignedGrams = (g) => signedWhole(g, 'g');
+/** A signed distance difference in whole metres: '+120 m', '-8 m'. */
+export const formatSignedMetres = (m) => signedWhole(m, 'm');
+
+/** The short code of a route stop, as the map tags it: 'HAB' for the first, 'WP2' for 'WP2 · dune field edge'. */
+export function waypointCode(name, index) {
+  if (index === 0) return 'HAB';
+  if (typeof name !== 'string' || name === '') return DASH;
+  return name.split(' · ')[0];
+}
+
 const ROUTE_KINDS = Object.freeze({
   initial: 'Initial route',
   replan: 'Route re-planned',
