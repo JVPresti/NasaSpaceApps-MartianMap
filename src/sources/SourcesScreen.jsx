@@ -27,7 +27,7 @@ const STATEMENT = [
 // Plain-text tags until #62 ships the SourceTag component and provenance registry. Swap these spans for it then.
 const TAGS = [
   { id: 'data', label: 'DATA', text: 'measured by a mission or stated in a NASA document' },
-  { id: 'derived', label: 'DERIVED', text: 'calculated by us from DATA' },
+  { id: 'derived', label: 'DERIVED', text: 'calculated by us from data' },
   { id: 'sim', label: 'SIM', text: 'our assumption or a game choice' },
 ];
 
@@ -142,14 +142,13 @@ export function SourcesScreen({ credits, status, onClose }) {
       <div className="sources-frame">
         <header className="sources-head">
           <div>
-            <p className="sources-kicker">Credits</p>
+            <p className="sources-kicker">
+              Credits{groups.length ? ` · ${credits.entries.length} sources in ${groups.length} groups` : ''}
+            </p>
             <h2 id="sources-title">Sources</h2>
           </div>
-          <p className="sources-count">
-            {groups.length ? `${credits.entries.length} sources in ${groups.length} groups` : null}
-          </p>
-          <button ref={closeRef} type="button" className="sources-close" onClick={onClose} aria-label="Close sources">
-            Close <kbd>Esc</kbd>
+          <button ref={closeRef} type="button" className="sources-close" onClick={onClose} aria-label="Close sources" title="Close (Esc)">
+            Close
           </button>
         </header>
 
@@ -181,26 +180,15 @@ export function SourcesScreen({ credits, status, onClose }) {
           {groups.map((group) => (
             <section key={group.id} className="sources-group" aria-labelledby={`sources-${group.id}`}>
               <h3 id={`sources-${group.id}`}>
-                {group.label} <span>{group.entries.length}</span>
+                {group.label} <span>· {group.entries.length}</span>
               </h3>
               <ul className="sources-list">
                 {group.entries.map((entry) => (
                   <li key={entry.id} className="sources-entry" data-entry={entry.id}>
                     <h4>{entry.name}</h4>
-                    <dl>
-                      <div>
-                        <dt>Provider</dt>
-                        <dd>{entry.provider}</dd>
-                      </div>
-                      <div>
-                        <dt>Credit</dt>
-                        <dd className="sources-credit">{entry.credit_line}</dd>
-                      </div>
-                      <div>
-                        <dt>Licence</dt>
-                        <dd>{entry.license}</dd>
-                      </div>
-                    </dl>
+                    <p className="sources-provider">{entry.provider}</p>
+                    <p className="sources-credit">Credit: {entry.credit_line}</p>
+                    <p className="sources-licence">Licence: {entry.license}</p>
                     <a href={entry.url} target="_blank" rel="noopener noreferrer">
                       {linkHost(entry.url)}
                       <span className="sources-visually-hidden"> (opens in a new tab)</span>

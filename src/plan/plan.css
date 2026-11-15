@@ -126,8 +126,7 @@
 
 .plan-panel h2 {
   margin: 0;
-  font-size: var(--text-l);
-  font-weight: 650;
+  font: 600 20px/1.2 var(--font-display);
   letter-spacing: 0.01em;
 }
 
@@ -146,7 +145,7 @@
 .decision-head h3 {
   margin: 0 0 var(--space-2);
   font-size: var(--text-s);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--dim);
 }
 
@@ -187,9 +186,9 @@
 }
 
 .layer-list button.on {
-  background: rgba(243, 230, 216, 0.12);
+  background: rgba(255, 255, 255, 0.08);
   border-color: var(--line-strong);
-  box-shadow: inset 3px 0 0 var(--ink);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .layer-index {
@@ -198,16 +197,16 @@
   width: 22px;
   height: 22px;
   flex: 0 0 22px;
-  font: 600 var(--text-xs) var(--font-mono);
+  font: 500 var(--text-xs) var(--font-mono);
   color: var(--dim);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-s);
 }
 
 .layer-list button.on .layer-index {
-  color: var(--bg);
-  background: var(--ink);
-  border-color: var(--ink);
+  color: #140a05;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .layer-name {
@@ -241,7 +240,7 @@
 
 .legend-gradient {
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-s);
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
@@ -249,7 +248,8 @@
   display: flex;
   justify-content: space-between;
   margin-top: var(--space-1);
-  font: var(--text-xs) var(--font-mono);
+  font: var(--text-xs) var(--font-num);
+  font-variant-numeric: tabular-nums;
   color: var(--dim);
 }
 
@@ -272,13 +272,14 @@
 .legend-swatch {
   width: 12px;
   height: 12px;
-  border-radius: 3px;
+  border-radius: var(--radius-s);
   border: 1px solid rgba(255, 255, 255, 0.22);
 }
 
 .legend-label {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-family: var(--font-num);
+  font-size: var(--text-s);
+  font-variant-numeric: tabular-nums;
 }
 
 .legend-detail {
@@ -297,7 +298,7 @@
   margin: var(--space-2) 0 0;
   font-size: var(--text-xs);
   line-height: 1.4;
-  color: var(--cyan);
+  color: var(--unit);
 }
 
 .plan-panel-foot {
@@ -353,15 +354,15 @@
 }
 
 .metric-value {
-  font: 600 var(--text-xl)/1.2 var(--font-mono);
+  font: 600 26px/1.1 var(--font-display);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
 }
 
 .metric-detail {
   margin-left: auto;
   padding-left: var(--space-1);
-  font: var(--text-xs) var(--font-mono);
+  font: var(--text-xs) var(--font-num);
+  font-variant-numeric: tabular-nums;
   color: var(--dim);
 }
 
@@ -405,7 +406,8 @@
 }
 
 .decision-reason b {
-  font-family: var(--font-mono);
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: var(--ink);
 }
@@ -424,7 +426,7 @@
 .decision-reason.margin-caution .decision-margin b { color: var(--caution); }
 .decision-reason.margin-warning { border-left-color: var(--danger); }
 .decision-reason.margin-warning .decision-margin b { color: var(--danger); }
-.decision-reason.planning { color: var(--cyan); border-left-color: var(--cyan); }
+.decision-reason.planning { color: var(--ink); border-left-color: var(--cyan); }
 .decision-reason.error { color: var(--danger); border-left-color: var(--danger); }
 
 .route-skipped {
@@ -445,12 +447,12 @@
   min-height: 34px;
   padding: 6px var(--space-3);
   font: inherit;
-  font-size: var(--text-s);
+  font-size: var(--text-m);
   font-weight: 600;
   color: var(--ink);
   background: var(--surface-hover);
   border: 1px solid var(--line);
-  border-radius: var(--radius-s);
+  border-radius: var(--radius-m);
   cursor: pointer;
 }
 
@@ -464,13 +466,13 @@
 }
 
 .route-actions .route-go.on {
-  color: #0f1a10;
+  color: #06170d;
   background: var(--ok);
   border-color: var(--ok);
 }
 
 .route-actions .route-nogo.on {
-  color: #2a0d08;
+  color: #1c0704;
   background: var(--danger);
   border-color: var(--danger);
 }
@@ -487,7 +489,7 @@
   gap: var(--space-2);
   padding: var(--space-3) 0 var(--space-2);
   font-size: var(--text-s);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--dim);
   list-style: none;
   cursor: pointer;
@@ -553,8 +555,8 @@
 }
 
 .legs-table tbody td {
-  font-family: var(--font-mono);
-  font-size: var(--text-s);
+  font-family: var(--font-num);
+  font-size: var(--text-m);
   font-variant-numeric: tabular-nums;
 }
 
@@ -605,11 +607,11 @@
   display: inline-block;
   width: 16px;
   margin-right: 6px;
-  font: 600 var(--text-xs) var(--font-mono);
+  font: 600 var(--text-xs) var(--font-num);
   text-align: center;
-  color: var(--bg);
+  color: #140a05;
   background: var(--accent);
-  border-radius: 999px;
+  border-radius: var(--radius-s);
 }
 
 .legs-sep {
@@ -626,7 +628,7 @@
 
 .legs-total th,
 .legs-total td {
-  font-weight: 700;
+  font-weight: 600;
   border-top: 1px solid var(--line-strong);
 }
 
@@ -658,10 +660,10 @@
   place-items: center;
   width: 20px;
   height: 20px;
-  font: 600 var(--text-xs) var(--font-mono);
-  color: var(--bg);
+  font: 600 var(--text-xs) var(--font-num);
+  color: #140a05;
   background: var(--accent);
-  border-radius: 999px;
+  border-radius: var(--radius-s);
 }
 
 .waypoint-name {
@@ -674,7 +676,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  font: var(--text-xs) var(--font-mono);
+  font: var(--text-xs) var(--font-num);
   color: var(--dim);
 }
 
@@ -682,7 +684,7 @@
   width: 100%;
   min-width: 0;
   padding: 4px 6px;
-  font: var(--text-s) var(--font-mono);
+  font: var(--text-s) var(--font-num);
   font-variant-numeric: tabular-nums;
   color: var(--ink);
   background: var(--surface-sunk);
@@ -740,7 +742,7 @@
 
 .north-arrow span {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--dim);
 }
 
@@ -750,7 +752,8 @@
   gap: 5px;
   min-width: 92px;
   padding: 6px var(--space-3);
-  font: var(--text-xs) var(--font-mono);
+  font: var(--text-xs) var(--font-num);
+  font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
 
@@ -758,8 +761,8 @@
   max-width: 160px;
   height: 3px;
   background: var(--ink);
-  border-radius: 999px;
-  box-shadow: 0 0 0 1px rgba(26, 16, 12, 0.3);
+  border-radius: 0;
+  box-shadow: 0 0 0 1px rgba(10, 13, 17, 0.3);
 }
 
 .plan-readout {
@@ -784,7 +787,7 @@
   color: var(--dim);
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   backdrop-filter: blur(8px);
   pointer-events: auto;
 }
@@ -797,7 +800,7 @@
 }
 
 .clock-item b {
-  font: 600 var(--text-l) var(--font-mono);
+  font: 600 18px/1.2 var(--font-display);
   font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
@@ -827,7 +830,7 @@
   }
 
   .metric-value {
-    font-size: 18px;
+    font-size: 23px;
   }
 }
 
@@ -847,6 +850,11 @@
   .legs-table th,
   .legs-table td { padding-top: 2px; padding-bottom: 2px; line-height: 1.15; }
   .layer-list button { min-height: 32px; }
+  .plan-section { padding-top: var(--space-3); }
+  .plan-note { margin: var(--space-2) 0 0; }
+  .layer-legend { padding: 10px var(--space-3); }
+  .legend-summary { margin-top: var(--space-2); }
+  .plan-panel-foot { margin-top: var(--space-3); padding-top: var(--space-2); }
 }
 
 @media (max-width: 1100px) {
@@ -880,4 +888,308 @@
   .plan-disclosure summary::before {
     transition: none;
   }
+}
+
+/* ------------------------------------------------------------------ mission table (#11) */
+
+/* The right panel is the mission table: four steps in tabs, the last one starts the EVA. */
+.mission-table {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.table-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.table-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 6px 4px;
+  font: 500 var(--text-m) var(--font-ui);
+  color: var(--dim);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+
+.table-tabs button:hover {
+  color: var(--ink);
+  background: var(--surface-hover);
+}
+
+.table-tabs button.on {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+.table-tab-num {
+  font: 500 var(--text-xs) var(--font-mono);
+  color: var(--dim);
+}
+
+.table-tabs button.on .table-tab-num {
+  color: var(--accent);
+}
+
+.table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin-right: -6px;
+  padding: 0 6px var(--space-1) 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.table-panel .plan-disclosure:last-child {
+  margin-bottom: 0;
+}
+
+.table-next {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.table-next button,
+.table-link,
+.route-replan-row button {
+  min-height: 34px;
+  padding: 6px var(--space-4);
+  font: 600 var(--text-m) var(--font-ui);
+  color: var(--ink);
+  background: var(--surface-hover);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  cursor: pointer;
+}
+
+.table-next button:hover,
+.table-link:hover,
+.route-replan-row button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--line-strong);
+}
+
+.route-replan-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.route-replan-row .route-skipped {
+  flex: 1 1 100%;
+  order: 3;
+  margin: 0;
+}
+
+.route-replan-row button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.table-title {
+  margin: var(--space-4) 0 var(--space-1);
+  font: 600 26px/1.1 var(--font-display);
+}
+
+.table-subtitle {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: var(--text-s);
+  font-weight: 500;
+  color: var(--dim);
+}
+
+.table-lead {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-l);
+  line-height: 1.5;
+}
+
+.table-title + .table-lead {
+  margin-top: var(--space-1);
+}
+
+.table-facts {
+  display: grid;
+  gap: 6px;
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3);
+  font-size: var(--text-m);
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+}
+
+.table-facts div,
+.hazard-card dl div {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.table-facts dt,
+.hazard-card dt {
+  color: var(--dim);
+}
+
+.table-facts dd,
+.table-truth dd,
+.hazard-card dd {
+  margin: 0;
+}
+
+.table-truth {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+}
+
+.table-truth-item {
+  padding-left: var(--space-3);
+  border-left: 3px solid var(--truth);
+  font-size: var(--text-m);
+  line-height: 1.45;
+}
+
+.table-truth-real { --truth: var(--ok); }
+.table-truth-artistic { --truth: #ffb86b; }
+.table-truth-modelled { --truth: #a9b4ff; }
+
+.table-truth dt {
+  font: 600 16px/1.3 var(--font-display);
+  color: var(--truth);
+}
+
+.hazard-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hazard-card {
+  padding: var(--space-3);
+  font-size: var(--text-m);
+  line-height: 1.45;
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--caution);
+  border-radius: var(--radius-m);
+}
+
+.hazard-card.hazard-warning { border-left-color: var(--warning); }
+.hazard-card.hazard-danger { border-left-color: var(--danger); }
+
+.hazard-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.hazard-head h3 {
+  margin: 0;
+  font: 600 18px/1.2 var(--font-display);
+}
+
+.hazard-when {
+  font-size: var(--text-s);
+  text-align: right;
+  color: var(--dim);
+}
+
+.hazard-card p {
+  margin: var(--space-1) 0 var(--space-2);
+}
+
+.hazard-card dl {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.hazard-card .hazard-basis {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  color: var(--dim);
+}
+
+.route-metrics.table-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.table-suit .route-metrics {
+  margin-top: 0;
+}
+
+.table-suit .route-decision-block {
+  margin-top: var(--space-4);
+}
+
+.table-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.table-actions button {
+  min-height: 44px;
+  padding: 8px var(--space-3);
+  font: 600 var(--text-l) var(--font-ui);
+  color: var(--ink);
+  background: var(--surface-hover);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  cursor: pointer;
+}
+
+.table-actions button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.table-actions .route-nogo.on {
+  color: #1c0704;
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+/* The one main action of the table: it starts the EVA. */
+.table-actions .table-begin {
+  color: #140a05;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.table-actions .table-begin:hover {
+  background: #ff8148;
+}
+
+.table-actions .table-begin:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.table-foot {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  color: var(--dim);
 }

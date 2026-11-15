@@ -131,7 +131,7 @@ describe('minimap data rules', () => {
   });
 
   it('starts with no hazard zones in the store: empty means unknown, not safe', () => {
-    expect(createInitialState().hazards).toEqual({ zones: [] });
+    expect(createInitialState().hazards.zones).toEqual([]);
   });
 
   it('keeps the habitat airlock distinct from the HAB route waypoint', () => {

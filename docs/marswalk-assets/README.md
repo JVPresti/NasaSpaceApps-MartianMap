@@ -84,7 +84,8 @@ so the GPU check now starts AMD integrated graphics on Low. On High, walking stu
 ## What is real and what is not (say this in the app)
 - Real: terrain shape and photo (HiRISE DTM 1 m + orthomosaic 25 cm), background (CTX DEM 20 m + mosaic 6 m),
   position of Cheyava Falls, slope values, sun shadows.
-- Artistic: the Mars colour (HiRISE and CTX are grayscale), sky and haze presets, night lamp.
+- Artistic: the Mars colour (HiRISE and CTX are grayscale), sky and haze presets, night lamp, the start screen video and
+  the hazard illustrations (AI-generated with Higgsfield, not mission images).
 - Modelled / estimated: rock positions (statistical model, not individual real rocks), rock shapes and close-up
   textures (Earth scans), the Cheyava Falls rock (hand-made after NASA PIA26401), the layered outcrop at Bright Angel
   (hand-made in the style of the Mastcam-Z images of sol 1217, not a copy of a specific rock), rock-abundance layer.

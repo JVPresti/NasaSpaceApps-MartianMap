@@ -1,23 +1,22 @@
-/* Sources screen (#63). Every colour goes through the --sources-* tokens below,
-   which fall back to the app variables in index.css. When the Plan mode
-   visual system lands, point these tokens at it and nothing else changes. */
+/* Sources screen (#63), in the #11 design: a centred panel over the dimmed scene, the real / artistic / modelled
+   statement on top, then every credit as a card. The statement and the header stay put; the cards scroll.
+   Sentence case: titles use the display face instead of capitals. */
 
 .sources {
-  --sources-bg: rgba(20, 12, 9, 0.96);
-  --sources-card: rgba(255, 236, 216, 0.04);
-  --sources-line: var(--line, rgba(255, 214, 170, 0.16));
-  --sources-ink: var(--ink, #f3e6d8);
-  --sources-dim: var(--dim, #b9a08a);
-  --sources-accent: var(--accent, #e0683a);
-  --sources-link: var(--cyan, #8fd3ee);
-  --sources-real: #9fd6a0;
-  --sources-artistic: #f2c48d;
-  --sources-modelled: #b8b4f2;
+  --sources-bg: rgba(10, 13, 17, 0.95);
+  --sources-line: rgba(255, 255, 255, 0.16);
+  --sources-ink: var(--ink, #e9edf2);
+  --sources-dim: var(--dim, #94a1af);
+  --sources-text: #c9d0d8;
+  --sources-link: #8fe3ea;
+  --sources-real: var(--ok, #6ee7a0);
+  --sources-artistic: var(--caution, #ffb020);
+  --sources-modelled: #a9b4ff;
 
   position: fixed;
   inset: 0;
-  width: min(1680px, calc(100vw - 48px));
-  height: calc(100vh - 48px);
+  width: min(1180px, calc(100vw - 48px));
+  height: min(820px, calc(100vh - 48px));
   max-width: none;
   max-height: none;
   margin: auto;
@@ -25,183 +24,114 @@
   color: var(--sources-ink);
   background: var(--sources-bg);
   border: 1px solid var(--sources-line);
-  border-radius: 18px;
+  border-radius: var(--radius-m, 3px);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
   overflow: hidden;
 }
 
-.sources::backdrop {
-  background: rgba(8, 4, 3, 0.62);
-  backdrop-filter: blur(4px);
-}
+.sources::backdrop { background: rgba(5, 7, 10, 0.72); }
 
-.sources-frame {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
+.sources-frame { display: flex; flex-direction: column; height: 100%; padding: 36px 36px 0; }
 
 .sources-head {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 24px;
-  padding: 20px 28px 14px;
-  border-bottom: 1px solid var(--sources-line);
 }
 
-.sources-kicker {
-  margin: 0 0 4px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--sources-accent);
-}
+.sources-kicker { margin: 0 0 4px; font-size: 14px; color: var(--sources-dim); }
 
-.sources-head h2 {
-  margin: 0;
-  font-size: 26px;
-  font-weight: 600;
-  line-height: 1.1;
-}
-
-.sources-count {
-  margin: 0 auto 2px 0;
-  font-size: 13px;
-  color: var(--sources-dim);
-}
-
-.sources kbd {
-  padding: 1px 5px;
-  font: 600 11px/1.4 ui-monospace, 'Cascadia Mono', Consolas, monospace;
-  color: var(--sources-dim);
-  border: 1px solid var(--sources-line);
-  border-radius: 4px;
-}
+.sources-head h2 { margin: 0; font: 600 44px/1.05 var(--font-display, inherit); }
 
 .sources-close {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  font: inherit;
-  font-size: 14px;
+  min-height: 46px;
+  min-width: 74px;
+  padding: 0 18px;
+  font: 600 15px var(--font-ui, inherit);
   color: var(--sources-ink);
-  background: rgba(255, 236, 216, 0.06);
-  border: 1px solid var(--sources-line);
-  border-radius: 10px;
+  background: rgba(10, 13, 17, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0;
   cursor: pointer;
 }
 
-.sources-close:hover {
-  background: rgba(255, 236, 216, 0.12);
-}
+.sources-close:hover { background: rgba(255, 255, 255, 0.08); }
 
-.sources :focus-visible {
-  outline: 2px solid var(--sources-accent);
-  outline-offset: 2px;
-}
+.sources :focus-visible { outline: 2px solid var(--focus, #2bffed); outline-offset: 2px; }
 
-/* The statement sits outside the scrolling body, so it is always on screen. */
-.sources-statement {
-  padding: 16px 28px 14px;
-  border-bottom: 1px solid var(--sources-line);
-  background: rgba(255, 236, 216, 0.025);
-}
+.sources-statement { padding: 26px 0 16px; border-bottom: 1px solid var(--sources-line); }
 
 .sources-truth {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  gap: 36px;
   margin: 0;
 }
 
-.sources-truth-item {
-  padding-left: 12px;
-  border-left: 3px solid var(--truth-colour);
-}
+.sources-truth-item { position: relative; padding-left: 22px; }
 
 .sources-truth-real { --truth-colour: var(--sources-real); }
 .sources-truth-artistic { --truth-colour: var(--sources-artistic); }
 .sources-truth-modelled { --truth-colour: var(--sources-modelled); }
 
-.sources-truth dt {
-  margin-bottom: 3px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--truth-colour);
+.sources-truth-item::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  background: var(--truth-colour);
 }
 
-.sources-truth dd {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.45;
-}
+.sources-truth dt { margin-bottom: 2px; font-size: 15px; font-weight: 600; }
+
+.sources-truth dd { margin: 0; font-size: 14px; line-height: 1.45; color: var(--sources-text); }
 
 .sources-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 20px;
-  margin: 12px 0 0;
-  font-size: 13px;
-  color: var(--sources-dim);
+  gap: 8px 28px;
+  margin: 22px 0 0;
+  padding-top: 18px;
+  font-size: 14px;
+  color: var(--sources-text);
+  border-top: 1px solid var(--sources-line);
 }
 
-/* Stand-in for the SourceTag component from #62. */
 .sources-tag {
   display: inline-block;
-  padding: 0 6px;
-  font: 700 11px/1.6 ui-monospace, 'Cascadia Mono', Consolas, monospace;
-  letter-spacing: 0.06em;
+  margin-right: 6px;
+  padding: 1px 6px;
+  font: 500 12px/1.5 var(--font-mono, ui-monospace, Consolas, monospace);
   color: var(--sources-ink);
-  border: 1px solid var(--sources-line);
-  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: var(--radius-s, 2px);
 }
-
-.sources-tag-data { color: var(--sources-real); }
-.sources-tag-derived { color: var(--sources-link); }
-.sources-tag-sim { color: var(--sources-artistic); }
 
 .sources-body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 6px 28px 28px;
+  margin: 0 -36px;
+  padding: 0 36px 32px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 214, 170, 0.25) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
 }
 
-.sources-body:focus {
-  outline: none;
-}
+.sources-body:focus { outline: none; }
 
-.sources-status {
-  margin: 20px 0;
-  color: var(--sources-dim);
-}
+.sources-status { margin: 20px 0; color: var(--sources-dim); }
 
-.sources-group h3 {
-  margin: 22px 0 10px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--sources-accent);
-}
+.sources-group h3 { margin: 20px 0 10px; font-size: 15px; font-weight: 500; color: var(--sources-text); }
 
-.sources-group h3 span {
-  margin-left: 6px;
-  font-weight: 500;
-  letter-spacing: 0;
-  color: var(--sources-dim);
-}
+.sources-group h3 span { color: var(--sources-text); }
 
 .sources-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 16px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -210,90 +140,36 @@
 .sources-entry {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
-  padding: 14px 16px;
-  background: var(--sources-card);
+  padding: 18px 18px 16px;
+  background: rgba(12, 16, 22, 0.6);
   border: 1px solid var(--sources-line);
-  border-radius: 12px;
 }
 
-.sources-entry h4 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.3;
-  overflow-wrap: anywhere;
-}
+.sources-entry h4 { margin: 0 0 4px; font-size: 16px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
 
-.sources-entry dl {
-  display: grid;
-  gap: 4px;
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.4;
-}
+.sources-entry p { margin: 0; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; color: var(--sources-text); }
 
-.sources-entry dl div {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
-  gap: 8px;
-}
+.sources-entry .sources-credit,
+.sources-entry .sources-licence { color: var(--sources-dim); }
 
-.sources-entry dt {
-  color: var(--sources-dim);
-}
+.sources-entry .sources-licence { font-size: 13px; }
 
-.sources-entry dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
+.sources a { color: var(--sources-link); text-underline-offset: 3px; overflow-wrap: anywhere; }
 
-.sources-credit {
-  font-style: italic;
-}
-
-.sources a {
-  color: var(--sources-link);
-  text-underline-offset: 3px;
-  overflow-wrap: anywhere;
-}
-
-.sources-entry a {
-  margin-top: auto;
-  font-size: 13px;
-}
+.sources-entry a { margin-top: auto; padding-top: 4px; font-size: 13px; }
 
 .sources-entry a::after,
-.sources-resources a::after {
-  content: ' ↗';
-}
+.sources-resources a::after { content: ' ↗'; }
 
-.sources-resources {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: 14px;
-}
+.sources-resources { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 14px; }
 
-.sources-resources li {
-  display: grid;
-  grid-template-columns: minmax(200px, 320px) minmax(0, 1fr);
-  gap: 16px;
-}
+.sources-resources li { display: grid; grid-template-columns: minmax(200px, 320px) minmax(0, 1fr); gap: 16px; }
 
-.sources-resources span {
-  color: var(--sources-dim);
-}
+.sources-resources span { color: var(--sources-dim); }
 
-.sources-notes {
-  margin: 22px 0 0;
-  padding-left: 18px;
-  font-size: 13px;
-  color: var(--sources-dim);
-}
+.sources-notes { margin: 22px 0 0; padding-left: 18px; font-size: 13px; color: var(--sources-dim); }
 
 .sources-visually-hidden {
   position: absolute;
@@ -305,70 +181,31 @@
   white-space: nowrap;
 }
 
-/* Plan mode entry point, centred just above the controls hint. */
+/* Sources button, used where a screen has no other entry point. */
 .sources-open {
-  position: absolute;
-  bottom: 54px;
-  left: 50%;
-  transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 7px 14px;
   font: inherit;
-  font-size: 13px;
-  color: var(--ink, #f3e6d8);
-  background: var(--panel, rgba(20, 12, 9, 0.78));
-  border: 1px solid var(--line, rgba(255, 214, 170, 0.16));
-  border-radius: 999px;
-  backdrop-filter: blur(10px);
+  font-size: 14px;
+  color: var(--ink, #e9edf2);
+  background: rgba(10, 13, 17, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   pointer-events: auto;
   cursor: pointer;
 }
 
-.sources-open:hover {
-  border-color: var(--accent, #e0683a);
-}
+.sources-open kbd { font: 500 11px/1.4 var(--font-mono, monospace); color: var(--dim, #94a1af); }
 
-.sources-open kbd {
-  padding: 0 5px;
-  font: 600 11px/1.4 ui-monospace, 'Cascadia Mono', Consolas, monospace;
-  color: var(--dim, #b9a08a);
-  border: 1px solid var(--line, rgba(255, 214, 170, 0.16));
-  border-radius: 4px;
-}
-
-@media (max-height: 800px) {
-  .sources {
-    height: calc(100vh - 32px);
-    width: min(1680px, calc(100vw - 32px));
-  }
-
-  .sources-head {
-    padding: 14px 24px 10px;
-  }
-
-  .sources-statement {
-    padding: 12px 24px 10px;
-  }
-
-  .sources-truth dd {
-    font-size: 13px;
-  }
-
-  .sources-body {
-    padding: 4px 24px 24px;
-  }
+@media (max-height: 720px) {
+  .sources-frame { padding: 24px 28px 0; }
+  .sources-head h2 { font-size: 36px; }
+  .sources-statement { padding: 16px 0 12px; }
+  .sources-body { margin: 0 -28px; padding: 0 28px 24px; }
 }
 
 @media (max-width: 900px) {
-  .sources-truth {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .sources-resources li {
-    grid-template-columns: 1fr;
-    gap: 2px;
-  }
+  .sources-truth { grid-template-columns: 1fr; gap: 12px; }
+  .sources-resources li { grid-template-columns: 1fr; gap: 2px; }
 }

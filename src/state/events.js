@@ -152,8 +152,10 @@ export function startEventRunner({ store = useMissionStore, now = () => Date.now
     store.setState((state) => ({ route: { ...state.route, shelter: null, skipped: [] } }));
   };
 
+  // Events switched off at the mission table (#11) are left out of this EVA.
+  const off = store.getState().hazards?.off ?? [];
   const engine = createEventEngine({
-    events: EVENT_DEFINITIONS,
+    events: EVENT_DEFINITIONS.filter((event) => !off.includes(event.id)),
     store: storeAdapter,
     getMissionTime: missionTime,
     requestReplan,

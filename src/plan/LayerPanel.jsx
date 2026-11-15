@@ -94,8 +94,8 @@ export default function LayerPanel({ layer, onLayer, radioShadow, onRadioShadow 
         <LayerLegend meta={meta} />
       </section>
 
+      {/* The tile size is in the readout under the map; it is not repeated here. */}
       <footer className="plan-panel-foot">
-        <span>Tile 1422 × 1500 m</span>
         <span>HiRISE DTM 1 m · ortho 25 cm</span>
       </footer>
     </aside>

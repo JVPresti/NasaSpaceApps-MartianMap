@@ -129,6 +129,7 @@
 .plan-alerts:has(> .stop-card-plan) > .event-banner { align-self: center; }
 .stop-card-plan {
   position: relative;
+  font-family: var(--font-ui, inherit);
   flex: 0 1 auto;
   width: min(340px, 100%);
   min-height: 0;

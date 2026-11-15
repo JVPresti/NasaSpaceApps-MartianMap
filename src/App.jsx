@@ -1,27 +1,24 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import EngineView from './components/EngineView.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
-import ModeSwitch from './components/ModeSwitch.jsx';
 import PauseMenu from './components/PauseMenu.jsx';
 import StartScreen from './components/StartScreen.jsx';
 import { useShortcuts } from './components/useShortcuts.js';
 import EventBanner from './events/EventBanner.jsx';
 import EventDebug from './events/EventDebug.jsx';
 import Hud from './hud/Hud.jsx';
-import MissionClock from './plan/MissionClock.jsx';
 import PlanMode from './plan/PlanMode.jsx';
 import SourcesRoot from './sources/SourcesScreen.jsx';
 import { WalkStopCard } from './stops/ScienceStops.jsx';
 import { createRouteProgress } from './hud/minimapRoute.js';
 import { openSources } from './sources/sourcesStore.js';
-import { pauseMission, setMode, useMissionStore } from './state/store.js';
+import { pauseMission, resumeMission, setMode, useMissionStore } from './state/store.js';
 import { EVA_PHASE, PAUSE_VIEW, pauseEva, requestEvaLock, restartEva, resumeEva } from './state/evaSession.js';
 import './App.css';
 import './components/menu.css';
 
 const HINTS = {
   walk: 'Esc to pause · WASD to walk · Shift to jog · H for controls',
-  plan: 'Right-drag to pan · scroll to zoom · Esc to pause · H for controls',
 };
 
 const SITE = 'Neretva Vallis · Jezero crater · Mars';
@@ -102,6 +99,11 @@ export default function App() {
   const qualityBusyRef = useRef(false);
   const [qualityError, setQualityError] = useState(null);
   const [planEpoch, setPlanEpoch] = useState(0);
+  // Planning costs no mission time (#11): the clock, suit and events wait at the mission table until the first
+  // Begin EVA. After that the clock also runs at the table, because the EVA is under way.
+  const [evaBegun, setEvaBegunState] = useState(false);
+  const evaBegunRef = useRef(false);
+  const setEvaBegun = useCallback((value) => { evaBegunRef.current = value; setEvaBegunState(value); }, []);
 
   const engineRef = useRef(null);
   const runtimeRef = useRef(null);
@@ -134,8 +136,9 @@ export default function App() {
       setPhase(EVA_PHASE.START);
       setOverlay(null);
       setNotice(null);
+      setEvaBegun(false);
     }
-  }, [setOverlay, setPhase]);
+  }, [setEvaBegun, setOverlay, setPhase]);
 
   const setBusyState = useCallback((value) => { busyRef.current = value; setBusy(value); }, []);
 
@@ -176,7 +179,8 @@ export default function App() {
     setBusyState(true);
     setNotice(null);
     setQualityError(null);
-    const result = await resumeEva({ engine: instance, mode: resumeMode, isCurrent });
+    const holdClock = resumeMode === 'plan' && !evaBegunRef.current;
+    const result = await resumeEva({ engine: instance, mode: resumeMode, isCurrent, holdClock });
     setBusyState(false);
     // A superseded attempt stays paused and silent: the action that ended it owns the menu and its message.
     if (result.stale) return;
@@ -184,10 +188,11 @@ export default function App() {
       setNotice(result.message);
       return;
     }
+    if (resumeMode === 'walk') setEvaBegun(true);
     setOverlay(null);
     setPhase(EVA_PHASE.PLAYING);
     setNotice(null);
-  }, [setBusyState, setOverlay, setPhase]);
+  }, [setBusyState, setEvaBegun, setOverlay, setPhase]);
 
   const handleModeChange = useCallback(async (next) => {
     if (busyRef.current) return;
@@ -207,9 +212,22 @@ export default function App() {
         try { instance?.releasePointerLock?.(); } catch { /* nothing to release */ }
         return;
       }
-      if (phaseRef.current === EVA_PHASE.PLAYING && !lock.ok) pauseFor(PAUSE_VIEW.MENU, lock.message);
+      if (phaseRef.current !== EVA_PHASE.PLAYING) return;
+      if (!lock.ok) {
+        pauseFor(PAUSE_VIEW.MENU, lock.message);
+        return;
+      }
+      // The first time on the surface is the start of the EVA: the clock held at the mission table starts now.
+      if (!evaBegunRef.current) {
+        setEvaBegun(true);
+        resumeMission();
+      }
     }
-  }, [pauseFor]);
+  }, [pauseFor, setEvaBegun]);
+
+  /** Begin EVA on the mission table's Suit tab. The click is the user gesture that captures the mouse. */
+  const handleBeginEva = useCallback(() => handleModeChange('walk'), [handleModeChange]);
+
 
   const handleQuality = useCallback(async (option) => {
     const instance = engineRef.current;
@@ -252,9 +270,29 @@ export default function App() {
     setPhase(EVA_PHASE.START);
     setOverlay(null);
     setPlanEpoch((value) => value + 1);
+    setEvaBegun(false);
     setNotice(result.ok ? null : result.message);
     if (instance) setQuality(instance.getQuality());
-  }, [setBusyState, setOverlay, setPhase]);
+  }, [setBusyState, setEvaBegun, setOverlay, setPhase]);
+
+  /** Pause menu: end the EVA and go back to the mission table. A restart (new clock, full suit) that skips the
+   *  start screen; the table needs no pointer lock, so it opens at once. */
+  const handleEndConfirm = useCallback(() => {
+    handleRestartConfirm();
+    setMode('plan');
+    handleResume();
+  }, [handleRestartConfirm, handleResume]);
+
+  // Controls opened from the mission table close back to the table; opened from the pause menu, back to the menu.
+  const controlsFromMenuRef = useRef(false);
+  const openControls = useCallback((fromMenu) => {
+    controlsFromMenuRef.current = fromMenu;
+    showOverlay(PAUSE_VIEW.CONTROLS);
+  }, [showOverlay]);
+  const closeControls = useCallback(() => {
+    if (controlsFromMenuRef.current || useMissionStore.getState().mode !== 'plan') setOverlay(PAUSE_VIEW.MENU);
+    else handleResume();
+  }, [handleResume, setOverlay]);
 
   const handleRetry = useCallback(() => {
     resumeSeqRef.current += 1;
@@ -266,10 +304,11 @@ export default function App() {
     setQuality(null);
     setQualityError(null);
     setBusyState(false);
+    setEvaBegun(false);
     qualityBusyRef.current = false;
     setQualityBusy(false);
     dispatch({ type: 'retry' });
-  }, [setBusyState, setOverlay, setPhase]);
+  }, [setBusyState, setEvaBegun, setOverlay, setPhase]);
 
   const handlePauseCancel = useCallback(() => {
     if (overlayRef.current !== PAUSE_VIEW.MENU) {
@@ -305,6 +344,7 @@ export default function App() {
       if (event.key === 'h' || event.key === 'H') {
         if (phaseRef.current === EVA_PHASE.PLAYING) {
           event.preventDefault();
+          controlsFromMenuRef.current = false;
           pauseFor(PAUSE_VIEW.CONTROLS);
         }
       }
@@ -314,12 +354,13 @@ export default function App() {
   }, [pauseFor]);
 
   const showTopbar = load.status === 'ready' && phase === EVA_PHASE.PLAYING;
-  // Like the topbar: off while loading, on the start screen and in the pause menu. M goes through the mode
-  // button's handler, so it also captures the mouse in Walk (#174).
+  // Like the topbar: off while loading, on the start screen and in the pause menu. There is no mode button any
+  // more (#11: the EVA begins on the mission table and returns to it from the pause menu), but M still goes
+  // through the same handler, so it also captures the mouse in Walk (#174).
   useShortcuts(showTopbar, handleModeChange);
 
   return (
-    <div className="app">
+    <div className={load.status === 'ready' && phase === EVA_PHASE.START ? 'app at-start' : 'app'}>
       <EngineView
         key={`engine-${load.attempt}`}
         onStatus={handleStatus}
@@ -331,19 +372,27 @@ export default function App() {
       />
 
       {load.status === 'ready' && (
-        <PlanMode key={`plan-${load.attempt}-${planEpoch}`} engine={engine} active={mode === 'plan'} />
+        <PlanMode
+          key={`plan-${load.attempt}-${planEpoch}`}
+          engine={engine}
+          active={mode === 'plan'}
+          evaBegun={evaBegun}
+          onBeginEva={handleBeginEva}
+          onControls={() => openControls(false)}
+        />
       )}
       {/* Plan mode places the banner in its own alert region; Walk keeps the free-floating strip. */}
       {load.status === 'ready' && mode === 'walk' && <EventBanner />}
       {load.status === 'ready' && DEBUG_EVENTS && <EventDebug />}
 
-      <header className="topbar" inert={showTopbar ? undefined : true}>
-        <h1>
-          Marswalk <span>Cheyava Falls · Neretva Vallis, Jezero crater</span>
-        </h1>
-        {showTopbar && mode === 'plan' && <MissionClock />}
-        <ModeSwitch mode={mode} onChange={handleModeChange} />
-      </header>
+      {/* The mission table has its own top bar; this one is for the surface. */}
+      {mode === 'walk' && (
+        <header className="topbar" inert={showTopbar ? undefined : true}>
+          <h1>
+            Marswalk <span>Cheyava Falls · Neretva Vallis, Jezero crater</span>
+          </h1>
+        </header>
+      )}
 
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={SITE} onRetry={handleRetry} onGone={handleGone} />
 
@@ -353,16 +402,26 @@ export default function App() {
 
       {load.status === 'ready' && <SourcesRoot />}
 
-      {showTopbar && <p className="hint">{mode === 'walk' ? HINTS.walk : HINTS.plan}</p>}
+      {showTopbar && mode === 'walk' && <p className="hint">{HINTS.walk}</p>}
 
       {load.status === 'ready' && loadingDone && phase === EVA_PHASE.START && (
-        <StartScreen mode={mode} busy={busy} notice={notice} onStart={handleResume} />
+        <StartScreen
+          busy={busy}
+          notice={notice}
+          onStart={() => {
+            // The start screen always opens the mission table; the EVA begins from there.
+            if (useMissionStore.getState().mode !== 'plan') setMode('plan');
+            handleResume();
+          }}
+          onSources={openSources}
+        />
       )}
 
       {load.status === 'ready' && phase === EVA_PHASE.PAUSED && overlay && (
         <PauseMenu
           view={overlay}
           mode={mode}
+          evaBegun={evaBegun}
           busy={busy}
           notice={notice}
           focusToken={menuFocus}
@@ -372,11 +431,13 @@ export default function App() {
           onResume={handleResume}
           onRestartRequest={() => showOverlay(PAUSE_VIEW.RESTART)}
           onRestartConfirm={handleRestartConfirm}
-          onControls={() => showOverlay(PAUSE_VIEW.CONTROLS)}
+          onControls={() => openControls(true)}
+          onControlsClose={closeControls}
           onSources={openSources}
           onMenu={() => setOverlay(PAUSE_VIEW.MENU)}
           onQuality={handleQuality}
-          onModeChange={handleModeChange}
+          onEndRequest={() => showOverlay(PAUSE_VIEW.END)}
+          onEndConfirm={handleEndConfirm}
           onCancel={handlePauseCancel}
         />
       )}

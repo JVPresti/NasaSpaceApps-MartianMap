@@ -14,7 +14,8 @@ import { clearClockSession, defaultSessionStorage } from '../sim/missionClock.js
 import { pauseMission, resetStore, resumeMission, useMissionStore } from './store.js';
 
 export const EVA_PHASE = Object.freeze({ START: 'start', PLAYING: 'playing', PAUSED: 'paused' });
-export const PAUSE_VIEW = Object.freeze({ MENU: 'menu', CONTROLS: 'controls', RESTART: 'restart' });
+// END: confirm ending the EVA and going back to the mission table (#11), a restart that lands on the table.
+export const PAUSE_VIEW = Object.freeze({ MENU: 'menu', CONTROLS: 'controls', RESTART: 'restart', END: 'end' });
 
 // Honest for every refusal: a denial is not always a permission problem. Right after Escape, browsers can
 // need a short moment before they accept a new capture, and the next attempt must come from Resume.
@@ -45,10 +46,13 @@ export async function requestEvaLock(engine) {
  * grant that arrives after the interface paused, changed mode or restarted is abandoned instead of
  * resuming the mission behind a menu. A stale answer is silent: the newer action owns the message.
  *
- * @param {{ engine?: object, mode?: 'walk' | 'plan', isCurrent?: (() => boolean) | null }} [options]
+ * `holdClock` enables the scene input without resuming the mission clock. The app uses it at the mission table
+ * before the EVA has begun (#11): planning costs no mission time, so the clock, suit and events wait for Begin EVA.
+ *
+ * @param {{ engine?: object, mode?: 'walk' | 'plan', isCurrent?: (() => boolean) | null, holdClock?: boolean }} [options]
  * @returns {Promise<{ ok: boolean, message: string | null, stale?: boolean }>}
  */
-export async function resumeEva({ engine, mode = 'walk', isCurrent = null } = {}) {
+export async function resumeEva({ engine, mode = 'walk', isCurrent = null, holdClock = false } = {}) {
   if (mode === 'walk') {
     const lock = await requestEvaLock(engine);
     if (typeof isCurrent === 'function' && !isCurrent()) {
@@ -62,7 +66,7 @@ export async function resumeEva({ engine, mode = 'walk', isCurrent = null } = {}
   } catch (cause) {
     return { ok: false, message: (cause && cause.message) || 'The scene input could not be enabled.' };
   }
-  resumeMission();
+  if (!holdClock) resumeMission();
   return { ok: true, message: null };
 }
 
