@@ -1,0 +1,53 @@
+{
+ "round": "r04",
+ "before": "scripts/quality/out/c02",
+ "after": "scripts/quality/out/c04",
+ "states": [
+  "walk-stop"
+ ],
+ "judges": {
+  "j1": {
+   "walk-stop": {
+    "new": "B"
+   }
+  },
+  "j2": {
+   "walk-stop": {
+    "new": "B"
+   }
+  },
+  "j3": {
+   "walk-stop": {
+    "new": "B"
+   }
+  }
+ },
+ "change": "c04 sampling checklist shows while a science card is open",
+ "issue": 283,
+ "personas": {
+  "j1": "opus b",
+  "j2": "opus c",
+  "j3": "fable a"
+ },
+ "verdicts": {
+  "j1": {
+   "walk-stop": "new",
+   "why": "the card now leads to a task; checklist sits far from the card"
+  },
+  "j2": {
+   "walk-stop": "new",
+   "why": "the checklist is the only thing that answers what to do now"
+  },
+  "j3": {
+   "walk-stop": "new",
+   "why": "the stop reads as a designed step; checklist style does not match"
+  }
+ },
+ "decision": "keep",
+ "reason": "3 of 3 prefer it; all three want the checklist next to the card and restyled",
+ "next_asks": [
+  "attach checklist to the card",
+  "restyle checklist to match",
+  "brighter hint text"
+ ]
+}

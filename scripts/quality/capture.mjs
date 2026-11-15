@@ -266,30 +266,35 @@ async function partner(page) {
 
 // Walk in 5 m steps at a sped-up mission clock, so the EVA clock, oxygen, margin and the debrief's distance read
 // like a real walk instead of a teleport. The EVA runner samples every 200 ms, so each step is one short stride.
-async function walkToward(page, target, { stopAt = 3, timeScale = 30 } = {}) {
-  await page.evaluate(async ({ tx, tz, stopAt, timeScale }) => {
+async function walkToward(page, target, { stopAt = 3, timeScale = 30, budgetSec = null } = {}) {
+  await page.evaluate(async ({ tx, tz, stopAt, timeScale, budgetSec }) => {
     const store = window.__missionStore;
     const setScale = (k) => store.setState((st) => ({ mission: { ...st.mission, timeScale: k } }));
     setScale(timeScale);
     const STEP = 5;
-    for (let n = 0; n < 2000; n++) {
-      const p = window.__marswalk.pose();
-      const dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
-      if (d <= stopAt) break;
-      const k = Math.min(STEP, d - stopAt) / d;
-      const x = p.x + dx * k, z = p.z + dz * k;
+    // the steps come from the start point, not from pose() after each move, so they never wait on a rendered frame
+    const p0 = window.__marswalk.pose();
+    const dx = tx - p0.x, dz = tz - p0.z, d = Math.hypot(dx, dz);
+    const n = Math.max(0, Math.ceil((d - stopAt) / STEP));
+    let x = p0.x, z = p0.z;
+    const t0 = store.getState().mission.elapsedSec || 0;
+    for (let i = 1; i <= n; i++) {
+      const k = Math.min(i * STEP, d - stopAt) / d;
+      x = p0.x + dx * k; z = p0.z + dz * k;
       window.__marswalk.place(x, z, Math.atan2(dx, -dz), -0.08);
-      if (n % 8 === 0) window.__marswalkQa.partnerNear(x, z);
+      if (i % 8 === 0) window.__marswalkQa.partnerNear(x, z);
+      // with a budget, mission time tracks it however slow each real step is: fast when behind, nearly stopped when ahead
+      if (budgetSec) setScale((store.getState().mission.elapsedSec || 0) < t0 + budgetSec * i / n ? timeScale : 0.05);
       await new Promise((r) => setTimeout(r, 210));
     }
-    window.__marswalkQa.partnerNear(window.__marswalk.pose().x, window.__marswalk.pose().z);
+    window.__marswalkQa.partnerNear(x, z);
     setScale(1);
-  }, { tx: target.x, tz: target.z, stopAt, timeScale });
+  }, { tx: target.x, tz: target.z, stopAt, timeScale, budgetSec });
 }
 
 async function walkTo(page, index) {
   const wp = await page.evaluate((i) => window.__missionStore.getState().route.waypoints[i], index);
-  await walkToward(page, wp, { stopAt: 1, timeScale: 10 });   // the scripted storm comes at 8 min: reach the stop first
+  await walkToward(page, wp, { stopAt: 1, timeScale: 20, budgetSec: 110 });   // the scripted storm comes at 8 min: reach the stop first
   await waitFor(page, (i) => window.__missionStore.getState().route.visited.length >= i, index, 20000).catch(() => {});
   await sleep(700);
 }
@@ -395,10 +400,28 @@ const server = createServer((req, res) => {
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const base = `http://127.0.0.1:${server.address().port}/`;
-const browser = await puppeteer.launch({
+// QA_GPU=1: a headed full Chromium on the WSLg X server renders on the GPU through Mesa's d3d12 driver, with the window
+// off screen. The default stays SwiftShader (headless, CPU), which works on any machine.
+const GPU = process.env.QA_GPU === '1';
+if (GPU) { process.env.GALLIUM_DRIVER ||= 'd3d12'; process.env.DISPLAY ||= ':0'; }
+const COMMON = ['--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required', '--mute-audio', '--no-sandbox',
+  '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'];
+const fullChromium = () => {
+  const cache = join(homedir(), '.cache/ms-playwright');
+  const d = existsSync(cache) && readdirSync(cache).filter((n) => /^chromium-\d+$/.test(n)).sort().reverse()[0];
+  return process.env.CHROME_PATH || (d && join(cache, d, 'chrome-linux64/chrome'));
+};
+const browser = await puppeteer.launch(GPU ? {
+  executablePath: fullChromium(),
+  headless: false,
+  args: [...COMMON, '--ozone-platform=x11', '--use-gl=angle', '--use-angle=gl', '--window-position=-4000,-4000', `--window-size=${W},${H + 132}`],
+  defaultViewport: { width: W, height: H, deviceScaleFactor: 1 },
+  protocolTimeout: 300000,
+  timeout: 240000,
+} : {
   executablePath: findChrome(),
   headless: process.platform === 'win32' ? true : 'shell',
-  args: [...(process.platform === 'win32' ? [] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']), '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required', '--mute-audio', '--no-sandbox', `--window-size=${W},${H}`],
+  args: [...(process.platform === 'win32' ? [] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']), ...COMMON, `--window-size=${W},${H}`],
   defaultViewport: { width: W, height: H, deviceScaleFactor: 1 },
   protocolTimeout: 300000,
   timeout: 240000,
@@ -408,6 +431,18 @@ try {
   const page = await browser.newPage();
   page.on('pageerror', (e) => result.errors.push(String(e.message || e).slice(0, 300)));
   page.setDefaultTimeout(120000);
+  // A headed window can win pointer lock and then lose it, which opens the pause menu mid-capture. Refuse it the way a
+  // headless browser does, so every run takes the app's drag-to-look path (#197).
+  await page.evaluateOnNewDocument(() => {
+    Element.prototype.requestPointerLock = function () {
+      setTimeout(() => document.dispatchEvent(new Event('pointerlockerror')), 0);
+      return Promise.reject(new DOMException('refused by the capture', 'NotAllowedError'));
+    };
+  });
+  const renderer = await page.evaluate(() => { const gl = document.createElement('canvas').getContext('webgl2'); const e = gl && gl.getExtension('WEBGL_debug_renderer_info'); return gl ? gl.getParameter(e ? e.UNMASKED_RENDERER_WEBGL : gl.RENDERER) : 'no webgl2'; });
+  result.renderer = renderer;
+  log('renderer ' + renderer);
+  if (GPU && /swiftshader/i.test(renderer)) throw new Error('QA_GPU=1 but the renderer is SwiftShader: ' + renderer);
   log('booting ' + base);
   await boot(page, base, '&tier=low');
   log('booted');
