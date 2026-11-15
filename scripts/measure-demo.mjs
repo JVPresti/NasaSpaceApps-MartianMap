@@ -137,7 +137,11 @@ if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 const catalog = JSON.parse(readFileSync(new URL(`../src/i18n/${LANG}.json`, import.meta.url), 'utf8'));
 const T = (key) => catalog[key] ?? key;
 const sleep = (s) => new Promise((r) => setTimeout(r, s * 1000));
-const fmt = (sec) => (Number.isFinite(sec) ? `${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, '0')}` : '—');
+const fmt = (sec) => {
+  if (!Number.isFinite(sec)) return '—';
+  const whole = Math.round(sec);
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
+};
 
 // ---------------------------------------------------------------------------------------------------- segments
 const results = [];
