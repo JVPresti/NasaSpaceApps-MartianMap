@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Marswalk architecture</title>
+<style>
+  @font-face { font-family: 'Barlow'; font-weight: 400; src: url('../../../src/assets/fonts/barlow-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Barlow'; font-weight: 600; src: url('../../../src/assets/fonts/barlow-latin-600-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Barlow Condensed'; font-weight: 600; src: url('../../../src/assets/fonts/barlow-condensed-latin-600-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'IBM Plex Mono'; font-weight: 500; src: url('../../../src/assets/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); }
+  :root { --ink: #14181d; --dim: #5b6672; --line: #c9d0d8; --accent: #ff6a2b; --cyan: #0fa89c; --panel: #f4f6f8; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1600px; padding: 36px; background: #fff; color: var(--ink); font-family: 'Barlow', sans-serif; font-size: 19px; }
+  .row { display: grid; gap: 22px; }
+  .col-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 22px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); margin-bottom: 10px; }
+  .wrap { display: grid; grid-template-columns: 330px 1fr 300px; gap: 28px; align-items: stretch; }
+  .zone { border: 1.5px solid var(--line); border-radius: 6px; padding: 18px; background: #fff; }
+  .zone.browser { border-color: var(--ink); }
+  .box { border: 1.5px solid var(--line); border-radius: 4px; padding: 12px 14px; background: var(--panel); }
+  .box h3 { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 25px; line-height: 1.05; margin-bottom: 4px; }
+  .box p { color: var(--dim); line-height: 1.3; font-size: 17px; }
+  .box code { font-family: 'IBM Plex Mono', monospace; font-size: 15px; color: var(--ink); }
+  .box.hot { border-color: var(--accent); background: #fff4ee; }
+  .box.dash { border-style: dashed; background: #fff; }
+  .stack { display: grid; gap: 12px; }
+  .arrow { text-align: center; color: var(--dim); font-family: 'IBM Plex Mono', monospace; font-size: 15px; }
+  .sim { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
+  .sim div { background: #fff; border: 1px solid var(--line); border-radius: 3px; padding: 7px 9px; font-size: 16px; line-height: 1.2; }
+  .sim b { font-weight: 600; }
+  .tag { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 13px; padding: 1px 6px; border: 1.3px solid currentColor; border-radius: 2px; margin-left: 6px; vertical-align: 2px; }
+  .data { color: #1f9a59; } .derived { color: #3f7f99; } .sim-t { color: #c98200; }
+  .between { display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; color: var(--dim); font-size: 15px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="zone">
+    <div class="col-title">Offline, once</div>
+    <div class="stack">
+      <div class="box"><h3>NASA archives</h3><p>USGS HiRISE DTM 1 m and ortho 25 cm, CTX DEM and mosaic, PDS MEDA and RAD, CCMC DONKI, MMGIS traverse, Mars 2020 raw images, NTRS suit and physiology reports</p></div>
+      <div class="arrow">▼ several GB, never in git</div>
+      <div class="box"><h3>Blender and Node scripts</h3><p>One Blender scene exports the terrain mesh and the 751 × 751 height grid. Node scripts write the data files</p></div>
+      <div class="arrow">▼ small static files</div>
+      <div class="box"><h3>Data files</h3><p>Terrain grid, suit and hazard values, weather, radiation, shelters, rover drives, science stops, models and textures. Each value keeps its source</p></div>
+    </div>
+  </div>
+
+  <div class="zone browser">
+    <div class="col-title">In the browser</div>
+    <div class="stack">
+      <div class="box"><h3>Interface · React 19</h3><p>Mission table (Site, Route, Hazards, Suit), helmet HUD, wrist screen, debrief and route review, Sources screen. Every number shows a tag <span class="tag data">DATA</span><span class="tag derived">DERIVED</span><span class="tag sim-t">SIM</span></p></div>
+      <div class="arrow">▲ reads one snapshot</div>
+      <div class="box"><h3>Mission store · Zustand 5</h3><p>Route, suit, alerts, navigation, crew needs, EVA log</p></div>
+      <div class="arrow">▲ writes ▼ reads</div>
+      <div style="display:grid;grid-template-columns:1.55fr 1fr;gap:12px">
+        <div class="box hot"><h3>Simulation</h3><p>Plain JavaScript, no React, no three.js. Runs in Web Workers and Node tests</p>
+          <div class="sim">
+            <div><b>Cost grid</b><br>slope, rock, 20° closed</div>
+            <div><b>A* planner</b><br>Web Worker</div>
+            <div><b>Route profiles</b><br>fastest, gentlest, radio</div>
+            <div><b>Suit model</b><br>O2, battery, margin</div>
+            <div><b>Event engine</b><br>storm, radiation, low O2</div>
+            <div><b>Navigation</b><br>drift, terrain fix</div>
+            <div><b>Crew needs</b><br>stops that fit</div>
+            <div><b>Shelters</b><br>sky view, re-plan</div>
+            <div><b>Route review</b><br>detour verdicts</div>
+          </div>
+        </div>
+        <div class="box"><h3>3D engine · three.js</h3><p>Terrain, sky and dust, astronaut and EV2, habitat, boot prints, slope grid. Owns the canvas and the render loop. Picks a High or Low tier from the measured frame rate</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="zone">
+    <div class="col-title">Hosting</div>
+    <div class="stack">
+      <div class="box"><h3>Cloudflare Workers</h3><p>Serves the built app as static files. Every accepted change deploys, and every proposed change gets a preview link</p></div>
+      <div class="arrow">▼ online play only</div>
+      <div class="box dash"><h3>Room · Durable Object</h3><p>One per room code: crew seats, positions, markers, samples, the habitat seat's route and go call. In development</p></div>
+      <div class="box"><h3>GitHub</h3><p>Changes go in as pull requests. Automatic checks lint, build and run the unit tests</p></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

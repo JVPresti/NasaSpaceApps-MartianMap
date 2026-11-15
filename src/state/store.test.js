@@ -4,6 +4,7 @@ import exampleEvent from '../sim/events/example-event.json';
 import { LOOK_DEFAULTS, LOOK_STORAGE_KEY } from '../engine/lookSettings.js';
 import { applySavedRoute, chooseRouteProfile, createInitialState, deleteSavedRoute, resetStore, saveCurrentRoute, setLookSettings, setMode, setNeeds, setRouteDecision, storeAdapter, useMissionStore, withRouteProfile } from './store.js';
 import { createMockState } from './mock.js';
+import { beginEgress } from './flow.js';
 
 beforeEach(() => resetStore());
 
@@ -143,7 +144,8 @@ describe('look settings (#102)', () => {
     storeAdapter.set('suit.oxygenSec', 3600);
     resetStore();
     expect(useMissionStore.getState().settings.look).toEqual({ sensitivity: 1.6, invertY: true });
-    expect(useMissionStore.getState().mode).toBe('plan');
+    expect(useMissionStore.getState().mode).toBe('walk');   // on foot in the habitat
+    expect(useMissionStore.getState().stage).toBe('habitat');
     expect(useMissionStore.getState().suit.oxygenSec).toBeNull();
     expect(useMissionStore.getState().mission.elapsedSec).toBe(0);
   });
@@ -218,10 +220,12 @@ describe('the needs of the crew (#265)', () => {
     expect(useMissionStore.getState().needs).toBe(before);
   });
 
-  it('locks the needs when the EVA begins, at the first switch to Walk, until a restart', () => {
+  it('locks the needs at Begin EVA, not when walking in the habitat, until a restart (#260)', () => {
     setNeeds({ objective: 'cheyava' });
-    setMode('walk');
+    setMode('walk');   // on foot in the habitat: still editable
+    expect(useMissionStore.getState().needs.locked).toBe(false);
     setMode('plan');
+    beginEgress();
     expect(useMissionStore.getState().needs.locked).toBe(true);
     expect(setNeeds({ objective: 'bright-angel', timeMin: 60 })).toBe(false);
     expect(useMissionStore.getState().needs).toMatchObject({ objective: 'cheyava', timeMin: 120 });
@@ -263,7 +267,7 @@ describe('the needs of the crew (#265)', () => {
     expect(state.needs).toEqual({ objective: 'cheyava', crew: 1, timeMin: 90, o2Pct: 80, batteryPct: 70, risk: 'cautious', locked: false });
     expect(state.route).toMatchObject({ profile: 'gentlest', path: null, stops: [] });
     expect(state.hazards.off).toEqual([]);   // the hazard switches start over, as on main
-    expect(state.mode).toBe('plan');
+    expect(state.mode).toBe('walk');   // a new EVA starts on foot in the habitat (#260)
     expect(setNeeds({ timeMin: 60 })).toBe(true);   // unlocked
     // a plain reset, as a page load, opens the first sortie
     resetStore();

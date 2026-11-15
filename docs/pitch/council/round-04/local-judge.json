@@ -1,0 +1,59 @@
+{
+  "findings": [
+    {
+      "where": "script-3min-en.md, every spoken row; pace line 'Pace: 140 words per minute'",
+      "problem": "Every row is written to 140 wpm with no pauses: cold open 56 words in 25 s, beat 3 39 words in 17 s, beat 5 about 48 words in 21 s. Spoken numbers run longer than their digits ('nine hundred thirteen metres', 'one hundred sixty grams'). Spanish-first speakers presenting in English to a room usually land near 115 to 125 wpm. At 120 wpm the spoken rows alone grow by about 20 s, and the 8 s of slack is gone before the demo handoff costs anything. Running over is a blocker under the rubric, so this sits one bad rehearsal away from one.",
+      "severity": "major",
+      "criterion": "Presentation (time limit)",
+      "proposal": "Re-time to 125 wpm and cut about 25 words. Candidates: 'the rock where Perseverance found a potential biosignature' becomes 'where Perseverance found a possible sign of life'. Drop 'computed with the app's planner and suit model' from beat 3, since slide 3 and beat 5 say it. Drop 'and says so' from beat 5, since the on-screen line already says Gale, not Jezero. Time the real presenters with a stopwatch, not tools/timing.mjs."
+    },
+    {
+      "where": "Demo cut B, B2 to B4 (demo-run-sheet.md, cut A note: 'could not run the walk at 20 % on this machine')",
+      "problem": "The live demo's one number, the margin at 20 % O2, has never been seen running. The only radiation screenshot (S8-radiation-walk.jpg) and the slide 3 inset show +399 min at 100 % O2. If the slider misbehaves, the fallback line says 'The margin reads 480', and if the banner fails the fallback still shows +399. In both cases the judge sees hundreds of minutes right after hearing that 14 minutes decides her fate. The live screen then contradicts the story instead of proving it. qa.md also admits the margin rises when she stops (#312), and that can happen live while P2 is steering with A/D.",
+      "severity": "major",
+      "criterion": "Validity / Presentation (demo)",
+      "proposal": "Before 2:00 pm, run B2 to B4 at 20 % on the demo laptop and take a new fallback still of the radiation banner with a margin in the tens of minutes. If 20 % cannot be verified, change B3 to explain the big number in one sentence ('close to home the 8 hour clock limits her, not oxygen') and let beat 5 carry the 14 minutes."
+    },
+    {
+      "where": "Beat 7, 2:32 ('for an EVA planner comparing three routes, and for a classroom here in Ensenada')",
+      "problem": "Impact gets 8 seconds and two generic users. Nothing says who walks on Mars, when, or why getting home is the hard limit. Apollo 15 and 17 are where the 20 % pad and the 30 min reserve come from, and the pitch never says it aloud. Qa.md admits nobody outside the team has used the app. 'For a classroom here in Ensenada' could appear unchanged in another team's pitch. A judge with no Mars background leaves without knowing why this problem matters off-screen.",
+      "severity": "major",
+      "criterion": "Impact",
+      "proposal": "Spend about 6 s of beat 1b or 7 on one real anchor: 'Apollo astronauts on the Moon worked under this same rule, a walkback limit with a 30 minute reserve. Artemis crews will too, and Mars crews farther from help.' Keep one concrete user, and say what that user does with the app in one verb."
+    },
+    {
+      "where": "Beat 7 close: 'Our copy of NASA's HiRISE terrain matches NASA Mars Trek to fourteen centimetres, a hand's width. That is the ground she walks home on.'",
+      "problem": "To a UABC or CICESE engineer this closing fact means 'our processed file equals NASA's processed file'. It checks the data pipeline, not the decision the product makes, and qa.md says so itself ('That proves our processing, not the DTM itself'). The last thing the judges hear is the weakest number in the pitch, after the 14 minutes, which is the strongest.",
+      "severity": "major",
+      "criterion": "Presentation / Relevance",
+      "proposal": "Move the 0.14 m to slide 5 and the Q&A. Close on the decision: 'Fourteen minutes. Enough to get home, on real HiRISE ground, around every slope over twenty degrees.' Or close on the live screen from B4, still showing HAB SHELTER."
+    },
+    {
+      "where": "Demo B1 and B4 versus the cold open",
+      "problem": "The cold open puts the astronaut at Cheyava Falls, 913 m out. The demo walks 55 m to a different stop, S1, and B4 calls it 'her radiation alert'. A judge sees two astronauts and two distances and may think the demo cannot reach the scenario it just described.",
+      "severity": "minor",
+      "criterion": "Presentation (retell)",
+      "proposal": "Say it outright in B1: 'Cheyava Falls is a 13 minute walk, so live we take the first 55 metres of the same kind of walk.' In B4, change 'her radiation alert' to 'the same radiation alert'."
+    },
+    {
+      "where": "Cold open, 'Walking back costs 54. Thirty minutes of reserve stay untouched.'",
+      "problem": "The listener hears grams, then grams, then minutes, and cannot do the subtraction by ear. The 72 g reserve and the 34 g margin exist only on the bar. A judge looking at the speaker instead of the screen loses the arithmetic.",
+      "severity": "minor",
+      "criterion": "Presentation",
+      "proposal": "Keep one unit aloud: 'Walking back costs 54 grams. Her reserve, 30 minutes of breathing, is another 72.' The bar keeps the rest."
+    },
+    {
+      "where": "Beat 3 on screen versus spoken words",
+      "problem": "The blue walkback zone is not in the app; the app shows a number. The small 'Presentation view · scenario SIM' caption is easy to miss, and the spoken line 'The blue area is everywhere she can reach' makes it sound like a product screen.",
+      "severity": "minor",
+      "criterion": "Validity (measured vs simulated)",
+      "proposal": "Start the line with 'This drawing, made with the app's own planner, shows...' so the honesty is spoken, not just captioned."
+    }
+  ],
+  "retell": "An astronaut on Mars is near the end of a walk with a fixed amount of oxygen. What matters is not how far she can go but whether she can still walk home with a safety reserve. Marswalk plans routes on real NASA terrain of Jezero crater and puts one number on her helmet, the minutes left after getting home, which told her to turn back with 14 minutes to spare when a radiation alert hit.",
+  "advance": {
+    "yes": true,
+    "why": "The story is the clearest of the afternoon. It has one problem, one number, and a live app that changes that number when the alert fires, and it names its NASA sources honestly, Gale versus Jezero included. Few local teams will show real HiRISE terrain driving a route plus a working first-person demo. My reservations are the time, an untested live number, and a thin impact case, not the idea.",
+    "change_my_mind": "Running past 3:00. A live margin reading +399 or +480 right after the 14-minute story, with no explanation. Or an answer to 'who would use this and why' that is still only 'planners and a classroom'."
+  }
+}

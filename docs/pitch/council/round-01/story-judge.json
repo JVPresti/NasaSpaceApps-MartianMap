@@ -1,0 +1,68 @@
+{
+  "findings": [
+    {
+      "where": "script-5min-en.md, beat 1 (0:00) vs demo D3 (0:25) and end (2:14); slides/02.png",
+      "problem": "The cold open asks a question it never answers. An astronaut at Cheyava Falls, 913 m out, storm coming: can she get back? Then the demo says 'Today we fly the first sortie: 55 metres' and walks somewhere else. The storm hits during a 55 m walk, not her 913 m walk. Nobody ever says whether she made it or by how much. A no-context listener spends 4 minutes waiting for a payoff that does not come.",
+      "severity": "blocker",
+      "criterion": "Presentation",
+      "proposal": "Make the demo, or at least its last 20 seconds, answer the cold open. Either fly the Cheyava Falls walk (or jump to a saved state near Cheyava when the storm hits) or have P2 say it out loud at D7: 'Back to our astronaut at Cheyava Falls. Storm on, route home re-planned: she gets home with N minutes of margin.' One sentence that names her and gives the number closes the loop."
+    },
+    {
+      "where": "script-5min-en.md, beat 1 (0:00) and slides/02.png headline",
+      "problem": "'18 minutes and 54 grams of oxygen' means nothing to someone who knows nothing about suits. Is 54 g a lot? Without how much she has left, the number has no tension, and the storm line ('And a dust storm is coming') has nothing to threaten. The beats.md walkback scenario already has the missing number (205 g left) but the open does not use it.",
+      "severity": "major",
+      "criterion": "Presentation",
+      "proposal": "Give the denominator in the open: 'She has 205 grams of oxygen left. Getting home costs 54, and 30 minutes of it she may never touch.' Put the same 'X g left / 54 g to get home' pair on slide 2. Tag the 205 g as SIM if it is the scenario."
+    },
+    {
+      "where": "script-5min-en.md, beats 5 and 6 (3:41-4:30); slides/05.png",
+      "problem": "Right after the demo, the emotional peak, the pitch drops into 50 seconds of instrument names: MRO, HiRISE, Mastcam-Z, MEDA sol 1187, RAD, DONKI, September 2017. To a no-context judge this is a parts list. It shows the data exists but not what it did in the story they just watched. This is the 'potential of open data' beat for the storytelling award, and it is the least story-shaped part of the pitch.",
+      "severity": "major",
+      "criterion": "Relevance",
+      "proposal": "Tell the data through the moments the audience just saw: 'The slope she walked around is HiRISE, one metre per pixel. The rock she sampled is the one Perseverance photographed. The storm that hit her is the dust Curiosity measured in 2018. The radiation alert replays a real 2017 solar event.' Keep instrument names on the slide only, not in the spoken line. Cut beat 6 to one sentence and fold it in."
+    },
+    {
+      "where": "script-5min-en.md, entire 5-minute script",
+      "problem": "The spoken pitch never says who uses Marswalk or why it matters on Earth today. The astronaut is hypothetical, and no human has walked on Mars. The only 'who' (EVA planners, classrooms) lives on slide 7 and in the video, not in the script. A judge scoring Impact has nothing to write down.",
+      "severity": "major",
+      "criterion": "Impact",
+      "proposal": "Add one line in beat 7 before the Mars Trek fact: 'NASA's Mars EVA planners need to rehearse walks like this before anyone flies, and a classroom can do it today in a browser with the same data.' Name a specific user, not a category."
+    },
+    {
+      "where": "slides/07.png (last slide of the PDF deck)",
+      "problem": "The deck ends on 'Who uses it, and what we build next', a roadmap. The team's own rule is to end on a hard fact, and the script ends on 0.14 m, but in the deck that number sits on slide 6. The deck reader's last impression is four boxes of plans.",
+      "severity": "major",
+      "criterion": "Presentation",
+      "proposal": "Swap the order: put the users/next content on slide 6 and end slide 7 on the cold-open answer ('She gets home with N min to spare') or on 0.14 m RMS over 564,001 points, with the QR code. Or move the 0.14 m block onto slide 7 next to the QR."
+    },
+    {
+      "where": "script-5min-en.md, beat 3 (0:52) vs slides/03.png",
+      "problem": "The script's central image is the blue walkback zone shrinking around her. It is the visual proof of the thesis. The deck has no picture of it. Slide 3 replaces it with a stacked bar and a HUD crop showing '+480 min, home in 0 min', which is the astronaut standing at the habitat, so nothing is at stake in the frame. A deck reader never sees the thesis made visible.",
+      "severity": "major",
+      "criterion": "Creativity",
+      "proposal": "Use the beat 3 final frame on slide 3: the cyan zone on HiRISE around the astronaut, with the shrunken version beside it, captioned 'Where she can go and still get home'. If the HUD crop stays, take it mid-walk with a margin that is visibly smaller than full."
+    },
+    {
+      "where": "script-5min-en.md, beat 1 (913 m) vs demo D3 ('route grows to 930 metres')",
+      "problem": "Two distances for the same place within 90 seconds. A listener who caught 913 now hears 930 and wonders which is real. Small, but it chips at the honesty story the pitch builds on.",
+      "severity": "minor",
+      "criterion": "Validity",
+      "proposal": "Say the same number both times, or say the difference out loud in D3: '913 metres straight, 930 around the slopes.'"
+    },
+    {
+      "where": "script-5min-en.md, beat 2 (0:35) 'And Mars has no GPS'; slides/02.png 'No GPS'",
+      "problem": "No GPS is a second problem, about navigation, stacked onto an oxygen story. It does not connect to 'still get home' until a passing line at D5, so in the rules beat it reads as a stray fact and splits attention from the thesis.",
+      "severity": "minor",
+      "criterion": "Presentation",
+      "proposal": "Tie it to the thesis or drop it from beat 2: 'And no GPS, so she has to know where home is from the ground itself.' Keep the payoff at D5."
+    }
+  ],
+  "retell": "An astronaut on Mars is almost a kilometre from her habitat with a dust storm coming, and what matters is whether she has enough oxygen to walk back, not how far she can go. Marswalk is a browser app that plans a walk on real Mars terrain from NASA orbiter data and then lets you walk it in a helmet view, where one number shows how much oxygen you can still spend after paying for the trip home and a 30-minute reserve. Every number says whether it was measured by a NASA mission or assumed by the team, and their terrain matches NASA's own to 14 cm.",
+  "advance": {
+    "yes": true,
+    "why": "One clear thesis, said early and said once, and a concrete cold open with a person, a distance, a cost and a threat. I could retell it after one viewing. The honesty layer (DATA, DERIVED, SIM) is unusual and believable. It advances on the strength of the setup, but the open question is left hanging.",
+    "change_my_mind": "If the pitch still never says whether the astronaut at Cheyava Falls got home, with a number, I would drop it. The hook makes a promise and the ending has to keep it."
+  },
+  "weakest_beat": "Beat 5, NASA data (3:41-4:11): a 30-second list of instrument names right after the demo. It tells a no-context judge nothing about the story they just watched.",
+  "strongest_beat": "Beat 1, the cold open (0:00-0:35): one astronaut, 913 m, 18 minutes, 54 g, a storm coming, then the thesis. Concrete, no greeting, and it sets the stakes in 20 seconds."
+}

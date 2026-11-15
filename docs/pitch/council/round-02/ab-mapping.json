@@ -1,0 +1,14 @@
+{
+ "local": {
+  "A": "new",
+  "B": "old"
+ },
+ "nasa": {
+  "A": "old",
+  "B": "new"
+ },
+ "story": {
+  "A": "old",
+  "B": "new"
+ }
+}

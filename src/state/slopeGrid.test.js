@@ -19,8 +19,15 @@ describe('slope grid switch', () => {
     toggleSlopeGrid(store);
     expect(store.getState().view.slopeGrid).toBe(false);
   });
-  it('toggles on G, ignores held keys, other keys and text fields', () => {
+  it('does nothing inside the habitat before the EVA', () => {
     const store = create(() => createInitialState()), target = new EventTarget();
+    const off = connectSlopeGridKey(store, target);
+    press(target, { code: 'KeyG' });
+    expect(store.getState().view.slopeGrid).toBe(false);
+    off();
+  });
+  it('toggles on G, ignores held keys, other keys and text fields', () => {
+    const store = create(() => ({ ...createInitialState(), stage: 'eva' })), target = new EventTarget();
     const off = connectSlopeGridKey(store, target);
     press(target, { code: 'KeyG' });
     expect(store.getState().view.slopeGrid).toBe(true);

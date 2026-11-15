@@ -15,6 +15,7 @@ function texts(beat) {
   for (const chip of beat.chips || []) if (chip.text) out.push(chip.text.en, chip.text.es);
   if (beat.source) out.push(beat.source.en, beat.source.es);
   if (beat.cta) out.push(beat.cta.en, beat.cta.es);
+  if (beat.list) { out.push(beat.list.title.en, beat.list.title.es, beat.list.note); for (const l of beat.list.lines) out.push(l.en, l.es); }
   return out.filter((t) => t != null);
 }
 
@@ -107,5 +108,38 @@ describe('presentation beats', () => {
     expect(lookup(plan, 'constants.reserveMin')).toBe(30);
     expect(lookup(plan, 'constants.evaMaxH')).toBe(8);
     expect(PLACES.hab.x).toBeCloseTo(plan.hab.x, 1);
+  });
+});
+
+describe('the presentation story', () => {
+  const all = (b) => texts(b);
+
+  it('uses no em or en dash anywhere on screen', () => {
+    for (const b of BEATS) for (const t of all(b)) expect(t, b.id).not.toMatch(/[\u2013\u2014]/);
+  });
+
+  it('ends on the sources, then hands over to the live app', () => {
+    const ids = BEATS.map((b) => b.id);
+    expect(ids.slice(-3)).toEqual(['sources', 'credits', 'live']);
+    expect(BEATS.at(-1).cta).toBeTruthy();
+  });
+
+  it('lists every source the presentation shows, each line tagged', () => {
+    const list = BEATS.find((b) => b.id === 'credits').list;
+    const text = list.lines.map((l) => l.en).join('\n');
+    for (const name of ['Viking MDIM 2.1', 'THEMIS day IR', 'CTX', 'JEZ_hirise_soc_006', 'Mars Trek', 'RAD', 'DONKI', 'τ 8', '3 km', 'MEDA', 'suited walking tests', 'xEVA', 'Apollo 17']) expect(text).toContain(name);
+    for (const l of list.lines) { expect(TAGS.has(l.tag), l.en).toBe(true); expect(l.es, l.en).toBeTruthy(); }
+  });
+
+  it('names the six team members and no email', () => {
+    const note = BEATS.find((b) => b.id === 'credits').list.note;
+    expect(note.split(' · ')).toEqual(['Teresa Rivas Gómez', 'Andrea Rivas Gómez', 'Fernando Haro Calvo', 'Jorge Antonio Vazquez Guzmán', 'Antonio Ramos Gonzalez', 'Brayan Iván Pérez Ventura']);
+    expect(note).not.toMatch(/@/);
+  });
+
+  it('says the zone comes from the planner and is not in the walk HUD yet', () => {
+    const zone = BEATS.find((b) => b.id === 'zone');
+    expect(zone.source.en).toMatch(/planner/);
+    expect(zone.source.en).toMatch(/Not in the walk HUD/);
   });
 });

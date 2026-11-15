@@ -1,0 +1,62 @@
+{
+  "quotes": [
+    {
+      "file": "script-3min-en.md",
+      "where": "2:32, beat 7, last spoken sentence of the pitch (also beats.md 3-minute table, row 7)",
+      "quote": "That is the ground she walks home on.",
+      "why_generic": "A closing flourish after the hard fact. The rubric says end on the demo or one hard fact, and this sentence adds no number or mechanism. Any terrain project could end on it.",
+      "rewrite": "Cut it. End on \"...matches NASA Mars Trek to fourteen centimetres, a hand's width.\" If a last beat is needed: \"Checked at 564,001 points.\""
+    },
+    {
+      "file": "script-3min-en.md",
+      "where": "0:25, beat 1b, after the team name (also beats.md 3-minute table, row 1b)",
+      "quote": "and Marswalk answers it.",
+      "why_generic": "Product-reveal formula. Swap the name and any team can say \"and X answers it\". It claims an answer without saying what the app is.",
+      "rewrite": "\"Marswalk is a browser app that plans her walk on HiRISE terrain and counts the minutes she has left after walking home.\""
+    },
+    {
+      "file": "script-3min-en.md",
+      "where": "2:32, beat 7, first sentence (also beats.md row 7)",
+      "quote": "and for a classroom here in Ensenada",
+      "why_generic": "\"For classrooms\" is the audience claim every Space Apps team makes. The spoken line gives no action or evidence, while slide 7 already says what the class does.",
+      "rewrite": "\"and for a class here in Ensenada that plans the walk to Cheyava Falls in a browser and watches the margin drop\""
+    },
+    {
+      "file": "slides/04.png",
+      "where": "Captions under the four screenshots",
+      "quote": "1 Plan ... 2 Walk ... 3 React ... 4 Review",
+      "why_generic": "A four-verb product loop. Plan, React and Review fit any app in any challenge. The detail text beside each verb is specific, the bold verbs are not.",
+      "rewrite": "Lead with what the screen shows: \"1 Mission table: the goal draws the route around slopes over 20°\", \"2 Visor: margin, route, position error\", \"3 Alert: storm or radiation re-plans the route home\", \"4 Debrief: margin over the reserve, minute by minute\"."
+    },
+    {
+      "file": "video-30s.md",
+      "where": "0:10-0:20 narration (also beats.md 30-second table)",
+      "quote": "When a dust storm takes the horizon, the way home re-plans.",
+      "why_generic": "\"Takes the horizon\" is mood, and \"the way home re-plans\" has no actor. It also drops the source that the shot's banner names.",
+      "rewrite": "\"When dust reaches the opacity Curiosity measured in 2018, Marswalk re-plans her route home.\""
+    },
+    {
+      "file": "video-30s.md",
+      "where": "0:20-0:30 narration",
+      "quote": "We process the same HiRISE model as NASA Mars Trek, to fourteen centimetres.",
+      "why_generic": "\"We process the same data as NASA\" is a line any team using NASA data can say, and \"to fourteen centimetres\" has nothing to attach to. It also disagrees with the beats.md wording for the same slot.",
+      "rewrite": "Use the beats.md line in both files: \"Our grid reproduces NASA's HiRISE model to fourteen centimetres.\""
+    },
+    {
+      "file": "slides/07.png",
+      "where": "Card \"Next: heart rate\"",
+      "quote": "a real sensor sets O2 use, with NASA's heart rate model",
+      "why_generic": "\"A real sensor\" and \"NASA's heart rate model\" name nothing. Every team has a \"next: real sensors\" card.",
+      "rewrite": "Name the sensor and the model, for example \"a chest-strap heart rate reading sets O2 use, through [the named NASA metabolic-rate relation]\". If the team cannot name them, cut the card."
+    },
+    {
+      "file": "slides/04.png",
+      "where": "Slide headline",
+      "quote": "Plan at the table. Walk it in the helmet.",
+      "why_generic": "Borderline. Table and helmet are this app's two views, so it is specific, but the two-beat parallel reads as a tagline and it is the only headline in the deck with no number.",
+      "rewrite": "Keep, or make it carry a fact: \"Plan the 913 m walk at the table. Walk it in the helmet with the margin on the visor.\""
+    }
+  ],
+  "banned_words_found": [],
+  "overall": "The material is mostly numbers with sources and has no banned words; the real slop is the closing sentence \"That is the ground she walks home on.\", the \"and Marswalk answers it\" reveal, and a handful of generic labels and a mismatched video line."
+}

@@ -13,6 +13,8 @@ import MapPosition from './MapPosition.jsx';
 import { useLayerPlaces } from './useLayerPlaces.js';
 import { useSkyView } from './routeExposure.js';
 import TraverseLayer from './TraverseLayer.jsx';
+import ReturnZoneLayer from '../zone/ReturnZoneLayer.jsx';
+import { useReturnZone, zoneFrameKey, zoneFramePoints } from '../zone/useReturnZone.js';
 import './mapLayers.css';
 
 // Flat map of the mission table (#11). The picture is painted once per layer from the HiRISE image, the outcrop mask
@@ -135,6 +137,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const caution = useMissionStore((s) => cautionDeg(s.needs?.risk));
   const sky = useSkyView(layer === LAYER.EXPOSURE);
   const radio = useRadioShadow(layer === LAYER.RADIO ? data?.terrain : null, mast);
+  const zone = useReturnZone(layer === LAYER.ZONE);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,9 +153,11 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   // candidate stops (Outcrop) and shelters (Exposure) are drawn where the view is; they never move the framing
   const places = useLayerPlaces(route ? layer : LAYER.IMAGE);
   const here = position && Number.isFinite(position.x) && Number.isFinite(position.z) ? position : null;
+  const zoneFrame = zoneFrameKey(zone);   // the plan's zone only, in 50 m steps: a live zone never moves the view
+  const zonePoints = useMemo(() => zoneFramePoints(zoneFrame), [zoneFrame]);
   const fit = useMemo(
-    () => mapCrop([...waypoints, ...pathPoints, ...altPoints, ...trackPoints, ...planPoints, ...(here ? [here] : [])], tile, { min: minSpanM }),
-    [waypoints, pathPoints, altPoints, trackPoints, planPoints, here?.x, here?.z, minSpanM, tile.width, tile.depth],   // eslint-disable-line react-hooks/exhaustive-deps
+    () => mapCrop([...waypoints, ...pathPoints, ...altPoints, ...trackPoints, ...planPoints, ...(here ? [here] : []), ...zonePoints], tile, { min: minSpanM }),
+    [waypoints, pathPoints, altPoints, trackPoints, planPoints, here?.x, here?.z, minSpanM, tile.width, tile.depth, zonePoints],   // eslint-disable-line react-hooks/exhaustive-deps
   );
   // A framed stretch is never framed wider than the map's own smallest fit (a short walk in the debrief, #274).
   const cropOn = (points) => (points?.length ? mapCrop(points, tile, { pad: 0.35, min: Math.min(200, minSpanM) }) : null);
@@ -236,6 +241,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
       onContextMenu={(event) => event.preventDefault()}
     >
       <canvas ref={canvasRef} width={PIXELS} height={PIXELS} role="img" aria-label={title} />
+      {layer === LAYER.ZONE && <ReturnZoneLayer zone={zone} crop={crop} />}
       {traverse && <TraverseLayer crop={crop} />}
       <svg className="table-map-marks" viewBox="0 0 100 100" aria-hidden="true">
         {route && alternatives.map((a) => (

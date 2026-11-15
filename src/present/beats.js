@@ -22,6 +22,7 @@
 //   scene       what the engine shows: sky, dust (0-1), layer (0 none, 1 slope), route, zone, images
 //   tracks      values that move during the beat: { name: [from, to, startSec, endSec] }, or a list of those in time order
 //                 route: metres of route drawn; zone: frame of the walkback zone clip; dust: storm level
+//   list        lines shown as a panel (the closing sources beat): { title: { en, es }, lines: [{ en, es, tag }], note }
 //   cta         the handoff button's label
 
 export const PLACES = {
@@ -45,7 +46,7 @@ export const BEATS = [
   {
     id: 'jezero',
     duration: 9,
-    shot: { target: 'jezero', dist: 240_000, yaw: 0, pitch: -90, fov: 32 },
+    shot: { target: 'jezero', dist: 165_000, yaw: 0, pitch: -90, fov: 32 },   // inside the 190 km THEMIS image
     move: { dur: 7.5, ease: 'zoom' },
     caption: { en: 'Jezero, a lake about 3.5 billion years ago.', es: 'Jezero. Un lago hace 3,500 millones de años.' },
     chips: [
@@ -61,10 +62,10 @@ export const BEATS = [
     caption: { en: 'Cheyava Falls. A possible sign of ancient life.', es: 'Cheyava Falls. Una posible señal de vida antigua.' },
     chips: [
       { at: 'cheyava', show: [8.5], text: { en: 'Cheyava Falls · Perseverance, 2024', es: 'Cheyava Falls · Perseverance, 2024' }, tag: 'DATA' },
-      { at: 'site', show: [10.5], big: '1 m', text: { en: 'HiRISE elevation, one height per metre', es: 'Elevación HiRISE, una altura por metro' }, tag: 'DATA' },
+      { at: 'site', show: [10.5], big: '1 m', text: { en: 'HiRISE terrain model, Mars 2020 landing maps', es: 'Modelo de terreno HiRISE, mapas de aterrizaje Mars 2020' }, tag: 'DATA' },
     ],
     scene: { images: true },
-    source: { en: 'CTX 6 m, then HiRISE 1 m elevation and 25 cm image, MRO. Colour: our tint', es: 'CTX 6 m, luego elevación HiRISE 1 m e imagen 25 cm, MRO. Color: nuestro tinte', tag: 'DATA' },
+    source: { en: 'CTX 6 m, then HiRISE 1 m terrain and 25 cm image shown at 0.5 m, MRO. Colour: our tint', es: 'CTX 6 m, luego terreno HiRISE 1 m e imagen de 25 cm vista a 0.5 m, MRO. Color: nuestro tinte', tag: 'DATA' },
   },
   {
     id: 'danger',
@@ -76,7 +77,7 @@ export const BEATS = [
       { at: 'hab', show: [2.5], big: '{constants.evaMaxH} h', text: { en: 'longest EVA a suit allows', es: 'la EVA más larga que permite el traje' }, tag: 'DATA' },
       { at: 'hab', show: [4.2], big: '{constants.reserveMin} min', text: { en: 'oxygen reserve, kept untouched', es: 'reserva de oxígeno, intocable' }, tag: 'DATA', offset: 1 },
     ],
-    source: { en: 'Suit limits: NASA xEVA and Apollo rules, hazards.json', es: 'Límites del traje: xEVA de la NASA y reglas Apollo, hazards.json', tag: 'DATA' },
+    source: { en: 'Suit limits: NASA xEVA concept of operations. Reserve: Apollo 17 procedures', es: 'Límites del traje: operaciones xEVA de la NASA. Reserva: procedimientos Apollo 17', tag: 'DATA' },
   },
   {
     id: 'plan',
@@ -89,6 +90,7 @@ export const BEATS = [
     chips: [
       { at: 'leg:0', show: [5], big: '{legs.0.distanceM} m', text: { en: '{legs.0.timeMin} min · {legs.0.o2G} g O2', es: '{legs.0.timeMin} min · {legs.0.o2G} g O2' }, tag: 'DERIVED' },
       { at: 'leg:2', show: [8], offset: 1, big: '{legs.2.distanceM} m', text: { en: '{legs.2.timeMin} min · {legs.2.o2G} g O2, uphill', es: '{legs.2.timeMin} min · {legs.2.o2G} g O2, cuesta arriba' }, tag: 'DERIVED' },
+      { at: 'cheyava', show: [12], big: '{totals.distanceM} m', text: { en: 'habitat to Cheyava Falls', es: 'del hábitat a Cheyava Falls' }, tag: 'DERIVED' },
       { at: 'bend', show: [10.5], big: '{bend.slopeDeg:1}°', text: { en: 'slope here. Over {constants.slopeNoGoDeg}° is no-go', es: 'de pendiente. Más de {constants.slopeNoGoDeg}° no se pasa' }, tag: 'DERIVED', danger: true },
     ],
     source: { en: 'Route: our planner on the HiRISE slope. O2: NASA suit tests', es: 'Ruta: nuestro planificador sobre la pendiente HiRISE. O2: pruebas de trajes de la NASA', tag: 'DERIVED' },
@@ -110,7 +112,7 @@ export const BEATS = [
         liveText: { en: 'reach and still get home, T+{clock}', es: 'alcanzas y aún vuelves, T+{clock}' }, tag: 'SIM', live: 'area' },
       { at: 'hab', show: [5.5], text: { en: 'Habitat', es: 'Hábitat' }, tag: 'DATA', home: true },
     ],
-    source: { en: 'Zone: HiRISE cost grid, NASA suit model, 30 min first sortie. Clock sped up', es: 'Zona: costo sobre HiRISE, modelo de traje NASA, salida de 30 min. Reloj acelerado', tag: 'SIM' },
+    source: { en: 'Zone: computed by our planner from the HiRISE cost grid and suit model. Not in the walk HUD yet. Clock sped up', es: 'Zona: la calcula nuestro planificador con el costo HiRISE y el modelo de traje. Aún no está en el HUD. Reloj acelerado', tag: 'SIM' },
   },
   {
     id: 'radiation',
@@ -129,15 +131,16 @@ export const BEATS = [
   {
     id: 'storm',
     duration: 10,
-    shot: { target: 'astronaut', dist: 150, yaw: 130, pitch: -13, fov: 50 },
+    shot: { target: 'astronaut', dist: 420, yaw: 130, pitch: -30, fov: 48 },
     move: { dur: 4, ease: 'inOut' },
-    caption: { en: 'Dust storm. Visibility drops; the zone does not.', es: 'Tormenta: baja la visibilidad, la zona no.' },
-    scene: { zone: true, sky: 'dust_storm' },
-    tracks: { zone: [31, 53, 0, 9], zoneOpacity: [1, 0.85, 0, 9], dust: [0, 0.75, 0.5, 6] },
+    caption: { en: 'Dust storm. The sky closes in.', es: 'Tormenta de polvo. El cielo se cierra.' },
+    scene: { sky: 'dust_storm', route: true },
+    tracks: { route: ['totals.distanceM', 'totals.distanceM', 0, 1], dust: [0, 0.75, 0.5, 6] },
     chips: [
-      { at: 'hab', show: [5], big: 'τ 8', text: { en: 'dust opacity, 2018 global storm', es: 'opacidad del polvo, tormenta global 2018' }, tag: 'DATA' },
+      { at: 'hab', show: [4], big: 'τ 8', text: { en: 'dust opacity, 2018 global storm', es: 'opacidad del polvo, tormenta global 2018' }, tag: 'DATA' },
+      { at: 'hab', show: [6], big: '3 km', text: { en: 'farthest view at Gale, 2018 storm', es: 'vista más lejana en Gale, tormenta 2018' }, tag: 'DATA', offset: 1 },
     ],
-    source: { en: 'Dust: Curiosity, Gale 2018. Weather: MEDA, Jezero, sol 1187', es: 'Polvo: Curiosity, Gale 2018. Clima: MEDA, Jezero, sol 1187', tag: 'DATA' },
+    source: { en: 'Dust and visibility: Curiosity, Gale 2018. Weather: MEDA, Jezero, sol 1187', es: 'Polvo y visibilidad: Curiosity, Gale 2018. Clima: MEDA, Jezero, sol 1187', tag: 'DATA' },
   },
   {
     id: 'sources',
@@ -156,12 +159,40 @@ export const BEATS = [
     source: { en: 'Every dataset is listed in Sources, in the app', es: 'Cada dato está en Fuentes, dentro de la app', tag: 'DATA' },
   },
   {
+    id: 'credits',
+    duration: 14,
+    shot: { target: 'site', dist: 2600, yaw: -24, pitch: -70, fov: 44 },
+    move: { dur: 3, ease: 'inOut' },
+    drift: { yaw: -0.6 },
+    caption: { en: 'Every source on screen, by name.', es: 'Cada fuente en pantalla, por su nombre.' },
+    scene: { route: true },
+    tracks: { route: ['totals.distanceM', 'totals.distanceM', 0, 1] },
+    // Names as docs/credits.md and scripts/credits-sources.mjs give them
+    list: {
+      title: { en: 'Sources', es: 'Fuentes' },
+      lines: [
+        { en: 'Globe: Viking MDIM 2.1 colorized global mosaic, 232 m. NASA/JPL/USGS', es: 'Globo: mosaico global Viking MDIM 2.1 a color, 232 m. NASA/JPL/USGS', tag: 'DATA' },
+        { en: 'Jezero: Mars Odyssey THEMIS day IR controlled global mosaic, 100 m. NASA/JPL-Caltech/ASU', es: 'Jezero: mosaico global THEMIS IR diurno, Mars Odyssey, 100 m. NASA/JPL-Caltech/ASU', tag: 'DATA' },
+        { en: 'CTX image mosaic for Mars 2020 TRN, 6 m (JEZ_ctx_B_soc_008). NASA/JPL/MSSS', es: 'Mosaico CTX para Mars 2020 TRN, 6 m (JEZ_ctx_B_soc_008). NASA/JPL/MSSS', tag: 'DATA' },
+        { en: 'HiRISE terrain model, 1 m, and image mosaic, 25 cm, for Mars 2020 TRN (JEZ_hirise_soc_006). NASA/JPL/UArizona', es: 'Modelo de terreno HiRISE, 1 m, y mosaico de imagen, 25 cm, para Mars 2020 TRN (JEZ_hirise_soc_006). NASA/JPL/UArizona', tag: 'DATA' },
+        { en: 'Terrain check: NASA Mars Trek HiRISE Jezero DEM, 0.14 m RMS', es: 'Revisión del terreno: DEM HiRISE de Jezero en NASA Mars Trek, 0.14 m RMS', tag: 'DERIVED' },
+        { en: 'Radiation: MSL Curiosity RAD, Gale crater, September 2017 event (Zeitlin et al. 2018). Timing: NASA DONKI', es: 'Radiación: RAD de MSL Curiosity, cráter Gale, evento de septiembre 2017 (Zeitlin et al. 2018). Tiempos: NASA DONKI', tag: 'DATA' },
+        { en: 'Dust: 2018 global storm at Gale, τ 8 (NASA/JPL, 20 June 2018), visibility under 3 km (Smith et al. 2019)', es: 'Polvo: tormenta global de 2018 en Gale, τ 8 (NASA/JPL, 20 de junio de 2018), visibilidad menor a 3 km (Smith et al. 2019)', tag: 'DATA' },
+        { en: 'Weather: Perseverance MEDA, Jezero, sol 1187 (NASA PDS)', es: 'Clima: MEDA de Perseverance, Jezero, sol 1187 (NASA PDS)', tag: 'DATA' },
+        { en: 'Suit: 8 h limit, NASA xEVA Concept of Operations EVA-EXP-0042. 30 min reserve, Apollo 17 procedures', es: 'Traje: límite de 8 h, NASA xEVA Concept of Operations EVA-EXP-0042. Reserva de 30 min, procedimientos Apollo 17', tag: 'DATA' },
+        { en: 'Route, slope and oxygen: our planner and suit model, calibrated to NASA suited walking tests', es: 'Ruta, pendiente y oxígeno: nuestro planificador y modelo de traje, calibrado con pruebas de la NASA con traje', tag: 'DERIVED' },
+        { en: 'The first sortie, its clock and the return zone scenario: ours', es: 'La primera salida, su reloj y el escenario de la zona de regreso: nuestros', tag: 'SIM' },
+      ],
+      note: 'Teresa Rivas Gómez · Andrea Rivas Gómez · Fernando Haro Calvo · Jorge Antonio Vazquez Guzmán · Antonio Ramos Gonzalez · Brayan Iván Pérez Ventura',
+    },
+  },
+  {
     id: 'live',
     duration: 6,
     shot: { target: 'hab', dist: 95, yaw: -40, pitch: -14, fov: 48 },
     move: { dur: 4, ease: 'inOut' },
     caption: { en: 'Now we walk it, live.', es: 'Ahora la caminamos, en vivo.' },
-    cta: { en: 'Start the first sortie', es: 'Empezar la primera salida' },
+    cta: { en: 'Open the mission table', es: 'Abrir la mesa de misión' },   // the start screen's own button (menu.open.mission.table)
   },
 ];
 

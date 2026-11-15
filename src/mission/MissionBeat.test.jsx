@@ -53,6 +53,7 @@ describe('beat lines (#265)', () => {
   });
 
   it('shows the plan beat as a table note before Begin EVA, and not after', () => {
+    useMissionStore.setState({ mode: 'plan' });   // at the table; the store starts on foot in the habitat (#260)
     expect(renderToStaticMarkup(<PlanBeat evaBegun={false} />)).toMatch(/class="table-note mission-beat"[^>]*>Plan · /);
     expect(renderToStaticMarkup(<PlanBeat evaBegun={true} />)).toBe('');
   });

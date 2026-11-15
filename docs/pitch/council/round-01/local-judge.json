@@ -1,0 +1,75 @@
+{
+  "findings": [
+    {
+      "where": "script-5min-es.md lines 76-79 (D5-D7); app-screens D5-walk-hud, D6-sample, D7-storm-walk, D7-storm-plan",
+      "problem": "The live demo never proves the thesis. The sortie is 55 m, O2 stays at 100 % the whole walk, and the margin reads +480, then +419, then +477 min. When the storm hits, the margin goes UP 58 minutes. P2 says 'La ruta se recalcula al hábitat', but the D7 plan screen says 'The route was chosen before the EVA began and stays as it is' and still shows 0.05 km. The opening promised an astronaut 913 m out with a storm coming and her way home at risk. The demo shows a stroll next to the door with nothing at stake.",
+      "severity": "blocker",
+      "criterion": "Validity",
+      "proposal": "Run the demo in a tight scenario. Set O2 low on the mission table (the slider exists) or start late in the EVA, so the margin sits near zero and visibly falls on a climb. Make the storm beat show the number dropping and the route home changing on the map. If the storm can't re-plan a 55 m route, stop saying it does. Say 'el margen baja de X a Y' and point at it."
+    },
+    {
+      "where": "script-5min-es.md line 76 (D5) and line 61 (beat 3); slides/03.png",
+      "problem": "P2 says the margin is 'el oxígeno que me sobra', and the visor shows '+480 min'. I hear oxygen and read minutes. 480 min is also exactly the 8 h suit limit from beat 2, so it reads like a clock, not oxygen. Slide 3 calls it O2 too. For a judge with no Mars background, the one number the team built the pitch around doesn't match what they say about it.",
+      "severity": "major",
+      "criterion": "Presentation",
+      "proposal": "Say it the way the screen shows it: 'minutos de oxígeno que me sobran después de volver y guardar la reserva'. If 480 is capped by the 8 h limit, say so in one clause, or start the demo where O2 is the limit and not the clock."
+    },
+    {
+      "where": "script-5min-es.md line 76, D5 '(Silencio, caminar.)', 0:55 to 1:48 of the demo",
+      "problem": "About 50 seconds of someone holding W in silence, a sixth of the pitch. After 26 other teams I'd be checking my phone. Nothing on the HUD changes enough to carry the silence (see the margin finding above).",
+      "severity": "major",
+      "criterion": "Presentation",
+      "proposal": "Cut the walk to 15-20 s and narrate one event during it: a climb where the margin drops, or the terrain fix updating the position. Use the saved time to state who the product is for."
+    },
+    {
+      "where": "script-5min-es.md line 65 (beat 7); compare slides/07.png",
+      "problem": "The spoken pitch never says who uses this or why it matters outside a game. Slide 7 has 'EVA planners' and 'Classrooms', but beat 7 skips straight to heart rate and HiRISE sites. Impact is one of five criteria, and on this script I can only score it on 'it looks good'.",
+      "severity": "major",
+      "criterion": "Impact",
+      "proposal": "Add one spoken sentence in beat 7 that names the users and one concrete use. For example: 'Un planeador de EVA ensaya la caminata antes de hacerla. Un salón de secundaria en Ensenada planea una con los mismos datos, gratis en el navegador.'"
+    },
+    {
+      "where": "script-5min-es.md line 58 (913 m) vs line 74 (930 m); app-screens/D1-table-site.jpg (785 m) and D3 (0.93 km); slides/02.png (913 m)",
+      "problem": "Cheyava Falls is 913 m away in the cold open, 930 m in the demo, and 785 m on the Site screen behind the presenter. Then the demo walk is 55 m. I write down 913, hear 930 a minute later, and wonder which one is wrong. The rubric's own rule is 'numbers from the app', and the app shows a different number.",
+      "severity": "major",
+      "criterion": "Validity",
+      "proposal": "Use one distance for Cheyava Falls everywhere. If 913 m is the walk home from the rock and 930 m includes Bright Angel, say 'a 930 metros por la ruta' in the cold open and drop 913, or explain the difference in one clause. Say the 55 m sortie is a short first walk so the 55 doesn't look like a step down."
+    },
+    {
+      "where": "script-5min-es.md line 63 (beat 5, NASA data)",
+      "problem": "Thirty seconds of acronyms: HiRISE, Mars Reconnaissance Orbiter, Mastcam-Z, MEDA, sol 1187, RAD, DONKI. I'm an engineer, but I don't know any of these, and 'sol 1187' means nothing to me. It sounds rigorous and I retain none of it. The data use is the team's strongest point, and this beat wastes it.",
+      "severity": "major",
+      "criterion": "Relevance",
+      "proposal": "Say what each source decides, in plain Spanish, and leave the instrument names on screen. For example: 'El terreno viene de una cámara en órbita con un metro de detalle; de ahí sale la pendiente y la ruta. El clima es un día real medido por Perseverance. La radiación son dosis reales que midió Curiosity en una tormenta solar de 2017.'"
+    },
+    {
+      "where": "script-5min-es.md lines 62, 66, 79-80 and the optional opening (lines 82-90); demo-run-sheet.md line 97 (cut A 2:20) vs script (2:25)",
+      "problem": "The script ends at exactly 5:00 with zero slack. The demo depends on a storm that fires by itself about 20 s after arrival, the run sheet and the script disagree on the cut length (2:20 vs 2:25), and the optional legacy opening adds 20 s. One slow load or one missed key and they run over, and the rubric counts running over as a blocker.",
+      "severity": "major",
+      "criterion": "Presentation",
+      "proposal": "Write for 4:30. Trigger the storm by hand from the Events strip and say so out loud, as cut B already does. Drop the legacy opening for the local event; last year's win doesn't score this year's project."
+    },
+    {
+      "where": "app-screens/D4-suit-go.jpg (τ 0.45 in the outlook) vs D7-storm-walk.jpg (τ 0.45, 'global storm worst case')",
+      "problem": "The dust opacity during the 'worst case' storm shows the same 0.45 as the normal outlook at Go. P2 says 'la opacidad que midió Curiosity en 2018', and the number on screen hasn't moved. A judge who compares the two screens will ask what changed.",
+      "severity": "minor",
+      "criterion": "Validity",
+      "proposal": "Let the storm run until τ clearly rises before P2 points at it, or say 'empieza a subir' and point at the plan screen value (0.53). Better, show the peak value the storm reaches."
+    }
+  ],
+  "advance": {
+    "yes": true,
+    "why": "They're far above a typical local entry on Relevance and Validity. Real HiRISE terrain checked against Mars Trek to 14 cm over 564,001 points, NASA suit rules with document numbers, and DATA/DERIVED/SIM tags on every number on screen. Most teams at this level wrap a NASA image in a web page; this team built a planner on the data. They advance despite the pitch, not because of it. The demo contradicts the thesis it was meant to prove, and the spoken pitch never says who it's for.",
+    "change_my_mind": "If the live demo again shows a 55 m walk where oxygen stays at 100 % and the margin goes up during the storm, I score Validity and Presentation down and a team with a weaker build but a clear problem and user can pass them."
+  },
+  "remembered_after_27_teams": "The rule 'it's not where you can go, it's where you can go and still get home' and the 14 cm match against NASA's own terrain model. If the demo had shown the margin hitting zero, that would be what I remembered.",
+  "confusing_moments": [
+    "913 m in the cold open, 930 m in the demo, 785 m on the screen behind them, then a 55 m walk: which distance is real?",
+    "'El margen es el oxígeno que me sobra', but the visor says +480 min. Oxygen in minutes? And 480 min is the same 8 h from the rules beat.",
+    "The storm hits and the margin goes up from +419 to +477.",
+    "P2 says the route recalculates, and the plan screen says the route stays as it is.",
+    "Beat 5: MRO, HiRISE, Mastcam-Z, MEDA, sol 1187, RAD, DONKI in 30 seconds. I couldn't repeat one of them.",
+    "Nobody says who would use this. I only found out from slide 7 of the global deck.",
+    "The blue walkback zone in beat 3 shrinks from 205 g O2 tagged SIM. I couldn't tell if that animation was the app or a mock-up, because the app itself never shows a zone, only a number."
+  ]
+}

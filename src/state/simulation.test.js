@@ -7,6 +7,7 @@ import stopsJson from '../../public/data/stops.json';
 import { createInitialState, pauseMission, resetStore, resumeMission, setMode, setNeeds, useMissionStore } from './store.js';
 import { listEvents } from './events.js';
 import { departRoute, startSimulation } from './simulation.js';
+import { beginEgress, completeEgress } from './flow.js';
 import { requestEvaEnd } from './eva.js';
 import { startAtAirlock } from '../plan/routeStart.js';
 import { nextTarget } from '../sim/waypointRunner.js';
@@ -14,6 +15,8 @@ import { resetDataFiles } from '../data/dataFiles.js';
 
 const ENGINE = { heightAt: () => 0 };
 const jsonResponse = (data) => ({ ok: true, json: async () => data });
+// Begin EVA at the table and finish the airlock cycle: the only way onto the surface (src/state/flow.js).
+const toSurface = () => { beginEgress(); completeEgress(); };
 
 function simulationFetch(sheltersResponse) {
   return vi.fn((url) => {
@@ -118,7 +121,7 @@ describe('startSimulation clock wiring', () => {
   });
 });
 
-describe('EVA start at the first switch to Walk (#166)', () => {
+describe('EVA start at the end of the airlock cycle', () => {
   const read = (path) => JSON.parse(readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8'));
   const files = {
     'hazards.json': read('../../public/data/hazards.json'),
@@ -142,8 +145,9 @@ describe('EVA start at the first switch to Walk (#166)', () => {
     }));
   }
 
-  it('opens in Plan mode', () => {
-    expect(createInitialState().mode).toBe('plan');
+  it('opens on foot inside the habitat', () => {
+    expect(createInitialState().mode).toBe('walk');
+    expect(createInitialState().stage).toBe('habitat');
   });
 
   it('marks the first waypoint as the departure point', () => {
@@ -153,23 +157,29 @@ describe('EVA start at the first switch to Walk (#166)', () => {
     expect(nextTarget(r).name).toBe(route.waypoints[1].name);
   });
 
-  it('runs only the clock in Plan mode', async () => {
+  it('runs only the clock in the habitat, on foot or at the table', async () => {
     vi.useFakeTimers();
     vi.stubGlobal('fetch', vi.fn(respond));
     planned();
     const stop = startSimulation(ENGINE);
     await flush();
-    vi.advanceTimersByTime(3000);
+    vi.advanceTimersByTime(1500);
+    setMode('plan');
+    vi.advanceTimersByTime(1500);
+    setMode('walk');
+    await flush();
     const s = useMissionStore.getState();
     expect(s.mission.elapsedSec).toBeGreaterThan(0);
     expect(s.suit.oxygenPct).toBeNull();
     expect(s.navigation.fixMode).toBeNull();
     expect(s.navigation.waypointRangeM).toBeNull();
     expect(s.route.nextIndex).toBe(0);
+    expect(s.eva.phase).toBe('ready');
+    expect(s.crew).toEqual([]);
     stop();
   });
 
-  it('starts the clock, consumables, fix and next target fresh on the first Walk, once', async () => {
+  it('starts the clock, consumables, fix and next target fresh when the airlock cycle ends, once', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-11-14T12:00:00Z'));
     vi.stubGlobal('fetch', vi.fn(respond));
@@ -179,7 +189,7 @@ describe('EVA start at the first switch to Walk (#166)', () => {
     vi.advanceTimersByTime(60000);   // a minute at the planning table
     const planStart = useMissionStore.getState().mission.startedAtMs;
 
-    setMode('walk');
+    toSurface();
     await flush();
     vi.advanceTimersByTime(1000);
     let s = useMissionStore.getState();
@@ -196,12 +206,9 @@ describe('EVA start at the first switch to Walk (#166)', () => {
     expect(Object.values(s.alerts).filter((a) => a?.active)).toEqual([]);
 
     const evaStart = s.mission.startedAtMs;
-    setMode('plan');
-    vi.advanceTimersByTime(2000);
-    setMode('walk');
-    vi.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(3000);
     s = useMissionStore.getState();
-    expect(s.mission.startedAtMs).toBe(evaStart);   // later switches keep the EVA going
+    expect(s.mission.startedAtMs).toBe(evaStart);   // one EVA, one clock
     expect(s.mission.elapsedSec).toBeCloseTo(4, 6);
     stop();
   });
@@ -213,7 +220,7 @@ describe('EVA start at the first switch to Walk (#166)', () => {
     setNeeds({ objective: 'cheyava', o2Pct: 60, batteryPct: 45 });
     const stop = startSimulation(ENGINE);
     await flush();
-    setMode('walk');   // Begin EVA locks the needs and starts the EVA from them
+    toSurface();   // Begin EVA locks the needs, and the end of the airlock cycle starts the EVA from them
     await flush();
     vi.advanceTimersByTime(1000);
     const s = useMissionStore.getState();
@@ -241,7 +248,7 @@ describe('EVA start at the first switch to Walk (#166)', () => {
     const solo = engineFor();
     let stop = startSimulation(solo);
     await flush();
-    setMode('walk');
+    toSurface();
     await flush();
     vi.advanceTimersByTime(2000);
     expect(solo.setPartnerSource).toHaveBeenCalledWith(null);
@@ -254,7 +261,7 @@ describe('EVA start at the first switch to Walk (#166)', () => {
     const pair = engineFor();
     stop = startSimulation(pair);
     await flush();
-    setMode('walk');
+    toSurface();
     await flush();
     vi.advanceTimersByTime(2000);
     expect(pair.setPartnerSource).not.toHaveBeenCalled();
@@ -262,14 +269,14 @@ describe('EVA start at the first switch to Walk (#166)', () => {
     stop();
   });
 
-  it('keeps a paused mission paused at EVA 0:00 when Walk starts behind a menu (#64)', async () => {
+  it('keeps a paused mission paused at EVA 0:00 when the cycle ends behind a menu (#64)', async () => {
     vi.useFakeTimers();
     vi.stubGlobal('fetch', vi.fn(respond));
     planned();
     const stop = startSimulation(ENGINE);
     pauseMission();
     vi.advanceTimersByTime(5000);
-    setMode('walk');
+    toSurface();
     vi.advanceTimersByTime(5000);
     let s = useMissionStore.getState();
     expect(s.mission.paused).toBe(true);
@@ -282,7 +289,7 @@ describe('EVA start at the first switch to Walk (#166)', () => {
     stop();
   });
 
-  it('replays MEDA weather and sums the RAD dose from the first Walk, with a source for each value (#189)', async () => {
+  it('replays MEDA weather and sums the RAD dose from the start of the EVA, with a source for each value (#189)', async () => {
     vi.useFakeTimers();
     const withEnvironment = {
       ...files,
@@ -300,9 +307,9 @@ describe('EVA start at the first switch to Walk (#166)', () => {
     const stop = startSimulation(ENGINE);
     await flush();
     vi.advanceTimersByTime(5000);
-    expect(useMissionStore.getState().environment.tempC).toBeNull();   // Plan mode: no EVA yet
+    expect(useMissionStore.getState().environment.tempC).toBeNull();   // in the habitat: no EVA yet
 
-    setMode('walk');
+    toSurface();
     await flush();
     vi.advanceTimersByTime(360000);   // 6 min of EVA
     const s = useMissionStore.getState();
@@ -318,7 +325,7 @@ describe('EVA start at the first switch to Walk (#166)', () => {
 });
 
 describe('startSimulation EVA wiring', () => {
-  it('starts the EVA runner on the first Walk once the real shelters.json HAB loads, then ends at the habitat when asked (#244)', async () => {
+  it('starts the EVA runner outside once the real shelters.json HAB loads, then ends at the habitat when asked (#244)', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-11-14T12:00:00Z'));
     let answerShelters;
@@ -326,7 +333,7 @@ describe('startSimulation EVA wiring', () => {
     vi.stubGlobal('fetch', simulationFetch(sheltersPromise));
 
     const stop = startSimulation(ENGINE);
-    setMode('walk');   // the EVA, and its statistics, start on the first Walk (#166)
+    toSurface();   // the EVA, and its statistics, start at the end of the airlock cycle
     useMissionStore.setState((state) => ({ navigation: { ...state.navigation, trueX: 545.1, trueZ: 574.1 } }));
     await vi.advanceTimersByTimeAsync(500);
     // The real HAB is still loading: the runner must not have started from the route waypoint (520, 600).
@@ -369,7 +376,7 @@ describe('startSimulation EVA wiring', () => {
     const engine = { ...ENGINE, habitatZoneAt: (x, z) => (Math.hypot(x - CABIN.x, z - CABIN.z) < 2 ? 'main' : null) };
 
     const stop = startSimulation(engine);
-    setMode('walk');
+    toSurface();
     useMissionStore.setState((state) => ({ navigation: { ...state.navigation, trueX: 500, trueZ: 600 } }));
     await vi.advanceTimersByTimeAsync(300);
     expect(useMissionStore.getState().eva).toMatchObject({ phase: 'active', atHabitat: false });
@@ -393,7 +400,7 @@ describe('startSimulation EVA wiring', () => {
     vi.stubGlobal('fetch', simulationFetch(sheltersPromise));
 
     const stop = startSimulation(ENGINE);
-    setMode('walk');
+    toSurface();
     stop();
     answerShelters(jsonResponse(sheltersJson));
     await vi.advanceTimersByTimeAsync(0);

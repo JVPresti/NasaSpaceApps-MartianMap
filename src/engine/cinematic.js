@@ -26,7 +26,9 @@ uniform sampler2D tLast; uniform float uFrame, uOpacity, uDim; uniform vec3 uCol
 varying vec2 vUv; varying vec2 vXZ;
 void main() {
   float v = texture2D(tLast, vUv).r * 255.0 - (uFrame + 0.5);
-  float w = fwidth(v) * 1.4 + 1e-4;
+  // the edge width follows the screen, capped at 0.6 of a frame: at a grazing view fwidth grows over many frames and
+  // drew old edges far from the zone as dashed lines
+  float w = min(fwidth(v) * 1.4, 0.6) + 1e-4;
   float inside = smoothstep(-w, w, v);
   float edge = 1.0 - smoothstep(0.0, w * 1.6, abs(v));
   vec3 c = mix(vec3(0.0), uColor, max(inside * 0.9, edge));
@@ -66,18 +68,16 @@ export function createCinematic(ctx, hooks) {
   // The app's own route glow and map labels stay out of the presentation's frames; release() brings them back.
   const hidden = [];
   let labelFrames = 0;
-  const LABEL_EVERY = 30;   // a full scene walk every 30 frames; between them only the top two levels
+  const LABEL_EVERY = 30;   // a full scene walk every 30 frames; between them only the top three levels
   const hide = (o) => { if (o && o.layers.isEnabled(0)) { hidden.push(o); o.layers.set(HIDDEN_LAYER); } };
   const hideAppLabels = (full) => {
     if (ctx.sys.routeGlow) { hide(ctx.sys.routeGlow.mesh); hide(ctx.sys.routeGlow.chevrons); }
-    // Waypoint and shelter labels, also ones added later: the waypoint markers rebuild their sprites in a group on
-    // the scene whenever the route changes, so the top two levels are checked every frame. On a slow GPU 30 frames
-    // can take seconds, too long to leave a label on screen.
+    // Waypoint, shelter and find labels, also ones added later. The waypoint markers rebuild their sprites in a group
+    // on the scene whenever the route changes (2 levels down); a find's label sits on its pole (3 levels down,
+    // finds.js). So the top three levels are checked every frame: on a slow GPU 30 frames can take seconds.
     if (full) { scene.traverse((o) => { if (o.isSprite) hide(o); }); return; }
-    for (const a of scene.children) {
-      if (a.isSprite) hide(a);
-      for (const b of a.children) if (b.isSprite) hide(b);
-    }
+    const walk = (o, depth) => { for (const c of o.children) { if (c.isSprite) hide(c); else if (depth < 3 && c !== group) walk(c, depth + 1); } };
+    walk(scene, 1);
   };
   hideAppLabels(true);
 

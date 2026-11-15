@@ -91,7 +91,7 @@ describe('mission table map', () => {
   });
 
   it('numbers its layers as layers.js does', () => {
-    expect(Object.entries(LAYER).map(([, index]) => LAYERS[index].id)).toEqual(['none', 'slope', 'rock', 'outcrop', 'radio', 'exposure']);
+    expect(Object.entries(LAYER).map(([, index]) => LAYERS[index].id)).toEqual(['none', 'slope', 'rock', 'outcrop', 'radio', 'exposure', 'zone']);
   });
 
   it('uses the terrain shader colours and slope limits, with the caution band where the table asks', () => {

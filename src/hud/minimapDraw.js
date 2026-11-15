@@ -13,6 +13,7 @@ import { resampleRoute } from './minimapRoute.js';
 import { waypointNumber } from '../sim/waypointNumber.js';
 import { drawPartner } from './minimapPartner.js';
 import { drawFinds } from './minimapFinds.js';
+import { drawMinimapZone } from '../zone/minimapZone.js';
 
 const TAU = Math.PI * 2;
 const COLORS = {
@@ -371,6 +372,7 @@ export function drawMinimap(g, view) {
   const scale = radius / rangeM;
   const project = projector(view, cx, cy, scale);
   drawPhoto(g, view, cx, cy, scale);
+  drawMinimapZone(g, view, cx, cy, scale);   // the return zone (src/sim/returnZone.js), over the photo
   drawShade(g, cx, cy, radius);
   drawRings(g, cx, cy, radius);
   drawTraverse(g, view.traverse, project, radius);
