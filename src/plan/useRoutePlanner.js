@@ -105,9 +105,10 @@ function buildSite(routeJson, sheltersJson, stopsJson, traverseJson, constants) 
  *
  * Before the EVA begins the route comes from the crew's needs (store `needs`, src/sim/missionNeeds.js): the worker
  * chooses the stops, the profile and the budget, then plans one route per profile on those stops (#245). This hook
- * writes the planned waypoints to route.waypoints (the habitat airlock first), the chosen and dropped stops, the reason
- * codes, the budget, the risk weights and the per-leg explanation (#246), and makes the profile in use route.path. It
- * re-plans whenever the needs, the profile chosen at the table or the habitat mast change.
+ * writes the planned waypoints to route.waypoints (the habitat airlock first), the chosen and dropped stops, the sampling
+ * tasks of a Collect samples plan (route.tasks, #352), the reason codes, the budget, the risk weights and the per-leg
+ * explanation (#246), and makes the profile in use route.path. It re-plans whenever the needs (the sampling tasks
+ * included), the profile chosen at the table or the habitat mast change.
  *
  * Once the EVA has begun (needs.locked) the needs no longer change, and the hook re-plans the waypoints as they stand,
  * as before: a find accepted in Walk (#71) or Re-plan, with the risk pricing of the needs the EVA started with.
@@ -241,9 +242,10 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
           if (!aliveRef.current) return;
           const start = startConsumables(plan.needs, constantsRef.current);
           const profiles = planned ? summariseProfiles(planned, plan.waypoints, heightAtRef.current, constantsRef.current, start) : null;
+          // tasks: the sampling tasks of a Collect samples plan, kept and dropped (#352); empty for the other goals
           const fields = {
             waypoints: plan.waypoints, stops: plan.stops, dropped: plan.dropped, planReasons: plan.reasons,
-            budget: plan.budget, weights: plan.weights, profiles,
+            budget: plan.budget, weights: plan.weights, profiles, tasks: plan.tasks ?? [],
           };
           memoryRef.current = afterNeedsPlan(memoryRef.current, { key, waypointsKey: waypointKey(plan.waypoints), nonce, mastId });
           plannedWaypointsRef.current = plan.waypoints;
