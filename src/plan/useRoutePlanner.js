@@ -98,7 +98,9 @@ function buildSite(routeJson, sheltersJson, stopsJson, traverseJson, constants) 
  * @param {{ waypoints: Array<{ name: string, x: number, z: number }>, enabled: boolean, engine?: object | null }} options
  *   waypoints: route.waypoints; engine: gives the habitat mast for the radio-contact profile; without it that profile
  *   has no route
- * @returns {{ status: 'loading' | 'ready' | 'planning' | 'error', error: string | null, replan: () => void }}
+ * @returns {{ status: 'loading' | 'ready' | 'planning' | 'error', error: string | null, replan: () => void,
+ *   mast: { x: number, y: number, z: number } | null }} mast: the habitat mast once the habitat has loaded, for the
+ *   mission table map's Radio shadow layer (the same mast the radio-contact profile prices)
  */
 export function useRoutePlanner({ waypoints, enabled, engine = null }) {
   const [state, setState] = useState({ status: 'loading', error: null });
@@ -324,5 +326,6 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
     status,
     error: state.error,
     replan: () => setNonce((value) => value + 1),
+    mast,
   };
 }
