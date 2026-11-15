@@ -307,6 +307,7 @@
   "noGoHeading": "Salir / no salir",
   "fixTerrain": "fijación con el terreno",
   "fixDR": "navegación por estima",
+  "fixRadio": "medición por radio",
   "fixAgeMinutes": "hace {minutes} min",
   "fixAgeHours": "hace {hours} h {minutes} min",
   "sampleRock": "Tomar fragmentos de {site}",

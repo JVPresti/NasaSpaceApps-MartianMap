@@ -8,6 +8,7 @@ import { useMissionStore } from '../state/store.js';
 import { MINIMAP_RANGE_M } from './minimapGeometry.js';
 import { drawMinimap } from './minimapDraw.js';
 import { createRedrawScheduler, MINIMAP_MAX_REDRAWS_PER_SECOND } from './minimapRedraw.js';
+import { truePosition } from '../sim/navigation.js';
 import { loadDataFile } from '../data/dataFiles.js';
 import { SHELTERS_PATH } from '../sim/shelters.js';
 import './minimap.css';
@@ -77,7 +78,8 @@ export default function Minimap({ tracker }) {
       const g = canvas.getContext('2d');
       if (!g) return;
       const nav = state.navigation ?? {};
-      lastProgress = tracker.update(nav);
+      // Walked distance and progress come from the true position (#42): the estimate wanders and snaps, the walk does not.
+      lastProgress = tracker.update(truePosition(nav));
       drawMinimap(g, {
         size,
         dpr,
