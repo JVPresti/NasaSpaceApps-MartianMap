@@ -759,7 +759,7 @@
   "table.hazard.radiation.art": "Ilustración: una astronauta corre al hábitat mientras el Sol lanza una ráfaga de partículas.",
   "table.hazard.radiation.happens": "Un evento de partículas solares sube la tasa de dosis a {rate} µGy/h, unas tres veces el fondo.",
   "table.hazard.radiation.act": "Refúgiate pronto en el hábitat (ALARA), el único refugio completo del mapa. Las paradas que quedan en la ruta se omiten.",
-  "table.hazard.radiation.basis": "Tasas de dosis del evento de septiembre de 2017, medidas por RAD en Curiosity en el cráter Gale, no en Jezero. Su duración de 12 min se acorta para una EVA.",
+  "table.hazard.radiation.basis": "Tasas de dosis del evento de septiembre de 2017, medidas por RAD en Curiosity en el cráter Gale, no en Jezero. Se acorta a {length} para esta EVA.",
   "table.hazard.oxygen.art": "Ilustración: una pantalla de muñeca con un indicador casi vacío.",
   "table.hazard.oxygen.name": "Oxígeno bajo",
   "table.hazard.oxygen.when": "Cuando el margen baja de {min} min, y otra vez en cero",

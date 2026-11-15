@@ -16,7 +16,7 @@ import { cardImage, stopHasContent } from '../stops/content.js';
 import { toggleWaypoint } from '../stops/selection.js';
 import { useStops } from '../stops/useStops.js';
 import { PROFILE_IDS } from '../sim/routeProfiles.js';
-import { eventStartSec } from '../sim/missions.js';
+import { eventStartSec, missionEventDefinitions } from '../sim/missions.js';
 import { PlanBeat } from '../mission/MissionBeat.jsx';
 import { LAYERS, SLOPE_LIMITS } from './layers.js';
 import LayerLegend from './LayerLegend.jsx';
@@ -26,6 +26,7 @@ import { layerButtonText, layerMapTitle } from './tableLayers.js';
 import { decisionFor } from './decision.js';
 import NeedsPanel from './NeedsPanel.jsx';
 import { droppedWhy, planReasonLines, stopLine } from './routeWhy.js';
+import { eventWhen, shortDuration } from './tableFormat.js';
 import { useDataFile, useDustAgainstLimit } from './useConditions.js';
 import RouteProfiles from './RouteProfiles.jsx';
 import SourceTag from './SourceTag.jsx';
@@ -49,9 +50,15 @@ const TABS = [
 
 const minutes = (sec) => Math.round(sec / 60);
 const peak = (event, path) => Math.max(...event.timeline.map((step) => step.set?.[path]).filter(Number.isFinite));
+/** The event as the objective's mission runs it (src/sim/missions.js): its start and its timeline, compressed for the
+    first sortie. */
+const scheduled = (event, objective) => missionEventDefinitions(objective, [event])[0];
+/** When an event starts in the objective's mission: seconds under two minutes, minutes after (tableFormat.eventWhen). */
+const when = (event, objective) => eventWhen(eventStartSec(objective, event.id)) ?? '–';
 
-// The hazards come from the event files the simulation runs (src/sim/events), so the briefing cannot drift from them.
-// `events` are the event ids a checkbox switches; low oxygen is one hazard with a caution and a warning.
+// The hazards come from the event files the simulation runs (src/sim/events) and the times of the objective's mission
+// (src/sim/missions.js), so the briefing cannot drift from them. `events` are the event ids a checkbox switches; low
+// oxygen is one hazard with a caution and a warning. when, happens and basis take the crew's objective.
 const HAZARDS = [
   {
     id: 'dust-storm',
@@ -61,13 +68,13 @@ const HAZARDS = [
     get name() { return translateText(dustStorm.label); },
     level: 'warning',
     get levelLabel() { return t('table.hazard.level.warning'); },
-    get when() { return t('table.hazard.when.min', { min: minutes(eventStartSec(useMissionStore.getState().needs?.objective, dustStorm.id)) }); },
-    get happens() {
-      return t('table.hazard.dust.happens', { opacity: num(peak(dustStorm, 'environment.dustOpacity')), sec: dustStorm.timeline.at(-1).atSec });
-    },
+    when: (objective) => when(dustStorm, objective),
+    happens: (objective) => t('table.hazard.dust.happens', {
+      opacity: num(peak(dustStorm, 'environment.dustOpacity')), sec: Math.round(scheduled(dustStorm, objective).timeline.at(-1).atSec),
+    }),
     get alert() { return translateText(dustStorm.alert.text); },
     get act() { return t('table.hazard.dust.act'); },
-    get basis() { return t('table.hazard.dust.basis'); },
+    basis: () => t('table.hazard.dust.basis'),
   },
   {
     id: 'radiation',
@@ -77,11 +84,11 @@ const HAZARDS = [
     get name() { return translateText(radiation.label); },
     level: 'warning',
     get levelLabel() { return t('table.hazard.level.warning'); },
-    get when() { return t('table.hazard.when.min', { min: minutes(eventStartSec(useMissionStore.getState().needs?.objective, radiation.id)) }); },
-    get happens() { return t('table.hazard.radiation.happens', { rate: num(peak(radiation, 'environment.doseRateUgyH'), 1) }); },
+    when: (objective) => when(radiation, objective),
+    happens: () => t('table.hazard.radiation.happens', { rate: num(peak(radiation, 'environment.doseRateUgyH'), 1) }),
     get alert() { return translateText(radiation.alert.text); },
     get act() { return t('table.hazard.radiation.act'); },
-    get basis() { return t('table.hazard.radiation.basis'); },
+    basis: (objective) => t('table.hazard.radiation.basis', { length: shortDuration(scheduled(radiation, objective).timeline.at(-1).atSec) }),
   },
   {
     id: 'low-oxygen',
@@ -91,13 +98,13 @@ const HAZARDS = [
     get name() { return t('table.hazard.oxygen.name'); },
     level: 'caution',
     get levelLabel() { return t('table.hazard.level.caution.then.warning'); },
-    get when() { return t('table.hazard.oxygen.when', { min: minutes(lowOxygenCaution.trigger.value) }); },
-    get happens() { return t('table.hazard.oxygen.happens'); },
+    when: () => t('table.hazard.oxygen.when', { min: minutes(lowOxygenCaution.trigger.value) }),
+    happens: () => t('table.hazard.oxygen.happens'),
     get alert() {
       return t('table.hazard.oxygen.alert', { caution: translateText(lowOxygenCaution.alert.text), warning: translateText(lowOxygenWarning.alert.text) });
     },
     get act() { return t('table.hazard.oxygen.act'); },
-    get basis() { return t('table.hazard.oxygen.basis'); },
+    basis: () => t('table.hazard.oxygen.basis'),
   },
 ];
 
@@ -502,12 +509,12 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
                 <span><i />{hazard.levelLabel}</span>
               </div>
               <dl>
-                <div><dt>{t('table.hazard.when')}</dt><dd>{hazard.when}</dd></div>
-                <div><dt>{t('table.hazard.what.happens')}</dt><dd>{hazard.happens}</dd></div>
+                <div><dt>{t('table.hazard.when')}</dt><dd>{hazard.when(objective)}</dd></div>
+                <div><dt>{t('table.hazard.what.happens')}</dt><dd>{hazard.happens(objective)}</dd></div>
                 <div><dt>{t('table.hazard.the.alert')}</dt><dd>{hazard.alert}</dd></div>
                 <div><dt>{t('table.hazard.what.to.do')}</dt><dd>{hazard.act}</dd></div>
               </dl>
-              <p className="table-note">{hazard.basis}</p>
+              <p className="table-note">{hazard.basis(objective)}</p>
               <HazardSwitch hazard={hazard} locked={evaBegun} />
             </li>
           ))}

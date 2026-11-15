@@ -22,4 +22,12 @@ describe('mission table', () => {
   it('falls back to the Site step for an unknown step', () => {
     expect(selectedTab(render({ initialTab: 'nowhere' }))).toBe('site');
   });
+
+  it('times the hazards from the first sortie\'s mission, in seconds under two minutes (#265)', () => {
+    const text = render({ initialTab: 'hazards' }).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    expect(text).toContain('75 s into the EVA');
+    expect(text).toContain('95 s into the EVA');
+    expect(text).toContain('in 30 s');   // the storm ramp, compressed for the first sortie
+    expect(text).toContain('Shortened to 60 s for this EVA');
+  });
 });
