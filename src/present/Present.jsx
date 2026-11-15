@@ -15,6 +15,7 @@ import { createClock, createTimeline, RECORD_STEP, easeInOut, easeOut, ramp, sho
 import { blendShot, boxToLocal, cameraHeight, engineCamera, geoToLocal, localToGeo } from './geo.js';
 import { createGlobe } from './globe.js';
 import { createProjector } from './project.js';
+import { layoutCards } from './layout.js';
 import { decodeLast, fill, marginAt, clockAt, areaAt, resolvePlace, trackNumber, astronautAt } from './data.js';
 import { createHoldTimer, fallbackStep, presentKey, queryWithoutPresent, restoreEngine as restoreFromStore } from './control.js';
 import './present.css';
@@ -149,7 +150,8 @@ export default function Present({ engine, onExit }) {
     const timeline = createTimeline(beats, { autoplay: opts.autoplay, start: Math.max(0, beats.findIndex((b) => b.id === opts.beat)) });
     let cine = null, engineState = { sky: null, layer: 0, dust: -1 };
     let fromShot = null, toShot = null, current = null, alive = true, raf = 0, lastNow = performance.now(), zoneFrame = 0;
-    let waitingNow = false, stalledNow = false;
+    let waitingNow = false, stalledNow = false, late = false;
+    const needsEngineAt = (i) => cameraHeight(beatShot(beats[i], plan, null, reduced)) < GLOBE_FULL_M;
     const holdTimer = createHoldTimer();
     const dims = { w: 1, h: 1 };
     const groundAt = () => (cine ? cine.groundAt : null);
@@ -235,6 +237,7 @@ export default function Present({ engine, onExit }) {
     function placeLabels(beat, t, globeAlpha) {
       const layer = layerRef.current;
       if (!layer) return;
+      const shown = [];
       for (const el of layer.querySelectorAll('[data-at]')) {
         const i = Number(el.dataset.i);
         const chip = beat.chips?.[i];
@@ -251,13 +254,9 @@ export default function Present({ engine, onExit }) {
         }
         const a = p && p.visible ? showValue(chip.show || [0], t, beat.duration) : 0;
         el.style.opacity = a.toFixed(3);
-        if (p) {
-          // keep the card inside the frame: 24 px from the edges, room for the card to the right and above
-          const x = Math.max(24, Math.min(dims.w - 360, p.x)), y = Math.max(150, Math.min(dims.h - 40, p.y));
-          el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
-        }
         const card = el.querySelector('.pr-card');
-        if (card) card.style.transform = `translateY(${((1 - a) * 10).toFixed(1)}px)`;
+        if (p && a > 0) shown.push({ el, card, p, below: !!chip.offset, start: chip.show?.[0] ?? 0 });
+        if (card) card.style.translate = `0 ${((1 - a) * 10).toFixed(1)}px`;
         if (chip.live === 'margin' || chip.live === 'area') {
           const big = el.querySelector('.pr-big');
           if (big) big.textContent = chip.live === 'area' ? `${fill('{a:1}', { a: areaAt(plan, zoneFrame) }, langRef.current)} ha` : `${marginAt(plan, zoneFrame)} min`;
@@ -275,6 +274,15 @@ export default function Present({ engine, onExit }) {
           }
         }
       }
+      // Cards beside their points, inside the frame, above the captions and clear of each other (layout.js)
+      const cop = layer.parentElement.querySelector('.pr-copy');
+      const bottom = cop ? Math.min(dims.h * 0.78, cop.offsetTop - 12) : dims.h * 0.7;
+      const boxes = layoutCards(shown.map(({ card, p, below, start }) => ({ x: p.x, y: p.y, w: card?.offsetWidth || 0, h: card?.offsetHeight || 0, below, start })), { w: dims.w, h: dims.h, bottom });
+      shown.forEach(({ el, card }, k) => {
+        const b = boxes[k];
+        el.style.transform = `translate(${b.pinX.toFixed(1)}px, ${b.pinY.toFixed(1)}px)`;
+        if (card) { card.style.left = `${b.cardX.toFixed(1)}px`; card.style.top = `${b.cardY.toFixed(1)}px`; card.style.bottom = 'auto'; }
+      });
       const astro = layer.querySelector('.pr-astronaut');
       if (astro) {
         const show = beat.tracks?.zone ? 1 : 0;
@@ -298,9 +306,11 @@ export default function Present({ engine, onExit }) {
     function frame(dt) {
       attachEngine();
       if (stalledNow) {
-        if (!cine) return;   // still late: the captions stay up
-        // The engine booted after the timeout: take over live at the beat the presenter stepped to in the captions,
-        // with the camera move from the beat before it.
+        // Still late, on a beat that needs the terrain: the captions stay up. The globe beats (Mars, Jezero) need no
+        // engine, so stepping back to them plays them live.
+        if (!cine && needsEngineAt(indexRef.current)) return;
+        // The engine booted after the timeout, or the presenter stepped back to the globe: take over live at that
+        // beat, with the camera move from the beat before it.
         stalledNow = false; setStalled(false); holdTimer.update(false, 0);
         current = null;
         timeline.goTo(indexRef.current);
@@ -311,7 +321,8 @@ export default function Present({ engine, onExit }) {
       if (hold !== waitingNow) { waitingNow = hold; setWaiting(hold); }
       // A late engine must not hold the show: after ENGINE_TIMEOUT_MS the captions take over until it boots (above).
       // A recording waits instead (its readyCheck below), since a fallback frame in a video is worse than a late one.
-      if (!opts.record && holdTimer.update(hold, performance.now())) { stalledNow = true; setStalled(true); return; }
+      // Once the engine has been late, a later hold drops to the captions at once instead of waiting again.
+      if (!opts.record && (holdTimer.update(hold, performance.now()) || (hold && late))) { stalledNow = late = true; setStalled(true); return; }
       if (!hold) {
         const changed = timeline.advance(dt);
         if (changed) { startBeat(timeline.index); setIndex(timeline.index); }
@@ -455,6 +466,17 @@ export default function Present({ engine, onExit }) {
         ))}
       </div>
       <div className={`pr-copy${still ? ' still' : ''}`} key={`copy-${beat.id}-${lang}`}>
+        {beat.list && (
+          <div className="pr-list" data-fade="0.5" style={hidden}>
+            <h2 className="pr-list-title">{tx(beat.list.title)}</h2>
+            <ul>
+              {beat.list.lines.map((line, k) => (
+                <li key={k}><span className={`pr-tag ${TAG_CLASS[line.tag]}`}>{line.tag}</span>{tx(line)}</li>
+              ))}
+            </ul>
+            {beat.list.note && <p className="pr-list-note">{beat.list.note}</p>}
+          </div>
+        )}
         {beat.title && <h1 className="pr-title" data-fade="0.2" style={hidden}>{beat.title}</h1>}
         <div className="pr-captions">
           {captionsOf(beat).map((c, k) => (

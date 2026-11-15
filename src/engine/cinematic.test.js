@@ -104,10 +104,20 @@ describe('createCinematic', () => {
     expect(late.layers.isEnabled(0)).toBe(false);
   });
 
-  it('finds deeper labels on the full walk, every 30 frames', () => {
+  it('hides a find label on its pole, three levels down, on the next frame', () => {
     const { ctx, cine } = make();
-    const g = new THREE.Group(), h = new THREE.Group(), late = new THREE.Sprite();
-    h.add(late); g.add(h); ctx.scene.add(g);
+    const group = new THREE.Group(), root = new THREE.Group(), label = new THREE.Sprite();
+    ctx.scene.add(group);
+    cine.apply(1 / 60);
+    root.add(label); group.add(root);   // finds.js: group > root > sprite
+    cine.apply(1 / 60);
+    expect(label.layers.isEnabled(0)).toBe(false);
+  });
+
+  it('finds labels below three levels on the full walk, every 30 frames', () => {
+    const { ctx, cine } = make();
+    const g = new THREE.Group(), h = new THREE.Group(), k = new THREE.Group(), late = new THREE.Sprite();
+    k.add(late); h.add(k); g.add(h); ctx.scene.add(g);
     for (let i = 0; i < 29; i++) cine.apply(1 / 60);
     expect(late.layers.isEnabled(0)).toBe(true);
     cine.apply(1 / 60);
