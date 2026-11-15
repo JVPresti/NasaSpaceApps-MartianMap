@@ -452,6 +452,7 @@
   "menu.walk.to.cheyava.falls.and.sample.the.science": "Walk to Cheyava Falls and sample the science target in Neretva Vallis, on the floor of Jezero crater. Plan the route at the habitat, then switch to Walk: your EVA starts at the airlock, 785 m from the rock in a straight line.",
   "menu.start.position.sim.the.foot.of.the.habitat": "Start position SIM: the foot of the habitat airlock steps, x 535 m east, z 574 m south of Cheyava Falls (HAB entry in shelters.json). Site 18.4975 N, 77.3053 E (DATA: Mars 2020 Perseverance waypoint, sol 1210).",
   "menu.opening": "Opening…",
+  "menu.loading.scene": "Loading the scene… {p0}%",
   "menu.start.in.plan.view": "Start in Plan view",
   "menu.start.eva": "Start EVA",
   "menu.plan.view.resumes.without.capturing.the.mouse.the": "Plan view resumes without capturing the mouse. The mission clock and suit stay paused behind this screen.",
