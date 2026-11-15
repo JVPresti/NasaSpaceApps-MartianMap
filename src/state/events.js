@@ -17,6 +17,7 @@ import { createRoutePlannerClient } from '../sim/routePlannerClient.js';
 import { suitConstantsFromHazards, walkCost } from '../sim/suitModel.js';
 import { createStoreAdapter, useMissionStore } from './store.js';
 import { truePosition } from '../sim/navigation.js';
+import { ARRIVAL_RADIUS_M } from '../sim/waypointRunner.js';
 
 // What each event is. When the storm and the radiation alert start, and how fast their timelines run, comes from the
 // mission the crew's objective defines (src/sim/missions.js, #265).
@@ -82,6 +83,26 @@ export function createEventStoreAdapter(store, sourcesByPath = EVENT_ENVIRONMENT
 }
 
 let current = null;
+
+/**
+ * Where each planned stop is, by stops.json id (`stopId` on the planner's waypoints), and how close counts as reaching
+ * it: the waypoint runner's arrival radius. The event runner reads it from the route locked at Begin EVA, so the first
+ * mission's storm waits for the sortie stop itself, not for whatever waypoint comes next (R5).
+ * @param {{ waypoints?: Array<{ stopId?: string, x: number, z: number }> }} route
+ * @returns {Record<string, { x: number, z: number, radius: number }>}
+ */
+export function plannedStops(route) {
+  const stops = {};
+  for (const waypoint of route?.waypoints ?? []) {
+    if (waypoint?.stopId && Number.isFinite(waypoint.x) && Number.isFinite(waypoint.z) && !stops[waypoint.stopId]) {
+      stops[waypoint.stopId] = { x: waypoint.x, z: waypoint.z, radius: ARRIVAL_RADIUS_M };
+    }
+  }
+  return stops;
+}
+
+/** The habitat entry of shelters.json, the shelter of every event that re-plans to the habitat. */
+const isHabitat = (shelter) => shelter?.id === 'HAB';
 
 function loadPlanner() {
   return Promise.all([
@@ -157,7 +178,7 @@ export function writeRoute(store, result, reason, shelter = null) {
 export function startEventRunner({ store = useMissionStore, objective, setInterval: si = setInterval, clearInterval: ci = clearInterval, onEventLog } = {}) {
   const lockedObjective = objective ?? store.getState().needs?.objective;
   const mission = missionForObjective(lockedObjective);
-  const definitions = missionEventDefinitions(lockedObjective, EVENT_DEFINITIONS);
+  const definitions = missionEventDefinitions(lockedObjective, EVENT_DEFINITIONS, { stops: plannedStops(store.getState().route) });
   let stopped = false;
   let planner = null;
   let plannerPromise = null;
@@ -209,14 +230,31 @@ export function startEventRunner({ store = useMissionStore, objective, setInterv
 
   const stillActive = (eventId) => !stopped && store.getState().eva?.phase !== 'ended' && engine.getActive().some((active) => active.id === eventId);
 
-  // Once no event with a planner block is active, the event route is over. The shelter and the skipped list clear,
-  // and the runner resumes the planned waypoints from route.nextIndex.
+  const sheltered = () => engine.getActive().some((active) => definitions.find((event) => event.id === active.id)?.planner);
+
+  // Once no event with a planner block is active, the event route is over.
+  // - A route home to the habitat stays the target until the crew is inside the habitat (eva.atHabitat), and the stops
+  //   it left out stay skipped: the events end 25 m out, and resuming the plan there sent the guidance back to the stop
+  //   while the path led home (P5). The tick below lets the habitat go once the crew is in.
+  // - A route to another shelter ends there: the shelter and the skipped list clear, and the planned waypoints resume
+  //   from route.nextIndex.
   const endEventRoute = ({ type }) => {
-    if (type !== 'end') return;
-    const sheltered = engine.getActive().some((active) => definitions.find((event) => event.id === active.id)?.planner);
-    const route = store.getState().route;
-    if (sheltered || (!route.shelter && !route.skipped?.length)) return;
-    store.setState((state) => ({ route: { ...state.route, shelter: null, skipped: [] } }));
+    if (type !== 'end' || sheltered()) return;
+    const state = store.getState();
+    const route = state.route;
+    if (!route.shelter && !route.skipped?.length) return;
+    if (isHabitat(route.shelter)) {
+      if (state.eva?.atHabitat === true) store.setState((s) => ({ route: { ...s.route, shelter: null } }));
+      return;
+    }
+    store.setState((s) => ({ route: { ...s.route, shelter: null, skipped: [] } }));
+  };
+
+  // Home: the habitat stops being the target once the crew is inside it, after the events that sent them there ended.
+  const releaseHome = (state) => {
+    if (isHabitat(state.route?.shelter) && state.eva?.atHabitat === true && !sheltered()) {
+      store.setState((s) => ({ route: { ...s.route, shelter: null } }));
+    }
   };
 
   const labels = new Map(definitions.map((definition) => [definition.id, definition.label]));
@@ -243,6 +281,7 @@ export function startEventRunner({ store = useMissionStore, objective, setInterv
     const truth = truePosition(state.navigation);
     const position = Number.isFinite(truth.x) && Number.isFinite(truth.z) ? truth : undefined;
     engine.update(missionTime(), position);
+    releaseHome(store.getState());
   };
 
   const timer = si(tick, 1000);

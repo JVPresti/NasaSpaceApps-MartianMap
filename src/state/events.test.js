@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { recordEvaEvent } from './eva.js';
-import { eventEnvironmentSources, listEvents, startEventRunner, writeRoute } from './events.js';
+import { eventEnvironmentSources, listEvents, plannedStops, startEventRunner, writeRoute } from './events.js';
 import { resetStore, setMode, setNeeds, useMissionStore } from './store.js';
 import { provenance } from '../data/provenance.js';
 import { MISSION_SOURCES } from '../sim/missions.js';
@@ -68,6 +68,17 @@ describe('event runner mission time', () => {
 // The airlock entry of shelters.json, the centre of both events' 25 m end area, and the first sortie stop (stops.json).
 const AIRLOCK = { x: 535.1, z: 574.1 };
 const STOP = { x: 493, z: 539 };
+const HAB_WAYPOINT = { name: 'HAB', x: AIRLOCK.x, z: AIRLOCK.z };
+const S1 = { name: 'S1 · light-toned patch', x: STOP.x, z: STOP.z, stopId: 'sortie', workSec: 300, required: true };
+const HAB_SHELTER = { id: 'HAB', name: 'Habitat', type: 'habitat', protection: 'full', x: AIRLOCK.x, z: AIRLOCK.z };
+/** A point `share` of the way from the stop to the airlock, and its distance from the airlock. */
+const toward = (share) => ({ x: STOP.x + (AIRLOCK.x - STOP.x) * share, z: STOP.z + (AIRLOCK.z - STOP.z) * share });
+const fromAirlock = (p) => Math.hypot(p.x - AIRLOCK.x, p.z - AIRLOCK.z);
+
+/** The sortie as Begin EVA locks it: the planned waypoints (the stop with its stops.json id), the first stop next. */
+function planSortie(waypoints = [HAB_WAYPOINT, S1]) {
+  useMissionStore.setState((state) => ({ route: { ...state.route, waypoints, nextIndex: 1, visited: ['HAB'] } }));
+}
 
 function quietRunner(options = {}) {
   // Both events have a planner block; keep its lazy planner load pending, these tests start no worker.
@@ -75,61 +86,159 @@ function quietRunner(options = {}) {
   return startEventRunner({ store: useMissionStore, setInterval: () => 0, clearInterval: () => {}, ...options });
 }
 
-function at(elapsedSec, position, nextIndex) {
+function at(elapsedSec, position, { samples, route } = {}) {
   useMissionStore.setState((state) => ({
     mission: { ...state.mission, elapsedSec },
     navigation: { ...state.navigation, x: position.x, z: position.z },
-    route: nextIndex === undefined ? state.route : { ...state.route, nextIndex },
+    ...(samples === undefined ? {} : { sampling: { ...state.sampling, count: samples } }),
+    ...(route ? { route: { ...state.route, ...route } } : {}),
   }));
 }
 
 const activeAlerts = () => Object.values(useMissionStore.getState().alerts).filter((alert) => alert?.active).map((alert) => alert.eventId);
+const startedAt = (id) => useMissionStore.getState().eva.events.find((e) => e.type === 'start' && e.eventId === id)?.atSec ?? null;
+
+function loggedRunner(options = {}) {
+  return quietRunner({ onEventLog: (entry) => recordEvaEvent(useMissionStore, entry), ...options });
+}
 
 describe('event runner missions (#265)', () => {
-  it('runs the first mission from the default needs: storm after the stop, radiation after the storm', () => {
+  it('runs the first mission: the storm once a sample is secured at the stop, the radiation alert 15 s later', () => {
+    planSortie();
     const runner = quietRunner();
     expect(runner.mission).toBe('first');
 
-    at(10, { x: 520, z: 560 }, 1); runner.tick();
-    at(55, STOP, 2); runner.tick();               // at the stop at T+55 s: about 20 s to sample
-    at(74, STOP); runner.tick();
+    at(10, toward(0.6)); runner.tick();
+    at(55, STOP); runner.tick();                     // at the stop at T+55 s
+    at(70, STOP); runner.tick();
+    expect(activeAlerts()).toEqual([]);              // sampling: the storm waits
+    at(74, STOP, { samples: 1 }); runner.tick();    // sample secured at T+74 s
+    at(76, STOP); runner.tick();
     expect(activeAlerts()).toEqual([]);
-    at(75, STOP); runner.tick();
+    at(77, STOP); runner.tick();                     // 3 s later
     expect(activeAlerts()).toEqual(['dust-storm']);
-    at(89, { x: 500, z: 545 }); runner.tick();
+    at(91, toward(0.1)); runner.tick();
     expect(activeAlerts()).toEqual(['dust-storm']);
-    at(95, { x: 505, z: 550 }); runner.tick();     // 20 s after the storm, still 38 m from the airlock
+    at(92, toward(0.15)); runner.tick();             // 15 s after the storm
     expect(activeAlerts()).toEqual(['dust-storm', 'radiation']);
-    at(105, { x: 510, z: 556 }); runner.tick();    // 31 m out
+    at(107, toward(0.3)); runner.tick();
     // The compressed storm ramp reaches the 2018 Gale peak 30 s after it started.
     expect(useMissionStore.getState().environment.dustOpacity).toBe(8);
 
-    at(120, AIRLOCK); runner.tick();               // both end within 25 m of the airlock
+    at(130, AIRLOCK); runner.tick();                 // both end within 25 m of the airlock
     expect(activeAlerts()).toEqual([]);
     expect(useMissionStore.getState().environment.dustOpacity).toBe(0.45);
     runner.stop();
   });
 
-  it('holds both events while the crew is inside the end area, however late, and plays them outside', () => {
-    const runner = quietRunner();
-    at(300, AIRLOCK, 1); runner.tick();            // past both latest times, never out of the airlock area
+  it('never interrupts a presenter mid-sample: the storm waits for the sample, or 90 s at the stop (N2)', () => {
+    planSortie();
+    const talking = quietRunner();
+    at(55, STOP, { samples: 0 }); talking.tick();
+    at(140, STOP); talking.tick();
+    expect(activeAlerts()).toEqual([]);              // 85 s at the stop, still no sample
+    at(144, STOP); talking.tick();
     expect(activeAlerts()).toEqual([]);
-    at(301, { x: 500, z: 545 }); runner.tick();    // 46 m out: the storm plays
+    at(145, STOP); talking.tick();                   // 90 s at the stop
     expect(activeAlerts()).toEqual(['dust-storm']);
-    at(316, { x: 500, z: 545 }); runner.tick();    // and the radiation alert 15 s after it
-    expect(activeAlerts()).toEqual(['dust-storm', 'radiation']);
+    talking.stop();
+  });
+
+  it('waits for the sortie stop itself, not an accepted find on the way (R5 a)', () => {
+    const find = { name: 'M01', x: 508, z: 553 };
+    planSortie([HAB_WAYPOINT, find, S1]);            // a find accepted on the way out sits at index 1
+    const runner = quietRunner();
+    at(40, find, { route: { nextIndex: 2, visited: ['HAB', 'M01'] } }); runner.tick();   // the find reached
+    at(60, find, { samples: 1 }); runner.tick();     // a sample at the find
+    at(100, find); runner.tick();
+    expect(activeAlerts()).toEqual([]);
+    at(110, STOP); runner.tick();                    // the stop reached at T+110 s, the sample already secured
+    expect(activeAlerts()).toEqual(['dust-storm']);
     runner.stop();
   });
 
-  it('waits for a slow crew to reach the stop before the storm', () => {
+  it('keeps the stop reached when a re-plan resets the route progress (R5 b)', () => {
+    planSortie();
     const runner = quietRunner();
-    at(80, { x: 510, z: 550 }, 1); runner.tick();  // due, but still walking out
-    expect(activeAlerts()).toEqual([]);
-    at(110, STOP, 2); runner.tick();
-    at(129, STOP); runner.tick();
-    expect(activeAlerts()).toEqual([]);
-    at(130, STOP); runner.tick();
+    at(55, STOP); runner.tick();
+    at(60, STOP, { route: { nextIndex: 0, visited: [] } }); runner.tick();   // Re-plan at the table during the EVA
+    at(70, STOP, { samples: 1 }); runner.tick();
+    at(73, STOP); runner.tick();
     expect(activeAlerts()).toEqual(['dust-storm']);
+    runner.stop();
+  });
+
+  it('meets both events before the end area when the crew samples and runs straight home (N14)', () => {
+    planSortie();
+    const runner = loggedRunner();
+    at(37, STOP); runner.tick();                     // the stop at a jog
+    at(45, STOP, { samples: 1 }); runner.tick();
+    // home at 1.5 m/s along the 55 m line, one tick per second
+    let radiationFrom = null;
+    for (let t = 48; t <= 90; t += 1) {
+      const p = toward(Math.min(1, ((t - 48) * 1.5) / 55));
+      at(t, p); runner.tick();
+      if (radiationFrom === null && activeAlerts().includes('radiation')) radiationFrom = fromAirlock(p);
+    }
+    expect(startedAt('dust-storm')).toBe(48);
+    expect(radiationFrom).toBeGreaterThan(25);       // the radiation alert started outside the end area
+    runner.stop();
+  });
+
+  it('meets both events before the end area when the crew turns home without sampling (N14)', () => {
+    planSortie();
+    const runner = loggedRunner();
+    at(50, STOP, { samples: 0 }); runner.tick();
+    let stormFrom = null, radiationFrom = null;
+    for (let t = 51; t <= 100; t += 1) {
+      const p = toward(Math.min(1, (t - 51) / 55));  // walking home at 1.0 m/s
+      at(t, p); runner.tick();
+      if (stormFrom === null && activeAlerts().includes('dust-storm')) stormFrom = fromAirlock(p);
+      if (radiationFrom === null && activeAlerts().includes('radiation')) radiationFrom = fromAirlock(p);
+    }
+    expect(stormFrom).toBeGreaterThan(25);
+    expect(radiationFrom).toBeGreaterThan(25);
+    runner.stop();
+  });
+
+  it('still plays both events for a crew that never leaves the airlock area: from the latest times, at least 20 s each', () => {
+    planSortie();
+    const runner = quietRunner();
+    at(239, AIRLOCK); runner.tick();
+    expect(activeAlerts()).toEqual([]);
+    at(240, AIRLOCK); runner.tick();
+    expect(activeAlerts()).toEqual(['dust-storm']);
+    at(254, AIRLOCK); runner.tick();
+    expect(activeAlerts()).toEqual(['dust-storm']);
+    at(255, AIRLOCK); runner.tick();                 // the radiation alert's latest time, 15 s after the storm
+    expect(activeAlerts()).toEqual(['dust-storm', 'radiation']);
+    at(260, AIRLOCK); runner.tick();                 // the storm has played its 20 s
+    expect(activeAlerts()).toEqual(['radiation']);
+    at(275, AIRLOCK); runner.tick();
+    expect(activeAlerts()).toEqual([]);
+    runner.stop();
+  });
+
+  it('keeps guiding home after the alerts end, and keeps the stop it left out skipped (P5)', () => {
+    planSortie();
+    const runner = quietRunner();
+    at(50, toward(0.2)); runner.tick();
+    expect(runner.fire('dust-storm')).toBe(true);    // the storm before the stop (for example from latestSec)
+    // what the planner writes for the storm: the route home, the habitat as the shelter, S1 skipped
+    writeRoute(useMissionStore, { ok: true, path: [[toward(0.2).x, toward(0.2).z], [AIRLOCK.x, AIRLOCK.z]], distance: 44, climb: 0, steepestSlopeDeg: 3, target: { id: 'HAB', name: 'Habitat' } }, 'storm', HAB_SHELTER);
+    expect(useMissionStore.getState().route.skipped).toEqual([S1.name]);
+
+    at(75, { x: AIRLOCK.x - 11, z: AIRLOCK.z }); runner.tick();   // 11 m out: the storm ends
+    expect(activeAlerts()).toEqual([]);
+    let route = useMissionStore.getState().route;
+    expect(route.shelter).toEqual(HAB_SHELTER);      // the habitat is still the target, not S1
+    expect(route.skipped).toEqual([S1.name]);
+
+    useMissionStore.setState((state) => ({ eva: { ...state.eva, atHabitat: true } }));   // inside the habitat
+    at(80, AIRLOCK); runner.tick();
+    route = useMissionStore.getState().route;
+    expect(route.shelter).toBeNull();
+    expect(route.skipped).toEqual([S1.name]);        // recorded as skipped
     runner.stop();
   });
 
@@ -137,7 +246,7 @@ describe('event runner missions (#265)', () => {
     setNeeds({ objective: 'bright-angel' });
     const runner = quietRunner();
     expect(runner.mission).toBe('full');
-    at(479, { x: 0, z: 0 }, 1); runner.tick();
+    at(479, { x: 0, z: 0 }); runner.tick();
     expect(activeAlerts()).toEqual([]);
     at(480, { x: 0, z: 0 }); runner.tick();
     expect(activeAlerts()).toEqual(['dust-storm']);
@@ -152,22 +261,28 @@ describe('event runner missions (#265)', () => {
 
   it('reads the mission once, from the objective locked at Begin EVA: a later change changes nothing', () => {
     setNeeds({ objective: 'sortie' });
+    planSortie();
     setMode('walk');                               // Begin EVA locks the needs
     expect(setNeeds({ objective: 'cheyava' })).toBe(false);
     const runner = quietRunner({ objective: useMissionStore.getState().needs.objective });
     // Even a direct write to the needs after the start leaves the running mission alone.
     useMissionStore.setState((state) => ({ needs: { ...state.needs, objective: 'cheyava' } }));
-    at(55, STOP, 2); runner.tick();
-    at(75, STOP); runner.tick();
+    at(55, STOP, { samples: 1 }); runner.tick();
+    at(58, STOP); runner.tick();
     expect(runner.mission).toBe('first');
     expect(activeAlerts()).toEqual(['dust-storm']);
     runner.stop();
   });
 
   it('lists the triggers of the chosen objective before the EVA', () => {
-    expect(listEvents().find((event) => event.id === 'dust-storm').trigger.atSec).toBe(75);
+    expect(listEvents().find((event) => event.id === 'dust-storm').trigger.atSec).toBe(45);
     setNeeds({ objective: 'cheyava' });
     expect(listEvents().find((event) => event.id === 'dust-storm').trigger.atSec).toBe(480);
+  });
+
+  it('places the stop from the route locked at Begin EVA', () => {
+    expect(plannedStops({ waypoints: [HAB_WAYPOINT, S1] })).toEqual({ sortie: { x: STOP.x, z: STOP.z, radius: 5 } });
+    expect(plannedStops({ waypoints: [HAB_WAYPOINT] })).toEqual({});
   });
 
   it('tags the shortened times SIM in the registry and in the event sources', () => {

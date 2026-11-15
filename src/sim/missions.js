@@ -18,18 +18,31 @@
  * Plain JavaScript with no React and no three.js.
  */
 
-/** The waypoint index the waypoint runner moves past once the first stop after the airlock is reached. */
-const FIRST_STOP_REACHED = Object.freeze({ path: 'route.nextIndex', op: 'gte', value: 2 });
+/** The first mission's science stop: the stops.json id the sortie objective plans (src/sim/missionNeeds.js). */
+export const FIRST_STOP = 'sortie';
+
+// Requirement data for the first mission. `{ stop, forSec }` is resolved by missionEventDefinitions into a place
+// requirement around the stop's planned waypoint ({ area: { x, z, radius }, forSec }, src/sim/eventEngine.js): reached
+// once is reached for good, so an accepted find on the way or a re-plan at the table cannot stand in for the stop (R5).
+const AT_STOP = Object.freeze({ stop: FIRST_STOP });
+const SAMPLE_SECURED = Object.freeze({ path: 'sampling.count', op: 'gte', value: 1, forSec: 3 });
+// Within 10 m of the end area (25 m around the airlock): a crew on its way home, about 7 to 10 s before the area.
+const NEAR_HOME = Object.freeze({ nearEndM: 10 });
+const SCIENCE_DONE = Object.freeze({ anyOf: Object.freeze([SAMPLE_SECURED, Object.freeze({ stop: FIRST_STOP, forSec: 90 }), NEAR_HOME]) });
 
 /**
- * The first mission's event schedule (SIM, our choice for #265). At 1.0 m/s the sortie stop is about 55 s from the
- * airlock (stops.json route_stops), so a player who walks straight there has about 20 s at the stop before the storm
- * at T+75 s. The trigger conditions keep that order for faster and slower players:
- * - requires: the stop has been reached at least 20 s ago (route.nextIndex, written by the waypoint runner);
- * - latestSec: a player who never reaches the stop still meets the event at that time;
- * - holdInsideEnd: the event never starts inside its own end area (25 m around the airlock), where it would end within
- *   a second and never play again; it waits until the player is outside;
- * - the radiation alert also waits until the storm has run 15 s, so the two alerts come one after the other.
+ * The first mission's event schedule (SIM, our choice for #265). The sortie stop is about 55 s from the airlock at
+ * 1.0 m/s (stops.json route_stops). The storm waits for the science at the stop, so a presenter is never interrupted
+ * mid-sample, and the radiation alert follows it:
+ * - requires: the crew has reached the stop (within the waypoint runner's arrival radius) and has secured a sample
+ *   3 s ago, or has been at the stop 90 s without one, or is already on its way home (within 10 m of the end area);
+ * - atSec: not before T+45 s, a little under the fastest jog to the stop and back toward the habitat;
+ * - the radiation alert follows the storm by 15 s, or at once when the crew comes within 10 m of the end area first, so
+ *   a crew that heads straight home still meets it before it is back (N14);
+ * - latestSec: a crew that never reaches the stop still meets both events, at T+240 s and T+255 s;
+ * - holdInsideEnd (storm): it does not start within 25 m of the airlock, where it would end at once, until latestSec;
+ * - endMinSec: once started, each event plays at least 20 s before its end area (25 m around the airlock) ends it, so
+ *   a crew that is already home still sees it (N14).
  * timelineScale compresses the event's timeline: the storm ramp from 90 s to 30 s, the 12-minute radiation profile to
  * 1 minute. The values (tau 0.45 to 8.0, RAD dose rates) are unchanged.
  */
@@ -37,25 +50,28 @@ const FIRST_EVENTS = Object.freeze({
   'dust-storm': Object.freeze({
     trigger: Object.freeze({
       type: 'missionTime',
-      atSec: 75,
-      requires: Object.freeze([Object.freeze({ ...FIRST_STOP_REACHED, forSec: 20 })]),
-      latestSec: 180,
+      atSec: 45,
+      requires: Object.freeze([AT_STOP, SCIENCE_DONE]),
+      latestSec: 240,
       holdInsideEnd: true,
     }),
     timelineScale: 1 / 3,
+    endMinSec: 20,
   }),
   radiation: Object.freeze({
     trigger: Object.freeze({
       type: 'missionTime',
-      atSec: 95,
+      atSec: 45,
       requires: Object.freeze([
-        Object.freeze({ ...FIRST_STOP_REACHED, forSec: 20 }),
-        Object.freeze({ event: 'dust-storm', afterSec: 15 }),
+        AT_STOP,
+        SCIENCE_DONE,
+        Object.freeze({ event: 'dust-storm', afterSec: 0 }),
+        Object.freeze({ anyOf: Object.freeze([Object.freeze({ event: 'dust-storm', afterSec: 15 }), NEAR_HOME]) }),
       ]),
-      latestSec: 210,
-      holdInsideEnd: true,
+      latestSec: 255,
     }),
     timelineScale: 1 / 12,
+    endMinSec: 20,
   }),
 });
 
@@ -72,6 +88,8 @@ const FULL_EVENTS = Object.freeze({
 const FIRST_BEATS = Object.freeze([
   Object.freeze({ id: 'plan', text: 'mission.beat.plan' }),
   Object.freeze({ id: 'walk', text: 'mission.beat.walk' }),
+  // at the science stop until a sample is secured: what to do there (P3)
+  Object.freeze({ id: 'stop', text: 'mission.beat.stop', stop: FIRST_STOP }),
   Object.freeze({ id: 'dust-storm', text: 'mission.beat.storm', event: 'dust-storm' }),
   Object.freeze({ id: 'radiation', text: 'mission.beat.radiation', event: 'radiation' }),
   Object.freeze({ id: 'debrief', text: 'mission.beat.debrief' }),
@@ -111,7 +129,7 @@ export function eventTrigger(objective, eventId) {
 }
 
 /**
- * The earliest mission time (s) the event can start in this objective's mission: 75 / 95 s in the first mission (later
+ * The earliest mission time (s) the event can start in this objective's mission: 45 s in the first mission (later
  * when its conditions hold later), 480 / 720 s in the full EVA. null when the mission does not schedule the event.
  * @param {string} objective
  * @param {string} eventId
@@ -122,6 +140,61 @@ export function eventStartSec(objective, eventId) {
   return trigger?.type === 'missionTime' ? trigger.atSec : null;
 }
 
+/**
+ * What the mission table can say about when an event starts (N5), read from the trigger data:
+ * - earliestSec: not before this mission time (null for an event the mission does not schedule);
+ * - latestSec: by this mission time at the latest, or null;
+ * - afterStop: `{ stop, afterSampleSec, orAtStopSec }` when the event waits for the science at a stop: a sample
+ *   secured there `afterSampleSec` ago, or `orAtStopSec` at the stop without one; null otherwise;
+ * - afterEvent: `{ event, afterSec }` when it follows another event, or null;
+ * - orNearHomeM: it starts sooner when the crew comes within this many metres of its end area on the way home, or null;
+ * - holdsOutsideEnd: it waits until the crew is out of its end area (until latestSec);
+ * - minDurationSec: once started it plays at least this long, or null.
+ * The full EVA gives `{ earliestSec: 480 | 720, latestSec: null, afterStop: null, afterEvent: null, ... }`.
+ * @param {string} objective
+ * @param {string} eventId
+ */
+export function eventTiming(objective, eventId) {
+  const scheduled = missionForObjective(objective).events[eventId];
+  if (!scheduled) return null;
+  const { trigger } = scheduled;
+  const requires = trigger.requires ?? [];
+  const stop = requires.find((r) => r.stop !== undefined && !r.forSec)?.stop ?? null;
+  const anyOf = requires.filter((r) => Array.isArray(r.anyOf)).flatMap((r) => r.anyOf);
+  const sample = anyOf.find((r) => r.path === 'sampling.count');
+  const atStop = anyOf.find((r) => r.stop !== undefined);
+  const near = anyOf.find((r) => r.nearEndM !== undefined);
+  const after = [...requires, ...anyOf].filter((r) => r.event !== undefined).sort((a, b) => b.afterSec - a.afterSec)[0];
+  return {
+    earliestSec: trigger.type === 'missionTime' ? trigger.atSec : null,
+    latestSec: trigger.latestSec ?? null,
+    afterStop: stop ? { stop, afterSampleSec: sample ? sample.forSec ?? 0 : null, orAtStopSec: atStop ? atStop.forSec ?? 0 : null } : null,
+    afterEvent: after ? { event: after.event, afterSec: after.afterSec } : null,
+    orNearHomeM: near ? near.nearEndM : null,
+    holdsOutsideEnd: trigger.holdInsideEnd === true,
+    minDurationSec: scheduled.endMinSec ?? null,
+  };
+}
+
+/** Whether a requirement, or one inside its anyOf, names a stop that `stops` does not place. */
+const missesStop = (requirement, stops) => (requirement.stop !== undefined && !stops?.[requirement.stop])
+  || (Array.isArray(requirement.anyOf) && requirement.anyOf.some((inner) => missesStop(inner, stops)));
+
+/**
+ * Turn the `{ stop, forSec }` requirements into place requirements around the planned stop. A requirement that names
+ * a stop not on the route is left out whole (the event then keeps its time and its latest time).
+ */
+function resolveRequirements(requires, stops) {
+  return requires.filter((requirement) => !missesStop(requirement, stops)).map((requirement) => {
+    if (requirement.stop !== undefined) {
+      const place = stops[requirement.stop];
+      return { area: { x: place.x, z: place.z, radius: place.radius }, ...(requirement.forSec ? { forSec: requirement.forSec } : {}) };
+    }
+    if (Array.isArray(requirement.anyOf)) return { anyOf: resolveRequirements(requirement.anyOf, stops) };
+    return requirement;
+  });
+}
+
 function scaleTimeline(timeline, scale) {
   if (scale === 1) return timeline;
   return timeline.map((entry) => ({ ...entry, atSec: Math.round(entry.atSec * scale * 100) / 100 }));
@@ -129,20 +202,27 @@ function scaleTimeline(timeline, scale) {
 
 /**
  * The event definitions for this objective's mission: each definition the mission schedules gets the mission's trigger
- * and its compressed timeline; the others (low oxygen) are returned as they are. The input is not changed.
+ * (its stop requirements placed on `stops`), its compressed timeline and its minimum duration; the others (low oxygen)
+ * are returned as they are. The input is not changed.
  * @param {string} objective
  * @param {Array<object>} definitions parsed event files
+ * @param {{ stops?: Record<string, { x: number, z: number, radius: number }> }} [options] where each planned stop is,
+ *   by stops.json id, and how close counts as reached (the event runner passes the route locked at Begin EVA). Without
+ *   it the stop requirements are left out: the event keeps its time and its latest time.
  * @returns {Array<object>}
  */
-export function missionEventDefinitions(objective, definitions) {
+export function missionEventDefinitions(objective, definitions, { stops = null } = {}) {
   const mission = missionForObjective(objective);
   return definitions.map((definition) => {
     const scheduled = mission.events[definition.id];
     if (!scheduled) return definition;
+    const { requires, ...trigger } = scheduled.trigger;
+    const resolved = requires ? resolveRequirements(requires, stops) : [];
     return {
       ...definition,
-      trigger: scheduled.trigger,
+      trigger: resolved.length > 0 ? { ...trigger, requires: resolved } : trigger,
       timeline: scaleTimeline(definition.timeline ?? [], scheduled.timelineScale ?? 1),
+      ...(scheduled.endMinSec && definition.end ? { end: { ...definition.end, minSec: scheduled.endMinSec } } : {}),
     };
   });
 }
@@ -150,14 +230,16 @@ export function missionEventDefinitions(objective, definitions) {
 /**
  * The beat line to show now, or null. Pure: the caller passes what it reads from the store.
  * - at the mission table before Begin EVA: 'plan';
- * - in Walk: the radiation beat while its alert is active, else the storm beat while its alert is active, else the walk
- *   beat until the first event has started;
+ * - in Walk: the radiation beat while its alert is active, else the storm beat while its alert is active; before the
+ *   first event, the stop beat at the science stop until a sample is secured (`atStop`, `samples`), nothing once it is,
+ *   and the walk beat otherwise;
  * - the debrief beat is not returned here: the debrief shows the recap of every beat.
  * @param {ReturnType<typeof missionForObjective>} mission
- * @param {{ mode: 'plan' | 'walk', evaBegun: boolean, alerts?: object, events?: Array<{ type: string, eventId: string }> }} state
- * @returns {{ id: string, text: string, event?: string } | null}
+ * @param {{ mode: 'plan' | 'walk', evaBegun: boolean, alerts?: object, events?: Array<{ type: string, eventId: string }>,
+ *   atStop?: boolean, samples?: number }} state
+ * @returns {{ id: string, text: string, event?: string, stop?: string } | null}
  */
-export function currentBeat(mission, { mode, evaBegun, alerts = {}, events = [] }) {
+export function currentBeat(mission, { mode, evaBegun, alerts = {}, events = [], atStop = false, samples = 0 }) {
   const beat = (id) => mission.beats.find((entry) => entry.id === id) ?? null;
   if (!evaBegun) return mode === 'plan' ? beat('plan') : null;
   if (mode !== 'walk') return null;
@@ -167,6 +249,9 @@ export function currentBeat(mission, { mode, evaBegun, alerts = {}, events = [] 
   }
   const scheduled = Object.keys(mission.events);
   if (events.some((entry) => entry.type === 'start' && scheduled.includes(entry.eventId))) return null;
+  const stop = beat('stop');
+  if (stop && samples >= 1) return null;
+  if (stop && atStop) return stop;
   return beat('walk');
 }
 
@@ -180,11 +265,11 @@ export const missionSourcePath = (missionId, eventId) => `missions.${missionId}.
 export const MISSION_SOURCES = Object.freeze({
   [missionSourcePath('first', 'dust-storm')]: Object.freeze({
     tag: 'SIM', label: 'First mission timing', short: 'SIM · first mission',
-    source: 'first mission: the storm starts at T+75 s, once the crew has been at the sortie stop 20 s (by T+180 s at the latest), never within 25 m of the airlock; ramp compressed from 90 s to 30 s. Tau values from hazards.json',
+    source: 'first mission: the storm starts once the crew has secured a sample at the sortie stop (or spent 90 s there, or turned home), not before T+45 s and by T+240 s at the latest, outside 25 m of the airlock; ramp compressed from 90 s to 30 s; plays at least 20 s. Tau values from hazards.json',
   }),
   [missionSourcePath('first', 'radiation')]: Object.freeze({
     tag: 'SIM', label: 'First mission timing', short: 'SIM · first mission',
-    source: 'first mission: the radiation alert starts at T+95 s, 15 s after the storm and 20 s after the sortie stop (by T+210 s at the latest), never within 25 m of the airlock; the 12-minute RAD profile compressed to 1 minute. Dose rates from hazards.json (RAD, Gale)',
+    source: 'first mission: the radiation alert starts 15 s after the storm, or sooner when the crew nears the habitat (by T+255 s at the latest); the 12-minute RAD profile compressed to 1 minute; plays at least 20 s. Dose rates from hazards.json (RAD, Gale)',
   }),
   [missionSourcePath('full', 'dust-storm')]: Object.freeze({
     tag: 'SIM', label: 'Scripted event time', short: 'SIM · scripted',
