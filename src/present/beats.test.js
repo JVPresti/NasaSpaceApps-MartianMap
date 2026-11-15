@@ -155,13 +155,13 @@ describe('the presentation story', () => {
   it('lists every source the presentation shows, each line tagged', () => {
     const list = BEATS.find((b) => b.id === 'credits').list;
     const text = list.lines.map((l) => l.en).join('\n');
-    for (const name of ['Viking MDIM 2.1', 'THEMIS day IR', 'CTX', 'JEZ_hirise_soc_006', 'Mars Trek', 'RAD', 'τ 8', 'xEVA', 'Apollo 17']) expect(text).toContain(name);
+    for (const name of ['Viking MDIM 2.1', 'THEMIS day IR', 'CTX', 'JEZ_hirise_soc_006', 'Mars Trek', 'RAD', 'DONKI', 'τ 8', '3 km', 'MEDA', 'suited walking tests', 'xEVA', 'Apollo 17']) expect(text).toContain(name);
     for (const l of list.lines) { expect(TAGS.has(l.tag), l.en).toBe(true); expect(l.es, l.en).toBeTruthy(); }
   });
 
   it('names the six team members and no email', () => {
     const note = BEATS.find((b) => b.id === 'credits').list.note;
-    expect(note.split(' · ')).toHaveLength(6);
+    expect(note.split(' · ')).toEqual(['Teresa Rivas Gómez', 'Andrea Rivas Gómez', 'Fernando Haro Calvo', 'Jorge Antonio Vazquez Guzmán', 'Antonio Ramos Gonzalez', 'Brayan Iván Pérez Ventura']);
     expect(note).not.toMatch(/@/);
   });
 
