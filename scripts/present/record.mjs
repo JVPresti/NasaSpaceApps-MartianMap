@@ -5,6 +5,7 @@
 //   QA_GPU=1 node scripts/present/record.mjs --seq global30 --out present-global30.mp4
 //   QA_GPU=1 node scripts/present/record.mjs --lang es --size 1366x768
 //   QA_GPU=1 node scripts/present/record.mjs --filmstrip 30 --beat zone   # every 30th frame as a contact sheet
+//   QA_GPU=1 node scripts/present/record.mjs --measure [--tier low]        # live autoplay, frame rate per beat
 //
 // The page runs with ?present=1&record=1: every step advances exactly 1/60 s, and this script saves one frame per step,
 // so the video is smooth whatever the capture speed. Frames go straight into an ffmpeg with libx264 (FFMPEG, the system
@@ -31,6 +32,7 @@ const TIER = opt('tier', '');
 const FRAMES_DIR = opt('frames', '');
 const MAX_FRAMES = Number(opt('max-frames', 0));
 const GPU = process.env.QA_GPU === '1';
+const MEASURE = args.includes('--measure');
 
 function chromePath() {
   if (process.env.CHROME) return process.env.CHROME;
@@ -71,13 +73,49 @@ async function launch() {
   return puppeteer.launch({ executablePath: chromePath(), headless: true, defaultViewport: { width: W, height: H }, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--hide-scrollbars'] });
 }
 
-const browser = await launch();
-try {
-  const page = await browser.newPage();
-  page.on('console', (m) => { if (m.type() === 'error') console.error('page:', m.text()); });
-  page.on('pageerror', (e) => console.error('page error:', e.message));
+const SPLIT = opt('split', '');   // record in two browser sessions, the second starting at this beat, and join them
+
+async function withPage(fn) {
+  const browser = await launch();
+  try {
+    const page = await browser.newPage();
+    page.on('console', (m) => { if (m.type() === 'error') console.error('page:', m.text()); });
+    page.on('pageerror', (e) => console.error('page error:', e.message));
+    return await fn(page, browser);
+  } finally {
+    await browser.close();
+  }
+}
+
+async function measure(page) {
+  // Live: real time, the page's own loop. Count frames per beat with requestAnimationFrame.
+  const mq = new URLSearchParams({ present: '1', autoplay: '1', seq: SEQ, lang: LANG });
+  if (TIER) mq.set('tier', TIER);
+  await page.goto(URL_BASE + '?' + mq, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.waitForSelector('.pr-progress', { timeout: 120000 });
+  const result = await page.evaluate(() => new Promise((resolve) => {
+    const per = {}; let last = performance.now(), worst = {};
+    const beatNow = () => [...document.querySelectorAll('.pr-progress span')].findIndex((e) => e.className === 'on');
+    const stopAt = performance.now() + 200000;
+    function tick(now) {
+      const b = beatNow(), dt = now - last; last = now;
+      (per[b] ||= []).push(dt); worst[b] = Math.max(worst[b] || 0, dt);
+      const spans = document.querySelectorAll('.pr-progress span:not(.pr-lang)');
+      if (now > stopAt || (b === spans.length - 1 && per[b].length > 400)) {
+        resolve(Object.entries(per).map(([k, v]) => ({ beat: Number(k), fps: Math.round(1000 * v.length / v.reduce((a, x) => a + x, 0)), worstMs: Math.round(worst[k]), frames: v.length })));
+        return;
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }));
+  console.table(result);
+}
+
+/** Record from beat `from` ('' for the start) until beat `stopAt` begins ('' for the end) into `out`. */
+async function recordRange(page, { from, stopAt, out }) {
   const q = new URLSearchParams({ present: '1', record: '1', autoplay: '1', seq: SEQ, lang: LANG });
-  if (BEAT) q.set('beat', BEAT);
+  if (from) q.set('beat', from);
   if (TIER) q.set('tier', TIER);
   await page.goto(URL_BASE + '?' + q, { waitUntil: 'domcontentloaded', timeout: 120000 });
   const renderer = await page.evaluate(() => {
@@ -98,9 +136,9 @@ try {
 
   let ff = null;
   if (!FILMSTRIP) {
-    mkdirSync(dirname(OUT), { recursive: true });
+    mkdirSync(dirname(out), { recursive: true });
     ff = spawn(ffmpegPath(), ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', '60', '-c:v', 'mjpeg', '-i', '-',
-      '-vf', 'scale=in_range=pc:out_range=tv,format=yuv420p', '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-color_range', 'tv', '-movflags', '+faststart', OUT], { stdio: ['pipe', 'inherit', 'inherit'] });
+      '-vf', 'scale=in_range=pc:out_range=tv,format=yuv420p', '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-color_range', 'tv', '-movflags', '+faststart', out], { stdio: ['pipe', 'inherit', 'inherit'] });
   }
   const stripDir = FILMSTRIP ? resolve(opt('strip-dir', 'present-filmstrip')) : null;
   if (stripDir) mkdirSync(stripDir, { recursive: true });
@@ -110,6 +148,7 @@ try {
   const t0 = Date.now();
   for (let f = 0; f < limit; f++) {
     const s = await page.evaluate(() => window.__present.step());
+    if (stopAt && s.beat === stopAt) break;   // the next segment starts here, in a fresh browser
     if (s.beat !== lastBeat) { captions.push({ beat: s.beat, frame: f }); lastBeat = s.beat; }
     if (FILMSTRIP) {
       if (f % FILMSTRIP === 0) writeFileSync(join(stripDir, `f${String(f).padStart(5, '0')}.jpg`), await shoot());
@@ -124,10 +163,24 @@ try {
   if (ff) {
     ff.stdin.end();
     await new Promise((r) => ff.on('close', r));
-    console.log('wrote', OUT);
+    console.log('wrote', out);
   }
-  writeFileSync(OUT.replace(/\.mp4$/, '.beats.json'), JSON.stringify({ seq: SEQ, lang: LANG, fps: 60, beats: captions }, null, 2) + '\n');
+  writeFileSync(out.replace(/\.mp4$/, '.beats.json'), JSON.stringify({ seq: SEQ, lang: LANG, fps: 60, beats: captions }, null, 2) + '\n');
   if (FILMSTRIP) console.log('frames in', stripDir);
-} finally {
-  await browser.close();
+}
+
+if (MEASURE) {
+  await withPage(measure);
+} else if (SPLIT && !FILMSTRIP) {
+  // A long capture can lose the browser (seen at about 4,000 frames on WSLg), so long videos record in two sessions.
+  const parts = [OUT.replace(/\.mp4$/, '.part1.mp4'), OUT.replace(/\.mp4$/, '.part2.mp4')];
+  await withPage((page) => recordRange(page, { from: BEAT, stopAt: SPLIT, out: parts[0] }));
+  await withPage((page) => recordRange(page, { from: SPLIT, stopAt: '', out: parts[1] }));
+  const list = OUT.replace(/\.mp4$/, '.parts.txt');
+  writeFileSync(list, parts.map((p) => `file '${p}'`).join('\n') + '\n');
+  const r = spawnSync(ffmpegPath(), ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-movflags', '+faststart', OUT], { stdio: 'inherit' });
+  if (r.status !== 0) throw new Error('ffmpeg concat failed');
+  console.log('joined', OUT);
+} else {
+  await withPage((page) => recordRange(page, { from: BEAT, stopAt: '', out: OUT }));
 }

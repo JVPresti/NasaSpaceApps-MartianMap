@@ -167,10 +167,20 @@ export default function Present({ engine, onExit }) {
       startBeat(timeline.index, true);
     }
 
+    function endShot(b) {
+      const sh = beatShot(b, plan, groundAt(), reduced);
+      if (sh.spin) sh.lon += sh.spin * b.duration;
+      if (b.drift && !reduced) sh.yaw += (b.drift.yaw || 0) * Math.max(0, b.duration - (b.move?.dur ?? 0));
+      sh.spin = 0;
+      return sh;
+    }
+
     function startBeat(i, keepFrom = false) {
       const beat = beats[i];
       const prev = beats[Math.max(0, timeline.previous)];
-      if (!keepFrom || !current) fromShot = current ? { ...current } : beatShot(i > 0 ? prev : beat, plan, groundAt(), reduced);
+      // Starting cold (?beat=, a recording segment): come from where the previous beat ended, spin and drift included,
+      // so two segments recorded apart join without a jump.
+      if (!keepFrom || !current) fromShot = current ? { ...current } : (i > 0 ? endShot(prev) : beatShot(beat, plan, groundAt(), reduced));
       toShot = beatShot(beat, plan, groundAt(), reduced);
       const eng = engineRef.current;
       if (cine && eng) {
