@@ -10,6 +10,7 @@ import { useShortcuts } from './components/useShortcuts.js';
 import DebriefScreen from './debrief/DebriefScreen.jsx';
 import EventBanner from './events/EventBanner.jsx';
 import EventDebug from './events/EventDebug.jsx';
+import Finds from './finds/Finds.jsx';
 import Hud from './hud/Hud.jsx';
 import MissionClock from './plan/MissionClock.jsx';
 import PlanMode from './plan/PlanMode.jsx';
@@ -378,6 +379,7 @@ export default function App() {
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={translateText(SITE)} onRetry={handleRetry} onGone={handleGone} />
 
       {load.status === 'ready' && mode === 'walk' && <Hud engine={engine} minimapRoute={minimapRoute} />}
+      {load.status === 'ready' && <Finds engine={engine} mode={mode} />}
 
       {load.status === 'ready' && <WalkStopCard active={mode === 'walk'} />}
 

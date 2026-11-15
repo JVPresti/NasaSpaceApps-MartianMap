@@ -25,6 +25,7 @@ function relevantState(s) {
     partnerX: s.crew?.[0]?.x,
     partnerZ: s.crew?.[0]?.z,
     partnerLink: s.crew?.[0]?.link,
+    finds: s.finds?.list,
   };
 }
 
@@ -38,7 +39,8 @@ function changed(prev, next) {
     || prev.zones !== next.zones
     || prev.partnerX !== next.partnerX
     || prev.partnerZ !== next.partnerZ
-    || prev.partnerLink !== next.partnerLink;
+    || prev.partnerLink !== next.partnerLink
+    || prev.finds !== next.finds;
 }
 
 export default function Minimap({ tracker }) {
@@ -88,6 +90,7 @@ export default function Minimap({ tracker }) {
         shelters,
         zones: state.hazards?.zones,
         partner: state.crew?.[0] ?? null,
+        finds: state.finds?.list,
       });
     }
 

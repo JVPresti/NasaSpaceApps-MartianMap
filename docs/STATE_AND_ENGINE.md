@@ -310,3 +310,12 @@ Tests: `src/hud/minimapGeometry.test.js` (tile UV with the five real waypoints, 
 
 - **Store to engine:** `mode`, `view.layer`, `view.sky`, `view.skyBlend`, `view.slopeGrid`, `route.path`, `route.shelter` and `environment.dustOpacity` (as the dust level), each when it changes.
 - **Engine to store:** `navigation.x`, `z` and `headingDeg` every 200 ms, skipped while the player stands still. This is the true position until the navigation model (#42) writes the estimate instead; after that, move this write into the navigation module.
+
+## Unexpected finds (#71)
+
+Plan section 3.4, scenario 3. In Walk, holding Q for 2 s while the centre of the view is on ground within 50 m drops a find marker there. The right arm takes the `point` pose of the first-person arms while Q is down. A card prices the detour, Y adds the find to the route and N or Esc dismisses it.
+
+- **Store:** `finds` holds `list` (at most 3: one undecided plus accepted finds not reached yet), `seq` for the M01, M02 labels, `activeId` (the find the card shows) and `routeKey`. Actions live in `src/state/finds.js`.
+- **Price:** `priceDetour(grid, request)` in `src/sim/findDetour.js`, run in the planner worker (`{ type: 'detour' }`, `client.detour(request)`). It plans the find into each of the two cheapest insertion points of the remaining route, keeps the cheaper one and returns the extra time, O2 and distance, the walkback margin before and after, and `verdict` `go`, `no-go` or `unknown`. No-go means the find is on ground over 20°, no path reaches it, or the margin after reaches the 0 min warning line.
+- **Accept:** the find becomes an ordinary waypoint (`{ name: 'M01 · find', x, z, find: 'M01' }`) inserted at the priced index, and the planner re-plans the whole route from the habitat through `applyPlannedRoute`. `nextIndex` and `visited` stay as they were. `finds.routeKey` tells the Plan planner that these waypoints already have a route, so opening Plan does not start the walk over.
+- **Engine:** `engine.setFinds(list)` draws the markers in Walk and Plan, `engine.aimGround(maxM)` returns where the view meets the terrain, and `engine.setPointing(on)` raises or lowers the arm. All three live in `src/engine/finds.js`.
