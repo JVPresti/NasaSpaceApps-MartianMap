@@ -6,6 +6,7 @@ import { connectSampling } from '../state/sampling.js';
 import { connectSlopeGridKey } from '../state/slopeGrid.js';
 import { connectHabitatScreens } from '../state/habitatScreens.js';
 import { startSimulation } from '../state/simulation.js';
+import { startCrewmate } from '../state/crewmate.js';
 import { connectWrist } from '../screens/wrist/controller.js';
 import { connectAudio } from '../audio/connectAudio.js';
 import { connectEvaEnd } from '../state/evaEnd.js';
@@ -45,6 +46,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
     let live = true;
     let disconnect = null, stopSimulation = null, disconnectSampling = null, disconnectSlopeGridKey = null, disconnectWrist = null, disconnectHabitatScreens = null, disconnectAudio = null, disconnectEvaEnd = null;
     const mock = new URLSearchParams(window.location.search).get('mock') === '1';
+    let crewmate = null;   // EV2, the crewmate (#288): one per engine, it outlives a restart
     const current = () => live && (engine === undefined || engineRef.current === engine);
 
     const stopCurrentSimulation = () => {
@@ -89,6 +91,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
         disconnectSampling = connectSampling(engine);   // checklist, sample count and the sampling prompt (#36)
         disconnectSlopeGridKey = connectSlopeGridKey();   // G: slope grid on the ground in Walk mode (#50)
         disconnectWrist = connectWrist(engine);   // wrist screen app (#67)
+        if (!mock) crewmate = startCrewmate(engine);   // EV2 walks with the player; ?mock=1 keeps the scripted partner (#288)
         disconnectHabitatScreens = connectHabitatScreens(engine);   // the habitat's wall screens and planning table (#47)
         disconnectAudio = connectAudio(engine);   // suit audio (#72): starts on the first click or key press
         disconnectEvaEnd = connectEvaEnd(engine);   // X ends the EVA back in the habitat, prompt over the table (#244)
@@ -114,6 +117,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
       if (disconnect) disconnect();
       if (disconnectSampling) disconnectSampling();
       if (disconnectSlopeGridKey) disconnectSlopeGridKey();
+      if (crewmate) crewmate.stop();
       if (disconnectWrist) disconnectWrist();
       if (disconnectHabitatScreens) disconnectHabitatScreens();
       if (disconnectAudio) disconnectAudio();

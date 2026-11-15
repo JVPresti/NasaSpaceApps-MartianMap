@@ -12,6 +12,7 @@ import { crewCss } from './crewColor.js';
 import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import { batteryLevel, formatValue } from './format.js';
 import * as I from './icons.jsx';
+import CrewmateRadio from './CrewmateRadio.jsx';
 import './partner.css';
 import { useRef } from 'react';
 import { usePoseFrame } from './livePose.js';
@@ -105,6 +106,7 @@ export default function PartnerPanel() {
         {!p.link && <span className="hud-partner-last" title={t('menu.last.known.position.age', { age: lastSeen })}>{t('menu.last')}</span>}
         {!open && p.link && <kbd className="hud-partner-key" title={t('menu.press.t.for.partner.detail')}>{t('menu.t')}</kbd>}
       </div>
+      <CrewmateRadio />
       {open && (
         <div className="hud-panel hud-partner-detail">
           {!p.link && <div className="hud-partner-nolink">{t('menu.no.link.last.contact')}{lastSeen}<SourceTag path="crew.0.link" /></div>}
