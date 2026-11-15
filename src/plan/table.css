@@ -925,3 +925,63 @@ button.table-stop-name {
 }
 .table-hazard-cards > li:nth-child(3) .table-hazard-art { object-position: center 45%; }
 .table-hazard-cards > li:nth-child(-n+2) .table-hazard-art { object-position: center 80%; }   /* the astronauts stand low in these two */
+
+/* Perseverance on the map (#249): the rover's drives as a thin white line under the route, the key in the lower
+   right corner, and a camera pin offset from the place the rover stood, with a leader back to it. */
+.map-traverse-layer { pointer-events: none; }
+.map-traverse,
+.map-traverse-casing { fill: none; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.map-traverse { stroke: #f4f1ea; stroke-width: 1.4px; opacity: 0.85; }
+.map-traverse-casing { stroke: #0a0d11; stroke-width: 3px; opacity: 0.35; }
+
+.map-traverse-key {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 5px 9px;
+  font-size: 12px;
+  color: #e3e7eb;
+  background: rgba(10, 13, 17, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  cursor: default;
+}
+.map-traverse-key > i { width: 18px; height: 0; border-top: 2px solid #f4f1ea; }
+
+.map-photos { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; pointer-events: none; }
+.map-photo { position: absolute; width: 0; height: 0; }
+.map-photo-dot { position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; background: #f4f1ea; border: 1px solid #0a0d11; border-radius: 50%; }
+/* leader from the point down and left to the pin: 30 px long at 143 degrees */
+.map-photo-lead { position: absolute; left: 0; top: 0; width: 30px; height: 0; border-top: 1px solid rgba(244, 241, 234, 0.85); transform: rotate(143deg); transform-origin: 0 0; }
+.map-photo-hit {
+  position: absolute;
+  left: -24px;
+  top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  font: 600 12px/1 var(--font-ui);
+  color: #0a0d11;
+  background: #f4f1ea;
+  border: 1px solid #0a0d11;
+  transform: translateX(-100%);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.map-photo-hit svg { width: 16px; height: 13px; fill: none; stroke: #0a0d11; stroke-width: 1.6; stroke-linejoin: round; }
+.map-photo-hit:hover,
+.map-photo-hit[aria-expanded='true'] { background: #ffffff; outline: 2px solid var(--cyan); }
+.map-photo-hit:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.map-photo-pop { width: 330px; }
+.map-photo-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.map-photo-list li { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; align-items: start; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 10px; }
+.map-photo-list img { display: block; width: 96px; height: 72px; object-fit: cover; border: 1px solid rgba(255, 255, 255, 0.2); }
+.map-photo-list a:hover img, .map-photo-list a:focus-visible img { border-color: var(--cyan); }
+.map-photo-list p { margin: 0 0 4px; font-size: 12px; line-height: 1.35; color: var(--ink); }
+.map-photo-list small { display: block; font-size: 11px; line-height: 1.35; color: var(--dim); }
+.map-photo-source { display: flex; align-items: center; gap: 6px; margin: 10px 0 0; font-size: 11px; color: var(--dim); }

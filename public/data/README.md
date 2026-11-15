@@ -10,6 +10,7 @@ Research notes for `hazards.json` (what was checked, what could not be confirmed
 | `shelters.json` | The habitat and natural safe points with their sky view and dose reduction, built by `npm run shelters`. Method in `docs/route/shelters.md` | #40 |
 | `meda_sol.json`, `rad.json` | One MEDA sol (sol 1187 at Cheyava Falls, wind from sol 312) in one-minute bins, and the RAD background plus the September 2017 event curve. Built by `npm run meda` and `npm run rad`. Loader: `src/data/medaRad.js`. Notes in `docs/data/meda-rad-notes.md` | #31 |
 | `stops.json` | The Bright Angel and Cheyava Falls science stops: text, Perseverance images in `images/`, sampling checklist. Loader: `src/data/stops.js` | #37 |
+| `traverse.json` | Perseverance's drives across the tile (sols 1140 to 1266) from the Mars 2020 MMGIS layers, clipped and in the engine frame, plus where the rover stood for each image in `stops.json`. Built by `npm run traverse`. Loader: `src/data/traverse.js` | #249 |
 
 ## Tags
 

@@ -75,6 +75,12 @@
   border-top: 2px dashed var(--caution);
 }
 
+.hud-map-key-traverse {
+  width: 1.35em;
+  height: 0;
+  border-top: 2px solid rgba(244, 241, 234, 0.85);
+}
+
 .hud-map-key-wp {
   width: 1.15em;
   height: 1.15em;

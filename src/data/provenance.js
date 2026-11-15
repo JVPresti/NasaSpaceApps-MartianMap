@@ -159,6 +159,15 @@ export const STORE_PATHS = Object.freeze({
     caption: 'September 2017 solar particle event · RAD · Curiosity · Gale crater, not Jezero',
     from: { hazards: ['model:sep_2017_profile'] },
   },
+  // Perseverance on the maps (#249): public/data/traverse.json, built by scripts/build-traverse.mjs. Not a store value;
+  // the mission table map and the minimap read the file and show this entry's tag.
+  'map.traverse': {
+    tag: 'DATA', label: 'Mars 2020 · rover traverse', short: 'Mars 2020 · traverse',
+    source: 'Perseverance drives and localizations from the NASA Where is the rover map (MMGIS), clipped to the tile; photo pins at the rover position on the image sol',
+    site: 'Neretva Vallis, Jezero crater',
+    solOrDate: 'sols 1140 to 1266',
+    from: { credits: 'm2020-rover-waypoint' },
+  },
 });
 
 const FIELDS = ['tag', 'label', 'short', 'source', 'caption', 'mission', 'instrument', 'site', 'solOrDate', 'reference', 'link', 'dataLink', 'note'];

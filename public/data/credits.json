@@ -197,7 +197,7 @@
     },
     {
       "id": "m2020-rover-waypoint",
-      "name": "Mars 2020 rover waypoints, sol 1210 at Cheyava Falls (MMGIS M20_waypoints)",
+      "name": "Mars 2020 rover traverse and waypoints, sols 1140 to 1266 across the tile (MMGIS M20_traverse, M20_waypoints)",
       "kind": "terrain_imagery",
       "provider": "NASA/JPL, Where is the rover map",
       "mission": "Mars 2020",
@@ -210,10 +210,14 @@
       "source_urls": [
         "https://mars.nasa.gov/mars2020/mission/where-is-the-rover/"
       ],
-      "data_urls": [],
+      "data_urls": [
+        "https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_traverse.json"
+      ],
       "used_in": [
         "Origin of the terrain tile and the Cheyava Falls stop (blender/data/jezero_cheyava_meta.json)",
-        "public/data/stops.json: stops[cheyava-falls].position"
+        "Perseverance drives and photo pins on the mission table map and the minimap (public/data/traverse.json)",
+        "public/data/stops.json: stops[cheyava-falls].position",
+        "public/data/traverse.json"
       ],
       "origin": "provenance"
     },
@@ -360,7 +364,7 @@
         "https://atmos.nmsu.edu/PDS/data/PDS4/Mars2020/mars2020_meda/data_derived_env/sol_1140_1259/sol_1187/WE__1187___________DER_RHS_________________P01.CSV"
       ],
       "used_in": [
-        "public/data/meda_sol.json: ",
+        "public/data/meda_sol.json",
         "public/data/meda_sol.json: series[sol_0312_wind].channels.wind_direction",
         "public/data/meda_sol.json: series[sol_0312_wind].channels.wind_speed",
         "public/data/meda_sol.json: series[sol_1187].channels.air_temperature",

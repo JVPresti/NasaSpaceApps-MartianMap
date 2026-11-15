@@ -740,5 +740,14 @@
   "wrist.map.missing": "Imagen HiRISE no disponible",
   "wrist.map.north": "N ↑",
   "wrist.map.source": "HiRISE · DATA",
-  "wrist.map.error": "±{error} m · SIM"
+  "wrist.map.error": "±{error} m · SIM",
+  "traverse.key": "Recorrido de Perseverance, soles {from} a {to}",
+  "traverse.minimap": "Huella del rover",
+  "traverse.photos.open": "Fotos de Perseverance tomadas aquí ({count}): abrir",
+  "traverse.photos.title": "Fotos de Perseverance",
+  "traverse.photos.where": "Dónde estaba el rover para estas imágenes",
+  "traverse.photos.rover": "rover aquí el sol {sol} ({rmc})",
+  "traverse.photos.full": "Abrir la imagen completa en una pestaña nueva",
+  "traverse.photos.close": "Cerrar",
+  "traverse.photos.source": "Posiciones: localizaciones del rover Mars 2020"
 }

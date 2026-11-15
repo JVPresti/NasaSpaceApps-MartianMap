@@ -5,6 +5,8 @@ import { decodeTerrain } from '../sim/costGrid.js';
 import { waypointNumber } from '../sim/waypointNumber.js';
 import { acrossLabel, clampCrop, mapCrop, paintMap, slopeGrid, toMap, zoomCrop } from './mapLayers.js';
 import { SLOPE_LIMITS } from './layers.js';
+import { PhotoPins, TraverseKey, TraverseLayer } from './MapTraverse.jsx';
+import { useTraverse } from './useTraverse.js';
 
 // Flat map of the mission table (#11). The picture is painted once per layer from the HiRISE image, the outcrop mask
 // and the height grid the 3D terrain uses (terrain.json comes through the shared loader, #217, so it is the copy the
@@ -71,6 +73,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const canvasRef = useRef(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const traverse = useTraverse();   // Perseverance's drives and photo pins (#249)
 
   useEffect(() => {
     let cancelled = false;
@@ -149,10 +152,13 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
       onContextMenu={(event) => event.preventDefault()}
     >
       <canvas ref={canvasRef} width={PIXELS} height={PIXELS} role="img" aria-label={title} />
+      <TraverseLayer traverse={traverse} crop={crop} />
       <svg className="table-map-marks" viewBox="0 0 100 100" aria-hidden="true">
         {route && line && <polyline points={line} className="map-route-shadow" />}
         {route && line && <polyline points={line} className="map-route" />}
       </svg>
+      {/* Under the stop markers, so a photo pin next to a stop never hides its number (#249). */}
+      <PhotoPins traverse={traverse} crop={crop} />
       {/* Stops as numbered markers with a label, as on the 3D plan map: HTML, so the text stays sharp at any zoom. The
           numbers are the app's one numbering (#220, src/sim/waypointNumber.js): HAB is 0 and WP1 is 1. */}
       <ol className="map-markers">
@@ -211,6 +217,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
         {title}
         <span>{t('map.north.up')} · {acrossLabel(crop.size)}</span>
       </p>
+      <TraverseKey traverse={traverse} />
       {legend}
       {view && (
         <button type="button" className="table-map-fit" onPointerDown={(event) => event.stopPropagation()} onClick={() => setView(null)}>

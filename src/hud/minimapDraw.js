@@ -1,5 +1,5 @@
 import { t, translateText } from '../i18n/index.js';
-// Canvas painter for the helmet minimap (#60). Draws the ortho photo, the route split into walked and
+// Canvas painter for the helmet minimap (#60). Draws the ortho photo, Perseverance's drives (#249), the route split into walked and
 // remaining, waypoints, the habitat, refuges, active hazard zones, the partner (#70), a north ring and a scale bar.
 // No player marker and no uncertainty ring: those belong to #21. No Plan-mode map: that is #14.
 // Plain JavaScript, no React and no three.js.
@@ -23,6 +23,7 @@ const COLORS = {
   hazard: '#ff5a3c',
   shelter: '#8fe9b8',
   habitat: '#9ff5c4',
+  traverse: 'rgba(244, 241, 234, 0.8)',
 };
 
 const font = (px, weight = 600) => `${weight} ${px}px ui-monospace, Consolas, monospace`;
@@ -163,6 +164,30 @@ function drawRoute(g, view, project, radius) {
       dash: [Math.max(4, radius * 0.045), Math.max(3, radius * 0.035)],
     });
   }
+}
+
+/** Perseverance's drives across the tile (#249): a thin pale line under the route, clipped by the map circle. */
+function drawTraverse(g, traverse, project, radius) {
+  const drives = Array.isArray(traverse?.drives) ? traverse.drives : [];
+  if (!drives.length) return;
+  g.beginPath();
+  for (const drive of drives) {
+    drive.path.forEach(([x, z], k) => {
+      const p = project(x, z);
+      if (k === 0) g.moveTo(p.x, p.y);
+      else g.lineTo(p.x, p.y);
+    });
+  }
+  g.lineJoin = 'round';
+  g.lineCap = 'round';
+  g.setLineDash([]);
+  const width = Math.max(1, radius * 0.01);
+  g.lineWidth = width + 1.5;
+  g.strokeStyle = 'rgba(20, 10, 6, 0.45)';
+  g.stroke();
+  g.lineWidth = width;
+  g.strokeStyle = COLORS.traverse;
+  g.stroke();
 }
 
 function drawShelters(g, view, project, radius) {
@@ -312,6 +337,7 @@ function drawScaleBar(g, cx, cy, radius, rangeM) {
  *   shelters?: Array<object>, zones?: Array<object>,
  *   partner?: object|null,   crew[0]: the partner marker (#70)
  *   finds?: Array<object>,   finds.list: marked finds (#71)
+ *   traverse?: { drives: Array<{ path: Array<[number, number]> }> } | null,   Perseverance's drives (#249)
  * }} view
  */
 export function drawMinimap(g, view) {
@@ -348,6 +374,7 @@ export function drawMinimap(g, view) {
   drawShade(g, cx, cy, radius);
   drawRings(g, cx, cy, radius);
   drawHazards(g, view.zones, project, cx, cy, radius, scale);
+  drawTraverse(g, view.traverse, project, radius);
   drawRoute(g, view, project, radius);
   drawShelters(g, view, project, radius);
   drawWaypoints(g, view, project, radius);

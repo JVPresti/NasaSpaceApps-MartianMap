@@ -139,7 +139,7 @@ export function buildCredits() {
     const sourceBlocks = blocks.filter((b) => !isOwnWork(b));
     const pick = sourceBlocks.length ? sourceBlocks : blocks;
     const sourceUrls = uniqueSorted([...(curated.match ?? []), ...blocks.map((b) => b.url)]);
-    const usedIn = uniqueSorted([...(curated.used_in ?? []), ...items.map((i) => `${DATA_DIR}/${i.file}: ${i.path}`)]);
+    const usedIn = uniqueSorted([...(curated.used_in ?? []), ...items.map((i) => (i.path ? `${DATA_DIR}/${i.file}: ${i.path}` : `${DATA_DIR}/${i.file}`))]);   // a file-level block has no path
     const entry = {
       id: curated.id,
       name: curated.name,
