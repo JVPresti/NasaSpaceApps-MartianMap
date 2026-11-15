@@ -177,7 +177,7 @@ Keep the textures as they are for the hackathon. The models are NASA material us
 
 ## Other rules we meet
 
-- **NASA data for a Global Award.** "To be eligible for a Global Award, you must use at least one NASA data or resource." We use eleven NASA datasets and services. They are listed in `docs/SUBMISSION.md`.
+- **NASA data for a Global Award.** "To be eligible for a Global Award, you must use at least one NASA data or resource." We use 13 NASA datasets and services, 3 Photojournal images, 13 NASA documents and 2 NASA 3D models. `docs/SUBMISSION.md` lists them.
 - **No one under 18.** "Project demonstrations and final projects may not include any images, video, audio, or other likeness to persons under 18 years old." The astronauts are 3D models and the start video is generated. Check the demo video before upload: no team member under 18 on camera or voice.
 - **Public links.** Demo and final project links must open "with no logins, permissions, or registrations required". The repository is private today. Make it public, or use the deployed site as the final project link.
 - **Licence.** Original content must be open source. Without a licence, NASA distributes it under Apache 2.0. Every third-party asset needs its licence listed, which `docs/credits.md` already does.
