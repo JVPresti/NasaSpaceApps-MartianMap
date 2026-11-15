@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createEventEngine } from '../sim/eventEngine.js';
 import exampleEvent from '../sim/events/example-event.json';
-import { continueEva, recordEvaEvent, requestEvaEnd, samePath, startEvaRunner } from './eva.js';
+import { reviewRoute } from '../sim/routeReview.js';
+import { continueEva, recordEvaEvent, requestEvaEnd, samePath, startEvaRunner, TRACK_STEP_M } from './eva.js';
 import { resetStore, storeAdapter, useMissionStore } from './store.js';
 
 const HAB = { id: 'HAB', x: 535.1, z: 574.1 };
@@ -324,5 +325,188 @@ describe('EVA statistics runner', () => {
     expect(samePath(null, null)).toBe(true);
     expect(samePath([], [])).toBe(true);
     expect(samePath([[0, 0]], null)).toBe(false);
+  });
+});
+
+describe('route review inputs (#274)', () => {
+  // A plan west from the habitat along z = 574.1, two legs of 100 m at 1 m/s and 0.1 g/m.
+  const PLAN_PATH = [[HAB.x, HAB.z], [HAB.x - 100, HAB.z], [HAB.x - 200, HAB.z]];
+  const ROUTE = {
+    path: PLAN_PATH,
+    distanceM: 200,
+    reason: 'Planned route',
+    decision: 'go',
+    profile: 'fastest',
+    waypoints: [{ name: 'HAB', x: HAB.x, z: HAB.z }, { name: 'WP1 · channel floor', x: HAB.x - 100, z: HAB.z }, { name: 'Cheyava Falls', x: HAB.x - 200, z: HAB.z }],
+    legs: [
+      { from: 'HAB', to: 'WP1 · channel floor', distanceM: 100, timeSec: 100, o2G: 10, climbM: 1, maxSlopeDeg: 4, o2Pct: 2 },
+      { from: 'WP1 · channel floor', to: 'Cheyava Falls', distanceM: 100, timeSec: 100, o2G: 10, climbM: 1, maxSlopeDeg: 4, o2Pct: 2 },
+    ],
+    totals: { distanceM: 200, timeSec: 200, o2G: 20, marginSec: 9000, status: 'nominal' },
+  };
+  const setRoute = (patch = {}) => useMissionStore.setState((state) => ({ route: { ...state.route, ...ROUTE, ...patch } }));
+  const slope = (slopeDeg) => useMissionStore.setState((state) => ({ navigation: { ...state.navigation, slopeDeg } }));
+
+  /** Walk in straight steps of at most 0.5 m to (x, z), one tick each, the clock at 1 m/s and the O2 at 0.12 g/m. */
+  function walkTo(runner, x, z) {
+    const nav = useMissionStore.getState().navigation;
+    const from = { x: nav.x, z: nav.z };
+    const length = Math.hypot(x - from.x, z - from.z);
+    const n = Math.max(1, Math.ceil(length / 0.5));
+    for (let i = 1; i <= n; i += 1) {
+      const s = useMissionStore.getState();
+      const step = length / n;
+      mission(s.mission.elapsedSec + step);
+      suit({ oxygenG: (s.suit.oxygenG ?? 600) - 0.12 * step, marginSec: (s.suit.marginSec ?? 3000) - step });
+      place(from.x + (x - from.x) * i / n, from.z + (z - from.z) * i / n);
+      runner.tick();
+    }
+  }
+
+  it('records a point every 2 m of walking with the margin, O2, slope, running event and habitat flag', () => {
+    setRoute();
+    place(HAB.x, HAB.z);
+    mission(0);
+    suit({ marginSec: 3000, oxygenG: 600 });
+    slope(3.24);
+    const runner = runnerAt();
+    expect(eva().track).toHaveLength(1);
+    expect(eva().track[0]).toEqual({ x: HAB.x, z: HAB.z, atSec: 0, marginSec: 3000, slopeDeg: 3.2, eventId: null, o2G: 600, home: true });
+
+    walkTo(runner, HAB.x - 20, HAB.z);
+    const track = eva().track;
+    expect(track).toHaveLength(1 + 20 / TRACK_STEP_M);
+    for (let i = 1; i < track.length; i += 1) {
+      expect(Math.hypot(track[i].x - track[i - 1].x, track[i].z - track[i - 1].z)).toBeCloseTo(TRACK_STEP_M, 6);
+    }
+    expect(track.at(-1)).toMatchObject({ x: HAB.x - 20, z: HAB.z, atSec: 20, marginSec: 2980, o2G: 597.6, home: false });
+
+    // The event the event engine is running, from the EVA's own history.
+    recordEvaEvent(useMissionStore, { type: 'start', eventId: 'dust-storm', label: 'Dust storm', missionTimeSec: 20 });
+    slope(21);
+    walkTo(runner, HAB.x - 24, HAB.z);
+    expect(eva().track.at(-1)).toMatchObject({ eventId: 'dust-storm', slopeDeg: 21 });
+    recordEvaEvent(useMissionStore, { type: 'end', eventId: 'dust-storm', label: 'Dust storm', missionTimeSec: 24 });
+    walkTo(runner, HAB.x - 26, HAB.z);
+    expect(eva().track.at(-1).eventId).toBeNull();
+
+    // Standing still, paused or in Plan adds no point.
+    const count = eva().track.length;
+    runner.tick();
+    mission(30, true);
+    place(HAB.x - 60, HAB.z);
+    runner.tick();
+    mission(30, false);
+    mode('plan');
+    runner.tick();
+    expect(eva().track).toHaveLength(count);
+  });
+
+  it('takes the slope from the injected terrain query when there is one', () => {
+    place(HAB.x, HAB.z);
+    const runner = runnerAt({ slopeAt: (x) => (x < HAB.x - 5 ? 22.04 : 2) });
+    walkTo(runner, HAB.x - 10, HAB.z);
+    expect(eva().track[0].slopeDeg).toBe(2);
+    expect(eva().track.at(-1).slopeDeg).toBe(22);
+  });
+
+  it('keeps the plan approved at Begin EVA when re-plans change the route', () => {
+    setRoute();
+    place(HAB.x, HAB.z);
+    mission(5);
+    runnerAt();
+    const plan = eva().plan;
+    expect(plan).toMatchObject({ atSec: 5, decision: 'go', profile: 'fastest', path: PLAN_PATH });
+    expect(plan.waypoints.map((w) => w.name)).toEqual(['HAB', 'WP1 · channel floor', 'Cheyava Falls']);
+    expect(plan.legs).toEqual([
+      { from: 'HAB', to: 'WP1 · channel floor', distanceM: 100, timeSec: 100, o2G: 10, climbM: 1, maxSlopeDeg: 4 },
+      { from: 'WP1 · channel floor', to: 'Cheyava Falls', distanceM: 100, timeSec: 100, o2G: 10, climbM: 1, maxSlopeDeg: 4 },
+    ]);
+    expect(plan.totals).toEqual({ distanceM: 200, timeSec: 200, o2G: 20, marginSec: 9000 });
+    // A detached copy: the store route can change without touching it.
+    expect(plan.path).not.toBe(useMissionStore.getState().route.path);
+
+    useMissionStore.setState((state) => ({ route: { ...state.route, path: [[0, 0], [5, 5]], reason: 'Off route: new route from your position', decision: 'pending', legs: [] } }));
+    expect(eva().plan.path).toEqual(PLAN_PATH);
+  });
+
+  it('takes the first route when it arrives after the runner, and its per-leg costs when they follow', () => {
+    place(HAB.x, HAB.z);
+    runnerAt();
+    expect(eva().plan).toBeNull();
+    setRoute({ legs: [], totals: null });
+    expect(eva().plan.legs).toEqual([]);
+    useMissionStore.setState((state) => ({ route: { ...state.route, legs: ROUTE.legs, totals: ROUTE.totals } }));
+    expect(eva().plan.legs).toHaveLength(2);
+    expect(eva().plan.totals.timeSec).toBe(200);
+  });
+
+  it('records where each route change happened', () => {
+    setRoute();
+    place(HAB.x, HAB.z);
+    runnerAt();
+    expect(eva().routeChanges[0]).toMatchObject({ kind: 'initial', x: HAB.x, z: HAB.z });
+    place(500, 590);
+    useMissionStore.setState((state) => ({ route: { ...state.route, path: [[500, 590], [400, 590]], reason: 'Off route: new route from your position' } }));
+    expect(eva().routeChanges[1]).toMatchObject({ kind: 'offroute', x: 500, z: 590 });
+  });
+
+  it('keeps every marked find with the time it was marked, after it leaves the finds list', () => {
+    place(HAB.x, HAB.z);
+    mission(40);
+    runnerAt();
+    const find = { id: 'find-1', label: 'M01', x: 480, z: 620, status: 'pricing', detour: null, error: null, basis: null };
+    useMissionStore.setState((state) => ({ finds: { ...state.finds, list: [find] } }));
+    mission(55);
+    useMissionStore.setState((state) => ({ finds: { ...state.finds, list: [{ ...find, status: 'accepted' }] } }));
+    useMissionStore.setState((state) => ({ finds: { ...state.finds, list: [] } }));   // reached: pruneFinds drops it
+    expect(eva().finds).toEqual([{ id: 'find-1', label: 'M01', x: 480, z: 620, atSec: 40, accepted: true }]);
+  });
+
+  it('freezes the track, plan and finds into the summary, and keeps them counting after continue EVA', () => {
+    setRoute();
+    place(HAB.x, HAB.z);
+    mission(0);
+    suit({ marginSec: 3000, oxygenG: 600 });
+    slope(5);
+    const runner = runnerAt();
+    useMissionStore.setState((state) => ({ finds: { ...state.finds, list: [{ id: 'find-1', label: 'M01', x: HAB.x - 50, z: HAB.z + 40, status: 'accepted' }] } }));
+
+    // Out along the plan, a detour to the find, back to the plan and home.
+    walkTo(runner, HAB.x - 30, HAB.z);
+    walkTo(runner, HAB.x - 50, HAB.z + 40);
+    walkTo(runner, HAB.x - 70, HAB.z);
+    walkTo(runner, HAB.x, HAB.z);
+    requestEvaEnd(useMissionStore);
+    runner.tick();
+
+    const first = eva().summary;
+    expect(first.plan.path).toEqual(PLAN_PATH);
+    expect(first.finds).toHaveLength(1);
+    expect(first.track.at(-1)).toMatchObject({ x: HAB.x, z: HAB.z, home: true });
+    for (const value of [first.track, first.track[0], first.plan, first.plan.path, first.finds]) expect(Object.isFrozen(value)).toBe(true);
+    const before = reviewRoute(first);
+    expect(before.deviations.map((d) => d.verdict)).toEqual(['worth']);
+    const points = first.track.length;
+
+    // Continue EVA (#244): the same track keeps growing, and a second detour joins the first.
+    expect(continueEva(useMissionStore)).toBe(true);
+    mission(first.endedAtSec, false);
+    runner.tick();
+    slope(24);
+    walkTo(runner, HAB.x - 120, HAB.z);
+    walkTo(runner, HAB.x - 150, HAB.z - 40);
+    walkTo(runner, HAB.x - 180, HAB.z);
+    slope(5);
+    walkTo(runner, HAB.x, HAB.z);
+    requestEvaEnd(useMissionStore);
+    runner.tick();
+
+    const second = eva().summary;
+    expect(second.track.length).toBeGreaterThan(points);
+    expect(second.track.slice(0, points)).toEqual(first.track);
+    const after = reviewRoute(second);
+    expect(after.deviations.map((d) => d.verdict)).toEqual(['worth', 'risky']);
+    expect(after.deviations[0].cost).toEqual(before.deviations[0].cost);
   });
 });

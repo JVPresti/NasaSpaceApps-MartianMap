@@ -14,6 +14,12 @@
  *      table, src/state/evaEnd.js). requestEvaEnd() then ends it on the next tick: the mission clock is paused at
  *      that instant and the summary is stored, deeply frozen, so the debrief cannot change while the rest of the app
  *      keeps running. continueEva() goes back to the EVA from the debrief; the statistics keep counting.
+ *   4. The route review inputs (#274). `track` keeps a point every TRACK_STEP_M of horizontal walking (position,
+ *      mission time, suit margin and O2, slope under the feet, the event running, at the habitat or not); `plan` is a
+ *      copy of the route when the runner starts, which is Begin EVA, right after the go decision (route.path changes
+ *      during the EVA, so the review needs this copy); `finds` keeps every marked find with the time it was marked,
+ *      because reached finds leave `finds.list`. All three are frozen into the summary and survive continueEva().
+ *      The review itself is src/sim/routeReview.js.
  *
  * Phases:
  *   'ready'  no statistics yet: the start screen, Plan mode or a paused mission, before the first Walk tick
@@ -35,6 +41,8 @@ import { truePosition } from '../sim/navigation.js';
 export const HAB_ARRIVAL_RADIUS_M = 5;
 /** How often the runner samples position, mission time and suit margins. */
 export const EVA_TICK_MS = 200;
+/** Horizontal walking between two points of the recorded track (#274), in metres: about 700 points for a 1.4 km EVA. */
+export const TRACK_STEP_M = 2;
 
 /** The `eva` store slice before the EVA starts. New arrays every call, so a reset cannot share them. */
 export function createInitialEvaState() {
@@ -46,7 +54,10 @@ export function createInitialEvaState() {
     minOxygenMarginSec: null,    // lowest suit.marginSec seen, seconds; null until a finite reading exists
     minBatteryPct: null,         // lowest suit.batteryPct seen, 0 to 100; null until a finite reading exists
     events: [],                  // [{ type: 'start' | 'end', eventId, label, atSec }]
-    routeChanges: [],            // [{ atSec, kind, reason, before, after }], see routeSnapshot below
+    routeChanges: [],            // [{ atSec, kind, reason, before, after, x, z }], see routeSnapshot below; x, z: where it happened
+    track: [],                   // [{ x, z, atSec, marginSec, slopeDeg, eventId, o2G, home }] every TRACK_STEP_M walked (#274)
+    plan: null,                  // the approved route at Begin EVA: { atSec, decision, profile, path, waypoints, legs, totals } (#274)
+    finds: [],                   // [{ id, label, x, z, atSec, accepted }] every find marked this EVA (#274)
     summary: null,               // final frozen snapshot; null until phase 'ended'
     atHabitat: false,            // during the EVA: the astronaut is back at the habitat, where the EVA can be ended (#244)
     endRequested: false,         // the astronaut asked to end the EVA; the runner ends it on its next tick
@@ -107,6 +118,117 @@ function routeSnapshot(route) {
     shelterId: route.shelter?.id ?? null,
     waypointCount: Array.isArray(route.waypoints) ? route.waypoints.length : 0,
   };
+}
+
+const round = (value, digits) => Math.round(value * 10 ** digits) / 10 ** digits;
+const roundedOrNull = (value, digits) => (isFiniteNumber(value) ? round(value, digits) : null);
+const LEG_KEYS = ['distanceM', 'timeSec', 'o2G', 'climbM', 'maxSlopeDeg'];
+const TOTAL_KEYS = ['distanceM', 'timeSec', 'o2G', 'marginSec'];
+const pickNumbers = (source, keys) => Object.fromEntries(keys.map((key) => [key, isFiniteNumber(source?.[key]) ? source[key] : null]));
+
+/**
+ * The approved plan for the route review (#274): a detached copy of the route path, its waypoints and its per-leg
+ * costs (src/sim/legCosts.js). null without a path.
+ */
+function planSnapshot(route, atSec) {
+  if (!route || !isPath(route.path)) return null;
+  return {
+    atSec,
+    decision: typeof route.decision === 'string' ? route.decision : null,
+    profile: typeof route.profile === 'string' ? route.profile : null,
+    path: clone(route.path),
+    waypoints: (Array.isArray(route.waypoints) ? route.waypoints : [])
+      .filter((w) => isFiniteNumber(w?.x) && isFiniteNumber(w?.z))
+      .map((w) => ({ name: typeof w.name === 'string' ? w.name : null, x: w.x, z: w.z })),
+    legs: (Array.isArray(route.legs) ? route.legs : []).map((leg) => ({ from: leg?.from ?? null, to: leg?.to ?? null, ...pickNumbers(leg, LEG_KEYS) })),
+    totals: route.totals ? pickNumbers(route.totals, TOTAL_KEYS) : null,
+  };
+}
+
+/**
+ * Keep the approved plan: the first route with a path the runner sees, which is the route of the go decision because
+ * the runner starts at Begin EVA. Per-leg costs that arrive after the path (same path, legs filled later) are added.
+ */
+function keepPlan(store) {
+  const state = store.getState();
+  const eva = evaOf(state);
+  const route = state.route;
+  if (eva.phase === 'ended' || !isPath(route?.path)) return;
+  let plan = null;
+  if (!eva.plan) {
+    plan = planSnapshot(route, missionTimeSec(state));
+  } else if (eva.plan.legs?.length === 0 && Array.isArray(route.legs) && route.legs.length > 0 && samePath(eva.plan.path, route.path)) {
+    const fresh = planSnapshot(route, eva.plan.atSec);
+    plan = { ...eva.plan, legs: fresh.legs, totals: fresh.totals };
+  }
+  if (plan) store.setState((s) => ({ eva: { ...evaOf(s), plan } }));
+}
+
+/**
+ * Keep every find marked this EVA with the mission time it was first seen, and whether it was added to the route.
+ * finds.list drops a find once it is reached (pruneFinds), so the review could not see it at the end otherwise.
+ */
+function recordFinds(store) {
+  const state = store.getState();
+  const eva = evaOf(state);
+  if (eva.phase === 'ended') return;
+  const next = Array.isArray(eva.finds) ? [...eva.finds] : [];
+  let changed = false;
+  for (const find of Array.isArray(state.finds?.list) ? state.finds.list : []) {
+    if (typeof find?.id !== 'string' || !isFiniteNumber(find.x) || !isFiniteNumber(find.z)) continue;
+    const accepted = find.status === 'accepted';
+    const index = next.findIndex((f) => f.id === find.id);
+    if (index < 0) {
+      next.push({ id: find.id, label: typeof find.label === 'string' ? find.label : null, x: find.x, z: find.z, atSec: missionTimeSec(state), accepted });
+      changed = true;
+    } else if (accepted && !next[index].accepted) {
+      next[index] = { ...next[index], accepted: true };
+      changed = true;
+    }
+  }
+  if (changed) store.setState((s) => ({ eva: { ...evaOf(s), finds: next } }));
+}
+
+/** The event-engine event running now, from this EVA's start and end entries: the latest one started and not ended. */
+function activeEventId(events) {
+  const running = [];
+  for (const entry of Array.isArray(events) ? events : []) {
+    const index = running.indexOf(entry?.eventId);
+    if (index >= 0) running.splice(index, 1);
+    if (entry?.type === 'start' && typeof entry.eventId === 'string') running.push(entry.eventId);
+  }
+  return running.at(-1) ?? null;
+}
+
+/**
+ * One point of the walked track (#274). The slope is the terrain under the feet: the injected slopeAt (the cost grid's
+ * 2 m central difference) or else navigation.slopeDeg, which the engine bridge computes the same way at the same point.
+ */
+function trackPoint(state, truth, eva, inside, slopeAt) {
+  const slope = typeof slopeAt === 'function' ? slopeAt(truth.x, truth.z) : state.navigation?.slopeDeg;
+  return {
+    x: round(truth.x, 2),
+    z: round(truth.z, 2),
+    atSec: round(missionTimeSec(state), 1),
+    marginSec: roundedOrNull(state.suit?.marginSec, 0),
+    slopeDeg: roundedOrNull(slope, 1),
+    eventId: activeEventId(eva.events),
+    o2G: roundedOrNull(state.suit?.oxygenG, 1),
+    home: inside === true,
+  };
+}
+
+/** The track with one more point, unless it stands where the last one does. */
+function withPoint(track, point) {
+  const list = Array.isArray(track) ? track : [];
+  const last = list.at(-1);
+  return last && last.x === point.x && last.z === point.z ? list : [...list, point];
+}
+
+/** Where the astronaut stands, rounded like the track, or nulls. */
+function positionOf(state) {
+  const truth = truePosition(state?.navigation);
+  return isFiniteNumber(truth.x) && isFiniteNumber(truth.z) ? { x: round(truth.x, 2), z: round(truth.z, 2) } : { x: null, z: null };
 }
 
 function activeAlerts(alerts) {
@@ -202,6 +324,10 @@ function buildSummary(state, eva, endedAtSec) {
     minBatteryPct: isFiniteNumber(eva.minBatteryPct) ? eva.minBatteryPct : null,
     events: clone(Array.isArray(eva.events) ? eva.events : []),
     routeChanges: clone(Array.isArray(eva.routeChanges) ? eva.routeChanges : []),
+    // The route review inputs (#274): the walked track, the plan approved at Begin EVA and every marked find.
+    track: clone(Array.isArray(eva.track) ? eva.track : []),
+    plan: eva.plan ? clone(eva.plan) : null,
+    finds: clone(Array.isArray(eva.finds) ? eva.finds : []),
     sampleCount: Number.isInteger(sampling.count) ? sampling.count : samples.length,
     photos: Number.isInteger(sampling.photos) ? sampling.photos : 0,
     samples,
@@ -241,6 +367,7 @@ export function continueEva(store) {
  *   store: { getState: Function, setState: Function, subscribe: Function },
  *   habitat: { x: number, z: number },
  *   habitatZoneAt?: (x: number, z: number) => string | null,   the habitat walk zone at a point (engine.habitatZoneAt)
+ *   slopeAt?: ((x: number, z: number) => number) | null,   terrain slope in degrees for the track; default navigation.slopeDeg
  *   setInterval?: Function,
  *   clearInterval?: Function,
  *   tickMs?: number,
@@ -251,6 +378,7 @@ export function startEvaRunner({
   store,
   habitat,
   habitatZoneAt = () => null,
+  slopeAt = null,
   setInterval: si = setInterval,
   clearInterval: ci = clearInterval,
   tickMs = EVA_TICK_MS,
@@ -267,6 +395,7 @@ export function startEvaRunner({
   let lastPosition = null;
   let lastRoute = null;
   let hasInitialRoute = false;
+  let sinceTrackM = 0;   // horizontal walking since the last track point
 
   // The initial route may already exist when the real HAB finally loads (the EVA runner starts after that fetch).
   // Capture it once, so a later re-plan still has a before/after pair.
@@ -281,12 +410,19 @@ export function startEvaRunner({
       reason: lastRoute.reason,
       before: null,
       after: lastRoute,
+      ...positionOf(initialState),
     });
   }
+  // The runner starts at Begin EVA, so this is the route the crew said go to (#274).
+  keepPlan(store);
+  recordFinds(store);
 
   const unsubscribe = store.subscribe((state, previous) => {
     if (state.mode !== previous.mode || state.mission?.paused !== previous.mission?.paused) lastPosition = null;
-    if (stopped || evaOf(state).phase === 'ended' || state.route === previous.route) return;
+    if (stopped || evaOf(state).phase === 'ended') return;
+    if (state.finds?.list !== previous.finds?.list) recordFinds(store);
+    if (state.route === previous.route) return;
+    keepPlan(store);
     const next = routeSnapshot(state.route);
     const nextHasPath = isPath(next?.path);
     if (!nextHasPath && lastRoute === null) return;                        // still no route: nothing changed
@@ -302,6 +438,7 @@ export function startEvaRunner({
       reason: nextHasPath ? next.reason : (next?.reason ?? null),
       before: lastRoute,
       after: nextHasPath ? next : null,
+      ...positionOf(state),   // where the plan changed, for the debrief map (#274)
     };
     // Update the baseline before writing: the write below notifies this subscriber again, and the new path must
     // already look like the current one or it would be recorded twice.
@@ -368,7 +505,8 @@ export function startEvaRunner({
       // The EVA starts on the first Walk tick with the mission running, wherever the astronaut stands (#244): they
       // began it at the mission table, and being at the habitat no longer ends it by itself.
       lastPosition = { x: truth.x, z: truth.z };
-      const patch = { phase: 'active', startedAtSec: missionTimeSec(state), atHabitat: inside };
+      sinceTrackM = 0;
+      const patch = { phase: 'active', startedAtSec: missionTimeSec(state), atHabitat: inside, track: withPoint(eva.track, trackPoint(state, truth, eva, inside, slopeAt)) };
       const minOxygen = lowest(null, state.suit?.marginSec);
       const minBattery = lowest(null, state.suit?.batteryPct);
       if (minOxygen !== null) patch.minOxygenMarginSec = minOxygen;
@@ -380,7 +518,10 @@ export function startEvaRunner({
     let distanceM = eva.distanceM;
     if (lastPosition) {
       const step = Math.hypot(truth.x - lastPosition.x, truth.z - lastPosition.z);
-      if (isFiniteNumber(step) && step > 0) distanceM += step;
+      if (isFiniteNumber(step) && step > 0) {
+        distanceM += step;
+        sinceTrackM += step;
+      }
     }
     lastPosition = { x: truth.x, z: truth.z };
 
@@ -388,12 +529,20 @@ export function startEvaRunner({
     const minBattery = lowest(eva.minBatteryPct, state.suit?.batteryPct);
 
     if (inside && eva.endRequested) {
-      // Count the last steps and the current margins before freezing the summary.
-      endEva({ distanceM, minOxygenMarginSec: minOxygen, minBatteryPct: minBattery, atHabitat: false, endRequested: false });
+      // Count the last steps, the current margins and the point where the walk ended before freezing the summary.
+      const track = withPoint(eva.track, trackPoint(state, truth, eva, inside, slopeAt));
+      sinceTrackM = 0;
+      endEva({ distanceM, minOxygenMarginSec: minOxygen, minBatteryPct: minBattery, atHabitat: false, endRequested: false, track });
       return;
     }
 
     const patch = {};
+    // One track point every TRACK_STEP_M of walking, measured along the steps like the distance (#274).
+    if (sinceTrackM >= TRACK_STEP_M || !Array.isArray(eva.track) || eva.track.length === 0) {
+      const track = withPoint(eva.track, trackPoint(state, truth, eva, inside, slopeAt));
+      if (track !== eva.track) patch.track = track;
+      sinceTrackM = 0;
+    }
     if (inside !== eva.atHabitat) patch.atHabitat = inside;
     if (!inside && eva.endRequested) patch.endRequested = false;   // only at the habitat
     if (distanceM !== eva.distanceM) patch.distanceM = distanceM;
