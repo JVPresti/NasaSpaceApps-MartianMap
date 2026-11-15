@@ -227,6 +227,20 @@ describe('route review in the debrief', () => {
     expect(body).not.toContain('Lowest +313 min');
   });
 
+  it('labels the margin chart with its scale, a faint line at each end and the reserve line at 0 min (P15)', () => {
+    // Highest margin 3000 s (50 min) at the start; the reserve line is the scale's 0.
+    const html = renderView(summaryWith(walk([[0, 0], [400, 0]])));
+    expect(text(html)).toContain('scale 0 min to +50 min');
+    expect(html.match(/class="debrief-review-grid"/g)).toHaveLength(1);
+    expect(html).toContain('class="debrief-review-reserve"');
+    // Below the reserve, the scale starts under 0 and a second faint line marks its foot.
+    const under = renderView(summaryWith(walk([[0, 0], [400, 0]], (p, s) => ({ marginSec: 600 - 2 * s }))));
+    expect(text(under)).toContain('scale -3 min to +10 min');
+    expect(under.match(/class="debrief-review-grid"/g)).toHaveLength(2);
+    setLanguage('es');
+    expect(text(renderView(summaryWith(walk([[0, 0], [400, 0]]))))).toContain('escala de 0 min a +50 min');
+  });
+
   it('names the alert on a detour to a GO find that it does not make risky, in English and Spanish (D7)', () => {
     const deviation = { reason: { code: 'find', label: 'M01', marginSec: 1800, lateEventId: 'radiation' }, cost: {} };
     const events = [{ type: 'start', eventId: 'radiation', label: 'Radiation alert', atSec: 200 }];

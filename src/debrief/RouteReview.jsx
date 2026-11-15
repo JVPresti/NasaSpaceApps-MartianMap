@@ -100,6 +100,8 @@ export function MarginStrip({ track, deviations, lowestSec = null }) {
       <figcaption className="debrief-review-strip-head">
         <span>{t('review.strip.title')}</span>
         <SourceTag path="suit.marginSec" variant="tag" interactive={false} className={TAG_CLASS} />
+        {/* the vertical scale: the plot runs from the lower to the upper figure, the reserve line at 0 min */}
+        <span className="debrief-review-strip-scale">{t('review.strip.scale', { low: formatSignedMinutes(lo), high: formatSignedMinutes(hi) })}</span>
         <span className="debrief-review-strip-low">{t('review.strip.lowest', { low: lowText, at: atText })}</span>
       </figcaption>
       <div
@@ -111,6 +113,9 @@ export function MarginStrip({ track, deviations, lowestSec = null }) {
           {deviations.filter((d) => isNumber(d.startSec) && isNumber(d.endSec)).map((d) => (
             <rect key={d.n} className={'debrief-review-shade review-' + d.verdict} x={x(d.startSec)} y="0" width={Math.max(0.6, x(d.endSec) - x(d.startSec))} height="100" />
           ))}
+          {/* faint lines at the ends of the scale in the head; the reserve line is its 0 */}
+          <line className="debrief-review-grid" x1="0" x2="100" y1={y(hi)} y2={y(hi)} />
+          {lo < 0 && <line className="debrief-review-grid" x1="0" x2="100" y1={y(lo)} y2={y(lo)} />}
           <line className="debrief-review-reserve" x1="0" x2="100" y1={reserveY} y2={reserveY} />
           <polyline className="debrief-review-margin" points={line} />
         </svg>

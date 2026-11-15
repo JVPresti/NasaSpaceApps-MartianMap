@@ -334,6 +334,7 @@
 }
 .debrief-review-strip-head .debrief-tag { margin-left: 0; }
 .debrief-review-strip-low { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--ink); }
+.debrief-review-strip-scale { font-variant-numeric: tabular-nums; }
 
 .debrief-review-strip-plot {
   position: relative;
@@ -346,6 +347,7 @@
 .debrief-review-strip-plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .debrief-review-shade { fill: var(--verdict); opacity: 0.22; }
 .debrief-review-reserve { stroke: var(--danger); stroke-width: 1px; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+.debrief-review-grid { stroke: var(--line-strong); stroke-width: 1px; stroke-dasharray: 2 3; vector-effect: non-scaling-stroke; }
 .debrief-review-margin { fill: none; stroke: var(--ink); stroke-width: 1.5px; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .debrief-review-shade-num {
   position: absolute;

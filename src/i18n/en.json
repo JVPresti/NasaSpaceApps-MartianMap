@@ -723,6 +723,7 @@
   "review.strip.reserve": "Reserve",
   "review.strip.label": "Margin over the reserve from {start} to {end}; lowest {low} at {at}",
   "review.strip.lowest": "Lowest {low} at {at}",
+  "review.strip.scale": "scale {low} to {high}",
   "review.notes.deviation": "A deviation starts when you are more than {enter} m from the plan approved at Begin EVA and lasts at least {length} m of walking; it ends when you are back within {exit} m. Re-plans during the EVA do not move the plan it is judged against.",
   "review.notes.cost": "Costs compare the walked stretch with the stretch of the plan it replaced: time from the mission clock and oxygen from the suit model, against the plan's per-leg costs.",
   "review.notes.worth": "you marked a find or secured a sample in it, and the margin stayed above the reserve.",

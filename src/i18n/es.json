@@ -723,6 +723,7 @@
   "review.strip.reserve": "Reserva",
   "review.strip.label": "Margen sobre la reserva de {start} a {end}; mínimo {low} en {at}",
   "review.strip.lowest": "Mínimo {low} en {at}",
+  "review.strip.scale": "escala de {low} a {high}",
   "review.notes.deviation": "Un desvío empieza cuando estás a más de {enter} m del plan aprobado al iniciar la EVA y dura al menos {length} m de caminata; termina cuando vuelves a menos de {exit} m. Las nuevas rutas durante la EVA no cambian el plan con el que se juzga.",
   "review.notes.cost": "Los costes comparan el tramo caminado con el tramo del plan que reemplazó: el tiempo sale del reloj de misión y el oxígeno del modelo del traje, frente a los costes por tramo del plan.",
   "review.notes.worth": "marcaste un hallazgo o aseguraste una muestra en él, y el margen se mantuvo sobre la reserva.",
