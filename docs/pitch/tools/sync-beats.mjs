@@ -21,7 +21,8 @@ for (let i = start + 2; i < script.length && script[i].startsWith('|'); i++) {
 const byBeat = Object.fromEntries(rows.map((r, i) => [r.beat, { ...r, end: rows[i + 1]?.time }]));
 
 const beats = readFileSync(join(ROOT, 'beats.md'), 'utf8').split('\n');
-const t0 = beats.findIndex((l) => l.startsWith('| # | Time | Beat |'));
+const t5 = beats.findIndex((l) => l.startsWith('## 5-minute pitch'));
+const t0 = beats.findIndex((l, i) => i > t5 && l.startsWith('| # | Time | Beat |'));
 let changed = 0;
 for (let i = t0 + 2; i < beats.length && beats[i].startsWith('|'); i++) {
   const c = cells(beats[i]);
@@ -33,7 +34,7 @@ for (let i = t0 + 2; i < beats.length && beats[i].startsWith('|'); i++) {
   changed++;
 }
 const slack = rows[rows.length - 1].time;
-const out = beats.join('\n').replace(/^\d+ seconds of slack after beat 7 \([^)]*\)\./m, () => {
+const out = beats.join('\n').replace(/^\d+ seconds of slack after beat 7 \([^)]*to 5:00\)\./m, () => {
   const [m, s] = slack.split(':').map(Number);
   return `${300 - (m * 60 + s)} seconds of slack after beat 7 (${slack} to 5:00).`;
 });

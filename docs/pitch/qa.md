@@ -16,9 +16,9 @@ Short, honest answers. Say the number, name the source, stop. If you don't know,
 
 ## 3. How does the terrain model become a route and a cost?
 
-**ES.** Del DTM de HiRISE (1 m) sacamos una malla de unos 2 m (751 × 751). Cada celda tiene pendiente, y más de 20° está prohibido. El planificador es A*: el costo por celda es la distancia por 1 + (pendiente/9)² + 0.6 × rocas. El oxígeno de cada tramo sale de un modelo metabólico publicado: la curva de Minetti (2002) para caminar en pendiente, que escalamos a la gravedad de Marte y a la masa con traje de las pruebas de la NASA (202 kg). La escala es nuestra (DERIVED) y no la hemos validado contra la prueba de 2009, que fue en gravedad lunar simulada; la rigidez del traje no está en el modelo. El ritmo es de esfuerzo constante: en subida caminas más lento.
+**ES.** Del DTM de HiRISE (1 m) sacamos una malla de unos 2 m (751 × 751). Cada celda tiene pendiente, y más de 20° está prohibido. El planificador es A*: el costo por celda es la distancia por 1 + (pendiente/9)² + 0.6 × rocas. El oxígeno de cada tramo sale de un modelo metabólico publicado: la curva de Minetti (2002) para caminar en pendiente, que escalamos a la gravedad de Marte y a la masa con traje de las pruebas de la NASA (202 kg). El costo en plano y el aumento por pendiente están calibrados con las pruebas de la NASA con traje a gravedad reducida (Norcross 2008 y 2010, de 0.12 a 3/8 g). El modelo es DERIVED: no modela la rigidez propia de un traje para Marte, y el xEMU es un traje lunar. El ritmo es de esfuerzo constante: en subida caminas más lento.
 
-**EN.** We resample the HiRISE DTM to a 751 × 751 grid, about 2 m. Each cell has a slope; over 20° is no-go. The planner is A*, with a cell cost of distance × (1 + (slope/9)² + 0.6 × rock). Each leg's oxygen comes from a published metabolic model: Minetti's (2002) cost of walking on a gradient, which we scale to Mars gravity and to the suited mass from NASA's tests (202 kg). The scaling is ours (DERIVED) and not yet validated against the 2009 walkback test, which ran at simulated lunar gravity; suit stiffness is not in the model. The pace is constant effort, so you slow down uphill.
+**EN.** We resample the HiRISE DTM to a 751 × 751 grid, about 2 m. Each cell has a slope; over 20° is no-go. The planner is A*, with a cell cost of distance × (1 + (slope/9)² + 0.6 × rock). Each leg's oxygen comes from a published metabolic model: Minetti's (2002) cost of walking on a gradient, which we scale to Mars gravity and to the suited mass from NASA's tests (202 kg). The level cost and the grade rise are calibrated to NASA's suited tests at reduced gravity (Norcross et al. 2008 and 2010, 0.12 to 3/8 g). The model is DERIVED: it does not model a Mars suit's own stiffness, and the xEMU is a lunar suit. The pace is constant effort, so you slow down uphill.
 
 ## 4. How do you know the terrain is right?
 
@@ -75,6 +75,12 @@ Short, honest answers. Say the number, name the source, stop. If you don't know,
 **ES.** Un sensor de ritmo cardiaco real que mueva el consumo de oxígeno, con el modelo de la NASA que estima el gasto metabólico desde el pulso (Hoffmann 2021). Tripulaciones en línea, de dos a seis personas. Y cualquier sitio con modelo HiRISE, porque el pipeline no depende de Jezero. Nadie fuera del equipo lo ha usado todavía. Los primeros usuarios que buscamos: quien planea una EVA, para comparar las tres rutas en el modelo HiRISE antes de aprobar una, y una clase en Ensenada que planee la caminata a Cheyava Falls (por confirmar con el equipo).
 
 **EN.** A real heart rate sensor driving oxygen use, through NASA's model of metabolic rate from heart rate (Hoffmann 2021). Crews online, two to six people. Any site with a HiRISE terrain model, since nothing in the pipeline depends on Jezero. Nobody outside the team has used it yet. The first users we want: an EVA planner comparing the three routes on the HiRISE model before approving one, and a class in Ensenada planning the walk to Cheyava Falls (team to confirm).
+
+## Extra: three questions a judge may slip in
+
+- **Have you checked your numbers?** "109 numbers checked against their sources, 16 problems listed, each with an issue" (`docs/VALIDITY.md`, PR #314). Never say every number is verified correct.
+- **Communication delay with Earth?** The app does not model it. If asked: 4 to 24 minutes one way, which is why the margin has to live on the visor and not in mission control.
+- **Is the habitat full protection?** No. Say "the best shelter on the tile". The natural shelters cut less than we first assumed (#296).
 
 ## Local context, if asked "why Ensenada?"
 
