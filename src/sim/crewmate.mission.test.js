@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { assertPartnerState, CASE_CLIP } from '../engine/partnerSource.js';
 import { CREWMATE, createCrewmate, HOME_CHAIN } from './crewmate.js';
-import { canStand, densePath, HAB_ENTRY, habToWorld, makeHabitat, makeTrack, makeWorld, reversals, S1, worldToHab } from './crewmateFixtures.js';
+import { canStand, densePath, HAB_ENTRY, habToWorld, makeHabitat, makeTrack, makeWorld, reversals, S1, withoutSteps, worldToHab } from './crewmateFixtures.js';
 
 const DT = 1 / 30;
 const STORM_AT = 97, RADIATION_AT = 113, LEAVE_AT = 100, POUR_DONE_AT = 82, FINISH_AT = 182;
@@ -59,7 +59,7 @@ function runMission({ habitatFirst }) {
     if (toggled === null && t >= POUR_DONE_AT && !brain.inspect().carrying) toggled = { t, ok: brain.command('toggleCase', world, sense) };
     const out = brain.update(DT, world, sense);
     assertPartnerState(out.state);
-    frames.push({ t, player: { ...p }, ev2: { x: out.state.x, z: out.state.z }, state: out.state, mode: brain.inspect().mode, chain: brain.inspect().chain });
+    frames.push({ t, player: { ...p }, ev2: { x: out.state.x, z: out.state.z }, state: out.state, mode: brain.inspect().mode, chain: brain.inspect().chain, yielding: brain.inspect().yield });
     said.push(...out.said.map((c) => ({ ...c, t })));
   }
   return { ...m, frames, said, toggled };
@@ -111,7 +111,7 @@ describe.each([
 
   it('never goes back and forth: no reversal the player did not make first', () => {
     const playerTurns = reversals(run.frames.map((f) => ({ t: f.t, ...f.player })));
-    const ev2Turns = reversals(run.frames.map((f) => ({ t: f.t, ...f.ev2 })));
+    const ev2Turns = reversals(withoutSteps(run.frames.map((f) => ({ t: f.t, ...f.ev2, yielding: f.yielding }))));   // steps aside left out (#377)
     expect(ev2Turns.filter((t) => !playerTurns.some((p) => t >= p && t <= p + 15)).length).toBeLessThanOrEqual(1);
   });
 
