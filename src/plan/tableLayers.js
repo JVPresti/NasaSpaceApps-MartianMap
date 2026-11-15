@@ -1,4 +1,5 @@
 import { catalogs, getLanguage, t } from '../i18n/index.js';
+import { tableLegend } from './layers.js';
 
 // The mission table's text for the map layers of src/plan/layers.js. The list, the order, the swatches and what each
 // layer decides come from layers.js, so a layer added or merged there reaches the table's buttons and legend without
@@ -35,21 +36,26 @@ export function layerDecides(layer) {
  * The legend rows of a layer, from its swatches and its colour ramp in layers.js. A swatch is drawn clear when the
  * table map leaves that band unpainted: `clear` on the swatch, or the walkable band of the slope layer, which the
  * table map leaves clear so the caution and no-go bands read at a glance (mapLayers.layerColour).
+ * The swatches and ramp come from layers.tableLegend for what the table knows now: Terrain's caution band follows the
+ * crew's risk, Exposure's ramp is labelled with the loaded sky view grid's range.
  * @param {{ id: string, swatches?: Array<{ color: string, label: string, detail?: string, clear?: boolean }>,
  *   gradient?: string[], minLabel?: string, maxLabel?: string }} layer
+ * @param {{ risk?: string, sky?: { min: number, max: number } | null }} [context] store `needs.risk`; the sky view grid
  * @returns {Array<{ key: string, text: string, color: string | null, gradient: string | null }>}
  */
-export function legendRows(layer) {
+export function legendRows(layer, context = {}) {
   const rows = [];
-  if (Array.isArray(layer?.gradient) && layer.gradient.length > 1) {
+  if (!layer) return rows;
+  const legend = typeof layer.index === 'number' ? tableLegend(layer, context) : layer;
+  if (Array.isArray(legend.gradient) && legend.gradient.length > 1) {
     rows.push({
       key: 'ramp',
-      text: [layer.minLabel, layer.maxLabel].filter(Boolean).join(' – '),
+      text: [legend.minLabel, legend.maxLabel].filter(Boolean).join(' – '),
       color: null,
-      gradient: `linear-gradient(90deg, ${layer.gradient.join(', ')})`,
+      gradient: `linear-gradient(90deg, ${legend.gradient.join(', ')})`,
     });
   }
-  (layer?.swatches ?? []).forEach((swatch, k) => {
+  (legend.swatches ?? []).forEach((swatch, k) => {
     const clear = swatch.clear ?? (layer.id === 'slope' && k === 0);
     rows.push({
       key: `swatch-${k}`,

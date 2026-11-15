@@ -1,14 +1,19 @@
+import { useMissionStore } from '../state/store.js';
+import { useSkyView } from './routeExposure.js';
 import { layerDecides, layerLegendTitle, legendRows } from './tableLayers.js';
 
 /**
  * The key of the layer shown on the mission table map, in the map's bottom-left corner (.table-map-legend): its
  * swatches or colour ramp from layers.js, then one line on what the layer decides when layers.js says. Nothing for a
- * layer with neither, such as the plain image.
+ * layer with neither, such as the plain image. It follows the crew's risk setting (Terrain's caution band) and the
+ * sky view grid once it has loaded (Exposure's range), as the map does.
  * @param {{ layer: object }} props an entry of LAYERS (src/plan/layers.js)
  */
 export default function LayerLegend({ layer }) {
+  const risk = useMissionStore((s) => s.needs?.risk);
+  const sky = useSkyView(layer?.id === 'exposure');
   if (!layer) return null;
-  const rows = legendRows(layer);
+  const rows = legendRows(layer, { risk, sky });
   const decides = layerDecides(layer);
   if (rows.length === 0 && !decides) return null;
   return (

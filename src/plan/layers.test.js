@@ -1,10 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
+import { provenance } from '../data/provenance.js';
 import { catalogs, setLanguage } from '../i18n/index.js';
 import { COST_CONSTANTS } from '../sim/costGrid.js';
 import { RISK_SETTINGS } from '../sim/missionNeeds.js';
 import { resetStore, setNeeds } from '../state/store.js';
 import {
-  EXPOSURE_RANGE, LAYERS, SLOPE_LIMITS, WALK_LAYERS, cautionDeg, layerMeta, layerSource, nextLayerIndex, terrainSwatches, walkLayerIndex, walkRow,
+  LAYERS, MARKER_COLOURS, SLOPE_LIMITS, WALK_LAYERS, cautionDeg, layerMeta, layerProvenancePath, layerSource, nextLayerIndex, tableLegend,
+  terrainSwatches, walkLayerIndex, walkRow,
 } from './layers.js';
 
 afterEach(() => { resetStore(); setLanguage('en'); });
@@ -77,26 +81,53 @@ describe('map layers', () => {
     expect(terrainSwatches('standard')[0].clear).toBe(true);   // the table map leaves walkable ground clear
   });
 
-  it('reads the risk for the table legend from the crew needs in the store', () => {
-    expect(layerMeta(1).swatches[1].label).toBe('15–20°');
+  it('takes the risk for the table legend as an argument, and reads no store', () => {
+    expect(layerMeta(1).swatches[1].label).toBe('15–20°');   // standard, without a context
     setNeeds({ risk: 'cautious' });
-    expect(layerMeta(1).swatches[1].label).toBe('12–20°');
+    expect(layerMeta(1).swatches[1].label).toBe('15–20°');   // the metadata never reads the store
+    expect(tableLegend(layerMeta(1), { risk: 'cautious' }).swatches[1].label).toBe('12–20°');
+    expect(tableLegend(layerMeta(1)).swatches[1].label).toBe('15–20°');
     expect(layerMeta(1).walkSwatches[1].label).toBe('15–20°');   // the ground in Walk keeps the suit limits
+    expect(tableLegend(layerMeta(2), { risk: 'cautious' })).toMatchObject({ gradient: layerMeta(2).gradient, swatches: [] });
+    expect(readFileSync(fileURLToPath(new URL('./layers.js', import.meta.url)), 'utf8')).not.toMatch(/^import .*(state\/store|zustand|react)/m);
   });
 
-  it('describes the rock range, the outcrop stops, the radio shadow and the narrow exposure range', () => {
-    expect(layerMeta(2).minLabel).toBe('0.08');
-    expect(layerMeta(2).maxLabel).toBe('1.0');
+  it('labels the Exposure ramp with the range of the sky view grid once it has loaded', () => {
+    expect(tableLegend(layerMeta(5))).toMatchObject({ minLabel: 'sheltered', maxLabel: 'open sky' });
+    expect(tableLegend(layerMeta(5), { sky: { min: 0.8219, max: 1 } })).toMatchObject({ minLabel: '0.82 sheltered', maxLabel: '1.00 open sky' });
+    setLanguage('es');
+    expect(tableLegend(layerMeta(5), { sky: { min: 0.8219, max: 1 } }).minLabel).toBe('0,82 resguardado');
+  });
+
+  it('describes the rock range, the outcrop stops, the radio shadow and the exposure layer without quoting numbers', () => {
+    expect(layerMeta(2).minLabel).toBe('0.08 bare');
+    expect(layerMeta(2).maxLabel).toBe('1.0 rocky');
     expect(layerMeta(2).summary).toMatch(/route planner prices/);
     expect(layerMeta(3).swatches.map((s) => s.label)).toEqual(['Stop on the route', 'Candidate stop']);
     expect(layerMeta(3).walkSwatches).toEqual([]);
-    expect(layerMeta(4).swatches).toHaveLength(1);
-    expect(EXPOSURE_RANGE).toEqual({ min: 0.81, max: 1 });
-    expect(layerMeta(5).summary).toMatch(/narrow, about 0.81 to 1.0/);
-    expect(layerMeta(5).minLabel).toBe('0.81 sheltered');
-    expect(layerMeta(5).maxLabel).toBe('1.0 open sky');
-    setLanguage('es');
-    expect(layerMeta(5).summary).toMatch(/0,81 a 1,0/);
+    // the clear row says what the layer leaves unpainted, so the image under it is not mistaken for the shadow
+    expect(layerMeta(4).swatches.map((s) => [s.label, !!s.clear])).toEqual([['In sight of the mast', true], ['Radio shadow', false]]);
+    expect(layerMeta(4).swatches[1].color).toBe(MARKER_COLOURS.radio);
+    expect(layerMeta(5).summary).toMatch(/narrow\.$/);
+    expect(layerMeta(5).summary).not.toMatch(/\d/);
+  });
+
+  it('keeps what each layer decides to one short line, in both languages', () => {
+    for (const language of ['en', 'es']) {
+      for (const layer of LAYERS) expect(catalogs[language][layer.decides].length, `${language} ${layer.id}`).toBeLessThanOrEqual(40);
+    }
+  });
+
+  it('gives every layer a source tag for its legend', () => {
+    for (const layer of LAYERS) {
+      const entry = provenance.lookup(layerProvenancePath(layer));
+      expect(entry, layer.id).not.toBeNull();
+      expect(['DATA', 'DERIVED', 'SIM']).toContain(entry.tag);
+      expect(layer.source.startsWith(entry.tag), layer.id).toBe(true);   // the legend's tag and the layer's source agree
+      expect(entry.source.length, layer.id).toBeGreaterThan(30);
+    }
+    expect(provenance.lookup('map.layer.rock').tag).toBe('DERIVED');
+    expect(provenance.lookup('map.layer.outcrop').tag).toBe('DERIVED');
   });
 
   it('states the source resolution separately from the displayed resolution (#250)', () => {

@@ -6,7 +6,8 @@ import { setLanguage } from '../i18n/index.js';
 import { radioShadowMask } from '../sim/radio.js';
 import { LAYERS } from './layers.js';
 import {
-  LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, contourLine, layerColour, layerPlaces, mapCrop, marsColour, paintMap, slopeGrid, toMap, zoomCrop,
+  LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, contourLine, layerColour, layerPlaces, mapCrop, marsColour, paintMap, sampleRed, slopeGrid, tagFlips,
+  toMap, zoomCrop,
 } from './mapLayers.js';
 import { exposureText } from './routeExposure.js';
 
@@ -94,14 +95,33 @@ describe('mission table map', () => {
     layerColour(LAYER.ROCK, { rock: 1 }).slice(0, 3).forEach((value, k) => expect(value).toBeCloseTo([1, 0.75, 0.1][k], 6));
     expect(layerColour(LAYER.OUTCROP, { mask: 0 })[3]).toBe(0);
     expect(layerColour(LAYER.OUTCROP, { mask: 1 })[3]).toBeCloseTo(0.6);
+    // bare ground almost clear, rocky ground strongly tinted, so the photo still reads under the layer
+    expect(layerColour(LAYER.ROCK, { rock: 0.1 })[3]).toBeLessThan(0.1);
+    expect(layerColour(LAYER.ROCK, { rock: 1 })[3]).toBeCloseTo(0.65, 6);
     expect(layerColour(LAYER.RADIO, { shadow: false })[3]).toBe(0);
-    expect(layerColour(LAYER.RADIO, { shadow: true })[3]).toBeGreaterThan(0);
+    // the shadow is the legend swatch's #5b8fbf in linear light, strong enough to read blue over the orange image
+    const [r, g, b, a] = layerColour(LAYER.RADIO, { shadow: true });
+    expect(b).toBeGreaterThan(g); expect(g).toBeGreaterThan(r); expect(a).toBeGreaterThanOrEqual(0.75);
     expect(layerColour(LAYER.EXPOSURE, { sky: null })[3]).toBe(0);   // grid not loaded yet: nothing drawn
-    const open = layerColour(LAYER.EXPOSURE, { sky: 1 });
-    const sheltered = layerColour(LAYER.EXPOSURE, { sky: 0.81 });
+    const range = { skyRange: { min: 0.82, max: 1 } };   // the ramp spans the grid's own range
+    const open = layerColour(LAYER.EXPOSURE, { sky: 1 }, range);
+    const sheltered = layerColour(LAYER.EXPOSURE, { sky: 0.82 }, range);
     open.slice(0, 3).forEach((value, k) => expect(value).toBeCloseTo([0.9, 0.2, 0.1][k], 6));   // the red end of the ramp: open sky, the most dose
     sheltered.slice(0, 3).forEach((value, k) => expect(value).toBeCloseTo([0.1, 0.3, 0.9][k], 6));
-    expect(layerColour(LAYER.EXPOSURE, { sky: 0.5 }).slice(0, 3)).toEqual(sheltered.slice(0, 3));   // clamped to the range
+    expect(layerColour(LAYER.EXPOSURE, { sky: 0.5 }, range).slice(0, 3)).toEqual(sheltered.slice(0, 3));   // clamped to the range
+  });
+
+  it('reads the photo bilinearly, so a map zoomed in on a short route stays smooth', () => {
+    const image = { w: 2, h: 1, data: new Uint8ClampedArray([0, 0, 0, 255, 255, 0, 0, 255]) };   // black west, white east
+    expect(sampleRed(image, 0.25, 0.5)).toBe(0);    // the centre of the west pixel
+    expect(sampleRed(image, 0.75, 0.5)).toBe(1);    // the centre of the east pixel
+    expect(sampleRed(image, 0.5, 0.5)).toBeCloseTo(0.5, 6);   // halfway
+    expect(sampleRed(image, -1, 2)).toBe(0);        // clamped at the edge
+  });
+
+  it('opens a tag to the other side of its symbol near the edge it would run off', () => {
+    expect([10, 60, 69, 71, 95].map((u) => tagFlips(u))).toEqual([false, false, false, true, true]);
+    expect([5, 17, 19, 60].map((u) => tagFlips(u, 'left'))).toEqual([true, true, false, false]);   // the rover pin
   });
 
   it('draws a contour line only near a multiple of 5 m', () => {
@@ -154,7 +174,7 @@ describe('mission table map', () => {
   it('paints the sky view where the grid is loaded', () => {
     const terrain = terrainOf(5, 40, () => 0);
     const slopes = slopeGrid(terrain);
-    const sky = { n: 2, width: 40, depth: 40, values: new Float32Array([0.81, 1, 0.81, 1]) };
+    const sky = { n: 2, width: 40, depth: 40, values: new Float32Array([0.81, 1, 0.81, 1]), min: 0.81, max: 1 };
     const size = 8;
     const out = paintMap(new Uint8ClampedArray(size * size * 4), size, { x0: -20, z0: -20, size: 40 }, LAYER.EXPOSURE, { ortho, mask: null, terrain, slopes, sky });
     expect(pixel(out, size, 0, 4)[2]).toBeGreaterThan(pixel(out, size, 7, 4)[2]);   // sheltered west: blue end
@@ -189,13 +209,13 @@ describe('mission table map', () => {
       ['bright-angel', 'candidate', 'dropped: over your time'],
       ['sortie', 'candidate', 'another objective'],
     ]);
-    expect(places[0].label).toBe('Bright Angel outcrop');
+    expect(places[0].label).toBe('Bright Angel');
     expect(places[0].title).toBe('Bright Angel: dropped: over your time');
     // a stop the route visits under its waypoint name (route.json anchors, no plan yet) is not marked twice
     expect(layerPlaces(LAYER.OUTCROP, { candidates, waypoints: [{ name: 'WP3 · Bright Angel outcrop' }] }).map((p) => p.id)).not.toContain('bright-angel');
     expect(layerPlaces(LAYER.OUTCROP, { candidates, dropped: [{ id: 'sortie', limit: 'odd' }] }).find((p) => p.id === 'sortie').detail).toBe('dropped: no route');
     setLanguage('es');
-    expect(layerPlaces(LAYER.OUTCROP, { candidates }).find((p) => p.id === 'sortie').detail).toBe('otro objetivo');
+    expect(layerPlaces(LAYER.OUTCROP, { candidates }).find((p) => p.id === 'sortie')).toMatchObject({ label: 'Zona de tono claro', detail: 'otro objetivo' });
   });
 
   it('marks the natural shelters on Exposure with their dose cut, and nothing on the other layers', () => {

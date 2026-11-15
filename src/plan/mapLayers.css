@@ -16,6 +16,15 @@
 .map-place .map-marker-tag { min-width: 0; }
 .map-place-candidate > i { background: #c9d0d8; border: 2px solid #0a0d11; border-radius: 50%; }
 .map-place-shelter > i { background: #0a0d11; border: 2px solid #f2f4f6; }
+/* above the rover's image pin (.map-pins, z-index 1, earlier in the map): on Outcrop and Exposure the places are the layer */
+.map-places { z-index: 1; }
+
+/* Near the map's right edge a tag opens to the left of its symbol, and the rover pin's tag to the right near the left
+   edge, so the edge never cuts a tag (mapLayers.tagFlips). The symbol stays on its point. */
+.map-marker.flip { transform: translate(calc(-100% + 11px), -50%); }
+.map-marker.flip .map-marker-hit { flex-direction: row-reverse; }
+.map-place.flip { flex-direction: row-reverse; transform: translate(calc(-100% + 7px), -50%); }
+.map-pin.flip .map-pin-hit { right: auto; left: 10px; }
 
 /* Perseverance's drives: the key's second line says what the drives decide (TraverseLayer.jsx) */
 .table-map-traverse-key small { display: block; font-size: 11px; font-weight: 400; color: var(--text-2); }

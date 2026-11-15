@@ -180,7 +180,7 @@ void main(){
       lay = mix(lay, vec3(1.0), line*0.8); a = max(a, line*0.75);
     } else if(uLayer < 2.5){     // rock abundance: the density grid of terrain.json the planner prices, nearest cell (costGrid.rockAbundanceAt)
       float d = clamp(0.08 + (texture2D(tDensity, vec2(vW.x/uSize.x + 0.5, vW.z/uSize.y + 0.5)).r - 0.25)/0.55*0.92, 0.08, 1.0);
-      lay = mix(vec3(0.15,0.2,0.6), vec3(1.0,0.75,0.1), d); a = 0.5;
+      lay = mix(vec3(0.15,0.2,0.6), vec3(1.0,0.75,0.1), d); a = 0.08 + 0.57*smoothstep(0.25, 0.9, d);   // bare ground almost clear, as the table map
     } else {                     // science targets: light-toned outcrop
       lay = vec3(0.3,0.9,0.95); a = smoothstep(0.05,0.45,texture2D(tMask,uv).r)*0.5;
     }

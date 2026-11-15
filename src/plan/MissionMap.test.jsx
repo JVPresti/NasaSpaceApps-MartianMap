@@ -8,7 +8,7 @@ vi.mock('./mapLayers.css', () => ({}));
 afterEach(() => setLanguage('en'));
 
 // The map's markers and lines are HTML and SVG, so a server render shows them; the canvases stay empty (no DOM).
-const waypoints = [{ name: 'HAB', x: 535.1, z: 574.1 }, { name: 'S1 · light-toned patch', x: 493, z: 539 }];
+const waypoints = [{ name: 'HAB', x: 535.1, z: 574.1 }, { name: 'S1 · light-toned patch', label: 'Light-toned patch', x: 493, z: 539, stopId: 'sortie' }];
 const render = (props) => renderToStaticMarkup(<MissionMap layer={0} title="Map" waypoints={waypoints} path={[[535.1, 574.1], [493, 539]]} {...props} />);
 const lineClasses = (html) => [...html.matchAll(/<polyline[^>]*class="([^"]+)"/g)].map((m) => m[1]);
 
@@ -45,6 +45,23 @@ describe('MissionMap', () => {
     expect(html).toContain('map-place-event');
     expect(html).toContain('<b>SP1 · terrain shade</b>');
     expect(html.match(/SHELTER/g)).toHaveLength(1);
+  });
+
+  it('names each stop once, by its number and its label, never by its waypoint code (P8)', () => {
+    const html = render();
+    expect(html).toContain('<span class="map-marker-num">1</span><span class="map-marker-tag"><b>Light-toned patch</b></span>');
+    expect(html).toContain('<b>Habitat airlock</b>');
+    expect(html).not.toMatch(/>S1<|>HAB<|light-toned patch</);
+    setLanguage('es');
+    expect(render()).toContain('<b>Zona de tono claro</b>');
+    expect(render()).toContain('<b>Esclusa del hábitat</b>');
+  });
+
+  it('opens a tag to the left near the right edge of the map, so the edge does not cut it (N8)', () => {
+    // the habitat sits at the east end of the sortie, past 70 % of a map framed on the route
+    const html = render({ minSpanM: 60 });
+    expect(html).toMatch(/class="map-marker flip"[^>]*>[\s\S]*?Habitat airlock/);
+    expect(html).toMatch(/class="map-marker target"/);   // the stop, west of it, opens to the right as before
   });
 
   it('says SHELTER in the interface language', () => {

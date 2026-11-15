@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { loadDataFile, TERRAIN_PATH } from '../data/dataFiles.js';
-import { t } from '../i18n/index.js';
+import { t, translateText } from '../i18n/index.js';
 import { decodeTerrain } from '../sim/costGrid.js';
 import { radioShadowMask } from '../sim/radio.js';
 import { mastKey } from '../sim/routeProfiles.js';
 import { waypointNumber } from '../sim/waypointNumber.js';
 import { useMissionStore } from '../state/store.js';
-import { LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, mapCrop, paintMap, slopeGrid, toMap, zoomCrop } from './mapLayers.js';
+import { LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, mapCrop, paintMap, slopeGrid, tagFlips, toMap, zoomCrop } from './mapLayers.js';
 import { SLOPE_LIMITS, cautionDeg } from './layers.js';
 import LayerPlaces from './LayerPlaces.jsx';
 import MapPosition from './MapPosition.jsx';
@@ -27,7 +27,6 @@ const PIXELS = 768;
 const NO_ALTERNATIVES = [];
 /** A stop this close to the end of an event's route is its shelter (the habitat's stop is its airlock). Metres. */
 const SHELTER_SNAP_M = 8;
-
 let dataRequest = null;
 const radioMasks = new Map();   // by mast position: one mask for every map on the page, as the planner keeps one
 
@@ -90,10 +89,15 @@ function pointFacts({ terrain, slopes }, { x, z }) {
   return { height: heights[j * n + i], slope: slopes[j * n + i] };
 }
 
-/** "WP1 · channel floor" → ["WP1", "channel floor"]; the first stop is the habitat airlock. */
-function markerLabel(name, index) {
-  if (index === 0) return ['HAB', t('map.habitat.airlock')];
-  return name.includes(' · ') ? name.split(' · ') : [name, ''];
+/**
+ * A stop's one display name (P8): the habitat airlock for the first waypoint, else the planned waypoint's `label` (the
+ * stops.json name) in the interface language, as the table's Stops list words it. `name` ("WP3 · Bright Angel outcrop")
+ * is only the link key; it is shown whole only for a waypoint that has no label, such as a route.json anchor.
+ * The marker's number is its position in the list (waypointNumber).
+ */
+function markerName(waypoint, index) {
+  if (index === 0) { const text = t('map.habitat.airlock'); return text.charAt(0).toUpperCase() + text.slice(1); }
+  return translateText(waypoint.label ?? waypoint.name);
 }
 
 /**
@@ -254,20 +258,20 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
           const [u, v] = toMap(w.x, w.z, crop);
           if (u < -5 || u > 105 || v < -5 || v > 105) return null;
           if (!route && k !== 0 && k !== last) return null;
-          const [code, name] = route ? markerLabel(w.name, k) : [k === 0 ? t('table.habitat') : w.name, ''];
+          const name = route ? markerName(w, k) : k === 0 ? t('table.habitat') : translateText(w.label ?? w.name);
           const target = science.has(w.name) || k === last;
           return (
-            <li key={k} className={target ? 'map-marker target' : 'map-marker'} style={{ left: `${u}%`, top: `${v}%` }}>
+            <li key={k} className={'map-marker' + (target ? ' target' : '') + (tagFlips(u) ? ' flip' : '')} style={{ left: `${u}%`, top: `${v}%` }}>
               <button
                 type="button"
                 className="map-marker-hit"
                 aria-expanded={open === k}
-                aria-label={t('map.marker.details', { name: `${code}${name ? ' ' + name : ''}` })}
+                aria-label={t('map.marker.details', { name: route ? `${waypointNumber(k)} ${name}` : name })}
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={() => setOpen(open === k ? null : k)}
               >
                 {route ? <span className="map-marker-num">{waypointNumber(k)}</span> : <span className={k === 0 ? 'map-marker-home' : 'map-marker-num'} />}
-                <span className="map-marker-tag"><b>{code}</b>{name && <small>{name}</small>}{k === shelterAt && <small className="map-tag-shelter">{t('ui.shelter.89')}</small>}</span>
+                <span className="map-marker-tag"><b>{name}</b>{k === shelterAt && <small className="map-tag-shelter">{t('ui.shelter.89')}</small>}</span>
               </button>
             </li>
           );
@@ -275,7 +279,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
         {destination && shelterAt < 0 && route && (() => {
           const [u, v] = toMap(destination.x, destination.z, crop);
           return (
-            <li className="map-place map-place-shelter map-place-event" style={{ left: `${u}%`, top: `${v}%` }}>
+            <li className={'map-place map-place-shelter map-place-event' + (tagFlips(u) ? ' flip' : '')} style={{ left: `${u}%`, top: `${v}%` }}>
               <i aria-hidden="true" />
               <span className="map-marker-tag">{typeof eventRoute === 'object' && eventRoute?.name && <b>{eventRoute.name}</b>}<small className="map-tag-shelter">{t('ui.shelter.89')}</small></span>
             </li>
@@ -295,15 +299,15 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
       {open !== null && waypoints[open] && (() => {
         const w = waypoints[open];
         const [u, v] = toMap(w.x, w.z, crop);
-        const [code, name] = markerLabel(w.name, open);
+        const name = markerName(w, open);
         const fact = data ? pointFacts(data, w) : null;
         const leg = open > 0 ? legs[open - 1] : null;
         const walked = legs.slice(0, open).reduce((sum, l) => sum + (l?.distanceM ?? 0), 0);
         const style = { left: u > 60 ? undefined : `calc(${u}% + 18px)`, right: u > 60 ? `calc(${100 - u}% + 18px)` : undefined, top: `clamp(8px, calc(${v}% - 40px), calc(100% - 260px))` };
         return (
-          <div className="map-pop" style={style} role="dialog" aria-label={t('map.marker.details', { name: code })} onPointerDown={(event) => event.stopPropagation()}>
+          <div className="map-pop" style={style} role="dialog" aria-label={t('map.marker.details', { name })} onPointerDown={(event) => event.stopPropagation()}>
             <div className="map-pop-head">
-              <div><b>{code}</b>{name && <span>{name}</span>}</div>
+              <div><b>{name}</b></div>
               <button type="button" className="map-pop-close" aria-label={t('menu.close')} onClick={() => setOpen(null)}>×</button>
             </div>
             <dl>

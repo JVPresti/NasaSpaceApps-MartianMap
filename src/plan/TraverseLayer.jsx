@@ -3,7 +3,7 @@ import { imageUrl } from '../data/stops.js';
 import { groupImages, loadTraverse } from '../data/traverse.js';
 import { t } from '../i18n/index.js';
 import { useStops } from '../stops/useStops.js';
-import { toMap } from './mapLayers.js';
+import { tagFlips, toMap } from './mapLayers.js';
 import SourceTag from './SourceTag.jsx';
 
 // Perseverance on the mission table map (#249): the drives the rover made across the tile, under our route, and a pin
@@ -66,7 +66,7 @@ export default function TraverseLayer({ crop }) {
           const [u, v] = toMap(p.x, p.z, crop);
           if (u < -5 || u > 105 || v < -5 || v > 105) return null;
           return (
-            <div key={k} className="map-pin" style={{ left: `${u}%`, top: `${v}%` }}>
+            <div key={k} className={tagFlips(u, 'left') ? 'map-pin flip' : 'map-pin'} style={{ left: `${u}%`, top: `${v}%` }}>
               <span className="map-pin-dot" aria-hidden="true" />
               <button
                 type="button"

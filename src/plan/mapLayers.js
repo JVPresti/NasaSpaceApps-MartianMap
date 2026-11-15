@@ -6,8 +6,8 @@
 // The colours repeat the terrain shader (src/engine/shaders.js, TERRAIN_FRAG) so a layer looks the same in both; radio
 // shadow and exposure are drawn here only (table-only layers, src/plan/layers.js).
 
-import { EXPOSURE_RANGE, SLOPE_LIMITS } from './layers.js';
-import { formatNumber, t } from '../i18n/index.js';
+import { SLOPE_LIMITS } from './layers.js';
+import { formatNumber, t, translateText } from '../i18n/index.js';
 import { rockAbundanceAt, sampleHeights } from '../sim/costGrid.js';
 import { inRadioShadow } from '../sim/radio.js';
 import { sampleSkyView } from '../sim/skyView.js';
@@ -72,6 +72,22 @@ export function toMap(x, z, crop) {
   return [((x - crop.x0) / crop.size) * 100, ((z - crop.z0) / crop.size) * 100];
 }
 
+/**
+ * Shares of the map's width (0 to 100) past which a tag would run off the edge: a stop's or a place's tag, which opens
+ * to the right of its symbol (up to about 170 px of a 630 px map in Spanish), and the rover's image pin, whose shorter
+ * tag opens to the left so it stays clear of the stop tags.
+ */
+export const TAG_FLIP_PCT = Object.freeze({ right: 70, left: 18 });
+
+/**
+ * Whether a marker's tag opens to the other side of its symbol, so the map edge does not cut it.
+ * @param {number} u the marker's share of the map width, 0 to 100 (toMap)
+ * @param {'right' | 'left'} [opens] the side the tag opens to by default
+ */
+export function tagFlips(u, opens = 'right') {
+  return opens === 'right' ? u > TAG_FLIP_PCT.right : u < TAG_FLIP_PCT.left;
+}
+
 /** Round a map width to a readable number of metres for the caption. */
 export function acrossLabel(size) {
   const step = size >= 1000 ? 50 : 10;
@@ -97,10 +113,10 @@ export function layerPlaces(layer, { candidates = [], stops = [], dropped = [], 
     return candidates
       .filter((c) => Number.isFinite(c.x) && Number.isFinite(c.z) && !visited.has(c.id) && !names.has(c.waypoint))
       .map((c) => {
-        const label = c.waypoint?.includes(' · ') ? c.waypoint.split(' · ')[1] : c.name;
+        const label = translateText(c.name);   // the stop's one display name (P8), never its waypoint code
         const limit = why.get(c.id);
         const detail = limit ? t('layers.stop.dropped.' + (['time', 'o2', 'battery'].includes(limit) ? limit : 'unreachable')) : t('layers.stop.other');
-        return { id: c.id, kind: 'candidate', x: c.x, z: c.z, label, detail, title: `${c.name}: ${detail}` };
+        return { id: c.id, kind: 'candidate', x: c.x, z: c.z, label, detail, title: `${translateText(c.name)}: ${detail}` };
       });
   }
   if (layer === LAYER.EXPOSURE) {
@@ -110,7 +126,7 @@ export function layerPlaces(layer, { candidates = [], stops = [], dropped = [], 
         const sky = s.values.sky_view_factor.value;
         const pct = Math.round((s.values.dose_reduction?.value ?? 1 - sky) * 100);
         const label = t('layers.shelter.tag', { id: s.id, pct });
-        return { id: s.id, kind: 'shelter', x: s.x, z: s.z, label, detail: '', title: t('layers.shelter.title', { name: s.name, sky: formatNumber(sky, 2), pct }) };
+        return { id: s.id, kind: 'shelter', x: s.x, z: s.z, label, detail: '', title: t('layers.shelter.title', { name: translateText(s.name), sky: formatNumber(sky, 2), pct }) };
       });
   }
   return [];
@@ -156,10 +172,12 @@ function ramp4(t) {
  * @param {{ slope?: number, rock?: number, mask?: number, shadow?: boolean, sky?: number | null }} sample
  *   slope in degrees; rock: abundance 0.08 to 1 from the planner's density grid; mask: outcrop mask 0 to 1; shadow: the
  *   habitat mast cannot see this point; sky: sky view 0 to 1, null when the grid is not loaded
- * @param {{ cautionDeg?: number }} [options] cautionDeg: where the Terrain layer's caution band starts (layers.cautionDeg)
+ * @param {{ cautionDeg?: number, skyRange?: { min: number, max: number } }} [options] cautionDeg: where the Terrain
+ *   layer's caution band starts (layers.cautionDeg); skyRange: the range of the sky view grid, which the Exposure ramp
+ *   spans (the decoded grid's min and max, about 0.82 to 1 on this tile)
  * @returns {[number, number, number, number]} linear RGB and alpha
  */
-export function layerColour(layer, { slope, rock, mask, shadow, sky } = {}, { cautionDeg = SLOPE_LIMITS.caution } = {}) {
+export function layerColour(layer, { slope, rock, mask, shadow, sky } = {}, { cautionDeg = SLOPE_LIMITS.caution, skyRange = { min: 0, max: 1 } } = {}) {
   if (layer === LAYER.TERRAIN) {
     // Walkable ground stays clear on the table map, so the caution and no-go bands read at a glance.
     if (slope > SLOPE_LIMITS.noGo) return [0.9, 0.08, 0.05, 0.6];
@@ -167,14 +185,17 @@ export function layerColour(layer, { slope, rock, mask, shadow, sky } = {}, { ca
     return [0, 0, 0, 0];
   }
   if (layer === LAYER.ROCK) {
+    // bare ground stays almost clear and rocky ground turns yellow, so the photo still reads (as the terrain shader)
     const d = Math.min(1, Math.max(0.08, rock));
-    return [mix(0.15, 1, d), mix(0.2, 0.75, d), mix(0.6, 0.1, d), 0.55];
+    return [mix(0.15, 1, d), mix(0.2, 0.75, d), mix(0.6, 0.1, d), 0.08 + 0.57 * smooth(0.25, 0.9, d)];
   }
   if (layer === LAYER.OUTCROP) return [0.3, 0.9, 0.95, smooth(0.05, 0.45, mask) * 0.6];
-  if (layer === LAYER.RADIO) return shadow ? [0.357, 0.561, 0.749, 0.55] : [0, 0, 0, 0];
+  // #5b8fbf in linear light, strong enough to read blue over the orange photo, as the legend swatch shows
+  if (layer === LAYER.RADIO) return shadow ? [0.104, 0.275, 0.521, 0.8] : [0, 0, 0, 0];
   if (layer === LAYER.EXPOSURE) {
     if (!Number.isFinite(sky)) return [0, 0, 0, 0];
-    const [r, gg, b] = ramp4(Math.min(1, Math.max(0, (sky - EXPOSURE_RANGE.min) / (EXPOSURE_RANGE.max - EXPOSURE_RANGE.min))));
+    const span = Math.max(1e-6, skyRange.max - skyRange.min);
+    const [r, gg, b] = ramp4(Math.min(1, Math.max(0, (sky - skyRange.min) / span)));
     return [r, gg, b, 0.45];
   }
   return [0, 0, 0, 0];
@@ -209,6 +230,25 @@ export function slopeGrid({ n, width, depth, heights }) {
   return out;
 }
 
+/**
+ * The red channel (0 to 1) of an RGBA image at a share (u, v) of its width and height, bilinear between the four
+ * nearest pixels and clamped at the edges.
+ * @param {{ w: number, h: number, data: Uint8ClampedArray }} image
+ * @param {number} u
+ * @param {number} v
+ */
+export function sampleRed(image, u, v) {
+  const { w, h, data: d } = image;
+  const fx = Math.min(w - 1, Math.max(0, u * w - 0.5));
+  const fy = Math.min(h - 1, Math.max(0, v * h - 0.5));
+  const x0 = Math.floor(fx), y0 = Math.floor(fy);
+  const x1 = Math.min(w - 1, x0 + 1), y1 = Math.min(h - 1, y0 + 1);
+  const tx = fx - x0, ty = fy - y0;
+  const top = d[(y0 * w + x0) * 4] * (1 - tx) + d[(y0 * w + x1) * 4] * tx;
+  const bottom = d[(y1 * w + x0) * 4] * (1 - tx) + d[(y1 * w + x1) * 4] * tx;
+  return (top * (1 - ty) + bottom * ty) / 255;
+}
+
 const toSrgb = (c) => {
   const v = Math.min(1, Math.max(0, c));
   return Math.round(255 * (v <= 0.0031308 ? v * 12.92 : 1.055 * v ** (1 / 2.4) - 0.055));
@@ -226,40 +266,38 @@ const toSrgb = (c) => {
  *   ortho and mask: RGBA pixels of the grayscale images (the red channel is read); terrain: costGrid.decodeTerrain, whose
  *   density grid is the one the planner prices; radio: radio.radioShadowMask for the habitat mast; sky: skyView.decodeSkyViewGrid
  * @param {{ cautionDeg?: number }} [options] passed to layerColour
+ *   The photo, the outcrop mask and the slope are read bilinearly, so a map zoomed in on a short route stays smooth;
+ *   the rock grid and the radio mask keep their cells, which are what the planner prices.
  */
 export function paintMap(out, size, crop, layer, { ortho, mask, terrain, slopes, radio = null, sky = null }, options = {}) {
   const { n, width, depth, heights } = terrain;
   const metres = crop.size / size;
+  const colourOptions = sky ? { ...options, skyRange: { min: sky.min, max: sky.max } } : options;
   for (let py = 0; py < size; py += 1) {
     const z = crop.z0 + (py + 0.5) * metres;
     const v = z / depth + 0.5;
-    const oy = Math.min(ortho.h - 1, Math.max(0, Math.floor(v * ortho.h)));
-    const gj = Math.min(n - 1, Math.max(0, Math.round(v * (n - 1))));
-    const my = mask ? Math.min(mask.h - 1, Math.max(0, Math.floor(v * mask.h))) : 0;
     for (let px = 0; px < size; px += 1) {
       const x = crop.x0 + (px + 0.5) * metres;
       const u = x / width + 0.5;
-      const ox = Math.min(ortho.w - 1, Math.max(0, Math.floor(u * ortho.w)));
-      const g = ortho.data[(oy * ortho.w + ox) * 4] / 255;
+      const g = sampleRed(ortho, u, v);
       let [r, gg, b] = marsColour(g);
       // a little light so the flat map is not darker than the lit terrain
       r *= 1.35; gg *= 1.35; b *= 1.35;
       if (layer > 0) {
-        const gi = Math.min(n - 1, Math.max(0, Math.round(u * (n - 1))));
-        const node = gj * n + gi;
-        const sample = { slope: slopes[node] };
+        const slope = sampleHeights(slopes, n, Math.min(n - 1, Math.max(0, u * (n - 1))), Math.min(n - 1, Math.max(0, v * (n - 1))));
+        const sample = { slope };
         if (layer === LAYER.ROCK) sample.rock = rockAbundanceAt(terrain, x, z);
-        else if (layer === LAYER.OUTCROP) sample.mask = mask ? mask.data[(my * mask.w + Math.min(mask.w - 1, Math.max(0, Math.floor(u * mask.w)))) * 4] / 255 : 0;
+        else if (layer === LAYER.OUTCROP) sample.mask = mask ? sampleRed(mask, u, v) : 0;
         else if (layer === LAYER.RADIO) sample.shadow = radio ? inRadioShadow(radio, x, z) : false;
         else if (layer === LAYER.EXPOSURE) sample.sky = sky ? sampleSkyView(sky, x, z) : null;
-        const [lr, lg, lb, a] = layerColour(layer, sample, options);
+        const [lr, lg, lb, a] = layerColour(layer, sample, colourOptions);
         if (a > 0) {
           const lum = 0.35 + (r + gg + b) * 0.6;
           r = mix(r, lr * lum, a); gg = mix(gg, lg * lum, a); b = mix(b, lb * lum, a);
         }
         if (layer === LAYER.TERRAIN) {
           // 5 m contours, the part of the old Elevation layer that still reads; a bilinear height keeps the lines smooth
-          const line = contourLine(sampleHeights(heights, n, u * (n - 1), v * (n - 1)), slopes[node], metres);
+          const line = contourLine(sampleHeights(heights, n, u * (n - 1), v * (n - 1)), slope, metres);
           if (line > 0) { const w = line * 0.6; r = mix(r, 1, w); gg = mix(gg, 1, w); b = mix(b, 1, w); }
         }
       }
