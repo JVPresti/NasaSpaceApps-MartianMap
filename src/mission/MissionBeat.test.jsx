@@ -64,7 +64,7 @@ describe('beat lines (#265)', () => {
   it('recaps every beat of the first mission in the debrief, one line each', () => {
     const html = renderToStaticMarkup(<MissionRecap objective="sortie" />);
     expect(html).toContain('What this mission showed');
-    expect(html.match(/<li /g)).toHaveLength(MISSIONS.first.beats.length);
+    expect(html.match(/<p data-beat=/g)).toHaveLength(MISSIONS.first.beats.length);
     expect(html).toContain('data-beat="debrief"');
   });
 });

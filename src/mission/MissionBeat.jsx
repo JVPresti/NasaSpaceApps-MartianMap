@@ -39,8 +39,8 @@ export function PlanBeat({ evaBegun }) {
 }
 
 /**
- * The debrief recap: one line per beat of the mission the EVA ran (the objective is locked from Begin EVA). Nothing for
- * the full EVA.
+ * The debrief recap: one line per beat of the mission the EVA ran (the objective stays locked from Begin EVA until a
+ * restart), as a debrief section of paragraphs like its notes. Nothing for the full EVA.
  * @param {{ objective?: string, className?: string, titleClassName?: string }} props
  */
 export function MissionRecap({ objective, className = '', titleClassName = '' }) {
@@ -50,9 +50,7 @@ export function MissionRecap({ objective, className = '', titleClassName = '' })
   return (
     <section className={className} aria-labelledby="mission-recap-title">
       <h3 id="mission-recap-title" className={titleClassName}>{t('mission.recap.title')}</h3>
-      <ul className="mission-recap">
-        {beats.map((beat) => <li key={beat.id} data-beat={beat.id}>{t(beat.text)}</li>)}
-      </ul>
+      {beats.map((beat) => <p key={beat.id} data-beat={beat.id}>{t(beat.text)}</p>)}
     </section>
   );
 }
