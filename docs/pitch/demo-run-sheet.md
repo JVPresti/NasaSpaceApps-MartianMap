@@ -20,7 +20,7 @@ The talk is `script-4min-en.md`, or `script-4min-es.md` in Spanish. P2 stands at
 | Step | Do | Check |
 |---|---|---|
 | 1 | Plug the laptop into power and the projector. Display duplicated, 1920 x 1080. | The projector shows the desktop |
-| 2 | Chrome, tab 1: `https://martian-map.fernando-haro-c.workers.dev/?present=1`. Wait for the globe and the caption "Plan a Mars walk you can return from." Press nothing. | About 20 s on the GPU laptop. "3D view unavailable. Captions only" means WebGL failed: run the talk from the PDF (below) |
+| 2 | Chrome, tab 1: `https://martian-map.fernando-haro-c.workers.dev/?present=1`. Wait for the globe and the caption "Plan a Mars walk you can return from." Press nothing. | About 20 s on the GPU laptop. If it shows "3D view unavailable. Captions only", WebGL failed, so run the talk from the PDF (below) |
 | 3 | Captions in English. If they show Spanish, press **L** once. | The first caption is in English |
 | 4 | Tab 2: `docs/pitch/out/deck-global.pdf`, full screen, on slide 1. Tab 3: the demo video as a plain file (#356's draft keeps it at `public/present/demo.mp4`), paused at 0:00. Open `docs/pitch/fallback/stills/` in an image viewer. Go back to tab 1. | One click plays the video file |
 | 5 | **F11** for full screen. Sound at about 30 % if the video has sound. | |
@@ -85,7 +85,7 @@ Then run `node docs/pitch/tools/sync-present.mjs`, put the real video length in 
 | `sources` | 6 (measured or simulated), then 7 for the last sentence (0.14 m) |
 | `credits` | 1 again (the thesis, the team name and the six names). Slide 7 lists next steps, which the talk leaves out |
 
-The PDF run is about a minute shorter, because slide 4 replaces the video. Do not read slide 3's 14 minutes aloud. The talk speaks no margin figure.
+The PDF run is about a minute shorter, because slide 4 replaces the video. Do not read slide 3's 11 minutes aloud. The talk speaks no margin figure.
 
 ## Re-check after these merge
 
@@ -93,6 +93,6 @@ The PDF run is about a minute shorter, because slide 4 replaces the video. Do no
 - **#353** (`fix/present-polish`): if it changes captions, rerun `sync-present.mjs`. The script lines do not quote captions, so they should not need to change.
 - **#335** (`feat/return-zone`): once the app draws the return zone, the zone beat's source line will change ("Not in the walk HUD yet"), and a still of it can join the video fallback.
 - **HUD restyle (`exp/hill-climb-quality`)**: retake the stills in `fallback/stills/` and the deck screenshots.
-- **#298 and #312** (the reserve held at a fixed 37.9 g; the margin priced at a planning rate): the 14 minutes on slide 3 change. Rerun `node docs/pitch/tools/walkback-zone.mjs` and update slide 3.
+- **#298 and #312** (the reserve held at a fixed 37.9 g; the margin priced at a planning rate): the 11 minutes on slide 3 change. Rerun `node docs/pitch/tools/walkback-zone.mjs` and update slide 3.
 
-The stills in `fallback/stills/` were captured from #282 at 989970f with `npm run measure:demo` on an RTX 3070, 1920 × 1080, English. `S1-start-AI-video.jpg` shows the AI-generated start video: do not use it.
+The stills in `fallback/stills/` were captured from #282 at 989970f with `npm run measure:demo` on an RTX 3070, 1920 × 1080, English. `S1-start-AI-video.jpg` shows the AI-generated start video, so do not use it.

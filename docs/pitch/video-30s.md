@@ -5,7 +5,7 @@ Hard limit 30 s. English narration, English on-screen text. If the team narrates
 Rules from the submission guide that apply here:
 
 - The audience knows nothing about Mars or EVAs. Every shot answers one question.
-- No AI-generated images or video unless they carry a visible watermark. Our start screen video is AI-generated: **do not use it**. Every shot below is a real app capture or a real NASA image.
+- No AI-generated images or video unless they carry a visible watermark. Our start screen video is AI-generated, so **do not use it**. Every shot below is a real app capture or a real NASA image.
 - No NASA logos, flags or mission insignia added or modified. The app shows none; keep it that way in titles.
 - No images of anyone under 18.
 
@@ -14,7 +14,7 @@ Rules from the submission guide that apply here:
 | Time | Official beat | Narration (EN) | Words / slot | Subtitle if narrated in Spanish (English) | On-screen text |
 |---|---|---|---|---|---|
 | 0:00-0:02 | Intro | (suit breathing, no words) | 0 / 2 s |  | Los Frijolitos Espaciales Refritos Nueva Generación · Ensenada, Mexico · NASA Space Apps 2026, Martian Map |
-| 0:02-0:05 | The challenge | "An astronaut has to walk home." | 6 / 3 s | An astronaut has to walk home. | Cheyava Falls · 53 g of O2 to walk home |
+| 0:02-0:05 | The challenge | "An astronaut has to walk home." | 6 / 3 s | An astronaut has to walk home. | Cheyava Falls · 62 g of O2 to walk home |
 | 0:05-0:10 | Name and tagline | "Marswalk shows how many minutes she has left after that." | 10 / 5 s | Marswalk shows how many minutes she has left after that. | Marswalk · MARGIN NOW, minutes left after the walk home |
 | 0:10-0:20 | How it works with NASA data | "The planner blocks HiRISE slopes over twenty degrees. When dust reaches the opacity Curiosity measured in 2018, the route home re-plans." | 22 / 10 s | The planner blocks HiRISE slopes over twenty degrees. When dust reaches the opacity Curiosity measured in 2018, the route home re-plans. | HiRISE terrain model · Mastcam-Z · storm opacity from Curiosity, Gale 2018 |
 | 0:20-0:30 | The future | "Next, a heart rate sensor sets her oxygen use. Our grid reproduces NASA's HiRISE model to fourteen centimetres." | 18 / 10 s | Next, a heart rate sensor sets her oxygen use. Our grid reproduces NASA's HiRISE model to fourteen centimetres. | Next: heart rate, other HiRISE sites · our grid reproduces NASA's HiRISE model to 0.14 m · martian-map.fernando-haro-c.workers.dev |
@@ -31,7 +31,7 @@ Base URL: `https://martian-map.fernando-haro-c.workers.dev/` (`main`, with #282 
 |---|---|---|---|---|
 | 1 | 0-59 | 0:00-0:02 | `?present=1`, globe beat. Fallback without the presentation mode: the mission table's Site step, slow zoom out from Cheyava Falls with the mouse wheel | Mars or the HiRISE tile; title card with the team name |
 | 2 | 60-149 | 0:02-0:05 | `?present=1`, cold open beat (astronaut at Cheyava Falls, the route home drawn). Fallback: Route step with goal **Sample Cheyava Falls**, the route from HAB to Cheyava Falls drawn. The overlay names no distance, because the presentation mode draws our 913 m export and #282's table reads 0.93 km | The habitat, Cheyava Falls and the route in one frame |
-| 3 | 150-299 | 0:05-0:10 | Walk, first sortie, with **O2** dragged to **20 %** in the crew's needs before **Begin EVA**, 10 s after **Start walking**; zoom or crop on the suit panel so "MARGIN NOW" and its number fill the frame. With a full tank the margin reads about +480, the 8 h EVA clock, not oxygen; at 20 % it should read tens of minutes, set by oxygen (rehearse it first, as cut B in `demo-run-sheet.md`). Do not use the presentation's walkback zone here: it is not an app feature | The margin pill, readable; title "Marswalk" |
+| 3 | 150-299 | 0:05-0:10 | Walk, first sortie, with **O2** dragged to **20 %** in the crew's needs before **Begin EVA**, 10 s after **Start walking**; zoom or crop on the suit panel so "MARGIN NOW" and its number fill the frame. With a full tank the margin reads about +480, the 8 h EVA clock, not oxygen. At 20 % it should read tens of minutes, set by oxygen; rehearse it once before recording. The orange return zone is in the app too now (#335, at the mission table), so shot 7 can show it | The margin pill, readable; title "Marswalk" |
 | 4 | 300-419 | 0:10-0:14 | Route step, click **Terrain**: the route bends around red slope bands | Red slope bands, a stretch where the route bends around them, the legend line "Decides where the route bends". Do not frame the route as never touching red: at Bright Angel, a stop on 28.7° rock, the line touches red |
 | 5 | 420-509 | 0:14-0:17 | Walk, first sortie, 5 s after **Start walking**, walking toward the Light-toned patch stop (S1 on the waypoint panel) | Helmet view, the margin readout "MARGIN NOW" on the left, the minimap |
 | 6 | 510-599 | 0:17-0:20 | Walk, first sortie on #282 at 8ec6f72: at the Light-toned patch stop (about T+53 s), take a sample (**P**, click the ground, **E**); the dust storm starts 3 s after the sample is secured (about T+68 s in the measured player run). Without a sample it waits 90 s. Film the banner and the sky darkening; press **M** at frame 570: the table shows the route home | The banner text "global storm worst case · up to Curiosity's Gale 2018 storm, not Jezero" readable for 1 s |
