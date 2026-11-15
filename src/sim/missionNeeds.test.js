@@ -6,7 +6,7 @@ import { startAtAirlock } from '../plan/routeStart.js';
 import { departRoute } from '../state/simulation.js';
 import { buildCostGrid, cellCost, heightAt } from './costGrid.js';
 import {
-  checkNeeds, CREW_SETTINGS, DEFAULT_NEEDS, normaliseNeeds, OBJECTIVE_IDS, OBJECTIVES, planFromNeeds, RISK_IDS,
+  checkNeeds, CREW_SETTINGS, DEFAULT_NEEDS, normaliseNeeds, OBJECTIVE_DEFAULTS, OBJECTIVE_IDS, OBJECTIVES, planFromNeeds, RISK_IDS,
   RISK_SETTINGS, riskPricing, siteStart,
 } from './missionNeeds.js';
 import { planProfiles, pricedProfileGrid, ROUTE_PROFILES } from './routeProfiles.js';
@@ -55,8 +55,9 @@ const ids = (plan) => plan.stops.map((s) => s.id);
 const MAST = { x: -95, y: 5, z: 0 };
 
 describe('needs', () => {
-  it('defaults to the full EVA to Cheyava Falls for a pair, today\'s planner cost, 2 h, full suit', () => {
-    expect(DEFAULT_NEEDS).toEqual({ objective: 'cheyava', crew: 2, timeMin: 120, o2Pct: 100, batteryPct: 100, risk: 'standard' });
+  it('defaults to the first sortie for a pair, today\'s planner cost, 30 min, full suit', () => {
+    expect(DEFAULT_NEEDS).toEqual({ objective: 'sortie', crew: 2, timeMin: 30, o2Pct: 100, batteryPct: 100, risk: 'standard' });
+    expect(OBJECTIVE_DEFAULTS).toEqual({ sortie: { timeMin: 30 }, cheyava: { timeMin: 120 }, 'bright-angel': { timeMin: 120 } });
     expect(riskPricing('standard')).toBeNull();
     expect(normaliseNeeds({ objective: 'nope', crew: 3, timeMin: 5, o2Pct: 150, risk: 'wild' })).toEqual({ ...DEFAULT_NEEDS, timeMin: 10 });
   });
@@ -284,19 +285,21 @@ describe('on the real terrain', () => {
     expect(plan.budget.workSec).toBe(300);
   });
 
-  // The two contrasting plans of the PR (8-minute plan, section A).
-  it('solo, cautious, 30 min: radio contact, Bright Angel dropped, and Cheyava Falls alone does not fit', () => {
-    const plan = planFromNeeds({ objective: 'cheyava', crew: 1, timeMin: 30, risk: 'cautious', profile: 'fastest' }, real);
+  // The two contrasting plans of the PR (8-minute plan, section A): both GO, with different stops and lines.
+  it('solo, cautious, 100 min: radio contact, Cheyava Falls alone, Bright Angel dropped for time', () => {
+    const plan = planFromNeeds({ objective: 'cheyava', crew: 1, timeMin: 100, risk: 'cautious', profile: 'fastest' }, real);
+    expect(plan.fits).toBe(true);
+    expect(plan.totals.status).toBe('nominal');
     expect(plan.profile).toBe('radio');
     expect(ids(plan)).toEqual(['cheyava-falls']);
     expect(plan.stops[0].workSec).toBe(1800);
-    expect(plan.fits).toBe(false);
-    expect(plan.dropped).toMatchObject([{ id: 'bright-angel', limit: 'time' }]);
-    expect(plan.budget.usableSec).toBe(30 * 60 * 0.75);
-    expect(plan.route.distance).toBeGreaterThan(820);
-    expect(plan.route.distance).toBeLessThan(930);
+    expect(plan.dropped).toMatchObject([{ id: 'bright-angel', limit: 'time', workSec: 1350 }]);
+    expect(plan.budget.usableSec).toBe(100 * 60 * 0.75);
+    expect(plan.route.distance).toBeGreaterThan(840);
+    expect(plan.route.distance).toBeLessThan(910);
     expect(plan.budget.usedSec / 60).toBeGreaterThan(60);
-    expect(plan.reasons.map((r) => r.code)).toEqual(['solo-radio', 'solo-work', 'risk', 'stop-dropped', 'required-over']);
+    expect(plan.budget.usedSec / 60).toBeLessThan(72);
+    expect(plan.reasons.map((r) => r.code)).toEqual(['solo-radio', 'solo-work', 'risk', 'stop-dropped', 'fits']);
   });
 
   it('pair, bold, 2 h: the chosen profile, both stops, and room to spare', () => {
@@ -312,12 +315,33 @@ describe('on the real terrain', () => {
     expect(plan.budget.usedSec / 60).toBeLessThan(85);
     expect(plan.budget.spareSec).toBeGreaterThan(30 * 60);
     expect(plan.totals.status).toBe('nominal');
+    expect(plan.reasons.map((r) => r.code)).toEqual(['risk', 'stop-added', 'fits']);
+  });
+
+  it('draws the two contrasting plans as different lines on the map', () => {
+    const solo = planFromNeeds({ objective: 'cheyava', crew: 1, timeMin: 100, risk: 'cautious', profile: 'fastest' }, real);
+    const pair = planFromNeeds({ objective: 'cheyava', crew: 2, timeMin: 120, risk: 'bold', profile: 'fastest' }, real);
+    // the farthest the solo route gets from the pair route: far more than a walking corridor
+    const off = Math.max(...solo.route.path.map(([x, z]) => Math.min(...pair.route.path.map(([px, pz]) => Math.hypot(px - x, pz - z)))));
+    expect(off).toBeGreaterThan(50);
+  });
+
+  it('solo, cautious, 30 min: keeps Cheyava Falls and says how far over the time it goes', () => {
+    const plan = planFromNeeds({ objective: 'cheyava', crew: 1, timeMin: 30, risk: 'cautious', profile: 'fastest' }, real);
+    expect(plan.fits).toBe(false);
+    expect(ids(plan)).toEqual(['cheyava-falls']);
+    expect(plan.reasons.at(-1)).toMatchObject({ code: 'required-over', limit: 'time' });
+    expect(plan.reasons.at(-1).overSec / 60).toBeGreaterThan(40);
   });
 
   it('keeps today\'s cost for the default needs, so the standard grids are the route profiles of #245', () => {
-    const plan = planFromNeeds({ ...DEFAULT_NEEDS, profile: 'fastest' }, real);
-    expect(plan.pricing).toBeNull();
-    expect(plan.fits).toBe(true);
-    expect(ids(plan)).toEqual(['bright-angel', 'cheyava-falls']);
+    const sortie = planFromNeeds({ ...DEFAULT_NEEDS, profile: 'fastest' }, real);
+    expect(sortie.pricing).toBeNull();
+    expect(sortie.fits).toBe(true);
+    expect(ids(sortie)).toEqual(['sortie']);
+    // the full EVA at its default time keeps both stops
+    const full = planFromNeeds({ ...DEFAULT_NEEDS, objective: 'cheyava', ...OBJECTIVE_DEFAULTS.cheyava, profile: 'fastest' }, real);
+    expect(full.fits).toBe(true);
+    expect(ids(full)).toEqual(['bright-angel', 'cheyava-falls']);
   });
 });

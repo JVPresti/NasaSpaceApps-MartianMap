@@ -4,7 +4,7 @@
 import { create } from 'zustand';
 import { createInitialEvaState } from './eva.js';
 import { LOOK_DEFAULTS, clampLookSettings, readLookSettings, writeLookSettings } from '../engine/lookSettings.js';
-import { checkNeeds, DEFAULT_NEEDS } from '../sim/missionNeeds.js';
+import { checkNeeds, DEFAULT_NEEDS, OBJECTIVE_DEFAULTS } from '../sim/missionNeeds.js';
 
 /** Plain data only. Units are in the field names. Coordinates: x east, z south, metres from Cheyava Falls. */
 export function createInitialState() {
@@ -111,15 +111,19 @@ export const setMode = (mode) => {
 /**
  * Change the crew's needs at the mission table (src/sim/missionNeeds.js): objective ('sortie' | 'cheyava' |
  * 'bright-angel'), crew (1 | 2), timeMin, o2Pct, batteryPct and risk ('cautious' | 'standard' | 'bold'). Numbers are
- * clamped to their range; an unknown key or value throws. Once the EVA has begun the needs are locked and nothing
- * changes. The terrain preference is the route profile (chooseRouteProfile), not a need.
+ * clamped to their range; an unknown key or value throws. A new objective without a timeMin in the same update takes
+ * that objective's default time (OBJECTIVE_DEFAULTS: 30 min for the sortie, 2 h for the full EVA). Once the EVA has
+ * begun the needs are locked and nothing changes. The terrain preference is the route profile (chooseRouteProfile),
+ * not a need.
  * @param {object} partial
  * @returns {boolean} true when the needs changed
  */
 export const setNeeds = (partial) => {
-  const update = checkNeeds(partial);
+  const checked = checkNeeds(partial);
   let changed = false;
   useMissionStore.setState((s) => {
+    const newObjective = checked.objective !== undefined && checked.objective !== s.needs.objective;
+    const update = newObjective && checked.timeMin === undefined ? { ...checked, ...OBJECTIVE_DEFAULTS[checked.objective] } : checked;
     if (s.needs.locked || Object.entries(update).every(([k, v]) => s.needs[k] === v)) return s;
     changed = true;
     return { needs: { ...s.needs, ...update } };

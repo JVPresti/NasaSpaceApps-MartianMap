@@ -197,14 +197,14 @@ describe('route profiles (#245)', () => {
 });
 
 describe('the needs of the crew (#265)', () => {
-  it('starts on the full EVA to Cheyava Falls for a pair, unlocked', () => {
-    expect(createInitialState().needs).toEqual({ objective: 'cheyava', crew: 2, timeMin: 120, o2Pct: 100, batteryPct: 100, risk: 'standard', locked: false });
+  it('starts on the first sortie for a pair, unlocked', () => {
+    expect(createInitialState().needs).toEqual({ objective: 'sortie', crew: 2, timeMin: 30, o2Pct: 100, batteryPct: 100, risk: 'standard', locked: false });
     expect(createInitialState().route).toMatchObject({ stops: [], dropped: [], planReasons: [], budget: null, weights: null, explain: [] });
   });
 
   it('applies a partial update, clamps numbers and refuses unknown values', () => {
     expect(setNeeds({ crew: 1, timeMin: 30, risk: 'cautious' })).toBe(true);
-    expect(useMissionStore.getState().needs).toMatchObject({ objective: 'cheyava', crew: 1, timeMin: 30, risk: 'cautious' });
+    expect(useMissionStore.getState().needs).toMatchObject({ objective: 'sortie', crew: 1, timeMin: 30, risk: 'cautious' });
     expect(setNeeds({ o2Pct: 50 })).toBe(true);
     expect(setNeeds({ o2Pct: 250 })).toBe(true);
     expect(useMissionStore.getState().needs.o2Pct).toBe(100);
@@ -214,19 +214,31 @@ describe('the needs of the crew (#265)', () => {
 
   it('keeps the same object when nothing changes, so the route does not re-plan', () => {
     const before = useMissionStore.getState().needs;
-    expect(setNeeds({ objective: 'cheyava', crew: 2 })).toBe(false);
+    expect(setNeeds({ objective: 'sortie', crew: 2 })).toBe(false);
     expect(useMissionStore.getState().needs).toBe(before);
   });
 
   it('locks the needs when the EVA begins, at the first switch to Walk, until a restart', () => {
-    setNeeds({ objective: 'sortie' });
+    setNeeds({ objective: 'cheyava' });
     setMode('walk');
     setMode('plan');
     expect(useMissionStore.getState().needs.locked).toBe(true);
     expect(setNeeds({ objective: 'bright-angel', timeMin: 60 })).toBe(false);
-    expect(useMissionStore.getState().needs).toMatchObject({ objective: 'sortie', timeMin: 120 });
+    expect(useMissionStore.getState().needs).toMatchObject({ objective: 'cheyava', timeMin: 120 });
     resetStore();
     expect(useMissionStore.getState().needs.locked).toBe(false);
+  });
+
+  it('gives a new objective its default time, unless the update sets one', () => {
+    setNeeds({ objective: 'cheyava' });
+    expect(useMissionStore.getState().needs).toMatchObject({ objective: 'cheyava', timeMin: 120 });
+    setNeeds({ timeMin: 90 });
+    setNeeds({ crew: 1 });
+    expect(useMissionStore.getState().needs.timeMin).toBe(90);   // only a new objective resets the time
+    setNeeds({ objective: 'sortie', timeMin: 45 });
+    expect(useMissionStore.getState().needs).toMatchObject({ objective: 'sortie', timeMin: 45 });
+    setNeeds({ objective: 'bright-angel' });
+    expect(useMissionStore.getState().needs.timeMin).toBe(120);
   });
 
   it('holds a solo crew to the radio-contact route while it has one', () => {

@@ -72,8 +72,20 @@ export const TIME_RANGE_MIN = Object.freeze([10, 480]);
 /** O2 and battery at the start, percent of the primary tank and battery. */
 export const CONSUMABLE_RANGE_PCT = Object.freeze([1, 100]);
 
-/** Needs before the crew changes anything: the full EVA to Cheyava Falls (today's route), two astronauts, 2 h. */
-export const DEFAULT_NEEDS = Object.freeze({ objective: 'cheyava', crew: 2, timeMin: 120, o2Pct: 100, batteryPct: 100, risk: 'standard' });
+/**
+ * The time each objective plans for by default (our choice, SIM). The first sortie is about 2 min of walking and 5 min
+ * of work, so 30 min leaves a wide margin; the full EVA to Cheyava Falls with Bright Angel uses about 76 min for a
+ * pair (walk 19 min, work 35 min, walk home 22 min), so 2 h keeps both stops. setNeeds applies it when the objective
+ * changes and the update gives no time of its own (store.js).
+ */
+export const OBJECTIVE_DEFAULTS = Object.freeze({
+  sortie: Object.freeze({ timeMin: 30 }),
+  cheyava: Object.freeze({ timeMin: 120 }),
+  'bright-angel': Object.freeze({ timeMin: 120 }),
+});
+
+/** Needs before the crew changes anything: the first sortie (the default mission, #265), two astronauts, 30 min. */
+export const DEFAULT_NEEDS = Object.freeze({ objective: 'sortie', crew: 2, timeMin: OBJECTIVE_DEFAULTS.sortie.timeMin, o2Pct: 100, batteryPct: 100, risk: 'standard' });
 export const NEEDS_KEYS = Object.freeze(Object.keys(DEFAULT_NEEDS));
 
 const finite = (value) => typeof value === 'number' && Number.isFinite(value);
