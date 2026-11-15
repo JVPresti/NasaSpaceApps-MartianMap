@@ -92,7 +92,7 @@ export function createCinematic(ctx, hooks) {
 
   // ---------------------------------------------------------------- the route, revealed from its start
   const routeMat = new THREE.ShaderMaterial({
-    uniforms: { uReveal: { value: 0 }, uOpacity: { value: 1 }, uColor: { value: new THREE.Color('#2bffed') } },
+    uniforms: { uReveal: { value: 0 }, uOpacity: { value: 1 }, uColor: { value: new THREE.Color('#e9edf2') } },   // ink white: orange is kept for danger and the zone
     vertexShader: ROUTE_VERT, fragmentShader: ROUTE_FRAG, transparent: true, depthWrite: false,
     polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -12,
   });

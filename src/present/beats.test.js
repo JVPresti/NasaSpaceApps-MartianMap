@@ -4,7 +4,7 @@ import { BEATS, GLOBAL_30, PLACES, captionsOf, sequence, wordCount } from './bea
 import { fill, lookup, resolvePlace, trackNumber } from './data.js';
 
 const plan = JSON.parse(readFileSync(new URL('../../public/present/plan.json', import.meta.url), 'utf8'));
-const data = { ...plan, zone: { ...plan.zone, margin: 1 } };
+const data = { ...plan, zone: { ...plan.zone, margin: 1, area: 1 } };
 const TAGS = new Set(['DATA', 'DERIVED', 'SIM']);
 // The creative brief bans these words on screen (#291).
 const BANNED = /revolutionary|groundbreaking|cutting-edge|next-generation|immersive|seamless|powerful|innovative|final frontier|one small step|imagine a world|introducing|future of exploration|ai-powered|and beyond/i;

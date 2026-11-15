@@ -14,7 +14,7 @@
 // GPU: headless Chrome in WSL2 falls back to SwiftShader (minutes per frame). QA_GPU=1 starts a headed Chrome off screen on
 // the WSLg X server, which renders on the real GPU (Mesa d3d12). Without it the script uses headless Chrome and warns.
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import puppeteer from 'puppeteer-core';
@@ -57,20 +57,25 @@ function ffmpegPath() {
   throw new Error('No ffmpeg with libx264. Set FFMPEG, install ffmpeg, or run: uv pip install --target ~/.cache/marswalk-ffmpeg imageio-ffmpeg');
 }
 
+// Chrome's profile goes on the real disk: /tmp is often a small tmpfs, and a full one kills Chrome mid-recording.
+const PROFILE_ROOT = join(homedir(), '.cache/marswalk-present');
+
 async function launch() {
+  mkdirSync(PROFILE_ROOT, { recursive: true });
+  const userDataDir = mkdtempSync(join(PROFILE_ROOT, 'chrome-'));
   if (GPU) {
     process.env.GALLIUM_DRIVER ||= 'd3d12';
     process.env.DISPLAY ||= ':0';
     return puppeteer.launch({
-      executablePath: chromePath(), headless: false, defaultViewport: { width: W, height: H },
+      executablePath: chromePath(), headless: false, defaultViewport: { width: W, height: H }, userDataDir,
       args: ['--ozone-platform=x11', '--use-gl=angle', '--use-angle=gl', '--ignore-gpu-blocklist',
         '--window-position=-4000,-4000', `--window-size=${W},${H + 140}`,
         '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows',
-        '--no-sandbox', '--mute-audio', '--hide-scrollbars'],
+        '--no-sandbox', '--mute-audio', '--hide-scrollbars', '--disable-dev-shm-usage'],
     });
   }
   console.warn('QA_GPU is not set: headless Chrome renders on the CPU (SwiftShader) and is very slow.');
-  return puppeteer.launch({ executablePath: chromePath(), headless: true, defaultViewport: { width: W, height: H }, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--hide-scrollbars'] });
+  return puppeteer.launch({ executablePath: chromePath(), headless: true, defaultViewport: { width: W, height: H }, userDataDir, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--hide-scrollbars'] });
 }
 
 const SPLIT = opt('split', '');   // record in two browser sessions, the second starting at this beat, and join them
@@ -83,7 +88,9 @@ async function withPage(fn) {
     page.on('pageerror', (e) => console.error('page error:', e.message));
     return await fn(page, browser);
   } finally {
+    const dir = browser.process()?.spawnargs?.find((a) => a.startsWith('--user-data-dir='))?.slice(16);
     await browser.close();
+    if (dir && dir.startsWith(PROFILE_ROOT)) rmSync(dir, { recursive: true, force: true });
   }
 }
 

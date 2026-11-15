@@ -14,7 +14,7 @@ import { createClock, createTimeline, RECORD_STEP, easeInOut, easeOut, ramp, sho
 import { blendShot, boxToLocal, cameraHeight, engineCamera, geoToLocal, localToGeo } from './geo.js';
 import { createGlobe } from './globe.js';
 import { createProjector } from './project.js';
-import { decodeLast, fill, marginAt, clockAt, resolvePlace, trackNumber, astronautAt } from './data.js';
+import { decodeLast, fill, marginAt, clockAt, areaAt, resolvePlace, trackNumber, astronautAt } from './data.js';
 import './present.css';
 
 const BASE = (import.meta.env.BASE_URL || '/') + 'present/';
@@ -192,8 +192,10 @@ export default function Present({ engine, onExit }) {
     function shotAt(beat, t) {
       const dur = reduced ? 0 : (beat.move?.dur ?? 0);
       const u = dur > 0 ? ramp(t, 0, dur) : 1;
-      const zoom = beat.move?.ease === 'zoom';
-      const eased = beat.move?.ease === 'out' ? easeOut(u) : easeInOut(u);
+      const ease = beat.move?.ease;
+      // zoomIn ends fast and zoomOut starts fast, so two of them back to back read as one fall with no stop between
+      const eased = ease === 'out' ? easeOut(u) : ease === 'zoomIn' ? u * u : ease === 'zoomOut' ? 1 - (1 - u) * (1 - u) : easeInOut(u);
+      const zoom = ease === 'zoom' || ease === 'zoomIn' || ease === 'zoomOut';
       const end = { ...toShot };
       if (end.spin) end.lon += end.spin * t;
       if (beat.drift && !reduced) end.yaw += (beat.drift.yaw || 0) * Math.max(0, t - dur);
@@ -238,12 +240,17 @@ export default function Present({ engine, onExit }) {
         }
         const a = p && p.visible ? showValue(chip.show || [0], t, beat.duration) : 0;
         el.style.opacity = a.toFixed(3);
-        if (p) el.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px)`;
+        if (p) {
+          // keep the card inside the frame: 24 px from the edges, room for the card to the right and above
+          const x = Math.max(24, Math.min(dims.w - 360, p.x)), y = Math.max(150, Math.min(dims.h - 40, p.y));
+          el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+        }
         const card = el.querySelector('.pr-card');
         if (card) card.style.transform = `translateY(${((1 - a) * 10).toFixed(1)}px)`;
-        if (chip.live === 'margin') {
+        if (chip.live === 'margin' || chip.live === 'area') {
           const big = el.querySelector('.pr-big');
-          if (big) big.textContent = `${marginAt(plan, zoneFrame)} min`;
+          if (big) big.textContent = chip.live === 'area' ? `${fill('{a}', { a: +areaAt(plan, zoneFrame).toFixed(1) }, langRef.current)} ha` : `${marginAt(plan, zoneFrame)} min`;
+          el.classList.toggle('danger', zoneFrame >= plan.zone.scenario.speFrame - 0.5);   // orange from the alert on
           const text = el.querySelector('.pr-text');
           if (text && chip.liveText) text.textContent = fill(chip.liveText[langRef.current] ?? chip.liveText.en, { clock: clockAt(plan, zoneFrame) }, langRef.current);
         }
@@ -395,18 +402,19 @@ export default function Present({ engine, onExit }) {
   const beat = beats[index];
   const plan = assets?.plan;
   const tx = (o) => (o ? (o[lang] ?? o.en ?? '') : '');
-  const dataFor = plan ? { ...plan, zone: { ...plan.zone, margin: plan.zone.frames[0].marginMin } } : {};
+  const dataFor = plan ? { ...plan, zone: { ...plan.zone, margin: plan.zone.frames[0].marginMin, area: plan.zone.frames[0].areaHa } } : {};
 
   return (
     <dialog ref={dialogRef} className={`present${opts.record ? ' recording' : ''}`} aria-label="Marswalk presentation" onCancel={(e) => { e.preventDefault(); exit(); }}>
       <canvas ref={globeRef} className="pr-globe" aria-hidden="true" />
+      <div className="pr-scrim" aria-hidden="true" />
       {failed && (
         <video className="pr-fallback" src={BASE + 'backup.mp4'} autoPlay muted playsInline loop={false} controls={false} />
       )}
       <div className="pr-layer" ref={layerRef} aria-hidden="true">
         {plan && beat.tracks?.zone && <div className="pr-astronaut"><span /></div>}
         {plan && (beat.chips || []).map((chip, i) => (
-          <div key={`${beat.id}-${i}`} className={`pr-pin${chip.danger ? ' danger' : ''}${chip.offset ? ' offset' : ''}`} data-at="1" data-i={i} style={{ opacity: 0 }}>
+          <div key={`${beat.id}-${i}`} className={`pr-pin${chip.danger ? ' danger' : ''}${chip.offset ? ' offset' : ''}${chip.home ? ' home' : ''}`} data-at="1" data-i={i} style={{ opacity: 0 }}>
             <span className="pr-dot" />
             {chip.ring && [0, 1].map((k) => <span key={k} className="pr-ring" data-k={k} />)}
             <div className="pr-card">

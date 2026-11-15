@@ -18,7 +18,7 @@ export function fill(text, data, lang = 'en') {
 }
 
 export function formatNumber(v, lang = 'en') {
-  const digits = Number.isInteger(v) ? 0 : Math.abs(v) < 1 ? 2 : Math.abs(v) < 10 ? 1 : 0;
+  const digits = Number.isInteger(v) ? 0 : Math.abs(v) < 1 ? 2 : Math.abs(v) < 100 ? 1 : 0;
   return v.toLocaleString(lang === 'es' ? 'es-MX' : 'en-US', { maximumFractionDigits: digits, minimumFractionDigits: digits });
 }
 
@@ -75,4 +75,11 @@ export function clockAt(plan, f) {
   const i = Math.max(0, Math.min(frames.length - 1, Math.floor(f))), j = Math.min(frames.length - 1, i + 1), u = Math.max(0, Math.min(1, f - i));
   const sec = Math.round(frames[i].elapsedSec + (frames[j].elapsedSec - frames[i].elapsedSec) * u);
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+}
+
+/** The zone's area in hectares at a fractional frame of the clip. */
+export function areaAt(plan, f) {
+  const frames = plan.zone.frames;
+  const i = Math.max(0, Math.min(frames.length - 1, Math.floor(f))), j = Math.min(frames.length - 1, i + 1), u = Math.max(0, Math.min(1, f - i));
+  return frames[i].areaHa + (frames[j].areaHa - frames[i].areaHa) * u;
 }
