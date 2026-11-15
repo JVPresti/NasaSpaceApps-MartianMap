@@ -65,8 +65,8 @@ import { createProgressTracker } from './progress.js';
 import { assertWebGL2, rendererFailure } from './webgl.js';
 
 // The layers of src/plan/layers.js, in `view.layer` order. The ground draws 1 to 3; radio shadow and exposure are drawn
-// on the mission table only, so the ground stays plain for them (TERRAIN_FRAG in shaders.js).
-export const LAYERS = ['none', 'terrain', 'rock abundance', 'outcrop', 'radio shadow', 'exposure'];
+// on the mission table only, so the ground stays plain for them (TERRAIN_FRAG in shaders.js), as for the return zone.
+export const LAYERS = ['none', 'terrain', 'rock abundance', 'outcrop', 'radio shadow', 'exposure', 'return zone'];
 export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
 
 /**

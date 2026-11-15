@@ -2,6 +2,7 @@ import { provenance } from '../data/provenance.js';
 import { t, formatNumber } from '../i18n/index.js';
 import { COST_CONSTANTS } from '../sim/costGrid.js';
 import { RISK_SETTINGS } from '../sim/missionNeeds.js';
+import { ZONE_LAYER } from '../zone/zoneLayer.js';
 /**
  * Map layer metadata: names, what each layer decides, thresholds, colours and units. One list for the mission table,
  * the 3D ground in Walk, the wrist layers page, the Walk layer chip and the L / Shift+L / 0 keys; `view.layer` in the
@@ -203,6 +204,9 @@ export const LAYERS = [
     get maxLabel() { return t('layers.exposure.open'); },
     get swatches() { return [{ color: MARKER_COLOURS.shelter, label: t('layers.exposure.shelter'), detail: t('layers.exposure.shelter.detail') }]; },
   },
+  // The return zone (src/sim/returnZone.js): everywhere the crew can walk to and still walk home with the 30 min
+  // reserve. src/zone/ReturnZoneLayer.jsx draws it over the map from the zone service (src/state/returnZone.js).
+  ZONE_LAYER,
 ];
 
 /**

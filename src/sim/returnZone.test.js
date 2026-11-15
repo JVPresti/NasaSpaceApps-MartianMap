@@ -195,3 +195,12 @@ describe('zoneRgba', () => {
     expect([...px]).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 });
+
+describe('zoneRgba rim', () => {
+  it('rims the nodes next to ground the margin shuts out, not the no-go holes', () => {
+    // one row: unreachable hole, inside, inside, edge, shut out by the margin
+    const zone = { cols: 5, rows: 1, state: new Uint8Array([0, 2, 2, 1, 0]), marginSec: new Float32Array([-Infinity, 2000, 1500, 300, -50]) };
+    const px = zoneRgba(zone, { outside: [0, 0, 0, 1], edge: [0, 0, 0, 2], inside: [0, 0, 0, 3], rim: [0, 0, 0, 9] });
+    expect([0, 1, 2, 3, 4].map((k) => px[k * 4 + 3])).toEqual([1, 3, 3, 9, 1]);
+  });
+});

@@ -67,7 +67,7 @@ try {
 
   mkdirSync(outDir, { recursive: true });
   for (const layer of LAYERS) {
-    const image = await page.evaluate(async ({ index, crop, mast, width, height, maxBytes }) => {
+    const image = await page.evaluate(async ({ index, id, crop, mast, width, height, maxBytes }) => {
       const { paintMap, slopeGrid } = await import('/src/plan/mapLayers.js');
       const { decodeTerrain } = await import('/src/sim/costGrid.js');
       const { radioShadowMask } = await import('/src/sim/radio.js');
@@ -99,12 +99,30 @@ try {
       const out = g.createImageData(width, width);
       paintMap(out.data, width, crop, index, data);
       g.putImageData(out, 0, 0);
+      if (id === 'zone') {
+        // the first mission's plan zone from the habitat airlock: a full tank and the sortie's time less the standard reserve
+        const { buildCostGrid } = await import('/src/sim/costGrid.js');
+        const { suitConstantsFromHazards } = await import('/src/sim/suitModel.js');
+        const { computeReturnZone } = await import('/src/sim/returnZone.js');
+        const { OBJECTIVE_DEFAULTS, RISK_SETTINGS } = await import('/src/sim/missionNeeds.js');
+        const { drawZoneWorld } = await import('/src/zone/zonePaint.js');
+        const constants = suitConstantsFromHazards(await (await fetch('/data/hazards.json')).json());
+        const hab = (await (await fetch('/data/shelters.json')).json()).shelters.find((s) => s.id === 'HAB');
+        const zone = computeReturnZone({
+          grid: buildCostGrid(data.terrain), home: hab, suit: { o2G: constants.o2UsableG }, constants,
+          evaLimitSec: OBJECTIVE_DEFAULTS.sortie.timeMin * 60 * (1 - RISK_SETTINGS.standard.reserveShare),
+        });
+        const k = width / crop.size;
+        g.setTransform(k, 0, 0, k, -crop.x0 * k, -crop.z0 * k);
+        drawZoneWorld(g, zone);
+        g.setTransform(1, 0, 0, 1, 0, 0);
+      }
       const frame = document.createElement('canvas'); frame.width = width; frame.height = height;
       frame.getContext('2d').drawImage(square, 0, (width - height) / 2, width, height, 0, 0, width, height);
       let quality = 0.8, dataUrl;
       do { dataUrl = frame.toDataURL('image/webp', quality); quality -= 0.08; } while (dataUrl.length * 0.75 > maxBytes && quality > 0.3);
       return dataUrl;
-    }, { index: layer.index, crop: CROP, mast, width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT, maxBytes: PREVIEW_MAX_BYTES });
+    }, { index: layer.index, id: layer.id, crop: CROP, mast, width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT, maxBytes: PREVIEW_MAX_BYTES });
     const bytes = Buffer.from(image.replace(/^data:image\/webp;base64,/, ''), 'base64');
     if (bytes.length > PREVIEW_MAX_BYTES) throw new Error(`${layer.id}: ${bytes.length} bytes, over ${PREVIEW_MAX_BYTES}`);
     writeFileSync(join(outDir, layer.id + '.webp'), bytes);

@@ -1,0 +1,21 @@
+/* The return zone on the mission table map (ReturnZoneLayer.jsx). */
+.table-map canvas.zone-layer { pointer-events: none; }
+.zone-status {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  max-width: calc(100% - 140px);
+  margin: 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--accent);
+  background: rgba(14, 10, 8, 0.82);
+  color: var(--ink, #fbf5ee);
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: none;
+}
+.zone-status b { display: block; font-size: 13px; color: var(--accent); }
+.zone-status span { color: var(--dim, rgba(251, 245, 238, 0.72)); }
+
+/* the minimap legend key of the zone edge (src/hud/Minimap.jsx) */
+.hud-map-key-zone { width: 0.9em; height: 0.9em; background: rgba(255, 106, 43, 0.6); box-shadow: inset 0 0 0 2px #ff6a2b; }

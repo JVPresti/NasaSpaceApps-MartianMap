@@ -257,11 +257,12 @@ function closedMask(zg, hazards) {
  * @property {Float32Array} homeO2G O2 to walk home from each node with the walkback pad, grams; Infinity likewise
  * @property {{ x: number, z: number }} home
  * @property {{ x: number, z: number }} from
- * @property {{ o2G: number, rateGs: number, reserveSec: number, evaLimitSec: number, elapsedSec: number,
+ * @property {{ o2G: number, o2UsableG: number, rateGs: number, reserveSec: number, evaLimitSec: number, elapsedSec: number,
  *   cautionSec: number, warningSec: number, homeward: boolean }} inputs what the zone was computed with
  * @property {{ insideCells: number, edgeCells: number, insideM2: number, edgeM2: number, reachM: number,
- *   limit: 'o2' | 'eva' | 'event' | null, ms: number }} stats reachM: the farthest inside node from home, straight
- *   line; limit: what closes the zone where it is tightest
+ *   limit: 'o2' | 'eva' | 'event' | null, ms: number, bounds: { minX: number, maxX: number, minZ: number, maxZ: number } | null }} stats
+ *   reachM: the farthest inside node from home, straight line; limit: what closes the zone where it is tightest;
+ *   bounds: the box around every node inside or on the edge, null when there is none
  */
 
 /**
@@ -312,6 +313,7 @@ export function computeReturnZone({ grid, home, from = null, suit, constants: c,
   const state = new Uint8Array(size), marginSec = new Float32Array(size).fill(-Infinity);
   const toSec = new Float32Array(size), homeSec = new Float32Array(size), toO2G = new Float32Array(size), homeO2G = new Float32Array(size);
   let insideCells = 0, edgeCells = 0, reach2 = 0, o2Binds = 0, evaBinds = 0, eventCut = 0;
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
   for (let k = 0; k < size; k += 1) {
     toSec[k] = to.sec[k]; homeSec[k] = back.sec[k]; toO2G[k] = to.o2[k]; homeO2G[k] = back.o2[k];
     if (!(to.o2[k] < Infinity) || !(back.o2[k] < Infinity)) continue;
@@ -324,8 +326,9 @@ export function computeReturnZone({ grid, home, from = null, suit, constants: c,
     if (back.o2[k] > homewardO2) { eventCut += 1; continue; }
     if (status === 'caution') { state[k] = ZONE_STATE.EDGE; edgeCells += 1; } else { state[k] = ZONE_STATE.INSIDE; insideCells += 1; }
     const q = k % zg.cols, r = (k - q) / zg.cols;
-    const d2 = (zg.x0 + q * zg.dx - home.x) ** 2 + (zg.z0 + r * zg.dz - home.z) ** 2;
+    const x = zg.x0 + q * zg.dx, z = zg.z0 + r * zg.dz, d2 = (x - home.x) ** 2 + (z - home.z) ** 2;
     if (d2 > reach2) reach2 = d2;
+    if (x < minX) minX = x; if (x > maxX) maxX = x; if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
   }
   const cellM2 = zg.dx * zg.dz;
   const bound = homeward && eventCut > 0 ? 'event' : o2Binds + evaBinds === 0 ? null : o2Binds >= evaBinds ? 'o2' : 'eva';
@@ -333,10 +336,11 @@ export function computeReturnZone({ grid, home, from = null, suit, constants: c,
     cols: zg.cols, rows: zg.rows, x0: zg.x0, z0: zg.z0, dx: zg.dx, dz: zg.dz, step,
     state, marginSec, toSec, homeSec, toO2G, homeO2G,
     home: { x: home.x, z: home.z }, from: { x: at.x, z: at.z },
-    inputs: { o2G: suit.o2G, rateGs: rate, reserveSec: c.reserveSec, evaLimitSec: limit, elapsedSec: elapsed, cautionSec: c.cautionSec, warningSec: c.warningSec, homeward },
+    inputs: { o2G: suit.o2G, o2UsableG: c.o2UsableG, rateGs: rate, reserveSec: c.reserveSec, evaLimitSec: limit, elapsedSec: elapsed, cautionSec: c.cautionSec, warningSec: c.warningSec, homeward },
     stats: {
       insideCells, edgeCells, insideM2: insideCells * cellM2, edgeM2: edgeCells * cellM2, reachM: Math.sqrt(reach2),
       limit: bound, ms: now() - started,
+      bounds: insideCells + edgeCells > 0 ? { minX, maxX, minZ, maxZ } : null,
     },
   };
 }
@@ -360,15 +364,24 @@ export function zoneMarginAt(zone, x, z) {
 
 /**
  * Paint the zone into an RGBA array of cols x rows pixels, one per node, for a canvas to scale up with smoothing.
- * Colours are [r, g, b, a] in 0 to 255.
+ * Colours are [r, g, b, a] in 0 to 255. `rim`, when given, paints the zone's outer boundary: the nodes inside or on the
+ * edge that touch a node the margin or an event shuts out. No-go holes and ground no path reaches get no rim, so the
+ * line follows the limit the zone is about.
  * @param {ReturnZone} zone
- * @param {{ outside: number[], edge: number[], inside: number[] }} colours
+ * @param {{ outside: number[], edge: number[], inside: number[], rim?: number[] }} colours
  * @param {Uint8ClampedArray} [out]
  */
 export function zoneRgba(zone, colours, out = new Uint8ClampedArray(zone.cols * zone.rows * 4)) {
   const by = [colours.outside, colours.edge, colours.inside];
-  for (let k = 0; k < zone.state.length; k += 1) {
-    const c = by[zone.state[k]], o = k * 4;
+  const { cols, rows, state, marginSec } = zone;
+  const shut = (k) => state[k] === ZONE_STATE.OUTSIDE && marginSec && marginSec[k] > -Infinity;
+  for (let k = 0; k < state.length; k += 1) {
+    let c = by[state[k]];
+    if (colours.rim && state[k] !== ZONE_STATE.OUTSIDE) {
+      const q = k % cols, r = (k - q) / cols;
+      if ((q > 0 && shut(k - 1)) || (q < cols - 1 && shut(k + 1)) || (r > 0 && shut(k - cols)) || (r < rows - 1 && shut(k + cols))) c = colours.rim;
+    }
+    const o = k * 4;
     out[o] = c[0]; out[o + 1] = c[1]; out[o + 2] = c[2]; out[o + 3] = c[3];
   }
   return out;
