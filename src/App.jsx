@@ -126,8 +126,8 @@ export default function App() {
   const qualityBusyRef = useRef(false);
   const [qualityError, setQualityError] = useState(null);
   const [planEpoch, setPlanEpoch] = useState(0);
-  // Planning costs no mission time (#11): the clock, suit and events wait at the mission table until the first
-  // Begin EVA. After that the clock also runs at the table, because the EVA is under way.
+  // Planning costs no mission time (#11): the clock, suit and events wait in the habitat until the airlock cycle after
+  // Begin EVA ends. After that the clock also runs at the table, because the EVA is under way.
   // Where the astronaut is in the flow (src/state/flow.js): habitat, egress, eva or debrief (habitat-first flow, #260).
   // The EVA has begun once the stage leaves 'habitat': Begin EVA starts the airlock cycle, and the cycle's end starts
   // the EVA. evaBegun is read from the stage, so the table, the beats and the pause menu all follow the same value.
@@ -292,13 +292,12 @@ export default function App() {
   }, [pauseFor]);
 
   /**
-   * Begin EVA on the mission table's Suit tab. The first time, the astronaut lands in Walk paused on the key reminder
-   * (PAUSE_VIEW.KEYS) with the clock still held; its Start walking button is the click that captures the mouse and
-   * starts the EVA (handleResume). Once the EVA is under way, Continue the EVA goes straight back to the walk.
+   * Begin EVA on the mission table's Suit tab. The first time (habitat-first flow, #260), it closes the table and starts
+   * the airlock cycle (beginEgress), which waits behind the key reminder (PAUSE_VIEW.KEYS) with the clock still held.
+   * Its Start walking button is the click that captures the mouse (handleResume); the cycle (effect below) moves the
+   * player outside while the screen is dark, and its end starts the EVA clock. Once the EVA is under way, Continue the
+   * EVA goes straight back to the walk.
    */
-  // Habitat-first flow (#260): the first Begin EVA closes the table and starts the airlock cycle (beginEgress), which
-  // waits behind the key reminder; Start walking captures the mouse, the cycle (effect below) moves the player outside
-  // while the screen is dark, and its end starts the EVA clock.
   const handleBeginEva = useCallback(() => {
     if (busyRef.current) return;
     if (evaBegunRef.current || phaseRef.current !== EVA_PHASE.PLAYING) {
@@ -310,7 +309,6 @@ export default function App() {
     beginEgress();
     pauseFor(PAUSE_VIEW.KEYS);
   }, [evaBegunRef, handleModeChange, pauseFor]);
-
 
   // Gamepad buttons reach the same actions as the keyboard (#101, #103). The engine reports them only while
   // gameplay input is enabled, so a press behind the pause menu cannot act; the phase check is a second guard.

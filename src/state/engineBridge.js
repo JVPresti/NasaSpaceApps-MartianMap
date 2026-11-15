@@ -39,7 +39,6 @@ export function connectEngine(engine, store = useMissionStore) {
     if (prev && s.stage !== prev.stage) writePlayer();
   };
 
-
   function writePlayer() {
     const p = engine.getPlayer(), state = store.getState(), nav = state.navigation;
     // Inside the habitat before the EVA: the walk zone, for the habitat HUD's airlock line (#260).

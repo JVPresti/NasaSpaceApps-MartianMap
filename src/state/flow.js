@@ -87,7 +87,7 @@ export const continueFromDebrief = (store = useMissionStore) => advance(store, S
  * `onDark` fires once when the screen is fully dark, `onDone` once at the end. Plain timers, so tests can drive it
  * with a fake clock.
  *
- * @param {{ durationMs?: number, darkAt?: number, now?: () => number, schedule?: (fn: () => void) => unknown,
+ * @param {{ durationMs?: number, darkAt?: number, minDarkMs?: number, now?: () => number, schedule?: (fn: () => void) => unknown,
  *   cancel?: (handle: unknown) => void, running?: () => boolean, onProgress?: (ratio: number) => void,
  *   onDark?: () => void, onDone?: () => void }} options
  * @returns {{ stop: () => void, progress: () => number }}

@@ -31,8 +31,8 @@ export function createInitialState() {
     // budget and the risk weights; explain: why each leg bends (#246, src/sim/routeExplain.js), one entry per route.legs
     // entry. Codes and numbers only: the table writes the sentences.
     route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [], profiles: null, profile: 'fastest', stops: [], dropped: [], planReasons: [], budget: null, weights: null, explain: [] },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js; profiles and profile: the routes the table compares and the one chosen (#245, src/sim/routeProfiles.js)
-    // The crew's needs at the mission table (#265, goal 2). setNeeds changes them until the EVA begins (locked: the first
-    // switch to Walk, the moment src/state/simulation.js starts the EVA); the route re-plans from them in Plan mode.
+    // The crew's needs at the mission table (#265, goal 2). setNeeds changes them until Begin EVA (locked: beginEgress in
+    // src/state/flow.js, at the start of the airlock cycle); the route re-plans from them in Plan mode.
     needs: { ...DEFAULT_NEEDS, locked: false },
     environment: { dustOpacity: 0, tempC: null, windMs: null, pressurePa: null, doseRateUgyH: null, doseUgy: null },
     // Active hazard areas for the minimap (#60): [{ id, x, z, radiusM, active }], metres. Empty means

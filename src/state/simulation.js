@@ -127,7 +127,7 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     // The crew's needs as they were locked at Begin EVA: the mission and the consumables the walk starts with.
     const needs = store.getState().needs ?? {};
     // A crew of one walks alone (D8): no partner on the surface, so no EV2 chip, no separation alert and no hand-over.
-    // A restart puts the scripted partner back at the airlock (engine.resetSession), for a crew of two.
+    // The next airlock cycle puts the scripted partner back beside the player (engine.exitAirlock), for a crew of two.
     const solo = needs.crew === 1;
     if (solo && typeof engine.setPartnerSource === 'function') {
       try { engine.setPartnerSource(null); } catch (e) { console.warn('partner not hidden:', e); }
@@ -135,7 +135,7 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     const waypoints = startWaypointRunner({ store });
     stopsReady.then((stops) => { if (stops) waypoints.setStops(stops); });
     eva = {
-      // The mission (#265) is the one the crew's objective defines, locked by this same switch to Walk (setMode).
+      // The mission (#265) is the one the crew's objective defines, locked at Begin EVA (beginEgress in flow.js).
       events: startEventRunner({ store, objective: needs.objective, stops: loadedStops, onEventLog: (entry) => recordEvaEvent(store, entry) }),
       offRoute: startOffRoute({ store }),
       waypoints,
