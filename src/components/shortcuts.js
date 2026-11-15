@@ -1,6 +1,7 @@
 import { nextLayerIndex } from '../plan/layers.js';
 import { setLayer, setMode, setVisorFrame, useMissionStore } from '../state/store.js';
 import { wristOwnsKeys } from '../screens/wrist/ownership.js';
+import { action } from '../input/actions.js';
 
 /**
  * Move the data layer by one step, wrapping at both ends. Shared by the L/Shift+L shortcuts and the gamepad
@@ -29,23 +30,13 @@ export function handleShortcut(event, { onMode = setMode } = {}) {
   if (wristOwnsKeys()) return;
 
   const state = useMissionStore.getState();
-  switch (event.code) {
-    case 'KeyM':
-      onMode(state.mode === 'walk' ? 'plan' : 'walk');
-      break;
-    case 'KeyL':
-      cycleLayer(event.shiftKey ? -1 : 1);
-      break;
-    case 'KeyV':
-      if (state.mode !== 'walk') return;   // the visor frame only shows in Walk (#28)
-      setVisorFrame();
-      break;
-    case 'Digit0':
-    case 'Numpad0':
-      setLayer(0);
-      break;
-    default:
-      return;
-  }
+  const is = (id) => action(id).codes.includes(event.code);   // the bindings live in src/input/actions.js (#365)
+  if (is('mode')) onMode(state.mode === 'walk' ? 'plan' : 'walk');
+  else if (is('layer-next')) cycleLayer(event.shiftKey ? -1 : 1);
+  else if (is('visor-frame')) {
+    if (state.mode !== 'walk') return;   // the visor frame only shows in Walk (#28)
+    setVisorFrame();
+  } else if (is('layer-off')) setLayer(0);
+  else return;
   event.preventDefault();
 }

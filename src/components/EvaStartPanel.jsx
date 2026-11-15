@@ -12,6 +12,18 @@ const ROWS = [
   [['H'], 'menu.keys.all'],
 ];
 
+// The same first minute on a touch screen (#365): what each finger and touch bar button does. menuMobile.css shows
+// these rows instead of the keys on a coarse pointer.
+const TOUCH_ROWS = [
+  ['touch.walk', 'controls.touch.walk'],
+  ['touch.look', 'controls.touch.look'],
+  ['touch.map', 'controls.touch.map'],
+  ['touch.pause', 'controls.touch.pause.eva'],
+  ['touch.wrist', 'controls.touch.wrist'],
+  ['touch.sample', 'controls.touch.sample'],
+  ['touch.more', 'controls.touch.more'],
+];
+
 const cap = (token) => (token.length > 1 ? t(token) : token);
 
 /**
@@ -25,7 +37,15 @@ export default function EvaStartPanel({ titleId, freeLook = false, busy = false,
     <div className="dialog-body eva-start-panel">
       <p className="dialog-kicker">{t('menu.keys.kicker')}</p>
       <h2 id={titleId} className="dialog-title">{t('menu.keys.title')}</h2>
-      <dl className="eva-start-keys">
+      <dl className="eva-start-keys controls-touch-list touch-only">
+        {TOUCH_ROWS.map(([name, text]) => (
+          <div key={name}>
+            <dt>{t(name)}</dt>
+            <dd>{t(text)}</dd>
+          </div>
+        ))}
+      </dl>
+      <dl className="eva-start-keys keys-only">
         {ROWS.map(([keys, action]) => (
           <div className="eva-start-row" key={action}>
             <dt>
@@ -40,7 +60,8 @@ export default function EvaStartPanel({ titleId, freeLook = false, busy = false,
           {busy && !freeLook ? t('menu.capturing.the.mouse') : t('menu.keys.start')}
         </button>
       </div>
-      <p className="dialog-footnote">{t('menu.keys.note')}</p>
+      <p className="dialog-footnote keys-only">{t('menu.keys.note')}</p>
+      <p className="dialog-footnote touch-only">{t('controls.touch.eva.note')}</p>
     </div>
   );
 }

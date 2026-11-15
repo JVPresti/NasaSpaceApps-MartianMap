@@ -1,0 +1,13 @@
+/* The title bubble of TapTitles.jsx (#365): only a coarse pointer ever shows it. */
+.tap-title {
+  position: fixed;
+  z-index: 60;
+  padding: 8px 12px;
+  font: 500 14px/1.4 var(--font-ui);
+  color: var(--ink);
+  background: rgba(10, 13, 17, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-s, 3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { STICK_MARGIN_PX, STICK_RADIUS_PX } from '../engine/touchInput.js';
+import { coarsePointer } from '../input/device.js';
 import './touchStick.css';
 
 const SIZE_PX = 2 * STICK_RADIUS_PX;
@@ -25,6 +26,7 @@ const BASE_STYLE = {
  */
 export default function TouchStick({ engine }) {
   const [stick, setStick] = useState(null);
+  const [coarse] = useState(coarsePointer);   // read once: the stick re-renders on every finger move
 
   useEffect(() => {
     const subscribe = engine?.subscribeTouch;
@@ -35,13 +37,15 @@ export default function TouchStick({ engine }) {
     return typeof unsubscribe === 'function' ? unsubscribe : undefined;
   }, [engine]);
 
-  if (!stick?.visible) return null;
+  // On a touch screen the stick shows at rest from the start, so a phone player sees where to walk from (#365);
+  // elsewhere it appears on the first touch (#103). The engine's hit circle is there either way.
+  if (!stick?.visible && !coarse) return null;
 
-  const knobX = Number.isFinite(stick.knobX) ? stick.knobX : 0;
-  const knobY = Number.isFinite(stick.knobY) ? stick.knobY : 0;
+  const knobX = Number.isFinite(stick?.knobX) ? stick.knobX : 0;
+  const knobY = Number.isFinite(stick?.knobY) ? stick.knobY : 0;
   const classes = ['touch-stick'];
-  if (stick.active === true) classes.push('on');
-  if (stick.jog === true) classes.push('jog');
+  if (stick?.active === true) classes.push('on');
+  if (stick?.jog === true) classes.push('jog');
 
   return (
     <div className={classes.join(' ')} aria-hidden="true" style={BASE_STYLE}>

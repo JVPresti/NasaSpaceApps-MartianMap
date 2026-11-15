@@ -7,6 +7,7 @@ import { provenance } from '../data/provenance.js';
 import { imageUrl } from '../data/stops.js';
 import { cardImage, stopHasContent, stopPaths } from './content.js';
 import './stopCard.css';
+import './stopsMobile.css';
 
 /** id of the Plan mode card, for the waypoint button's aria-controls. */
 export const PLAN_CARD_ID = 'science-stop-card';

@@ -21,6 +21,7 @@ import { setLiveEngine, usePoseFrame } from './livePose.js';
 import NavLine from './NavLine.jsx';
 import Minimap from './Minimap.jsx';
 import './hud.css';
+import './hudMobile.css';
 import { SamplingChecklist, SamplingCrosshair } from './SamplingPanel.jsx';
 import PartnerPanel from './PartnerPanel.jsx';
 import { useInCabin } from './useInCabin.js';

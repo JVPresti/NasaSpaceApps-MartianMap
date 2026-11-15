@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { t } from '../i18n/index.js';
 import { saveCurrentRoute, saveEvaRoute, useMissionStore } from '../state/store.js';
+import { keepInView } from './keepInView.js';
 import './saveRoute.css';
 
 // The save-route form (#357, #364): a name and a save button, shared by the mission table's Route step and the EVA
@@ -31,6 +32,8 @@ export default function SaveRouteForm({ summary = null, buttonClass = 'table-sec
           placeholder={t('savedRoutes.name.placeholder')}
           aria-label={t('savedRoutes.name')}
           onChange={(event) => { setName(event.target.value); setSaved(null); }}
+          onFocus={(event) => keepInView(event.currentTarget)}
+          enterKeyHint="done"
         />
         <button type="submit" className={buttonClass} disabled={!canSave || name.trim() === ''}>
           {t('savedRoutes.save')}

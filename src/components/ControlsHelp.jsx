@@ -72,6 +72,55 @@ const COLUMNS = [
 
 const cap = (token) => (token.length > 1 ? t(token) : token);
 
+// The touch controls (#365, docs/CONTROLS.md Touch): what a finger does, by view. Each row is [name, what it does],
+// both catalog keys; the names are the touch bar's own labels (src/input/actions.js). menuMobile.css shows this part
+// on a coarse pointer only, above the keyboard tables, so a desktop help is unchanged.
+const TOUCH_GROUPS = [
+  {
+    title: 'controls.touch.walking',
+    rows: [
+      ['touch.walk', 'controls.touch.walk'],
+      ['touch.look', 'controls.touch.look'],
+      ['touch.map', 'controls.touch.map'],
+      ['touch.pause', 'controls.touch.pause'],
+      ['touch.wrist', 'controls.touch.wrist'],
+      ['touch.sample', 'controls.touch.sample'],
+      ['touch.open.plan', 'controls.touch.cabin'],
+      ['touch.more', 'controls.touch.more'],
+    ],
+  },
+  {
+    title: 'menu.help.group.table',
+    rows: [
+      ['touch.map', 'controls.touch.table.map'],
+      ['touch.pause', 'controls.touch.table.pause'],
+      ['controls.touch.hold', 'controls.touch.hold.text'],
+    ],
+  },
+];
+
+/** The touch part of the controls help: shown on coarse pointers only (menuMobile.css). */
+export function TouchHelp() {
+  return (
+    <div className="controls-touch">
+      {TOUCH_GROUPS.map((group) => (
+        <section key={group.title} className="controls-group">
+          <h3>{t(group.title)}</h3>
+          <dl className="controls-touch-list">
+            {group.rows.map(([name, text]) => (
+              <div key={name + text}>
+                <dt>{t(name)}</dt>
+                <dd>{t(text)}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ))}
+      <h3 className="controls-keys-title">{t('controls.keys.title')}</h3>
+    </div>
+  );
+}
+
 /** The controls reference (#11 style), shown from the start screen, the mission table and the pause menu. */
 export default function ControlsHelp() {
   return (
@@ -117,6 +166,7 @@ export function ControlsPanel({ titleId, onClose, closeRef, closeLabel }) {
           {closeLabel ?? t('ui.close').trim()}
         </button>
       </div>
+      <TouchHelp />
       <ControlsHelp />
       <p className="dialog-footnote">{t('menu.help.paused.note')}</p>
     </div>
