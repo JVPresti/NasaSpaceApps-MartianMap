@@ -158,7 +158,14 @@ It is now matched to colour photos Perseverance took at this exact spot: nine Ma
 - Changed: the terrain colour ramp (ramp() in TERRAIN_FRAG and RING_FRAG), slab and dust tints, the loose-rock tint (rocks at the site are as pale as the soil,
   not dark red), the ground seen through the habitat portholes, and the clear_day sky, halo and haze in atmosphere_presets.json.
 - Raw frames are auto-stretched, so only the hue was taken from them, not the brightness. Not changed: dust_storm, late_afternoon and night skies,
-  the Cheyava Falls hero rock texture, the sample soil in the scoop and case.
+  the sample soil in the scoop and case.
+- Cheyava Falls hero rock (cheyava_color.jpg), re-graded 2026-11-14 (#194) by scripts/grade-cheyava-rock.py. The script starts from the original
+  painted texture in Git (commit d972866), so it gives the same file every run, and prints the numbers below.
+  Rock body went from 2.06 and 1.57 to 1.50 and 1.79, mean linear luminance from 0.21 to 0.30. The leopard spots stay dark (0.10) at 1.41 and 1.61.
+  The white veins went from 4 to 12 px painted lines to 2 to 3 px centre lines, about 62 % of their length kept, the rest broken into gaps;
+  white cover fell from 6.5 % to 2.6 % of the rock. The drill-tailings discs and the grey abrasion patch keep their paint.
+  The PIA26401 frame on the stop card measures 1.16 and 1.31 on clean rock: it is a colour-balanced press product, so the rock follows
+  the raw-frame numbers above, the same ones as the ground. No tint uniform touches it: ROCK_FRAG with HERO uses the texture as is.
 - Credit for these frames: NASA/JPL-Caltech/ASU.
 
 ## Credits
