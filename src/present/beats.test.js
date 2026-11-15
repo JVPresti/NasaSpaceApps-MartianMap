@@ -134,9 +134,10 @@ describe('the presentation story', () => {
     expect(captionsOf(demo).length).toBeGreaterThan(0);   // the fallback if the file fails
   });
 
-  it('fits the 3:00 limit: under 2:50 on autoplay (pitch spec v2: 2:42)', () => {
+  it('fits the 4:00 limit: about 3:15 on autoplay, at most 3:30, so a manual takeover still ends under 4:00', () => {
     const total = sequence('full').reduce((a, b) => a + b.duration, 0);
-    expect(total).toBeLessThan(170);
+    expect(total).toBeLessThanOrEqual(210);
+    expect(sequence('full')).toHaveLength(6);   // one beat per slide
   });
 
   it('opens with one fall from orbit, then states the stakes', () => {

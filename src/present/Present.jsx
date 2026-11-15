@@ -2,7 +2,8 @@
 // the walkback zone is the hero shot, and the last beat hands over to the live mission table without a reload.
 //
 // Keys (presentation clickers send these): Right, Space, PageDown, Enter next; Left, PageUp back; L language; Esc exit.
-// URL: &autoplay=1 runs the beats on their timings; &record=1 steps exactly 1/60 s a frame for scripts/present/record.mjs;
+// URL: the beats run on their timings by default (&autoplay=0 starts manual; the first key, tap or swipe takes over);
+// &record=1 steps exactly 1/60 s a frame for scripts/present/record.mjs;
 // &seq=global30 plays the 30 s global video cut; &beat=<id> starts at a beat; &tier=low forces the light version.
 //
 // Everything moves from one clock (clock.js), never from CSS transitions, so a recording is frame-perfect.
@@ -17,7 +18,7 @@ import { createGlobe } from './globe.js';
 import { createProjector } from './project.js';
 import { layoutCards } from './layout.js';
 import { decodeLast, fill, marginAt, clockAt, areaAt, resolvePlace, trackNumber, astronautAt } from './data.js';
-import { createHoldTimer, fallbackStep, presentKey, queryWithoutPresent, restoreEngine as restoreFromStore } from './control.js';
+import { createHoldTimer, createPilot, pointerStep, fallbackStep, presentKey, queryWithoutPresent, restoreEngine as restoreFromStore } from './control.js';
 import './present.css';
 
 const BASE = (import.meta.env.BASE_URL || '/') + 'present/';
@@ -35,7 +36,7 @@ const UI = {
 function params() {
   const q = new URLSearchParams(window.location.search);
   return {
-    autoplay: q.get('autoplay') === '1' || q.get('record') === '1',
+    autoplay: q.get('autoplay') !== '0' || q.get('record') === '1',
     record: q.get('record') === '1',
     seq: q.get('seq') === 'global30' ? 'global30' : 'full',
     live: q.get('live') === '1',   // add the hand-over to the live app after the sources
@@ -105,6 +106,10 @@ export default function Present({ engine, onExit }) {
   const [stalled, setStalled] = useState(false);
   const still = !!failed || stalled;   // the caption fallback is up
   const indexRef = useRef(index);
+  // Auto until the presenter's first step, then manual for the rest of the session (control.js createPilot)
+  const pilotRef = useRef(null);
+  if (!pilotRef.current) pilotRef.current = createPilot(opts.autoplay && !opts.record);
+  const [pilotMode, setPilotMode] = useState(() => pilotRef.current.mode);
   // The recorded app demo (a beat with `video`): its element, and whether the file failed to load
   const videoRef = useRef(null);
   const [videoFailed, setVideoFailed] = useState(false);
@@ -384,7 +389,7 @@ export default function Present({ engine, onExit }) {
       next() { if (timeline.index === beats.length - 1) return false; timeline.next(); startBeat(timeline.index); setIndex(timeline.index); return true; },
       back() { timeline.back(); startBeat(timeline.index); setIndex(timeline.index); },
     };
-    exitRef.current = { nav, release: () => { if (cine) { cine.release(); cine = null; } } };
+    exitRef.current = { nav, takeover: () => timeline.setAutoplay(false), release: () => { if (cine) { cine.release(); cine = null; } } };
 
     if (opts.record) {
       // The recorder calls step() once per frame and saves the frame after it resolves.
@@ -455,22 +460,43 @@ export default function Present({ engine, onExit }) {
       if (e.type !== 'keydown' || e.repeat) return;
       if (action === 'exit') { exit(); return; }
       if (action === 'lang') { setLang((v) => (v === 'en' ? 'es' : 'en')); return; }
-      if (still) { setIndex((i) => fallbackStep(i, action, beats.length)); return; }   // no clock, no camera, no hand-off
+      step(action);
+    };
+    // One step from a key, a clicker, a tap or a swipe. The first one in auto only takes over: the beat (and a video in
+    // it) carries on, and the presenter steps from there.
+    const step = (action) => {
+      const next = pilotRef.current.input(action);
+      if (next === null) { exitRef.current?.takeover?.(); setPilotMode('manual'); return; }
+      if (still) { setIndex((i) => fallbackStep(i, next, beats.length)); return; }   // no clock, no camera, no hand-off
       const nav = exitRef.current?.nav;
-      if (action === 'back') { nav?.back(); return; }
+      if (next === 'back') { nav?.back(); return; }
       if (!nav?.next() && beats[beats.length - 1].cta) begin();
+    };
+    const dialog = dialogRef.current;
+    let down = null;
+    const onDown = (e) => { down = e.target.closest?.('button, a') ? null : { x: e.clientX, y: e.clientY }; };
+    const onUp = (e) => {
+      if (!down) return;
+      const action = pointerStep(down, { x: e.clientX, y: e.clientY }, window.innerWidth);
+      down = null;
+      if (action) step(action);
     };
     window.addEventListener('keydown', onKey, true);
     window.addEventListener('keyup', onKey, true);
-    return () => { window.removeEventListener('keydown', onKey, true); window.removeEventListener('keyup', onKey, true); };
+    dialog?.addEventListener('pointerdown', onDown);
+    dialog?.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('keydown', onKey, true); window.removeEventListener('keyup', onKey, true);
+      dialog?.removeEventListener('pointerdown', onDown); dialog?.removeEventListener('pointerup', onUp);
+    };
   }, [beats, begin, exit, still]);
 
   // ?autoplay keeps running in the caption fallback, on the same beat lengths
   useEffect(() => {
-    if (!still || !opts.autoplay || index >= beats.length - 1) return undefined;
+    if (!still || pilotMode !== 'auto' || index >= beats.length - 1) return undefined;
     const id = setTimeout(() => setIndex((i) => fallbackStep(i, 'next', beats.length)), beats[index].duration * 1000);
     return () => clearTimeout(id);
-  }, [still, opts.autoplay, index, beats]);
+  }, [still, pilotMode, index, beats]);
 
   const beat = beats[index];
   const plan = assets?.plan;
@@ -548,6 +574,7 @@ export default function Present({ engine, onExit }) {
       {!opts.record && (
         <div className="pr-progress" aria-hidden="true">
           {beats.map((b, i) => <span key={b.id} className={i === index ? 'on' : i < index ? 'past' : ''} />)}
+          <span className="pr-mode" data-mode={pilotMode}>{pilotMode === 'auto' ? 'Auto' : 'Manual'}</span>
           <span className="pr-lang">{lang.toUpperCase()}</span>
         </div>
       )}

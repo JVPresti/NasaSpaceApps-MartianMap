@@ -203,6 +203,8 @@ body.mw-recording, body.mw-recording * { cursor: none !important; }
 .pr-progress span { width: 14px; height: 2px; background: rgba(255, 255, 255, 0.3); }
 .pr-progress span.past { background: rgba(255, 255, 255, 0.6); }
 .pr-progress span.on { background: var(--ink); }
+.pr-progress .pr-mode { width: auto; height: auto; background: none; margin-left: 10px; font: 600 11px/1 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: rgba(233, 237, 242, 0.75); }
+.pr-progress .pr-mode[data-mode='manual'] { color: var(--accent); }
 .pr-progress .pr-lang { width: auto; height: auto; margin-left: 8px; background: none; font: 600 11px/1 var(--font-mono); }
 .pr-wait { position: absolute; right: 16px; top: 30px; margin: 0; font-size: 13px; color: var(--dim); }
 

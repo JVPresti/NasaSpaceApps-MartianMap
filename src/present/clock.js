@@ -55,6 +55,9 @@ export function createTimeline(beats, { autoplay = false, start = 0 } = {}) {
     next() { if (index < beats.length - 1) go(index + 1); },
     back() { go(index - 1); },
     goTo(i) { go(i); },
+    /** Turn the beat-by-beat advance on or off (a presenter's manual takeover turns it off). */
+    setAutoplay(on) { autoplay = !!on; },
+    get autoplay() { return autoplay; },
     get index() { return index; },
     /** The beat the camera comes from: the one shown before this one. */
     get previous() { return prev; },

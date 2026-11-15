@@ -86,3 +86,28 @@ export function fallbackStep(index, action, count) {
   if (action === 'next') return Math.min(count - 1, index + 1);
   return index;
 }
+
+/**
+ * Who drives the beats: 'auto' (the beat lengths) or 'manual' (the presenter). The talk starts in auto; the first
+ * manual step (a key, a clicker, a tap or a swipe) only takes over, so a video mid-beat keeps playing, and every step
+ * after it moves the beats. input(action) returns the step to make, or null for the takeover itself.
+ */
+export function createPilot(auto = true) {
+  let mode = auto ? 'auto' : 'manual';
+  return {
+    get mode() { return mode; },
+    input(action) {
+      if (action !== 'next' && action !== 'back') return action;
+      if (mode === 'auto') { mode = 'manual'; return null; }
+      return action;
+    },
+  };
+}
+
+/** A tap or swipe as a step: a swipe of 50 px or more left is next, right is back; a tap on the right half is next. */
+export function pointerStep(down, up, width) {
+  const dx = up.x - down.x, dy = up.y - down.y;
+  if (Math.abs(dx) >= 50 && Math.abs(dx) > Math.abs(dy)) return dx < 0 ? 'next' : 'back';
+  if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return up.x >= width / 2 ? 'next' : 'back';
+  return null;
+}

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createInitialState } from '../state/store.js';
 import { dustLevelFromTau } from '../state/dustLevel.js';
-import { ENGINE_TIMEOUT_MS, createHoldTimer, fallbackStep, presentHrefFor, presentKey, queryWithoutPresent, restoreEngine } from './control.js';
+import { ENGINE_TIMEOUT_MS, createHoldTimer, createPilot, pointerStep, fallbackStep, presentHrefFor, presentKey, queryWithoutPresent, restoreEngine } from './control.js';
 
 const key = (k, mods = {}) => ({ key: k, altKey: false, ctrlKey: false, metaKey: false, ...mods });
 
@@ -104,5 +104,34 @@ describe('fallbackStep', () => {
     expect(fallbackStep(3, 'next', 10)).toBe(4);
     expect(fallbackStep(9, 'next', 10)).toBe(9);   // no hand-off into an app without an engine
     expect(fallbackStep(4, 'lang', 10)).toBe(4);
+  });
+});
+
+describe('createPilot: autoplay by default, the presenter takes over', () => {
+  it('starts in auto, and the first step only takes over', () => {
+    const pilot = createPilot(true);
+    expect(pilot.mode).toBe('auto');
+    expect(pilot.input('next')).toBeNull();
+    expect(pilot.mode).toBe('manual');
+    expect(pilot.input('next')).toBe('next');
+    expect(pilot.input('back')).toBe('back');
+  });
+
+  it('leaves language and exit alone, and starts manual with ?autoplay=0', () => {
+    const pilot = createPilot(true);
+    expect(pilot.input('lang')).toBe('lang');
+    expect(pilot.input('exit')).toBe('exit');
+    expect(pilot.mode).toBe('auto');
+    expect(createPilot(false).input('next')).toBe('next');
+  });
+});
+
+describe('pointerStep: taps and swipes', () => {
+  it('reads a swipe left as next, right as back, and a tap by its half', () => {
+    expect(pointerStep({ x: 600, y: 300 }, { x: 400, y: 310 }, 1000)).toBe('next');
+    expect(pointerStep({ x: 300, y: 300 }, { x: 500, y: 290 }, 1000)).toBe('back');
+    expect(pointerStep({ x: 800, y: 300 }, { x: 802, y: 301 }, 1000)).toBe('next');
+    expect(pointerStep({ x: 100, y: 300 }, { x: 101, y: 300 }, 1000)).toBe('back');
+    expect(pointerStep({ x: 100, y: 300 }, { x: 130, y: 300 }, 1000)).toBeNull();   // a drag, not a step
   });
 });
