@@ -264,12 +264,32 @@ async function partner(page) {
   await page.evaluate(() => { const p = window.__marswalk.pose(); window.__marswalkQa.partnerNear(p.x, p.z); });
 }
 
+// Walk in 5 m steps at a sped-up mission clock, so the EVA clock, oxygen, margin and the debrief's distance read
+// like a real walk instead of a teleport. The EVA runner samples every 200 ms, so each step is one short stride.
+async function walkToward(page, target, { stopAt = 3, timeScale = 30 } = {}) {
+  await page.evaluate(async ({ tx, tz, stopAt, timeScale }) => {
+    const store = window.__missionStore;
+    const setScale = (k) => store.setState((st) => ({ mission: { ...st.mission, timeScale: k } }));
+    setScale(timeScale);
+    const STEP = 5;
+    for (let n = 0; n < 2000; n++) {
+      const p = window.__marswalk.pose();
+      const dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
+      if (d <= stopAt) break;
+      const k = Math.min(STEP, d - stopAt) / d;
+      const x = p.x + dx * k, z = p.z + dz * k;
+      window.__marswalk.place(x, z, Math.atan2(dx, -dz), -0.08);
+      if (n % 8 === 0) window.__marswalkQa.partnerNear(x, z);
+      await new Promise((r) => setTimeout(r, 210));
+    }
+    window.__marswalkQa.partnerNear(window.__marswalk.pose().x, window.__marswalk.pose().z);
+    setScale(1);
+  }, { tx: target.x, tz: target.z, stopAt, timeScale });
+}
+
 async function walkTo(page, index) {
-  await page.evaluate((i) => {
-    const wp = window.__missionStore.getState().route.waypoints[i];
-    window.__marswalk.place(wp.x + 0.5, wp.z + 0.5, 0, -0.1);
-  }, index);
-  await partner(page);
+  const wp = await page.evaluate((i) => window.__missionStore.getState().route.waypoints[i], index);
+  await walkToward(page, wp, { stopAt: 1 });
   await waitFor(page, (i) => window.__missionStore.getState().route.visited.length >= i, index, 20000).catch(() => {});
   await sleep(700);
 }
@@ -324,7 +344,10 @@ state('debrief', { stats: R.stats }, async (page) => {
   // resume (drag-to-look), walk back to the habitat and end the EVA with X
   await page.evaluate(() => document.querySelector('dialog[open] .ui-button.primary').click());
   await waitFor(page, () => !document.querySelector('dialog[open]'));
+  const hab = await page.evaluate(() => { const w = window.__missionStore.getState().route.waypoints[0]; return { x: w.x, z: w.z }; });
+  await walkToward(page, hab, { stopAt: 12 });
   await page.evaluate(() => window.__marswalk.insideHabitat());
+  await partner(page);
   await waitFor(page, () => window.__missionStore.getState().eva.atHabitat === true, null, 20000);
   await sleep(500);
   await page.keyboard.press('KeyX');

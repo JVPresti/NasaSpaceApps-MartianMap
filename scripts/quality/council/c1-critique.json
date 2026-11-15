@@ -1,0 +1,16 @@
+{"round": "c1", "kind": "critique", "at": "2026-11-15T10:40Z", "screens": "baseline (main + qa hook), 11 states",
+ "judges": [
+  {"model": "opus", "persona": "a. Space Apps judge", "top": ["blocker: EVA clock reads 0:00 and 1.67 km in 35 s (capture artifact: teleports, no time passing)", "major: ~12 equal-weight panels, tags on every number, serif HUD font unlike the table", "major: storm banner is a grey toast, margin stays green, banner covers compass", "major: wrist screen unreadable", "major: debrief shows HUD through backdrop, focus box on title, no outcome line"], "demo_ready_no": ["06-walk","07-walk-stop","08-walk-storm","09-wrist","11-debrief"]},
+  {"model": "opus", "persona": "b. HUD designer", "top": ["blocker: EVA clock 0:00", "blocker: debrief HUD bleed-through, SEP panel, impossible distance, focus ring, raw event ids", "major: storm banner over the compass, vitals stay calm, target loss buried", "major: tags on every number, serif numerals, six stacked right panels", "major: wrist screen unreadable, HUD drawn over the arm"], "demo_ready_no": ["06-walk","07-walk-stop","08-walk-storm","09-wrist","11-debrief"]},
+  {"model": "fable", "persona": "c. first-time player", "top": ["blocker: debrief looks broken, no verdict, no visible button, HUD leaks behind", "blocker: wrist screen unreadable, arm renders black", "major: storm signals contradict, banner jargon, banner over compass", "major: ten panels and sixteen badges, margin buried, serif vs sans", "major: science card is the smallest thing on screen, no next action"], "demo_ready_no": ["06-walk","07-walk-stop","08-walk-storm","09-wrist","11-debrief"]}
+ ],
+ "consensus": [
+  {"id": "hud-system", "judges": 3, "severity": "major", "screens": ["06-walk","07-walk-stop","08-walk-storm"], "summary": "Walk HUD: serif type and rounded translucent panels unlike the table, a source tag on every number, too many equal-weight panels"},
+  {"id": "storm-banner", "judges": 3, "severity": "major", "screens": ["08-walk-storm"], "summary": "Storm banner sits on the compass, second and third lines are jargon, the rest of the HUD looks calm"},
+  {"id": "debrief", "judges": 3, "severity": "blocker", "screens": ["11-debrief"], "summary": "HUD shows through the debrief, focus box on the title, no outcome line, raw event ids"},
+  {"id": "wrist", "judges": 3, "severity": "major", "screens": ["09-wrist"], "summary": "Wrist screen unreadable at 1366x768, HUD panels draw over the arm"},
+  {"id": "clock", "judges": 3, "severity": "blocker", "screens": ["06-walk"], "summary": "EVA clock at 0:00 and impossible pace: capture artifact from teleports, fixed in capture.mjs by walking in steps with mission time sped up"},
+  {"id": "stop-card", "judges": 2, "severity": "major", "screens": ["07-walk-stop"], "summary": "Science card is small with ~9 px body text and no next action"}
+ ],
+ "demo_ready": {"yes_all_3": ["01-start","02-table-site","03-table-route","04-table-hazards","05-table-suit","10-pause"], "no_all_3": ["06-walk","07-walk-stop","08-walk-storm","09-wrist","11-debrief"]}
+}
