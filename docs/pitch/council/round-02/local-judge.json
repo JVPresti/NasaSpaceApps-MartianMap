@@ -1,0 +1,43 @@
+{
+  "prefer": "A",
+  "why": "A asks a question in the first 20 seconds (160 g left, 54 g to get home, 30 minutes you can't touch, radiation alert) and answers it at 3:39 with a number: 13 minutes of margin, go home now, by the route around the slopes. That closed loop is what I remember after 27 teams. B poses the dust storm and never says whether she makes it, and its beat 5 turns into a list of instruments (MRO, Mastcam-Z, MEDA sol 1187, RAD, DONKI) that any Mars team could read out. A also leaves 20 seconds of slack. B's script ends at exactly 5:00 with nothing spare, and if the optional opening goes in it has to cut its own beat 7.",
+  "better": [
+    "Story payoff: beat 5 answers the cold open with the app's own result (13 min margin, head home now), and B never answers its own question",
+    "Data is tied to the story. Each source is named at the moment it matters (HiRISE slope under the route, Perseverance photo of the rock, Curiosity 2018 opacity for the storm, 2017 doses for the alert), not read out as a list",
+    "The demo starts at 20 % O2 so the margin actually moves on screen. B starts full, its slide shows +480 min, and a judge sees a number that never matters",
+    "The demo says plainly which part is their own model: position error grows while walking, gets corrected at a stop, and is tagged SIM",
+    "Time: 4:40 planned with 20 s of slack. B is planned to 5:00 flat",
+    "The margin is defined in minutes ('minutos que me quedan después de volver y guardar la reserva'). That unit is easier to follow than B's 'oxígeno que me sobra' next to a minutes readout"
+  ],
+  "worse": [
+    "A lost B's 'La radiación se midió en Gale, no en Jezero, y la pantalla lo dice'. That honesty line is gone from A",
+    "A lost B's plain definitions of DATA / DERIVED / SIM (medido, lo calculamos, suposición nuestra). A's beat 6 is 10 seconds and vaguer",
+    "A says nothing about what comes next (heart rate, any HiRISE site). B's beat 7 says it, and A's global slide 7 still carries it but the local script doesn't",
+    "B names more NASA sources out loud (MEDA, DONKI, MRO). A only gives MEDA a passing mention in the 30 s video, so Relevance looks a bit thinner in A's spoken pitch",
+    "B's cold open uses the dust storm, which is what the live demo shows. A opens on a radiation alert while the demo's big event is the storm, a small mismatch",
+    "B's cold open is lighter: three numbers. A packs 913 m, 160 g, 54 g and 30 min into 22 seconds"
+  ],
+  "next": "Change demo line D3 so the 55 m sortie is visibly part of the Cheyava Falls story: 'Cheyava Falls está a 930 metros. Hoy, en vivo, caminamos solo la primera parada, 55 metros, con 20 % de oxígeno para que vean moverse el margen.' Right now the pitch builds up a 913 m walk and then the demo walks 55 m without saying why.",
+  "remaining_blockers_or_majors": [
+    {
+      "problem": "The story is about a 913 m walk to Cheyava Falls, but the demo walks a 55 m first sortie and never explains the jump. A judge with no Mars background will think the demo shows something else",
+      "severity": "major",
+      "criterion": "Presentation"
+    },
+    {
+      "problem": "The cold open stacks four numbers (913 m, 160 g, 54 g, 30 min) in 22 s, and the 13 min answer depends on arithmetic nobody in the room will do. Put the three oxygen numbers on screen as a bar (left, walk home, reserve) so the eye does the math",
+      "severity": "major",
+      "criterion": "Presentation"
+    },
+    {
+      "problem": "'Nuestra malla coincide con la de NASA Mars Trek en 97 de cada 100 puntos' sounds like a check of terrain accuracy. The team's own source note says it checks their processing of the same HiRISE DTM, not the DTM's accuracy. A CICESE researcher will ask in Q&A, and the claim reads as stronger than it is. Say 'procesamos el mismo modelo HiRISE y coincide con Trek en 97 de cada 100 puntos'",
+      "severity": "major",
+      "criterion": "Validity"
+    },
+    {
+      "problem": "A says 'dosis reales de Curiosity' but never says those doses were measured in Gale, not Jezero. B discloses this, and the team's honesty rule requires it. Use 5 of the 20 s of slack to add B's line to beat 6",
+      "severity": "major",
+      "criterion": "Validity"
+    }
+  ]
+}

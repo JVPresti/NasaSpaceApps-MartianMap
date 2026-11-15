@@ -44,12 +44,12 @@ Uses DEMO.md segments 2, 3, 4, 5, 6 and 7, cut short. One change from DEMO.md: t
 | Beat | Time | Do | Say |
 |---|---|---|---|
 | B1 | 0:00 | **Abrir la mesa de misión**, **Siguiente: ruta**, layer **Terreno** | "La ruta sale del modelo de terreno de HiRISE y rodea las pendientes peligrosas." |
-| B2 | 0:15 | Tab **Traje**, **Empezar la EVA**, **Empezar a caminar**, click the scene | "El plan dice que sí podemos salir." |
+| B2 | 0:15 | Tab **Traje**, **Empezar la EVA**, **Empezar a caminar**. Do **not** click the scene: without the mouse capture the cursor stays free for the Events strip in B4. Steer with **A** / **D** or drag on the scene to look | "El plan dice que sí podemos salir." |
 | B3 | 0:25 | Hold **W** toward S1 for about 20 s | "El margen de regreso, arriba a la izquierda, baja con cada paso." |
 | B4 | 0:45 | Press **`**, click **Dust storm**, press **`**. Wait for the banner. Press **M**, then **M** | "Disparo la tormenta ahora para ahorrar tiempo. La ruta se recalcula al hábitat." |
 | | 1:15 | Back to slides | |
 
-Say that you fire the storm by hand. A judge who sees the Events strip will ask.
+Say that you fire the storm by hand. A judge who sees the Events strip will ask. Rehearse B2 to B4 once: with the mouse captured, a click lands on the scene (it samples the ground) instead of on the Events strip, and Esc closes the strip, so the cursor has to stay free from the start.
 
 ## Cut C: the full demo inside the 8-minute version
 

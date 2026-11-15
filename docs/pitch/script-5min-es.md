@@ -10,15 +10,15 @@ Ritmo: 140 palabras por minuto. Los números salen de la app y de sus fuentes (v
 
 | Tiempo | Beat | Quién | Texto |
 |---|---|---|---|
-| 0:00 | 1 · Jezero | P1 | Cráter Jezero, Marte. Una astronauta está en Cheyava Falls, la roca donde Perseverance encontró una posible biofirma, a 913 metros del hábitat por la ruta. Le quedan 160 gramos de oxígeno. Volver cuesta 54. Treinta minutos de reserva no se tocan. Y llega una alerta de radiación. |
-| 0:22 | 1 · Tesis | P1 | En Marte, la pregunta no es a dónde puedes ir. Es a dónde puedes ir y todavía volver. Somos Los Frijolitos Espaciales Refritos Nueva Generación, de Ensenada. Esto es Marswalk. |
-| 0:36 | 2 · Los límites | P1 | Tres límites de los trajes lunares de la NASA: ocho horas de caminata, treinta minutos de reserva, nada de más de veinte grados de pendiente. Y sin GPS: el camino a casa hay que leerlo en el terreno. |
-| 0:52 | 3 · La zona de regreso | P1 | Lo azul es todo lo que ella alcanza y todavía regresa con su reserva, calculado con el planificador y el modelo de traje de la app. Cada subida lo encoge. Con la alerta, se cierra al camino de vuelta. En la app, eso es un número en el visor: el margen. |
-| 1:14 | 4 · Demo | P2 | (Demo, corte A, 2:25. Líneas abajo.) |
-| 3:39 | 5 · La respuesta y los datos | P3 | ¿Y la astronauta de Cheyava Falls? Con la alerta, le sobran trece minutos de margen. Marswalk la manda de vuelta ya, por la ruta que rodea las pendientes. Esa pendiente es el modelo HiRISE de un metro. La roca es la que fotografió Perseverance. La tormenta llega a la opacidad que midió Curiosity en 2018, y la radiación repite dosis reales de 2017. |
-| 4:12 | 6 · Medido o simulado | P3 | Cada lectura del traje dice si es medida, calculada o supuesta. Caminar a un metro por segundo es supuesto, y lo dice. |
-| 4:22 | 7 · Quién y un dato | P3 | Sirve para quien planea una caminata, que compara tres rutas antes de aprobar una, y para una clase en Ensenada, en el navegador. Un último dato: nuestra malla coincide con la de NASA Mars Trek en 97 de cada 100 puntos de pendiente. |
-| 4:40 | | | (Fin. 20 segundos de margen.) |
+| 0:00 | 1 · Jezero | P1 | Cráter Jezero, Marte. Una astronauta está en Cheyava Falls, la roca donde Perseverance encontró una posible biofirma, a 913 metros del hábitat por la ruta. Es el final de su EVA: le quedan 160 gramos de oxígeno. Volver cuesta 54. Treinta minutos de reserva no se tocan. Y llega una alerta de radiación. |
+| 0:24 | 1 · Tesis | P1 | En Marte, la pregunta no es a dónde puedes ir. Es a dónde puedes ir y todavía volver. Somos Los Frijolitos Espaciales Refritos Nueva Generación, de Ensenada. Esto es Marswalk. |
+| 0:38 | 2 · Los límites | P1 | Tres límites de los trajes lunares de la NASA: ocho horas de caminata, treinta minutos de reserva, nada de más de veinte grados de pendiente. Y sin GPS: el camino a casa hay que leerlo en el terreno. |
+| 0:55 | 3 · La zona de regreso | P1 | Lo azul es todo lo que ella alcanza y todavía regresa con su reserva, calculado con el planificador y el modelo de traje de la app. Cada subida lo encoge. Con la alerta, se cierra al camino de vuelta. En la app, eso es un número en el visor: el margen. |
+| 1:19 | 4 · Demo | P2 | (Demo, corte A, 2:25. Líneas abajo.) |
+| 3:44 | 5 · La respuesta y los datos | P3 | ¿Y la astronauta de Cheyava Falls? Con la alerta, le sobran trece minutos de margen. Marswalk la manda de vuelta ya, por la ruta que rodea las pendientes. Esa pendiente es el modelo HiRISE de un metro. La roca es la que fotografió Perseverance. La tormenta llega a la opacidad que midió Curiosity en 2018, y la radiación repite dosis reales de 2017. |
+| 4:11 | 6 · Medido o simulado | P3 | Cada lectura dice si es medida, calculada o supuesta: caminar a un metro por segundo es supuesto. La tormenta y la radiación las midió Curiosity en Gale, no en Jezero, y la alerta lo dice. El clima de Jezero es la estación MEDA de Perseverance. |
+| 4:30 | 7 · Quién y un dato | P3 | Sirve para quien planea una caminata, que compara tres rutas antes de aprobar una, y para una clase en Ensenada, en el navegador. Un último dato: procesamos el mismo modelo HiRISE que sirve NASA Mars Trek, y la diferencia típica es de catorce centímetros. |
+| 4:51 | | | (Fin. 9 segundos de margen.) |
 
 ## Líneas de la demo (P2, corte A)
 
@@ -26,8 +26,8 @@ Ritmo: 140 palabras por minuto. Los números salen de la app y de sus fuentes (v
 |---|---|---|
 | D1 | 0:00 | La mesa de misión: Jezero, con el terreno de HiRISE. |
 | D2 | 0:06 | Capa Terreno: la pendiente. La ruta rodea lo amarillo y nunca cruza lo rojo, más de veinte grados. |
-| D3 | 0:25 | Si la tripulación pide ir a Cheyava Falls, la ruta crece y el plan recalcula tiempo y oxígeno. Hoy hacemos la primera salida: 55 metros. |
-| D4 | 0:45 | Salgo con 20 % de oxígeno, para que el margen importe. El plan dice que sí. Empezamos. |
+| D3 | 0:25 | Si la tripulación pide Cheyava Falls, la ruta crece y el plan recalcula tiempo y oxígeno. En vivo caminamos la primera parada: 55 metros. |
+| D4 | 0:45 | Simulo el final de una EVA: salgo con 20 % de oxígeno. El plan dice que sí. Empezamos. |
 | D5 | 0:55 | A la izquierda, el margen: minutos que me quedan después de volver caminando y guardar la reserva. Se lee a mi paso: al caminar baja, al subir baja más. Abajo, la posición: sin GPS, el error crece al caminar y se corrige al detenerme con horizonte despejado. Ese modelo es nuestro, y dice SIM. |
 | D6 | 1:48 | Llegamos. Foto, muestra, guardar. |
 | D7 | 2:03 | Tormenta de polvo. No te tira: te quita el horizonte, y sin horizonte no hay posición. La ruta se recalcula al hábitat. |

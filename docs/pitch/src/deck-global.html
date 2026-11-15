@@ -10,10 +10,10 @@
   .s-title .team { font-family: var(--font-display); font-size: 44px; font-weight: 600; margin-top: 56px; }
   .s-title .tagline { font-size: 46px; line-height: 1.25; max-width: 980px; margin-top: 30px; }
   /* slide 2 */
-  .s-problem .facts { display: grid; grid-template-columns: 1fr; gap: 34px; width: 820px; margin-top: 56px; }
+  .s-problem .facts { display: grid; grid-template-columns: 1fr; gap: 26px; width: 820px; margin-top: 40px; }
   .s-problem .fact b { font-family: var(--font-display); font-size: 64px; font-weight: 600; display: block; line-height: 1; }
   .s-problem .fact span { font-size: 30px; color: var(--dim); }
-  .s-problem .map { position: absolute; right: 120px; top: 96px; width: 820px; height: 820px; }
+  .s-problem .map { position: absolute; right: 120px; top: 96px; width: 780px; height: 780px; }
   /* slide 3 */
   .bar { display: flex; height: 120px; margin-top: 64px; border: 1px solid var(--line-strong); border-radius: 3px; overflow: hidden; }
   .bar > div { display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 600; font-size: 34px; color: #0a0d11; text-align: center; line-height: 1.05; padding: 0 12px; }
@@ -78,40 +78,39 @@
 <!-- 2. Problem -->
 <section class="slide s-problem">
   <p class="kicker">Cheyava Falls, Jezero crater</p>
-  <h2 style="margin-top:24px;width:860px">An astronaut 913 m from the habitat. A radiation alert. Can she get back?</h2>
+  <h2 style="margin-top:24px;width:860px;font-size:68px">913 m from home, at the end of her EVA, a radiation alert. Can she get back?</h2>
   <div class="facts">
     <div class="fact"><b>160 g of O<sub>2</sub> left</b><span>Walking home costs 54 g and 18 min on this route (the app's suit model)</span></div>
     <div class="fact"><b>30 min reserve</b><span>Never touched: 72 g at walking pace (Apollo 17 rule)</span></div>
     <div class="fact"><b>8 h, 20°, no GPS</b><span>Longest EVA and steepest slope (NASA xEVA); position from the terrain</span></div>
   </div>
   <div class="frame map"><img src="../img/app-map-cheyava-terrain.jpg" alt="Planned route on HiRISE with slope bands"></div>
-  <p class="credit" style="left:auto;right:120px;bottom:120px">The app's route to Cheyava Falls on HiRISE slope: amber 15-20°, red over 20°, never crossed</p>
-  <p class="credit">160 g is our scenario (SIM): she left with 205 g and spent 45 g walking out</p>
+  <p class="credit" style="left:auto;right:120px;bottom:150px;width:780px">The app's route to Cheyava Falls on HiRISE slope: amber 15-20°, red over 20° (the planner blocks those cells). 785 m in a straight line</p>
+  <p class="credit">160 g is our scenario (SIM): the end of a long EVA, 21 % of the 771 g tank</p>
 </section>
 
 <!-- 3. The margin -->
 <section class="slide s-idea">
   <p class="kicker">The margin</p>
-  <h2 style="margin-top:24px;width:1150px">One number on the visor: minutes left after the walk home.</h2>
-  <div class="row" style="margin-top:56px;gap:64px;align-items:flex-start">
+  <h2 style="margin-top:24px;width:1500px">She has 13 minutes to spare. Marswalk says: head home now.</h2>
+  <div class="row" style="margin-top:50px;gap:64px;align-items:flex-start">
     <div style="flex:1">
-      <div class="bar" style="margin-top:0">
-        <div class="used" style="width:28%">Used</div>
-        <div class="home" style="width:30%">Walk home</div>
-        <div class="reserve" style="width:17%">Reserve</div>
-        <div class="margin" style="width:25%">Margin</div>
+      <p class="dim" style="font-size:26px">Her 160 g of O<sub>2</sub> at Cheyava Falls</p>
+      <div class="bar" style="margin-top:12px">
+        <div class="home" style="width:34%">Walk home 54 g</div>
+        <div class="reserve" style="width:45%">Reserve 72 g</div>
+        <div class="margin" style="width:21%">13 min</div>
       </div>
-      <div class="bar-notes" style="grid-template-columns:28% 30% 17% 25%">
-        <div>O<sub>2</sub> burned so far</div>
-        <div>Priced along the route, +20 % (Apollo 15 rule)</div>
-        <div>30 min (Apollo 17)</div>
-        <div>Minutes left to explore</div>
+      <div class="bar-notes" style="grid-template-columns:34% 45% 21%">
+        <div>Priced along the route with +20 % (Apollo 15 rule)</div>
+        <div>30 min that nobody touches (Apollo 17 rule)</div>
+        <div>The margin: 34 g</div>
       </div>
-      <p style="margin-top:50px">Oxygen or the 8 h suit clock, whichever runs out first. Recomputed every metre at the current pace, so a climb, a detour or a re-plan home changes it at once.</p>
+      <p style="margin-top:44px">The visor shows this one number, in minutes: oxygen or the 8 h suit clock, whichever runs out first, recomputed every metre.</p>
     </div>
-    <div style="width:560px;flex:none">
-      <div class="frame" style="height:420px"><img src="../img/app-hud-margin.jpg" alt="HUD suit panel with the margin, +399 min"></div>
-      <p class="caption">During the radiation alert: +399 min, shelter in 1 min. Tagged SIM because its weakest input, walking speed, is our assumption.</p>
+    <div style="width:520px;flex:none">
+      <div class="frame" style="height:390px"><img src="../img/app-hud-margin.jpg" alt="HUD suit panel with the margin, +399 min"></div>
+      <p class="caption">The same readout in the app, 40 m from home with a full tank: +399 min. Tagged SIM because its weakest input, walking speed, is our assumption.</p>
     </div>
   </div>
 </section>
@@ -158,10 +157,10 @@
 
 <!-- 7. One hard fact, users, next -->
 <section class="slide s-next">
-  <p class="kicker">Checked against NASA</p>
+  <p class="kicker">The same HiRISE model as NASA Mars Trek</p>
   <div class="row" style="align-items:baseline;gap:36px;margin-top:20px">
-    <div class="big ok" style="font-size:180px">97.3 %</div>
-    <h3 style="width:760px">of our 564,001 grid points fall in the same slope class as NASA Mars Trek's HiRISE model. Height RMS 0.14 m.</h3>
+    <div class="big ok" style="font-size:180px">0.14<span class="unit">m</span></div>
+    <h3 style="width:760px">typical height difference between our 2 m grid and the HiRISE model NASA Mars Trek serves, over 564,001 points. It shows we did not distort the data.</h3>
   </div>
   <div class="next" style="margin-top:44px">
     <div class="panel"><b>EVA planners</b><span>compare the fastest, gentlest and radio-contact routes before approving one</span></div>

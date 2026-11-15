@@ -17,11 +17,11 @@ Rules from the submission guide that apply here:
 | 0:02-0:05 | The challenge | "An astronaut, 913 metres from the habitat. Walking back costs 54 grams of oxygen." | (same) | NASA Space Apps 2026 · Martian Map |
 | 0:05-0:10 | Name and tagline | "Marswalk tells her how far she can go and still get home." | (same) | Marswalk · where you can go and still get home |
 | 0:10-0:20 | How it works with NASA data | "HiRISE terrain sets the route around slopes over twenty degrees. When a dust storm takes the horizon, the way home re-plans." | (same) | HiRISE DTM · Mastcam-Z · MEDA · Curiosity RAD |
-| 0:20-0:30 | The future | "Next, a heart rate sensor sets her oxygen use. Our terrain already matches NASA Mars Trek on 97 percent of slope points." | (same) | Next: heart rate, other HiRISE sites · 97.3 % slope match with NASA Mars Trek · martian-map.fernando-haro-c.workers.dev |
+| 0:20-0:30 | The future | "Next, a heart rate sensor sets her oxygen use. We process the same HiRISE model as NASA Mars Trek, to fourteen centimetres." | (same) | Next: heart rate, other HiRISE sites · same HiRISE model as NASA Mars Trek, 0.14 m · martian-map.fernando-haro-c.workers.dev |
 
 Narration: 58 words in about 27 s of speaking slots, about 130 words per minute. Read it once against a stopwatch before recording.
 
-Spanish narration, if chosen (same timing, English subtitles above): "Una astronauta, a 913 metros del hábitat. Volver caminando cuesta 54 gramos de oxígeno." / "Marswalk le dice hasta dónde puede ir y todavía volver." / "El terreno de HiRISE traza la ruta alrededor de pendientes de más de veinte grados. Si una tormenta de polvo le quita el horizonte, la ruta de regreso se recalcula." / "Lo siguiente: un sensor de ritmo cardiaco marca su consumo de oxígeno. Nuestro terreno ya coincide con NASA Mars Trek en 97 % de los puntos de pendiente."
+Spanish narration, if chosen (same timing, English subtitles above): "Una astronauta, a 913 metros del hábitat. Volver caminando cuesta 54 gramos de oxígeno." / "Marswalk le dice hasta dónde puede ir y todavía volver." / "El terreno de HiRISE traza la ruta alrededor de pendientes de más de veinte grados. Si una tormenta de polvo le quita el horizonte, la ruta de regreso se recalcula." / "Lo siguiente: un sensor de ritmo cardiaco marca su consumo de oxígeno. Procesamos el mismo modelo HiRISE que NASA Mars Trek, con catorce centímetros de diferencia."
 
 ## Shot list (30 fps, 1920 × 1080)
 
@@ -36,7 +36,7 @@ Base URL: the #282 build. Preview until it merges: `https://feat-short-mission-d
 | 5 | 420-509 | 0:14-0:17 | Walk, first sortie, 5 s after **Start walking**, walking toward S1 | Helmet view, the margin readout "MARGIN NOW" on the left, the minimap |
 | 6 | 510-599 | 0:17-0:20 | Walk, the dust storm banner at about T+99 s (20 s after reaching S1), sky darkening; press **M** at frame 570: the table shows the route home | The banner text "global storm worst case · up to Curiosity's Gale 2018 storm, not Jezero" readable for 1 s |
 | 7 | 600-749 | 0:20-0:25 | Mission table, Route step, goal **Sample Cheyava Falls**, the route profiles **Fastest**, **Gentlest**, **Radio** compared | The three profile columns |
-| 8 | 750-899 | 0:25-0:30 | End card over the Terrain layer: "97.3 % slope match with NASA Mars Trek", the URL and the QR | The number and the URL |
+| 8 | 750-899 | 0:25-0:30 | End card over the Terrain layer: "same HiRISE model as NASA Mars Trek, 0.14 m", the URL and the QR | The number and the URL |
 
 ## Recording notes
 

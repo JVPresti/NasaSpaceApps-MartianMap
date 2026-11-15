@@ -1,0 +1,62 @@
+{
+  "prefer": "B",
+  "why": "B removes the claims A cannot back. A says the suit 'matches the terrain to the HiRISE map' when the position fix is a SIM drift model, credits the walkback zone and O2 per metre to 'NASA suit tests' when the code uses Minetti's walking model (DERIVED), says 'every number says where it comes from', and files dust under MEDA when tau comes from Mastcam-Z. B ties each dataset to the decision it drives (HiRISE slope sets the route, Curiosity's tau 8.0 kills the position fix, RAD dose rates raise the alert), gives the cold open a denominator (160 g) and a payoff (13 min), and labels the zone as a presentation view. B pays for it by naming fewer missions aloud and by dropping the spoken Gale caveat.",
+  "better": [
+    "Navigation is honest in B. Demo D5 says the error grows as she walks, resets when she stops with a clear horizon, and 'that model is ours, and it says SIM'. That matches navigationDrift.js (2 % of distance, fix needs 5 s still, tau <= 1.0). A claims real terrain matching, and A slide 5 lists 'position fixes' as a HiRISE product.",
+    "The dust storm line is correct planetary science in B: 'It won't knock you over: it takes the horizon, and without a horizon there is no position fix.' It also connects Curiosity's tau to a decision in the app. A only says the route re-plans.",
+    "B beat 3 says the zone is 'computed with the app's planner and suit model' and carries a permanent caption that it is a presentation view and the app shows a number. A presents the zone as coming from HiRISE and NASA suit tests, and the app draws no reach area (code-facts section 4).",
+    "B slide 5 corrects the provenance: O2 per metre from Minetti's model scaled to Mars, MEDA split into sol 1187 temperature and pressure plus sol 312 wind, clear-sky tau 0.45 from Mastcam-Z, storm tau 8.0 from Curiosity in Gale, 2 m grid stated. A slide 5 credits O2 per metre to NASA/TP-2009-214796, puts dust under MEDA and cites DONKI, which the code uses for credits only.",
+    "B narrows the tagging claim to 'every suit reading' and slide 6 shows the real visor with oxygen DERIVED, pressure DATA, margin SIM, plus the 30 s storm ramp as SIM. A's 'every number on screen says where it comes from' is false for the Site tab stats and the nav line.",
+    "B beat 2 says 'three limits from NASA's lunar suits'. That is the honest framing for xEVA and Apollo 17 rules applied to Mars. A says 'NASA sets the rules', which implies Mars EVA rules exist.",
+    "B drops A's unexplained 930 m in demo D3, which contradicted the 913 m of the cold open.",
+    "B slide 3 explains that the margin is the lesser of oxygen and the 8 h clock and captions the screenshot value (+399 min, SIM). A slide 3 shows '+480 min, home in 0 min' with no explanation.",
+    "B closes on a slope-class agreement, which is the quantity the route planner uses. B slide 7 keeps the 0.14 m height RMS next to it."
+  ],
+  "worse": [
+    "B lost the spoken Gale caveat. A beat 6 says 'The radiation was measured in Gale, not Jezero, and the screen says so.' B says 'the opacity Curiosity measured in 2018' and 'real doses from 2017' in the same breath as two Jezero facts, and never says Gale aloud. It survives only on B slide 6 and in the app banner.",
+    "B lost MEDA from speech and from the beat 5 on-screen labels. A names 'MEDA's sol 1187'. In B, Perseverance's weather station is only on slide 5, so the one in-situ Jezero environment dataset is silent in the live pitch.",
+    "B names fewer instruments aloud. A says Mars Reconnaissance Orbiter, Mastcam-Z, MEDA and RAD. B says HiRISE, Perseverance and Curiosity. A Relevance judge counting datasets hears five in A and three in B.",
+    "B lost the debrief sentence from the demo close ('the debrief compares the walked route with the approved one'). The Review step is now only on slide 4.",
+    "B's closing number is weaker for a scientist than A's. 'Fourteen centimetres over 564 thousand points' is a physical quantity. '97 of every 100 slope points' needs the class bins to mean anything, and B never says them.",
+    "B lost the spoken QR line and the spoken 'any site with a HiRISE terrain model', which was A's reach argument for Impact. B slide 7 still has both."
+  ],
+  "next": "Spend 8 of B's 20 spare seconds on beat 6. Add after the SIM sentence: 'The storm and the radiation were measured by Curiosity in Gale crater, not Jezero, and the alert says so. The Jezero weather is Perseverance's MEDA station.' That restores the Gale caveat and MEDA in speech without touching the story beats.",
+  "remaining_blockers_or_majors": [
+    {
+      "problem": "The cold-open scenario starts the astronaut at the habitat with 205 g of O2, 27 % of the 771 g xEMU tank. No EVA plan passes go / no-go with a quarter tank, so the 13 min margin exists only because the scenario underfills the suit. The beats note says 'late in a long EVA' while slide 2 says 'she left with 205 g', and the demo repeats the device with 'I leave with 20 % oxygen'.",
+      "severity": "major",
+      "criterion": "Validity",
+      "evidence": "B slide 2 footnote '160 g is our scenario (SIM): she left with 205 g and spent 45 g walking out'; B beats note 'scenario start (205 g O2 left, late in a long EVA ...)'; B demo D4; code-facts: primary_usable 771 g, walking burn lasts 5.3 h. Fix by making Cheyava Falls the last stop of a long EVA (say 5 h elapsed) in the footnote and the beat 3 animation, with the same 160 g."
+    },
+    {
+      "problem": "The live pitch attributes Curiosity's storm opacity and radiation doses to the Jezero walk without saying Gale. A planetary scientist knows Curiosity is 3,700 km from Jezero and will hear a site mix-up unless told otherwise.",
+      "severity": "major",
+      "criterion": "Validity, Relevance",
+      "evidence": "B script 3:39 'The storm reaches the opacity Curiosity measured in 2018, and the radiation replays real doses from 2017'; B demo end 'with real Curiosity doses'; code-facts section 5 'RAD comes from Gale crater, not Jezero'. A script 4:11 had the caveat."
+    },
+    {
+      "problem": "The slide 2 caption says the red ground is 'never crossed', and the route line in the screenshot runs through the red band north of the habitat at slide scale. The line is drawn as straight segments, so it reads as a hand-drawn path cutting the no-go slope.",
+      "severity": "major",
+      "criterion": "Validity, Presentation",
+      "evidence": "B slides/02.png, route segment at about x 1655, y 655 where the blue line meets the red band; caption 'amber 15-20°, red over 20°, never crossed'. Zoomed crop shows the line touching red cells at the gap. Use a tighter crop that shows the bend through the gap, or re-shoot with the full A* path."
+    },
+    {
+      "problem": "The closing check compares the team's grid with the same HiRISE DTM served by Mars Trek, on slope bins of 0-15, 15-25 and over 25°. The app decides on 15° and 20°. The number proves the resampling, not the terrain, and its bins do not match the no-go rule the pitch just taught. The slide title 'Checked against NASA' and the spoken line do not say either.",
+      "severity": "major",
+      "criterion": "Validity",
+      "evidence": "script-5min-es.md sources table: 'clases de pendiente (0-15, 15-25, >25°) ... 97.3 % de 564,001 nodos ... Prueba el procesamiento, no la exactitud del DTM'; B script 4:22 'our grid matches NASA Mars Trek on 97 of every 100 slope points'; code-facts: slope.no_go 20°, caution 15°. Recompute on the app's own classes (under 15, 15-20, over 20) and say 'the same HiRISE model on NASA Mars Trek'."
+    },
+    {
+      "problem": "The deck never shows a tight margin. Every screenshot has O2 at 100 % and margins of +480, +399 or 'lowest 229 min', while the story is about 13 minutes. A judge reading only the PDF sees a number that never matters.",
+      "severity": "major",
+      "criterion": "Presentation, Validity",
+      "evidence": "B slides 03, 04, 06: visor shows O2 100 %, '+399 min'; slide 04 debrief 'Lowest 229 min'; code-facts: 'Low oxygen will not fire on its own in a demo'. Capture one visor frame from the 20 % O2 start with the margin in caution (under 15 min) for slide 3."
+    },
+    {
+      "problem": "913 m 'from the habitat' on slide 2 and in the video disagrees with the app's Site tab, which shows 785 m from the habitat. The script says 'by the route' and the slide headline does not.",
+      "severity": "major",
+      "criterion": "Validity",
+      "evidence": "B slide 2 headline 'An astronaut 913 m from the habitat'; B video row 0:02 '913 metres from the habitat'; code-facts MissionTable.jsx:403-407 '785 m from habitat'. Write '913 m by the route' everywhere."
+    }
+  ]
+}
