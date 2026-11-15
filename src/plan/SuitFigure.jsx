@@ -31,8 +31,9 @@ function disposeFigure(figure) {
       material.dispose();
     }
   });
+  const lost = figure.renderer?.getContext().isContextLost() ?? true;
   figure.renderer?.dispose();
-  figure.renderer?.forceContextLoss();
+  if (!lost) figure.renderer.forceContextLoss();   // a lost context has nothing left to free
   figure.renderer?.domElement.remove();
 }
 
