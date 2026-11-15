@@ -315,6 +315,17 @@ export default function App() {
     else if (action === 'layer-next') cycleLayer(1);
   }, [handleModeChange]);
 
+  // The habitat table's Open plan (src/state/tableActions.js: E or gamepad A in the cabin) opens the mission table on its
+  // Route step; M, Start and the menus still open it on the default step. False when it cannot open now.
+  const [planTab, setPlanTab] = useState(undefined);
+  useEffect(() => useMissionStore.subscribe((s, prev) => { if (prev.mode === 'plan' && s.mode !== 'plan') setPlanTab(undefined); }), []);
+  const handleOpenPlan = useCallback(() => {
+    if (phaseRef.current !== EVA_PHASE.PLAYING || busyRef.current || useMissionStore.getState().mode !== 'walk') return false;
+    setPlanTab('route');
+    handleModeChange('plan');
+    return true;
+  }, [handleModeChange]);
+
   const handleQuality = useCallback(async (option) => {
     const instance = engineRef.current;
     if (!instance || qualityBusyRef.current) return;
@@ -508,6 +519,7 @@ export default function App() {
         onLockChange={handleLockChange}
         onEngine={handleEngine}
         onGamepadAction={handleGamepadAction}
+        onOpenPlan={handleOpenPlan}
       />
 
       {/* Helmet bezel and alert ring (#28): over the 3D view, under every interface layer, so HUD text stays on top. */}
@@ -521,6 +533,7 @@ export default function App() {
           evaBegun={evaBegun}
           onBeginEva={handleBeginEva}
           onControls={() => openControls(false)}
+          initialTab={planTab}
         />
       )}
       {/* Plan mode places the banner in its own alert region; Walk puts it under the heading box, the HUD's only alert. */}
