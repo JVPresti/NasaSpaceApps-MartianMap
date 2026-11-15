@@ -820,6 +820,7 @@
   "table.begin.eva": "Empezar la EVA",
   "table.continue.eva": "Continuar la EVA",
   "table.layer.slope.legend": "Pendiente, del modelo de elevación HiRISE",
+  "table.site.this.run": "Esta salida: {goal}.",
   "table.site.text": "Una roca de cerca de un metro de largo en Neretva Vallis, el antiguo cauce que alimentaba el lago del cráter Jezero. Perseverance extrajo un núcleo el 21 de julio de 2024, y en 2025 la NASA la llamó una posible biofirma.",
   "table.site.photo": "Las manchas de leopardo de Cheyava Falls, de cerca",
   "table.site.image.credit": "Imagen: {credit}",

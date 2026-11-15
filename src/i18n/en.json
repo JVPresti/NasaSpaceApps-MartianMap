@@ -820,6 +820,7 @@
   "table.begin.eva": "Begin EVA",
   "table.continue.eva": "Continue the EVA",
   "table.layer.slope.legend": "Slope, from the HiRISE elevation model",
+  "table.site.this.run": "This run: {goal}.",
   "table.site.text": "A rock about one metre long in Neretva Vallis, the old river channel that fed the lake in Jezero crater. Perseverance cored it on 21 July 2024, and in 2025 NASA called it a potential biosignature.",
   "table.site.photo": "The leopard spots on Cheyava Falls, close up",
   "table.site.image.credit": "Image: {credit}",

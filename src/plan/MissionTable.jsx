@@ -560,6 +560,12 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
         <section className="table-left">
           <h2 className="table-h">{t('ui.cheyava.falls')}</h2>
           <p className="table-text">{t('table.site.text')}</p>
+          {/* When the goal walks somewhere else, say so here, before the Route step plans it (#340) */}
+          {objective !== 'cheyava' && (
+            <p className="table-site-goal">
+              <b>{t('table.site.this.run', { goal: t(`needs.objective.${objective}`) })}</b> {t(`needs.objective.${objective}.text`)}
+            </p>
+          )}
           {/* The first mission's plan beat (#265, src/mission/MissionBeat.jsx): nothing for the full EVA. */}
           <PlanBeat evaBegun={evaBegun} />
           {image && (
