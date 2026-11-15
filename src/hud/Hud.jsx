@@ -62,7 +62,7 @@ const CLIP = (() => {   // a wedge from the circle's centre through both ends of
 function HeadingTape() {
   const heading = useMissionStore((s) => s.navigation.headingDeg);
   const target = useMissionStore(useShallow((s) => { const w = nextWaypointInfo(s.route, s.navigation); return w ? Math.round(w.bearingDeg) : null; }));
-  const group = useRef(null), box = useRef(null), labels = useRef([]), shown = useRef({ h: null, text: null });
+  const group = useRef(null), box = useRef(null), shown = useRef({ h: null, text: null });
   const h0 = typeof heading === 'number' ? heading : null;
   // Per frame: turn the tape to the engine's heading and update the box, writing to the DOM only when it changed.
   usePoseFrame((p) => {
@@ -71,7 +71,7 @@ function HeadingTape() {
     shown.current.h = h;
     const turn = -(h / SPAN) * SWEEP * rad2deg;
     group.current.setAttribute('transform', `rotate(${turn} ${PIVOT.x} ${PIVOT.y})`);
-    for (const el of labels.current) if (el) el.setAttribute('transform', `rotate(${-turn} ${el.getAttribute('x')} ${el.getAttribute('y')})`);
+    for (const el of group.current.querySelectorAll('text')) el.setAttribute('transform', `rotate(${-turn} ${el.getAttribute('x')} ${el.getAttribute('y')})`);
     const text = Math.round(wrapDeg(h)) + '°';
     if (box.current && text !== shown.current.text) { box.current.textContent = text; shown.current.text = text; }
   });
@@ -81,7 +81,6 @@ function HeadingTape() {
   const markerAt = (deg) => { const { x, y, a } = arc(deg); return <path key={deg} d={`M${x - 7} ${y + 16} L${x + 7} ${y + 16} L${x} ${y + 27} Z`} transform={`rotate(${a * rad2deg} ${x} ${y})`} className="hud-tape-target" />; };
   const markers = target === null ? [] : [target, target < SPAN ? target + 360 : null, target > 360 - SPAN ? target - 360 : null].filter((d) => d !== null).map(markerAt);
   const path = `M${arc(-SPAN).x} ${arc(-SPAN).y} A${R} ${R} 0 0 1 ${arc(SPAN).x} ${arc(SPAN).y}`;
-  labels.current = [];
   return (
     <div className="hud-heading" aria-label={h0 === null ? t('ui.heading.unknown') : t('ui.heading.p0.degrees', { p0: Math.round(h0) })}>
       <svg viewBox={`0 0 ${W} 120`} className="hud-tape" aria-hidden="true">
@@ -91,8 +90,8 @@ function HeadingTape() {
           <g clipPath="url(#hud-tape-clip)">
             <g ref={group} transform={`rotate(${turn0} ${PIVOT.x} ${PIVOT.y})`}>
               {TICKS.map((k) => <line key={'t' + k.d} x1={k.x} y1={k.y} x2={k.x - Math.sin(k.a) * k.len} y2={k.y + Math.cos(k.a) * k.len} className={k.major ? 'hud-tick-major' : 'hud-tick'} />)}
-              {TICKS.filter((k) => k.label).map((k, i) => (
-                <text key={'l' + k.d} ref={(el) => { labels.current[i] = el; }} x={k.x - Math.sin(k.a) * 30} y={k.y + Math.cos(k.a) * 30} transform={`rotate(${-turn0} ${k.x - Math.sin(k.a) * 30} ${k.y + Math.cos(k.a) * 30})`} className="hud-tape-label">{k.label}</text>
+              {TICKS.filter((k) => k.label).map((k) => (
+                <text key={'l' + k.d} x={k.x - Math.sin(k.a) * 30} y={k.y + Math.cos(k.a) * 30} transform={`rotate(${-turn0} ${k.x - Math.sin(k.a) * 30} ${k.y + Math.cos(k.a) * 30})`} className="hud-tape-label">{k.label}</text>
               ))}
               {markers}
             </g>
