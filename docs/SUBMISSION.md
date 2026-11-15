@@ -108,7 +108,7 @@ Paste everything inside the box. The form takes rich text, so the headings survi
 >
 > **Factors we considered**
 >
-> We label every observation as historical, never live. Radiation carries the name of the crater where Curiosity measured it. Navigation never claims GPS. We dropped a THEMIS thermal view because its 100 m pixels put 15 by 15 pixels on the whole site. We dropped a geology map because it sits 100 to 200 m off the terrain. A judge without a gamepad or a strong GPU can still finish the walk. It reads keyboard, mouse, touch and gamepad, and switches between English and Spanish. It starts on a Low graphics tier when the GPU name shows integrated or mobile graphics, and drops from High to Low after three seconds in a row under 40 frames per second.
+> We label every observation as historical, never live. Radiation carries the name of the crater where Curiosity measured it. Navigation never claims GPS. We dropped a THEMIS thermal view because its 100 m pixels put 15 by 15 pixels on the whole site. We dropped a geology map because it sits 100 to 200 m off the terrain. A judge without a gamepad or a strong GPU can still finish the walk. It reads keyboard, mouse, touch and gamepad, and switches between English and Spanish. It starts on a Low graphics tier when the GPU name matches a list of weaker integrated and mobile chips, and drops from High to Low after three seconds in a row under 40 frames per second.
 >
 > **Tools and languages**
 >
