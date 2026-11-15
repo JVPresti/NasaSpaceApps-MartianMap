@@ -317,13 +317,24 @@ function BeginButton({ planner, totals, evaBegun, onBeginEva }) {
   );
 }
 
+/** A tab id the table has, or the first step. */
+const tabOrSite =(id) => (TABS.some((item) => item.id === id) ? id : TABS[0].id);
+
 /**
  * @param {{ planner: { status: string, error: string | null, replan: () => void },
  *   waypoints: Array<{ name: string, x: number, z: number }>, evaBegun?: boolean, onBeginEva?: () => void,
- *   onControls?: () => void }} props
+ *   onControls?: () => void, initialTab?: 'site' | 'route' | 'hazards' | 'suit' }} props
+ *   initialTab: the step the table opens on (the habitat table's "Open plan" opens Route); step 1 by default
  */
-export default function MissionTable({ planner, waypoints, evaBegun = false, onBeginEva, onControls }) {
-  const [tab, setTab] = useState('site');   // the table opens on step 1
+export default function MissionTable({ planner, waypoints, evaBegun = false, onBeginEva, onControls, initialTab = 'site' }) {
+  const [tab, setTab] = useState(() => tabOrSite(initialTab));
+  // A new initialTab while the table is open moves to that step; set while rendering, as React suggests for state
+  // that follows a prop.
+  const [openedOn, setOpenedOn] = useState(initialTab);
+  if (initialTab !== openedOn) {
+    setOpenedOn(initialTab);
+    setTab(tabOrSite(initialTab));
+  }
   const [traverse, setTraverse] = useState(true);   // Perseverance's drives on the map (#249), on both map steps
   const route = useMissionStore((s) => s.route);
   const layer = useMissionStore((s) => s.view.layer);
