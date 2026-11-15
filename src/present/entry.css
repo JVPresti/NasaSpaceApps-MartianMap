@@ -1,0 +1,15 @@
+.start-present {
+  position: absolute;
+  right: var(--space-5);
+  bottom: var(--space-4);
+  font-size: var(--text-s);
+  color: var(--dim);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+
+.start-present:hover,
+.start-present:focus-visible {
+  color: var(--ink);
+  text-decoration: underline;
+}

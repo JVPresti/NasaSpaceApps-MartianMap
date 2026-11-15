@@ -22,6 +22,7 @@ import { subscribeLanguage } from '../i18n/index.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as SH from './shaders.js';
+import { createCinematic } from './cinematic.js';   // the presentation's camera and overlays (#291)
 import { createAssets, b64u16, b64u8 } from './assets.js';
 import { buildAssetManifest, ROCK_NAMES } from './assetManifest.js';
 import { decodeTerrainJson, decodeRingJson } from './queries.js';
@@ -210,8 +211,9 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   }
   function renderFrame() {
     const now = performance.now(), ft = now - last; last = now;
-    const dt = Math.min(ft / 1000, 0.1);
+    const dt = sys.cine ? sys.cine.frameDt(ft) : Math.min(ft / 1000, 0.1);   // the presentation can fix the step (#291)
     viewCtl.update(dt);
+    if (sys.cine) sys.cine.apply(dt);
     camera.getWorldDirection(U.uCamDir.value);
     const eyeMode = ctx.view.mode === 'eye';
     if (sys.arms.L) sys.arms.L.g.visible = sys.arms.R.g.visible = eyeMode;   // first-person arms only in Walk
@@ -245,7 +247,8 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       // auto tier: three slow seconds in a row on High -> Low. The controller serialises this with a
       // user choice made from the pause menu, so the two can never interleave.
       const q = quality.get();
-      if (q.auto && !q.pending && ctx.tier === 'high' && now - booted > 3000) {
+      if (sys.cine) slowWindows = 0;   // never rebuild the terrain under the presentation's meshes (#291)
+      else if (q.auto && !q.pending && ctx.tier === 'high' && now - booted > 3000) {
         slowWindows = (fps < 40 && worst < 250 && !document.hidden) ? slowWindows + 1 : 0;
         if (slowWindows >= 3) {
           slowWindows = 0;
@@ -786,6 +789,11 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
         inFront,
         visible: inFront && Math.abs(p.x) <= 1 && Math.abs(p.y) <= 1,
       };
+    },
+    /** The presentation's camera and scene overlays (cinematic.js, #291), until its release(). Null before ready. */
+    cinematic() {
+      if (!started) return null;
+      return (sys.cine ||= createCinematic(ctx, { render: renderFrame, loop: (on) => renderer.setAnimationLoop(on ? tick : null), release: () => { sys.cine = null; viewCtl.setMode(requestedMode); } }));
     },
     /** Removes every boot print (bootPrints.js): the start of a new EVA. */
     clearPrints() { if (sys.prints) sys.prints.clear(); },
