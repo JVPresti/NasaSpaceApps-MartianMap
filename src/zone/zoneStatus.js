@@ -2,7 +2,8 @@
 import { formatNumber, t } from '../i18n/index.js';
 import { shortDuration } from '../plan/tableFormat.js';
 
-const EVENT_NAMES = { 'dust-storm': 'stormLabel', radiation: 'radiationLabel' };
+// Every event with a planner request sets the zone's way home (zoneModifiers), so each needs a name here.
+const EVENT_NAMES = { 'dust-storm': 'stormLabel', radiation: 'radiationLabel', 'low-oxygen-caution': 'oxygenCaution', 'low-oxygen-warning': 'oxygenWarning' };
 /** The walk home from where the zone was computed from, seconds; null off the grid. */
 function homeSecFrom(zone) {
   if (!zone.from || !zone.homeSec) return null;
@@ -16,7 +17,8 @@ const eventName = (id) => (id && EVENT_NAMES[id] ? t(EVENT_NAMES[id]) : id ?? ''
 /**
  * @param {object | null} zone the zone service's zone (computeReturnZone plus kind, events, windowSec and the plan's budget)
  * @returns {{ head: string, limit: string, reach: string } | null} head: the budget ("Your plan: 30 min, 15 % time
- *   reserve, 30 min O2 reserve"); limit: what sets the edge now; reach: the farthest ground in reach
+ *   reserve · 30 min O2 reserve · 100 % O2 · tight under 15 min"); limit: what sets the edge now; reach: the farthest
+ *   ground in reach
  */
 export function zoneStatus(zone) {
   if (!zone) return null;

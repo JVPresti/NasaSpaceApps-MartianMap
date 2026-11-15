@@ -388,10 +388,17 @@ export function computeReturnZone({ grid, home, from = null, suit, constants: c,
     if (x < minX) minX = x; if (x > maxX) maxX = x; if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
   }
   const cellM2 = zg.dx * zg.dz;
+  const empty = insideCells + edgeCells === 0;
   // the event rules first: they are why the zone changed; else the budget limit that shuts out the most ground
-  const bound = window !== null && (shut.window > 0 || insideCells + edgeCells === 0) ? 'window'
+  let bound = window !== null && (shut.window > 0 || empty) ? 'window'
     : homeward && shut.event > 0 ? 'event'
       : ['eva', 'o2', 'battery'].reduce((best, id) => (shut[id] > (best ? shut[best] : 0) ? id : best), null);
+  // An empty zone with nothing counted: the sweeps stopped at once because the time or the O2 over the reserve is spent
+  // (maxSec or maxO2 at 0), so no node reached the checks. Name the budget that ran out, never "whole tile in reach".
+  if (bound === null && empty) {
+    if (batteryWh !== null && batteryWh <= batteryReserveWh) bound = 'battery';
+    else bound = limit - elapsed <= (suit.o2G / rate - c.reserveSec - floorSec) ? 'eva' : 'o2';
+  }
   return {
     cols: zg.cols, rows: zg.rows, x0: zg.x0, z0: zg.z0, dx: zg.dx, dz: zg.dz, step,
     state, marginSec, toSec, homeSec, toO2G, homeO2G,
@@ -404,7 +411,7 @@ export function computeReturnZone({ grid, home, from = null, suit, constants: c,
     stats: {
       insideCells, edgeCells, insideM2: insideCells * cellM2, edgeM2: edgeCells * cellM2, reachM: Math.sqrt(reach2),
       limit: bound, ms: now() - started,
-      bounds: insideCells + edgeCells > 0 ? { minX, maxX, minZ, maxZ } : null,
+      bounds: empty ? null : { minX, maxX, minZ, maxZ },
     },
   };
 }

@@ -181,6 +181,18 @@ describe('event modifiers', () => {
     expect(zoneStateAt(z, 60, 60)).not.toBe(ZONE_STATE.OUTSIDE);
   });
 
+  it('names the spent budget when the zone is empty, never the whole tile', () => {
+    const late = computeReturnZone({ ...base, suit: { o2G: c.o2UsableG, elapsedSec: 3600 }, evaLimitSec: 3000 });
+    expect(late.stats.insideCells + late.stats.edgeCells).toBe(0);
+    expect(late.stats.limit).toBe('eva');
+    expect(late.stats.bounds).toBeNull();
+    const dry = computeReturnZone({ ...base, suit: { o2G: 0.5 * c.reserveSec * rate } });
+    expect(dry.stats.insideCells + dry.stats.edgeCells).toBe(0);
+    expect(dry.stats.limit).toBe('o2');
+    const flat = computeReturnZone({ ...base, suit: { o2G: c.o2UsableG, batteryWh: 10 }, plan: { batteryReserveWh: 20 } });
+    expect(flat.stats.limit).toBe('battery');
+  });
+
   it('reads homeward from the active alerts of events that send the crew to a shelter', () => {
     const defs = [{ id: 'dust-storm', planner: { action: 'replan', target: 'habitat' } }, { id: 'low-oxygen-caution' }];
     expect(zoneModifiers({ alerts: {} }, defs).homeward).toBe(false);
@@ -248,7 +260,7 @@ describe('the first sortie on the real HiRISE tile (#282 plan)', () => {
     expect(area(full)).toBeLessThan((2 / 3) * area(before));
   });
 
-  it('the storm keeps only the way home: a third of the area or less', () => {
+  it('the storm keeps only the way home: it cuts the zone by at least a third', () => {
     const storm = computeReturnZone({ grid, home, from: { x: stop.x, z: stop.z }, suit: { o2G: c.o2UsableG - 10, elapsedSec: 150 }, constants: c, evaLimitSec: usableSec, modifiers: { homeward: true } });
     expect(storm.stats.limit).toBe('event');
     expect(area(storm)).toBeLessThanOrEqual((2 / 3) * area(before));

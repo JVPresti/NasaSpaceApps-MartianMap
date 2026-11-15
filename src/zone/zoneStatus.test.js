@@ -33,4 +33,8 @@ describe('zoneStatus', () => {
   it('names the storm re-plan', () => {
     expect(zoneStatus(zone({ kind: 'live', events: ['dust-storm'], stats: { limit: 'event', reachM: 79 } })).limit).toBe('Dust storm: re-planned home, only the way home stays');
   });
+
+  it('names the low oxygen warning by its label, not its id', () => {
+    expect(zoneStatus(zone({ kind: 'live', events: ['low-oxygen-warning'], stats: { limit: 'event', reachM: 40 } })).limit).toBe('Low oxygen · warning: re-planned home, only the way home stays');
+  });
 });
