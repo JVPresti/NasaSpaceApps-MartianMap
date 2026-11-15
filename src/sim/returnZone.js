@@ -1,32 +1,37 @@
 /**
- * The return zone: every place the astronaut can walk to from where they stand and still walk home with the 30 min
- * reserve untouched.
+ * The return zone: every place the crew can walk to from where they stand, do the planned work there, and still walk
+ * home inside the budget the crew planned at the mission table.
  *
  * Two Dijkstra passes over the HiRISE height grid of the cost grid (costGrid.buildCostGrid):
- * - from home (the habitat airlock, or the event shelter), over reversed edges: the time and O2 to walk home from every
- *   node, with the walkback pad (suit.reserve.walkback_pad), as the HUD walkback;
- * - from the astronaut, over forward edges: the time and O2 to get to every node, at the nominal rate, as the plan's legs.
+ * - from home (the habitat airlock, or the event shelter), over reversed edges: the time, O2 and battery to walk home
+ *   from every node, with the walkback pad (suit.reserve.walkback_pad), as the HUD walkback and the plan's walk home;
+ * - from the astronaut, over forward edges: the time, O2 and battery to get to every node at the nominal rate, as the
+ *   plan's legs (legCosts.routeLegCosts).
  * Each edge is priced with the suit model's walking cost (suitModel.walkCost: constant effort, Minetti on Mars), so a
  * path's cost here is walkCost on that path. Ground over the 20 degree no-go limit (the grid's `blocked`) is closed.
  *
- * A node is inside when its margin, the suit model's margin at that node (suitModel.o2Margin and evaMargin, the formula
- * suitReadout uses), stays over the warning margin (0 min):
- *   O2 margin  = (O2 left - O2 to get there) / rate - O2 home / rate - 30 min reserve
- *   EVA margin = EVA limit - (EVA time so far + time to get there) - time home
- * It is on the edge when that margin is under the caution margin (15 min). The rate is the flat walking rate, as the
- * plan's margin (route.totals.marginSec, legCosts.js) uses, so the zone does not breathe in and out when the astronaut
- * stops. The EVA limit is suit.eva_duration_max, or the shorter time the crew planned when the caller passes it.
+ * A node is inside when going there, the work there (a planned stop's workSec, legCosts.workCost) and the walk home fit
+ * the crew's budget (#282, missionNeeds.planFromNeeds `budget`, checked as its checkBudget checks a route):
+ *   time:    EVA time so far + time there + work + time home <= the usable time (time available less the risk reserve)
+ *   O2:      the suit model's O2 margin at home, (O2 left - O2 there - work O2 - O2 home) / walking rate - 30 min
+ *            reserve (suitModel.o2Margin), over the risk's floor (0 min, or 15 min for a cautious crew)
+ *   battery: battery left - battery there - work - battery home >= the risk's battery reserve
+ * It is on the edge when the tighter of the time and O2 margins is under the caution margin (15 min). Without a plan
+ * the time limit is suit.eva_duration_max and the floor is the warning margin, the suit model's own limits.
  *
- * Event modifiers come from the event engine, never from rules made up here:
- * - homeward: an active event asks the crew to go to a shelter (its `planner` request, src/sim/events/*.json). The
- *   zone then keeps only ground no farther from home, in walking time, than the astronaut is now.
+ * Event modifiers come from the event engine and the re-planner, never from physics made up here:
+ * - shelterWithinSec: an event with a warning window (the radiation alert: the time from its start to the peak dose
+ *   rate of its timeline) keeps only ground from which the crew reaches the shelter before the window closes.
+ * - homeward: an active event sends the crew to a shelter (its `planner` request). Neither event changes walking speed
+ *   or cost in the sim, so the zone applies the re-plan's own rule: only ground no farther from home than the crew.
  * - hazards: active hazard areas (store hazards.zones), closed like no-go ground.
  *
  * Plain JavaScript with no React and no three.js: it runs in returnZone.worker.js and in tests.
  * Coordinates: x east, z south, metres from Cheyava Falls; node (0, 0) is the north-west corner.
  */
 
-import { constantEffortSpeed, evaMargin, marginStatus, metabolicPowerW, o2Margin, o2RateGs, walkingO2RateGs } from './suitModel.js';
+import { constantEffortSpeed, evaMargin, metabolicPowerW, o2Margin, o2RateGs, walkingO2RateGs } from './suitModel.js';
+import { workCost } from './legCosts.js';
 
 /**
  * Zone nodes per cost grid node. 2 gives 3.8 m x 4 m cells: the full-tank zone (the whole tile) takes about 130 ms on a
@@ -241,6 +246,37 @@ function closedMask(zg, hazards) {
 }
 
 /**
+ * Battery (Wh) of a walk from its time and O2. The suit model's battery draw (batteryDrawW) is a fixed part plus a part
+ * that follows metabolic power, and O2 is power x time / energy per litre x density, so the sum over a path's steps is
+ * this one line: walkCost's battery for the same path. O2 with the walkback pad gives the padded battery, as walkCost.
+ */
+export function batteryWhOf(sec, o2G, c) {
+  const joules = (o2G * c.jPerL) / c.rhoO2;
+  return (c.batteryAvgW * ((1 - c.batteryEffortShare) * sec + (c.batteryEffortShare * joules) / c.designAvgW)) / 3600;
+}
+
+/** Work cost at the stops: per node within `radiusM` of a stop, its workCost (time, O2, battery). */
+function stopWork(zg, stops, radiusM, c) {
+  const work = new Map();
+  for (const stop of stops ?? []) {
+    if (!stop || !Number.isFinite(stop.x) || !Number.isFinite(stop.z) || !(stop.workSec > 0)) continue;
+    const w = workCost(stop.workSec, c);
+    const q0 = Math.max(0, Math.floor((stop.x - radiusM - zg.x0) / zg.dx)), q1 = Math.min(zg.cols - 1, Math.ceil((stop.x + radiusM - zg.x0) / zg.dx));
+    const r0 = Math.max(0, Math.floor((stop.z - radiusM - zg.z0) / zg.dz)), r1 = Math.min(zg.rows - 1, Math.ceil((stop.z + radiusM - zg.z0) / zg.dz));
+    for (let r = r0; r <= r1; r += 1) {
+      for (let q = q0; q <= q1; q += 1) {
+        if (Math.hypot(zg.x0 + q * zg.dx - stop.x, zg.z0 + r * zg.dz - stop.z) > radiusM) continue;
+        const k = r * zg.cols + q, prev = work.get(k);
+        if (!prev || prev.timeSec < w.timeSec) work.set(k, w);
+      }
+    }
+  }
+  return work;
+}
+
+const NO_WORK = Object.freeze({ timeSec: 0, o2G: 0, batteryWh: 0 });
+
+/**
  * @typedef {object} ReturnZone
  * @property {number} cols nodes west to east
  * @property {number} rows nodes north to south
@@ -250,18 +286,22 @@ function closedMask(zg, hazards) {
  * @property {number} dz node spacing south, metres
  * @property {number} step cost grid nodes per zone node (1: the grid's own spacing)
  * @property {Uint8Array} state ZONE_STATE per node, row-major from the north-west corner
- * @property {Float32Array} marginSec the suit model's margin at each node, seconds; -Infinity where it cannot be reached
+ * @property {Float32Array} marginSec the tighter of the O2 margin and the time to spare at each node, seconds; -Infinity
+ *   where it cannot be reached
  * @property {Float32Array} toSec time to get to each node from the astronaut, seconds
  * @property {Float32Array} homeSec time to walk home from each node, seconds
  * @property {Float32Array} toO2G O2 to get to each node at the nominal rate, grams; Infinity past the O2 or time left
  * @property {Float32Array} homeO2G O2 to walk home from each node with the walkback pad, grams; Infinity likewise
  * @property {{ x: number, z: number }} home
  * @property {{ x: number, z: number }} from
- * @property {{ o2G: number, o2UsableG: number, rateGs: number, reserveSec: number, evaLimitSec: number, elapsedSec: number,
- *   cautionSec: number, warningSec: number, homeward: boolean }} inputs what the zone was computed with
+ * @property {{ o2G: number, o2UsableG: number, batteryWh: number | null, batteryReserveWh: number, rateGs: number,
+ *   reserveSec: number, evaLimitSec: number, elapsedSec: number, marginFloorSec: number, marginFloor: 'caution' | 'warning',
+ *   cautionSec: number, warningSec: number, homeward: boolean, shelterWithinSec: number | null, planned: boolean }} inputs
+ *   what the zone was computed with; planned: a crew plan set the limits
  * @property {{ insideCells: number, edgeCells: number, insideM2: number, edgeM2: number, reachM: number,
- *   limit: 'o2' | 'eva' | 'event' | null, ms: number, bounds: { minX: number, maxX: number, minZ: number, maxZ: number } | null }} stats
- *   reachM: the farthest inside node from home, straight line; limit: what closes the zone where it is tightest;
+ *   limit: 'o2' | 'eva' | 'battery' | 'window' | 'event' | null, ms: number, bounds: { minX: number, maxX: number, minZ: number, maxZ: number } | null }} stats
+ *   reachM: the farthest inside node from home, straight line; limit: what shuts out the most ground ('eva' is the
+ *   time limit, 'window' an event's shelter window, 'event' the re-plan's way home);
  *   bounds: the box around every node inside or on the edge, null when there is none
  */
 
@@ -271,20 +311,24 @@ function closedMask(zg, hazards) {
  *   grid: { n: number, width: number, depth: number, heights: Float32Array, blocked: Uint8Array },
  *   home: { x: number, z: number },
  *   from?: { x: number, z: number } | null,
- *   suit: { o2G: number, elapsedSec?: number },
+ *   suit: { o2G: number, batteryWh?: number, elapsedSec?: number },
  *   constants: object,
  *   evaLimitSec?: number,
- *   modifiers?: { homeward?: boolean, hazards?: Array<{ x: number, z: number, radiusM: number, active?: boolean }> },
+ *   plan?: { marginFloor?: 'caution' | 'warning', marginFloorSec?: number, batteryReserveWh?: number,
+ *     stops?: Array<{ x: number, z: number, workSec: number }>, stopRadiusM?: number },
+ *   modifiers?: { homeward?: boolean, shelterWithinSec?: number, hazards?: Array<{ x: number, z: number, radiusM: number, active?: boolean }> },
  *   step?: number,
  *   now?: () => number,
  * }} input
  *   grid: buildCostGrid's grid (or any object with those fields); home: the habitat airlock or the event shelter;
  *   from: the astronaut, home when left out (the plan's zone before the EVA); suit.o2G: O2 left, grams; elapsedSec:
  *   EVA time so far; constants: suitConstantsFromHazards; evaLimitSec: the EVA time limit, suit.eva_duration_max by
- *   default, never more; step: zone node spacing in cost grid nodes
+ *   default, never more (pass the plan's budget.usableSec); plan: the rest of the plan's budget (budget.marginFloor,
+ *   marginFloorSec, batteryReserveWh) and the stops still to work (route.waypoints with workSec), each counted within
+ *   stopRadiusM (5 m, the waypoint arrival radius); step: zone node spacing in cost grid nodes
  * @returns {ReturnZone}
  */
-export function computeReturnZone({ grid, home, from = null, suit, constants: c, evaLimitSec, modifiers = {}, step = DEFAULT_ZONE_STEP, now = () => Date.now() }) {
+export function computeReturnZone({ grid, home, from = null, suit, constants: c, evaLimitSec, plan = {}, modifiers = {}, step = DEFAULT_ZONE_STEP, now = () => Date.now() }) {
   const started = now();
   if (!home || !Number.isFinite(home.x) || !Number.isFinite(home.z)) throw new Error('return zone needs a finite home');
   if (!suit || !Number.isFinite(suit.o2G)) throw new Error('return zone needs suit.o2G');
@@ -297,9 +341,15 @@ export function computeReturnZone({ grid, home, from = null, suit, constants: c,
   const rate = walkingO2RateGs(c);
   const elapsed = Number.isFinite(suit.elapsedSec) ? Math.max(0, suit.elapsedSec) : 0;
   const limit = Math.min(c.evaMaxSec, Number.isFinite(evaLimitSec) ? evaLimitSec : c.evaMaxSec);
-  // Nothing past these can be inside: the whole O2 above the reserve, the whole time left.
+  const floor = plan.marginFloor === 'caution' ? 'caution' : 'warning';
+  const floorSec = Number.isFinite(plan.marginFloorSec) ? plan.marginFloorSec : floor === 'caution' ? c.cautionSec : c.warningSec;
+  const batteryWh = Number.isFinite(suit.batteryWh) ? suit.batteryWh : null;
+  const batteryReserveWh = Number.isFinite(plan.batteryReserveWh) ? plan.batteryReserveWh : 0;
+  const window = Number.isFinite(modifiers.shelterWithinSec) ? Math.max(0, modifiers.shelterWithinSec) : null;
+  const work = stopWork(zg, plan.stops, Number.isFinite(plan.stopRadiusM) ? plan.stopRadiusM : 5, c);
+  // Nothing past these can be inside: the whole O2 above the reserve, the whole time left (or the shelter window).
   const maxO2 = Math.max(0, suit.o2G - c.reserveSec * rate);
-  const maxSec = Math.max(0, limit - elapsed);
+  const maxSec = Math.max(0, Math.min(limit - elapsed, window ?? Infinity));
 
   const homeNode = nearestOpen(zg, zoneNodeAt(zg, home.x, home.z), closed);
   const fromNode = nearestOpen(zg, zoneNodeAt(zg, at.x, at.z), closed);
@@ -312,31 +362,43 @@ export function computeReturnZone({ grid, home, from = null, suit, constants: c,
 
   const state = new Uint8Array(size), marginSec = new Float32Array(size).fill(-Infinity);
   const toSec = new Float32Array(size), homeSec = new Float32Array(size), toO2G = new Float32Array(size), homeO2G = new Float32Array(size);
-  let insideCells = 0, edgeCells = 0, reach2 = 0, o2Binds = 0, evaBinds = 0, eventCut = 0;
+  const shut = { o2: 0, eva: 0, battery: 0, window: 0, event: 0 };
+  let insideCells = 0, edgeCells = 0, reach2 = 0;
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
   for (let k = 0; k < size; k += 1) {
     toSec[k] = to.sec[k]; homeSec[k] = back.sec[k]; toO2G[k] = to.o2[k]; homeO2G[k] = back.o2[k];
     if (!(to.o2[k] < Infinity) || !(back.o2[k] < Infinity)) continue;
-    const o2m = o2Margin(suit.o2G - to.o2[k], back.o2[k], rate, c);
-    const evam = evaMargin(elapsed + to.sec[k], back.sec[k], c, limit);
-    const m = Math.min(o2m, evam);
+    const w = work.get(k) ?? NO_WORK;
+    // checkBudget's three checks, in the suit model's terms
+    const o2m = o2Margin(suit.o2G - to.o2[k] - w.o2G, back.o2[k], rate, c);
+    const spare = evaMargin(elapsed + to.sec[k] + w.timeSec, back.sec[k], c, limit);
+    const m = Math.min(o2m, spare);
     marginSec[k] = m;
-    const status = marginStatus(m, c);
-    if (status === 'warning') { if (o2m <= evam) o2Binds += 1; else evaBinds += 1; continue; }
-    if (back.o2[k] > homewardO2) { eventCut += 1; continue; }
-    if (status === 'caution') { state[k] = ZONE_STATE.EDGE; edgeCells += 1; } else { state[k] = ZONE_STATE.INSIDE; insideCells += 1; }
+    if (spare < 0) { shut.eva += 1; continue; }
+    if (floor === 'caution' ? !(o2m >= floorSec) : !(o2m > floorSec)) { shut.o2 += 1; continue; }
+    if (batteryWh !== null && batteryWh - batteryWhOf(to.sec[k], to.o2[k], c) - w.batteryWh - batteryWhOf(back.sec[k], back.o2[k], c) < batteryReserveWh) { shut.battery += 1; continue; }
+    if (window !== null && to.sec[k] + back.sec[k] > window) { shut.window += 1; continue; }
+    if (back.o2[k] > homewardO2) { shut.event += 1; continue; }
+    if (m < c.cautionSec) { state[k] = ZONE_STATE.EDGE; edgeCells += 1; } else { state[k] = ZONE_STATE.INSIDE; insideCells += 1; }
     const q = k % zg.cols, r = (k - q) / zg.cols;
     const x = zg.x0 + q * zg.dx, z = zg.z0 + r * zg.dz, d2 = (x - home.x) ** 2 + (z - home.z) ** 2;
     if (d2 > reach2) reach2 = d2;
     if (x < minX) minX = x; if (x > maxX) maxX = x; if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
   }
   const cellM2 = zg.dx * zg.dz;
-  const bound = homeward && eventCut > 0 ? 'event' : o2Binds + evaBinds === 0 ? null : o2Binds >= evaBinds ? 'o2' : 'eva';
+  // the event rules first: they are why the zone changed; else the budget limit that shuts out the most ground
+  const bound = window !== null && (shut.window > 0 || insideCells + edgeCells === 0) ? 'window'
+    : homeward && shut.event > 0 ? 'event'
+      : ['eva', 'o2', 'battery'].reduce((best, id) => (shut[id] > (best ? shut[best] : 0) ? id : best), null);
   return {
     cols: zg.cols, rows: zg.rows, x0: zg.x0, z0: zg.z0, dx: zg.dx, dz: zg.dz, step,
     state, marginSec, toSec, homeSec, toO2G, homeO2G,
     home: { x: home.x, z: home.z }, from: { x: at.x, z: at.z },
-    inputs: { o2G: suit.o2G, o2UsableG: c.o2UsableG, rateGs: rate, reserveSec: c.reserveSec, evaLimitSec: limit, elapsedSec: elapsed, cautionSec: c.cautionSec, warningSec: c.warningSec, homeward },
+    inputs: {
+      o2G: suit.o2G, o2UsableG: c.o2UsableG, batteryWh, batteryReserveWh, rateGs: rate, reserveSec: c.reserveSec, evaLimitSec: limit,
+      elapsedSec: elapsed, marginFloorSec: floorSec, marginFloor: floor, cautionSec: c.cautionSec, warningSec: c.warningSec, homeward,
+      shelterWithinSec: window, planned: Number.isFinite(evaLimitSec) && evaLimitSec < c.evaMaxSec,
+    },
     stats: {
       insideCells, edgeCells, insideM2: insideCells * cellM2, edgeM2: edgeCells * cellM2, reachM: Math.sqrt(reach2),
       limit: bound, ms: now() - started,
@@ -388,17 +450,41 @@ export function zoneRgba(zone, colours, out = new Uint8ClampedArray(zone.cols * 
 }
 
 /**
+ * An event's warning window, seconds from its start: the first timeline entry at the peak dose rate
+ * (environment.doseRateUgyH). Only the radiation alert has one; null for any other event. The timeline is the one the
+ * mission runs (missions.missionEventDefinitions scales it: 210 s in the full EVA, 17.5 s in the first sortie, SIM).
+ * @param {{ timeline?: Array<{ atSec: number, set?: Record<string, number> }> }} definition
+ * @returns {number | null}
+ */
+export function shelterWindowSec(definition) {
+  const doses = (definition?.timeline ?? []).filter((e) => Number.isFinite(e?.set?.['environment.doseRateUgyH']));
+  if (doses.length < 2) return null;
+  const peak = Math.max(...doses.map((e) => e.set['environment.doseRateUgyH']));
+  if (!(peak > doses[0].set['environment.doseRateUgyH'])) return null;
+  return doses.find((e) => e.set['environment.doseRateUgyH'] === peak).atSec;
+}
+
+/**
  * The event modifiers the event engine's state gives: `homeward` while an active alert belongs to an event whose
- * definition has a planner request (it sends the crew to a shelter), and the active hazard areas.
- * @param {{ alerts?: Record<string, { eventId?: string, active?: boolean } | null>, hazards?: { zones?: Array<object> } }} state
- *   the mission store's state
- * @param {Array<{ id: string, planner?: object }>} definitions event definitions (src/sim/events/*.json)
- * @returns {{ homeward: boolean, hazards: Array<object>, events: string[] }} events: the ids that set homeward
+ * definition has a planner request (it sends the crew to a shelter); `shelterWithinSec`, the time left in the warning
+ * window of an active event that has one (shelterWindowSec), never under 0; and the active hazard areas.
+ * @param {{ alerts?: Record<string, { eventId?: string, active?: boolean, startedAtSec?: number } | null>,
+ *   hazards?: { zones?: Array<object> }, mission?: { elapsedSec?: number } }} state the mission store's state
+ * @param {Array<{ id: string, planner?: object, timeline?: Array<object> }>} definitions the mission's event definitions
+ * @returns {{ homeward: boolean, shelterWithinSec: number | null, windowSec: number | null, hazards: Array<object>, events: string[] }}
+ *   windowSec: the whole window; events: the ids that set homeward or the window
  */
 export function zoneModifiers(state, definitions) {
-  const sends = new Set(definitions.filter((d) => d && d.planner).map((d) => d.id));
-  const events = Object.values(state?.alerts ?? {})
-    .filter((a) => a && a.active !== false && sends.has(a.eventId ?? a.id))
-    .map((a) => a.eventId ?? a.id);
-  return { homeward: events.length > 0, hazards: state?.hazards?.zones ?? [], events: [...new Set(events)].sort() };
+  const byId = new Map(definitions.filter(Boolean).map((d) => [d.id, d]));
+  const active = Object.values(state?.alerts ?? {}).filter((a) => a && a.active !== false && byId.get(a.eventId ?? a.id)?.planner);
+  const elapsed = Number.isFinite(state?.mission?.elapsedSec) ? state.mission.elapsedSec : 0;
+  let shelterWithinSec = null, windowSec = null;
+  for (const a of active) {
+    const w = shelterWindowSec(byId.get(a.eventId ?? a.id));
+    if (w === null) continue;
+    const left = Math.max(0, w - (Number.isFinite(a.startedAtSec) ? Math.max(0, elapsed - a.startedAtSec) : 0));
+    if (shelterWithinSec === null || left < shelterWithinSec) { shelterWithinSec = left; windowSec = w; }
+  }
+  const events = [...new Set(active.map((a) => a.eventId ?? a.id))].sort();
+  return { homeward: events.length > 0, shelterWithinSec, windowSec, hazards: state?.hazards?.zones ?? [], events };
 }

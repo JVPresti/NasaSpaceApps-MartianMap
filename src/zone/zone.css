@@ -2,8 +2,8 @@
 .table-map canvas.zone-layer { pointer-events: none; }
 .zone-status {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 56px;
+  left: 14px;
   max-width: calc(100% - 140px);
   margin: 0;
   padding: 6px 10px;

@@ -3,9 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildCostGrid, heightAt } from './costGrid.js';
 import {
-  computeReturnZone, edgeCost, walkingTables, ZONE_STATE, zoneGrid, zoneMarginAt, zoneModifiers, zoneNodeAt, zoneRgba, zoneStateAt,
+  computeReturnZone, edgeCost, shelterWindowSec, walkingTables, ZONE_STATE, zoneGrid, zoneMarginAt, zoneModifiers, zoneNodeAt, zoneRgba, zoneStateAt,
 } from './returnZone.js';
 import { suitConstantsFromHazards, suitReadout, walkCost, walkingO2RateGs } from './suitModel.js';
+import { DEFAULT_NEEDS, OBJECTIVE_DEFAULTS, RISK_SETTINGS } from './missionNeeds.js';
+import { FIRST_OBJECTIVE, FIRST_STOP, missionEventDefinitions } from './missions.js';
+import radiation from './events/radiation.json';
 
 const hazards = JSON.parse(readFileSync(fileURLToPath(new URL('../../public/data/hazards.json', import.meta.url)), 'utf8'));
 const c = suitConstantsFromHazards(hazards);
@@ -183,7 +186,7 @@ describe('event modifiers', () => {
     expect(zoneModifiers({ alerts: {} }, defs).homeward).toBe(false);
     expect(zoneModifiers({ alerts: { 'low-oxygen-caution': { eventId: 'low-oxygen-caution', active: true } } }, defs).homeward).toBe(false);
     const storm = zoneModifiers({ alerts: { 'dust-storm': { eventId: 'dust-storm', active: true } }, hazards: { zones: [] } }, defs);
-    expect(storm).toEqual({ homeward: true, hazards: [], events: ['dust-storm'] });
+    expect(storm).toEqual({ homeward: true, shelterWithinSec: null, windowSec: null, hazards: [], events: ['dust-storm'] });
     expect(zoneModifiers({ alerts: { 'dust-storm': null } }, defs).homeward).toBe(false);
   });
 });
@@ -202,5 +205,65 @@ describe('zoneRgba rim', () => {
     const zone = { cols: 5, rows: 1, state: new Uint8Array([0, 2, 2, 1, 0]), marginSec: new Float32Array([-Infinity, 2000, 1500, 300, -50]) };
     const px = zoneRgba(zone, { outside: [0, 0, 0, 1], edge: [0, 0, 0, 2], inside: [0, 0, 0, 3], rim: [0, 0, 0, 9] });
     expect([0, 1, 2, 3, 4].map((k) => px[k * 4 + 3])).toEqual([1, 3, 3, 9, 1]);
+  });
+});
+
+describe('the first sortie on the real HiRISE tile (#282 plan)', () => {
+  const terrain = JSON.parse(readFileSync(fileURLToPath(new URL('../../public/marswalk/assets/terrain.json', import.meta.url)), 'utf8'));
+  const shelters = JSON.parse(readFileSync(fileURLToPath(new URL('../../public/data/shelters.json', import.meta.url)), 'utf8'));
+  const stops = JSON.parse(readFileSync(fileURLToPath(new URL('../../public/data/stops.json', import.meta.url)), 'utf8'));
+  const grid = buildCostGrid(terrain);
+  const home = shelters.shelters.find((s) => s.id === 'HAB');
+  const stop = stops.route_stops.find((s) => s.id === FIRST_STOP);
+  // the budget planFromNeeds gives the default needs: the sortie's time, a full tank and battery, standard risk
+  const risk = RISK_SETTINGS[DEFAULT_NEEDS.risk];
+  const availableSec = OBJECTIVE_DEFAULTS.sortie.timeMin * 60;
+  const usableSec = availableSec * (1 - risk.reserveShare);
+  const plan = { marginFloor: risk.marginFloor, marginFloorSec: c.warningSec, batteryReserveWh: risk.reserveShare * c.batteryWh, stops: [{ x: stop.x, z: stop.z, workSec: stop.work_time_s.value ?? stop.work_time_s }] };
+  const tileM2 = grid.width * grid.depth;
+  const area = (z) => z.stats.insideM2 + z.stats.edgeM2;
+  const before = computeReturnZone({ grid, home, suit: { o2G: c.o2UsableG, batteryWh: c.batteryWh }, constants: c, evaLimitSec: usableSec, plan });
+
+  it('is clearly bounded before Begin EVA: under half the tile, and the edge rims it', () => {
+    expect(area(before)).toBeGreaterThan(0.05 * tileM2);
+    expect(area(before)).toBeLessThan(0.5 * tileM2);
+    expect(before.stats.limit).toBe('eva');
+    expect(before.stats.reachM).toBeLessThan(800);
+    expect(zoneStateAt(before, stop.x, stop.z)).not.toBe(ZONE_STATE.OUTSIDE);
+    expect(zoneStateAt(before, -500, -600)).toBe(ZONE_STATE.OUTSIDE);
+  });
+
+  it('the radiation alert cuts it by at least a third: shelter within the window of its timeline', () => {
+    const radiationDef = missionEventDefinitions(FIRST_OBJECTIVE, [radiation]).find((d) => d.id === 'radiation');
+    const windowSec = shelterWindowSec(radiationDef);
+    expect(windowSec).toBeCloseTo(17.5, 1);   // 210 s to the peak dose rate, x 1/12 in the first sortie (SIM)
+    // the alert starts with the crew at the stop, 150 s into the EVA
+    const atStop = { grid, home, from: { x: stop.x, z: stop.z }, suit: { o2G: c.o2UsableG - 10, batteryWh: c.batteryWh - 5, elapsedSec: 150 }, constants: c, evaLimitSec: usableSec, plan: { ...plan, stops: [] } };
+    const spe = computeReturnZone({ ...atStop, modifiers: { homeward: true, shelterWithinSec: windowSec } });
+    expect(area(spe)).toBeLessThanOrEqual((2 / 3) * area(before));
+    expect(spe.stats.limit).toBe('window');
+    // in the full EVA the window is 210 s: ground within reach of the habitat in 3.5 min stays
+    const full = computeReturnZone({ ...atStop, modifiers: { homeward: true, shelterWithinSec: 210 } });
+    expect(area(full)).toBeGreaterThan(0);
+    expect(area(full)).toBeLessThan((2 / 3) * area(before));
+  });
+
+  it('the storm keeps only the way home: a third of the area or less', () => {
+    const storm = computeReturnZone({ grid, home, from: { x: stop.x, z: stop.z }, suit: { o2G: c.o2UsableG - 10, elapsedSec: 150 }, constants: c, evaLimitSec: usableSec, modifiers: { homeward: true } });
+    expect(storm.stats.limit).toBe('event');
+    expect(area(storm)).toBeLessThanOrEqual((2 / 3) * area(before));
+  });
+
+  it('counts the work at the stop: a short plan leaves the stop out once its work does not fit', () => {
+    const tight = computeReturnZone({ grid, home, suit: { o2G: c.o2UsableG }, constants: c, evaLimitSec: 200, plan: { stops: [{ x: stop.x, z: stop.z, workSec: 150 }] } });
+    expect(zoneStateAt(tight, stop.x, stop.z)).toBe(ZONE_STATE.OUTSIDE);
+    const loose = computeReturnZone({ grid, home, suit: { o2G: c.o2UsableG }, constants: c, evaLimitSec: 200 });
+    expect(zoneStateAt(loose, stop.x, stop.z)).not.toBe(ZONE_STATE.OUTSIDE);
+  });
+
+  it('shuts the zone at the battery reserve', () => {
+    const low = computeReturnZone({ grid, home, suit: { o2G: c.o2UsableG, batteryWh: plan.batteryReserveWh + 4 }, constants: c, plan });
+    expect(low.stats.limit).toBe('battery');
+    expect(area(low)).toBeLessThan(area(before));
   });
 });

@@ -23,7 +23,7 @@ export const ZONE_LAYER = {
     return [
       { color: '#000000', clear: true, label: t('layers.zone.inside'), detail: t('layers.zone.inside.detail') },
       { color: ZONE_ORANGE, label: t('layers.zone.edge'), detail: t('layers.zone.edge.detail', { min: CAUTION_MIN }) },
-      { color: '#140c08', label: t('layers.zone.outside'), detail: t('layers.zone.outside.detail') },
+      { color: '#3b2a20', label: t('layers.zone.outside'), detail: t('layers.zone.outside.detail') },
     ];
   },
 };
