@@ -182,7 +182,8 @@ export default function App() {
   const handleLockChange = useCallback((locked) => {
     if (locked || phaseRef.current !== EVA_PHASE.PLAYING) return;
     if (useMissionStore.getState().mode !== 'walk') return;   // Plan deliberately releases the lock
-    pauseFor(PAUSE_VIEW.MENU, 'menu.the.mouse.was.released.so.the.eva.is');
+    // The open menu says it all; a refused capture or another failure still explains itself here.
+    pauseFor(PAUSE_VIEW.MENU);
   }, [pauseFor]);
 
   /**
@@ -551,6 +552,7 @@ export default function App() {
           onRestartConfirm={handleEndConfirm}
           controlsToMenu={controlsFromMenu || mode !== 'plan'}
           onControls={() => openControls(true)}
+          onSettings={() => setOverlay(PAUSE_VIEW.SETTINGS)}
           onControlsClose={closeControls}
           onSources={openSources}
           onMenu={() => setOverlay(PAUSE_VIEW.MENU)}
