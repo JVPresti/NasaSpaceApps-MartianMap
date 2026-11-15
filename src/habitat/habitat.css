@@ -155,20 +155,13 @@
   width: 8px;
   height: 8px;
   border: 1px solid currentColor;
+  animation: inherit;
+  animation-name: airlock-tick;
 }
 
 @keyframes airlock-step {
   from { color: var(--dim, #94a1af); }
   to { color: var(--ink, #e9edf2); }
-}
-
-.airlock-steps li {
-  --tick: var(--cyan, #2bffed);
-}
-
-.airlock-steps li::before {
-  animation: inherit;
-  animation-name: airlock-tick;
 }
 
 @keyframes airlock-tick {

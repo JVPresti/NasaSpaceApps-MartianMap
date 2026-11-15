@@ -1,5 +1,5 @@
 import { t } from '../i18n/index.js';
-import { AIRLOCK_CYCLE_MS, AIRLOCK_DARK_AT } from '../state/flow.js';
+import { AIRLOCK_CYCLE_MS } from '../state/flow.js';
 import './habitat.css';
 
 const STEPS = ['airlock.out.step1', 'airlock.out.step2', 'airlock.out.step3'];
@@ -15,10 +15,8 @@ const STEPS = ['airlock.out.step1', 'airlock.out.step2', 'airlock.out.step3'];
  * @param {{ running: boolean }} props
  */
 export default function AirlockCycle({ running }) {
-  const steps = STEPS;
   const style = {
     '--cycle-ms': `${AIRLOCK_CYCLE_MS}ms`,
-    '--dark-at': AIRLOCK_DARK_AT,
     animationPlayState: running ? 'running' : 'paused',
   };
   return (
@@ -27,7 +25,7 @@ export default function AirlockCycle({ running }) {
         <p className="airlock-kicker">{t('airlock.kicker')}</p>
         <h2 className="airlock-title">{t('airlock.out.title')}</h2>
         <ol className="airlock-steps">
-          {steps.map((key, i) => (
+          {STEPS.map((key, i) => (
             <li key={key} style={{ '--step': i, animationPlayState: style.animationPlayState }}>{t(key)}</li>
           ))}
         </ol>
