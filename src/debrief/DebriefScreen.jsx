@@ -16,6 +16,7 @@ import {
   routeReasonText,
 } from './format.js';
 import RouteReview, { ReviewNotes } from './RouteReview.jsx';
+import TaskRows from './TaskRows.jsx';
 import { MissionRecap } from '../mission/MissionBeat.jsx';
 import { useReserveSec } from './useReserveSec.js';
 import './debrief.css';
@@ -164,6 +165,9 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
             </dd>
           </div>
         </dl>
+
+        {/* The sampling tasks of the plan (#352, TaskRows.jsx): done, done elsewhere or not done; nothing without tasks. */}
+        <TaskRows tasks={summary.tasks} />
 
         <RouteReview summary={summary} />
 
