@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { createEngine } from '../engine/index.js';
+import { QA, setQaEngine } from '../qa.js';
 import { pauseMission, useMissionStore } from '../state/store.js';
 import { connectEngine } from '../state/engineBridge.js';
 import { connectSampling } from '../state/sampling.js';
@@ -9,7 +10,6 @@ import { startSimulation } from '../state/simulation.js';
 import { connectWrist } from '../screens/wrist/controller.js';
 import { connectAudio } from '../audio/connectAudio.js';
 import { connectEvaEnd } from '../state/evaEnd.js';
-import { QA, setQaEngine } from '../qa.js';
 
 const ASSET_BASE = import.meta.env.BASE_URL + 'marswalk/';
 
@@ -85,6 +85,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
     engineRef.current = engine;
     engine.ready.then(() => {
       if (!current()) return;
+      setQaEngine(engine);   // ?qa=1 only (src/qa.js)
       try {
         disconnect = connectEngine(engine);
         disconnectSampling = connectSampling(engine);   // checklist, sample count and the sampling prompt (#36)
@@ -93,7 +94,6 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
         disconnectHabitatScreens = connectHabitatScreens(engine);   // the habitat's wall screens and planning table (#47)
         disconnectAudio = connectAudio(engine);   // suit audio (#72): starts on the first click or key press
         disconnectEvaEnd = connectEvaEnd(engine);   // X ends the EVA back in the habitat, prompt over the table (#244)
-        setQaEngine(engine);
         startCurrentSimulation();
         pauseMission();   // the start screen is a real pause, including ?mock=1 where nothing starts
         callbacks.current.onEngine?.(engine, {
