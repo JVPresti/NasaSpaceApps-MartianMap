@@ -3,6 +3,7 @@
 // No React and no three.js here: the hook comes from Zustand, and the simulation can use the store without React.
 import { create } from 'zustand';
 import { createInitialEvaState } from './eva.js';
+import { LOOK_DEFAULTS, clampLookSettings, readLookSettings, writeLookSettings } from '../engine/lookSettings.js';
 
 /** Plain data only. Units are in the field names. Coordinates: x east, z south, metres from Cheyava Falls. */
 export function createInitialState() {
@@ -15,13 +16,14 @@ export function createInitialState() {
       anchorMs: null, timeScale: 1, initialSol: null, initialLmst: null, longitudeDeg: null, sky: null,
     },
     suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
-    navigation: { x: null, z: null, headingDeg: null, slopeDeg: null, waypointRangeM: null, waypointBearingDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // the estimate, never the truth: no GPS on Mars
+    navigation: { x: null, z: null, trueX: null, trueZ: null, headingDeg: null, slopeDeg: null, waypointRangeM: null, waypointBearingDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // x/z: the estimate the HUD shows (#42); trueX/trueZ: the true position, engine bridge only
     route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [] },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js
     environment: { dustOpacity: 0, tempC: null, windMs: null, pressurePa: null, doseRateUgyH: null, doseUgy: null },
     // Active hazard areas for the minimap (#60): [{ id, x, z, radiusM, active }], metres. Empty means
     // "no zone known", not "safe". No writer yet; the event work (#24-#26) fills it. The minimap draws
     // only active === true entries with a finite centre and radiusM > 0.
-    hazards: { zones: [] },
+    // off: ids of events switched off at the mission table before the EVA (#11). The event runner leaves them out.
+    hazards: { zones: [], off: [] },
     alerts: {},                                     // { [eventId]: { id, eventId, level, text, startedAtSec, active } | null }
     crew: [],                                       // [{ id, name, color, x, z, oxygenPct, batteryPct }]
     // #36, written by src/state/sampling.js: samples secured this EVA, the checklist of the sample in progress, and the engine's
@@ -37,12 +39,18 @@ export function createInitialState() {
     // the decision card shows; routeKey: waypointKey of the waypoints a Walk re-plan already routed, so Plan does not start over.
     finds: { list: [], seq: 0, activeId: null, routeKey: null },
     view: { layer: 0, sky: 'late_afternoon', skyBlend: 0, slopeGrid: false },   // what the engine draws; #59 demo starts in late-afternoon light
+    // Player preferences, not mission state: the look settings (#102) are remembered per browser and survive
+    // a reset; sensitivity multiplies the base look rate (0.5-2, step 0.1) and invertY flips only the pitch.
+    settings: { look: { ...LOOK_DEFAULTS } },
     sources: {},                                    // { 'environment.tempC': { tag: 'DATA' | 'DERIVED' | 'SIM', source } }
   };
 }
 
+// Read once at load, like the saved language in src/i18n/index.js: a missing, blocked or corrupt entry leaves the defaults.
+const savedLook = readLookSettings();
+
 /** React hook and store. Select slices: useMissionStore((s) => s.suit.oxygenPct). */
-export const useMissionStore = create(() => createInitialState());
+export const useMissionStore = create(() => ({ ...createInitialState(), settings: { look: savedLook } }));
 
 const FORBIDDEN = new Set(['__proto__', 'constructor', 'prototype']);
 function splitPath(path) {
@@ -91,7 +99,30 @@ export const setRouteDecision = (decision) => {
   if (!['pending', 'go', 'no-go'].includes(decision)) throw new Error('route decision must be pending, go or no-go');
   storeAdapter.set('route.decision', decision);
 };
-export const resetStore = () => useMissionStore.setState(createInitialState(), true);
+/** Switch an event on or off for this run (mission table, #11). Read once, when the EVA's event runner starts. */
+export const setHazardEnabled = (eventId, enabled) => {
+  useMissionStore.setState((state) => {
+    const off = (state.hazards.off ?? []).filter((id) => id !== eventId);
+    return { hazards: { ...state.hazards, off: enabled ? off : [...off, eventId] } };
+  });
+};
+// A restart must not lose the player's look settings (#102): the preference survives resetStore, and a new
+// page load re-reads it from 'marswalk.look'.
+export const resetStore = () => useMissionStore.setState((s) => ({ ...createInitialState(), settings: s.settings }), true);
+
+/**
+ * Partial update of the look preference (#102): clamps, writes the store and saves it in this browser.
+ * Storage failures are silent; the value still applies for the session.
+ * @param {{ sensitivity?: number, invertY?: boolean }} patch
+ * @returns {{ sensitivity: number, invertY: boolean }} the stored value
+ */
+export const setLookSettings = (patch) => {
+  const current = useMissionStore.getState().settings.look;
+  const next = clampLookSettings({ ...current, ...(patch && typeof patch === 'object' ? patch : {}) });
+  useMissionStore.setState((s) => ({ settings: { ...s.settings, look: next } }));
+  writeLookSettings(next);
+  return next;
+};
 
 // Mission clock controls. The clock runner subscribes to `mission.paused` and `mission.timeScale`, so these
 // actions (and a direct storeAdapter.set / setState with the same paths) are anchored at the exact moment they

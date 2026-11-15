@@ -2,23 +2,24 @@ import { t, translateText } from './i18n/index.js';
 import { useLanguage } from './i18n/useLanguage.js';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import EngineView from './components/EngineView.jsx';
+import GamepadHint from './components/GamepadHint.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
-import ModeSwitch from './components/ModeSwitch.jsx';
 import PauseMenu from './components/PauseMenu.jsx';
 import StartScreen from './components/StartScreen.jsx';
+import TouchStick from './components/TouchStick.jsx';
+import { cycleLayer } from './components/shortcuts.js';
 import { useShortcuts } from './components/useShortcuts.js';
 import DebriefScreen from './debrief/DebriefScreen.jsx';
 import EventBanner from './events/EventBanner.jsx';
 import EventDebug from './events/EventDebug.jsx';
 import Finds from './finds/Finds.jsx';
 import Hud from './hud/Hud.jsx';
-import MissionClock from './plan/MissionClock.jsx';
 import PlanMode from './plan/PlanMode.jsx';
 import SourcesRoot from './sources/SourcesScreen.jsx';
 import { WalkStopCard } from './stops/ScienceStops.jsx';
 import { createRouteProgress } from './hud/minimapRoute.js';
 import { openSources } from './sources/sourcesStore.js';
-import { pauseMission, setMode, useMissionStore } from './state/store.js';
+import { pauseMission, resumeMission, setMode, useMissionStore } from './state/store.js';
 import { EVA_PHASE, PAUSE_VIEW, pauseEva, requestEvaLock, restartEva, resumeEva } from './state/evaSession.js';
 import './App.css';
 import './components/menu.css';
@@ -26,7 +27,6 @@ import './components/menu.css';
 const HINTS = {
   get walk() { return t('menu.esc.to.pause.wasd.to.walk.shift.to'); },
   get drag() { return t('menu.esc.to.pause.drag.to.look'); },
-  get plan() { return t('menu.right.drag.to.pan.scroll.to.zoom.esc'); },
 };
 
 const SITE = 'ui.neretva.vallis.jezero.crater.mars';
@@ -117,6 +117,11 @@ export default function App() {
   const qualityBusyRef = useRef(false);
   const [qualityError, setQualityError] = useState(null);
   const [planEpoch, setPlanEpoch] = useState(0);
+  // Planning costs no mission time (#11): the clock, suit and events wait at the mission table until the first
+  // Begin EVA. After that the clock also runs at the table, because the EVA is under way.
+  const [evaBegun, setEvaBegunState] = useState(false);
+  const evaBegunRef = useRef(false);
+  const setEvaBegun = useCallback((value) => { evaBegunRef.current = value; setEvaBegunState(value); }, []);
 
   const engineRef = useRef(null);
   const runtimeRef = useRef(null);
@@ -149,8 +154,9 @@ export default function App() {
       setPhase(EVA_PHASE.START);
       setOverlay(null);
       setNotice(null);
+      setEvaBegun(false);
     }
-  }, [setOverlay, setPhase]);
+  }, [setEvaBegun, setOverlay, setPhase]);
 
   const setBusyState = useCallback((value) => { busyRef.current = value; setBusy(value); }, []);
 
@@ -196,8 +202,10 @@ export default function App() {
     setBusyState(true);
     setNotice(null);
     setQualityError(null);
+    // Planning costs no mission time (#11): resuming the mission table before Begin EVA keeps the clock held.
+    const holdClock = resumeMode === 'plan' && !evaBegunRef.current;
     try {
-      const result = await resumeEva({ engine: instance, mode: resumeMode, isCurrent, capture: !freeLookRef.current });
+      const result = await resumeEva({ engine: instance, mode: resumeMode, isCurrent, capture: !freeLookRef.current, holdClock });
       // A superseded attempt stays paused and silent: the action that ended it owns the menu and its message.
       if (result.stale) return;
       if (!result.ok) {
@@ -205,6 +213,8 @@ export default function App() {
         setNotice(result.message);
         return;
       }
+      // Walk only resumes once the EVA is under way: the clock is running from here on, also at the table.
+      if (resumeMode === 'walk') setEvaBegun(true);
       setLockFailed(false);
       setOverlay(null);
       setPhase(EVA_PHASE.PLAYING);
@@ -215,7 +225,7 @@ export default function App() {
     } finally {
       setBusyState(false);
     }
-  }, [setBusyState, setOverlay, setPhase]);
+  }, [setBusyState, setEvaBegun, setOverlay, setPhase]);
 
   /** The fallback button: switch to drag-to-look for the rest of the session and resume now. */
   const handleResumeWithoutCapture = useCallback(() => {
@@ -225,14 +235,20 @@ export default function App() {
     handleResume();
   }, [handleResume]);
 
-  const handleModeChange = useCallback(async (next) => {
+  const handleModeChange = useCallback(async (next, { capture = true } = {}) => {
     if (busyRef.current) return;
     if (next === useMissionStore.getState().mode) return;
     // Any mode change ends a pending resume; setMode also makes the engine cancel a pending Walk lock.
     resumeSeqRef.current += 1;
     const attempt = ++walkLockSeqRef.current;
     setMode(next);
-    if (phaseRef.current === EVA_PHASE.PLAYING && next === 'walk' && !freeLookRef.current) {
+    // A gamepad press is not a user gesture, so the browser can only refuse a lock request (#103). The pad
+    // switch keeps drag-to-look, the same fallback as #197, instead of pausing behind a failed capture.
+    if (!capture && next === 'walk' && !freeLookRef.current) {
+      freeLookRef.current = true;
+      setFreeLookState(true);
+    }
+    if (phaseRef.current === EVA_PHASE.PLAYING && next === 'walk' && capture && !freeLookRef.current) {
       // The click itself is the user gesture. If the lock is refused, stay paused and explain.
       const instance = engineRef.current;
       const lock = await requestEvaLock(instance);
@@ -249,12 +265,33 @@ export default function App() {
         try { instance?.releasePointerLock?.(); } catch { /* nothing to release */ }
         return;
       }
-      if (phaseRef.current === EVA_PHASE.PLAYING && !lock.ok) {
+      if (phaseRef.current !== EVA_PHASE.PLAYING) return;
+      if (!lock.ok) {
         pauseFor(PAUSE_VIEW.MENU, lock.message);
         setLockFailed(true);
+        return;
       }
     }
-  }, [pauseFor]);
+    // The first time on the surface is the start of the EVA: the clock held at the mission table starts now. With
+    // drag-to-look (#197) there is no lock to wait for, so it starts with the switch itself.
+    if (phaseRef.current === EVA_PHASE.PLAYING && next === 'walk' && !evaBegunRef.current) {
+      setEvaBegun(true);
+      resumeMission();
+    }
+  }, [pauseFor, setEvaBegun]);
+
+  /** Begin EVA on the mission table's Suit tab. The click is the user gesture that captures the mouse. */
+  const handleBeginEva = useCallback(() => handleModeChange('walk'), [handleModeChange]);
+
+  // Gamepad buttons reach the same actions as the keyboard (#101, #103). The engine reports them only while
+  // gameplay input is enabled, so a press behind the pause menu cannot act; the phase check is a second guard.
+  const handleGamepadAction = useCallback((action) => {
+    if (phaseRef.current !== EVA_PHASE.PLAYING || busyRef.current) return;
+    if (action === 'mode') {
+      handleModeChange(useMissionStore.getState().mode === 'walk' ? 'plan' : 'walk', { capture: false });
+    } else if (action === 'layer-prev') cycleLayer(-1);
+    else if (action === 'layer-next') cycleLayer(1);
+  }, [handleModeChange]);
 
   const handleQuality = useCallback(async (option) => {
     const instance = engineRef.current;
@@ -297,13 +334,36 @@ export default function App() {
     setPhase(EVA_PHASE.START);
     setOverlay(null);
     setPlanEpoch((value) => value + 1);
+    setEvaBegun(false);
     // A new EVA starts at the spawn: forget the walked progress of the old route. The tracker only resets on a
     // content change, so an empty path here is explicit rather than relying on the minimap remounting.
     minimapRoute.setPath(null);
     setNotice(result.ok ? null : result.message);
     setLockFailed(false);
     if (instance) setQuality(instance.getQuality());
-  }, [minimapRoute, setBusyState, setOverlay, setPhase]);
+  }, [minimapRoute, setBusyState, setEvaBegun, setOverlay, setPhase]);
+
+  /** Pause menu: end the EVA and go back to the mission table. A restart (new clock, full suit) that skips the
+   *  start screen; the table needs no pointer lock, so it opens at once. */
+  const handleEndConfirm = useCallback(() => {
+    handleRestartConfirm();
+    setMode('plan');
+    handleResume();
+  }, [handleRestartConfirm, handleResume]);
+
+  // Controls opened from the mission table close back to the table; opened from the pause menu, back to the menu.
+  // The ref serves the handlers; the state labels the dialog's close button.
+  const controlsFromMenuRef = useRef(false);
+  const [controlsFromMenu, setControlsFromMenuState] = useState(false);
+  const setControlsFromMenu = useCallback((value) => { controlsFromMenuRef.current = value; setControlsFromMenuState(value); }, []);
+  const openControls = useCallback((fromMenu) => {
+    setControlsFromMenu(fromMenu);
+    showOverlay(PAUSE_VIEW.CONTROLS);
+  }, [setControlsFromMenu, showOverlay]);
+  const closeControls = useCallback(() => {
+    if (controlsFromMenuRef.current || useMissionStore.getState().mode !== 'plan') setOverlay(PAUSE_VIEW.MENU);
+    else handleResume();
+  }, [handleResume, setOverlay]);
 
   const handleRetry = useCallback(() => {
     resumeSeqRef.current += 1;
@@ -316,10 +376,11 @@ export default function App() {
     setQuality(null);
     setQualityError(null);
     setBusyState(false);
+    setEvaBegun(false);
     qualityBusyRef.current = false;
     setQualityBusy(false);
     dispatch({ type: 'retry' });
-  }, [setBusyState, setOverlay, setPhase]);
+  }, [setBusyState, setEvaBegun, setOverlay, setPhase]);
 
   const handlePauseCancel = useCallback(() => {
     if (overlayRef.current !== PAUSE_VIEW.MENU) {
@@ -355,13 +416,14 @@ export default function App() {
       if (event.key === 'h' || event.key === 'H') {
         if (phaseRef.current === EVA_PHASE.PLAYING) {
           event.preventDefault();
+          setControlsFromMenu(false);
           pauseFor(PAUSE_VIEW.CONTROLS);
         }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [pauseFor]);
+  }, [pauseFor, setControlsFromMenu]);
 
   // The EVA runner pauses the mission clock at the instant the summary is frozen. Close the interactive EVA here as
   // well: disable engine input and release the pointer before a lock-change handler can open the pause menu, and
@@ -378,12 +440,13 @@ export default function App() {
   }), [setBusyState, setOverlay, setPhase]);
 
   const showTopbar = load.status === 'ready' && !evaSummary && phase === EVA_PHASE.PLAYING;
-  // Like the topbar: off while loading, on the start screen and in the pause menu. M goes through the mode
-  // button's handler, so it also captures the mouse in Walk (#174).
+  // Like the topbar: off while loading, on the start screen and in the pause menu. There is no mode button any
+  // more (#11: the EVA begins on the mission table and returns to it from the pause menu), but M still goes
+  // through the same handler, so it also captures the mouse in Walk (#174).
   useShortcuts(showTopbar, handleModeChange);
 
   return (
-    <div className="app">
+    <div className={load.status === 'ready' && phase === EVA_PHASE.START ? 'app at-start' : 'app'}>
       <EngineView
         key={`engine-${load.attempt}`}
         onStatus={handleStatus}
@@ -392,40 +455,55 @@ export default function App() {
         onError={handleError}
         onLockChange={handleLockChange}
         onEngine={handleEngine}
+        onGamepadAction={handleGamepadAction}
       />
 
       {load.status === 'ready' && (
-        <PlanMode key={`plan-${load.attempt}-${planEpoch}`} engine={engine} active={mode === 'plan'} />
+        <PlanMode
+          key={`plan-${load.attempt}-${planEpoch}`}
+          engine={engine}
+          active={mode === 'plan'}
+          evaBegun={evaBegun}
+          onBeginEva={handleBeginEva}
+          onControls={() => openControls(false)}
+        />
       )}
       {/* Plan mode places the banner in its own alert region; Walk puts it under the heading box, the HUD's only alert. */}
       {load.status === 'ready' && mode === 'walk' && <EventBanner className="event-banner-walk" />}
       {load.status === 'ready' && DEBUG_EVENTS && <EventDebug />}
 
-      <header className="topbar" inert={showTopbar ? undefined : true}>
-        <h1>{t('app.brandSpaced')}<span>{t('ui.cheyava.falls.neretva.vallis.jezero.crater')}</span>
-        </h1>
-        {showTopbar && mode === 'plan' && <MissionClock />}
-        <ModeSwitch mode={mode} onChange={handleModeChange} />
-      </header>
+      {/* The mission table has its own top bar; this one is for the surface. */}
+      {mode === 'walk' && (
+        <header className="topbar" inert={showTopbar ? undefined : true}>
+          <h1>{t('app.brandSpaced')}<span>{t('ui.cheyava.falls.neretva.vallis.jezero.crater')}</span>
+          </h1>
+        </header>
+      )}
 
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={translateText(SITE)} onRetry={handleRetry} onGone={handleGone} />
 
       {load.status === 'ready' && mode === 'walk' && <Hud engine={engine} minimapRoute={minimapRoute} />}
+      {/* Inputs appear only after they are used (#103): the stick on the first touch, the pad hint on the first press. */}
+      {load.status === 'ready' && mode === 'walk' && !evaSummary && <TouchStick engine={engine} />}
+      {load.status === 'ready' && mode === 'walk' && !evaSummary && <GamepadHint engine={engine} />}
       {load.status === 'ready' && <Finds engine={engine} mode={mode} />}
 
       {load.status === 'ready' && <WalkStopCard active={mode === 'walk'} />}
 
-      {showTopbar && <p className="hint">{mode === 'walk' ? (freeLook ? HINTS.drag : HINTS.walk) : HINTS.plan}</p>}
+      {showTopbar && mode === 'walk' && <p className="hint">{freeLook ? HINTS.drag : HINTS.walk}</p>}
 
       {load.status === 'ready' && !evaSummary && loadingDone && phase === EVA_PHASE.START && (
         <StartScreen
-          mode={mode}
           busy={busy}
           notice={notice}
           freeLook={freeLook}
-          lockFailed={lockFailed}
-          onStart={handleResume}
-          onStartWithoutCapture={handleResumeWithoutCapture}
+          onStart={() => {
+            // The start screen always opens the mission table; the EVA begins from there. The table needs no
+            // pointer lock, so a refused capture is met at Begin EVA, where the pause menu offers drag-to-look.
+            if (useMissionStore.getState().mode !== 'plan') setMode('plan');
+            handleResume();
+          }}
+          onSources={openSources}
         />
       )}
 
@@ -433,6 +511,7 @@ export default function App() {
         <PauseMenu
           view={overlay}
           mode={mode}
+          evaBegun={evaBegun}
           busy={busy}
           notice={notice}
           freeLook={freeLook}
@@ -445,11 +524,14 @@ export default function App() {
           onResumeWithoutCapture={handleResumeWithoutCapture}
           onRestartRequest={() => showOverlay(PAUSE_VIEW.RESTART)}
           onRestartConfirm={handleRestartConfirm}
-          onControls={() => showOverlay(PAUSE_VIEW.CONTROLS)}
+          controlsToMenu={controlsFromMenu || mode !== 'plan'}
+          onControls={() => openControls(true)}
+          onControlsClose={closeControls}
           onSources={openSources}
           onMenu={() => setOverlay(PAUSE_VIEW.MENU)}
           onQuality={handleQuality}
-          onModeChange={handleModeChange}
+          onEndRequest={() => showOverlay(PAUSE_VIEW.END)}
+          onEndConfirm={handleEndConfirm}
           onCancel={handlePauseCancel}
         />
       )}

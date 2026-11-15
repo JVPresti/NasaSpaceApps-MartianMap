@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { resetStore, useMissionStore } from '../state/store.js';
-import { FIX_MODES, NAVIGATION_SOURCES, NAV_PLACEHOLDER_ERROR_M, initNavigation } from './navigation.js';
+import { FIX_MODES, NAVIGATION_SOURCES, NAV_FIX_ERROR_M, initNavigation, truePosition } from './navigation.js';
 
 beforeEach(() => resetStore());
 
-describe('navigation placeholder', () => {
+describe('navigation init', () => {
   it('writes a terrain fix at the current mission time with a small fixed error', () => {
     useMissionStore.setState((s) => ({ mission: { ...s.mission, elapsedSec: 1234 }, navigation: { ...s.navigation, x: 8, z: 70, headingDeg: 12 } }));
     initNavigation({ store: useMissionStore });
     const nav = useMissionStore.getState().navigation;
-    expect(nav).toMatchObject({ errorM: NAV_PLACEHOLDER_ERROR_M, fixMode: FIX_MODES.terrainFix, lastFixSec: 1234 });
-    expect(nav).toMatchObject({ x: 8, z: 70, headingDeg: 12 });   // position and heading stay with the engine bridge
-    expect(NAV_PLACEHOLDER_ERROR_M).toBeLessThan(1);               // a terrain fix is under 1 m (plan, section 4.2)
+    expect(nav).toMatchObject({ errorM: NAV_FIX_ERROR_M, fixMode: FIX_MODES.terrainFix, lastFixSec: 1234 });
+    expect(nav).toMatchObject({ x: 8, z: 70, headingDeg: 12 });   // the estimate stays; the drift runner (#42) owns it
+    expect(NAV_FIX_ERROR_M).toBeLessThan(1);                       // a terrain fix is under 1 m (plan, section 4.2)
   });
 
   it('falls back to mission time 0 before the clock publishes', () => {
@@ -24,11 +24,25 @@ describe('navigation placeholder', () => {
     useMissionStore.setState({ sources: { 'suit.oxygenPct': { tag: 'DERIVED', source: 'suit model' } } });
     initNavigation({ store: useMissionStore });
     const { sources } = useMissionStore.getState();
-    for (const path of ['navigation.x', 'navigation.z', 'navigation.errorM', 'navigation.fixMode', 'navigation.lastFixSec']) expect(sources[path].tag).toBe('SIM');
+    for (const path of ['navigation.x', 'navigation.z', 'navigation.trueX', 'navigation.trueZ', 'navigation.errorM', 'navigation.fixMode', 'navigation.lastFixSec']) expect(sources[path].tag).toBe('SIM');
     expect(sources['suit.oxygenPct'].tag).toBe('DERIVED');
   });
 
   it('never names satellite navigation in the source text people read', () => {
     for (const s of Object.values(NAVIGATION_SOURCES)) expect(s.source).not.toMatch(/GPS/i);
+  });
+
+  it('offers the three fix modes of the drift model', () => {
+    expect(FIX_MODES).toEqual({ terrainFix: 'terrain fix', deadReckoning: 'dead reckoning', radioRanging: 'radio ranging' });
+  });
+});
+
+describe('truePosition', () => {
+  it('reads the bridge truth first and falls back to the estimate', () => {
+    expect(truePosition({ trueX: 1, trueZ: 2, x: 9, z: 9 })).toEqual({ x: 1, z: 2 });
+    expect(truePosition({ trueX: null, trueZ: null, x: 9, z: 8 })).toEqual({ x: 9, z: 8 });
+    expect(truePosition({ x: 9, z: 8 })).toEqual({ x: 9, z: 8 });
+    expect(truePosition({ trueX: 1, trueZ: null, x: 9, z: 8 })).toEqual({ x: 1, z: 8 });
+    expect(truePosition(null)).toEqual({ x: null, z: null });
   });
 });

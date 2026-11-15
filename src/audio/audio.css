@@ -1,0 +1,25 @@
+/* Suit audio controls in the pause menu (#72). Same look as the scene quality block and buttons (menu.css). */
+.audio-block {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+.audio-block h3 { margin: 0 0 10px; font-size: 15px; font-weight: 500; color: var(--dim); }
+.audio-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 12px; align-items: center; }
+.audio-row button {
+  min-height: 44px;
+  padding: 8px;
+  font: 500 15px var(--font-ui);
+  color: var(--ink);
+  background: rgba(10, 13, 17, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0;
+  cursor: pointer;
+}
+.audio-row button:hover { background: rgba(255, 255, 255, 0.08); }
+.audio-row button.on { color: #0a0d11; background: #f2f4f6; border-color: #f2f4f6; }
+.audio-row button:focus-visible, .audio-volume input:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.audio-volume { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--dim); }
+.audio-volume input { flex: 1; min-height: 44px; accent-color: var(--focus); }
+.audio-volume input:disabled { opacity: 0.4; }
+@media (max-height: 820px) { .audio-block { margin-top: 16px; padding-top: 14px; } }

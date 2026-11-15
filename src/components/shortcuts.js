@@ -2,6 +2,18 @@ import { LAYERS } from '../plan/layers.js';
 import { setLayer, setMode, useMissionStore } from '../state/store.js';
 
 /**
+ * Move the data layer by one step, wrapping at both ends. Shared by the L/Shift+L shortcuts and the gamepad
+ * bumpers (#101, #103), so both keep the same order and the same store action.
+ * @param {number} direction +1 for the next layer, -1 for the previous one
+ */
+export function cycleLayer(direction) {
+  const state = useMissionStore.getState();
+  const current = LAYERS.findIndex((layer) => layer.index === state.view.layer);
+  const next = ((current < 0 ? 0 : current) + (direction < 0 ? -1 : 1) + LAYERS.length) % LAYERS.length;
+  setLayer(LAYERS[next].index);
+}
+
+/**
  * Interface shortcuts use the same actions as the buttons; the bridge owns engine updates.
  * `onMode` is the mode button's handler (App's handleModeChange, #174): it also requests the Walk pointer lock
  * and respects a pending resume or restart. Without it, M falls back to the store's setMode.
@@ -19,12 +31,9 @@ export function handleShortcut(event, { onMode = setMode } = {}) {
     case 'KeyM':
       onMode(state.mode === 'walk' ? 'plan' : 'walk');
       break;
-    case 'KeyL': {
-      const current = LAYERS.findIndex((layer) => layer.index === state.view.layer);
-      const next = ((current < 0 ? 0 : current) + (event.shiftKey ? -1 : 1) + LAYERS.length) % LAYERS.length;
-      setLayer(LAYERS[next].index);
+    case 'KeyL':
+      cycleLayer(event.shiftKey ? -1 : 1);
       break;
-    }
     case 'Digit0':
     case 'Numpad0':
       setLayer(0);
