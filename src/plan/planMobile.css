@@ -139,7 +139,6 @@
   .table-map-traverse-key { right: 8px; bottom: 8px; max-width: 40%; padding: 4px 6px; font-size: 11px; }
   .table-map-legend { max-width: 55%; }
   .table-close { white-space: nowrap; font-size: 14px; }
-  .map-pop { width: min(270px, calc(100% - 16px)); max-height: calc(100% - 16px); overflow-y: auto; }
 
   /* the hazard cards: one column, the illustration a band */
   .table-hazards { overflow: visible; }
@@ -150,6 +149,11 @@
 
   /* the actions stay at the foot of the sheet while the right column is in view */
   .table-right .table-actions { padding-bottom: 4px; }
+
+  /* While the saved-routes name has the keyboard, the screen is half its height: the map steps aside and the actions
+     stop sticking, so the field and its Save button stay in the space left. */
+  .table-body:has(.saved-routes-form input:focus) > .table-centre { display: none; }
+  .table-body:has(.saved-routes-form input:focus) .table-actions { position: static; }
 
   /* the saved-routes name keeps clear of the sticky actions and the keyboard (SavedRoutes.jsx scrolls it into view) */
   .saved-routes-form input { scroll-margin: 72px 0 96px; font-size: 16px; }   /* 16 px: iOS does not zoom the page */

@@ -43,13 +43,15 @@
 /* ------------------------------------------------------------------ dialogs on small screens */
 
 @media (max-width: 900px), (max-height: 500px) {
-  :root .modal {
+  :root .modal:not(.start-dialog):not(.debrief-dialog) {
     width: min(520px, calc(100% - 16px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+  }
+  :root .modal:not(.start-dialog) {
     max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     overscroll-behavior: contain;
   }
-  :root .controls-dialog,
-  :root .eva-start-dialog { width: min(1040px, calc(100% - 16px - env(safe-area-inset-left) - env(safe-area-inset-right))); }
+  :root .modal.controls-dialog,
+  :root .modal.eva-start-dialog { width: min(1040px, calc(100% - 16px - env(safe-area-inset-left) - env(safe-area-inset-right))); }
 
   :root .dialog-body { padding: 22px 18px 20px; }
   :root .dialog-title { font-size: 32px; }

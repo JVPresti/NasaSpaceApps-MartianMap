@@ -74,8 +74,8 @@
 
 /* The find card (src/finds/finds.css): touch-sized Add and Dismiss without their key caps, clear of the stick and the bar. */
 @media (pointer: coarse) {
-  .find-actions button { min-height: 44px; font-size: 14px; }
-  .find-actions kbd { display: none; }
+  .find-card .find-actions button { min-height: 44px; font-size: 14px; }
+  .find-card .find-actions kbd { display: none; }
 }
 @media (pointer: coarse) and (max-width: 600px) {
   .find-card { width: calc(100vw - 24px); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
