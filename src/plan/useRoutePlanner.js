@@ -41,6 +41,19 @@ function routeOnProfile(base, use, chosen) {
 }
 
 /**
+ * A re-plan of the same waypoints during the EVA (Re-plan at the table, needs locked) keeps the walk so far: the
+ * waypoints reached and the next one (withRouteProfile starts a plan from the airlock, nextIndex 0). Before the EVA the
+ * new route starts at the airlock as before (R5).
+ * @param {object | null} route the re-planned route
+ * @param {{ nextIndex?: number, visited?: string[] }} current the store's route before it
+ * @param {boolean} evaBegun needs.locked
+ */
+export function keepWalkProgress(route, current, evaBegun) {
+  if (!route || !evaBegun) return route;
+  return { ...route, nextIndex: current?.nextIndex ?? route.nextIndex, visited: Array.isArray(current?.visited) ? current.visited : route.visited };
+}
+
+/**
  * The habitat mast from the engine, once the habitat has loaded: the radio-contact profile prices the ground the
  * mast cannot see (#245). Null without an engine.
  * @param {object | null} engine
@@ -298,7 +311,7 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
               const base = { ...store.route, profiles };
               const chosen = store.route.profile;
               const use = soloRadio && profiles.radio?.ok ? 'radio' : chosen;
-              const route = routeOnProfile(base, use, chosen) ?? routeOnProfile(base, 'fastest', chosen);
+              const route = keepWalkProgress(routeOnProfile(base, use, chosen) ?? routeOnProfile(base, 'fastest', chosen), store.route, store.needs?.locked === true);
               return { route, sources: { ...store.sources, ...ROUTE_SOURCES, ...sourcesRef.current } };
             });
             setState({ status: 'ready', error: null });
