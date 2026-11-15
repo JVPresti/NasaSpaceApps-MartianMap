@@ -827,7 +827,7 @@ button.table-stop-name {
   .table-panel { padding: 12px 14px; }
   .table-primary { min-height: 52px; font-size: 23px; }
   .table-secondary { min-height: 40px; }
-  .table-layers button { min-height: 32px; }
+  .table-layers button { min-height: 32px; padding: 0 3px; font-size: 13px; }   /* "Afloramiento" whole in a third of the column */
   .table-layers { gap: 6px; }
   .table-body-route .table-left { gap: 10px; }
   .table-grid2 { row-gap: 8px; }
@@ -1209,6 +1209,11 @@ button.table-stop-name {
   row-gap: 0;
 }
 .table-hazard-cards > li > .table-hazard-art { height: 100%; min-height: 0; max-height: none; }
+/* each card's text sits at the top of its shared row, not spread over it; the switch at the foot */
+.table-hazard-cards > li > .table-hazard-title,
+.table-hazard-cards > li > dl,
+.table-hazard-cards > li > .table-note { align-self: start; }
+.table-hazard-cards > li > .table-hazard-switch { align-self: end; }
 @media (max-width: 1100px) {
   .table-hazard-cards { grid-template-rows: none; row-gap: 20px; }
   .table-hazard-cards > li { display: flex; grid-row: auto; }

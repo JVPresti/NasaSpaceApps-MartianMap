@@ -454,8 +454,18 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
   // During an event the route is the event's route to a shelter (#265): the table shows it, and where the crew is.
   const alerts = useMissionStore((s) => s.alerts);
   const event = eventRouteOf(route, alerts);
-  const crewAt = useMissionStore(useShallow((s) => ({ x: Math.round(s.navigation.x ?? NaN), z: Math.round(s.navigation.z ?? NaN) })));
+  // The navigation estimate the HUD shows, with its error ring (#42): rounded, so the table repaints only when it moves
+  // a metre, turns 5 degrees or the ring changes by half a metre.
+  const crewAt = useMissionStore(useShallow((s) => ({
+    x: Math.round(s.navigation.x ?? NaN),
+    z: Math.round(s.navigation.z ?? NaN),
+    errorM: Number.isFinite(s.navigation.errorM) ? Math.round(s.navigation.errorM * 2) / 2 : null,
+    headingDeg: Number.isFinite(s.navigation.headingDeg) ? Math.round(s.navigation.headingDeg / 5) * 5 : null,
+    fixMode: s.navigation.fixMode ?? null,
+  })));
   const position = evaBegun && Number.isFinite(crewAt.x) && Number.isFinite(crewAt.z) ? crewAt : null;
+  // The approved plan, drawn thin under an event's route so the route home reads apart from it (eva.plan, #274).
+  const planPath = useMissionStore((s) => s.eva?.plan?.path ?? null);
   const objective = useMissionStore((s) => s.needs.objective);
   const needs = useMissionStore(useShallow((s) => ({ crew: s.needs.crew, o2Pct: s.needs.o2Pct, batteryPct: s.needs.batteryPct })));
   const dust = useDustAgainstLimit();
@@ -498,7 +508,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
 
   const map = (props) => (
     <div className="table-centre">
-      <MissionMap path={route.path} waypoints={waypoints} science={science} legs={route.legs ?? []} onScience={toggleWaypoint} traverse={traverse} mast={planner.mast ?? null} position={position} eventRoute={Boolean(event)} {...props} />
+      <MissionMap path={route.path} waypoints={waypoints} science={science} legs={route.legs ?? []} onScience={toggleWaypoint} traverse={traverse} mast={planner.mast ?? null} position={position} eventRoute={Boolean(event)} planPath={event ? planPath : null} {...props} />
       <div className="table-overlay">
         <EventBanner />
         <PlanStopCard />
