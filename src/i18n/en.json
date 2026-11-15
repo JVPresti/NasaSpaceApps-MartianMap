@@ -829,7 +829,7 @@
   "table.site.latitude": "Latitude",
   "table.site.longitude": "Longitude",
   "table.site.this.run.out": "This run, walk out to its last stop",
-  "table.site.from.habitat.falls": "Cheyava Falls from the habitat, beyond this run",
+  "table.site.from.habitat.falls": "Cheyava Falls from the habitat in a straight line, beyond this run",
   "table.site.from.habitat": "From the habitat, in a straight line",
   "table.site.relief": "Relief, lowest to highest point",
   "table.site.area": "Area of the terrain",
