@@ -208,6 +208,26 @@ function placeMarker(engine, target, width, height) {
   return { mode: 'edge', x: width / 2 + dx * t, y: height / 2 + dy * t, angle: relative };
 }
 
+// A world label that falls behind a HUD panel shows through it and reads as a glitch (#283): push the label out of the
+// panel along the shorter way, so it stays next to the panel instead of under it.
+function clearOfPanels(place, label, hud) {
+  const w = label.offsetWidth, h = label.offsetHeight, origin = hud.getBoundingClientRect();
+  // the science card and the Walk alert sit outside the HUD element but over the same view
+  const boxes = [...document.querySelectorAll('.hud .hud-panel, .stop-card-walk, .event-banner-walk')].map((panel) => {
+    const r = panel.getBoundingClientRect();
+    return r.width ? { left: r.left - origin.left - w / 2 - 4, right: r.right - origin.left + w / 2 + 4, top: r.top - origin.top - h / 2 - 4, bottom: r.bottom - origin.top + h / 2 + 4 } : null;
+  }).filter(Boolean);
+  const inside = (b) => place.x > b.left && place.x < b.right && place.y > b.top && place.y < b.bottom;
+  for (const b of boxes) {
+    if (!inside(b)) continue;
+    const moves = [[place.x - b.left, 'x', b.left], [b.right - place.x, 'x', b.right], [place.y - b.top, 'y', b.top], [b.bottom - place.y, 'y', b.bottom]];
+    const [, axis, to] = moves.reduce((a, c) => (c[0] < a[0] ? c : a));
+    place[axis] = to;
+  }
+  // no clear spot next to the panels: hide the label, the panel below already names the waypoint and its range
+  return !boxes.some(inside);
+}
+
 // Projects every frame and writes style.transform through refs, so the marker follows head turns without a React
 // render. The store only changes the text (name and range) at its own rate.
 function WaypointMarker({ engine }) {
@@ -230,7 +250,8 @@ function WaypointMarker({ engine }) {
       if (!m || !a) return;
       const box = m.parentElement;   // the .hud overlay, inset 0 over the engine container
       const place = t && box ? placeMarker(engine, t, box.clientWidth, box.clientHeight) : null;
-      m.style.visibility = place?.mode === 'marker' ? 'visible' : 'hidden';
+      const clear = place?.mode === 'marker' ? clearOfPanels(place, m, box) : true;
+      m.style.visibility = place?.mode === 'marker' && clear ? 'visible' : 'hidden';
       a.style.visibility = place?.mode === 'edge' ? 'visible' : 'hidden';
       if (!place) return;
       const el = place.mode === 'marker' ? m : a;
