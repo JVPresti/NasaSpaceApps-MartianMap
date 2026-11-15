@@ -9,14 +9,20 @@ import { shortDuration } from './tableFormat.js';
 const finite = (value) => typeof value === 'number' && Number.isFinite(value);
 const LIMITS = ['time', 'o2', 'battery'];
 
-/** The way out of a no-go: the least time, O2 or battery that lets the plan through, else a shorter goal. */
+/**
+ * The way out of a no-go: the least time, O2 or battery that lets the plan through, else a shorter goal. For "Collect
+ * samples" the shorter goal is a nearer first task (#352): the plan keeps a later task only when it fits, so a no-go
+ * means the first task alone does not.
+ */
 function wayOut(limit, objective) {
   let way;
   if (limit.id === 'time' && finite(limit.needMin)) way = t('table.way.time', { time: shortDuration(limit.needMin * 60) });
   else if (limit.id === 'o2' && finite(limit.needPct)) way = t('table.way.o2', { pct: limit.needPct });
   else if (limit.id === 'battery' && finite(limit.needPct)) way = t('table.way.battery', { pct: limit.needPct });
+  else if (objective === 'samples') return t('tasktable.way.task');
   else if (objective !== 'sortie') return t('table.way.first');
   else return t('table.way.none');
+  if (objective === 'samples') return t('tasktable.way.or.task', { way });
   return objective && objective !== 'sortie' ? t('table.way.or.sortie', { way }) : t('table.way.end', { way });
 }
 
