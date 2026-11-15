@@ -1,15 +1,8 @@
+/* The start screen's way into the presentation (#291): a button beside Controls and Sources, in their style
+   (ui-button ghost). A link, so the presentation starts from a fresh page; keyboard and touch reach it like a button. */
 .start-present {
-  position: absolute;
-  right: var(--space-5);
-  bottom: var(--space-4);
-  font-size: var(--text-s);
-  color: var(--dim);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-decoration: none;
-  letter-spacing: 0.02em;
-}
-
-.start-present:hover,
-.start-present:focus-visible {
-  color: var(--ink);
-  text-decoration: underline;
 }

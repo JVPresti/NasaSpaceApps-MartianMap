@@ -3,7 +3,8 @@
 import { dustLevelFromTau } from '../state/dustLevel.js';
 import { missionSolarHours } from '../state/skyTime.js';
 
-const NEXT = new Set(['ArrowRight', 'PageDown', ' ', 'Enter', 'Spacebar']);
+const NEXT = new Set(['ArrowRight', 'PageDown', 'Enter']);
+const TOGGLE = new Set([' ', 'Spacebar', 'p', 'P', 'k', 'K', 'MediaPlayPause']);
 const BACK = new Set(['ArrowLeft', 'PageUp']);
 // Keys the browser keeps while presenting: reload, full screen and the developer tools.
 const BROWSER = new Set(['F5', 'F11', 'F12']);
@@ -15,7 +16,8 @@ export const PRESENT_KEYS = ['present', 'autoplay', 'record', 'seq', 'beat', 'li
 export const ENGINE_TIMEOUT_MS = 20_000;
 
 /**
- * What a key does while presenting: 'next', 'back', 'exit', 'lang', 'swallow' or null.
+ * What a key does while presenting: 'next', 'back', 'toggle' (play or pause), 'slide:N' (jump to slide N, from the
+ * digit keys 1 to 9), 'exit', 'lang', 'swallow' or null.
  * 'swallow' means the key is not the presentation's but must not reach the app either: G would toggle the slope grid
  * and WASD would walk the camera under the cinematic. Null leaves the key to the browser (modifiers, F5, F11, F12).
  */
@@ -25,6 +27,8 @@ export function presentKey(e) {
   if (BROWSER.has(k)) return null;
   if (NEXT.has(k)) return 'next';
   if (BACK.has(k)) return 'back';
+  if (TOGGLE.has(k)) return 'toggle';
+  if (/^[1-9]$/.test(k)) return 'slide:' + k;
   if (k === 'Escape') return 'exit';
   if (k === 'l' || k === 'L') return 'lang';
   return 'swallow';
@@ -86,3 +90,56 @@ export function fallbackStep(index, action, count) {
   if (action === 'next') return Math.min(count - 1, index + 1);
   return index;
 }
+
+/**
+ * Play or pause. The talk opens paused on its first frame, behind a Play button, and plays only when the presenter
+ * starts it. Pausing freezes the beat clock and the demo video; next, back and the slide keys move the beats whether it
+ * plays or not, and keep the play state.
+ */
+export function createPlayer(playing = false) {
+  let on = !!playing, started = on;
+  return {
+    get playing() { return on; },
+    /** The presenter has pressed Play at least once (the big Play button goes after that). */
+    get started() { return started; },
+    play() { on = true; started = true; },
+    pause() { on = false; },
+    toggle() { if (on) on = false; else { on = true; started = true; } return on; },
+  };
+}
+
+/** A slide key's target index, clamped to the beats there are, or null for any other action. */
+export function slideTarget(action, count) {
+  const m = /^slide:(\d+)$/.exec(String(action));
+  if (!m) return null;
+  return Math.max(0, Math.min(count - 1, Number(m[1]) - 1));
+}
+
+/** A tap or swipe as a step: a swipe of 50 px or more left is next, right is back; a tap on the right half is next. */
+export function pointerStep(down, up, width) {
+  const dx = up.x - down.x, dy = up.y - down.y;
+  if (Math.abs(dx) >= 50 && Math.abs(dx) > Math.abs(dy)) return dx < 0 ? 'next' : 'back';
+  if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return up.x >= width / 2 ? 'next' : 'back';
+  return null;
+}
+
+/**
+ * Where the demo video stands at beat time t: the frame to show, whether it plays, and its opacity. It plays from the
+ * beat's start, holds its last frame once the file ends (a beat a little longer than the file never shows an ended or
+ * rewound video), and fades out over the beat's last 0.6 s into the next beat. With `hold` (the presenter has taken
+ * over, so the beat stays up until they step) it never fades out: the last frame stays instead of an empty scene.
+ * @param {number} t beat seconds  @param {number} beatSec the beat's length  @param {number} fileSec the file's length
+ * @param {{ hold?: boolean }} [options]
+ */
+export function videoFrame(t, beatSec, fileSec, { hold = false } = {}) {
+  const end = Number.isFinite(fileSec) && fileSec > 0 ? fileSec : beatSec;
+  const last = Math.max(0, end - 1 / 30);   // a frame before the end: browsers show black or the poster at `ended`
+  const time = Math.max(0, Math.min(t, last));
+  const playing = t < last && (hold || t < beatSec - 0.05);
+  const fadeIn = Math.min(1, Math.max(0, t / 0.6));
+  const fadeOut = hold ? 1 : Math.min(1, Math.max(0, (beatSec - t) / 0.6));
+  return { time, playing, opacity: Math.min(fadeIn, fadeOut) };
+}
+
+/** The play state's words, beside the slide number. */
+export const playLabel = (playing, lang) => (playing ? (lang === 'es' ? 'En curso' : 'Playing') : (lang === 'es' ? 'En pausa' : 'Paused'));

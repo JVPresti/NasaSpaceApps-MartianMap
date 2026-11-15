@@ -1,8 +1,11 @@
 // The presentation mode (#291): ?present=1. One camera falls from Mars orbit to the HiRISE ground at Cheyava Falls,
 // the walkback zone is the hero shot, and the last beat hands over to the live mission table without a reload.
 //
-// Keys (presentation clickers send these): Right, Space, PageDown, Enter next; Left, PageUp back; L language; Esc exit.
-// URL: &autoplay=1 runs the beats on their timings; &record=1 steps exactly 1/60 s a frame for scripts/present/record.mjs;
+// Keys (presentation clickers send these): Right, PageDown, Enter next; Left, PageUp back; 1 to 9 jump to that slide;
+// Space, P or K play and pause; L language; Esc exit.
+// URL: the talk opens paused behind a Play button and then runs on the beat lengths (&autoplay=1 plays at once);
+// next, back and the slide keys move the beats whether it plays or not;
+// &record=1 steps exactly 1/60 s a frame for scripts/present/record.mjs;
 // &seq=global30 plays the 30 s global video cut; &beat=<id> starts at a beat; &tier=low forces the light version.
 //
 // Everything moves from one clock (clock.js), never from CSS transitions, so a recording is frame-perfect.
@@ -17,7 +20,7 @@ import { createGlobe } from './globe.js';
 import { createProjector } from './project.js';
 import { layoutCards } from './layout.js';
 import { decodeLast, fill, marginAt, clockAt, areaAt, resolvePlace, trackNumber, astronautAt } from './data.js';
-import { createHoldTimer, fallbackStep, presentKey, queryWithoutPresent, restoreEngine as restoreFromStore } from './control.js';
+import { createHoldTimer, createPlayer, playLabel, pointerStep, slideTarget, videoFrame, fallbackStep, presentKey, queryWithoutPresent, restoreEngine as restoreFromStore } from './control.js';
 import './present.css';
 
 const BASE = (import.meta.env.BASE_URL || '/') + 'present/';
@@ -30,12 +33,15 @@ const UI = {
   late: { en: 'Terrain still loading. Captions until it is ready', es: 'El terreno sigue cargando. Textos mientras tanto' },
   placeholder: { en: 'zone: placeholder model', es: 'zona: modelo provisional' },
   exit: { en: 'Esc exits', es: 'Esc para salir' },
+  play: { en: 'Play', es: 'Reproducir' },
+  pause: { en: 'Pause', es: 'Pausa' },
+  slide: { en: 'Slide', es: 'Diapositiva' },
 };
 
 function params() {
   const q = new URLSearchParams(window.location.search);
   return {
-    autoplay: q.get('autoplay') === '1' || q.get('record') === '1',
+    autoplay: q.get('autoplay') === '1' || q.get('record') === '1',   // play at once, with no Play button
     record: q.get('record') === '1',
     seq: q.get('seq') === 'global30' ? 'global30' : 'full',
     live: q.get('live') === '1',   // add the hand-over to the live app after the sources
@@ -96,6 +102,9 @@ function beatShot(beat, plan, groundAt, reduced) {
 export default function Present({ engine, onExit }) {
   const opts = useMemo(() => params(), []);
   const beats = useMemo(() => sequence(opts.seq, { live: opts.live }), [opts.seq, opts.live]);
+  // The demo video file's real length once it loads: the frame loop gives its copy of the demo beat this length, so a
+  // new cut sets the talk's length by itself (beats.js `duration` is the length until then)
+  const videoLenRef = useRef(null);
   const [lang, setLang] = useState(() => (opts.lang === 'es' || opts.lang === 'en' ? opts.lang : opts.record ? 'en' : getLanguage()));
   const [index, setIndex] = useState(() => Math.max(0, beats.findIndex((b) => b.id === opts.beat)));
   const [assets, setAssets] = useState(null);
@@ -105,6 +114,11 @@ export default function Present({ engine, onExit }) {
   const [stalled, setStalled] = useState(false);
   const still = !!failed || stalled;   // the caption fallback is up
   const indexRef = useRef(index);
+  // Paused behind the Play button until the presenter starts it (control.js createPlayer); a recording always plays
+  const [player] = useState(() => createPlayer(opts.autoplay || opts.record));
+  const [playing, setPlaying] = useState(() => player.playing);
+  const [started, setStarted] = useState(() => player.started);
+  const pausedRef = useRef(!player.playing);
   // The recorded app demo (a beat with `video`): its element, and whether the file failed to load
   const videoRef = useRef(null);
   const [videoFailed, setVideoFailed] = useState(false);
@@ -153,7 +167,11 @@ export default function Present({ engine, onExit }) {
     }
     const projector = createProjector();
     const clock = createClock({ fixedStep: opts.record ? RECORD_STEP : null });
-    const timeline = createTimeline(beats, { autoplay: opts.autoplay, start: Math.max(0, beats.findIndex((b) => b.id === opts.beat)) });
+    // Always on: a paused talk stops the beat clock itself (frame below), so a finished beat moves on only while it plays
+    // The loop's own copies of the beats, so the demo beat can take the video file's length (videoLenRef)
+    const live = beats.map((b) => ({ ...b }));
+    const liveVideo = live.find((b) => b.video) || null;
+    const timeline = createTimeline(live, { autoplay: true, start: Math.max(0, beats.findIndex((b) => b.id === opts.beat)) });
     let cine = null, engineState = { sky: null, layer: 0, dust: -1 };
     let fromShot = null, toShot = null, current = null, alive = true, raf = 0, lastNow = performance.now(), zoneFrame = 0;
     let waitingNow = false, stalledNow = false, late = false;
@@ -305,7 +323,9 @@ export default function Present({ engine, onExit }) {
         el.style.opacity = showValue([from + 0.3, to], t, beat.duration).toFixed(3);
       });
       layer.parentElement.querySelectorAll('[data-fade]').forEach((el) => {
-        el.style.opacity = showValue([Number(el.dataset.fade) || 0], t, beat.duration).toFixed(3);
+        // data-fade="from" or "from,to", in beat seconds
+        const [from, to] = el.dataset.fade.split(',').map(Number);
+        el.style.opacity = showValue(Number.isFinite(to) ? [from || 0, to] : [from || 0], t, beat.duration).toFixed(3);
       });
     }
 
@@ -315,18 +335,23 @@ export default function Present({ engine, onExit }) {
       const v = videoRef.current;
       if (!v) return 0;
       const on = !!beat.video && !videoFailedRef.current;
-      const a = on ? showValue([0], t, beat.duration) : 0;
-      v.style.opacity = a.toFixed(3);
-      if (!on) { if (!v.paused) v.pause(); return 0; }
-      if (opts.record) { if (!v.paused) v.pause(); if (Math.abs(v.currentTime - t) > 1e-3) v.currentTime = Math.min(t, v.duration || t); return a; }
-      if (t >= beat.duration - 0.05) { if (!v.paused) v.pause(); return a; }
-      if (Math.abs(v.currentTime - t) > 0.5) v.currentTime = t;   // entering the beat, or after a stall
+      if (!on) { v.style.opacity = '0'; if (!v.paused) v.pause(); return 0; }
+      // control.js: plays, then holds the last frame, then fades into the next beat; while paused it stays up
+      const f = videoFrame(t, beat.duration, v.duration, { hold: !opts.record && pausedRef.current });
+      v.style.opacity = f.opacity.toFixed(3);
+      if (opts.record || !f.playing || pausedRef.current) {
+        if (!v.paused) v.pause();
+        if (Math.abs(v.currentTime - f.time) > (opts.record ? 1e-3 : 0.1) && !v.seeking) v.currentTime = f.time;
+        return f.opacity;
+      }
+      if (Math.abs(v.currentTime - f.time) > 0.5) v.currentTime = f.time;   // entering the beat, or after a stall
       if (v.paused) v.play().catch(() => {});
-      return a;
+      return f.opacity;
     }
 
     function frame(dt) {
       attachEngine();
+      if (liveVideo && videoLenRef.current && !opts.record) liveVideo.duration = videoLenRef.current;
       if (stalledNow) {
         // Still late, on a beat that needs the terrain: the captions stay up. The globe beats (Mars, Jezero) need no
         // engine, so stepping back to them plays them live.
@@ -346,7 +371,7 @@ export default function Present({ engine, onExit }) {
       // Once the engine has been late, a later hold drops to the captions at once instead of waiting again.
       if (!opts.record && (holdTimer.update(hold, performance.now()) || (hold && late))) { stalledNow = late = true; setStalled(true); return; }
       if (!hold) {
-        const changed = timeline.advance(dt);
+        const changed = timeline.advance(pausedRef.current ? 0 : dt);
         if (changed) { startBeat(timeline.index); setIndex(timeline.index); }
       }
       const beat = timeline.beat;
@@ -381,6 +406,7 @@ export default function Present({ engine, onExit }) {
     const nav = {
       next() { if (timeline.index === beats.length - 1) return false; timeline.next(); startBeat(timeline.index); setIndex(timeline.index); return true; },
       back() { timeline.back(); startBeat(timeline.index); setIndex(timeline.index); },
+      goTo(i) { timeline.goTo(i); startBeat(timeline.index); setIndex(timeline.index); },
     };
     exitRef.current = { nav, release: () => { if (cine) { cine.release(); cine = null; } } };
 
@@ -442,6 +468,13 @@ export default function Present({ engine, onExit }) {
     onExit?.();
   }, [onExit, restoreEngine]);
 
+  // Play or pause: the beat clock and the demo video stop together (frame and playVideo read pausedRef)
+  const toggle = useCallback(() => {
+    player.toggle();
+    pausedRef.current = !player.playing;
+    setPlaying(player.playing); setStarted(player.started);
+  }, [player]);
+
   useEffect(() => {
     // Captured on window and stopped there, so no key reaches the app under the presentation (view.js, App's shortcuts).
     const onKey = (e) => {
@@ -453,22 +486,47 @@ export default function Present({ engine, onExit }) {
       if (e.type !== 'keydown' || e.repeat) return;
       if (action === 'exit') { exit(); return; }
       if (action === 'lang') { setLang((v) => (v === 'en' ? 'es' : 'en')); return; }
-      if (still) { setIndex((i) => fallbackStep(i, action, beats.length)); return; }   // no clock, no camera, no hand-off
+      if (action === 'toggle') { toggle(); return; }
+      step(action);
+    };
+    // One step from a key, a clicker, a tap or a swipe. It moves the beats at once and keeps the play state.
+    const step = (action) => {
+      const target = slideTarget(action, beats.length);
       const nav = exitRef.current?.nav;
+      if (target !== null) {
+        if (still) setIndex(target); else nav?.goTo(target);
+        return;
+      }
+      if (still) { setIndex((i) => fallbackStep(i, action, beats.length)); return; }   // no clock, no camera, no hand-off
       if (action === 'back') { nav?.back(); return; }
       if (!nav?.next() && beats[beats.length - 1].cta) begin();
     };
+    const dialog = dialogRef.current;
+    let down = null;
+    // the primary button or a touch only: a right or middle click never steps
+    const onDown = (e) => { down = e.button !== 0 || e.target.closest?.('button, a') ? null : { x: e.clientX, y: e.clientY }; };
+    const onUp = (e) => {
+      if (!down) return;
+      const action = pointerStep(down, { x: e.clientX, y: e.clientY }, window.innerWidth);
+      down = null;
+      if (action) step(action);
+    };
     window.addEventListener('keydown', onKey, true);
     window.addEventListener('keyup', onKey, true);
-    return () => { window.removeEventListener('keydown', onKey, true); window.removeEventListener('keyup', onKey, true); };
-  }, [beats, begin, exit, still]);
+    dialog?.addEventListener('pointerdown', onDown);
+    dialog?.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('keydown', onKey, true); window.removeEventListener('keyup', onKey, true);
+      dialog?.removeEventListener('pointerdown', onDown); dialog?.removeEventListener('pointerup', onUp);
+    };
+  }, [beats, begin, exit, still, toggle]);
 
-  // ?autoplay keeps running in the caption fallback, on the same beat lengths
+  // The caption fallback plays on the same beat lengths while the talk plays (a pause or a step restarts the beat's wait)
   useEffect(() => {
-    if (!still || !opts.autoplay || index >= beats.length - 1) return undefined;
+    if (!still || !playing || index >= beats.length - 1) return undefined;
     const id = setTimeout(() => setIndex((i) => fallbackStep(i, 'next', beats.length)), beats[index].duration * 1000);
     return () => clearTimeout(id);
-  }, [still, opts.autoplay, index, beats]);
+  }, [still, playing, index, beats]);
 
   const beat = beats[index];
   const plan = assets?.plan;
@@ -485,9 +543,12 @@ export default function Present({ engine, onExit }) {
         // Lazy: the file starts loading after the first beat, so the opening never waits on it
         <video
           ref={videoRef} className="pr-video" aria-hidden="true" muted playsInline disablePictureInPicture
-          src={index >= 1 || opts.record ? BASE + (lang === 'es' && videoBeat.video.srcEs ? videoBeat.video.srcEs : videoBeat.video.src) : undefined}
+          src={index >= 1 || opts.record ? BASE + videoBeat.video.src : undefined}
           poster={BASE + videoBeat.video.poster} preload={index >= 1 || opts.record ? 'auto' : 'none'} style={{ opacity: 0 }}
           onError={() => { videoFailedRef.current = true; setVideoFailed(true); }}
+          // The beat lasts as long as the file, so a new cut sets the talk's length by itself (beats.js `duration` is
+          // the length before the file loads, and beats.test.js keeps it within 0.5 s of the file in the repo)
+          onLoadedMetadata={(e) => { const d = e.currentTarget.duration; if (Number.isFinite(d) && d > 1) videoLenRef.current = Math.round(d * 10) / 10; }}
         />
       )}
       {still && <div className="pr-fallback" style={assets ? { backgroundImage: `url(${BASE}${index < 2 ? 'globe_2k.jpg' : 'jezero_ctx.jpg'})` } : undefined} aria-hidden="true" />}
@@ -506,15 +567,28 @@ export default function Present({ engine, onExit }) {
         ))}
       </div>
       <div className={`pr-copy${still ? ' still' : ''}`} key={`copy-${beat.id}-${lang}`}>
-        {beat.list && (
-          <div className="pr-list" data-fade="0.5" style={hidden}>
-            <h2 className="pr-list-title">{tx(beat.list.title)}</h2>
+        {beat.references && (still ? [beat.references.pages[0]] : beat.references.pages).map((page, k) => (
+          // APA 7, one page at a time; the fallback shows the first page only, so nothing overlaps
+          <div key={k} className="pr-list pr-refs" data-fade={page.join(',')} style={hidden}>
+            <h2 className="pr-list-title">{tx(beat.references.title)} <span className="pr-refs-page">{k + 1}/{beat.references.pages.length}</span></h2>
             <ul>
-              {beat.list.lines.map((line, k) => (
-                <li key={k}><span className={`pr-tag ${TAG_CLASS[line.tag]}`}>{line.tag}</span>{tx(line)}</li>
+              {beat.references.entries.slice(k * beat.references.perPage, (k + 1) * beat.references.perPage).map((entry) => (
+                <li key={entry}>{entry.split('*').map((part, j) => (j % 2 ? <i key={j}>{part}</i> : part))}</li>
               ))}
             </ul>
-            {beat.list.note && <p className="pr-list-note">{beat.list.note}</p>}
+          </div>
+        ))}
+        {beat.team && !still && (
+          // the team, the app's address and its QR code, in the references' place
+          <div className="pr-team" data-fade={String(beat.team.at)} style={hidden}>
+            <div className="pr-team-text">
+              <h2 className="pr-team-name">{beat.team.name}</h2>
+              <p className="pr-team-people">{beat.team.people}</p>
+            </div>
+            <figure className="pr-qr">
+              <img src={BASE + beat.team.qr} alt="" width="200" height="200" />
+              <figcaption>{beat.team.url.replace('https://', '')}<br /><span>{tx(beat.team.open)}</span></figcaption>
+            </figure>
           </div>
         )}
         {beat.title && <h1 className="pr-title" data-fade="0.2" style={hidden}>{beat.title}</h1>}
@@ -537,9 +611,25 @@ export default function Present({ engine, onExit }) {
         )}
       </div>
       {!opts.record && (
-        <div className="pr-progress" aria-hidden="true">
-          {beats.map((b, i) => <span key={b.id} className={i === index ? 'on' : i < index ? 'past' : ''} />)}
-          <span className="pr-lang">{lang.toUpperCase()}</span>
+        <div className="pr-progress">
+          {beats.map((b, i) => <span key={b.id} aria-hidden="true" className={i === index ? 'on' : i < index ? 'past' : ''} />)}
+          <span className="pr-lang" aria-hidden="true">{lang.toUpperCase()}</span>
+        </div>
+      )}
+      {!opts.record && !started && (
+        <button type="button" className="pr-play" onClick={toggle} aria-label={tx(UI.play)}>
+          <span className="pr-play-icon" aria-hidden="true" />{tx(UI.play)}
+        </button>
+      )}
+      {!opts.record && (
+        // the slide number, so a presenter can say "slide 4" and the laptop can go there (the 4 key)
+        <div className="pr-slideno">
+          {started && (
+            <button type="button" className="pr-pp" data-playing={playing ? '1' : '0'} onClick={toggle} aria-label={tx(playing ? UI.pause : UI.play)}>
+              <span aria-hidden="true">{playing ? '❚❚' : '▶'}</span> {playLabel(playing, lang)}
+            </button>
+          )}
+          <span className="pr-slideno-n" role="status" aria-label={`${tx(UI.slide)} ${index + 1} / ${beats.length}`}>{index + 1} / {beats.length}</span>
         </div>
       )}
       {waiting && !still && <p className="pr-wait">{tx(UI.loading)}</p>}

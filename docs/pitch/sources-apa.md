@@ -1,8 +1,16 @@
 # Sources (APA 7)
 
-The sources the presentation names on its `close` beat, plus the papers the talk and `qa.md` lean on, in APA 7 style and in alphabetical order. Titles, volumes and links come from `docs/credits.md` and `docs/SUBMISSION.md`.
+The sources the presentation names on its `close` beat, plus the papers the talk and `qa.md` lean on, in APA 7 style and in alphabetical order. Titles, volumes and links come from `docs/credits.md` and `docs/SUBMISSION.md`. The presentation's `close` beat shows this same list (`src/present/beats.js`, `references`); `src/present/beats.test.js` keeps the two equal.
 
-Two gaps. The repo records only the first author of most papers, so those entries end the author list with "et al."; APA 7 lists up to 20 authors, so complete them from the DOI before printing. Datasets with no release year in the repo carry "n.d.".
+The four USGS and PDS data sets carry the authors and years their DOIs return. Most papers still end the author list with "et al."; APA 7 lists up to 20 authors, so complete them from the DOI before printing. Data sets with no release year carry "n.d.".
+
+de la Torre Juárez, M., & Rodriguez-Manfredi, J. A. (2021). *Mars 2020 MEDA bundle* (urn:nasa:pds:mars2020_meda) [Data set]. NASA Planetary Data System, Atmospheres Node. https://doi.org/10.17189/1522849
+
+Fergason, R. L., Galuszka, D. M., Hare, T. M., Mayer, D. P., & Redding, B. L. (2020a). *Mars 2020 Terrain Relative Navigation context camera orthorectified image mosaic, 6 m (JEZ_ctx_B_soc_008)* [Data set]. U.S. Geological Survey. https://doi.org/10.5066/P9GV1ND3
+
+Fergason, R. L., Galuszka, D. M., Hare, T. M., Mayer, D. P., & Redding, B. L. (2020b). *Mars 2020 Terrain Relative Navigation HiRISE DTM mosaic, 1 m (JEZ_hirise_soc_006)* [Data set]. U.S. Geological Survey. https://doi.org/10.5066/P9REJ9JN
+
+Fergason, R. L., Galuszka, D. M., Hare, T. M., Mayer, D. P., & Redding, B. L. (2020c). *Mars 2020 Terrain Relative Navigation HiRISE orthorectified image mosaic, 25 cm (JEZ_hirise_soc_006)* [Data set]. U.S. Geological Survey. https://doi.org/10.5066/P9QJDP48
 
 Hassler, D. M., et al. (2014). Mars' surface radiation environment measured with the Mars Science Laboratory's Curiosity rover. *Science, 343*, 1244797. https://doi.org/10.1126/science.1244797
 
@@ -22,12 +30,6 @@ NASA Solar System Treks. (n.d.). *Mars Trek: HiRISE Jezero DEM* [Data set]. http
 
 NASA/JPL-Caltech/Arizona State University. (n.d.). *Mars Odyssey THEMIS day IR controlled global mosaic, 100 m* [Data set]. NASA Mars Trek. https://trek.nasa.gov/mars/
 
-NASA/JPL/Malin Space Science Systems. (n.d.). *CTX orthorectified image mosaic for Mars 2020 TRN, 6 m (JEZ_ctx_B_soc_008)* [Data set]. U.S. Geological Survey. https://doi.org/10.5066/P9GV1ND3
-
-NASA/JPL/University of Arizona. (n.d.-a). *HiRISE digital terrain model mosaic for Mars 2020 TRN, 1 m (JEZ_hirise_soc_006)* [Data set]. U.S. Geological Survey. https://doi.org/10.5066/P9REJ9JN
-
-NASA/JPL/University of Arizona. (n.d.-b). *HiRISE orthorectified image mosaic for Mars 2020 TRN, 25 cm (JEZ_hirise_soc_006)* [Data set]. U.S. Geological Survey. https://doi.org/10.5066/P9QJDP48
-
 NASA/JPL/USGS. (n.d.). *Mars Viking MDIM 2.1 colorized global mosaic, 232 m* [Data set]. U.S. Geological Survey Astrogeology Science Center. https://astrogeology.usgs.gov/search/map/mars_viking_mdim21_colorized_global_mosaic_232m
 
 Norcross, J., et al. (2008). *Feasibility of suited 10 km walkback on the Moon* [Conference presentation]. Aerospace Medical Association. https://ntrs.nasa.gov/citations/20080014853
@@ -35,8 +37,6 @@ Norcross, J., et al. (2008). *Feasibility of suited 10 km walkback on the Moon* 
 Norcross, J., et al. (2009). *Feasibility of performing a suited 10-km ambulation on the Moon* (NASA/TP-2009-214796). NASA. https://www.lpi.usra.edu/lunar/artemis/NorcrossEtAl_NASA-TP-2009-214796_EVA%20Walkback%20Test.pdf
 
 Norcross, J. R., et al. (2010). *Metabolic costs and biomechanics of inclined ambulation and exploration tasks in a planetary suit* (NASA/TP-2010-216125). NASA. https://ntrs.nasa.gov/citations/20110003409
-
-Rodriguez-Manfredi, J. A., et al. (n.d.). *Mars 2020 MEDA bundle* (urn:nasa:pds:mars2020_meda) [Data set]. NASA Planetary Data System, Atmospheres Node. https://doi.org/10.17189/1522849
 
 Smith, C. L., et al. (2019). Visibility and line-of-sight extinction estimates in Gale crater during the 2018/MY34 global dust storm. *Geophysical Research Letters, 46*, 9414–9421. https://doi.org/10.1029/2019GL083788
 
