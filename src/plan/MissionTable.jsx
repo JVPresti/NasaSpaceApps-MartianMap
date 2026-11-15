@@ -398,7 +398,8 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
             </figure>
           )}
         </section>
-        {map({ layer: 0, route: false, title: t('table.layer.hirise') })}
+        {/* The habitat and the rock the step describes, whatever stop the goal walks to */}
+        {map({ layer: 0, route: false, title: t('table.layer.hirise'), waypoints: target && waypoints.length > 0 ? [waypoints[0], { name: target.waypoint, x: target.x, z: target.z }] : waypoints })}
         <section className="table-right">
           <div className="table-panel table-fill">
             <p className="table-label">{t('table.site.where')}</p>
