@@ -4,7 +4,7 @@
 //         still works while the mouse is not locked, but only while input is enabled. On touch screens a
 //         virtual stick in the bottom-left corner walks (push further to jog) and any other finger looks
 //         (#103, touchInput.js); a standard gamepad moves with the left stick, looks with the right one,
-//         jogs with L3 and reports Start/LB/RB as actions (#103, gamepadInput.js).
+//         jogs with L3 and reports Start/LB/RB, and A/X for the habitat table, as actions (#103, gamepadInput.js).
 //   plan: the site from above (OrbitControls): right-drag to pan and scroll to zoom; rotation is disabled and
 //         touch pans with one finger and pans/pinch-zooms with two (index.js, planTouch.js).
 // Internally view.mode keeps the bench's values ('eye' | 'orbit') because the arms, legs and habitat check them.
@@ -63,7 +63,7 @@ export function applyLook(view, dx, dy, k, settings = LOOK_DEFAULTS) {
  * @param {{ onLockChange?: (locked: boolean) => void, inputEnabled?: boolean,
  *   onTouch?: (state: { visible: boolean, active: boolean, knobX: number, knobY: number, jog: boolean }) => void,
  *   onGamepad?: (state: { used: boolean, connected: boolean }) => void,
- *   onGamepadAction?: (action: 'mode' | 'layer-prev' | 'layer-next') => void,
+ *   onGamepadAction?: (action: 'mode' | 'layer-prev' | 'layer-next' | 'open-plan' | 'end-eva') => void,
  *   document?: Document }} [options] onLockChange fires on pointer-lock changes only, never per frame; onTouch fires
  *   only on touch events; onGamepad fires on the first gamepad use; onGamepadAction fires once per button press
  */
