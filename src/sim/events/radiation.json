@@ -1,7 +1,7 @@
 {
   "id": "radiation",
   "label": "Radiation alert",
-  "trigger": { "type": "missionTime", "atSec": 720 },
+  "trigger": { "type": "manual" },
   "timeline": [
     { "atSec": 0, "set": { "environment.doseRateUgyH": 10.0 } },
     { "atSec": 90, "set": { "environment.doseRateUgyH": 10.0 } },
@@ -18,5 +18,5 @@
   "planner": { "action": "replan", "target": "habitat" },
   "end": { "type": "area", "x": 535.1, "z": 574.1, "radius": 25 },
   "endSet": { "environment.doseRateUgyH": 10.0 },
-  "notes": "Peak window of the September 2017 event in hazards.json models.sep_2017_profile: background 240 uGy/day (10 uGy/h) and peak 718 uGy/day (29.92 uGy/h), RAD B detector in Gale crater, not Jezero. The 12-minute duration is a SIM compression for one EVA; the accumulated dose uses the real rates: the environment runner (src/sim/environmentRunner.js) sums environment.doseRateUgyH into environment.doseUgy over mission time, so the event sets only the rate. Shelter is the habitat, the only full-protection shelter in public/data/shelters.json."
+  "notes": "Peak window of the September 2017 event in hazards.json models.sep_2017_profile: background 240 uGy/day (10 uGy/h) and peak 718 uGy/day (29.92 uGy/h), RAD B detector in Gale crater, not Jezero. The 12-minute duration is a SIM compression for one EVA; the accumulated dose uses the real rates: the environment runner (src/sim/environmentRunner.js) sums environment.doseRateUgyH into environment.doseUgy over mission time, so the event sets only the rate. Shelter is the habitat, the only full-protection shelter in public/data/shelters.json. When it starts, and how fast this timeline runs, comes from the mission the crew's objective defines (src/sim/missions.js, #265): T+720 s and this 12-minute timeline in the full EVA; in the first mission T+95 s at the earliest, 15 s after the storm and outside the 25 m end area, with the timeline compressed to 1 minute (SIM)."
 }

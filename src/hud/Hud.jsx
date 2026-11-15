@@ -8,7 +8,7 @@ import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
 import { bearingDeg } from '../sim/bearing.js';
 import { nextTarget } from '../sim/waypointRunner.js';
-import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, wrapDeg } from './format.js';
+import { batteryLevel, cardinal, formatDose, formatEva, formatMinutes, formatValue, nextWaypointInfo, wrapDeg } from './format.js';
 import ElevationProfile from './ElevationProfile.jsx';
 import RadioLink from './RadioLink.jsx';
 import LayerChip from './LayerChip.jsx';
@@ -19,6 +19,7 @@ import Minimap from './Minimap.jsx';
 import './hud.css';
 import { SamplingChecklist, SamplingCrosshair } from './SamplingPanel.jsx';
 import PartnerPanel from './PartnerPanel.jsx';
+import { useInCabin } from './useInCabin.js';
 
 // Shared source tag (#62). The HUD never takes the pointer, so the tag shows its tag text only and puts the full
 // source in the title and the screen reader text.
@@ -125,7 +126,7 @@ function EnvStrip() {
       <EnvValue icon={<I.Thermometer />} path="environment.tempC" value={formatValue(e.t)} unit={t('ui.c')} title={t('ui.air.temperature')} />
       <EnvValue icon={<I.Wind />} path="environment.windMs" value={formatValue(e.w)} unit={t('ui.m.s')} title={t('ui.wind.speed')} />
       <EnvValue icon={<span className="hud-tau">τ</span>} path="environment.dustOpacity" value={formatValue(e.tau, 2)} title={t('ui.dust.opacity.tau')} />
-      <EnvValue icon={<I.Radiation />} path="environment.doseUgy" value={formatValue(e.dose)} unit={t('ui.gy')} title={t('ui.radiation.dose.this.eva') + (typeof e.rate === 'number' ? t('ui.rate.rate.gy.h', { rate: formatNumber(e.rate, 1) }) : '')} />
+      <EnvValue icon={<I.Radiation />} path="environment.doseUgy" value={formatDose(e.dose)} unit={t('ui.gy')} title={t('ui.radiation.dose.this.eva') + (typeof e.rate === 'number' ? t('ui.rate.rate.gy.h', { rate: formatNumber(e.rate, 1) }) : '')} />
     </section>
   );
 }
@@ -265,10 +266,13 @@ function WaypointMarker({ engine }) {
  * `minimapRoute` is App's route tracker: it outlives this component so Plan mode does not reset the walk.
  */
 export default function Hud({ engine, minimapRoute }) {
+  // In the habitat's cabin the table prompt is the interface (#244): the next-waypoint panel and marker, centred and about
+  // the walk outside, give way to it so they neither cover it nor point the crew back out, and so does the sampling ring.
+  const cabin = useInCabin(engine);
   return (
     <div className="hud" aria-label={t('ui.helmet.display')}>
       <HeadingTape />
-      <WaypointMarker engine={engine} />
+      {!cabin && <WaypointMarker engine={engine} />}
       <SlopeAhead engine={engine} />
       <Clocks />
       <SuitPanel />
@@ -282,8 +286,8 @@ export default function Hud({ engine, minimapRoute }) {
         <NavLine><SourceTag path="navigation.errorM" /></NavLine>
         <RadioLink engine={engine} />
       </div>
-      <WaypointPanel heightAt={engine?.heightAt} slopeAt={engine?.slopeAt} />
-      <SamplingCrosshair />
+      {!cabin && <WaypointPanel heightAt={engine?.heightAt} slopeAt={engine?.slopeAt} />}
+      <SamplingCrosshair reticle={!cabin} />
     </div>
   );
 }

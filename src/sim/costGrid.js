@@ -456,6 +456,74 @@ export function resetZones(grid) {
 }
 
 /**
+ * Half-width of the band of ground Perseverance drove, around the centre line of its MMGIS traverse. Metres. Half of
+ * the rover's 2.7 m width plus about a 2 m grid cell, so the band has no gaps on the 2 m grid and covers a little of
+ * the error of the traverse positions. Our choice (SIM), used by the cautious risk setting (src/sim/missionNeeds.js).
+ */
+export const TRAVERSE_RADIUS_M = 3;
+
+/** Distance from a point to the segment ab. */
+function segmentDistance(px, pz, ax, az, bx, bz) {
+  const dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz;
+  const t = l2 > 0 ? Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / l2)) : 0;
+  return Math.hypot(px - (ax + dx * t), pz - (az + dz * t));
+}
+
+/**
+ * The grid nodes on ground Perseverance drove: within `radiusM` of a drive of public/data/traverse.json (#249).
+ * @param {{ n: number, width: number, depth: number }} grid
+ * @param {Array<Array<[number, number]> | { points: Array<[number, number]> }>} drives polylines in metres, or the
+ *   drives of parseTraverse (src/data/traverse.js)
+ * @param {number} [radiusM]
+ * @returns {{ n: number, width: number, depth: number, radiusM: number, cells: Uint8Array, count: number }}
+ *   cells[j * n + i] is 1 on the rover's ground
+ */
+export function traverseMask(grid, drives, radiusM = TRAVERSE_RADIUS_M) {
+  const { n, width, depth } = grid;
+  const cells = new Uint8Array(n * n);
+  let count = 0;
+  const perX = (n - 1) / width, perZ = (n - 1) / depth;
+  for (const drive of drives ?? []) {
+    const points = Array.isArray(drive) ? drive : drive?.points;
+    if (!Array.isArray(points)) continue;
+    for (let k = 0; k < points.length - 1; k += 1) {
+      const [ax, az] = points[k];
+      const [bx, bz] = points[k + 1];
+      if (![ax, az, bx, bz].every(Number.isFinite)) continue;
+      const i0 = Math.max(0, Math.floor((Math.min(ax, bx) - radiusM + width / 2) * perX));
+      const i1 = Math.min(n - 1, Math.ceil((Math.max(ax, bx) + radiusM + width / 2) * perX));
+      const j0 = Math.max(0, Math.floor((Math.min(az, bz) - radiusM + depth / 2) * perZ));
+      const j1 = Math.min(n - 1, Math.ceil((Math.max(az, bz) + radiusM + depth / 2) * perZ));
+      for (let j = j0; j <= j1; j += 1) {
+        const z = (j / (n - 1) - 0.5) * depth;
+        for (let i = i0; i <= i1; i += 1) {
+          const index = j * n + i;
+          if (cells[index]) continue;
+          const x = (i / (n - 1) - 0.5) * width;
+          if (segmentDistance(x, z, ax, az, bx, bz) <= radiusM) {
+            cells[index] = 1;
+            count += 1;
+          }
+        }
+      }
+    }
+  }
+  return { n, width, depth, radiusM, cells, count };
+}
+
+/**
+ * Whether a world position is on ground Perseverance drove (nearest node of the mask).
+ * @param {{ n: number, width: number, depth: number, cells: Uint8Array }} mask from {@link traverseMask}
+ * @param {number} x
+ * @param {number} z
+ * @returns {boolean}
+ */
+export function onTraverse(mask, x, z) {
+  const { i, j } = nearestCell(mask, x, z);
+  return mask.cells[j * mask.n + i] === 1;
+}
+
+/**
  * Deep copy of a grid, so a re-plan can apply event zones without touching the
  * base grid the rest of the app uses.
  * @param {object} grid

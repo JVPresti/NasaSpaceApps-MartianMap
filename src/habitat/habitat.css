@@ -56,18 +56,6 @@
   color: var(--ink, #e9edf2);
 }
 
-/* A small aiming dot: the table opens when it is in front of you. */
-.habitat-dot {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 4px;
-  height: 4px;
-  margin: -2px 0 0 -2px;
-  background: rgba(255, 255, 255, 0.75);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
-}
-
 .habitat-prompt {
   position: absolute;
   left: 50%;
@@ -87,23 +75,6 @@
   border: 1px solid var(--line, rgba(255, 255, 255, 0.12));
   border-radius: 0;
   backdrop-filter: var(--blur, blur(14px));
-}
-
-.habitat-prompt-action {
-  border-color: var(--line-strong, rgba(255, 255, 255, 0.24));
-  font-weight: 500;
-}
-
-.habitat-prompt kbd {
-  display: inline-grid;
-  place-items: center;
-  min-width: 26px;
-  height: 26px;
-  padding: 0 6px;
-  font: 600 14px/1 var(--font-mono, ui-monospace, monospace);
-  color: var(--bg, #0a0d11);
-  background: var(--accent, #ff6a2b);
-  border-radius: 0;
 }
 
 /* ------------------------------------------------------------------ airlock cycle */

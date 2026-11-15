@@ -123,7 +123,8 @@ export function restartEva({
   attempt('simulation stop', () => { if (stopSimulation) stopSimulation(); });
   // The old clock has persisted its final reading by now; remove it before any new clock can read it.
   clearClockSession(storage);
-  resetStore();
+  // A new EVA keeps the crew's needs and route profile (D9, unlocked): Restart and End the EVA return to the same plan.
+  resetStore({ keepNeeds: true });
   attempt('engine reset', () => {
     engine?.setInputEnabled?.(false);
     engine?.releasePointerLock?.();

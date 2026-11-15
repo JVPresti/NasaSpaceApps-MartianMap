@@ -38,12 +38,17 @@ const GROUPS = [
  * @param {{ locked?: boolean }} props locked: the EVA has begun, so the route can no longer be swapped
  */
 export default function RouteProfiles({ locked = false }) {
-  const { profiles, chosen, path } = useMissionStore(useShallow((s) => ({ profiles: s.route.profiles, chosen: s.route.profile, path: s.route.path })));
+  const { profiles, chosen, path, crew } = useMissionStore(useShallow((s) => ({
+    profiles: s.route.profiles, chosen: s.route.profile, path: s.route.path, crew: s.needs?.crew,
+  })));
   if (!profiles) return <><Heading /><p className="table-note">{t('profiles.waiting')}</p></>;
 
   // The profile in use is the one whose route is the route: after an event re-plan none is.
   const inUse = PROFILE_IDS.find((id) => profiles[id]?.ok && profiles[id].path === path) ?? null;
   const described = inUse ?? chosen;
+  // A solo crew stays in radio contact (src/sim/missionNeeds.js): while the radio route exists, the store ignores every
+  // choice (chooseRouteProfile), so all three buttons are off, Radio shown as the one in use, and the note says why.
+  const soloRadio = crew === 1 && profiles.radio?.ok === true;
 
   return (
     <>
@@ -59,7 +64,7 @@ export default function RouteProfiles({ locked = false }) {
                   type="button"
                   className={'profiles-pick profile-' + id}
                   aria-pressed={id === inUse}
-                  disabled={locked || !profiles[id]?.ok}
+                  disabled={locked || !profiles[id]?.ok || soloRadio}
                   title={t(`profiles.${id}.what`)}
                   onClick={() => chooseRouteProfile(id)}
                 >
@@ -93,7 +98,7 @@ export default function RouteProfiles({ locked = false }) {
       </table>
       <p className="table-note profiles-what">
         <i className={'profile-swatch profile-' + described} aria-hidden="true" />
-        {locked ? t('profiles.locked') : t(`profiles.${described}.what`)}
+        {locked ? t('profiles.locked') : soloRadio ? t('profiles.solo') : t(`profiles.${described}.what`)}
       </p>
     </>
   );

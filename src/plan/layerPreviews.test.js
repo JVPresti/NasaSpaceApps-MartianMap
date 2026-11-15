@@ -1,4 +1,4 @@
-import { readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LAYERS } from './layers.js';
@@ -22,6 +22,10 @@ describe('layer previews (#51)', () => {
       expect(statSync(file(layer)).size).toBeLessThan(PREVIEW_MAX_BYTES);
       expect(webpSize(readFileSync(file(layer)))).toEqual({ width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT });
     }
+  });
+  it('keeps no image of a layer that is gone, such as the merged Elevation layer', () => {
+    const files = readdirSync(join(process.cwd(), 'public', PREVIEW_DIR)).filter((name) => name.endsWith('.webp'));
+    expect(files.sort()).toEqual(LAYERS.map((layer) => layer.id + '.webp').sort());
   });
   it('points each layer to its image under the app base URL', () => {
     expect(layerPreview(LAYERS[1], '/base/')).toEqual({

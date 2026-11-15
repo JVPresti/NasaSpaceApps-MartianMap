@@ -14,15 +14,14 @@ const COLUMNS = [
         [['menu.mouse'], 'menu.help.look'],
         [['ui.esc'], 'menu.help.release.pause'],
         [['H'], 'menu.help.this.help'],
-        [['X'], 'menu.help.end.eva'],
+        // src/state/tableActions.js: in the habitat's cabin, E opens the plan and X finishes the EVA (#244)
+        [['E', '/', 'X'], 'tableprompt.help'],
       ],
     },
     {
-      // src/App.jsx: E or a click while facing the table in the habitat opens it (habitat-first flow).
       // src/plan/MissionMap.jsx: wheel zoom, drag to move, double click to fit the route; Esc pauses the table.
       title: 'menu.help.group.table',
       rows: [
-        [['E', '/', 'click'], 'menu.help.open.table'],
         [['menu.scroll'], 'menu.zoom.in.and.out'],
         [['menu.help.key.drag'], 'menu.help.pan'],
         [['menu.help.key.double.click'], 'menu.help.fit.route'],
@@ -32,8 +31,8 @@ const COLUMNS = [
   ],
   [
     {
-      // src/engine/sampling.js: click, KeyP, KeyE, KeyF, on the surface only. The HUD prompt names the action that applies now.
-      title: 'menu.help.sampling.outside',
+      // src/engine/sampling.js: click, KeyP, KeyE, KeyF. The HUD prompt names the action that applies now.
+      title: 'menu.help.sampling',
       rows: [
         [['click'], 'menu.help.collect'],
         [['P'], 'menu.help.photo'],
@@ -42,9 +41,10 @@ const COLUMNS = [
       ],
     },
     {
-      // src/components/shortcuts.js (L, Shift+L, 0: outside and at the mission table) and src/sources/sourcesStore.js (C).
-      title: 'menu.help.layers.sources',
+      // src/components/shortcuts.js (M, L, Shift+L, 0) and src/sources/sourcesStore.js (C).
+      title: 'menu.help.both.views',
       rows: [
+        [['M'], 'menu.help.switch.table'],
         [['L'], 'menu.help.layer.next'],
         [['menu.shift', 'L'], 'menu.help.layer.previous'],
         [['0'], 'menu.help.layer.image'],

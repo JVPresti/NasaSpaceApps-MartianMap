@@ -4,6 +4,7 @@
 import { create } from 'zustand';
 import { createInitialEvaState } from './eva.js';
 import { LOOK_DEFAULTS, clampLookSettings, readLookSettings, writeLookSettings } from '../engine/lookSettings.js';
+import { checkNeeds, DEFAULT_NEEDS, OBJECTIVE_DEFAULTS } from '../sim/missionNeeds.js';
 
 /** Plain data only. Units are in the field names. Coordinates: x east, z south, metres from Cheyava Falls. */
 export function createInitialState() {
@@ -12,10 +13,9 @@ export function createInitialState() {
     mode: 'walk',
     // Where the astronaut is in the flow: 'habitat' | 'egress' | 'eva' | 'debrief' (src/state/flow.js).
     stage: 'habitat',
-    // Inside the habitat, written by the engine bridge 5 times per second while the stage is 'habitat':
-    // nearTable is true when the astronaut stands at the mission table and faces it (E or a click opens it);
-    // zone is the walk zone they stand in ('main', 'airlock', ...), or null outside.
-    habitat: { nearTable: false, zone: null },
+    // Inside the habitat, written by the engine bridge 5 times per second while the stage is 'habitat': the walk
+    // zone the astronaut stands in ('main', 'airlock', ...), or null outside. The habitat HUD reads it.
+    habitat: { zone: null },
     // Clock fields: docs/STATE_AND_ENGINE.md. anchorMs is the wall timestamp elapsedSec is measured from;
     // startedAtMs is the first start. The mission clock fills anchorMs and the fields after it when it starts.
     mission: {
@@ -24,7 +24,14 @@ export function createInitialState() {
     },
     suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
     navigation: { x: null, z: null, trueX: null, trueZ: null, headingDeg: null, slopeDeg: null, waypointRangeM: null, waypointBearingDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // x/z: the estimate the HUD shows (#42); trueX/trueZ: the true position, engine bridge only
-    route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [], profiles: null, profile: 'fastest' },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js; profiles and profile: the routes the table compares and the one chosen (#245, src/sim/routeProfiles.js)
+    // stops, dropped, planReasons, budget, weights: the plan from the crew's needs (src/sim/missionNeeds.js, written by
+    // src/plan/useRoutePlanner.js): stops chosen in walking order, stops dropped and why, the plan's reason codes, the
+    // budget and the risk weights; explain: why each leg bends (#246, src/sim/routeExplain.js), one entry per route.legs
+    // entry. Codes and numbers only: the table writes the sentences.
+    route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [], profiles: null, profile: 'fastest', stops: [], dropped: [], planReasons: [], budget: null, weights: null, explain: [] },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js; profiles and profile: the routes the table compares and the one chosen (#245, src/sim/routeProfiles.js)
+    // The crew's needs at the mission table (#265, goal 2). setNeeds changes them until the EVA begins (locked: the first
+    // switch to Walk, the moment src/state/simulation.js starts the EVA); the route re-plans from them in Plan mode.
+    needs: { ...DEFAULT_NEEDS, locked: false },
     environment: { dustOpacity: 0, tempC: null, windMs: null, pressurePa: null, doseRateUgyH: null, doseUgy: null },
     // Active hazard areas for the minimap (#60): [{ id, x, z, radiusM, active }], metres. Empty means
     // "no zone known", not "safe". No writer yet; the event work (#24-#26) fills it. The minimap draws
@@ -101,7 +108,35 @@ export function createStoreAdapter(store = useMissionStore) {
 export const storeAdapter = createStoreAdapter();
 
 // Small actions for the interface.
-export const setMode = (mode) => { if (mode !== 'walk' && mode !== 'plan') throw new Error('mode must be walk or plan'); useMissionStore.setState({ mode }); };
+// Walking no longer begins the EVA: the astronaut walks in the habitat first (habitat-first flow, #260). Begin EVA
+// (beginEgress in src/state/flow.js) locks the crew's needs.
+export const setMode = (mode) => {
+  if (mode !== 'walk' && mode !== 'plan') throw new Error('mode must be walk or plan');
+  useMissionStore.setState({ mode });
+};
+
+/**
+ * Change the crew's needs at the mission table (src/sim/missionNeeds.js): objective ('sortie' | 'cheyava' |
+ * 'bright-angel'), crew (1 | 2), timeMin, o2Pct, batteryPct and risk ('cautious' | 'standard' | 'bold'). Numbers are
+ * clamped to their range; an unknown key or value throws. A new objective without a timeMin in the same update takes
+ * that objective's default time (OBJECTIVE_DEFAULTS: 30 min for the sortie, 2 h for the full EVA). Once the EVA has
+ * begun the needs are locked and nothing changes. The terrain preference is the route profile (chooseRouteProfile),
+ * not a need.
+ * @param {object} partial
+ * @returns {boolean} true when the needs changed
+ */
+export const setNeeds = (partial) => {
+  const checked = checkNeeds(partial);
+  let changed = false;
+  useMissionStore.setState((s) => {
+    const newObjective = checked.objective !== undefined && checked.objective !== s.needs.objective;
+    const update = newObjective && checked.timeMin === undefined ? { ...checked, ...OBJECTIVE_DEFAULTS[checked.objective] } : checked;
+    if (s.needs.locked || Object.entries(update).every(([k, v]) => s.needs[k] === v)) return s;
+    changed = true;
+    return { needs: { ...s.needs, ...update } };
+  });
+  return changed;
+};
 export const setLayer = (layer) => storeAdapter.set('view.layer', layer);
 export const setSky = (sky) => storeAdapter.set('view.sky', sky);
 export const setRoutePath = (path) => storeAdapter.set('route.path', path);
@@ -128,14 +163,20 @@ export function withRouteProfile(route, id) {
     climbM: profile.climbM,
     steepestSlopeDeg: profile.steepestSlopeDeg,
     etaSec: profile.timeSec,
+    explain: Array.isArray(profile.explain) ? profile.explain : [],
     reason: 'Planned route',
     nextIndex: 0,
     visited: [],
   };
 }
-/** Choose a route profile at the mission table (#245). Does nothing when that profile has no route. */
+/**
+ * Choose a route profile at the mission table (#245). Does nothing when that profile has no route, or while a solo crew
+ * walks the radio-contact route (src/sim/missionNeeds.js holds it there): route.profile then keeps the choice made for a
+ * pair, which is the route again when the crew goes back to two (round 1 review, P22).
+ */
 export const chooseRouteProfile = (id) => {
   useMissionStore.setState((state) => {
+    if (state.needs?.crew === 1 && state.route.profiles?.radio?.ok) return state;
     if (state.route.profile === id && state.route.path === state.route.profiles?.[id]?.path) return state;
     const route = withRouteProfile(state.route, id);
     return route ? { route } : state;
@@ -150,7 +191,23 @@ export const setHazardEnabled = (eventId, enabled) => {
 };
 // A restart must not lose the player's look settings (#102): the preference survives resetStore, and a new
 // page load re-reads it from 'marswalk.look'.
-export const resetStore = () => useMissionStore.setState((s) => ({ ...createInitialState(), settings: s.settings }), true);
+/**
+ * Back to a fresh mission state. The look settings always survive. With keepNeeds (the debrief's Restart and the pause
+ * menu's End the EVA, product decision D9) the crew's six needs and the route profile chosen at the table survive too,
+ * unlocked for the next EVA; everything else, the hazard switches included, starts over. A page load starts from the
+ * defaults (the first sortie).
+ * @param {{ keepNeeds?: boolean }} [options]
+ */
+export const resetStore = ({ keepNeeds = false } = {}) => useMissionStore.setState((s) => {
+  const fresh = createInitialState();
+  if (!keepNeeds) return { ...fresh, settings: s.settings };
+  return {
+    ...fresh,
+    settings: s.settings,
+    needs: { ...s.needs, locked: false },
+    route: { ...fresh.route, profile: s.route.profile },
+  };
+}, true);
 
 /**
  * Partial update of the look preference (#102): clamps, writes the store and saves it in this browser.

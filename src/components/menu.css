@@ -438,6 +438,8 @@
 }
 
 .start-primary:hover { background: #ff8148; }
+/* The full EVA (#265): a secondary choice, a whole row under the main action. */
+.start-full { grid-column: 1 / -1; }
 .start-primary:disabled { opacity: 0.7; cursor: wait; }
 
 .start-status {

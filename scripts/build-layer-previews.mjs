@@ -1,24 +1,22 @@
-// Renders one preview image per Plan-mode data layer (#51), from the engine itself, so a preview always matches what
-// the layer looks like in the app.
+// Renders one preview image per map layer (#51) with the mission table's own map painter (src/plan/mapLayers.js
+// paintMap), so a preview always matches what the layer looks like on the table, where the previews pop up beside the
+// layer buttons. Radio shadow and Exposure are drawn on the table only, so the 3D engine cannot show them.
 //
 //   npm run previews
 //   npm run previews -- --browser "C:/path/to/chrome.exe"
 //
-// Starts the Vite dev server (the store hook window.__missionStore only exists in development), opens the app with
-// ?mock=1 in a browser window of exactly WIDTH x HEIGHT, hides every overlay (HUD, Plan chrome, the position marker's
-// canvas) and clears the waypoints and the route, and for each layer of src/plan/layers.js shows Plan mode's top-down
-// camera with a clear-day sky and no dust, then saves the view as WebP into
-// public/marswalk/previews/<layer id>.webp. Every image has the same size and framing and must stay under MAX_BYTES.
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+// Starts the Vite dev server and opens the app in a headless browser, so the page can import the app's own modules
+// and data. It waits for the engine to place the habitat, to take the mast where engine.getHabitatMast() puts it
+// (src/engine/index.js), then for each layer of src/plan/layers.js paints the same 1000 x 625 m view of the full EVA
+// route, at the standard risk setting, crops it to PREVIEW_WIDTH x PREVIEW_HEIGHT and saves it as WebP into
+// public/marswalk/previews/<layer id>.webp, under MAX_BYTES. A preview of a layer that is gone is deleted.
+import { existsSync, mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import puppeteer from 'puppeteer-core';
-import { LAYERS } from '../src/plan/layers.js';
-import { PREVIEW_HEIGHT, PREVIEW_WIDTH, PREVIEW_DIR, PREVIEW_MAX_BYTES } from '../src/plan/layerPreviews.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const outDir = join(root, 'public', PREVIEW_DIR);
 const args = process.argv.slice(2);
 const arg = (name, fallback) => { const i = args.indexOf('--' + name); return i >= 0 ? args[i + 1] : fallback; };
 
@@ -35,51 +33,87 @@ const CANDIDATES = [
 const browserPath = arg('browser') || CANDIDATES.find((p) => p && existsSync(p));
 if (!browserPath) { console.error('No Chrome or Edge found. Pass --browser <path to chrome or msedge>.'); process.exit(1); }
 
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+/**
+ * The square painted for every preview, of which the middle PREVIEW_HEIGHT rows are kept: 1000 x 625 m around the full
+ * EVA route (habitat airlock at x 535 z 574, Cheyava Falls at 0 0), its east edge on the tile's (x 711).
+ */
+const CROP = { x0: 711 - 1000, z0: 287 - 500, size: 1000 };
 
 const server = await createServer({ root, server: { port: 5199, strictPort: false }, logLevel: 'error' });
 await server.listen();
 const url = server.resolvedUrls.local[0];
+// layers.js imports the language catalogs as JSON, which plain Node cannot, so the list comes through Vite too
+const { PREVIEW_DIR, PREVIEW_HEIGHT, PREVIEW_MAX_BYTES, PREVIEW_WIDTH } = await server.ssrLoadModule('/src/plan/layerPreviews.js');
+const { LAYERS } = await server.ssrLoadModule('/src/plan/layers.js');
+const outDir = join(root, 'public', PREVIEW_DIR);
 const browser = await puppeteer.launch({
-  executablePath: browserPath, headless: false,   // a real window: WebGL 2 on the GPU, like the app
-  defaultViewport: { width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT, deviceScaleFactor: 1 },
-  args: ['--window-size=' + (PREVIEW_WIDTH + 40) + ',' + (PREVIEW_HEIGHT + 160), '--hide-scrollbars'],
+  executablePath: browserPath,
+  headless: true,
+  args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
 });
 
 try {
   const page = await browser.newPage();
-  await page.goto(url + '?mock=1&tier=high', { waitUntil: 'load' });
-  await page.waitForFunction(() => window.__missionStore && window.__marswalk && document.querySelector('canvas'), { timeout: 120000 });
-  await wait(4000);   // textures, rocks and the first frames
-  // only the engine's own canvas: every overlay, including the 2D canvas of the position marker, is hidden
-  await page.addStyleTag({ content: 'body * { visibility: hidden !important; } .engine-view > canvas { visibility: visible !important; }' });
-  await page.evaluate(() => {
-    window.__missionStore.setState((s) => ({
-      mode: 'plan',
-      view: { ...s.view, sky: 'clear_day', skyBlend: 0, layer: 0 },
-      environment: { ...s.environment, dustOpacity: 0.45 },
-      route: { ...s.route, path: null, shelter: null },
-    }));
+  await page.goto(url, { waitUntil: 'load' });
+  // the habitat is placed once the engine has loaded; the mast is fixed on it (engine.getHabitatMast)
+  await page.waitForFunction(() => { try { return Number.isFinite(window.__marswalk?.habitat?.().x); } catch { return false; } }, { timeout: 240000 });
+  const mast = await page.evaluate(() => {
+    const h = window.__marswalk.habitat(), y = window.__marswalk.habitatY();
+    // model +X is the airlock end; rotation.y = atan2(-dir.z, dir.x), so local (x, z) turns to (x dirX - z dirZ, x dirZ + z dirX)
+    const lx = -1.9, ly = 4.35, lz = 3.4;
+    return { x: h.x + lx * h.dirX - lz * h.dirZ, y: y + ly, z: h.z + lx * h.dirZ + lz * h.dirX };
   });
-  await wait(4000);   // preset shadows and the camera move into Plan mode; Plan mode loads route.json's waypoints
-  await page.evaluate(() => window.__missionStore.setState((s) => ({ route: { ...s.route, waypoints: [], path: null, shelter: null } })));
-  await wait(1500);
-  mkdirSync(outDir, { recursive: true });
+  console.log(`habitat mast at (${mast.x.toFixed(1)}, ${mast.y.toFixed(1)}, ${mast.z.toFixed(1)})`);
 
+  mkdirSync(outDir, { recursive: true });
   for (const layer of LAYERS) {
-    await page.evaluate((index) => window.__missionStore.setState((s) => ({ view: { ...s.view, layer: index } })), layer.index);
-    await wait(800);
-    // Plan mode puts the waypoints and the route back when the layer changes: clear them again for every image
-    await page.evaluate(() => window.__missionStore.setState((s) => ({ route: { ...s.route, waypoints: [], path: null, shelter: null } })));
-    await wait(1200);
-    let quality = 80, image;
-    do {
-      image = await page.screenshot({ type: 'webp', quality, clip: { x: 0, y: 0, width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT } });
-      quality -= 8;
-    } while (image.length > PREVIEW_MAX_BYTES && quality > 30);
-    if (image.length > PREVIEW_MAX_BYTES) throw new Error(`${layer.id}: ${image.length} bytes, over ${PREVIEW_MAX_BYTES}`);
-    writeFileSync(join(outDir, layer.id + '.webp'), image);
-    console.log(`${layer.id.padEnd(10)} ${(image.length / 1024).toFixed(1)} KB (quality ${quality + 8})`);
+    const image = await page.evaluate(async ({ index, crop, mast, width, height, maxBytes }) => {
+      const { paintMap, slopeGrid } = await import('/src/plan/mapLayers.js');
+      const { decodeTerrain } = await import('/src/sim/costGrid.js');
+      const { radioShadowMask } = await import('/src/sim/radio.js');
+      const { decodeSkyViewGrid } = await import('/src/sim/skyView.js');
+      const pixels = (src) => new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+          const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+          resolve({ w: c.width, h: c.height, data: g.getImageData(0, 0, c.width, c.height).data });
+        };
+        img.onerror = () => reject(new Error(src + ' did not load'));
+        img.src = src;
+      });
+      window.__previewData ??= (async () => {
+        const terrain = decodeTerrain(await (await fetch('/marswalk/assets/terrain.json')).json());
+        return {
+          ortho: await pixels('/marswalk/assets/ortho_lo.jpg'),
+          mask: await pixels('/marswalk/assets/outcrop_mask.jpg'),
+          terrain,
+          slopes: slopeGrid(terrain),
+          radio: radioShadowMask(terrain, mast),
+          sky: decodeSkyViewGrid(await (await fetch('/data/sky_view.json')).json()),
+        };
+      })();
+      const data = await window.__previewData;
+      const square = document.createElement('canvas'); square.width = width; square.height = width;
+      const g = square.getContext('2d');
+      const out = g.createImageData(width, width);
+      paintMap(out.data, width, crop, index, data);
+      g.putImageData(out, 0, 0);
+      const frame = document.createElement('canvas'); frame.width = width; frame.height = height;
+      frame.getContext('2d').drawImage(square, 0, (width - height) / 2, width, height, 0, 0, width, height);
+      let quality = 0.8, dataUrl;
+      do { dataUrl = frame.toDataURL('image/webp', quality); quality -= 0.08; } while (dataUrl.length * 0.75 > maxBytes && quality > 0.3);
+      return dataUrl;
+    }, { index: layer.index, crop: CROP, mast, width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT, maxBytes: PREVIEW_MAX_BYTES });
+    const bytes = Buffer.from(image.replace(/^data:image\/webp;base64,/, ''), 'base64');
+    if (bytes.length > PREVIEW_MAX_BYTES) throw new Error(`${layer.id}: ${bytes.length} bytes, over ${PREVIEW_MAX_BYTES}`);
+    writeFileSync(join(outDir, layer.id + '.webp'), bytes);
+    console.log(`${layer.id.padEnd(10)} ${(bytes.length / 1024).toFixed(1)} KB`);
+  }
+  const ids = new Set(LAYERS.map((layer) => layer.id + '.webp'));
+  for (const file of readdirSync(outDir).filter((f) => f.endsWith('.webp') && !ids.has(f))) {
+    unlinkSync(join(outDir, file));
+    console.log(`removed ${file}: no layer by that id`);
   }
   console.log(`Wrote ${LAYERS.length} previews of ${PREVIEW_WIDTH} x ${PREVIEW_HEIGHT} px to public/${PREVIEW_DIR}/`);
 } finally {

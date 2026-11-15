@@ -3,6 +3,7 @@ import hazards from '../../../public/data/hazards.json';
 import { setLanguage, translateText } from '../../i18n/index.js';
 import { validateEvent } from '../eventEngine.js';
 import radiation from './radiation.json';
+import { eventStartSec, missionEventDefinitions } from '../missions.js';
 
 afterEach(() => setLanguage('en'));
 
@@ -48,5 +49,14 @@ describe('radiation alert event data', () => {
     setLanguage('es');
     expect(translateText(radiation.alert.text)).toMatch(/tasa de dosis elevada/);
     expect(translateText(radiation.alert.text)).toMatch(/ALARA/);
+  });
+
+  it('leaves its start time to the mission: T+720 s and the 12-minute profile in the full EVA (#265)', () => {
+    expect(radiation.trigger).toEqual({ type: 'manual' });
+    expect(eventStartSec('bright-angel', 'radiation')).toBe(720);
+    expect(missionEventDefinitions('bright-angel', [radiation])[0].timeline).toEqual(radiation.timeline);
+    const [first] = missionEventDefinitions('sortie', [radiation]);
+    expect(first.timeline.at(-1).atSec).toBe(60);
+    expect(first.timeline.map((entry) => entry.set)).toEqual(radiation.timeline.map((entry) => entry.set));
   });
 });

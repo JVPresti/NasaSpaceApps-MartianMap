@@ -8,18 +8,17 @@ import './habitat.css';
 const AIRLOCK_ZONES = new Set(['inner', 'airlock', 'hatch']);
 
 /**
- * The habitat HUD (habitat-first flow): inside, before the EVA, the suit is on standby, so none of the EVA HUD shows.
- * Only where the astronaut is, the local Mars time and what to do next: walk to the mission table and press E or click.
- * Reads the store only; `habitat.nearTable` and `habitat.zone` come from the engine bridge 5 times per second.
+ * The habitat HUD (habitat-first flow, #260): inside, before the EVA, the suit is on standby, so none of the EVA HUD
+ * shows. Only where the astronaut is and the local Mars time. The table's own prompt ("[E] Open plan", "[X] Finish
+ * EVA", src/state/tableActions.js) floats over the table in the cabin, so this HUD adds a line only in the airlock,
+ * where the hatch stays shut until Begin EVA. Reads the store only; `habitat.zone` comes from the engine bridge.
  */
 export default function HabitatHud() {
-  const { sol, lmst, nearTable, zone } = useMissionStore(useShallow((s) => ({
+  const { sol, lmst, zone } = useMissionStore(useShallow((s) => ({
     sol: s.mission.sol,
     lmst: s.mission.lmst,
-    nearTable: s.habitat?.nearTable === true,
     zone: s.habitat?.zone ?? null,
   })));
-  const inAirlock = AIRLOCK_ZONES.has(zone);
 
   return (
     <div className="habitat-hud" aria-live="polite">
@@ -32,16 +31,7 @@ export default function HabitatHud() {
         </p>
       </section>
 
-      <div className="habitat-dot" aria-hidden="true" />
-
-      {nearTable ? (
-        <p className="habitat-prompt habitat-prompt-action">
-          <kbd>E</kbd>
-          <span>{t('habitat.openTable')}</span>
-        </p>
-      ) : (
-        <p className="habitat-prompt">{inAirlock ? t('habitat.hatchShut') : t('habitat.goToTable')}</p>
-      )}
+      {AIRLOCK_ZONES.has(zone) && <p className="habitat-prompt">{t('habitat.hatchShut')}</p>}
     </div>
   );
 }

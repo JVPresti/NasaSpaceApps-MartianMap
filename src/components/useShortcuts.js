@@ -2,13 +2,14 @@ import { useEffect } from 'react';
 import { handleShortcut } from './shortcuts.js';
 
 /**
- * Layer and visor keys. App turns them on where they apply: on the surface and at the mission table, never while
- * loading, behind a menu or walking in the habitat (habitat-first flow).
+ * Disabled while loading or recovering from an engine failure, and whenever the EVA is not playing.
+ * `onMode` is the mode button's handler, so M takes the same path as a click (#174).
  */
-export function useShortcuts(enabled) {
+export function useShortcuts(enabled, onMode) {
   useEffect(() => {
     if (!enabled) return undefined;
-    window.addEventListener('keydown', handleShortcut);
-    return () => window.removeEventListener('keydown', handleShortcut);
-  }, [enabled]);
+    const onKey = (event) => handleShortcut(event, onMode ? { onMode } : undefined);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [enabled, onMode]);
 }

@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CLOCK_STORAGE_KEY, createClockSession, readClockSession, startMissionClock, writeClockSession } from '../sim/missionClock.js';
-import { resetStore, useMissionStore } from './store.js';
+import { resetStore, setNeeds, useMissionStore } from './store.js';
 import { pauseEva, resumeEva, restartEva } from './evaSession.js';
+import { beginEgress } from './flow.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -246,7 +247,7 @@ describe('EVA restart', () => {
       ...s,
       mode: 'walk',
       stage: 'debrief',
-      habitat: { nearTable: true, zone: 'main' },
+      habitat: { zone: 'main' },
       navigation: { ...s.navigation, x: 42, z: -17 },
       suit: { ...s.suit, oxygenPct: 55 },
       route: { ...s.route, path: [[0, 0], [10, 10]], distanceM: 14.1 },
@@ -273,7 +274,7 @@ describe('EVA restart', () => {
     expect(engine.resets).toBe(1);
     expect(engine.resetState.mode).toBe('walk');   // a new EVA starts on foot inside the habitat
     expect(engine.resetState.stage).toBe('habitat');
-    expect(engine.resetState.habitat).toEqual({ nearTable: false, zone: null });
+    expect(engine.resetState.habitat).toEqual({ zone: null });
     expect(engine.resetState.navigation.x).toBeNull();
     expect(engine.resetState.suit.oxygenPct).toBeNull();
     expect(engine.resetState.route.path).toBeNull();
@@ -338,5 +339,16 @@ describe('EVA restart', () => {
     expect(result.message).toMatch(/simulation stop: stop failed/);
     expect(startSimulation).not.toHaveBeenCalled();
     expect(useMissionStore.getState().mission.paused).toBe(true);
+  });
+
+  it('keeps the needs of the crew and the route profile for the next EVA, unlocked (D9)', () => {
+    setNeeds({ objective: 'cheyava', crew: 1, risk: 'cautious' });
+    useMissionStore.setState((state) => ({ route: { ...state.route, profile: 'gentlest' } }));
+    beginEgress();   // Begin EVA locks them
+    restartEva({ engine: fakeEngine(), storage: memoryStorage() });
+    const { needs, route, mode } = useMissionStore.getState();
+    expect(needs).toMatchObject({ objective: 'cheyava', crew: 1, risk: 'cautious', locked: false });
+    expect(route.profile).toBe('gentlest');
+    expect(mode).toBe('walk');   // a new EVA starts on foot in the habitat (#260)
   });
 });

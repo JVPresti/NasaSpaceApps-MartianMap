@@ -15,14 +15,17 @@ import { FOCUSABLE, focusTarget } from './focus.js';
  * the scene loads behind it. The main action stays unavailable until then and shows the real progress; Controls and
  * Sources already work. It is a modal dialog, so the scene behind it is inert (App also hides the top
  * bar and the table while it is open). Nothing runs behind it: the EVA's clock, suit and events start when the
- * airlock cycle after Begin EVA ends. Walking in the habitat needs the mouse, so the click captures it; after a
- * refused capture the screen offers drag-to-look (#197).
- * @param {{ busy: boolean, notice: string|null, freeLook?: boolean,
+ * airlock cycle after Begin EVA ends. Walking in the habitat needs the mouse, so the click captures it; after a refused
+ * capture the screen offers drag-to-look (#197).
+ * The main action enters the habitat on the first mission (the first sortie, #265). `onFullEva`, when given, adds one
+ * secondary button that enters it on the full EVA instead (the Cheyava Falls objective); the table's objective can
+ * change either until Begin EVA.
+ * @param {{ busy: boolean, notice: string|null, freeLook?: boolean, lockFailed?: boolean,
  *   scene?: { status: string, stage?: string, progress?: number }|null,
- *   lockFailed?: boolean, onStart: () => void, onStartWithoutCapture?: () => void, onSources?: () => void }} props
+ *   onStart: () => void, onStartWithoutCapture?: () => void, onFullEva?: () => void, onSources?: () => void }} props
  *   scene is App's load state. A null scene counts as ready, so a caller that already has the engine can use the screen as it was.
  */
-export default function StartScreen({ busy, notice, freeLook = false, lockFailed = false, scene = null, onStart, onStartWithoutCapture, onSources }) {
+export default function StartScreen({ busy, notice, freeLook = false, lockFailed = false, scene = null, onStart, onStartWithoutCapture, onFullEva, onSources }) {
   const [controls, setControls] = useState(false);
   const startRef = useRef(null);
   const closeRef = useRef(null);
@@ -85,6 +88,11 @@ export default function StartScreen({ busy, notice, freeLook = false, lockFailed
               {lockFailed && !freeLook && onStartWithoutCapture && (
                 <button type="button" className="ui-button ghost" onClick={onStartWithoutCapture} disabled={busy}>
                   {t('menu.continue.without.mouse.capture')}
+                </button>
+              )}
+              {onFullEva && (
+                <button type="button" className="ui-button ghost start-full" onClick={onFullEva} disabled={busy || !ready}>
+                  {t('mission.start.full')}
                 </button>
               )}
               <button type="button" className="ui-button ghost" onClick={() => setControls(true)}>{t('menu.controls')}</button>

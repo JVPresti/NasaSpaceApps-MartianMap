@@ -20,6 +20,7 @@ import { parseShelters, SHELTERS_PATH } from '../sim/shelters.js';
 import { HAZARDS_PATH } from '../data/provenance.js';
 import { loadDataFile } from '../data/dataFiles.js';
 import { suitConstantsFromHazards } from '../sim/suitModel.js';
+import { startConsumables } from '../sim/legCosts.js';
 import { startSuitRunner } from '../sim/suitRunner.js';
 import { startPartnerRunner } from '../sim/partnerRunner.js';
 import { legCostSources, startLegCostRunner } from '../sim/legCosts.js';
@@ -61,6 +62,9 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
   if (mock) return () => {};
   const slopeDetour = startSlopeDetourService();
   const stopsReady = loadStops().catch((e) => { console.error('stops.json not loaded, arrival radius 5 m:', e); return null; });
+  // Usually loaded long before Begin EVA (the table takes a while): the event runner reads each stop's arrival radius.
+  let loadedStops = null;
+  stopsReady.then((stops) => { loadedStops = stops; });
   let stopped = false, suit = null, legs = null, clock = null, eva = null, partner = null, environment = null, navigation = null;
   const environmentData = Promise.all([
     loadEnvironmentFile(MEDA_SOL_PATH, 'meda_sol.json', parseMedaSol),
@@ -81,7 +85,8 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
 
   const shelters = loadDataFile(SHELTERS_PATH).catch(() => null);
   // The habitat entry is the first shelter in the real file (the foot of the airlock steps), not the HAB route waypoint.
-  // null when the file is missing or invalid: the suit runner then uses its DEFAULT_HABITAT and the EVA statistics do not start.
+  // null when the file is missing or invalid: the suit runner then uses its DEFAULT_HABITAT and the EVA statistics count
+  // only the habitat's walk zones as being back.
   const habitatEntry = shelters.then((data) => {
     try {
       return data ? parseShelters(data)[0] ?? null : null;
@@ -119,10 +124,19 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
       getMast: () => (typeof engine.getHabitatMast === 'function' ? engine.getHabitatMast() : null),
     });
     store.setState((s) => ({ route: departRoute(s.route) }));
+    // The crew's needs as they were locked at Begin EVA: the mission and the consumables the walk starts with.
+    const needs = store.getState().needs ?? {};
+    // A crew of one walks alone (D8): no partner on the surface, so no EV2 chip, no separation alert and no hand-over.
+    // A restart puts the scripted partner back at the airlock (engine.resetSession), for a crew of two.
+    const solo = needs.crew === 1;
+    if (solo && typeof engine.setPartnerSource === 'function') {
+      try { engine.setPartnerSource(null); } catch (e) { console.warn('partner not hidden:', e); }
+    }
     const waypoints = startWaypointRunner({ store });
     stopsReady.then((stops) => { if (stops) waypoints.setStops(stops); });
     eva = {
-      events: startEventRunner({ store, onEventLog: (entry) => recordEvaEvent(store, entry) }),
+      // The mission (#265) is the one the crew's objective defines, locked by this same switch to Walk (setMode).
+      events: startEventRunner({ store, objective: needs.objective, stops: loadedStops, onEventLog: (entry) => recordEvaEvent(store, entry) }),
       offRoute: startOffRoute({ store }),
       waypoints,
       stats: null,
@@ -135,20 +149,25 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     // The debrief statistics (#43): distance, minima and history from this EVA's clock, ended at the real HAB entry.
     habitatEntry.then((entry) => {
       if (stopped) return;
-      if (!entry) { console.error('shelters.json not loaded, EVA statistics not started'); return; }
+      // Without the HAB entry the runner still starts on the habitat's walk zones alone, so the EVA can still be
+      // finished at the cabin table (src/state/tableActions.js).
+      if (!entry) console.error('shelters.json not loaded: only the habitat walk zones count as back at the habitat');
       try {
         // the whole habitat counts as being back, not only the circle at the foot of the steps (#244)
         const habitatZoneAt = typeof engine.habitatZoneAt === 'function' ? (x, z) => engine.habitatZoneAt(x, z) : undefined;
-        eva.stats = startEvaRunner({ store, habitat: { x: entry.x, z: entry.z }, habitatZoneAt });
+        eva.stats = startEvaRunner({ store, habitat: entry ? { x: entry.x, z: entry.z } : null, habitatZoneAt });
       } catch (e) {
         console.error('EVA statistics not started:', e);
       }
     });
     suitData.then(({ constants, habitat }) => {
       if (stopped) return;
-      suit = startSuitRunner({ store, heightAt: engine.heightAt, constants, habitat });   // full O2 and battery
+      // O2 and battery as the crew set them at the mission table, the same start the plan and route.totals use
+      const { o2StartG, batteryStartWh } = startConsumables(needs, constants);
+      const start = { o2G: o2StartG, batteryWh: batteryStartWh };
+      suit = startSuitRunner({ store, heightAt: engine.heightAt, constants, habitat, start });
       // the partner's suit and the separation limit (#70), read only through the partner source
-      if (engine.getPartner) partner = startPartnerRunner({ store, readPartner: engine.getPartner, heightAt: engine.heightAt, lineOfSight: engine.lineOfSight, constants, habitat });
+      if (engine.getPartner && !solo) partner = startPartnerRunner({ store, readPartner: engine.getPartner, heightAt: engine.heightAt, lineOfSight: engine.lineOfSight, constants, habitat, start });
     }, () => {});
   }
 

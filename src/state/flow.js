@@ -70,7 +70,8 @@ function advance(store, to) {
 export function beginEgress(store = useMissionStore) {
   const from = store.getState().stage ?? STAGE.HABITAT;
   if (!canAdvance(from, STAGE.EGRESS)) throw new Error(`flow: cannot go from ${from} to ${STAGE.EGRESS}`);
-  store.setState({ stage: STAGE.EGRESS, mode: 'walk' });
+  // The route and the crew's needs are fixed from here (#265): the EVA starts from them at the end of the cycle.
+  store.setState((s) => ({ stage: STAGE.EGRESS, mode: 'walk', needs: s.needs ? { ...s.needs, locked: true } : s.needs }));
 }
 
 /** The cycle is over and the player stands outside: the EVA starts (see startSimulation). */

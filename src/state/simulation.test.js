@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 import hazardsJson from '../../public/data/hazards.json';
 import sheltersJson from '../../public/data/shelters.json';
 import stopsJson from '../../public/data/stops.json';
-import { createInitialState, pauseMission, resetStore, resumeMission, setMode, useMissionStore } from './store.js';
+import { createInitialState, pauseMission, resetStore, resumeMission, setMode, setNeeds, useMissionStore } from './store.js';
+import { listEvents } from './events.js';
 import { departRoute, startSimulation } from './simulation.js';
 import { beginEgress, completeEgress } from './flow.js';
 import { requestEvaEnd } from './eva.js';
@@ -212,6 +213,62 @@ describe('EVA start at the end of the airlock cycle', () => {
     stop();
   });
 
+  it('starts the suit from the O2 and battery the crew set at the table, and the events of its objective (#265)', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', vi.fn(respond));
+    planned();
+    setNeeds({ objective: 'cheyava', o2Pct: 60, batteryPct: 45 });
+    const stop = startSimulation(ENGINE);
+    await flush();
+    toSurface();   // Begin EVA locks the needs, and the end of the airlock cycle starts the EVA from them
+    await flush();
+    vi.advanceTimersByTime(1000);
+    const s = useMissionStore.getState();
+    expect(s.needs.locked).toBe(true);
+    expect(s.suit.oxygenPct).toBeCloseTo(60, 0);
+    expect(s.suit.batteryPct).toBeCloseTo(45, 0);
+    // the full EVA's times, read from the locked objective; a change now is refused and changes nothing
+    expect(setNeeds({ objective: 'sortie' })).toBe(false);
+    expect(listEvents().find((event) => event.id === 'dust-storm').trigger).toEqual({ type: 'missionTime', atSec: 480 });
+    stop();
+  });
+
+  it('walks a crew of one without the partner, and a pair with it (D8)', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', vi.fn(respond));
+    const partnerState = { x: entry.x + 2, z: entry.z, headingDeg: 0, speedMs: 0, visible: true };
+    const engineFor = () => ({
+      heightAt: () => 0,
+      setPartnerSource: vi.fn(),
+      getPartner: vi.fn(() => ({ id: 'ev2', color: [1, 0.5, 0], state: partnerState })),
+    });
+
+    planned();
+    setNeeds({ crew: 1 });
+    const solo = engineFor();
+    let stop = startSimulation(solo);
+    await flush();
+    toSurface();
+    await flush();
+    vi.advanceTimersByTime(2000);
+    expect(solo.setPartnerSource).toHaveBeenCalledWith(null);
+    expect(solo.getPartner).not.toHaveBeenCalled();     // no partner runner: no EV2 chip, no separation alert
+    expect(useMissionStore.getState().crew).toEqual([]);
+    stop();
+
+    resetStore();
+    planned();
+    const pair = engineFor();
+    stop = startSimulation(pair);
+    await flush();
+    toSurface();
+    await flush();
+    vi.advanceTimersByTime(2000);
+    expect(pair.setPartnerSource).not.toHaveBeenCalled();
+    expect(pair.getPartner).toHaveBeenCalled();
+    stop();
+  });
+
   it('keeps a paused mission paused at EVA 0:00 when the cycle ends behind a menu (#64)', async () => {
     vi.useFakeTimers();
     vi.stubGlobal('fetch', vi.fn(respond));
@@ -244,6 +301,9 @@ describe('EVA start at the end of the airlock cycle', () => {
       return Promise.resolve(name ? { ok: true, json: () => Promise.resolve(withEnvironment[name]) } : { ok: false, status: 404 });
     }));
     planned();
+    // The background values over 6 min: the full EVA, whose first event comes at T+480 s (the first mission's storm would
+    // come by T+240 s and its opacity is SIM).
+    setNeeds({ objective: 'cheyava' });
     const stop = startSimulation(ENGINE);
     await flush();
     vi.advanceTimersByTime(5000);
@@ -305,6 +365,31 @@ describe('startSimulation EVA wiring', () => {
     expect(ended.eva.summary.distanceM).toBeGreaterThan(0);
     expect(Object.isFrozen(ended.eva.summary)).toBe(true);
     stop();
+  });
+
+  it('still starts the EVA runner when shelters.json fails, so the EVA can be finished from the cabin', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-14T12:00:00Z'));
+    vi.stubGlobal('fetch', simulationFetch(Promise.reject(new Error('shelters.json: 404'))));
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const CABIN = { x: 541, z: 582 };
+    const engine = { ...ENGINE, habitatZoneAt: (x, z) => (Math.hypot(x - CABIN.x, z - CABIN.z) < 2 ? 'main' : null) };
+
+    const stop = startSimulation(engine);
+    toSurface();
+    useMissionStore.setState((state) => ({ navigation: { ...state.navigation, trueX: 500, trueZ: 600 } }));
+    await vi.advanceTimersByTimeAsync(300);
+    expect(useMissionStore.getState().eva).toMatchObject({ phase: 'active', atHabitat: false });
+
+    useMissionStore.setState((state) => ({ navigation: { ...state.navigation, trueX: CABIN.x, trueZ: CABIN.z } }));
+    await vi.advanceTimersByTimeAsync(300);
+    expect(useMissionStore.getState().eva).toMatchObject({ phase: 'active', atHabitat: true });
+    expect(requestEvaEnd(useMissionStore)).toBe(true);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(useMissionStore.getState().eva.phase).toBe('ended');
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('shelters.json not loaded'));
+    stop();
+    error.mockRestore();
   });
 
   it('never starts the EVA runner from a late shelter answer after the simulation stopped', async () => {

@@ -1,16 +1,40 @@
 // Pure formatting for the EVA debrief (#43). No React, no three.js and no store import: the screen formats the
 // frozen `eva.summary` only. Every helper returns a dash for a value that was not known when the EVA ended.
+// Words come from src/i18n (debrief.*) and decimals follow the interface language; SI unit symbols stay as they are.
+import { formatNumber, t, translateText } from '../i18n/index.js';
+import { REVIEW_RULES } from '../sim/routeReview.js';
 
 const DASH = '—';
 
 const isNumber = (value) => typeof value === 'number' && Number.isFinite(value);
 const pad2 = (value) => String(value).padStart(2, '0');
 
+/**
+ * The name of the planned stop a point lies at, or null: the nearest stop of the approved plan (not the habitat, the
+ * first waypoint) within REVIEW_RULES.reachM, the distance at which the route review counts a sample as at a place.
+ * The name is the stop's own label ("Light-toned patch"), else the part of the waypoint name after its code.
+ * @param {{ x?: number, z?: number } | null} point
+ * @param {Array<{ name?: string | null, label?: string | null, x: number, z: number }> | null} waypoints summary.plan.waypoints
+ */
+export function plannedStopAt(point, waypoints, reachM = REVIEW_RULES.reachM) {
+  if (!isNumber(point?.x) || !isNumber(point?.z) || !Array.isArray(waypoints)) return null;
+  let best = null;
+  for (const [index, w] of waypoints.entries()) {
+    if (index === 0 || !isNumber(w?.x) || !isNumber(w?.z)) continue;
+    const d = Math.hypot(w.x - point.x, w.z - point.z);
+    if (d <= reachM && (!best || d < best.d)) best = { d, w };
+  }
+  if (!best) return null;
+  if (typeof best.w.label === 'string' && best.w.label) return best.w.label;
+  const name = typeof best.w.name === 'string' ? best.w.name : '';
+  return name.includes(' · ') ? name.split(' · ').slice(1).join(' · ') : name || null;
+}
+
 /** Horizontal distance: metres below one kilometre, kilometres with two decimals above it. */
 export function formatDistance(m) {
   if (!isNumber(m) || m < 0) return DASH;
   const rounded = Math.round(m);
-  return rounded < 1000 ? rounded + ' m' : (m / 1000).toFixed(2) + ' km';
+  return rounded < 1000 ? rounded + ' m' : formatNumber(m / 1000, 2) + ' km';
 }
 
 /** Mission elapsed seconds in the log: 'T+1:02:05'. */
@@ -53,27 +77,67 @@ export function formatPercent(pct) {
 export function formatDose(ugy) {
   if (!isNumber(ugy)) return DASH;
   const abs = Math.abs(ugy);
-  if (abs > 0 && abs < 0.01) return '<0.01 µGy';
-  return (abs < 10 ? ugy.toFixed(2) : ugy.toFixed(1)) + ' µGy';
+  if (abs > 0 && abs < 0.01) return '<' + formatNumber(0.01, 2) + ' µGy';
+  return formatNumber(ugy, abs < 10 ? 2 : 1) + ' µGy';
 }
 
 /** '1 sample' or '4 samples'. */
 export function formatSamples(count) {
   if (!Number.isInteger(count) || count < 0) return DASH;
-  return count + (count === 1 ? ' sample' : ' samples');
+  return t(count === 1 ? 'debrief.samples.one' : 'debrief.samples.many', { n: count });
 }
 
-const ROUTE_KINDS = Object.freeze({
-  initial: 'Initial route',
-  replan: 'Route re-planned',
-  offroute: 'Off-route recovery',
-  slope: 'Slope detour',
-  event: 'Hazard re-route',
-});
+/** A margin in whole minutes, no sign for a positive value: '12 min', '-3 min'. Route review reasons (#274). */
+export function formatMinutes(sec) {
+  if (!isNumber(sec)) return DASH;
+  const minutes = Math.round(sec / 60);
+  return (minutes === 0 ? 0 : minutes) + ' min';
+}
+
+/** A signed time difference: seconds under a minute, whole minutes above. '+40 s', '+7 min', '-2 min', '0 s'. */
+export function formatSignedDelta(sec) {
+  if (!isNumber(sec)) return DASH;
+  const sign = sec > 0 ? '+' : '-';
+  const seconds = Math.round(Math.abs(sec));
+  if (seconds === 0) return '0 s';
+  return seconds < 60 ? sign + seconds + ' s' : sign + Math.round(seconds / 60) + ' min';
+}
+
+function signedWhole(value, unit) {
+  if (!isNumber(value)) return DASH;
+  const rounded = Math.round(value);
+  if (rounded === 0) return '0 ' + unit;
+  return (rounded > 0 ? '+' : '-') + Math.abs(rounded) + ' ' + unit;
+}
+
+/** A signed O2 difference in whole grams: '+41 g', '-5 g'. */
+export const formatSignedGrams = (g) => signedWhole(g, 'g');
+/** A signed distance difference in whole metres: '+120 m', '-8 m'. */
+export const formatSignedMetres = (m) => signedWhole(m, 'm');
+
+/** The short code of a route stop, as the map tags it: 'HAB' for the first, 'WP2' for 'WP2 · dune field edge'. */
+export function waypointCode(name, index) {
+  if (index === 0) return 'HAB';
+  if (typeof name !== 'string' || name === '') return DASH;
+  return name.split(' · ')[0];
+}
+
+const ROUTE_KINDS = Object.freeze(['initial', 'replan', 'offroute', 'slope', 'event']);
 
 /** A readable name for the route change kind the EVA runner classified. */
 export function routeKindLabel(kind) {
-  return ROUTE_KINDS[kind] ?? 'Route updated';
+  return t(ROUTE_KINDS.includes(kind) ? 'debrief.kind.' + kind : 'debrief.kind.other');
+}
+
+/**
+ * The reason of a route change in the interface language, where the catalog knows it. An event re-route reads
+ * "<alert text> (<event id>)" (src/state/events.js): the alert text is translated and the event id kept. Reasons the
+ * catalog does not know (a slope detour, a find, a planner error) stay as their writer wrote them.
+ */
+export function routeReasonText(reason) {
+  if (typeof reason !== 'string' || reason === '') return null;
+  const tagged = reason.match(/^(.*) \(([\w-]+)\)$/);
+  return tagged ? translateText(tagged[1]) + ' (' + tagged[2] + ')' : translateText(reason);
 }
 
 /** '412 m → 388 m' from the before/after snapshots, or null when neither distance is known. */

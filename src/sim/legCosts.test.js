@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildCostGrid, heightAt } from './costGrid.js';
-import { combinedTag, legCostSources, routeLegCosts, splitAtWaypoints, startLegCostRunner } from './legCosts.js';
+import { combinedTag, legCostSources, routeLegCosts, splitAtWaypoints, startConsumables, startLegCostRunner, waypointsForCosts, workCost } from './legCosts.js';
 import { planRoute } from './routePlanner.js';
 import { metabolicPowerW, o2RateGs, suitConstantsFromHazards } from './suitModel.js';
 
@@ -103,6 +103,53 @@ describe('totals and the margin at the habitat', () => {
   });
 });
 
+describe('work time at the stops (#247)', () => {
+  const hills = (x, z) => 20 * Math.sin(x / 80) + 10 * Math.cos(z / 60);
+  const wps = [{ name: 'HAB', x: 0, z: 0 }, { name: 'A', x: 300, z: 0 }, { name: 'B', x: 300, z: 400 }];
+  const path = wps.map((w) => [w.x, w.z]);
+  const bare = routeLegCosts(path, wps, hills, c);
+  const workSec = 900;
+  const worked = routeLegCosts(path, wps.map((w) => (w.name === 'A' ? { ...w, workSec } : w)), hills, c);
+  const workO2G = o2RateGs(c.designAvgW, c) * workSec;
+
+  it('raises the total time by the work time and the O2 by the work at the design average rate', () => {
+    expect(worked.totals.timeSec - bare.totals.timeSec).toBeCloseTo(workSec, 6);
+    expect(worked.totals.o2G - bare.totals.o2G).toBeCloseTo(workO2G, 6);
+    expect(workO2G).toBeCloseTo(workCost(workSec, c).o2G, 9);
+    expect(worked.totals.batteryWh - bare.totals.batteryWh).toBeCloseTo(workCost(workSec, c).batteryWh, 6);
+    expect(worked.totals.workSec).toBe(workSec);
+    expect(worked.totals.walkSec).toBeCloseTo(bare.totals.timeSec, 6);
+  });
+
+  it('puts the work on the leg that reaches the stop, and none on the walk home', () => {
+    expect(worked.legs[0].workSec).toBe(workSec);
+    expect(worked.legs[0].timeSec).toBeCloseTo(worked.legs[0].walkSec + workSec, 6);
+    expect(worked.legs[1].workSec).toBe(0);
+    expect(worked.legs[1].timeSec).toBeCloseTo(bare.legs[1].timeSec, 9);
+    expect(worked.totals.returnTimeSec).toBeCloseTo(bare.totals.returnTimeSec, 9);
+    expect(worked.totals.returnO2G).toBeCloseTo(bare.totals.returnO2G, 9);
+  });
+
+  it('takes the work out of the margin at the end of the plan', () => {
+    const rate = o2RateGs(metabolicPowerW(c.speedFlat, 0, c), c);
+    expect(bare.totals.marginSec - worked.totals.marginSec).toBeCloseTo(workO2G / rate, 6);
+    expect(worked.totals.arrivalO2G).toBeCloseTo(bare.totals.arrivalO2G - workO2G, 6);
+  });
+
+  it('counts no work for a missing or negative work time', () => {
+    expect(workCost(undefined, c)).toEqual({ timeSec: 0, o2G: 0, batteryWh: 0 });
+    expect(workCost(-5, c).timeSec).toBe(0);
+  });
+
+  it('starts from the O2 and battery the crew set', () => {
+    const half = routeLegCosts(path, wps, hills, c, startConsumables({ o2Pct: 50, batteryPct: 80 }, c));
+    expect(half.totals.arrivalO2G).toBeCloseTo(bare.totals.arrivalO2G - 0.5 * c.o2UsableG, 6);
+    expect(half.totals.arrivalBatteryWh).toBeCloseTo(bare.totals.arrivalBatteryWh - 0.2 * c.batteryWh, 6);
+    expect(half.totals.o2Pct).toBeCloseTo(bare.totals.o2Pct, 9);   // the use is still a share of the full tank
+    expect(startConsumables(null, c)).toEqual({ o2StartG: c.o2UsableG, batteryStartWh: c.batteryWh });
+  });
+});
+
 describe('tags from hazards.json', () => {
   it('takes the weakest tag of the inputs, never better than DERIVED', () => {
     expect(combinedTag(hazards, ['metabolic.model_mass'])).toBe('DERIVED');
@@ -118,6 +165,8 @@ describe('tags from hazards.json', () => {
     expect(s['route.legs.o2G'].tag).toBe('SIM');
     expect(s['route.legs.batteryPct'].tag).toBe('SIM');
     expect(s['route.totals.marginSec'].tag).toBe('SIM');
+    expect(s['route.legs.workSec'].tag).toBe('SIM');
+    expect(s['route.totals.workO2G'].tag).toBe('SIM');
   });
 
   it('tags the margin at the end of the plan like the HUD margin now (#195)', () => {
@@ -149,6 +198,60 @@ describe('runner on a store', () => {
     store.setState((s) => ({ route: { ...s.route, path: null } }));
     expect(store.getState().route.legs).toEqual([]);
     r.stop();
+  });
+
+  it('counts the work time the waypoints carry and the O2 the crew starts with', () => {
+    const wps = [{ name: 'HAB', x: 0, z: 0 }, { name: 'A', x: 100, z: 0, workSec: 600 }];
+    const store = fakeStore({ route: { waypoints: wps, path: wps.map((w) => [w.x, w.z]), legs: [], totals: null }, needs: { o2Pct: 100 }, sources: {} });
+    const r = startLegCostRunner({ store, heightAt: flat, constants: c, sources: legCostSources(hazards) });
+    expect(store.getState().route.totals.workSec).toBe(600);
+    const full = store.getState().route.totals.arrivalO2G;
+    store.setState({ needs: { o2Pct: 60 } });
+    expect(store.getState().route.totals.arrivalO2G).toBeCloseTo(full - 0.4 * c.o2UsableG, 6);
+    expect(store.getState().sources['route.legs.workSec'].tag).toBe('SIM');
+    r.stop();
+  });
+  // R4 (round 1 review): a re-planned path is the walk from where the crew is; it must not carry the work of stops
+  // already reached or left out. The three cases of the reviewer's repro (shelter-legs.mjs).
+  describe('after a re-plan during the EVA', () => {
+    const FULL = [{ name: 'HAB', x: 535, z: 574 }, { name: 'BA', x: 40, z: 30, workSec: 900 }, { name: 'CF', x: 0, z: 0, workSec: 1200 }];
+    const run = (route) => {
+      const store = fakeStore({ route: { legs: [], totals: null, visited: [], skipped: [], shelter: null, ...route }, sources: {} });
+      startLegCostRunner({ store, heightAt: flat, constants: c }).stop();
+      return store.getState().route.totals;
+    };
+
+    it('counts no work on the storm route home, while the shelter is set and the stops are skipped', () => {
+      const totals = run({
+        waypoints: FULL, path: [[300, 300], [420, 440], [535, 574]],
+        visited: ['HAB'], skipped: ['BA', 'CF'], shelter: { id: 'HAB', name: 'HAB · habitat airlock', x: 535, z: 574 },
+      });
+      expect(totals.workSec).toBe(0);
+      expect(totals.timeSec).toBeCloseTo(totals.walkSec, 9);
+      expect(totals.timeSec).toBeLessThan(400);   // 361 m of walking, not 2461 s
+    });
+
+    it('counts no work again on the first mission\'s route home from the stop already reached', () => {
+      const totals = run({
+        waypoints: [{ name: 'HAB', x: 535, z: 574 }, { name: 'S1', x: 493, z: 539, workSec: 300 }],
+        path: [[493, 539], [535, 574]], visited: ['HAB', 'S1'], shelter: { id: 'HAB', x: 535, z: 574 },
+      });
+      expect(totals.workSec).toBe(0);
+    });
+
+    it('keeps the work of the stops still ahead after an off-route re-plan past Bright Angel', () => {
+      const totals = run({ waypoints: FULL, path: [[30, 25], [0, 0]], visited: ['HAB', 'BA'] });
+      expect(totals.workSec).toBe(1200);
+    });
+
+    it('drops the work of a stop the moment it is reached, and leaves the waypoints as they are', () => {
+      const route = { waypoints: FULL, visited: ['HAB', 'BA'], skipped: [], shelter: null };
+      expect(waypointsForCosts(route).map((w) => w.workSec ?? 0)).toEqual([0, 0, 1200]);
+      expect(FULL[1].workSec).toBe(900);
+      const untouched = { waypoints: FULL, visited: ['HAB'], skipped: [], shelter: null };
+      expect(waypointsForCosts(untouched)).toBe(FULL);
+      expect(waypointsForCosts(null)).toEqual([]);
+    });
   });
 });
 

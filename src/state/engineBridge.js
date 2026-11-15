@@ -2,7 +2,7 @@
 // shelter, dust and the look settings, when they change, and clearing the boot prints when a new EVA starts.
 // Engine -> store: the player's position and heading, 5 times per second (never per frame). The position written is the
 // TRUE one (#42): the drift model (src/sim/navigationDrift.js) reads it and writes the estimate the HUD shows. Inside the
-// habitat it also writes whether the player stands at the mission table (habitat.nearTable) and their walk zone (habitat.zone).
+// habitat it also writes the walk zone they stand in (habitat.zone).
 import { useMissionStore } from './store.js';
 import { dustLevelFromTau } from './dustLevel.js';
 import { missionSolarHours } from './skyTime.js';
@@ -42,8 +42,8 @@ export function connectEngine(engine, store = useMissionStore) {
   const pollHabitat = () => {
     const state = store.getState();
     const inside = state.stage === 'habitat' && typeof engine.getHabitat === 'function' ? engine.getHabitat() : null;
-    const nearTable = !!inside?.nearTable, zone = inside?.zone ?? null;
-    if (nearTable !== state.habitat?.nearTable || zone !== state.habitat?.zone) store.setState({ habitat: { nearTable, zone } });
+    const zone = inside?.zone ?? null;
+    if (zone !== state.habitat?.zone) store.setState({ habitat: { zone } });
   };
 
   function writePlayer() {

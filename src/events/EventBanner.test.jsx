@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { setLanguage } from '../i18n/index.js';
 import { provenance } from '../data/provenance.js';
-import { resetStore, useMissionStore } from '../state/store.js';
+import { resetStore, setNeeds, useMissionStore } from '../state/store.js';
+import { FIRST_STORM_TAU_PATH } from '../mission/sources.js';
 import EventBanner, { EVENT_VALUE_PATHS, eventCaption } from './EventBanner.jsx';
 
 // Render a populated mission snapshot in SSR (Zustand normally uses the creation-time state).
@@ -30,6 +31,7 @@ function banner(eventId, environment, sources = {}) {
 
 describe('event banner captions and tags (#196)', () => {
   it('writes the dust caption and tag from one registry entry, the profile the event plays', () => {
+    setNeeds({ objective: 'cheyava' });   // the full EVA plays the storm on its own ramp
     const entry = provenance.lookup(EVENT_VALUE_PATHS['dust-storm']);
     const html = banner('dust-storm', { dustOpacity: 3.17 });
     expect(text(html)).toContain('τ 3.17 · ' + entry.caption);
@@ -40,7 +42,17 @@ describe('event banner captions and tags (#196)', () => {
     expect(entry.source).not.toMatch(/2022/);
   });
 
+  it('tags the storm opacity SIM in the first mission, whose ramp is shortened, with the same caption (P19)', () => {
+    const entry = provenance.lookup(FIRST_STORM_TAU_PATH);
+    const html = banner('dust-storm', { dustOpacity: 3.17 });
+    expect(entry.tag).toBe('SIM');
+    expect(tagOf(html)).toBe('SIM');
+    expect(entry.caption).toBe(provenance.lookup(EVENT_VALUE_PATHS['dust-storm']).caption);
+    expect(text(html)).toContain('τ 3.17 · ' + entry.caption);
+  });
+
   it('ignores a live store source with another tag, so the words and the tag stay together', () => {
+    setNeeds({ objective: 'cheyava' });
     const html = banner('dust-storm', { dustOpacity: 0.45 }, { 'environment.dustOpacity': { tag: 'SIM', source: 'something else' } });
     expect(tagOf(html)).toBe(provenance.lookup('environment.dustOpacity').tag);
   });
@@ -58,5 +70,21 @@ describe('event banner captions and tags (#196)', () => {
     setLanguage('es');
     expect(eventCaption(EVENT_VALUE_PATHS['dust-storm'])).toMatch(/tormenta de Curiosity en Gale en 2018/);
     expect(eventCaption(EVENT_VALUE_PATHS.radiation)).toMatch(/septiembre de 2017/);
+  });
+});
+
+describe('event banner order', () => {
+  const alert = (eventId, level, startedAtSec) => ({ active: true, eventId, level, text: eventId + ' alert', startedAtSec });
+
+  it('shows the newest of two alerts of one level, and counts the other (#265)', () => {
+    useMissionStore.setState({ alerts: { 'dust-storm': alert('dust-storm', 'warning', 75), radiation: alert('radiation', 'warning', 95) } });
+    const html = text(renderToStaticMarkup(<EventBanner />));
+    expect(html).toMatch(/^ ?warning radiation alert/);
+    expect(html).toMatch(/1 more alert/);
+  });
+
+  it('still puts a more severe alert above a newer one', () => {
+    useMissionStore.setState({ alerts: { 'dust-storm': alert('dust-storm', 'warning', 75), 'low-oxygen-caution': alert('low-oxygen-caution', 'caution', 95) } });
+    expect(text(renderToStaticMarkup(<EventBanner />))).toMatch(/^ ?warning dust-storm alert/);
   });
 });

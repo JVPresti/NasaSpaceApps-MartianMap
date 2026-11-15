@@ -1,0 +1,44 @@
+/* The mission table map's layer additions (src/plan/layers.js). The rest of the map is styled in table.css. */
+
+/* Places some layers mark (LayerPlaces.jsx): candidate stops on Outcrop, shelters on Exposure. The tag is the stop
+   markers' own (.map-marker-tag); the symbol is smaller than a stop's numbered circle, so a place never reads as a stop
+   of the route. Colours: MARKER_COLOURS in layers.js, which the legend swatches use. */
+.map-place {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-7px, -50%);
+  white-space: nowrap;
+  pointer-events: auto;
+}
+.map-place > i { flex: none; width: 14px; height: 14px; }
+.map-place .map-marker-tag { min-width: 0; }
+.map-place-candidate > i { background: #c9d0d8; border: 2px solid #0a0d11; border-radius: 50%; }
+.map-place-shelter > i { background: #0a0d11; border: 2px solid #f2f4f6; }
+/* above the rover's image pin (.map-pins, z-index 1, earlier in the map): on Outcrop and Exposure the places are the layer */
+.map-places { z-index: 1; }
+/* the route's own stops above both (later in the map, same layer), so a place or a pin never hides a stop; the stop
+   details (.map-pop, z-index 2) stay on top */
+.map-stops { z-index: 1; }
+
+/* Near the map's right edge a tag opens to the left of its symbol, so the edge never cuts it (mapLayers.tagFlips); the
+   symbol stays on its point. Near the left edge the rover pin's tag drops below its dot instead, opening to the right:
+   the rover stood beside a stop, whose own tag takes the row to the right of the dot. */
+.map-marker.flip { transform: translate(calc(-100% + 11px), -50%); }
+.map-marker.flip .map-marker-hit { flex-direction: row-reverse; }
+.map-place.flip { flex-direction: row-reverse; transform: translate(calc(-100% + 7px), -50%); }
+.map-pin.flip .map-pin-hit { right: auto; left: -6px; top: 10px; transform: none; }
+
+/* Perseverance's drives: the key's second line says what the drives decide (TraverseLayer.jsx) */
+.table-map-traverse-key small { display: block; font-size: 11px; font-weight: 400; color: var(--text-2); }
+
+/* During an event (MissionMap eventRoute): the route to the shelter in the alert's caution colour, the approved plan
+   thin under it in the plan colour, and SHELTER on the destination as on the HUD's waypoint panel */
+.table-map .map-route.map-route-event { stroke: var(--caution); stroke-width: 2.5px; }
+.table-map .map-route.map-route-plan { stroke-width: 1.5px; opacity: 0.75; }
+.map-marker-tag .map-tag-shelter { font-weight: 600; letter-spacing: 0.04em; color: var(--caution); }
+.map-place-event .map-marker-tag { border-color: var(--caution); }
+
+/* The crew's position (MapPosition.jsx): the HUD's marker on a canvas over the map, above the stops */
+.table-map-position { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
