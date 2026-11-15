@@ -4,21 +4,25 @@
 
 El guion principal es `script-4min-en.md`, en inglés. Este es su gemelo en español, para ensayar y para contestar preguntas en español: mismos beats, mismos tiempos, mismos números. La charla corre en el modo de presentación en `main` (https://martian-map.fernando-haro-c.workers.dev/?present=1), una flecha **Derecha** por beat. No hay demo en vivo: un video editado de la app, dentro de `?present=1`, muestra la app. Si WebGL falla, cambia a `out/deck-global.pdf` (`demo-run-sheet.md`).
 
-Ritmo: escrito para 125 palabras por minuto; ninguna fila pasa de 140. Con un video de 88 s la charla termina en 3:37.
+**El momento para recordar** es la zona cerrándose con la alerta de radiación. Di "Miren la zona" y guarda dos segundos de silencio mientras se encoge.
+
+**Solo tres números en voz alta:** la pendiente de 20°, la reserva de 30 min y la revisión del terreno de 0.14 m. Ninguna cifra de margen ni de dosis hasta que el hilo de la presentación las fije en su nuevo PR.
+
+Ritmo: escrito para 125 palabras por minuto; ninguna fila pasa de 140. Con un video de 88 s la charla termina en 3:43.
 
 | Tiempo | Beat | Quién | Texto |
 |---|---|---|---|
-| 0:00 | mars | P1 | (Deja el título Marswalk un respiro.) Marte. Somos Los Frijolitos Espaciales Refritos Nueva Generación, de Ensenada. Esto es Marswalk. |
-| 0:08 | jezero | P1 | El cráter Jezero, un lago hace tres mil quinientos millones de años. Perseverance aterrizó aquí en 2021. |
-| 0:17 | cheyava | P1 | Esto es Cheyava Falls, donde Perseverance encontró una posible señal de vida antigua. Nuestra astronauta camina aquí, a 913 metros del hábitat, sobre terreno real de HiRISE. |
-| 0:31 | danger | P1 | En Marte, nadie puede ir por ti. El traje permite ocho horas afuera, y treinta minutos de oxígeno quedan en reserva. |
-| 0:43 | plan | P1 | Marswalk planea la caminata sobre ese terreno. Bloquea pendientes de más de veinte grados y cobra cada metro en tiempo y oxígeno, con las pruebas de la NASA. |
-| 0:57 | zone | P1 | En Marte, la pregunta no es a dónde puedes ir. Es a dónde puedes ir y todavía volver. Lo naranja es todo lo que alcanza y todavía regresa con su reserva. Cada subida lo encoge. |
-| 1:16 | radiation | P1 | Luego, una alerta de radiación, con dosis reales que midió Curiosity en 2017. La zona se cierra al camino a casa, y ella regresa ya. |
-| 1:28 | storm | P1 | Una tormenta de polvo como la de Curiosity en 2018. Ambos datos son de Gale, no de Jezero, y la pantalla lo dice. |
-| 1:39 | video | P2 | (Corre el video de la app. Di cada frase cuando empiece su escena y deja hablar a la app.) La tripulación planea en la mesa. La misma zona naranja, en la app. Sale por la esclusa. Su compañero reacciona a la alerta. Adentro, la revisión compara la caminata con el plan. |
-| 3:07 | sources | P3 | Cada número dice si es medido, derivado o simulado. Suponemos la velocidad al caminar. El terreno coincide con el de la NASA a catorce centímetros. |
-| 3:19 | credits | P3 | Cada fuente está en pantalla, con su nombre. Siguen un sensor de ritmo cardiaco real y otros sitios de HiRISE. Porque en Marte, la pregunta es desde dónde todavía vuelves a casa. Gracias. (No presiones Derecha otra vez.) |
-| 3:37 | | | (Fin. 23 s antes del tope de 4:00.) |
+| 0:00 | mars | P1 | En Marte, nadie puede ir por ti. Marswalk le muestra a una astronauta a dónde puede ir y todavía volver. |
+| 0:12 | jezero | P1 | Este es el cráter Jezero, un lago antiguo, sobre el terreno HiRISE de la NASA. |
+| 0:22 | cheyava | P1 | Su meta es Cheyava Falls, donde Perseverance encontró una posible biofirma, sin confirmar. Camina hasta ahí desde el hábitat. |
+| 0:34 | danger | P1 | Si algo sale mal aquí afuera, el único rescate es su propia caminata a casa. |
+| 0:43 | plan | P1 | Marswalk planea esa caminata sobre el terreno. Más de veinte grados no se pasa, y cada metro cuesta tiempo y oxígeno, según las pruebas de la NASA. |
+| 0:58 | zone | P1 | En Marte, la pregunta no es a dónde puedes ir. Es a dónde puedes ir y todavía volver. Su primera salida guarda treinta minutos de reserva, así que lo naranja es todo lo que alcanza y todavía regresa a tiempo. |
+| 1:19 | radiation | P1 | Llega una alerta de radiación. Miren la zona. (Dos segundos de silencio.) Solo queda el camino a casa. Ella regresa ya. |
+| 1:33 | storm | P1 | (No digas nada; el video muestra la tormenta. Presiona Derecha a los 5 s.) |
+| 1:38 | video | P2 | (Corre el video de la app. Di cada frase cuando empiece su escena y deja hablar a la app.) La tripulación planea en la mesa. La misma zona naranja, en la app. Sale por la esclusa. Una tormenta, y su compañero reacciona. Adentro, la revisión compara la caminata con el plan. |
+| 3:06 | sources | P3 | Cada número en pantalla dice si es medido, derivado o simulado. La radiación y la tormenta son lecturas reales de Gale, no de Jezero, y sus tiempos son nuestros. El terreno coincide con el de la NASA a catorce centímetros. |
+| 3:26 | credits | P3 | Cada fuente está en pantalla. En Marte, la pregunta no es a dónde puedes ir. Es desde dónde todavía vuelves a casa. Somos Los Frijolitos Espaciales Refritos Nueva Generación. Gracias. (No presiones Derecha otra vez.) |
+| 3:43 | | | (Fin. 17 s antes del tope de 4:00.) |
 
 Fuentes de cada número: la tabla al final de `script-4min-en.md`.

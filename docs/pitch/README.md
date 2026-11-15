@@ -8,7 +8,7 @@ Martian Map", Ensenada local event). Built on the presentation mode on `main` (#
 > "prepárate para exponer en idioma inglés durante un tiempo máximo de 3 minutos"; the team takes 4 and confirms with
 > them. There is one script, `script-4min-en.md`, spoken over the presentation mode on `main`
 > (https://martian-map.fernando-haro-c.workers.dev/?present=1), one Right per beat. An edited app video, a beat inside
-> the presentation, replaces the live demo. With an 88 s video the talk ends at 3:37.
+> the presentation, replaces the live demo. With an 88 s video the talk ends at 3:43.
 >
 > **The file for the organisers is `docs/pitch/out/deck-global.pdf`**, the 7-slide deck, due by 2:00 pm. It is also
 > the backup on the day: if WebGL fails on the laptop, the presenter switches to the same PDF (slide per beat in

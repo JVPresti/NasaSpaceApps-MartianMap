@@ -33,18 +33,18 @@ The talk is `script-4min-en.md` (Spanish twin `script-4min-es.md`). P2 stands at
 
 | Talk time | Beat | Press | Cue (first words of the line) | If it fails |
 |---|---|---|---|---|
-| 0:00 | `mars` | (already there) | Let the Marswalk title sit for a breath, then "Mars. We are Los Frijolitos…" | Black screen or captions only: switch to tab 2, the PDF, and follow the slide column below |
-| 0:08 | `jezero` | **Right** | "Jezero crater…" | |
-| 0:17 | `cheyava` | **Right** | "This is Cheyava Falls…" | |
-| 0:31 | `danger` | **Right** | "On Mars, nobody can come and get you…" | |
-| 0:43 | `plan` | **Right** | "Marswalk plans the walk…" | |
-| 0:57 | `zone` | **Right** | "On Mars, the question isn't…" | The zone does not draw: say the line; slide 3 shows the same budget |
-| 1:16 | `radiation` | **Right** | "Then a radiation alert…" | |
-| 1:28 | `storm` | **Right** | "Then a dust storm…" | |
-| 1:39 | `video` | **Right** | The video starts. P2 says the four cues as each scene starts | See "If the video fails" |
-| 3:07 | `sources` | **Right** when the video ends | "Every number says…" | |
-| 3:19 | `credits` | **Right** | "Every source is on screen…" | |
-| 3:37 | end | **Nothing.** If a `live` beat still follows `credits`, one more **Right** opens the app | "Thank you." | |
+| 0:00 | `mars` | (already there) | "On Mars, nobody can come and get you…" | Black screen or captions only: switch to tab 2, the PDF, and follow the slide column below |
+| 0:12 | `jezero` | **Right** | "This is Jezero crater…" | |
+| 0:22 | `cheyava` | **Right** | "Her goal is Cheyava Falls…" | |
+| 0:34 | `danger` | **Right** | "If something goes wrong out here…" | |
+| 0:43 | `plan` | **Right** | "Marswalk plans that walk…" | |
+| 0:58 | `zone` | **Right** | "On Mars, the question isn't…" | The zone does not draw: say the line; slide 3 shows the same budget |
+| 1:19 | `radiation` | **Right** | "Then a radiation alert. Watch the zone." Then two seconds of silence while the zone closes, then "Only the way home is left…" | |
+| 1:33 | `storm` | **Right** | Nothing. The video carries the storm. Press **Right** after about 5 s | |
+| 1:38 | `video` | **Right** | The video starts. P2 says the five cues as each scene starts | See "If the video fails" |
+| 3:06 | `sources` | **Right** when the video ends | "Every number on screen says…" | |
+| 3:26 | `credits` | **Right** | "Every source is on screen…" | |
+| 3:43 | end | **Nothing.** If a `live` beat still follows `credits`, one more **Right** opens the app | "Thank you." | |
 
 The times assume an 88 s video. If the real video is shorter or longer, every time from `sources` on moves by the same amount.
 
