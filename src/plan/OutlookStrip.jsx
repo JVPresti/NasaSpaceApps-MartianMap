@@ -2,13 +2,14 @@ import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { MEDA_SOL_PATH, parseMedaSol } from '../data/medaRad.js';
 import { HAZARDS_PATH, provenance } from '../data/provenance.js';
-import { formatNumber, t } from '../i18n/index.js';
-import { eventStartSec, missionForObjective, missionSourcePath } from '../sim/missions.js';
+import { formatNumber, t, translateText } from '../i18n/index.js';
+import { eventTiming, missionForObjective, missionSourcePath } from '../sim/missions.js';
+import dustStorm from '../sim/events/dust-storm.json';
 import { useMissionStore } from '../state/store.js';
 import { medaOverWindow, plannedWalkSec, spaceWeather, walkStartLmstSec } from './outlook.js';
 import { exposureText, useRouteExposure } from './routeExposure.js';
 import SourceTag from './SourceTag.jsx';
-import { shortDuration } from './tableFormat.js';
+import { eventTimingText } from './tableFormat.js';
 import { useDataFile } from './useConditions.js';
 
 // The conditions outlook on the mission table (#248), next to go / no-go: the MEDA weather over the planned walk, the
@@ -33,6 +34,8 @@ provenance.define({
     from: { hazards: ['radiation.sep_2017.warning_lead_time'] },
   },
 });
+
+const lowerFirst = (text) => (text ? text.charAt(0).toLowerCase() + text.slice(1) : text);
 
 const range = (min, max) => {
   const a = formatNumber(min, 0), b = formatNumber(max, 0);
@@ -67,7 +70,7 @@ export function OutlookView({ window, dust, dustSource = null, space, missionId,
   const lead = space.leadMin ?? '–';
   const spaceLine = space.state === 'active' ? t('outlook.space.active')
     : space.state === 'off' ? t('outlook.space.off')
-      : space.state === 'scheduled' ? t('outlook.space.scheduled', { when: t('outlook.space.when', { time: shortDuration(space.atSec, { secondsBelow: 120 }) }), lead })
+      : space.state === 'scheduled' ? t('outlook.space.scheduled', { when: lowerFirst(space.when ?? eventTimingText({ earliestSec: space.atSec })), lead })
         : t('outlook.space.watch', { lead });
 
   return (
@@ -133,11 +136,14 @@ export default function OutlookStrip({ dust, planCurrent = true }) {
   const durationSec = plannedWalkSec({ budget: planCurrent ? s.budget : null, totals: s.totals });
   const start = walkStartLmstSec({ initialLmst: s.initialLmst }, s.sky);
   const window = meda && durationSec !== null ? medaOverWindow(meda, start, durationSec) : null;
-  const space = spaceWeather({
+  // When this run's alert comes, as its trigger allows (N5): after the storm in the first sortie, at a time in the full EVA.
+  const timing = eventTiming(s.objective, 'radiation');
+  const when = eventTimingText(timing, (id) => lowerFirst(translateText(id === dustStorm.id ? dustStorm.label : id)));
+  const space = { ...spaceWeather({
     leadMin: hazards?.values?.['radiation.sep_2017.warning_lead_time']?.value,
-    atSec: eventStartSec(s.objective, 'radiation'),
+    atSec: timing?.earliestSec ?? null,
     off: (s.off ?? []).includes('radiation'),
     active: s.radiationActive,
-  });
+  }), when };
   return <OutlookView window={window} dust={dust} dustSource={s.dustSource ?? null} space={space} missionId={missionForObjective(s.objective).id} exposure={exposure} />;
 }

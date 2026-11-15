@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { t, translateText } from '../i18n/index.js';
 import { useShallow } from 'zustand/react/shallow';
 import { HAZARDS_PATH } from '../data/provenance.js';
@@ -13,21 +13,24 @@ import { openSources } from '../sources/sourcesStore.js';
 import { setHazardEnabled, setLayer, setRouteDecision, useMissionStore } from '../state/store.js';
 import { PlanStopCard } from '../stops/ScienceStops.jsx';
 import { cardImage, stopHasContent } from '../stops/content.js';
-import { toggleWaypoint } from '../stops/selection.js';
+import { clearWaypoint, toggleWaypoint, useStopSelection } from '../stops/selection.js';
 import { useStops } from '../stops/useStops.js';
 import { PROFILE_IDS } from '../sim/routeProfiles.js';
-import { eventStartSec, missionEventDefinitions } from '../sim/missions.js';
+import { eventTiming, missionEventDefinitions } from '../sim/missions.js';
 import { PlanBeat } from '../mission/MissionBeat.jsx';
 import { LAYERS, SLOPE_LIMITS } from './layers.js';
 import LayerLegend from './LayerLegend.jsx';
 import LayerPreview from './LayerPreview.jsx';
 import MissionMap from './MissionMap.jsx';
 import { layerButtonText, layerMapTitle } from './tableLayers.js';
-import { decisionFor } from './decision.js';
+import { decisionFor, liveSuitStatus, startSuitStatus, tightestText } from './decision.js';
+import { planLimits } from './limits.js';
+import { suitConstantsFromHazards } from '../sim/suitModel.js';
+import { eventRouteOf, shelterLabel } from './eventRoute.js';
 import NeedsPanel from './NeedsPanel.jsx';
 import OutlookStrip from './OutlookStrip.jsx';
 import { droppedWhy, planReasonLines, stopLine } from './routeWhy.js';
-import { eventWhen, shortDuration } from './tableFormat.js';
+import { eventTimingText, shortDuration } from './tableFormat.js';
 import { useDataFile, useDustAgainstLimit } from './useConditions.js';
 import RouteProfiles from './RouteProfiles.jsx';
 import SourceTag from './SourceTag.jsx';
@@ -50,12 +53,19 @@ const TABS = [
 ];
 
 const minutes = (sec) => Math.round(sec / 60);
+const EVENT_LABELS = { [dustStorm.id]: dustStorm.label, [radiation.id]: radiation.label };
 const peak = (event, path) => Math.max(...event.timeline.map((step) => step.set?.[path]).filter(Number.isFinite));
 /** The event as the objective's mission runs it (src/sim/missions.js): its start and its timeline, compressed for the
     first sortie. */
 const scheduled = (event, objective) => missionEventDefinitions(objective, [event])[0];
 /** When an event starts in the objective's mission: seconds under two minutes, minutes after (tableFormat.eventWhen). */
-const when = (event, objective) => eventWhen(eventStartSec(objective, event.id)) ?? '–';
+/** An event's name inside a sentence: "the dust storm". */
+const eventName = (id) => {
+  const name = translateText(EVENT_LABELS[id] ?? id);
+  return name.charAt(0).toLowerCase() + name.slice(1);
+};
+/** When an event starts in the objective's mission, from its trigger (N5, missions.eventTiming). */
+const when = (event, objective) => sentence(eventTimingText(eventTiming(objective, event.id), eventName) ?? '–');
 
 // The hazards come from the event files the simulation runs (src/sim/events) and the times of the objective's mission
 // (src/sim/missions.js), so the briefing cannot drift from them. `events` are the event ids a checkbox switches; low
@@ -74,7 +84,7 @@ const HAZARDS = [
       opacity: num(peak(dustStorm, 'environment.dustOpacity')), sec: Math.round(scheduled(dustStorm, objective).timeline.at(-1).atSec),
     }),
     get alert() { return translateText(dustStorm.alert.text); },
-    get act() { return t('table.hazard.dust.act'); },
+    get act() { return t('table.hazard.dust.act', { radius: dustStorm.end?.radius ?? 25 }); },
     basis: () => t('table.hazard.dust.basis'),
   },
   {
@@ -86,9 +96,9 @@ const HAZARDS = [
     level: 'warning',
     get levelLabel() { return t('table.hazard.level.warning'); },
     when: (objective) => when(radiation, objective),
-    happens: () => t('table.hazard.radiation.happens', { rate: num(peak(radiation, 'environment.doseRateUgyH'), 1) }),
+    happens: () => t('table.hazard.radiation.happens', { rate: num(peak(radiation, 'environment.doseRateUgyH'), 1), background: num(radiation.timeline[0]?.set?.['environment.doseRateUgyH'], 1) }),
     get alert() { return translateText(radiation.alert.text); },
-    get act() { return t('table.hazard.radiation.act'); },
+    get act() { return t('table.hazard.radiation.act', { radius: radiation.end?.radius ?? 25 }); },
     basis: (objective) => t('table.hazard.radiation.basis', { length: shortDuration(scheduled(radiation, objective).timeline.at(-1).atSec) }),
   },
   {
@@ -170,6 +180,41 @@ function Stops({ waypoints, legs, explain = [], dropped = [] }) {
   );
 }
 
+/**
+ * The stop list while an event's shelter route is the route (#265): from where the crew is to the shelter, with the
+ * alert that sent them there, and the stops the event route leaves out. The plan approved before the EVA comes back
+ * when the event ends.
+ * @param {{ event: ReturnType<typeof eventRouteOf> }} props
+ */
+function EventStops({ event }) {
+  const [code, name] = shelterLabel(event.shelter);
+  return (
+    <ol className="table-stops">
+      <li>
+        <code>{t('table.event.here.code')}</code>
+        <span className="table-stop-name">{t('table.event.here')}</span>
+        <span className="table-stop-dist">{t('table.stop.start')}</span>
+      </li>
+      <li className="event">
+        <code>{code}</code>
+        <span className="table-stop-name">{t('table.event.shelter', { name: sentence(translateText(name)) })}</span>
+        <span className="table-stop-dist">{Number.isFinite(event.distanceM) ? `${Math.round(event.distanceM)} m` : ''}</span>
+        {event.alertText && <small className="table-stop-why">{translateText(event.alertText)}</small>}
+      </li>
+      {event.skipped.map((stop) => {
+        const [skippedCode, label] = stop.includes(' · ') ? stop.split(' · ') : ['–', stop];
+        return (
+          <li key={'skipped-' + stop} className="dropped">
+            <code>{skippedCode}</code>
+            <span className="table-stop-name">{sentence(translateText(label))}</span>
+            <span className="table-stop-dist">{t('table.event.skipped')}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 function SuitNow() {
   const suit = useMissionStore(useShallow((s) => ({
     o2: s.suit.oxygenPct, battery: s.suit.batteryPct, pressure: s.suit.pressurePsi, o2Start: s.needs.o2Pct, batteryStart: s.needs.batteryPct,
@@ -204,15 +249,18 @@ function Stack({ parts, label }) {
 }
 
 /**
- * What the EVA spends, as budgets: time (out, back, spare, reserve) and the oxygen and battery tanks (out, back, left).
- * Every share comes from route.totals (src/sim/legCosts.js).
+ * What the EVA spends, as budgets: time (out, back, and against the crew's time: spare and the risk reserve) and the
+ * oxygen and battery tanks (out, back, left). Shares from route.totals (src/sim/legCosts.js) and route.budget
+ * (src/sim/missionNeeds.js). The time bar is the crew's time only: the oxygen margin is the Return panel's figure (N12).
+ * @param {{ totals: object | null, metrics: object, limits: object | null, budget: object | null }} props
  */
-function BudgetPanel({ totals, metrics }) {
+function BudgetPanel({ totals, metrics, limits, budget }) {
   const tot = totals;
   const minutes = (sec) => Math.round(sec / 60);
-  const reserveSec = 30 * 60;
-  const time = tot ? [[tot.timeSec, 'out'], [tot.roundTrip ? 0 : tot.returnTimeSec, 'back'], [Math.max(0, tot.marginSec), 'spare'], [reserveSec, 'reserve']] : [];
-  const tank = (outPct, leftPct) => [[outPct, 'out'], [Math.max(0, 100 - outPct - leftPct), 'back'], [leftPct, 'left']];
+  const time = limits?.time ?? null;
+  const parts = tot ? [[tot.timeSec, 'out'], [tot.roundTrip ? 0 : tot.returnTimeSec, 'back']] : [];
+  if (time && budget) parts.push([Math.max(0, time.spareSec), 'spare'], [budget.reserveSec ?? 0, 'reserve']);
+  const tank = (outPct, leftPct) => [[outPct, 'out'], [Math.max(0, 100 - outPct - Math.max(0, leftPct)), 'back'], [Math.max(0, leftPct), 'left']];
   return (
     <div className="table-panel budget-panel">
       <p className="table-label">{t('table.budget.title')}</p>
@@ -221,28 +269,30 @@ function BudgetPanel({ totals, metrics }) {
         <div className="budget-head"><span>{t('table.time')}</span><b>{tot ? minutes(tot.timeSec) : metrics.time.value}<small>{t('table.budget.min.out')}</small></b></div>
         {tot && (
           <Stack
-            parts={time}
-            label={t('table.budget.time.label', { out: minutes(tot.timeSec), back: minutes(tot.returnTimeSec), spare: minutes(tot.marginSec) })}
+            parts={parts}
+            label={t('table.budget.time.label', { out: minutes(tot.timeSec), back: minutes(tot.roundTrip ? 0 : tot.returnTimeSec) })}
           />
         )}
         {tot && (
           <p className="budget-key">
             <i className="seg-out" />{tot.workSec > 0 ? t('table.budget.key.out.work', { min: minutes(tot.timeSec), work: shortDuration(tot.workSec) }) : t('table.budget.key.out', { min: minutes(tot.timeSec) })}{' '}
             <i className="seg-back" />{tot.roundTrip ? t('table.budget.key.round.trip') : t('table.budget.key.back', { min: minutes(tot.returnTimeSec) })}{' '}
-            <i className="seg-spare" />{t('table.budget.key.spare', { min: minutes(tot.marginSec) })}{' '}
-            <i className="seg-reserve" />{t('table.budget.key.reserve')}
+            {time && budget && (time.ok
+              ? <><i className="seg-spare" />{t('table.budget.key.spare', { min: minutes(time.spareSec) })}{' '}</>
+              : <span className="tone-warning">{t('table.budget.key.time.over', { min: Math.ceil(-time.spareSec / 60) })}{' '}</span>)}
+            {time && budget && <><i className="seg-reserve" />{t('table.budget.key.time.reserve', { min: minutes(budget.reserveSec ?? 0) })}</>}
           </p>
         )}
       </div>
 
       <div className="budget-row">
         <div className="budget-head"><span>{t('table.oxygen')}</span><b>{metrics.o2.value}<small>{t('table.budget.g.out', { pct: pct1(tot?.o2Pct) })}</small></b></div>
-        {tot && <Stack parts={tank(tot.o2Pct, tot.arrivalO2Pct)} label={t('table.budget.oxygen.label', { out: pct1(tot.o2Pct), left: num(tot.arrivalO2Pct) })} />}
+        {tot && <Stack parts={tank(tot.o2Pct, tot.arrivalO2Pct)} label={t('table.budget.oxygen.label', { out: pct1(tot.o2Pct), left: num(Math.max(0, tot.arrivalO2Pct)) })} />}
       </div>
 
       <div className="budget-row">
         <div className="budget-head"><span>{t('table.battery')}</span><b>{metrics.battery.value}<small>{t('table.budget.wh.out', { pct: pct1(tot?.batteryPct) })}</small></b></div>
-        {tot && <Stack parts={tank(tot.batteryPct, tot.arrivalBatteryPct)} label={t('table.budget.battery.label', { out: pct1(tot.batteryPct), left: num(tot.arrivalBatteryPct) })} />}
+        {tot && <Stack parts={tank(tot.batteryPct, tot.arrivalBatteryPct)} label={t('table.budget.battery.label', { out: pct1(tot.batteryPct), left: num(Math.max(0, tot.arrivalBatteryPct)) })} />}
         {tot && (
           <p className="budget-key">
             <i className="seg-out" />{t('table.budget.key.way.out')}{' '}
@@ -257,35 +307,54 @@ function BudgetPanel({ totals, metrics }) {
   );
 }
 
-/** A ring gauge, 0 to 100 %. */
-function Ring({ value, label, tone = 'ok' }) {
+/** A ring gauge, 0 to 100 %. A value under 0 draws empty, and the caption says what is short instead (P1). */
+function Ring({ value, label, shortLabel, tone = 'ok' }) {
   const r = 42, c = 2 * Math.PI * r;
   const share = Number.isFinite(value) ? Math.max(0, Math.min(100, value)) / 100 : 0;
+  const short = Number.isFinite(value) && value < 0;
   return (
     <figure className="ring">
       <svg viewBox="0 0 100 100" aria-hidden="true">
         <circle cx="50" cy="50" r={r} className="ring-track" />
         <circle cx="50" cy="50" r={r} className={'ring-fill tone-' + tone} strokeDasharray={`${c * share} ${c}`} transform="rotate(-90 50 50)" />
       </svg>
-      <figcaption><b>{Number.isFinite(value) ? num(value) : '–'}<small>%</small></b><span>{label}</span></figcaption>
+      <figcaption>
+        <b className={short ? 'tone-warning' : undefined}>{Number.isFinite(value) ? num(Math.max(0, value)) : '–'}<small>%</small></b>
+        <span className={short ? 'tone-warning' : undefined}>{short ? shortLabel(num(-value)) : label}</span>
+      </figcaption>
     </figure>
   );
 }
 
-/** What is left when the walk ends back at the airlock, and the margin over the reserve. */
-function ReturnPanel({ totals }) {
+/**
+ * The tone of a limit's figure: warning when it breaks, caution when it has less than the suit's caution margin left,
+ * green only while the decision is a go (a no-go never sits beside a green figure), else plain.
+ */
+function limitTone(limit, go, cautionSec = 15 * 60) {
+  if (!limit) return go ? 'ok' : 'muted';
+  if (!limit.ok) return 'warning';
+  if (limit.spareSec < cautionSec) return 'caution';
+  return go ? 'ok' : 'muted';
+}
+
+/**
+ * What is left when the walk ends back at the airlock, and the oxygen margin over the reserve, each in the tone of its
+ * own limit (src/plan/limits.js).
+ * @param {{ totals: object | null, limits: object | null, go: boolean }} props
+ */
+function ReturnPanel({ totals, limits, go }) {
   const tot = totals;
   const marginMin = tot ? Math.round(tot.marginSec / 60) : null;
-  const tone = tot ? (tot.status === 'nominal' ? 'ok' : tot.status) : null;
+  const o2Tone = tot ? limitTone(limits?.o2 ?? (tot.status === 'warning' ? { ok: false } : null), go) : null;
   return (
     <div className="table-panel return-panel">
       <p className="table-label">{t('table.return.title')}</p>
       <div className="ring-pair">
-        <Ring value={tot?.arrivalO2Pct} label={t('table.return.oxygen.left')} />
-        <Ring value={tot?.arrivalBatteryPct} label={t('table.return.battery.left')} />
+        <Ring value={tot?.arrivalO2Pct} label={t('table.return.oxygen.left')} shortLabel={(pct) => t('table.return.oxygen.short', { pct })} tone={o2Tone ?? 'ok'} />
+        <Ring value={tot?.arrivalBatteryPct} label={t('table.return.battery.left')} shortLabel={(pct) => t('table.return.battery.short', { pct })} tone={tot ? limitTone(limits?.battery, go) : 'ok'} />
       </div>
       <div className="return-margin">
-        <b className={tone ? 'tone-' + tone : undefined}>{tot ? `${marginMin >= 0 ? '+' : ''}${marginMin}` : '–'}<small>min</small></b>
+        <b className={o2Tone && o2Tone !== 'muted' ? 'tone-' + o2Tone : undefined}>{tot ? `${marginMin >= 0 ? '+' : ''}${marginMin}` : '–'}<small>min</small></b>
         {/* route.totals.marginSec is capped at the 8 h EVA limit (#208); the tag's details say so. */}
         <span>{t('table.return.margin')}<SourceTag path="route.totals.marginSec" /></span>
       </div>
@@ -334,6 +403,11 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
     setTab(tabOrSite(initialTab));
   }
   const [traverse, setTraverse] = useState(true);   // Perseverance's drives on the map (#249), on both map steps
+  // A stop card left open closes when its stop leaves the route (a new goal, a re-plan) (P23).
+  const selectedStop = useStopSelection((s) => s.waypoint);
+  useEffect(() => {
+    if (selectedStop && !waypoints.some((waypoint) => waypoint.name === selectedStop)) clearWaypoint();
+  }, [selectedStop, waypoints]);
   const route = useMissionStore((s) => s.route);
   const layer = useMissionStore((s) => s.view.layer);
   const clock = useMissionStore(useShallow((s) => ({ lmst: s.mission.lmst, elapsedSec: s.mission.elapsedSec })));
@@ -354,15 +428,40 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
   // event re-plan to a shelter replaces route.path and leaves them as they were, so they show only while the route on
   // the table is one of the planned profiles.
   const planCurrent = inUse !== null;
+  // During an event the route is the event's route to a shelter (#265): the table shows it, and where the crew is.
+  const alerts = useMissionStore((s) => s.alerts);
+  const event = eventRouteOf(route, alerts);
+  const crewAt = useMissionStore(useShallow((s) => ({ x: Math.round(s.navigation.x ?? NaN), z: Math.round(s.navigation.z ?? NaN) })));
+  const position = evaBegun && Number.isFinite(crewAt.x) && Number.isFinite(crewAt.z) ? crewAt : null;
   const objective = useMissionStore((s) => s.needs.objective);
+  const needs = useMissionStore(useShallow((s) => ({ crew: s.needs.crew, o2Pct: s.needs.o2Pct, batteryPct: s.needs.batteryPct })));
   const dust = useDustAgainstLimit();
-  const decision = decisionFor({ planner, totals, budget: planCurrent ? route.budget : null, dust });
+  // One decision from the three limits of the plan, time, oxygen and battery, each as minutes of slack (P1).
+  const hazardsFile = useDataFile(HAZARDS_PATH);
+  const constants = useMemo(() => {
+    try { return hazardsFile ? suitConstantsFromHazards(hazardsFile) : null; } catch { return null; }
+  }, [hazardsFile]);
+  const limits = planLimits({ totals, budget: planCurrent ? route.budget : null, constants, needs });
+  // The forecast radiation alert (D6): switched on for this run and not yet fired.
+  const radiationExpected = useMissionStore((s) => !(s.hazards.off ?? []).includes('radiation')) && !alerts?.radiation;
+  const decision = decisionFor({ planner, totals, limits, dust, objective, radiationExpected });
   // Each reason is said once: a solo crew held to the radio route under the profile buttons it turns off
-  // (RouteProfiles.jsx). A no-go takes the place of the plan's reasons: what to change comes first, the crew and risk
-  // settings stay in view in the needs panel, and each leg's reason stays in the stop list.
-  const soloRadio = useMissionStore((s) => s.needs.crew === 1) && profiles?.radio?.ok === true;
+  // (RouteProfiles.jsx), whether the plan fits in the tightest-limit line. A no-go takes the place of the plan's reasons:
+  // what to change comes first, the crew and risk settings stay in view in the needs panel, and each leg's reason stays
+  // in the stop list.
+  const soloRadio = needs.crew === 1 && profiles?.radio?.ok === true;
   const noGo = !decision.go && decision.reason !== 'planning';
-  const whyLines = planCurrent && !noGo ? planReasonLines((route.planReasons ?? []).filter((r) => !(soloRadio && r.code === 'solo-radio'))) : [];
+  const said = (r) => (soloRadio && r.code === 'solo-radio') || r.code === 'fits' || r.code === 'required-over';
+  const reasonLines = planCurrent && !noGo ? planReasonLines((route.planReasons ?? []).filter((r) => !said(r))) : [];
+  const whyLines = planCurrent && !noGo && limits?.tightest ? [tightestText(limits.tightest), ...reasonLines] : reasonLines;
+  // The plan being approved, in one line (P9): goal · crew · profile.
+  const planLine = t('table.plan.line', {
+    goal: t(`needs.objective.${objective}`), crew: t(`needs.crew.${needs.crew}`), profile: t(`profiles.${inUse ?? route.profile}`),
+  });
+  // The suit: before the EVA, against the plan (the O2 and battery at the start are the crew's inputs); during it, the
+  // suit model's live status.
+  const liveStatus = useMissionStore((s) => s.suit.status);
+  const suitStatus = evaBegun ? liveSuitStatus(liveStatus) : startSuitStatus(limits, constants);
 
   const onTabKey = (event) => {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
@@ -375,7 +474,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
 
   const map = (props) => (
     <div className="table-centre">
-      <MissionMap path={route.path} waypoints={waypoints} science={science} legs={route.legs ?? []} onScience={toggleWaypoint} traverse={traverse} mast={planner.mast ?? null} {...props} />
+      <MissionMap path={route.path} waypoints={waypoints} science={science} legs={route.legs ?? []} onScience={toggleWaypoint} traverse={traverse} mast={planner.mast ?? null} position={position} eventRoute={Boolean(event)} {...props} />
       <div className="table-overlay">
         <EventBanner />
         <PlanStopCard />
@@ -436,8 +535,14 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           {/* The crew's needs take the place of the compact hazard switches, which the Hazards step has in full. */}
           <NeedsPanel locked={evaBegun} />
           <div className="table-panel table-fill">
-            <p className="table-label">{t('table.stops')}</p>
-            <Stops waypoints={waypoints} legs={route.legs ?? []} explain={planCurrent ? route.explain ?? [] : []} dropped={planCurrent ? route.dropped ?? [] : []} />
+            <div className="table-panel-head">
+              <p className="table-label">{event ? t('table.event.stops') : t('table.stops')}</p>
+              {/* the work at each stop (SIM) and why each leg bends (DERIVED) */}
+              {!event && <span><SourceTag path="route.legs.workSec" /><SourceTag path="route.explain" /></span>}
+            </div>
+            {event ? <EventStops event={event} /> : (
+              <Stops waypoints={waypoints} legs={route.legs ?? []} explain={planCurrent ? route.explain ?? [] : []} dropped={planCurrent ? route.dropped ?? [] : []} />
+            )}
           </div>
           <div className="table-panel">
             {/* Perseverance's drives on or off (#249): an overlay, so it sits by the heading, apart from the layer grid
@@ -478,15 +583,22 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
             <div className="table-grid2">
               <Big value={metrics.distance.value} unit="km" label={t('ui.distance')} />
               {/* Walk out plus the work at the stops (#247): planned time, not played in real time */}
-              <Big value={metrics.time.value} unit="min" label={t('table.planned.out')} title={t('table.planned.out.title')} />
+              {event
+                ? <Big value={metrics.time.value} unit="min" label={t('table.event.to.shelter')} />
+                : <Big value={metrics.time.value} unit="min" label={t('table.planned.out')} title={t('table.planned.out.title')} />}
               <Big value={metrics.climb.value} unit="m" label={t('ui.climb')} />
               <Big value={metrics.steepest.value} unit="°" label={t('table.steepest.slope')} tone={steepTone} />
             </div>
-            {route.skipped?.length > 0 && <p className="table-note tone-caution">{t('table.replanned.skipped', { stops: route.skipped.join(' · ') })}</p>}
+            {event && (
+              <p className="table-note tone-caution">
+                {t('table.event.replanned', { event: event.label ? translateText(event.label) : t('table.event.an.event'), shelter: sentence(translateText(shelterLabel(event.shelter)[1])) })}
+              </p>
+            )}
+            {!event && route.skipped?.length > 0 && <p className="table-note tone-caution">{t('table.replanned.skipped', { stops: route.skipped.join(' · ') })}</p>}
             {/* Why this route (#246), plan level: the crew rules, the risk and the budget; each leg's reason is in the stop
                 list. A no-go reason comes first, so a locked Begin EVA always says why. */}
-            {!decision.go && decision.tone && <p className={'table-note tone-' + decision.tone}>{decision.text}</p>}
-            {whyLines.length > 0 && <p className="table-note route-why">{whyLines.join(' ')}</p>}
+            {!evaBegun && !decision.go && decision.tone && <p className={'table-note tone-' + decision.tone}>{decision.text}</p>}
+            {whyLines.length > 0 && <p className="table-note route-why">{whyLines.join(' ')}<SourceTag path="route.planReasons" /></p>}
           </div>
           {/* The comparison takes the place of the suit readout, which the Suit step shows in full (#245). */}
           <div className="table-panel table-fill profiles-panel">
@@ -509,7 +621,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           <div>
             <h2 className="table-h">{t('table.hazards.title')}</h2>
           </div>
-          <p className="table-text">{t('table.hazards.text')}</p>
+          <p className="table-text">{t(evaBegun ? 'table.hazards.text.eva' : 'table.hazards.text')}</p>
         </div>
         <ul className="table-hazard-cards">
           {HAZARDS.map((hazard) => (
@@ -544,10 +656,13 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
         <section className="table-left">
           <h2 className="table-h">{t('table.suit.check')}</h2>
           <div className="table-panel">
-            <div className="table-panel-head"><p className="table-label">{t('table.suit.now')}</p><p className="table-label tone-ok">{t('table.nominal')}</p></div>
+            <div className="table-panel-head">
+              <p className="table-label">{t(evaBegun ? 'table.suit.now.eva' : 'table.suit.now')}</p>
+              <p className={'table-label tone-' + suitStatus.tone}>{suitStatus.label}</p>
+            </div>
             <SuitNow />
           </div>
-          <BudgetPanel totals={totals} metrics={metrics} />
+          <BudgetPanel totals={totals} metrics={metrics} limits={limits} budget={planCurrent ? route.budget : null} />
         </section>
         {/* The conditions outlook (#248) heads the middle column, level with go / no-go; the suit model fills the rest. */}
         <div className="table-centre-wrap">
@@ -559,10 +674,23 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
         <section className="table-right">
           <div className="table-panel">
             <p className="table-label">{t('table.decision')}</p>
-            <p className={'table-decision' + (decision.tone ? ' tone-' + decision.tone : '')}>{decision.title}</p>
-            <p className="table-text small">{decision.text}</p>
+            {evaBegun ? (
+              <>
+                <p className={'table-decision tone-' + suitStatus.tone}>{t('table.decision.eva')}</p>
+                <p className="table-text small">
+                  {event
+                    ? t('table.decision.eva.event', { event: event.label ? translateText(event.label) : t('table.event.an.event'), shelter: sentence(translateText(shelterLabel(event.shelter)[1])) })
+                    : t('table.decision.eva.text')}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className={'table-decision' + (decision.tone ? ' tone-' + decision.tone : '')}>{decision.title}</p>
+                <p className="table-text small"><span className="decision-plan">{planLine}</span>{decision.text}</p>
+              </>
+            )}
           </div>
-          <ReturnPanel totals={totals} />
+          <ReturnPanel totals={totals} limits={limits} go={evaBegun || decision.go} />
           <Actions>
             <BeginButton decision={decision} planning={planner.status === 'planning'} evaBegun={evaBegun} onBeginEva={onBeginEva} />
             <div className="table-pair">
