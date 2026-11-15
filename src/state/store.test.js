@@ -313,7 +313,11 @@ describe('the sampling tasks (#352)', () => {
     expect(() => setTasks([rock, rock])).toThrow(/duplicate/);
     expect(() => setTasks('rock')).toThrow(/array/);
     setTasks([rock]);
-    setMode('walk');
+    setMode('walk');   // on foot in the habitat: still editable (#260)
+    expect(setTasks([rock, photo])).toBe(true);
+    setTasks([rock]);
+    setMode('plan');
+    beginEgress();   // Begin EVA locks the tasks with the needs
     expect(setTasks([photo])).toBe(false);
     expect(useMissionStore.getState().needs.tasks).toEqual([rock]);
   });
@@ -333,7 +337,7 @@ describe('the sampling tasks (#352)', () => {
 
   it('keeps the tasks across a Restart, and a page load starts with none', () => {
     setTasks([rock, photo]);
-    setMode('walk');
+    beginEgress();
     resetStore({ keepNeeds: true });
     expect(useMissionStore.getState().needs).toMatchObject({ locked: false, tasks: [rock, { ...photo, place: { ...photo.place, x: 500.12 } }] });
     resetStore();
