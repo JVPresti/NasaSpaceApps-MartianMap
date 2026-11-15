@@ -103,3 +103,18 @@ Marswalk is not the first slope-aware EVA route planner. NASA's SEXTANT optimize
 - Mars-gravity suit data. Nobody has it; the model uses lunar-gravity and 1 g tests and says so.
 - Communication delay with Earth. BASALT tested 5 and 15 minute one-way delays ([Marquez et al. 2019](https://pmc.ncbi.nlm.nih.gov/articles/PMC6442304)); Marswalk has no Earth link.
 - A crew rover. It would change the scale of the map from 1.5 km to about 10 km.
+
+## Issues from this review
+
+Before the deadline, Sunday 15 November at 11:59 pm Pacific (Ensenada):
+
+| Issue | Rows | Priority | Overlaps |
+|---|---|---|---|
+| #322 Price the sand ripple field in the route cost | 13 | P1 | #282, #311 |
+| #323 Suit tab and HUD show two different walkback margins | 9, 23 | P1 | #282 (`limits.js`), #298 |
+| #324 Check daylight in the go / no-go | 23 | P1 | #294 |
+| #325 Put a third kind of data on the map | 7 | P2 | #282 (Exposure layer) |
+| #326 A Perseverance image at every stop | 20 | P2 | #282 (`stops.json`) |
+| #327 Count carried tools and samples in the suit mass | 11 | P2 | #288, #298, #299 |
+
+Already filed: #309 (return zone map, row 9), #311 (rock layer is a brightness proxy, row 13), #295 (radiation numbers, row 10), #248 (conditions outlook, row 8, in #282), #247 (work time at stops, row 23, in #282), #286 (wrist readability, row 15), #288 (EV2 crewmate, row 21).
