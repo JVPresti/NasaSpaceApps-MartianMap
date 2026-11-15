@@ -40,7 +40,7 @@ The surface player is moved with the engine's `window.__marswalk.place`. The spo
 | Update rate on the habitat map while the surface player steps | 9 crew updates in about 4 s |
 | Behind the ridge | the surface HUD radio goes from linked to lost; the habitat marker turns grey with "Last known" at (542.1, 544.5), where it was last heard; the crew list reads "Last known · 2 s ago" |
 | Back in sight | live again |
-| "Send route to the crew" | confirmed on the habitat after 112 ms ("The crew has the route, sent at 03:19 AM."); the surface adopts it after at most 117 ms, with the notice "New route from Crew 1944" |
+| "Send route to the crew" | confirmed on the habitat after 112 ms (the run used the first wording, "The crew has the route, sent at 03:19 AM."; it now reads "The room stored the route at …", because the confirmation is the room's echo, not an answer from the crew); the surface adopts it after at most 117 ms, with the notice "New route from Crew 1944" |
 | No-go with a reason | surface visor: "No-go from Crew 1944 / Dust rising to the west"; habitat: "Last call: No-go · Dust rising to the west" |
 | A note dropped on the habitat map | reaches the surface labelled "Check the dark band"; the habitat map shows it too |
 | The surface player reloads | the route comes back from `welcome` (11 points); still the habitat's after 3 s at the table and after Begin EVA; the last call too |
@@ -59,4 +59,4 @@ Both clients plan the same route from `route.json`, so in this run the route the
 ## Found and fixed during the run
 
 - **Stale estimate on the habitat map.** The pose sender sent a `p` only when the true position or heading changed. The navigation estimate updates 4 times per second, so the pose sent on a move could carry the estimate from before it, and a suit that then stood still never sent another. The habitat map held a point 30 m away. The sender now also sends when the estimate moves more than 0.5 m (`ESTIMATE_MIN_MOVE_M` in `src/net/poseSync.js`). That also carries a terrain fix taken while standing still.
-- **H opened Controls while typing.** The app's H key paused into Controls even with focus in a text field, so a note label lost every key after the first "h". The handler in `src/App.jsx` now skips text fields, as the other shortcuts already did.
+- **H opened Controls while typing.** The app's H key paused into Controls even with focus in a text field, so a note label lost every key after the first "h". The handler in `src/App.jsx` now returns early when focus is in a text field.

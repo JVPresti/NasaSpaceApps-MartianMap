@@ -1,5 +1,5 @@
 // What the habitat seat's map draws (#55): the crew from `habitat.crew` (src/net/habitat.js writes it from the radio),
-// the route the crew has, and the room's markers. Plain JavaScript, no React, so the rules are tested on their own.
+// the last route sent to the crew, and the room's markers. Plain JavaScript, no React, so the rules are tested on their own.
 import { PLAYER_COLORS } from '../engine/crew.js';
 import { t } from '../i18n/index.js';
 import { crewCss } from '../hud/crewColor.js';
