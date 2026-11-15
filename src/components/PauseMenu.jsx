@@ -1,10 +1,36 @@
 import { t, translateText } from '../i18n/index.js';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { fullscreen } from '../input/device.js';
 import { ControlsPanel } from './ControlsHelp.jsx';
 import EvaStartPanel from './EvaStartPanel.jsx';
 import Modal from './Modal.jsx';
 import SettingsPanel from './SettingsPanel.jsx';
 import { FOCUSABLE, focusTarget } from './focus.js';
+import './menuMobile.css';
+
+/**
+ * Full screen on and off (#365). A phone browser has no F11, so the pause menu offers it. menuMobile.css shows it on
+ * coarse pointers only (a desktop keeps F11), and it is not drawn at all where the page cannot go full screen (iPhone).
+ */
+function FullscreenButton({ disabled }) {
+  const [fs] = useState(() => fullscreen());
+  const [on, setOn] = useState(() => fs.active());
+  useEffect(() => {
+    const sync = () => setOn(fs.active());
+    document.addEventListener('fullscreenchange', sync);
+    document.addEventListener('webkitfullscreenchange', sync);
+    return () => {
+      document.removeEventListener('fullscreenchange', sync);
+      document.removeEventListener('webkitfullscreenchange', sync);
+    };
+  }, [fs]);
+  if (!fs.available) return null;
+  return (
+    <button type="button" className="ui-button ghost menu-fullscreen" aria-pressed={on} disabled={disabled} onClick={() => fs.toggle().then(setOn)}>
+      {on ? t('touch.fullscreen.exit') : t('touch.fullscreen')}
+    </button>
+  );
+}
 
 /**
  * Pause dialog (#11 design). There is no Plan / Walk switch: once the EVA has begun, End the EVA goes back to the
@@ -93,6 +119,7 @@ export default function PauseMenu({
             <button type="button" className="ui-button ghost" onClick={onSettings} disabled={busy}>
               {t('menu.settings')}
             </button>
+            <FullscreenButton disabled={busy} />
             <button type="button" className="ui-button ghost" onClick={onSources} disabled={busy} title={t('menu.credits.and.the.data.artistic.and.modelled.sources')}>
               {t('ui.sources.188')}
             </button>

@@ -40,6 +40,7 @@ import { createFindsApi } from './finds.js';
 import { metresPerPixel } from './planView.js';
 import { createUniforms } from './uniforms.js';
 import { TIERS, detectTier } from './tiers.js';
+import { touchOnly } from '../input/device.js';
 import { createQualityController, QUALITY_OPTIONS } from './quality.js';
 import { createTerrain } from './terrain.js';
 import { buildSky, applyPreset, applySkyBlend } from './atmosphere.js';
@@ -142,7 +143,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
 
   // The quality tier decides which ortho texture belongs in the initial manifest, so detect it before
   // registering the total. Everything else is the same for both tiers.
-  const detected = detectTier(renderer);
+  const detected = detectTier(renderer, { touchOnly: touchOnly() });
   if (tier && !TIERS[tier]) console.warn('createEngine: unknown tier "' + tier + '", using automatic choice');
   const forcedTier = tier && TIERS[tier] ? tier : null;   // a forced tier also stops the automatic downgrade
   const initialTier = forcedTier || detected.tier;
@@ -169,7 +170,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   // Serialises UI and automatic quality changes. The actual work is applyTier below.
   const quality = createQualityController({
     apply: (name) => applyTier(name),
-    detect: () => detectTier(renderer).tier,
+    detect: () => detectTier(renderer, { touchOnly: touchOnly() }).tier,
     initialTier,
     initialAuto: !forcedTier,
     onError: (cause) => { if (alive) console.warn('Could not change scene quality', cause); },
@@ -862,6 +863,8 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
      * Plain data for the store bridge; null before the scene is ready.
      */
     getSampling() { return sys.sampling ? sys.sampling.status() : null; },
+    /** Runs one sampling input ('click' | 'photo' | 'stow' | 'case') as the touch bar's Sample button does (#365). */
+    sampleAct(input) { return sys.sampling ? sys.sampling.act(input) : null; },
     /** Sampling events ({ type: 'photo' | 'collect' | 'texture' | 'secured' | 'sealed' | 'input', ... }). Returns an unsubscribe function. Available once ready. */
     onSampling(listener) {
       if (!sys.sampling) throw new Error('engine is not ready: wait for engine.ready');

@@ -1,0 +1,117 @@
+/* The helmet HUD on a phone (#365). Only coarse pointers on small screens: a desktop window of any size keeps hud.css.
+   The touch action bar (src/components/touchActions.css) holds Map and Pause in the top-right corner and the action
+   buttons in the bottom-right one; the stick takes the bottom-left corner (src/engine/touchInput.js: 24 px margin,
+   112 px across). The HUD keeps clear of all three and of the safe areas.
+
+   Portrait, top to bottom: EVA clock | Map, Pause; heading tape; next waypoint row; suit panel and minimap side by
+   side; partner chip under the suit panel; the beat line above the stick. The elevation profile, the minimap legend
+   and the key hints (keyboard only) drop out; All gauges in the bar's More menu still opens the detailed visor. */
+
+@media (pointer: coarse) {
+  /* H and I are keyboard hints; on a touch screen the pause menu has Controls and the bar has All gauges */
+  .hud-keys { display: none; }
+  /* a tablet keeps the desktop layout; the LMST pill drops below the bar's Map and Pause in the top-right corner */
+  .hud-lmst { top: calc(var(--u) * 5.2 + 56px); }
+}
+
+@media (pointer: coarse) and (max-width: 600px) {
+  .hud {
+    --u: 12px;
+    --top: env(safe-area-inset-top, 0px);
+    --side-l: calc(10px + env(safe-area-inset-left, 0px));
+    --side-r: calc(10px + env(safe-area-inset-right, 0px));
+  }
+  .hud-eva { top: calc(12px + var(--top)); left: var(--side-l); font-size: 0.95em; }
+  .hud-lmst { display: none; }
+  .hud-heading { top: calc(60px + var(--top)); width: 78vw; }
+
+  .hud-waypoint {
+    top: calc(108px + var(--top)); bottom: auto; left: var(--side-l); right: var(--side-r); transform: none;
+    padding: 0.5em 0.8em; white-space: normal;
+  }
+  .hud-waypoint-row { gap: 0.9em; justify-content: space-between; }
+  .hud-wp-name { font-size: 1.25em; }
+  .hud-wp-cell b { font-size: 1.3em; }
+  .hud-waypoint .elevation-profile { display: none; }
+
+  .hud-suit { left: var(--side-l); top: calc(170px + var(--top)); width: min(44vw, 170px); padding: 0.7em 0.8em 0.6em; }
+  .hud-row { margin-bottom: 0.6em; }
+  .hud-row-head b { font-size: 1.55em; }
+  .hud-walkback { padding-top: 0.5em; }
+
+  .hud-right { --hud-right-w: min(40vw, 160px); right: var(--side-r); top: calc(170px + var(--top)); }
+  .hud-map-wrap { --map-size: min(40vw, 160px); }
+  .hud .hud-right .hud-map-legend { display: none; }
+  .hud-nav { max-width: 100%; }
+
+  .hud-partner { left: var(--side-l); top: calc(170px + var(--top) + 15.5em); width: min(44vw, 170px); }
+
+}
+
+/* A phone held sideways: about 390 px tall. Smaller unit, the waypoint row up top in the middle, the beat line between the
+   stick and the action bar. */
+@media (pointer: coarse) and (max-height: 500px) {
+  .hud {
+    --u: 10.5px;
+    --top: env(safe-area-inset-top, 0px);
+    --side-l: calc(10px + env(safe-area-inset-left, 0px));
+    --side-r: calc(10px + env(safe-area-inset-right, 0px));
+  }
+  .hud-eva { top: calc(10px + var(--top)); left: var(--side-l); }
+  .hud-lmst { display: none; }
+  .hud-heading { top: calc(6px + var(--top)); width: 36vw; }
+  .hud-waypoint { top: calc(54px + var(--top)); bottom: auto; padding: 0.45em 0.8em; }
+  .hud-waypoint .elevation-profile { display: none; }
+  .hud-suit { left: var(--side-l); top: calc(52px + var(--top)); width: 150px; padding: 0.6em 0.75em 0.5em; }
+  .hud-row { margin-bottom: 0.5em; }
+  .hud-row-head b { font-size: 1.45em; }
+  .hud-right { --hud-right-w: 120px; right: var(--side-r); top: calc(64px + var(--top)); }
+  .hud-map-wrap { --map-size: 120px; }
+  .hud .hud-right .hud-map-legend { display: none; }
+  .hud .hud-partner { display: none; }   /* the minimap shows the partner; T in the bar's More menu opens the detail */
+  .hud .hud-partner:has(.hud-partner-detail) { display: flex; left: calc(var(--side-l) + 160px); top: calc(52px + var(--top)); }
+}
+
+/* The find card (src/finds/finds.css): touch-sized Add and Dismiss without their key caps, clear of the stick and the bar. */
+@media (pointer: coarse) {
+  .find-card .find-actions button { min-height: 44px; font-size: 14px; }
+  .find-card .find-actions kbd { display: none; }
+}
+@media (pointer: coarse) and (max-width: 600px) {
+  .find-card { width: calc(100vw - 24px); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+  /* an alert sits above the stick, in the beat line's place, so the waypoint row and the suit panel stay readable;
+     the beat line waits until the alert clears */
+  .event-banner.event-banner-walk { top: auto; bottom: calc(150px + env(safe-area-inset-bottom, 0px)); width: calc(100vw - 20px); padding: 8px 12px; }
+  .event-banner-walk .event-text { font-size: 16px; }
+  .app:has(.event-banner-walk) .mission-beat { display: none; }
+}
+@media (pointer: coarse) and (max-height: 500px) {
+  .find-card { width: min(44vw, 360px); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .event-banner.event-banner-walk { top: auto; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: min(44vw, 400px); padding: 6px 10px; }
+  .event-banner-walk .event-text { font-size: 14px; }
+  .app:has(.event-banner-walk) .mission-beat { display: none; }
+}
+
+/* The steep-slope warning (SlopeAhead.jsx): full width under the waypoint row in portrait, over the waypoint row in
+   landscape, with a touch-sized detour button. */
+@media (pointer: coarse) {
+  .hud-slope-copy button { min-height: 44px; }
+}
+@media (pointer: coarse) and (max-width: 600px) {
+  .hud-slope-warning { left: var(--side-l); right: var(--side-r); top: calc(170px + var(--top)); width: auto; }
+}
+@media (pointer: coarse) and (max-height: 500px) {
+  .hud-slope-warning { left: 50%; right: auto; transform: translateX(-50%); top: calc(50px + var(--top)); width: min(44vw, 360px); }
+}
+
+/* The data layer chip (layerChip.css) leaves the stick's corner: under the partner chip in portrait, right of the suit
+   panel in landscape. Its "0 off" key cap is a keyboard hint; Layer off is in the bar's More menu. */
+@media (pointer: coarse) {
+  .hud-layer-key { display: none; }
+}
+@media (pointer: coarse) and (max-width: 600px) {
+  .hud .hud-layer { left: var(--side-l); bottom: auto; top: calc(170px + var(--top) + 15.5em + 48px); max-width: calc(100vw - 20px); }
+}
+@media (pointer: coarse) and (max-height: 500px) {
+  .hud .hud-layer { left: calc(var(--side-l) + 160px); bottom: auto; top: calc(110px + var(--top)); max-width: 30vw; }
+}

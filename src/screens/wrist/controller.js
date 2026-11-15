@@ -1,3 +1,4 @@
+import { codeOf } from '../../input/actions.js';
 import { useMissionStore, setLayer } from '../../state/store.js';
 import { createRedrawScheduler } from '../../hud/minimapRedraw.js';
 import { subscribeLanguage } from '../../i18n/index.js';
@@ -54,7 +55,7 @@ export function connectWrist(engine, store = useMissionStore) {
     if (state.mode !== 'walk' || state.mission.paused
       || document.querySelector('.sources, [role="dialog"], [aria-modal="true"]')) return;
     if (!open && document.querySelector('.stop-card-walk')) return;
-    if (event.code === 'KeyQ') qHeld = true;
+    if (event.code === codeOf('find')) qHeld = true;
     const action = wristKey(event, open, { qHeld });
     if (!action) return;
     event.preventDefault();
@@ -78,7 +79,7 @@ export function connectWrist(engine, store = useMissionStore) {
       scheduler.request('key');
     }
   };
-  const onKeyUp = (event) => { if (event.code === 'KeyQ') qHeld = false; };
+  const onKeyUp = (event) => { if (event.code === codeOf('find')) qHeld = false; };
   const onBlur = () => { qHeld = false; };
   window.addEventListener('keydown', onKey);
   window.addEventListener('keyup', onKeyUp);

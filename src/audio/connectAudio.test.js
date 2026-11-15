@@ -44,6 +44,19 @@ describe('suit audio connection (#72)', () => {
     expect(audio.dispose).toHaveBeenCalled();
   });
 
+  it('keeps listening after a touch that left the context suspended, and starts on the finger lifting (#365)', () => {
+    const { win, audio, off } = connect();
+    audio.start = vi.fn(() => { if (audio.start.mock.calls.length >= 2) audio.running = true; });
+    win.fire('pointerdown');   // a finger going down: the browser makes the context but keeps it suspended
+    expect(audio.running).toBe(false);
+    expect(win.handlers.touchend.size).toBe(1);
+    win.fire('touchend');      // the finger lifts: a user activation, so the context resumes
+    expect(audio.start).toHaveBeenCalledTimes(2);
+    expect(audio.running).toBe(true);
+    for (const type of ['pointerdown', 'pointerup', 'touchend', 'keydown']) expect(win.handlers[type].size).toBe(0);
+    off();
+  });
+
   it('plays a tone and a habitat call for a new alert, and radio cues for the partner link', () => {
     const { audio, off } = connect();
     useMissionStore.setState({ alerts: { storm: { level: 'warning', active: true } } });

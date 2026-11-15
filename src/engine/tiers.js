@@ -7,7 +7,10 @@ export const TIERS = {
 };
 
 // weak GPUs start on Low (bench boot, lines 881-884)
-export function detectTier(renderer) {
+// A touch-only device (a phone or a tablet without a mouse, src/input/device.js) starts on Low whatever its GPU reports
+// (#365): Safari reports every Apple chip as "Apple GPU", some Android browsers hide the name, and a phone's battery and
+// heat matter as much as its peak speed. ?tier=high or the High button in the settings still overrides it.
+export function detectTier(renderer, { touchOnly = false } = {}) {
   const gl = renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info'), gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : '';
   // AMD integrated graphics ("AMD Radeon(TM) Graphics", "Radeon Vega 8 Graphics") also start on Low: measured on a Ryzen 5 5600H,
   // High drops to 41 fps inside the habitat while Low holds 58-60 everywhere (docs/marswalk-assets/README.md, Tiers).
@@ -18,5 +21,5 @@ export function detectTier(renderer) {
   // another word does not count. Not measured on an Iris Xe laptop yet; the 3-second check drops it to Low if High is too slow.
   const intelFast = /\bArc\b|\bIris(\(R\))? ?Xe\b|\bIntel(\(R\))? Xe Graphics\b/i.test(gpu);
   const weak = (/Intel|SwiftShader|llvmpipe|Mali|Adreno|PowerVR|Apple GPU|Microsoft Basic/i.test(gpu) && !intelFast) || amdIntegrated;
-  return { tier: weak ? 'low' : 'high', gpu };
+  return { tier: weak || touchOnly ? 'low' : 'high', gpu };
 }

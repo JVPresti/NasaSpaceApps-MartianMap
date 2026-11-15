@@ -1,0 +1,217 @@
+/* The mission table on phones and tablets (#365). Every rule sits in a media query, so a desktop window wider than
+   900 px and taller than 500 px keeps table.css as it is.
+
+   Portrait (up to 900 px wide): the step tabs and the way out at the top, the map under them, and the step's panels in
+   a sheet that scrolls under the map. The bar under the map folds the sheet away so the map fills the body.
+
+     [ 17:45 LMST · Habitat    Back  Pause ]
+     [ Site | Route | Hazards | Suit       ]
+     +-------------------------------------+
+     |                map                  |
+     +-------------------------------------+
+     [          Map only / Show panels     ]
+     | panels, scrolling ...               |
+     | [ Begin EVA ] (sticky)              |
+
+   Landscape (up to 500 px high): one header row, the map on the left at full height, the panels scroll on the right.
+   PlanMode's wrapper (.plan-touch) has no box; it only carries the sheet state (plan-sheet-open / plan-sheet-map). */
+
+.plan-touch { display: contents; }
+.plan-sheet-toggle,
+.plan-menu-button { display: none; }
+
+/* ------------------------------------------------------------------ touch targets (coarse pointers) */
+
+@media (pointer: coarse) {
+  .plan-menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 14px;
+    font: 600 15px var(--font-ui);
+    color: var(--ink);
+    background: rgba(10, 13, 17, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 0;
+  }
+
+  .table-screen button:not(.map-marker-hit),
+  .table-screen select,
+  .table-screen input:not([type='checkbox']):not([type='radio']) {
+    min-height: 44px;
+  }
+  .table-screen button:not(.map-marker-hit) { min-width: 44px; }
+  .table-screen input[type='range'] { height: 44px; }
+  .table-screen .table-close,
+  .table-screen .table-secondary { min-height: 44px; }
+  .table-layers-head .table-overlay-toggle { min-height: 44px; }
+  .table-layers button { min-height: 44px; }
+
+  /* the stop markers: a 44 px tall hit area around the number and its tag, centred on the same point */
+  .map-marker-hit { min-height: 44px; }
+  .map-pop-close { width: 44px; height: 44px; }
+  .map-pop-science { min-height: 44px; }
+
+  /* a checkbox's label is its target */
+  .table-check { min-height: 44px; }
+
+  /* readable notes: at least 14 px on a phone held at arm's length */
+  .table-note,
+  .table-text.small,
+  .saved-route-line,
+  .profiles-panel .table-note { font-size: 14px; }
+
+  /* the title bubble from TapTitles.jsx sits in tapTitles.css */
+}
+
+/* ------------------------------------------------------------------ stacked table (narrow or short windows) */
+
+@media (pointer: coarse) and (max-width: 900px), (pointer: coarse) and (max-height: 500px) {
+  .table-screen {
+    --table-pad: 12px;
+    gap: 8px;
+    overflow: hidden;
+    padding:
+      calc(8px + env(safe-area-inset-top)) calc(var(--table-pad) + env(safe-area-inset-right))
+      calc(6px + env(safe-area-inset-bottom)) calc(var(--table-pad) + env(safe-area-inset-left));
+  }
+
+  .table-top {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: stretch;
+    gap: 6px;
+  }
+  .table-brand { display: none; }
+  .table-end {
+    grid-row: 1;
+    justify-self: stretch;
+    justify-content: flex-end;
+    gap: 8px;
+    min-width: 0;
+  }
+  .table-time { margin-right: auto; min-width: 0; font-size: 13px; line-height: 1.25; }
+  .table-close { padding: 6px 12px; }
+  .table-tabs { grid-row: 2; gap: 4px; }
+  .table-tabs button { flex: 1 1 0; min-width: 0; min-height: 44px; padding: 6px 4px 8px; }
+
+  /* the body scrolls; the map sticks to its top while the panels pass under it */
+  .table-body {
+    container-type: size;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    --map-side: min(100cqw, calc(52cqh - 52px));
+  }
+  .table-left,
+  .table-right { flex: none; min-height: max-content; overflow: visible; }
+  .table-left > .table-panel,
+  .table-right > .table-panel { flex: none; overflow: visible; }
+  .table-body > .table-centre {
+    order: -1;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: auto;
+    padding-bottom: 4px;
+    background: rgba(10, 13, 17, 0.94);
+  }
+  .table-body > .table-centre > .table-map { width: var(--map-side); height: auto; max-width: 100%; }
+  .table-body > .table-centre > .table-overlay { bottom: 52px; }
+  .table-body > .table-centre > .table-overlay .stop-card-plan { max-height: calc(var(--map-side) - 24px); overflow-y: auto; }
+
+  /* map furniture on a small map */
+  .table-map-caption { top: 8px; left: 8px; font-size: 12px; }
+  .table-map-caption span { font-size: 11px; }
+  .table-map-legend { left: 8px; bottom: 8px; max-width: 58%; padding: 6px 8px; font-size: 12px; }
+  .table-map-legend p { margin-bottom: 4px; }
+  .table-map-legend .table-map-decides { font-size: 11px; }
+  .table-map-fit { top: 8px; right: 8px; }
+  .table-map-traverse-key { right: 8px; bottom: 8px; max-width: 40%; padding: 4px 6px; font-size: 11px; }
+  .table-map-legend { max-width: 55%; }
+  .table-close { white-space: nowrap; font-size: 14px; }
+
+  /* the hazard cards: one column, the illustration a band */
+  .table-hazards { overflow: visible; }
+
+  /* the suit figure: a band, not the whole screen */
+  .table-body-suit .table-centre-wrap { flex: none; }
+  .table-body-suit .table-centre { height: min(60cqh, 420px); flex: none; }
+
+  /* the actions stay at the foot of the sheet while the right column is in view */
+  .table-right .table-actions { padding-bottom: 4px; }
+
+  /* While the saved-routes name has the keyboard, the screen is half its height: the map steps aside and the actions
+     stop sticking, so the field and its Save button stay in the space left. */
+  .table-body:has(.save-route-form input:focus) > .table-centre { display: none; }
+  .table-body:has(.save-route-form input:focus) .table-actions { position: static; }
+
+  /* the saved-routes name keeps clear of the sticky actions and the keyboard (SavedRoutes.jsx scrolls it into view) */
+  .save-route-form input { scroll-margin: 72px 0 96px; font-size: 16px; }   /* 16 px: iOS does not zoom the page */
+}
+
+/* Landscape phone: header in one row, the map left at full height, the panels right. */
+@media (pointer: coarse) and (max-height: 500px) and (orientation: landscape) {
+  .table-top { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
+  .table-tabs { grid-row: 1; grid-column: 1; }
+  .table-tabs button { flex: 0 0 auto; min-width: 72px; padding: 6px 8px 8px; }
+  .table-end { grid-column: 2; }
+
+  .table-body:has(> .table-centre) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-auto-rows: max-content;
+    align-content: start;
+    column-gap: 14px;
+    --map-side: min(55cqw, 100cqh);
+  }
+  .table-body:has(> .table-centre) > * { grid-column: 2; min-height: max-content; }
+  .table-body:has(> .table-centre) > .table-centre {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: start;
+    height: 100cqh;
+    padding: 0;
+  }
+  .table-body > .table-centre > .table-overlay { bottom: 12px; }
+  .table-body > .table-centre > .table-overlay .stop-card-plan { max-height: calc(100cqh - 24px); }
+  .table-body-suit .table-centre { height: 80cqh; }
+  /* sticky actions would cover a third of a 390 px screen: they sit at the end of the column instead */
+  .table-right .table-actions { position: static; }
+}
+
+/* Portrait only: the bar under the map folds the panels away (in landscape the map is already as tall as the body). */
+@media (pointer: coarse) and (max-width: 900px) and (min-height: 501px) {
+  .plan-sheet-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 16px;
+    font: 600 14px var(--font-ui);
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    border-top: 1px solid var(--panel-line);
+    cursor: pointer;
+  }
+  /* a sheet handle: a short bar */
+  .plan-sheet-toggle i { width: 36px; height: 4px; background: rgba(255, 255, 255, 0.45); border-radius: 2px; }
+
+  /* Map only: the panels fold away and the map takes the body */
+  .plan-sheet-map .table-body { overflow: hidden; --map-side: min(100cqw, calc(100cqh - 52px)); }
+  .plan-sheet-map .table-body > :not(.table-centre) { display: none; }
+  .plan-sheet-map .table-body > .table-centre { flex: 1 1 auto; justify-content: center; }
+
+}

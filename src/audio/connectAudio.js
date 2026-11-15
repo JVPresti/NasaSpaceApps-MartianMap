@@ -1,5 +1,5 @@
 // Connects the suit audio (#72) to the mission store, the engine and the page.
-//   - The audio starts on the first click or key press anywhere on the page (browsers block sound before one).
+//   - The audio starts on the first click, tap or key press anywhere on the page (browsers block sound before one).
 //   - Alerts that start or get worse play their tone, then a habitat radio call. The partner link dropping or coming
 //     back plays radio static or a click.
 //   - UPDATE_MS: suit levels follow the store (effort, wind, storm, dose rate) and the engine (footsteps from the distance
@@ -12,6 +12,8 @@ import { newAlerts, radioCue, shelterOf, stepsFor, suitAudible } from './audioRu
 import { getAudioSettings, subscribeAudioSettings } from './settings.js';
 
 export const UPDATE_MS = 50;
+/** The events that can carry a user activation for audio: a key, a click, and a finger lifting on a phone. */
+export const GESTURES = ['pointerdown', 'pointerup', 'touchend', 'keydown'];
 const CALL_AFTER_ALERT_S = 0.9;   // the habitat call follows the suit's own alert tone
 
 /**
@@ -22,14 +24,15 @@ export function connectAudio(engine, store = useMissionStore, { win = globalThis
   audio.setSettings(getAudioSettings());
   const unsubscribeSettings = subscribeAudioSettings((s) => audio.setSettings(s));
 
+  // A phone only unlocks audio when a finger lifts (pointerup, touchend), not when it goes down (#365), so the page
+  // listens to both and stops once the context runs. A muted player keeps it suspended; the listeners then go too.
   const start = () => {
     audio.start();
     audio.setSettings(getAudioSettings());
-    win.removeEventListener('pointerdown', start, true);
-    win.removeEventListener('keydown', start, true);
+    if (audio.running || getAudioSettings().muted) unlisten();
   };
-  win.addEventListener('pointerdown', start, true);
-  win.addEventListener('keydown', start, true);
+  const unlisten = () => { for (const type of GESTURES) win.removeEventListener(type, start, true); };
+  for (const type of GESTURES) win.addEventListener(type, start, true);
 
   const onVisibility = () => audio.setHidden(doc.visibilityState === 'hidden');
   doc.addEventListener('visibilitychange', onVisibility);
@@ -63,8 +66,7 @@ export function connectAudio(engine, store = useMissionStore, { win = globalThis
 
   return () => {
     clearInterval(timer); unsubscribe(); unsubscribeSettings();
-    win.removeEventListener('pointerdown', start, true);
-    win.removeEventListener('keydown', start, true);
+    unlisten();
     doc.removeEventListener('visibilitychange', onVisibility);
     audio.dispose();
   };

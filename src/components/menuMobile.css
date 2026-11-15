@@ -1,0 +1,121 @@
+/* Start screen, pause menu, settings, controls help and the EVA start view on phones and tablets (#365). Every rule
+   sits in a media query, so a desktop window wider than 900 px and taller than 500 px keeps menu.css as it is. */
+
+:root .menu-fullscreen { display: none; }
+:root .controls-touch { display: none; }
+
+/* ------------------------------------------------------------------ touch targets and touch content */
+
+@media (pointer: coarse) {
+  :root .menu-fullscreen { display: block; }
+
+  /* every menu button at least 44 px (menu.css drops them to 42 px under 820 px high) */
+  :root .modal .ui-button,
+  :root .modal .menu-actions .ui-button { min-height: 44px; min-width: 44px; }
+  :root .mode-switch button { min-height: 44px; min-width: 44px; }
+  :root .start-present { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; padding: 0 4px; }
+
+  /* the controls help leads with the touch controls; the keyboard tables stay below for a tablet with a keyboard */
+  :root .controls-touch { display: block; margin: 0 0 22px; }
+  :root .controls-touch + .controls-help { padding-top: 18px; border-top: 1px solid rgba(255, 255, 255, 0.18); }
+  :root .controls-touch .controls-keys-title { display: block; }
+  :root .eva-start-panel .keys-only { display: none; }
+  :root .eva-start-panel .eva-start-keys.touch-only { display: grid; }
+  :root .eva-start-panel .dialog-footnote.touch-only { display: block; }
+}
+
+:root .controls-keys-title { display: none; margin: 0 0 12px; font-size: 15px; font-weight: 500; color: var(--dim); }
+:root .eva-start-panel .touch-only { display: none; }
+
+:root .controls-touch-list { display: grid; gap: 10px; margin: 0; }
+:root .controls-touch-list > div {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+}
+:root .controls-touch-list > div:last-child { border-bottom: 0; padding-bottom: 0; }
+:root .controls-touch-list dt { font-weight: 600; color: var(--ink); }
+:root .controls-touch-list dd { margin: 0; font-size: 15px; line-height: 1.45; color: #e3e7eb; }
+
+/* ------------------------------------------------------------------ dialogs on small screens */
+
+@media (pointer: coarse) and (max-width: 900px), (pointer: coarse) and (max-height: 500px) {
+  :root .modal:not(.start-dialog):not(.debrief-dialog) {
+    width: min(520px, calc(100% - 16px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+  }
+  :root .modal:not(.start-dialog) {
+    max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    overscroll-behavior: contain;
+  }
+  :root .modal.controls-dialog,
+  :root .modal.eva-start-dialog { width: min(1040px, calc(100% - 16px - env(safe-area-inset-left) - env(safe-area-inset-right))); }
+
+  :root .dialog-body { padding: 22px 18px 20px; }
+  :root .dialog-title { font-size: 32px; }
+  :root .pause-dialog > .dialog-body,
+  :root .controls-panel.dialog-body { padding: 20px 18px 18px; }
+  :root .pause-dialog .dialog-title,
+  :root .controls-panel .dialog-title { font-size: 32px; }
+  :root .dialog-head { gap: 12px; margin-bottom: 16px; }
+  :root .menu-actions .menu-resume { min-height: 52px; font-size: 24px; }
+  :root .dialog-footnote { margin-top: 16px; }
+
+  /* the controls help in one column on a phone; its rows may wrap */
+  :root .controls-help { grid-template-columns: 1fr; gap: 20px; }
+  :root .controls-row { flex-wrap: wrap; gap: 6px 12px; }
+  :root .controls-row dd { text-align: left; }
+  :root .eva-start-row dd { font-size: 15px; }
+
+  /* the start screen scrolls when its content is taller than the window (a phone on its side) */
+  :root .start-dialog { overflow-y: auto; overscroll-behavior: contain; }
+  :root .start-layout {
+    justify-content: flex-start;
+    padding:
+      calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right))
+      calc(16px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));
+  }
+  :root .start-kicker { margin-bottom: 10px; font-size: 20px; }
+  :root .start-title { font-size: clamp(44px, 12vw, 64px); }
+  :root .start-text { margin-top: 12px; font-size: 16px; }
+  :root .start-actions { width: min(420px, 100%); margin-top: 20px; }
+  :root .start-primary { min-height: 56px; font-size: 24px; }
+  :root .start-actions .ui-button { min-height: 44px; }
+  /* the credit and the presentation link follow the buttons instead of sitting over them */
+  :root .start-credit { position: static; margin-top: 20px; font-size: 13px; line-height: 1.45; }
+  :root .start-present { position: static; align-self: flex-start; margin-top: 4px; }
+  /* the loading and error panel keeps clear of a notch */
+  :root .loading-screen {
+    padding:
+      calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+      calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+  }
+  :root .start-controls { width: calc(100% - 16px); max-height: calc(100dvh - 16px); }
+}
+
+/* A phone on its side: the text column and the buttons side by side, so the main action is on the first screen. */
+@media (pointer: coarse) and (max-height: 500px) and (orientation: landscape) {
+  :root .start-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 0.8fr);
+    grid-template-rows: auto auto auto;
+    column-gap: 24px;
+    align-content: start;
+  }
+  :root .start-hero { display: contents; }
+  :root .start-hero > * { grid-column: 1; }
+  :root .start-hero > .start-actions { grid-column: 2; grid-row: 1 / span 4; align-self: start; margin-top: 8px; width: 100%; }
+  :root .start-kicker { margin-bottom: 6px; }
+  :root .start-title { font-size: 44px; }
+  :root .start-text { font-size: 15px; line-height: 1.45; }
+  :root .start-credit { grid-column: 1 / -1; margin-top: 14px; }
+  :root .start-present { grid-column: 1 / -1; }
+  :root .dialog-title,
+  :root .pause-dialog .dialog-title,
+  :root .controls-panel .dialog-title { font-size: 28px; }
+  :root .pause-dialog .menu-actions { grid-template-columns: 1fr 1fr; }
+  :root .pause-dialog .menu-actions .menu-resume { grid-column: 1 / -1; }
+  :root .controls-help { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

@@ -1,7 +1,8 @@
 // The visor's mode (#283, #286): which key toggles every instrument, when the sampling checklist joins the default set,
 // and the classes that hud.css reads. Plain functions, so the rules are tested without a DOM.
+import { codeOf } from '../input/actions.js';
 
-export const DETAIL_CODE = 'KeyI';
+export const DETAIL_CODE = codeOf('visor-detail');
 
 /**
  * Whether a keydown toggles every instrument: I, no repeat or modifier, not while typing, not while the wrist screen owns

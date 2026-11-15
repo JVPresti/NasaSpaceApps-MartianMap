@@ -42,9 +42,10 @@ export function usePlacedPopup(getAnchor, deps) {
 
 // Where a source tag's details open when the tag is on the map (#380). The details are the shared SourceTag's own
 // portal, placed against the window; on the map they move beside the tag, or beside the legend card that holds it,
-// inside the map and clear of its chrome.
+// inside the map and clear of its chrome. The open tag is found by its hover, focus or open state: the tap that opens
+// it on a phone (#365) leaves no hover and, on some phones, no focus, so SourceTag marks the open tag itself.
 function placeTip(map, tip) {
-  const tag = map.querySelector('.source-tag-interactive:hover, .source-tag-interactive:focus');
+  const tag = map.querySelector('.source-tag-interactive:hover, .source-tag-interactive:focus, .source-tag-open');
   if (!tag) return;
   const origin = map.getBoundingClientRect();
   tip.style.maxWidth = `${Math.min(360, map.clientWidth - 2 * POPUP_EDGE)}px`;

@@ -35,9 +35,14 @@ import { STAGE, beginEgress, canSwitchMode, completeEgress, continueFromDebrief,
 import { preloadAppAssets } from './preload.js';
 import './App.css';
 import './components/menu.css';
+import { action } from './input/actions.js';
+import { touchOnly } from './input/device.js';
+import TouchActions from './components/TouchActions.jsx';
 
 // The wrist screen keeps a key strip while it is up (#231); the walk keys show once, on the card at the start of the EVA.
 const WRIST_HINT = 'menu.hint.wrist';
+const PAUSE_KEYS = action('pause').keys;
+const HELP_KEYS = action('help').keys;
 
 const SITE = 'ui.neretva.vallis.jezero.crater.mars';
 
@@ -117,8 +122,9 @@ export default function App() {
   // `freeLook` records the player's choice and stays on for the session, so later resumes, restarts and
   // Plan-to-Walk switches never ask the browser again for a lock it already refused.
   const [lockFailed, setLockFailed] = useState(false);
-  const [freeLook, setFreeLookState] = useState(false);
-  const freeLookRef = useRef(false);
+  // A touch-only device has no pointer lock to ask for (#365): it starts on drag-to-look.
+  const [freeLook, setFreeLookState] = useState(touchOnly);
+  const freeLookRef = useRef(freeLook);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [menuFocus, setMenuFocus] = useState(0);
@@ -453,14 +459,14 @@ export default function App() {
   useEffect(() => {
     const onKey = (event) => {
       if (event.repeat) return;
-      if (event.key === 'Escape') {
+      if (PAUSE_KEYS.includes(event.key)) {
         if (phaseRef.current === EVA_PHASE.PLAYING) {
           event.preventDefault();
           pauseFor(PAUSE_VIEW.MENU);
         }
         return;
       }
-      if (event.key === 'h' || event.key === 'H') {
+      if (HELP_KEYS.includes(event.key)) {
         if (phaseRef.current === EVA_PHASE.PLAYING) {
           event.preventDefault();
           setControlsFromMenu(false);
@@ -599,13 +605,15 @@ export default function App() {
       {/* Inputs appear only after they are used (#103): the stick on the first touch, the pad hint on the first press. */}
       {load.status === 'ready' && mode === 'walk' && !evaSummary && <TouchStick engine={engine} />}
       {load.status === 'ready' && mode === 'walk' && !evaSummary && <GamepadHint engine={engine} />}
+      {/* Every keyboard action as a button on a touch screen (#365); the stick and drag-to-look stay with the engine. */}
+      {playing && mode === 'walk' && <TouchActions engine={engine} wristOpen={wristOpen} />}
       {load.status === 'ready' && <Finds engine={engine} mode={mode} />}
 
       {load.status === 'ready' && <WalkStopCard active={mode === 'walk' && stage === STAGE.EVA} />}
 
       {load.status === 'ready' && stage === STAGE.EGRESS && <AirlockCycle running={phase === EVA_PHASE.PLAYING} />}
 
-      {playing && mode === 'walk' && wristOpen && <p className="hint">{t(WRIST_HINT)}</p>}
+      {playing && mode === 'walk' && wristOpen && <p className="hint hint-keys">{t(WRIST_HINT)}</p>}
       {/* The first mission's beat line (#265) takes the key strip's place while the wrist screen is down. */}
       {playing && mode === 'walk' && !wristOpen && <WalkBeat evaBegun={evaBegun} />}
 
