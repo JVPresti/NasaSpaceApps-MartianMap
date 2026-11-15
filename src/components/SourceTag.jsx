@@ -1,7 +1,6 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { provenance as appRegistry, describeEntry, textAlternative } from '../data/provenance.js';
-import { MAP_CHROME, chromeRects, placePopup, rectIn } from '../plan/popupPlacement.js';
 import { useMissionStore } from '../state/store.js';
 import { tipAfterTap } from './sourceTagTap.js';
 import './SourceTag.css';
@@ -23,39 +22,14 @@ function placeTip(anchor) {
   return below < window.innerHeight * 0.6 ? { left, top: below, maxWidth: w } : { left, bottom: window.innerHeight - r.top + GAP, maxWidth: w };
 }
 
-// On the mission table map the details follow the map's popup rules (#380): inside the map, beside the tag, or beside
-// the legend card that holds it, and clear of the map's caption, legend and rover key.
-function placeOnMap(anchor, tip) {
-  const map = anchor.closest('.table-map');
-  if (!map) return null;
-  const origin = map.getBoundingClientRect();
-  const card = anchor.closest(MAP_CHROME);
-  const p = placePopup({
-    anchor: rectIn(origin, card ?? anchor),
-    size: { width: tip.offsetWidth, height: tip.offsetHeight },
-    box: { width: map.clientWidth, height: map.clientHeight },
-    avoid: chromeRects(map, origin, anchor),
-  });
-  return { left: origin.left + p.left, top: origin.top + p.top };
-}
-
-function Details({ entry, style, anchor, onEnter, onLeave, tipRef }) {
+function Details({ entry, style, onEnter, onLeave, tipRef }) {
   const ref = useRef(null);
   // Inside an open modal dialog (the debrief, the sources screen) the portal goes into the dialog, so the details sit in
   // the top layer with it instead of under it (#365).
   const host = document.querySelector('dialog[open]') ?? document.body;
   const setRef = (el) => { ref.current = el; if (tipRef) tipRef.current = el; };
-  const [onMap, setOnMap] = useState(null);
-  const inMap = Boolean(anchor?.closest('.table-map'));
-  useLayoutEffect(() => {
-    if (!inMap || !ref.current) return;
-    const map = anchor.closest('.table-map');
-    ref.current.style.maxWidth = `${Math.min(TIP_WIDTH, map.clientWidth - 2 * MARGIN)}px`;
-    setOnMap(placeOnMap(anchor, ref.current));
-  }, [anchor, inMap, entry]);
-  const placed = !inMap ? style : onMap ? { left: onMap.left, top: onMap.top, maxWidth: style.maxWidth } : { ...style, visibility: 'hidden' };
   return createPortal(
-    <div className="source-tag-tip" ref={setRef} style={placed} aria-hidden="true" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+    <div className="source-tag-tip" ref={setRef} style={style} aria-hidden="true" onMouseEnter={onEnter} onMouseLeave={onLeave}>
       <dl>
         {describeEntry(entry).map(([k, v, href]) => (
           <div key={k}>
@@ -93,7 +67,6 @@ export default function SourceTag({ path, variant = 'label', interactive = true,
   useSyncExternalStore(registry.subscribe, registry.getVersion, registry.getVersion);
   const id = useId();
   const [tip, setTip] = useState(null);
-  const [anchor, setAnchor] = useState(null);
   const closeTimer = useRef(null);
   const tipRef = useRef(null);
   useEffect(() => () => clearTimeout(closeTimer.current), []);
@@ -115,7 +88,7 @@ export default function SourceTag({ path, variant = 'label', interactive = true,
     );
   }
 
-  const open = (e) => { clearTimeout(closeTimer.current); setAnchor(e.currentTarget); setTip(placeTip(e.currentTarget)); };
+  const open = (e) => { clearTimeout(closeTimer.current); setTip(placeTip(e.currentTarget)); };
   const closeSoon = () => { clearTimeout(closeTimer.current); closeTimer.current = setTimeout(() => setTip(null), CLOSE_MS); };
   const keep = () => clearTimeout(closeTimer.current);
   const close = () => { clearTimeout(closeTimer.current); setTip(null); };
@@ -134,7 +107,7 @@ export default function SourceTag({ path, variant = 'label', interactive = true,
     >
       <span aria-hidden="true">{text}</span>
       <span id={id} className="source-tag-sr">{alt}</span>
-      {tip && <Details entry={entry} style={tip} anchor={anchor} onEnter={keep} onLeave={closeSoon} tipRef={tipRef} />}
+      {tip && <Details entry={entry} style={tip} onEnter={keep} onLeave={closeSoon} tipRef={tipRef} />}
     </span>
   );
 }

@@ -1,5 +1,5 @@
-import { useLayoutEffect, useRef, useState } from 'react';
-import { chromeRects, placePopup, rectIn } from './popupPlacement.js';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { MAP_CHROME, POPUP_EDGE, chromeRects, placePopup, rectIn } from './popupPlacement.js';
 
 /**
  * Places a popup inside its .table-map with placePopup: beside the anchor, clear of the map's chrome and of any other
@@ -19,7 +19,8 @@ export function usePlacedPopup(getAnchor, deps) {
       const anchorEl = getAnchor();
       if (!anchorEl) return;
       const origin = map.getBoundingClientRect();
-      const others = [...map.querySelectorAll('.map-pop')].filter((el) => el !== pop).map((el) => rectIn(origin, el));
+      // other open popups and the stop and pin labels, which a popup should leave readable when it can
+      const others = [...map.querySelectorAll('.map-pop, .map-marker-hit, .map-pin-hit')].filter((el) => el !== pop && el !== anchorEl).map((el) => rectIn(origin, el));
       const next = placePopup({
         anchor: rectIn(origin, anchorEl),
         size: { width: pop.offsetWidth, height: pop.offsetHeight },
@@ -37,4 +38,40 @@ export function usePlacedPopup(getAnchor, deps) {
   }, deps);
   const style = pos ? { left: pos.left, top: pos.top } : { left: 0, top: 0, visibility: 'hidden' };
   return [ref, style];
+}
+
+// Where a source tag's details open when the tag is on the map (#380). The details are the shared SourceTag's own
+// portal, placed against the window; on the map they move beside the tag, or beside the legend card that holds it,
+// inside the map and clear of its chrome.
+function placeTip(map, tip) {
+  const tag = map.querySelector('.source-tag-interactive:hover, .source-tag-interactive:focus');
+  if (!tag) return;
+  const origin = map.getBoundingClientRect();
+  tip.style.maxWidth = `${Math.min(360, map.clientWidth - 2 * POPUP_EDGE)}px`;
+  const card = tag.closest(MAP_CHROME);
+  const p = placePopup({
+    anchor: rectIn(origin, card ?? tag),
+    size: { width: tip.offsetWidth, height: tip.offsetHeight },
+    box: { width: map.clientWidth, height: map.clientHeight },
+    avoid: [...chromeRects(map, origin, tag), ...[...map.querySelectorAll('.map-pop, .map-marker-hit, .map-pin-hit')].map((el) => rectIn(origin, el))],
+  });
+  tip.style.left = `${origin.left + p.left}px`;
+  tip.style.top = `${origin.top + p.top}px`;
+  tip.style.bottom = 'auto';
+}
+
+/** Moves any source tag details that open for a tag inside `mapRef`'s map. */
+export function useMapTipPlacement(mapRef) {
+  useEffect(() => {
+    if (typeof MutationObserver !== 'function') return undefined;
+    const observer = new MutationObserver((records) => {
+      const map = mapRef.current;
+      if (!map) return;
+      for (const r of records) for (const node of r.addedNodes) {
+        if (node.nodeType === 1 && node.classList.contains('source-tag-tip')) placeTip(map, node);
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [mapRef]);
 }

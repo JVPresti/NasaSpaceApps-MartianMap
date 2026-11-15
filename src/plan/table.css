@@ -150,6 +150,11 @@
 
 .table-text.small { font-size: 14px; }
 
+/* The step's title and description, boxed like the panels under it (#395), so the left column starts with a panel
+   level with the right column's first one. flex: none keeps it at its text's height when the column scrolls. */
+.table-intro { flex: none; display: flex; flex-direction: column; gap: 10px; }
+.table-intro .table-note { margin-top: 0; }
+
 .table-panel {
   padding: 16px 18px;
   background: var(--panel-bg);
@@ -857,7 +862,7 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
   .table-stops { gap: 2px; }
   .table-body-route .table-right { gap: 10px; }
   /* the goal's one-line description: the goal select and the stop list say the same on a short screen */
-  .table-body-route .table-left > .table-text { display: none; }
+  .table-body-route .table-intro > .table-text { display: none; }
 }
 
 @media (max-width: 1100px) {
