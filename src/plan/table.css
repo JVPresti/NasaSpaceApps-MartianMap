@@ -1180,6 +1180,10 @@ button.table-stop-name {
   .profiles-table td { padding-top: 1px; padding-bottom: 1px; }
   .table-big > span { margin-top: 2px; }
   .table-hazard-cards dd { font-size: 14px; }
+  .table-stops .table-stop-why { line-height: 1.25; }
+  .profiles-panel .table-label { margin-bottom: 6px; }
+  .profiles-panel .profiles-what { margin-top: 4px; }
+  .profiles-table .profiles-group th { padding-top: 3px; }
   /* the Suit step's right column: the decision names the plan, its tightest limit and the expected alert */
   .ring svg { max-width: 104px; }
   .ring figcaption b { font-size: 28px; }
