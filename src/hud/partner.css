@@ -19,7 +19,7 @@
 .hud-partner-range b { font-size: 1.35em; }
 .hud-partner-brg { color: var(--dim); font-size: 0.85em; }
 .hud-partner-key {
-  margin-left: auto; padding: 0 0.4em; font: 600 0.62em/1.5 ui-monospace, Consolas, monospace; color: var(--dim);
+  margin-left: auto; padding: 0 0.4em; font: 600 max(var(--hud-min-text), 0.62em)/1.5 ui-monospace, Consolas, monospace; color: var(--dim);
   border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 0.3em;
 }
 .hud-partner-sep-caution .hud-partner-range b { color: var(--caution); }
@@ -31,7 +31,7 @@
 .hud-partner-row { margin-bottom: 0.7em; }
 .hud-partner-row:last-child { margin-bottom: 0; }
 .hud-partner-row .hud-row-head b { font-size: 1.4em; }
-.hud-partner-sep-label { color: var(--unit); font-weight: 700; font-size: 0.75em; letter-spacing: 0.1em; }
+.hud-partner-sep-label { color: var(--unit); font-weight: 700; font-size: max(var(--hud-min-text), 0.75em); letter-spacing: 0.1em; }
 .hud-partner-sep { padding-top: 0.6em; border-top: 1px solid rgba(255, 245, 235, 0.45); }
 .hud-partner-sep .hud-caption { display: flex; align-items: baseline; }
 
@@ -46,8 +46,8 @@
 .hud-partner-dot-lost { background: transparent; border: 1.5px solid var(--dim); box-shadow: none; }
 .hud-partner-lost .hud-partner-chip { border-left-color: rgba(251, 245, 238, 0.45); }
 .hud-partner-lost .hud-partner-id, .hud-partner-lost .hud-partner-range b, .hud-partner-lost .hud-partner-arrow { color: var(--dim); fill: var(--dim); }
-.hud-partner-last { margin-left: auto; font: 700 0.6em/1.5 system-ui, 'Segoe UI', sans-serif; letter-spacing: 0.12em; color: var(--dim); }
-.hud-partner-nolink { display: flex; align-items: baseline; margin-bottom: 0.6em; font: 700 0.62em/1.4 system-ui, 'Segoe UI', sans-serif; letter-spacing: 0.1em; color: var(--dim); }
+.hud-partner-last { margin-left: auto; font: 700 max(var(--hud-min-text), 0.6em)/1.5 system-ui, 'Segoe UI', sans-serif; letter-spacing: 0.12em; color: var(--dim); }
+.hud-partner-nolink { display: flex; align-items: baseline; margin-bottom: 0.6em; font: 700 max(var(--hud-min-text), 0.62em)/1.4 system-ui, 'Segoe UI', sans-serif; letter-spacing: 0.1em; color: var(--dim); }
 
 /* minimap legend key for the partner marker */
 .hud-map-key-partner { width: 0.8em; height: 0.8em; border-radius: 50%; background: #ff9a3c; }
