@@ -57,9 +57,14 @@ export default function TaskList({ waypoints, legs = NONE, explain = NONE, planT
   const full = tasks.length >= 3;
   const points = [...new Map(tasks.filter((task) => task.place?.type === 'point').map((task) => [task.place.id, task.place])).values()];
   const set = (list) => { if (!off) setTasks(list); };
-  // the list scrolls inside its panel on a short screen: bring the pick hint or the word on a click into view
+  // The list scrolls inside its panel on a short screen: while a pick is on, its hint or the word on a click in view;
+  // once it ends, or the plan changes, the list back at its top, so task 1 (the one a no-go names) shows.
+  const listRef = useRef(null);
   const noteRef = useRef(null);
-  useEffect(() => { noteRef.current?.scrollIntoView?.({ block: 'nearest' }); }, [pick.taskId, pick.note]);
+  useEffect(() => {
+    if (pick.taskId) noteRef.current?.scrollIntoView?.({ block: 'nearest' });
+    else if (listRef.current) listRef.current.scrollTop = 0;
+  }, [pick.taskId, pick.note, planTasks]);
 
   const onWhere = (task, value) => {
     if (value === 'pick') { startPick(task.id); return; }
@@ -87,7 +92,7 @@ export default function TaskList({ waypoints, legs = NONE, explain = NONE, planT
         </button>
       </div>
       {tasks.length === 0 ? <p className="table-note">{t('tasks.plan.none')}</p> : (
-        <ol className="table-stops">
+        <ol className="table-stops" ref={listRef}>
           {tasks.map((task, k) => {
             const n = k + 1;
             const { code, line, dropped } = planned(task, { waypoints, legs, explain, planTasks });
@@ -106,7 +111,7 @@ export default function TaskList({ waypoints, legs = NONE, explain = NONE, planT
                   {COUNTS.map((count) => <option key={count} value={count}>{t('tasktable.count', { n: count })}</option>)}
                 </select>
                 <select className="needs-select task-where" data-task-where={task.id} aria-label={t('tasktable.where.label', { n })}
-                  value={whereValue(task.place)} disabled={off} onChange={(event) => onWhere(task, event.target.value)}>
+                  value={pick.taskId === task.id ? 'pick' : whereValue(task.place)} disabled={off} onChange={(event) => onWhere(task, event.target.value)}>
                   {candidates.map((stop) => <option key={stop.id} value={'stop:' + stop.id}>{translateText(stop.name)}</option>)}
                   {points.map((p) => <option key={p.id} value={'point:' + p.id}>{t('tasktable.where.at.point', { id: p.id })}</option>)}
                   {/* a stop the file has not loaded yet still shows as chosen */}
@@ -119,7 +124,7 @@ export default function TaskList({ waypoints, legs = NONE, explain = NONE, planT
                 {line && <small className="table-stop-why">{line}</small>}
                 {pick.taskId === task.id && (
                   <p className="table-note" ref={note ? undefined : noteRef}>
-                    {t('tasktable.pick.hint', { n })}{' '}
+                    {t('tasktable.pick.hint')}{' '}
                     <button type="button" className="table-link" onClick={cancelPick}>{t('tasktable.pick.cancel')}</button>
                   </p>
                 )}

@@ -1168,6 +1168,9 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
    on a 1366 x 768 screen; rows from the top, as a list being edited grows. */
 .task-panel { min-height: 150px; }
 .task-panel > .table-stops { min-height: 0; overflow-y: auto; align-content: start; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+/* the list rests on the top of a row, never on half of one */
+.task-panel > .table-stops { scroll-snap-type: y proximity; }
+.task-panel > .table-stops > li { scroll-snap-align: start; }
 .table-stops > li > .table-note { grid-column: 2 / -1; margin: 0; font-size: 12px; line-height: 1.35; }   /* the size of the stop line */
 
 /* ------------------------------------------------------------------ conditions outlook (#248) */

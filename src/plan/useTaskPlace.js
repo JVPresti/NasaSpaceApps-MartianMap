@@ -78,7 +78,6 @@ function placeName(place) {
  *   tasks: the new list, null when refused; done: the pick is over
  */
 export function placeTask(grid, point, { taskId, tasks, start, candidates }) {
-  const n = tasks.findIndex((task) => task.id === taskId) + 1;
   const result = checkTaskPoint(grid, point, { start, stops: candidates, points: listPoints(withoutTask(tasks, taskId)) });
   if (!result.ok) {
     const values = { slope: Number.isFinite(result.slopeDeg) ? formatNumber(result.slopeDeg, 0) : '–', limit: COST_CONSTANTS.SLOPE_LIMIT_DEG, snap: SNAP_M };
@@ -87,7 +86,7 @@ export function placeTask(grid, point, { taskId, tasks, start, candidates }) {
   let place = result.place;
   let note = null;
   if (place.type === 'stop' || place.id) {
-    note = { tone: null, text: t('tasktable.near', { n, place: placeName(resolvePlace(place, candidates)), m: formatNumber(result.snappedM, 0) }), tag: null };
+    note = { tone: null, text: t('tasktable.near', { place: placeName(resolvePlace(place, candidates)), m: formatNumber(result.snappedM, 0) }), tag: null };
   } else {
     place = { ...place, id: nextPointId(withoutTask(tasks, taskId)) };
     if (result.snappedM > 0) note = { tone: null, text: t('tasktable.snapped', { m: formatNumber(result.snappedM, 0), limit: COST_CONSTANTS.SLOPE_LIMIT_DEG }), tag: 'tasks.place' };
