@@ -80,6 +80,23 @@ The canvas uses `touch-action: none` (src/App.css), so a touch on the scene neve
 | Touch inside the stick, drag | Walk in that direction; the further you push, the faster |
 | Push the stick past 85 % | Jog, up to 1.5 m/s |
 | Any other finger, drag | Look around |
+| Map, Pause (top right) | M and Esc |
+| Open plan, Finish EVA (in the habitat cabin) | E and X at the table |
+| Sample, Photo, Stow, Case | Click, P, E and F. Each button shows only while its action does something, in its own row above Wrist and More |
+| Wrist | R. While the wrist is up: Page back, Next page, Row up, Row down, Select ([, ], K, J, Enter) |
+| More | Layer (L), Layer off (0), Hold: find (Q, hold 2 s), Partner (T), Slope grid (G), All gauges (I), Visor frame (V), Sources (C), Full screen |
+| Find card | Add to route and Dismiss (Y and N) are buttons on the card |
+
+The touch action bar (`src/components/TouchActions.jsx`, #365) shows on a coarse pointer, or after the first touch on
+the scene on a touchscreen laptop. Its buttons come from the action list in
+[src/input/actions.js](../src/input/actions.js), the one place every key binding lives: each entry names its key codes
+and its touch control. A tap sends the action's key through the same handler the keyboard uses, so every guard applies
+(the wrist owns the keys while up, a dialog is open, the habitat cabin). `src/input/actions.test.js` scans `src/` and
+fails when a handler listens for a key that has no entry, or an entry has no touch control.
+
+A device whose pointers are all coarse (a phone, or a tablet without a trackpad) starts on drag-to-look without asking
+for a pointer lock, on the Low graphics tier (`?tier=high` or the High button in Settings overrides it), and draws the
+stick at rest from the start. Audio starts when the first finger lifts, the user activation a phone accepts.
 
 Touch is read from Touch Events, not Pointer Events: while the mouse pointer is locked, Chrome reports
 `clientX/clientY` as 0 on touch Pointer Events, while Touch Events keep the real coordinates. So a touchscreen
