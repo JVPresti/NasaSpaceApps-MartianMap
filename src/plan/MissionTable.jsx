@@ -5,6 +5,7 @@ import { HAZARDS_PATH } from '../data/provenance.js';
 import { imageUrl, stopForWaypoint, stopReason } from '../data/stops.js';
 import EventBanner from '../events/EventBanner.jsx';
 import { formatEva } from '../hud/format.js';
+import * as I from '../hud/icons.jsx';
 import dustStorm from '../sim/events/dust-storm.json';
 import lowOxygenCaution from '../sim/events/low-oxygen-caution.json';
 import lowOxygenWarning from '../sim/events/low-oxygen-warning.json';
@@ -17,7 +18,7 @@ import { clearWaypoint, toggleWaypoint, useStopSelection } from '../stops/select
 import { useStops } from '../stops/useStops.js';
 import { PROFILE_IDS } from '../sim/routeProfiles.js';
 import { waypointNumber } from '../sim/waypointNumber.js';
-import { eventTiming, missionEventDefinitions, missionForObjective, missionSourcePath } from '../sim/missions.js';
+import { missionEventDefinitions } from '../sim/missions.js';
 import { PlanBeat } from '../mission/MissionBeat.jsx';
 import { LAYERS, SLOPE_LIMITS } from './layers.js';
 import LayerLegend from './LayerLegend.jsx';
@@ -34,7 +35,7 @@ import OutlookStrip from './OutlookStrip.jsx';
 import { droppedWhy, planReasonLines, stopLine, taskRole } from './routeWhy.js';
 import TaskList from './TaskList.jsx';
 import { useTaskCandidates, useTaskPick } from './useTaskPlace.js';
-import { eventTimingText, shortDuration } from './tableFormat.js';
+import { shortDuration } from './tableFormat.js';
 import { useDataFile, useDustAgainstLimit } from './useConditions.js';
 import RouteProfiles from './RouteProfiles.jsx';
 import SavedRoutes from './SavedRoutes.jsx';
@@ -58,24 +59,17 @@ const TABS = [
   { id: 'suit', label: 'table.tab.suit' },
 ];
 
-const minutes = (sec) => Math.round(sec / 60);
-const EVENT_LABELS = { [dustStorm.id]: dustStorm.label, [radiation.id]: radiation.label };
 const peak = (event, path) => Math.max(...event.timeline.map((step) => step.set?.[path]).filter(Number.isFinite));
 /** The event as the objective's mission runs it (src/sim/missions.js): its start and its timeline, compressed for the
     first sortie. */
 const scheduled = (event, objective) => missionEventDefinitions(objective, [event])[0];
 /** When an event starts in the objective's mission: seconds under two minutes, minutes after (tableFormat.eventWhen). */
 /** An event's name inside a sentence: "the dust storm". */
-const eventName = (id) => {
-  const name = translateText(EVENT_LABELS[id] ?? id);
-  return name.charAt(0).toLowerCase() + name.slice(1);
-};
-/** When an event starts in the objective's mission, from its trigger (N5, missions.eventTiming). */
-const when = (event, objective) => sentence(eventTimingText(eventTiming(objective, event.id), eventName) ?? '–');
 
 // The hazards come from the event files the simulation runs (src/sim/events) and the times of the objective's mission
 // (src/sim/missions.js), so the briefing cannot drift from them. `events` are the event ids a checkbox switches; low
-// oxygen is one hazard with a caution and a warning. when, happens and basis take the crew's objective.
+// oxygen is one hazard with a caution and a warning. happens and basis take the crew's objective. The cards say what
+// happens and what to do; the When row was removed (#399).
 const HAZARDS = [
   {
     id: 'dust-storm',
@@ -85,8 +79,6 @@ const HAZARDS = [
     get name() { return translateText(dustStorm.label); },
     level: 'warning',
     get levelLabel() { return t('table.hazard.level.warning'); },
-    timed: true,
-    when: (objective) => when(dustStorm, objective),
     happens: (objective) => t('table.hazard.dust.happens', {
       opacity: num(peak(dustStorm, 'environment.dustOpacity')), sec: Math.round(scheduled(dustStorm, objective).timeline.at(-1).atSec),
     }),
@@ -102,8 +94,6 @@ const HAZARDS = [
     get name() { return translateText(radiation.label); },
     level: 'warning',
     get levelLabel() { return t('table.hazard.level.warning'); },
-    timed: true,
-    when: (objective) => when(radiation, objective),
     happens: () => t('table.hazard.radiation.happens', { rate: num(peak(radiation, 'environment.doseRateUgyH'), 1), background: num(radiation.timeline[0]?.set?.['environment.doseRateUgyH'], 1) }),
     get alert() { return translateText(radiation.alert.text); },
     get act() { return t('table.hazard.radiation.act', { radius: radiation.end?.radius ?? 25 }); },
@@ -117,7 +107,6 @@ const HAZARDS = [
     get name() { return t('table.hazard.oxygen.name'); },
     level: 'caution',
     get levelLabel() { return t('table.hazard.level.caution.then.warning'); },
-    when: () => t('table.hazard.oxygen.when', { min: minutes(lowOxygenCaution.trigger.value) }),
     happens: () => t('table.hazard.oxygen.happens'),
     get alert() {
       return t('table.hazard.oxygen.alert', { caution: translateText(lowOxygenCaution.alert.text), warning: translateText(lowOxygenWarning.alert.text) });
@@ -372,7 +361,6 @@ function BudgetPanel({ totals, metrics, limits, budget }) {
         )}
       </div>
 
-      <p className="table-note">{t('table.budget.note')}</p>
     </div>
   );
 }
@@ -427,18 +415,29 @@ function ReturnPanel({ totals, limits, go }) {
   const otherMin = Number.isFinite(other) ? Math.round(other / 60) : null;
   const signed = (value) => `${value >= 0 ? '+' : ''}${value}`;
   return (
-    <div className="table-panel return-panel">
-      <p className="table-label">{t('table.return.title')}</p>
+    <div className="table-panel return-panel" role="group" aria-label={t('table.return.title')}>
       <div className="ring-pair">
         <Ring value={tot?.arrivalO2Pct} label={t('table.return.oxygen.left')} shortLabel={(pct) => t('table.return.oxygen.short', { pct })} tone={o2Tone ?? 'ok'} />
         <Ring value={tot?.arrivalBatteryPct} label={t('table.return.battery.left')} shortLabel={(pct) => t('table.return.battery.short', { pct })} tone={tot ? limitTone(limits?.battery, go) : 'ok'} />
       </div>
-      <div className="return-margin" title={t('table.return.margin.title')}>
+      <div className="return-margin" title={t('table.return.margin.title') + (otherMin !== null ? ' ' + t('table.return.margin.other', { limit: t('limit.' + otherLimit), min: signed(otherMin) }) : '')}>
         <b className={o2Tone && o2Tone !== 'muted' ? 'tone-' + o2Tone : undefined}>{tot ? signed(marginMin) : '–'}<small>min</small></b>
         <span>{t('table.return.margin.plan')} · {t('limit.' + limit)}<SourceTag path="route.totals.marginSec" /></span>
-        {otherMin !== null && <span className="return-margin-note">{t('table.return.margin.other', { limit: t('limit.' + otherLimit), min: signed(otherMin) })}</span>}
       </div>
     </div>
+  );
+}
+
+const LIMIT_CHIP = { time: [I.Stopwatch, 'table.time'], o2: [I.Gauge, 'table.oxygen'], battery: [I.Battery, 'table.battery'] };
+
+/** The Suit step's decision chip for the limit with the least slack: its icon, its name and the minutes it has spare. */
+function DecisionLimitChip({ limit, go }) {
+  const [Icon, label] = LIMIT_CHIP[limit.id] ?? LIMIT_CHIP.time;
+  const tone = limitTone(limit, go);
+  return (
+    <span className={'suit-chip tone-' + tone} title={tightestText(limit)}>
+      <Icon />{t(label)}<b>+{Math.round(limit.spareSec / 60)}<small>min</small></b>
+    </span>
   );
 }
 
@@ -801,11 +800,6 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
                 <span><i />{hazard.levelLabel}</span>
               </div>
               <dl>
-                <div>
-                  <dt>{t('table.hazard.when')}</dt>
-                  {/* the mission's timing is SIM: its tag gives the whole rule (missions.MISSION_SOURCES) */}
-                  <dd>{hazard.when(objective)}{hazard.timed && <SourceTag path={missionSourcePath(missionForObjective(objective).id, hazard.id)} requireSource={false} />}</dd>
-                </div>
                 <div><dt>{t('table.hazard.what.happens')}</dt><dd>{hazard.happens(objective)}</dd></div>
                 <div><dt>{t('table.hazard.the.alert')}</dt><dd>{hazard.alert}</dd></div>
                 <div><dt>{t('table.hazard.what.to.do')}</dt><dd>{hazard.act}</dd></div>
@@ -839,16 +833,10 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           </div>
           <BudgetPanel totals={totals} metrics={metrics} limits={limits} budget={planCurrent ? route.budget : null} />
         </section>
-        {/* The conditions outlook (#248) heads the middle column, level with go / no-go; the suit model fills the rest. */}
+        {/* Go / no-go heads the middle column (#397), the step's answer in the middle of the screen; the suit model fills
+            the rest. The conditions outlook (#248) moved to the right column, beside the numbers back at the habitat. */}
         <div className="table-centre-wrap">
-          <OutlookStrip dust={dust} planCurrent={planCurrent} />
-          <div className="table-centre">
-            <SuitFigure />
-          </div>
-        </div>
-        <section className="table-right">
-          <div className="table-panel">
-            <p className="table-label">{t('table.decision')}</p>
+          <div className="table-panel suit-decision" data-tone={evaBegun ? suitStatus.tone : decision.tone ?? undefined} role="group" aria-label={t('table.decision')}>
             {evaBegun ? (
               <>
                 <p className={'table-decision tone-' + suitStatus.tone}>{t('table.decision.eva')}</p>
@@ -861,13 +849,24 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
             ) : (
               <>
                 <p className={'table-decision' + (decision.tone ? ' tone-' + decision.tone : '')}>{decision.title}</p>
-                <p className="table-text small">
-                  <span className="decision-plan">{planLine}</span>{decision.text}
-                  {decision.note && <span className="decision-begin"> {decision.note}</span>}
-                </p>
+                {/* A go is the verdict and two chips (#397): the limit with the least slack and the expected alert. A
+                    no-go keeps its sentence: what to change is the one thing the crew must read. */}
+                {decision.go ? (
+                  <div className="suit-chips">
+                    {limits?.tightest && <DecisionLimitChip limit={limits.tightest} go={decision.go} />}
+                    {radiationExpected && <span className="suit-chip tone-caution"><I.Radiation />{t('table.chip.radiation')}</span>}
+                  </div>
+                ) : decision.reason !== 'planning' && <p className="table-text small">{decision.text}</p>}
+                <p className="suit-plan">{planLine}</p>
               </>
             )}
           </div>
+          <div className="table-centre">
+            <SuitFigure />
+          </div>
+        </div>
+        <section className="table-right">
+          <OutlookStrip dust={dust} planCurrent={planCurrent} />
           <ReturnPanel totals={totals} limits={limits} go={evaBegun || decision.go} />
           <Actions>
             <BeginButton decision={decision} planning={planner.status === 'planning'} evaBegun={evaBegun} onBeginEva={onBeginEva} />

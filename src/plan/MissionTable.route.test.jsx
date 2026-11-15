@@ -76,18 +76,21 @@ describe('the Route step before the EVA (#341)', () => {
     expect(route).toContain('The route uses the oxygen reserve');
   });
 
-  it('names the plan margin, its binding limit and the other limit beside it (#323)', () => {
-    const suit = text(render(planState({ marginSec: 239 * 60, o2MarginSec: 239 * 60, evaMarginSec: 426 * 60, marginLimit: 'o2' }), 'suit'));
+  // The other limit's margin moved from a line under the figure to the figure's tooltip (#397).
+  it('names the plan margin, its binding limit and the other limit in its tooltip (#323)', () => {
+    const html = render(planState({ marginSec: 239 * 60, o2MarginSec: 239 * 60, evaMarginSec: 426 * 60, marginLimit: 'o2' }), 'suit');
+    const suit = text(html);
     expect(suit).toContain('+239 min');
     expect(suit).toContain('Margin at the end of the plan · O2');
-    expect(suit).toContain('The other limit: EVA clock +426 min');
+    expect(html).toMatch(/class="return-margin" title="[^"]*The other limit: EVA clock \+426 min/);
   });
 
   it('says the EVA clock sets the plan margin when that limit is tighter (#323)', () => {
-    const suit = text(render(planState({ marginSec: 120 * 60, o2MarginSec: 300 * 60, evaMarginSec: 120 * 60, marginLimit: 'eva' }), 'suit'));
+    const html = render(planState({ marginSec: 120 * 60, o2MarginSec: 300 * 60, evaMarginSec: 120 * 60, marginLimit: 'eva' }), 'suit');
+    const suit = text(html);
     expect(suit).toContain('+120 min');
     expect(suit).toContain('Margin at the end of the plan · EVA clock');
-    expect(suit).toContain('The other limit: O2 +300 min');
+    expect(html).toMatch(/class="return-margin" title="[^"]*The other limit: O2 \+300 min/);
   });
 
   it('leaves the step as it was once the EVA has begun', () => {

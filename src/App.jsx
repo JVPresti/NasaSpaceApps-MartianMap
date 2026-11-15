@@ -46,9 +46,9 @@ const HELP_KEYS = action('help').keys;
 
 const SITE = 'ui.neretva.vallis.jezero.crater.mars';
 
-const DEBUG_EVENTS =
-  import.meta.env.DEV ||
-  (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1');
+// The event debug strip (fire any event by hand) only with ?debug=1, in development too (#401): the plain URL shows
+// the interface as players see it, without the Events chip in the corner.
+const DEBUG_EVENTS = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1';
 
 // Escape is a key press, not a user activation, so it cannot grant pointer lock. In the Walk pause menu it
 // must explain that instead of starting a request that can only fail.
