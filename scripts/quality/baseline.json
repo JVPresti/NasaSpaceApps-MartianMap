@@ -1,0 +1,940 @@
+{
+ "size": "1366x768",
+ "at": "2026-11-15T10:21:17.131Z",
+ "states": {
+  "start": {
+   "facts": {
+    "o2Pct": null,
+    "marginSec": null,
+    "waypoint": "HAB",
+    "rangeM": null,
+    "headingDeg": 323.2,
+    "decision": "pending",
+    "etaSec": 1111.973027022462,
+    "totals": {
+     "timeSec": 1111.973027022462,
+     "marginSec": 14691.566488990327
+    },
+    "hazardsOff": [],
+    "alerts": [],
+    "summary": null
+   },
+   "overlap": 0,
+   "overlaps": [],
+   "offscreen": 0,
+   "offscreenList": [],
+   "tinyText": 0,
+   "tiny": [],
+   "lowContrast": 0,
+   "low": [],
+   "hudCount": 0,
+   "hudList": [],
+   "styleDrift": {
+    "fonts": [
+     "Barlow Condensed",
+     "Barlow"
+    ],
+    "radii": [
+     "0px"
+    ],
+    "panelBgs": [
+     "256,104,40,1.00",
+     "8,16,16,0.60"
+    ],
+    "count": 5
+   },
+   "boxes": 3,
+   "required": {}
+  },
+  "table-site": {
+   "facts": {
+    "o2Pct": null,
+    "marginSec": null,
+    "waypoint": "HAB",
+    "rangeM": null,
+    "headingDeg": 323.2,
+    "decision": "pending",
+    "etaSec": 1111.973027022462,
+    "totals": {
+     "timeSec": 1111.973027022462,
+     "marginSec": 14691.566488990327
+    },
+    "hazardsOff": [],
+    "alerts": [],
+    "summary": null
+   },
+   "overlap": 0,
+   "overlaps": [],
+   "offscreen": 0,
+   "offscreenList": [],
+   "tinyText": 0,
+   "tiny": [],
+   "lowContrast": 0,
+   "low": [],
+   "hudCount": 0,
+   "hudList": [],
+   "styleDrift": {
+    "fonts": [
+     "Barlow Condensed",
+     "Barlow"
+    ],
+    "radii": [
+     "3px",
+     "0px",
+     "50%"
+    ],
+    "panelBgs": [
+     "16,16,24,0.72",
+     "24,16,16,1.00",
+     "8,16,16,1.00",
+     "8,8,8,0.88",
+     "40,256,240,1.00",
+     "256,104,40,1.00",
+     "8,16,16,0.60"
+    ],
+    "count": 12
+   },
+   "boxes": 5,
+   "required": {
+    "route": true
+   }
+  },
+  "table-route": {
+   "facts": {
+    "o2Pct": null,
+    "marginSec": null,
+    "waypoint": "HAB",
+    "rangeM": null,
+    "headingDeg": 323.2,
+    "decision": "pending",
+    "etaSec": 1111.973027022462,
+    "totals": {
+     "timeSec": 1111.973027022462,
+     "marginSec": 14691.566488990327
+    },
+    "hazardsOff": [],
+    "alerts": [],
+    "summary": null
+   },
+   "overlap": 0,
+   "overlaps": [],
+   "offscreen": 0,
+   "offscreenList": [],
+   "tinyText": 4,
+   "tiny": [
+    "small 10.0px \"habitat airlock\"",
+    "small 10.0px \"channel floor\"",
+    "small 10.0px \"dune field edge\"",
+    "small 10.0px \"Bright Angel outcrop\""
+   ],
+   "lowContrast": 0,
+   "low": [],
+   "hudCount": 0,
+   "hudList": [],
+   "styleDrift": {
+    "fonts": [
+     "Barlow Condensed",
+     "Barlow",
+     "IBM Plex Mono"
+    ],
+    "radii": [
+     "3px",
+     "2px",
+     "0px",
+     "50%"
+    ],
+    "panelBgs": [
+     "16,16,24,0.72",
+     "256,104,40,1.00",
+     "240,248,248,1.00",
+     "8,16,16,0.60",
+     "24,16,16,1.00",
+     "232,160,128,1.00",
+     "8,8,8,0.88",
+     "40,256,240,1.00"
+    ],
+    "count": 15
+   },
+   "boxes": 9,
+   "required": {
+    "route": true,
+    "decision": true
+   }
+  },
+  "table-hazards": {
+   "facts": {
+    "o2Pct": null,
+    "marginSec": null,
+    "waypoint": "HAB",
+    "rangeM": null,
+    "headingDeg": 323.2,
+    "decision": "pending",
+    "etaSec": 1111.973027022462,
+    "totals": {
+     "timeSec": 1111.973027022462,
+     "marginSec": 14691.566488990327
+    },
+    "hazardsOff": [],
+    "alerts": [],
+    "summary": null
+   },
+   "overlap": 0,
+   "overlaps": [],
+   "offscreen": 0,
+   "offscreenList": [],
+   "tinyText": 0,
+   "tiny": [],
+   "lowContrast": 0,
+   "low": [],
+   "hudCount": 0,
+   "hudList": [],
+   "styleDrift": {
+    "fonts": [
+     "Barlow Condensed",
+     "Barlow"
+    ],
+    "radii": [
+     "3px",
+     "0px",
+     "2px"
+    ],
+    "panelBgs": [
+     "16,16,24,0.72",
+     "256,120,64,1.00",
+     "256,104,40,1.00",
+     "256,176,32,1.00",
+     "8,16,16,0.60"
+    ],
+    "count": 10
+   },
+   "boxes": 5,
+   "required": {
+    "route": false
+   }
+  },
+  "table-suit": {
+   "facts": {
+    "o2Pct": null,
+    "marginSec": null,
+    "waypoint": "HAB",
+    "rangeM": null,
+    "headingDeg": 323.2,
+    "decision": "pending",
+    "etaSec": 1111.973027022462,
+    "totals": {
+     "timeSec": 1111.973027022462,
+     "marginSec": 14691.566488990327
+    },
+    "hazardsOff": [],
+    "alerts": [],
+    "summary": null
+   },
+   "overlap": 0,
+   "overlaps": [],
+   "offscreen": 0,
+   "offscreenList": [],
+   "tinyText": 0,
+   "tiny": [],
+   "lowContrast": 0,
+   "low": [],
+   "hudCount": 0,
+   "hudList": [],
+   "styleDrift": {
+    "fonts": [
+     "Barlow Condensed",
+     "Barlow",
+     "IBM Plex Mono"
+    ],
+    "radii": [
+     "3px",
+     "0px",
+     "2px"
+    ],
+    "panelBgs": [
+     "16,16,24,0.72",
+     "256,104,40,1.00",
+     "256,176,136,1.00",
+     "112,232,160,0.75",
+     "8,16,16,0.60"
+    ],
+    "count": 11
+   },
+   "boxes": 8,
+   "required": {
+    "decision": true
+   }
+  },
+  "walk": {
+   "facts": {
+    "o2Pct": 99.9700289979139,
+    "marginSec": 28758.471709708214,
+    "waypoint": "WP1 \u00b7 channel floor",
+    "rangeM": 327.1580316911079,
+    "headingDeg": 323.2,
+    "decision": "go",
+    "etaSec": 1111.973027022462,
+    "totals": {
+     "timeSec": 1111.973027022462,
+     "marginSec": 14691.566488990327
+    },
+    "hazardsOff": [],
+    "alerts": [],
+    "summary": null
+   },
+   "overlap": 0,
+   "overlaps": [],
+   "offscreen": 0,
+   "offscreenList": [],
+   "tinyText": 57,
+   "tiny": [
+    "span.hud-wp-marker-name 10.0px \"WP1\"",
+    "span.hud-wp-marker-range 10.0px \"327 mSIMSource: SIM. Val\"",
+    "span 10.0px \"SIM\"",
+    "small 10.8px \"LMST\"",
+    "sub 10.0px \"2\"",
+    "small 10.0px \"%\"",
+    "span 10.0px \"DERIVED\"",
+    "small 10.0px \"%\"",
+    "span 10.0px \"DERIVED\"",
+    "small 10.0px \"psi\"",
+    "span 10.0px \"DATA\"",
+    "small 10.0px \"min\"",
+    "span 10.0px \"SIM\"",
+    "div.hud-caption 10.0px \"MARGIN NOW \u00b7 home in 1 m\"",
+    "small 10.0px \"m\"",
+    "small 10.0px \"\u00b0\"",
+    "kbd.hud-partner-key 10.0px \"T\"",
+    "span 9.0px \"Route\"",
+    "span 9.0px \"3WP\"",
+    "i.hud-map-key.hud-map-key-wp 10.0px \"3\"",
+    "span 9.0px \"Refuge\"",
+    "span 9.0px \"Hazard\"",
+    "span 9.0px \"Habitat\"",
+    "span 9.0px \"Partner\"",
+    "span 10.0px \"SAMPLING\"",
+    "small 10.0px \"samples\"",
+    "em 10.0px \"P \u00b7 site in view\"",
+    "em 10.0px \"seen in the scoop\"",
+    "em 10.0px \"E bag \u00b7 F case\"",
+    "em 10.0px \"bag or case closed\"",
+    "small 10.0px \"\u00b0C\"",
+    "span 10.0px \"DATA\"",
+    "small 10.0px \"m/s\"",
+    "span 10.0px \"DATA\"",
+    "span 10.0px \"DATA\"",
+    "small 10.0px \"\u00b5Gy\"",
+    "span 10.0px \"DERIVED\"",
+    "span 10.0px \"SIM\"",
+    "b 10.7px \"LINK\"",
+    "small 8.5px \"27 m\""
+   ],
+   "lowContrast": 3,
+   "low": [
+    "b.hud-partner-id 4.40 \"EV2\"",
+    "text 4.45 \"30 m\"",
+    "text 4.45 \"62 m\""
+   ],
+   "hudCount": 14,
+   "hudList": [
+    "div.hud-heading-box",
+    "div.hud-wp-marker",
+    "div.hud-pill",
+    "div.hud-pill",
+    "section.hud-panel.hud-suit",
+    "div.hud-panel.hud-partner-chip",
+    "section.hud-map",
+    "div.hud-map-legend",
+    "section.hud-panel.hud-sampling",
+    "section.hud-panel.hud-env",
+    "section.hud-panel.hud-nav",
+    "div.hud-radio.hud-radio-linked",
+    "section.hud-panel.hud-waypoint",
+    "div.hud-reticle.hud-reticle-aim"
+   ],
+   "styleDrift": {
+    "fonts": [
+     "Iowan Old Style",
+     "ui-monospace",
+     "system-ui"
+    ],
+    "radii": [
+     "7.54px",
+     "4.55px",
+     "3px",
+     "8.2225px",
+     "11.7px",
+     "7.15px",
+     "50%",
+     "4.05px",
+     "1px",
+     "0px",
+     "7.8px",
+     "6.5px",
+     "5.863px",
+     "10.4px"
+    ],
+    "panelBgs": [
+     "72,40,32,0.32",
+     "72,40,32,0.42",
+     "24,16,16,1.00",
+     "248,248,240,1.00",
+     "144,232,184,1.00"
+    ],
+    "count": 22
+   },
+   "boxes": 14,
+   "required": {
+    "o2": true,
+    "waypoint": true,
+    "distance": true,
+    "heading": true
+   }
+  },
+  "walk-stop": {
+   "facts": {
+    "o2Pct": 99.94247509022618,
+    "marginSec": 27678.034847555107,
+    "waypoint": "Cheyava Falls",
+    "rangeM": 52.32546798644041,
+    "headingDeg": 168,
+    "decision": "go",
+    "etaSec": 1111.973027022462,
+    "totals": {
+     "timeSec": 1111.973027022462,
+     "marginSec": 14691.566488990327
+    },
+    "hazardsOff": [],
+    "alerts": [],
+    "summary": null
+   },
+   "overlap": 3893,
+   "overlaps": [
+    [
+     "div.hud-wp-marker",
+     "section.hud-panel.hud-waypoint",
+     3893
+    ]
+   ],
+   "offscreen": 0,
+   "offscreenList": [],
+   "tinyText": 63,
+   "tiny": [
+    "span.hud-wp-marker-name 10.0px \"Cheyava Falls\"",
+    "span.hud-wp-marker-range 10.0px \"52 mSIMSource: SIM. Valu\"",
+    "span 10.0px \"SIM\"",
+    "small 10.8px \"LMST\"",
+    "sub 10.0px \"2\"",
+    "small 10.0px \"%\"",
+    "span 10.0px \"DERIVED\"",
+    "small 10.0px \"%\"",
+    "span 10.0px \"DERIVED\"",
+    "small 10.0px \"psi\"",
+    "span 10.0px \"DATA\"",
+    "small 10.0px \"min\"",
+    "span 10.0px \"SIM\"",
+    "div.hud-caption 10.0px \"MARGIN NOW \u00b7 home in 19 \"",
+    "small 10.0px \"m\"",
+    "small 10.0px \"\u00b0\"",
+    "kbd.hud-partner-key 10.0px \"T\"",
+    "span 9.0px \"Route\"",
+    "span 9.0px \"3WP\"",
+    "i.hud-map-key.hud-map-key-wp 10.0px \"3\"",
+    "span 9.0px \"Refuge\"",
+    "span 9.0px \"Hazard\"",
+    "span 9.0px \"Habitat\"",
+    "span 9.0px \"Partner\"",
+    "span 10.0px \"SAMPLING\"",
+    "small 10.0px \"samples\"",
+    "em 10.0px \"P \u00b7 site in view\"",
+    "em 10.0px \"seen in the scoop\"",
+    "em 10.0px \"E bag \u00b7 F case\"",
+    "em 10.0px \"bag or case closed\"",
+    "small 10.0px \"\u00b0C\"",
+    "span 10.0px \"DATA\"",
+    "small 10.0px \"m/s\"",
+    "span 10.0px \"DATA\"",
+    "span 10.0px \"DATA\"",
+    "small 10.0px \"\u00b5Gy\"",
+    "span 10.0px \"DERIVED\"",
+    "span 10.0px \"SIM\"",
+    "b 10.7px \"WEAK\"",
+    "small 8.5px \"841 m\""
+   ],
+   "lowContrast": 4,
+   "low": [
+    "b.hud-partner-id 4.40 \"EV2\"",
+    "text 4.45 \"30 m\"",
+    "text 4.45 \"62 m\"",
+    "kbd 4.23 \"Enter\""
+   ],
+   "hudCount": 15,
+   "hudList": [
+    "div.hud-heading-box",
+    "div.hud-wp-marker",
+    "div.hud-pill",
+    "div.hud-pill",
+    "section.hud-panel.hud-suit",
+    "div.hud-panel.hud-partner-chip",
+    "section.hud-map",
+    "div.hud-map-legend",
+    "section.hud-panel.hud-sampling",
+    "section.hud-panel.hud-env",
+    "section.hud-panel.hud-nav",
+    "div.hud-radio.hud-radio-weak",
+    "section.hud-panel.hud-waypoint",
+    "div.hud-reticle.hud-reticle-aim",
+    "aside.stop-card.stop-card-walk"
+   ],
+   "styleDrift": {
+    "fonts": [
+     "Iowan Old Style",
+     "ui-monospace",
+     "system-ui",
+     "IBM Plex Mono"
+    ],
+    "radii": [
+     "7.54px",
+     "4.55px",
+     "3px",
+     "8.2225px",
+     "11.7px",
+     "7.15px",
+     "50%",
+     "4.05px",
+     "1px",
+     "0px",
+     "7.8px",
+     "6.5px",
+     "5.863px",
+     "10.4px",
+     "8.8px",
+     "3.784px",
+     "4.73px"
+    ],
+    "panelBgs": [
+     "72,40,32,0.32",
+     "72,40,32,0.42",
+     "24,16,16,1.00",
+     "248,248,240,1.00",
+     "144,232,184,1.00",
+     "40,24,16,0.62",
+     "40,24,16,1.00"
+    ],
+    "count": 28
+   },
+   "boxes": 15,
+   "required": {
+    "o2": true,
+    "waypoint": true,
+    "distance": true,
+    "heading": true
+   }
+  },
+  "walk-storm": {
+   "facts": {
+    "o2Pct": 99.87999846540528,
+    "marginSec": 27610.61062730109,
+    "waypoint": "HAB \u00b7 habitat airlock",
+    "rangeM": 829.5831740096951,
+    "headingDeg": 168,
+    "decision": "pending",
+    "etaSec": 1160.255372698912,
+    "totals": {
+     "timeSec": 1160.255372698912,
+     "marginSec": 14846.966890928114
+    },
+    "hazardsOff": [],
+    "alerts": [
+     {
+      "id": "dust-storm",
+      "level": "warning"
+     }
+    ],
+    "summary": null
+   },
+   "overlap": 331,
+   "overlaps": [
+    [
+     "div.hud-wp-marker",
+     "section.hud-panel.hud-suit",
+     331
+    ]
+   ],
+   "offscreen": 0,
+   "offscreenList": [],
+   "tinyText": 58,
+   "tiny": [
+    "span 9.5px \"DERIVED\"",
+    "span.hud-wp-marker-name 10.0px \"HAB\"",
+    "span.hud-wp-marker-range 10.0px \"830 mSIMSource: SIM. Val\"",
+    "span 10.0px \"SIM\"",
+    "small 10.8px \"LMST\"",
+    "sub 10.0px \"2\"",
+    "small 10.0px \"%\"",
+    "span 10.0px \"DERIVED\"",
+    "small 10.0px \"%\"",
+    "span 10.0px \"DERIVED\"",
+    "small 10.0px \"psi\"",
+    "span 10.0px \"DATA\"",
+    "small 10.0px \"min\"",
+    "span 10.0px \"SIM\"",
+    "div.hud-caption 10.0px \"MARGIN NOW \u00b7 shelter in \"",
+    "small 10.0px \"m\"",
+    "small 10.0px \"\u00b0\"",
+    "kbd.hud-partner-key 10.0px \"T\"",
+    "span 9.0px \"Route\"",
+    "span 9.0px \"3WP\"",
+    "i.hud-map-key.hud-map-key-wp 10.0px \"3\"",
+    "span 9.0px \"Refuge\"",
+    "span 9.0px \"Hazard\"",
+    "span 9.0px \"Habitat\"",
+    "span 9.0px \"Partner\"",
+    "span 10.0px \"SAMPLING\"",
+    "small 10.0px \"samples\"",
+    "em 10.0px \"P \u00b7 site in view\"",
+    "em 10.0px \"seen in the scoop\"",
+    "em 10.0px \"E bag \u00b7 F case\"",
+    "em 10.0px \"bag or case closed\"",
+    "small 10.0px \"\u00b0C\"",
+    "span 10.0px \"DATA\"",
+    "small 10.0px \"m/s\"",
+    "span 10.0px \"DATA\"",
+    "span 10.0px \"DERIVED\"",
+    "small 10.0px \"\u00b5Gy\"",
+    "span 10.0px \"DERIVED\"",
+    "span 10.0px \"SIM\"",
+    "b 10.7px \"WEAK\""
+   ],
+   "lowContrast": 3,
+   "low": [
+    "b.hud-partner-id 4.40 \"EV2\"",
+    "text 4.45 \"26 m\"",
+    "text 4.45 \"62 m\""
+   ],
+   "hudCount": 15,
+   "hudList": [
+    "div.event-banner.warning",
+    "div.hud-heading-box",
+    "div.hud-wp-marker",
+    "div.hud-pill",
+    "div.hud-pill",
+    "section.hud-panel.hud-suit",
+    "div.hud-panel.hud-partner-chip",
+    "section.hud-map",
+    "div.hud-map-legend",
+    "section.hud-panel.hud-sampling",
+    "section.hud-panel.hud-env",
+    "section.hud-panel.hud-nav",
+    "div.hud-radio.hud-radio-weak",
+    "section.hud-panel.hud-waypoint",
+    "div.hud-reticle.hud-reticle-aim"
+   ],
+   "styleDrift": {
+    "fonts": [
+     "Barlow",
+     "IBM Plex Mono",
+     "Iowan Old Style",
+     "ui-monospace",
+     "system-ui"
+    ],
+    "radii": [
+     "3px",
+     "2px",
+     "7.54px",
+     "4.55px",
+     "8.2225px",
+     "11.7px",
+     "7.15px",
+     "50%",
+     "4.05px",
+     "1px",
+     "0px",
+     "7.8px",
+     "6.5px",
+     "5.863px",
+     "10.4px"
+    ],
+    "panelBgs": [
+     "8,16,16,0.90",
+     "72,40,32,0.32",
+     "72,40,32,0.42",
+     "24,16,16,1.00",
+     "248,248,240,1.00",
+     "144,232,184,1.00"
+    ],
+    "count": 26
+   },
+   "boxes": 15,
+   "required": {
+    "o2": true,
+    "waypoint": true,
+    "distance": true,
+    "heading": true,
+    "alert": true
+   }
+  },
+  "wrist": {
+   "facts": {
+    "o2Pct": 99.87586271958132,
+    "marginSec": 27607.601627301086,
+    "waypoint": "HAB \u00b7 habitat airlock",
+    "rangeM": 829.5831740096951,
+    "headingDeg": 168,
+    "decision": "pending",
+    "etaSec": 1160.255372698912,
+    "totals": {
+     "timeSec": 1160.255372698912,
+     "marginSec": 14846.966890928114
+    },
+    "hazardsOff": [],
+    "alerts": [
+     {
+      "id": "dust-storm",
+      "level": "warning"
+     }
+    ],
+    "summary": null
+   },
+   "overlap": 331,
+   "overlaps": [
+    [
+     "div.hud-wp-marker",
+     "section.hud-panel.hud-suit",
+     331
+    ]
+   ],
+   "offscreen": 0,
+   "offscreenList": [],
+   "tinyText": 58,
+   "tiny": [
+    "span 9.5px \"DERIVED\"",
+    "span.hud-wp-marker-name 10.0px \"HAB\"",
+    "span.hud-wp-marker-range 10.0px \"830 mSIMSource: SIM. Val\"",
+    "span 10.0px \"SIM\"",
+    "small 10.8px \"LMST\"",
+    "sub 10.0px \"2\"",
+    "small 10.0px \"%\"",
+    "span 10.0px \"DERIVED\"",
+    "small 10.0px \"%\"",
+    "span 10.0px \"DERIVED\"",
+    "small 10.0px \"psi\"",
+    "span 10.0px \"DATA\"",
+    "small 10.0px \"min\"",
+    "span 10.0px \"SIM\"",
+    "div.hud-caption 10.0px \"MARGIN NOW \u00b7 shelter in \"",
+    "small 10.0px \"m\"",
+    "small 10.0px \"\u00b0\"",
+    "kbd.hud-partner-key 10.0px \"T\"",
+    "span 9.0px \"Route\"",
+    "span 9.0px \"3WP\"",
+    "i.hud-map-key.hud-map-key-wp 10.0px \"3\"",
+    "span 9.0px \"Refuge\"",
+    "span 9.0px \"Hazard\"",
+    "span 9.0px \"Habitat\"",
+    "span 9.0px \"Partner\"",
+    "span 10.0px \"SAMPLING\"",
+    "small 10.0px \"samples\"",
+    "em 10.0px \"P \u00b7 site in view\"",
+    "em 10.0px \"seen in the scoop\"",
+    "em 10.0px \"E bag \u00b7 F case\"",
+    "em 10.0px \"bag or case closed\"",
+    "small 10.0px \"\u00b0C\"",
+    "span 10.0px \"DATA\"",
+    "small 10.0px \"m/s\"",
+    "span 10.0px \"DATA\"",
+    "span 10.0px \"DERIVED\"",
+    "small 10.0px \"\u00b5Gy\"",
+    "span 10.0px \"DERIVED\"",
+    "span 10.0px \"SIM\"",
+    "b 10.7px \"WEAK\""
+   ],
+   "lowContrast": 3,
+   "low": [
+    "b.hud-partner-id 4.40 \"EV2\"",
+    "text 4.45 \"26 m\"",
+    "text 4.45 \"62 m\""
+   ],
+   "hudCount": 15,
+   "hudList": [
+    "div.event-banner.warning",
+    "div.hud-heading-box",
+    "div.hud-wp-marker",
+    "div.hud-pill",
+    "div.hud-pill",
+    "section.hud-panel.hud-suit",
+    "div.hud-panel.hud-partner-chip",
+    "section.hud-map",
+    "div.hud-map-legend",
+    "section.hud-panel.hud-sampling",
+    "section.hud-panel.hud-env",
+    "section.hud-panel.hud-nav",
+    "div.hud-radio.hud-radio-weak",
+    "section.hud-panel.hud-waypoint",
+    "div.hud-reticle.hud-reticle-aim"
+   ],
+   "styleDrift": {
+    "fonts": [
+     "Barlow",
+     "IBM Plex Mono",
+     "Iowan Old Style",
+     "ui-monospace",
+     "system-ui"
+    ],
+    "radii": [
+     "3px",
+     "2px",
+     "7.54px",
+     "4.55px",
+     "8.2225px",
+     "11.7px",
+     "7.15px",
+     "50%",
+     "4.05px",
+     "1px",
+     "0px",
+     "7.8px",
+     "6.5px",
+     "5.863px",
+     "10.4px"
+    ],
+    "panelBgs": [
+     "8,16,16,0.90",
+     "72,40,32,0.32",
+     "72,40,32,0.42",
+     "24,16,16,1.00",
+     "248,248,240,1.00",
+     "144,232,184,1.00",
+     "16,16,24,0.80"
+    ],
+    "count": 27
+   },
+   "boxes": 16,
+   "required": {}
+  },
+  "pause": {
+   "facts": {
+    "o2Pct": 99.87489996800988,
+    "marginSec": 27606.158627301087,
+    "waypoint": "HAB \u00b7 habitat airlock",
+    "rangeM": 829.5831740096951,
+    "headingDeg": 168,
+    "decision": "pending",
+    "etaSec": 1160.255372698912,
+    "totals": {
+     "timeSec": 1160.255372698912,
+     "marginSec": 14846.966890928114
+    },
+    "hazardsOff": [],
+    "alerts": [
+     {
+      "id": "dust-storm",
+      "level": "warning"
+     }
+    ],
+    "summary": null
+   },
+   "overlap": 0,
+   "overlaps": [],
+   "offscreen": 0,
+   "offscreenList": [],
+   "tinyText": 0,
+   "tiny": [],
+   "lowContrast": 0,
+   "low": [],
+   "hudCount": 0,
+   "hudList": [],
+   "styleDrift": {
+    "fonts": [
+     "Barlow Condensed",
+     "Barlow"
+    ],
+    "radii": [
+     "0px"
+    ],
+    "panelBgs": [
+     "256,104,40,1.00",
+     "8,16,16,0.60"
+    ],
+    "count": 5
+   },
+   "boxes": 6,
+   "required": {}
+  },
+  "debrief": {
+   "facts": {
+    "o2Pct": 99.8648089961888,
+    "marginSec": 27648.0765771635,
+    "waypoint": "Cheyava Falls",
+    "rangeM": 792.1798266807859,
+    "headingDeg": 143.2,
+    "decision": "pending",
+    "etaSec": 1160.255372698912,
+    "totals": {
+     "timeSec": 1160.255372698912,
+     "marginSec": 14846.966890928114
+    },
+    "hazardsOff": [],
+    "alerts": [
+     {
+      "id": "partner-separation",
+      "level": "warning"
+     }
+    ],
+    "summary": {
+     "distanceM": 1666.56750747155
+    }
+   },
+   "overlap": 0,
+   "overlaps": [],
+   "offscreen": 3,
+   "offscreenList": [
+    "button.ui-button.primary",
+    "button.ui-button.ghost",
+    "button.ui-button.ghost"
+   ],
+   "tinyText": 16,
+   "tiny": [
+    "dt 10.0px \"Time outside\"",
+    "span 9.5px \"DERIVED\"",
+    "dt 10.0px \"Distance walked\"",
+    "span 9.5px \"DERIVED\"",
+    "dt 10.0px \"Samples\"",
+    "span 9.5px \"SIM\"",
+    "dt 10.0px \"Dose\"",
+    "span 9.5px \"DERIVED\"",
+    "dt 10.0px \"Lowest oxygen margin\"",
+    "span 9.5px \"SIM\"",
+    "dt 10.0px \"Lowest battery\"",
+    "span 9.5px \"DERIVED\"",
+    "#debrief-log-title.debrief-section-title 10.0px \"Mission log\"",
+    "span.debrief-entry-id 10.5px \"dust-storm\"",
+    "span.debrief-entry-id 10.5px \"dust-storm\"",
+    "#debrief-notes-title.debrief-section-title 10.0px \"How to read these number\""
+   ],
+   "lowContrast": 0,
+   "low": [],
+   "hudCount": 0,
+   "hudList": [],
+   "styleDrift": {
+    "fonts": [
+     "Barlow",
+     "Barlow Condensed",
+     "IBM Plex Mono"
+    ],
+    "radii": [
+     "0px"
+    ],
+    "panelBgs": [
+     "256,104,40,1.00",
+     "8,16,16,0.60"
+    ],
+    "count": 6
+   },
+   "boxes": 3,
+   "required": {
+    "stats": true
+   }
+  }
+ },
+ "errors": []
+}

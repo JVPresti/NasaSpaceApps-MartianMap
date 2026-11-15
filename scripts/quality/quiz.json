@@ -1,0 +1,37 @@
+{
+  "note": "Comprehension test. A fresh judge sees one screenshot with one line of context and answers each question with no help, then explains what they looked at, what confused them and what would have let them answer faster. The correct answers for each capture come from the store at capture time (`facts` in metrics.json, see `truth` below for which field answers what). The orchestrator compares answers with the truth by hand and records each one as right or wrong in council/quiz-<round>.json.",
+  "states": {
+    "walk": {
+      "context": "First-person view through the helmet of an astronaut walking on Mars during a timed EVA.",
+      "questions": [
+        { "id": "o2", "q": "How much oxygen or margin do you have left?", "truth": "facts.o2Pct (percent) or facts.marginSec (shown in minutes)" },
+        { "id": "where", "q": "Where do you need to go and how far is it?", "truth": "facts.waypoint and facts.rangeM (metres)" },
+        { "id": "danger", "q": "Are you in danger right now? Why?", "truth": "facts.alerts: empty means no danger" },
+        { "id": "controls", "q": "What key opens the controls?", "truth": "H" }
+      ]
+    },
+    "walk-storm": {
+      "context": "First-person view through the helmet of an astronaut walking on Mars during a timed EVA.",
+      "questions": [
+        { "id": "o2", "q": "How much oxygen or margin do you have left?", "truth": "facts.o2Pct or facts.marginSec" },
+        { "id": "where", "q": "Where do you need to go and how far is it?", "truth": "facts.waypoint (the shelter during an event) and facts.rangeM" },
+        { "id": "danger", "q": "Are you in danger right now? Why?", "truth": "yes: facts.alerts (dust storm), go to the shelter" },
+        { "id": "controls", "q": "What key opens the controls?", "truth": "H" }
+      ]
+    },
+    "table-route": {
+      "context": "The mission planning table of a Mars EVA simulator, before the walk starts.",
+      "questions": [
+        { "id": "go", "q": "Is this route go or no-go?", "truth": "go when facts.totals.marginSec > 0 (the table's margin), else no-go" },
+        { "id": "duration", "q": "How long will the EVA take?", "truth": "facts.totals.timeSec, in minutes as the table shows it" },
+        { "id": "hazards", "q": "What hazards are active?", "truth": "the events not in facts.hazardsOff: dust storm, low oxygen caution and warning, radiation" }
+      ]
+    },
+    "debrief": {
+      "context": "The end-of-EVA debrief screen of a Mars EVA simulator.",
+      "questions": [
+        { "id": "outcome", "q": "Did the EVA go well or badly? Why?", "truth": "well: back in the habitat with a positive lowest margin (facts.summary.minMarginSec > 0)" }
+      ]
+    }
+  }
+}

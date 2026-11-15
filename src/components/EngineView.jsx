@@ -9,6 +9,7 @@ import { startSimulation } from '../state/simulation.js';
 import { connectWrist } from '../screens/wrist/controller.js';
 import { connectAudio } from '../audio/connectAudio.js';
 import { connectEvaEnd } from '../state/evaEnd.js';
+import { QA, setQaEngine } from '../qa.js';
 
 const ASSET_BASE = import.meta.env.BASE_URL + 'marswalk/';
 
@@ -66,7 +67,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
         mode: useMissionStore.getState().mode,
         tier: tierFromUrl(),
         inputEnabled: false,
-        debug: import.meta.env.DEV,
+        debug: import.meta.env.DEV || QA,
         // Identity checks keep a disposed StrictMode/retry engine from writing stale progress into React.
         onStatus: (text) => { if (current()) callbacks.current.onStatus?.(text); },
         onProgress: (progress) => { if (current()) callbacks.current.onProgress?.(progress); },
@@ -92,6 +93,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
         disconnectHabitatScreens = connectHabitatScreens(engine);   // the habitat's wall screens and planning table (#47)
         disconnectAudio = connectAudio(engine);   // suit audio (#72): starts on the first click or key press
         disconnectEvaEnd = connectEvaEnd(engine);   // X ends the EVA back in the habitat, prompt over the table (#244)
+        setQaEngine(engine);
         startCurrentSimulation();
         pauseMission();   // the start screen is a real pause, including ?mock=1 where nothing starts
         callbacks.current.onEngine?.(engine, {

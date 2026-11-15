@@ -27,3 +27,5 @@ dist-ssr
 # Blender backups
 *.blend1
 *.blend@
+scripts/quality/out/
+scripts/quality/.inflight.txt
