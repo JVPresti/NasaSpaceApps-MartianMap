@@ -16,7 +16,8 @@
     "prints:eva": "node scripts/eva-prints.mjs",
     "preview": "vite preview",
     "credits": "node scripts/build-credits.mjs",
-    "previews": "node scripts/build-layer-previews.mjs"
+    "previews": "node scripts/build-layer-previews.mjs",
+    "traverse": "node scripts/build-traverse.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

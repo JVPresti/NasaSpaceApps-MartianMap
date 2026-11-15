@@ -81,6 +81,15 @@ NASA and PDS data are public with no restriction of use (NASA Science Mission Di
 
 Show the image credit next to every image.
 
+## Perseverance traverse
+
+`traverse.json` puts a second NASA mission on the map (#249). Built by `scripts/build-traverse.mjs` (`npm run traverse`) from the two MMGIS layers of the Mars 2020 Where is the rover map; do not edit it by hand.
+
+- `traverse.drives`: one entry per drive that crosses the tile, with its `sol`, the RMC (site and drive) it went `from` and `to`, and `points` as `[x, z]` in the engine frame. Each drive is clipped to the tile, simplified to 0.5 m and rounded to 0.1 m. `sols` gives the first and last sol, `length_m` the length inside the tile. One provenance block covers the dataset (DATA).
+- `images`: one entry per science stop image, at the position where the rover stood when it took it, with the RMC and a provenance block. The position is DATA when the image ID names the RMC (Mars 2020 raw images), and DERIVED when the rover did not drive on the image sol, so it stood at the end of its last drive. It is where the rover was, not where the camera pointed.
+
+Coordinates use the projection of the HiRISE DTM the tile was cut from (equirectangular, lat_ts = 0, R = 3,396,190 m) about the sol 1210 waypoint, the tile origin.
+
 ## MEDA sol and RAD curve
 
 Both files hold series, not single values, so their layout differs from `values`:

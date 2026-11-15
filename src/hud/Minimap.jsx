@@ -11,6 +11,7 @@ import { createRedrawScheduler, MINIMAP_MAX_REDRAWS_PER_SECOND } from './minimap
 import { truePosition } from '../sim/navigation.js';
 import { loadDataFile } from '../data/dataFiles.js';
 import { SHELTERS_PATH } from '../sim/shelters.js';
+import { loadTraverse } from '../data/traverse.js';
 import './minimap.css';
 
 const ORTHO_URL = import.meta.env.BASE_URL + 'marswalk/assets/ortho_lo.jpg';
@@ -59,6 +60,7 @@ export default function Minimap({ tracker }) {
     let image = null;
     let imageState = 'loading';
     let shelters = [];
+    let traverse = [];
     let lastPath = state.route?.path;
     let lastProgress = null;
     tracker.setPath(lastPath ?? null);   // same route content on remount: keeps the progress
@@ -94,6 +96,7 @@ export default function Minimap({ tracker }) {
         zones: state.hazards?.zones,
         partner: state.crew?.[0] ?? null,
         finds: state.finds?.list,
+        traverse,
       });
     }
 
@@ -141,6 +144,15 @@ export default function Minimap({ tracker }) {
         shelters = [];   // no substitute data: the map simply shows no refuge markers
         scheduler.request('shelters');
       });
+
+    // Perseverance's drives (#249). Without the file the minimap simply shows no drives.
+    loadTraverse()
+      .then((data) => {
+        if (disposed) return;
+        traverse = data.drives;
+        scheduler.request('traverse');
+      })
+      .catch(() => {});
 
     const img = new Image();
     img.decoding = 'async';
@@ -192,6 +204,7 @@ export default function Minimap({ tracker }) {
       </section>
       <div className="hud-map-legend" aria-label={t('ui.map.legend')}>
         <span><i className="hud-map-key hud-map-key-route" />{t('ui.route')}</span>
+        <span><i className="hud-map-key hud-map-key-traverse" />{t('ui.rover.track')}</span>
         <span><i className="hud-map-key hud-map-key-wp">3</i>{t('ui.wp')}</span>
         <span><i className="hud-map-key hud-map-key-shelter" />{t('ui.refuge')}</span>
         <span><i className="hud-map-key hud-map-key-hazard" />{t('ui.hazard')}</span>
