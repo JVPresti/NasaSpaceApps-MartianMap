@@ -10,6 +10,7 @@ import lowOxygenCaution from '../sim/events/low-oxygen-caution.json';
 import lowOxygenWarning from '../sim/events/low-oxygen-warning.json';
 import radiation from '../sim/events/radiation.json';
 import { needsKey } from '../sim/missionNeeds.js';
+import { tasksKey } from '../sim/sampleTasks.js';
 
 /** The events that send the crew on a route of their own (a planner block): the storm, radiation, low O2 warning. */
 const ROUTE_EVENTS = new Set([dustStorm, radiation, lowOxygenCaution, lowOxygenWarning].filter((event) => event.planner).map((event) => event.id));
@@ -51,9 +52,12 @@ export function emptyPlannerMemory() {
   return { needsKey: '', plannedWaypointsKey: '', lastKey: '', lastNonce: -1, lastMast: '', appliedPlanId: '' };
 }
 
-/** Key of a needs plan: the six needs, the profile chosen at the table, Re-plan and the habitat mast. */
+/**
+ * Key of a needs plan: the six needs, the sampling tasks of the "Collect samples" goal (#352, empty for the other goals),
+ * the profile chosen at the table, Re-plan and the habitat mast. Any task edit plans again.
+ */
 export function needsPlanKey({ needs, profile, nonce, mastId }) {
-  return `${needsKey(needs)}|${profile}|${nonce}|${mastId}`;
+  return `${needsKey(needs)}|${tasksKey(needs)}|${profile}|${nonce}|${mastId}`;
 }
 
 /**

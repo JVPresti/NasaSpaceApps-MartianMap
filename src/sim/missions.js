@@ -28,8 +28,12 @@ export const FIRST_STOP = 'sortie';
 // a sample taken on the way, at a find, does not count (N1).
 const AT_STOP = Object.freeze({ stop: FIRST_STOP });
 const SAMPLE_SECURED = Object.freeze({ samplesAt: FIRST_STOP, atLeast: 1, forSec: 3 });
-/** How far past the stop's radius a sample still counts as taken there: the scoop reaches about 1.5 m ahead. Metres. */
-const SAMPLE_REACH_M = 2;
+/**
+ * How far past the stop's radius a sample still counts as taken there: the scoop reaches about 1.5 m ahead. Metres.
+ * One rule with the sampling tasks (#352, src/sim/taskProgress.js): a task's record counts within its place's radius
+ * plus this.
+ */
+export const SAMPLE_REACH_M = 2;
 // Within 10 m of the end area (25 m around the airlock): a crew on its way home, about 7 to 10 s before the area.
 const NEAR_HOME = Object.freeze({ nearEndM: 10 });
 const SCIENCE_DONE = Object.freeze({ anyOf: Object.freeze([SAMPLE_SECURED, Object.freeze({ stop: FIRST_STOP, forSec: 90 }), NEAR_HOME]) });

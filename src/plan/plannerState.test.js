@@ -42,6 +42,20 @@ describe('planning from the needs', () => {
     expect(decidePlan(input({ mastId: '544.9,-,581.5' }), memory).action).toBe('plan-needs');
   });
 
+  it('plans again for any edit of a sampling task, and never for tasks the goal does not use (#352)', () => {
+    const rock = { id: 't1', what: 'rock', count: 1, place: { type: 'stop', stopId: 'bright-angel' } };
+    const samples = (tasks) => needs({ objective: 'samples', tasks });
+    const key = needsPlanKey({ needs: samples([rock]), profile: 'fastest', nonce: 0, mastId: '' });
+    const memory = afterNeedsPlan(emptyPlannerMemory(), { key, waypointsKey: input().waypointsKey, nonce: 0, mastId: '' });
+    expect(decidePlan(input({ needs: samples([{ ...rock }]) }), memory).action).toBe('none');
+    for (const edit of [{ count: 2 }, { what: 'soil' }, { place: { type: 'point', id: 'P1', x: 500, z: 560 } }]) {
+      expect(decidePlan(input({ needs: samples([{ ...rock, ...edit }]) }), memory).action).toBe('plan-needs');
+    }
+    expect(decidePlan(input({ needs: samples([]) }), memory).action).toBe('plan-needs');
+    const sortie = needsPlanKey({ needs: needs(), profile: 'fastest', nonce: 0, mastId: '' });
+    expect(needsPlanKey({ needs: needs({ tasks: [rock] }), profile: 'fastest', nonce: 0, mastId: '' })).toBe(sortie);
+  });
+
   it('puts the planned stops back when something else wrote route.waypoints', () => {
     const key = needsPlanKey({ needs: needs(), profile: 'fastest', nonce: 0, mastId: '' });
     const memory = afterNeedsPlan(emptyPlannerMemory(), { key, waypointsKey: input().waypointsKey, nonce: 0, mastId: '' });

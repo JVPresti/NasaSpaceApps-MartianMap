@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createEventEngine } from '../sim/eventEngine.js';
 import exampleEvent from '../sim/events/example-event.json';
 import { LOOK_DEFAULTS, LOOK_STORAGE_KEY } from '../engine/lookSettings.js';
-import { chooseRouteProfile, createInitialState, resetStore, setLookSettings, setMode, setNeeds, setRouteDecision, storeAdapter, useMissionStore, withRouteProfile } from './store.js';
+import { chooseRouteProfile, createInitialState, resetStore, setLookSettings, setMode, setNeeds, setRouteDecision, setTasks, storeAdapter, useMissionStore, withRouteProfile } from './store.js';
 import { createMockState } from './mock.js';
 
 beforeEach(() => resetStore());
@@ -198,8 +198,9 @@ describe('route profiles (#245)', () => {
 
 describe('the needs of the crew (#265)', () => {
   it('starts on the first sortie for a pair, unlocked', () => {
-    expect(createInitialState().needs).toEqual({ objective: 'sortie', crew: 2, timeMin: 30, o2Pct: 100, batteryPct: 100, risk: 'standard', locked: false });
-    expect(createInitialState().route).toMatchObject({ stops: [], dropped: [], planReasons: [], budget: null, weights: null, explain: [] });
+    expect(createInitialState().needs).toEqual({ objective: 'sortie', crew: 2, timeMin: 30, o2Pct: 100, batteryPct: 100, risk: 'standard', tasks: [], locked: false });
+    expect(createInitialState().route).toMatchObject({ stops: [], dropped: [], planReasons: [], budget: null, weights: null, explain: [], tasks: [] });
+    expect(createInitialState().sampling.photoLog).toEqual([]);
   });
 
   it('applies a partial update, clamps numbers and refuses unknown values', () => {
@@ -260,7 +261,7 @@ describe('the needs of the crew (#265)', () => {
     setMode('walk');
     resetStore({ keepNeeds: true });
     const state = useMissionStore.getState();
-    expect(state.needs).toEqual({ objective: 'cheyava', crew: 1, timeMin: 90, o2Pct: 80, batteryPct: 70, risk: 'cautious', locked: false });
+    expect(state.needs).toEqual({ objective: 'cheyava', crew: 1, timeMin: 90, o2Pct: 80, batteryPct: 70, risk: 'cautious', tasks: [], locked: false });
     expect(state.route).toMatchObject({ profile: 'gentlest', path: null, stops: [] });
     expect(state.hazards.off).toEqual([]);   // the hazard switches start over, as on main
     expect(state.mode).toBe('plan');
@@ -285,5 +286,40 @@ describe('the needs of the crew (#265)', () => {
     expect(useMissionStore.getState().route.path).toBe(profiles.radio.path);
     setNeeds({ crew: 2 });
     expect(useMissionStore.getState().route.profile).toBe('gentlest');   // what the next plan walks (missionNeeds)
+  });
+});
+
+describe('the sampling tasks (#352)', () => {
+  const rock = { id: 't1', what: 'rock', count: 1, place: { type: 'stop', stopId: 'bright-angel' } };
+  const photo = { id: 't2', what: 'photo', count: 2, place: { type: 'point', id: 'P1', x: 500.123, z: 560 } };
+
+  it('stores a checked copy of the list, and says when nothing changed', () => {
+    expect(setTasks([rock, { ...photo, count: 7 }])).toBe(true);
+    const { tasks } = useMissionStore.getState().needs;
+    expect(tasks).toEqual([rock, { ...photo, count: 3, place: { ...photo.place, x: 500.12 } }]);
+    expect(tasks[0]).not.toBe(rock);
+    const before = useMissionStore.getState().needs;
+    expect(setTasks([rock, { ...photo, count: 3 }])).toBe(false);
+    expect(useMissionStore.getState().needs).toBe(before);
+    expect(setTasks([])).toBe(true);
+    expect(useMissionStore.getState().needs.tasks).toEqual([]);
+  });
+
+  it('refuses a bad list, and changes nothing once the EVA has begun', () => {
+    expect(() => setTasks([rock, rock])).toThrow(/duplicate/);
+    expect(() => setTasks('rock')).toThrow(/array/);
+    setTasks([rock]);
+    setMode('walk');
+    expect(setTasks([photo])).toBe(false);
+    expect(useMissionStore.getState().needs.tasks).toEqual([rock]);
+  });
+
+  it('keeps the tasks across a Restart, and a page load starts with none', () => {
+    setTasks([rock, photo]);
+    setMode('walk');
+    resetStore({ keepNeeds: true });
+    expect(useMissionStore.getState().needs).toMatchObject({ locked: false, tasks: [rock, { ...photo, place: { ...photo.place, x: 500.12 } }] });
+    resetStore();
+    expect(useMissionStore.getState().needs.tasks).toEqual([]);
   });
 });

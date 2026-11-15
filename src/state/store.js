@@ -5,6 +5,7 @@ import { create } from 'zustand';
 import { createInitialEvaState } from './eva.js';
 import { LOOK_DEFAULTS, clampLookSettings, readLookSettings, writeLookSettings } from '../engine/lookSettings.js';
 import { checkNeeds, DEFAULT_NEEDS, OBJECTIVE_DEFAULTS } from '../sim/missionNeeds.js';
+import { checkTasks, DEFAULT_TASKS, tasksKey } from '../sim/sampleTasks.js';
 
 /** Plain data only. Units are in the field names. Coordinates: x east, z south, metres from Cheyava Falls. */
 export function createInitialState() {
@@ -22,10 +23,14 @@ export function createInitialState() {
     // src/plan/useRoutePlanner.js): stops chosen in walking order, stops dropped and why, the plan's reason codes, the
     // budget and the risk weights; explain: why each leg bends (#246, src/sim/routeExplain.js), one entry per route.legs
     // entry. Codes and numbers only: the table writes the sentences.
-    route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [], profiles: null, profile: 'fastest', stops: [], dropped: [], planReasons: [], budget: null, weights: null, explain: [] },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js; profiles and profile: the routes the table compares and the one chosen (#245, src/sim/routeProfiles.js)
+    // tasks: the sampling tasks of the "Collect samples" plan (#352), kept and dropped, in list order, each with its
+    // resolved place, work and drop reason (src/sim/missionNeeds.js); empty for the other goals.
+    route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [], profiles: null, profile: 'fastest', stops: [], dropped: [], planReasons: [], budget: null, weights: null, explain: [], tasks: [] },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js; profiles and profile: the routes the table compares and the one chosen (#245, src/sim/routeProfiles.js)
     // The crew's needs at the mission table (#265, goal 2). setNeeds changes them until the EVA begins (locked: the first
     // switch to Walk, the moment src/state/simulation.js starts the EVA); the route re-plans from them in Plan mode.
-    needs: { ...DEFAULT_NEEDS, locked: false },
+    // tasks: the sampling tasks of the "Collect samples" goal (#352, src/sim/sampleTasks.js), changed with setTasks and
+    // locked with the rest.
+    needs: { ...DEFAULT_NEEDS, tasks: [], locked: false },
     environment: { dustOpacity: 0, tempC: null, windMs: null, pressurePa: null, doseRateUgyH: null, doseUgy: null },
     // Active hazard areas for the minimap (#60): [{ id, x, z, radiusM, active }], metres. Empty means
     // "no zone known", not "safe". No writer yet; the event work (#24-#26) fills it. The minimap draws
@@ -35,8 +40,9 @@ export function createInitialState() {
     alerts: {},                                     // { [eventId]: { id, eventId, level, text, startedAtSec, active } | null }
     crew: [],                                       // [{ id, name, color, x, z, oxygenPct, batteryPct }]
     // #36, written by src/state/sampling.js: samples secured this EVA, the checklist of the sample in progress, and the engine's
-    // sampling status (what the crosshair is on, the clip phase, the partner's case and what each input does), 5 times per second
-    sampling: { count: 0, photos: 0, samples: [], checklist: { photo: false, texture: false, sample: false, seal: false, photoAt: null, siteAt: null, sampleId: null }, status: null },
+    // sampling status (what the crosshair is on, the clip phase, the partner's case and what each input does), 5 times per second.
+    // photoLog (#352): each photo taken, [{ x, z, kind, site, atSec }] with x, z the aimed point, for the sampling tasks
+    sampling: { count: 0, photos: 0, samples: [], photoLog: [], checklist: { photo: false, texture: false, sample: false, seal: false, photoAt: null, siteAt: null, sampleId: null }, status: null },
     // #43, written by src/state/eva.js: statistics and history for the debrief. `phase` is 'ready' until the astronaut
     // first walks outside the habitat arrival area, 'active' during the EVA and 'ended' when they re-enter the HAB;
     // `summary` is then a frozen snapshot with the outside time, distance, minima, events, route changes, samples and
@@ -110,11 +116,12 @@ export const setMode = (mode) => {
 
 /**
  * Change the crew's needs at the mission table (src/sim/missionNeeds.js): objective ('sortie' | 'cheyava' |
- * 'bright-angel'), crew (1 | 2), timeMin, o2Pct, batteryPct and risk ('cautious' | 'standard' | 'bold'). Numbers are
- * clamped to their range; an unknown key or value throws. A new objective without a timeMin in the same update takes
- * that objective's default time (OBJECTIVE_DEFAULTS: 30 min for the sortie, 2 h for the full EVA). Once the EVA has
- * begun the needs are locked and nothing changes. The terrain preference is the route profile (chooseRouteProfile),
- * not a need.
+ * 'bright-angel' | 'samples'), crew (1 | 2), timeMin, o2Pct, batteryPct and risk ('cautious' | 'standard' | 'bold').
+ * Numbers are clamped to their range; an unknown key or value throws. A new objective without a timeMin in the same
+ * update takes that objective's default time (OBJECTIVE_DEFAULTS: 30 min for the sortie, 2 h for the others). Choosing
+ * 'samples' with no task yet also gives it its first task (tasksOnChoosingSamples); the tasks change with setTasks. Once
+ * the EVA has begun the needs are locked and nothing changes. The terrain preference is the route profile
+ * (chooseRouteProfile), not a need.
  * @param {object} partial
  * @returns {boolean} true when the needs changed
  */
@@ -126,7 +133,36 @@ export const setNeeds = (partial) => {
     const update = newObjective && checked.timeMin === undefined ? { ...checked, ...OBJECTIVE_DEFAULTS[checked.objective] } : checked;
     if (s.needs.locked || Object.entries(update).every(([k, v]) => s.needs[k] === v)) return s;
     changed = true;
-    return { needs: { ...s.needs, ...update } };
+    const tasks = newObjective && checked.objective === 'samples' ? tasksOnChoosingSamples(s.needs.tasks) : s.needs.tasks;
+    return { needs: { ...s.needs, ...update, tasks } };
+  });
+  return changed;
+};
+
+/**
+ * The tasks the "Collect samples" goal opens with (PO Q1): the crew's own list when it has one, else one rock sample at
+ * Bright Angel (sampleTasks.DEFAULT_TASKS), so the goal has a route at once.
+ * @param {Array<object> | undefined} tasks needs.tasks
+ */
+function tasksOnChoosingSamples(tasks) {
+  return Array.isArray(tasks) && tasks.length > 0 ? tasks : checkTasks(DEFAULT_TASKS);
+}
+
+/**
+ * Change the sampling tasks of the "Collect samples" goal (#352, src/sim/sampleTasks.js): the whole list, up to three
+ * `{ id, what, count, place }`. Counts are clamped to 1..3; a bad list throws (checkTasks). Ignored once the EVA has
+ * begun (the needs are locked), like setNeeds.
+ * @param {Array<object>} list
+ * @returns {boolean} true when the tasks changed
+ */
+export const setTasks = (list) => {
+  const checked = checkTasks(list);
+  const key = (tasks) => tasksKey({ objective: 'samples', tasks });
+  let changed = false;
+  useMissionStore.setState((s) => {
+    if (s.needs.locked || key(s.needs.tasks ?? []) === key(checked)) return s;
+    changed = true;
+    return { needs: { ...s.needs, tasks: checked } };
   });
   return changed;
 };
@@ -186,7 +222,7 @@ export const setHazardEnabled = (eventId, enabled) => {
 // page load re-reads it from 'marswalk.look'.
 /**
  * Back to a fresh mission state. The look settings always survive. With keepNeeds (the debrief's Restart and the pause
- * menu's End the EVA, product decision D9) the crew's six needs and the route profile chosen at the table survive too,
+ * menu's End the EVA, product decision D9) the crew's six needs, its sampling tasks and the route profile chosen at the table survive too,
  * unlocked for the next EVA; everything else, the hazard switches included, starts over. A page load starts from the
  * defaults (the first sortie).
  * @param {{ keepNeeds?: boolean }} [options]

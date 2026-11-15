@@ -63,7 +63,7 @@ export function normaliseWaypoint(waypoint) {
  * @param {number} maxRadius max search radius in cells
  * @returns {{i: number, j: number}|null}
  */
-function nearestFreeCell(grid, i, j, maxRadius) {
+export function nearestFreeCell(grid, i, j, maxRadius) {
   const index = j * grid.n + i;
   if (grid.blocked[index] === 0) return { i, j };
 
