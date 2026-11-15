@@ -564,6 +564,8 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           {objective !== 'cheyava' && (
             <p className="table-site-goal">
               <b>{t('table.site.this.run', { goal: t(`needs.objective.${objective}`) })}</b> {t(`needs.objective.${objective}.text`)}
+              {/* the Bright Angel goal's own sentence already says how far past it Cheyava Falls is */}
+              {objective === 'sortie' && <> {t('table.site.beyond')}</>}
             </p>
           )}
           {/* The first mission's plan beat (#265, src/mission/MissionBeat.jsx): nothing for the full EVA. */}
