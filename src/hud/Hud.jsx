@@ -338,6 +338,13 @@ function useHudDetail() {
 function KeyHint({ engine }) {
   const ref = useRef(null);
   useEffect(() => { setLiveEngine(engine ?? null); return () => setLiveEngine(null); }, [engine]);
+  // hud-wrist while the wrist screen is up (#286): the panels that cover the raised arm step back (hud.css)
+  useEffect(() => {
+    const hud = ref.current && ref.current.closest('.hud');
+    if (!hud || !engine || typeof engine.subscribeWrist !== 'function') return undefined;
+    const off = engine.subscribeWrist((state) => hud.classList.toggle('hud-wrist', state?.open === true));
+    return () => { if (typeof off === 'function') off(); hud.classList.remove('hud-wrist'); };
+  }, [engine]);
   const detail = useHudDetail();
   const sampling = useMissionStore((s) => {
     const c = s.sampling.checklist;

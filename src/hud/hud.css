@@ -372,3 +372,10 @@
   background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius-s);
 }
 @media (max-width: 900px) { .hud-keys { left: 3vw; } }
+
+/* Wrist screen up (#286): the next-waypoint panel and the world labels would sit on the raised arm, so they step out,
+   and so does the right column. The wrist's own map page carries the same navigation. */
+.hud .hud-waypoint, .hud .hud-wp-marker, .hud .hud-wp-arrow, .hud .hud-right { transition: opacity 0.2s ease; }
+.hud.hud-wrist .hud-waypoint, .hud.hud-wrist .hud-wp-marker, .hud.hud-wrist .hud-wp-arrow { opacity: 0; }
+.hud.hud-wrist .hud-right { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .hud .hud-waypoint, .hud .hud-wp-marker, .hud .hud-wp-arrow, .hud .hud-right { transition: none; } }
