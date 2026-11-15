@@ -54,6 +54,20 @@ describe('the debrief task rows (#352)', () => {
     expect(open).toContain('left out of the plan');
   });
 
+  it('shows a photo task only as Done or Not done, never done elsewhere (decision 11): the browser verifier\'s case', () => {
+    // soil x1 at P1 and photo x1 at Bright Angel; one soil sample at P1 with its photo step, nobody at Bright Angel
+    const rows = taskProgress([
+      { id: 't1', what: 'soil', count: 1, place: P1, kept: true },
+      { id: 't2', what: 'photo', count: 1, place: BRIGHT_ANGEL, kept: true },
+    ], { samples: [{ id: 1, kind: 'ground', site: null, x: 471, z: 561, into: 'pouch', atSec: 60 }], photoLog: [{ x: 471, z: 561, kind: 'ground', site: null, atSec: 50 }] });
+    const html = renderToStaticMarkup(<TaskRows tasks={rows} />);
+    const photoRow = rowOf(html, 't2');
+    expect(photoRow).toContain('data-state="open"');
+    expect(photoRow).toContain('<p class="debrief-entry-title">Not done · 1 photo · Bright Angel<span');
+    expect(photoRow).toContain('<p class="debrief-entry-meta"><span>0 of 1</span></p>');   // no split count, no distance
+    expect(photoRow).toContain('<span class="debrief-time">—</span>');
+  });
+
   it('renders nothing without tasks, so the goals without them keep their debrief', () => {
     expect(renderToStaticMarkup(<TaskRows tasks={[]} />)).toBe('');
     expect(renderToStaticMarkup(<TaskRows />)).toBe('');

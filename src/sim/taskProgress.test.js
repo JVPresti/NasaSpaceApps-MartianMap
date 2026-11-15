@@ -132,6 +132,40 @@ describe('taskProgress', () => {
     expect(atP2[2]).toMatchObject({ elsewhere: 1, state: 'elsewhere' });
   });
 
+  describe('a photo task is done only by a photo at its place (product decision 11)', () => {
+    // the verifier's case: soil x1 at a clicked point, photo x1 at Bright Angel; one soil sample at the point, with the
+    // checklist's photo step, and nobody goes to Bright Angel
+    const tasks = [task('t1', 'soil', 1, { ...P1, x: 510, z: 552 }), task('t2', 'photo', 1, BRIGHT_ANGEL)];
+    const atPoint = { samples: [sample(1, 'ground', 512, 553, 60)], photoLog: [photo(512, 553, 50)] };
+
+    it('a sample\'s photo step elsewhere does not do it: Not done, never done elsewhere', () => {
+      const rows = taskProgress(tasks, atPoint);
+      expect(rows[0]).toMatchObject({ id: 't1', state: 'done', here: 1 });
+      expect(rows[1]).toMatchObject({ id: 't2', state: 'open', here: 0, elsewhere: 0, atSec: null, distanceM: null });
+    });
+
+    it('a photo taken at the place does it', () => {
+      const rows = taskProgress(tasks, { ...atPoint, photoLog: [...atPoint.photoLog, photo(-10, -50, 900)] });
+      expect(rows[1]).toMatchObject({ state: 'done', here: 1, elsewhere: 0, atSec: 900 });
+    });
+
+    it('a sample\'s own photo step counts for a photo task at the same place', () => {
+      const same = [task('t1', 'soil', 1, { ...P1, x: 510, z: 552 }), task('t2', 'photo', 1, { ...P1, x: 510, z: 552 })];
+      expect(taskProgress(same, atPoint).map((r) => r.state)).toEqual(['done', 'done']);
+    });
+
+    it('stays short of its count with photos elsewhere, while soil and rock still count elsewhere', () => {
+      const mixed = [task('t1', 'photo', 2, BRIGHT_ANGEL), task('t2', 'soil', 1, P1), task('t3', 'rock', 1, BRIGHT_ANGEL)];
+      const rows = taskProgress(mixed, {
+        photoLog: [photo(-11, -50, 10), photo(300, 300, 20)],
+        samples: [sample(1, 'ground', 0, 0, 30), sample(2, 'rock', 200, 200, 40)],
+      });
+      expect(rows[0]).toMatchObject({ state: 'open', here: 1, elsewhere: 0 });
+      expect(rows[1]).toMatchObject({ state: 'elsewhere', elsewhere: 1 });
+      expect(rows[2]).toMatchObject({ state: 'elsewhere', elsewhere: 1 });
+    });
+  });
+
   it('is empty without tasks', () => {
     expect(taskProgress([], { samples: [sample(1, 'rock', 0, 0, 1)] })).toEqual([]);
     expect(taskProgress(undefined, undefined)).toEqual([]);

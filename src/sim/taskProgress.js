@@ -13,11 +13,14 @@
  * distance; the outcrop is centred 4.2 m from its waypoint and is 6.7 m long, more than its 4 m count radius). Counting
  * has two passes, and each record counts once:
  *   1. tasks in list order take the unused matching records at their place, oldest first, up to their count (`here`);
- *   2. tasks still short take unused matching records anywhere, oldest first, up to what is missing (`elsewhere`).
+ *   2. soil and rock tasks still short take unused matching records anywhere, oldest first, up to what is missing
+ *      (`elsewhere`). A photo task never does (product decision 11): a photo is about its subject, so a photo of other
+ *      ground is not the one asked for, while a sample taken elsewhere is still in the bag. A sample's own photo step
+ *      counts for a photo task when it was taken at that task's place, like any photo.
  * The tasks the plan kept go through both passes first, then the tasks it left out, so a left-out task never takes a
  * record from a kept one.
- * A task is 'done' with all its items at the place, 'elsewhere' when the count is complete only with records from
- * elsewhere, and 'open' otherwise. Nothing holds the crew at a place: an open task simply stays open.
+ * A task is 'done' with all its items at the place, 'elsewhere' (soil and rock only) when the count is complete only
+ * with records from elsewhere, and 'open' otherwise. Nothing holds the crew at a place: an open task simply stays open.
  *
  * Callers: src/mission/useTaskProgress.js for the walk (the banner at the place and the sampling panel's line) and
  * src/state/eva.js for the debrief's frozen rows. No store field: the rows are always computed from the records.
@@ -108,8 +111,9 @@ export function taskProgress(tasks, sampling = {}) {
         if (!item.used && atPlace(row.place, row.site, item.record)) { item.used = true; row.here.push(item.record); }
       }
     }
-    // Pass 2: what is still missing, from anywhere.
+    // Pass 2: what is still missing, from anywhere; never for a photo task, which only a photo at its place does.
     for (const row of group) {
+      if (row.task.what === 'photo') continue;
       for (const item of pool(row.task.what)) {
         if (row.here.length + row.elsewhere.length >= row.count) break;
         if (!item.used) { item.used = true; row.elsewhere.push(item.record); }

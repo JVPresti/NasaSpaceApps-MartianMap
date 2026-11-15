@@ -91,6 +91,10 @@ describe('the task banner (#352)', () => {
     expect(html).toContain('Take 1 photo here · 0 of 1');
     expect(html).not.toContain('soil');
     expect(renderToStaticMarkup(<SamplingChecklist />)).toContain('data-tasks="t2">Task · Photo 0/1</div>');
+    // a photo taken at the first point (the soil sample's photo step) is not the photo of P2 (decision 11)
+    secure([{ id: 1, kind: 'ground', site: null, x: 511, z: 553, into: 'pouch', atSec: 60 }], [{ x: 511, z: 553, kind: 'ground', site: null, atSec: 50 }]);
+    expect(banner()).toMatch(/data-task="t2" data-state="open">Take 1 photo here · 0 of 1 </);
+    expect(renderToStaticMarkup(<SamplingChecklist />)).toContain('data-tasks="t2">Task · Photo 0/1</div>');
   });
 
   it('shows nothing for a goal without tasks', () => {

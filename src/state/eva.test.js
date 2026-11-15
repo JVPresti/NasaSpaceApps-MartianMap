@@ -669,7 +669,7 @@ describe('sampling tasks in the debrief (#352)', () => {
     expect(summary.tasks.map((r) => [r.id, r.state, r.here, r.elsewhere, r.kept, r.atSec])).toEqual([
       ['t1', 'done', 1, 0, true, 300],
       ['t2', 'elsewhere', 1, 1, true, 520],
-      ['t3', 'elsewhere', 0, 1, false, 50],
+      ['t3', 'open', 0, 0, false, null],   // a photo 14 m from Cheyava Falls is not the photo asked for (decision 11)
     ]);
     expect(summary.tasks[1].distanceM).toBeCloseTo(50, 6);
     expect(Object.isFrozen(summary.tasks)).toBe(true);
