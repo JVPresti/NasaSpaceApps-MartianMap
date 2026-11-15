@@ -21,12 +21,12 @@ export const FINGER_TAP_M = 0.001;         // confirming: it pinches down to 1 m
 export const TAP_SECONDS = 0.25;
 export const WRIST_POSES = ['down', 'point', 'tool', 'open', 'pinch'];   // arms.js P keys that an arm can hold
 
-const LAYER_ROWS = 5;   // arms.js LAYER_NAMES
+export const LAYER_ROWS = 4;   // arms.js LAYER_NAMES: the four layers the ground draws (WALK_LAYERS in src/plan/layers.js)
 const LAYER_ROW_TOP = 74, LAYER_ROW_STEP = 52, LAYER_ROW_LABEL = 20, LAYER_COLUMN_X = 350;   // arms.draw() layer list
 
 /**
  * Canvas pixel at the centre of a layer row of the built-in fallback list, where the bench's finger rests.
- * @param {number} row 0 to 4 (LAYER_NAMES in arms.js)
+ * @param {number} row 0 to 3 (LAYER_NAMES in arms.js); a table-only layer index is clamped to the last row
  * @returns {{ x: number, y: number }} pixel, x 0..512, y 0..352
  */
 export function layerRowPointer(row) {
