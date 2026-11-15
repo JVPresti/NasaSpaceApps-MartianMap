@@ -1247,7 +1247,7 @@
   "plan.sheet.map": "Map only",
   "plan.sheet.open": "Show the panels",
   "controls.touch.walking": "Touch: walking",
-  "controls.touch.walk": "The stick appears where your thumb lands, bottom left. Push it to walk; past 85 % you jog.",
+  "controls.touch.walk": "The stick waits bottom left. Push it to walk; past 85 % you jog.",
   "controls.touch.look": "Drag any other finger on the scene.",
   "controls.touch.map": "Map button: opens the mission table.",
   "controls.touch.pause": "Pause button: this menu, with Controls, Settings and Sources.",

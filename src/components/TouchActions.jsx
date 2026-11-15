@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { touchBarActions } from '../input/actions.js';
 import { coarsePointer, fullscreen } from '../input/device.js';
-import { sendKey } from '../input/sendKey.js';
+import { holdKey, sendKey } from '../input/sendKey.js';
 import { useInCabin } from '../hud/useInCabin.js';
 import { t } from '../i18n/index.js';
 import { useMissionStore } from '../state/store.js';
@@ -52,7 +52,7 @@ export default function TouchActions({ engine, wristOpen }) {
   const now = useMissionStore(useShallow((s) => ({ mode: s.mode, stage: s.stage, actions: s.sampling?.status?.actions ?? null })));
   const inCabin = useInCabin(engine);
   const [more, setMore] = useState(false);
-  const held = useRef(false);
+  const [holder] = useState(() => holdKey(sendKey));
   const [fs] = useState(fullscreen);
   const [isFull, setFull] = useState(() => fs.active());
   useEffect(() => {
@@ -79,22 +79,12 @@ export default function TouchActions({ engine, wristOpen }) {
       sendKey(a.id, 'keyup');
       if (a.more) setMore(false);
     };
-    // A hold action (Q, held 2 s) sends keydown when the finger goes down and one keyup when it lifts, is cancelled or
-    // slides off the button; the first of those three ends the hold.
-    const hold = (e) => {
-      e.preventDefault();
-      if (held.current) return;
-      held.current = true;
-      sendKey(a.id, 'keydown');
-    };
-    const release = () => {
-      if (!held.current) return;
-      held.current = false;
-      sendKey(a.id, 'keyup');
-      if (a.more) setMore(false);
-    };
+    // A hold action (Q, held 2 s) sends keydown when the finger goes down and one keyup when it lifts or the browser
+    // cancels the touch (holdKey). A touch pointer stays captured by the button, so sliding off does not end it.
+    const hold = (e) => { e.preventDefault(); holder.press(a.id); };
+    const release = () => { if (holder.release() && a.more) setMore(false); };
     const handlers = a.hold
-      ? { onPointerDown: hold, onPointerUp: release, onPointerCancel: release, onPointerLeave: release, onContextMenu: (e) => e.preventDefault() }
+      ? { onPointerDown: hold, onPointerUp: release, onPointerCancel: release, onContextMenu: (e) => e.preventDefault() }
       : { onClick: press };
     return (
       <button key={a.id} type="button" className={`touch-action touch-action-${a.id}`} data-action={a.id} {...handlers}>

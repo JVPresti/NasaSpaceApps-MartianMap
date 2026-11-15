@@ -53,15 +53,15 @@ const WALK_KEYS = ['src/components/shortcuts.js'];
 export const ACTIONS = Object.freeze([
   // Walk and look
   { id: 'walk', codes: ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'], files: ['src/engine/walkInput.js'],
-    touch: 'stick', control: { file: 'src/engine/view.js', has: 'touchstart' }, label: 'touch.walk' },
+    touch: 'stick', control: { file: 'src/engine/view.js', has: "canvas.addEventListener('touchstart'" }, label: 'touch.walk' },
   { id: 'jog', codes: ['ShiftLeft', 'ShiftRight'], files: ['src/engine/view.js'],
-    touch: 'stick', control: { file: 'src/engine/touchInput.js', has: 'STICK_JOG_FROM' }, label: 'touch.jog' },
-  { id: 'look', codes: [], files: [], touch: 'gesture', control: { file: 'src/engine/touchInput.js', has: 'consumeLook' }, label: 'touch.look' },
+    touch: 'stick', control: { file: 'src/engine/touchInput.js', has: 'export const STICK_JOG_FROM' }, label: 'touch.jog' },
+  { id: 'look', codes: [], files: [], touch: 'gesture', control: { file: 'src/engine/touchInput.js', has: 'consumeLook()' }, label: 'touch.look' },
 
   // Both views
   { id: 'pause', codes: ['Escape'], keys: ['Escape'], files: ['src/App.jsx'], touch: 'button', when: 'always', label: 'touch.pause' },
   { id: 'mode', codes: ['KeyM'], files: WALK_KEYS, touch: 'button', when: 'walk', label: 'touch.map' },
-  { id: 'help', codes: ['KeyH'], keys: ['h', 'H'], files: ['src/App.jsx'], touch: 'dialog', control: { file: 'src/components/PauseMenu.jsx', has: 'onControls' }, label: 'touch.help' },
+  { id: 'help', codes: ['KeyH'], keys: ['h', 'H'], files: ['src/App.jsx'], touch: 'dialog', control: { file: 'src/components/PauseMenu.jsx', has: 'onClick={onControls}' }, label: 'touch.help' },
   { id: 'layer-next', codes: ['KeyL'], files: WALK_KEYS, touch: 'button', when: 'walk', more: true, label: 'touch.layer' },
   { id: 'layer-off', codes: ['Digit0', 'Numpad0'], files: WALK_KEYS, touch: 'button', when: 'walk', more: true, label: 'touch.layer.off' },
   { id: 'visor-frame', codes: ['KeyV'], files: WALK_KEYS, touch: 'button', when: 'surface', more: true, label: 'touch.visor' },
@@ -76,8 +76,8 @@ export const ACTIONS = Object.freeze([
   { id: 'stow', codes: ['KeyE'], files: ['src/engine/sampling.js'], touch: 'button', when: 'surface', label: 'touch.stow' },
   { id: 'case', codes: ['KeyF'], files: ['src/engine/sampling.js'], touch: 'button', when: 'surface', label: 'touch.case' },
   { id: 'find', codes: ['KeyQ'], files: ['src/finds/Finds.jsx', 'src/screens/wrist/controller.js'], touch: 'button', when: 'surface', hold: true, more: true, label: 'touch.find' },
-  // Esc while Q is held cancels the find: on touch, the finger sliding off the Hold button cancels it
-  { id: 'find-cancel', codes: ['Escape'], files: ['src/finds/Finds.jsx'], touch: 'gesture', control: { file: BAR, has: 'onPointerLeave' }, label: 'touch.find' },
+  // Esc while Q is held cancels the find: on touch, lifting the finger from the Hold button before 2 s cancels it
+  { id: 'find-cancel', codes: ['Escape'], files: ['src/finds/Finds.jsx'], touch: 'gesture', control: { file: BAR, has: 'onPointerUp: release' }, label: 'touch.find' },
   { id: 'find-accept', codes: ['KeyY'], files: ['src/finds/Finds.jsx'], touch: 'dialog', control: { file: 'src/finds/Finds.jsx', has: 'service.accept(f.id)' }, label: 'touch.find.accept' },
   { id: 'find-dismiss', codes: ['KeyN', 'Escape'], files: ['src/finds/Finds.jsx'], touch: 'dialog', control: { file: 'src/finds/Finds.jsx', has: 'service.dismiss(f.id)' }, label: 'touch.find.dismiss' },
   { id: 'partner', codes: ['KeyT'], files: ['src/hud/PartnerPanel.jsx'], touch: 'button', when: 'surface', more: true, label: 'touch.partner' },
@@ -94,8 +94,10 @@ export const ACTIONS = Object.freeze([
   { id: 'wrist-confirm', codes: ['Enter', 'NumpadEnter'], keys: ['Enter'], files: ['src/screens/wrist/keys.js'], touch: 'button', when: 'wrist', label: 'touch.wrist.select' },
 
   // Screens that draw their own buttons for their keys
+  // Every menu dialog (Modal.jsx): Esc is its Resume or Back button, Enter its primary button, Tab moves keyboard focus
+  // only, so a tap on any button is the touch control
   { id: 'dialog-keys', codes: ['Tab', 'Enter', 'Escape'], keys: ['Tab', 'Enter', 'Escape'], files: ['src/components/Modal.jsx'],
-    touch: 'dialog', control: { file: 'src/components/Modal.jsx', has: 'so the dialog is never left without a button to press' }, label: 'touch.dialog.focus' },
+    touch: 'dialog', control: { file: 'src/components/PauseMenu.jsx', has: 'onClick={onResume}' }, label: 'touch.dialog.focus' },
   { id: 'sources-close', codes: ['Escape', 'Tab'], keys: ['Escape', 'Tab'], files: ['src/sources/SourcesScreen.jsx'],
     touch: 'dialog', control: { file: 'src/sources/SourcesScreen.jsx', has: 'className="sources-close" onClick={onClose}' }, label: 'touch.dialog.focus' },
   { id: 'card-close', codes: ['Enter', 'NumpadEnter', 'Escape'], files: ['src/stops/closeKeys.js'],
@@ -106,13 +108,13 @@ export const ACTIONS = Object.freeze([
   { id: 'task-pick-cancel', codes: ['Escape'], keys: ['Escape'], files: ['src/plan/useTaskPlace.js'],
     touch: 'dialog', control: { file: 'src/plan/TaskList.jsx', has: 'onClick={cancelPick}' }, label: 'touch.dialog.focus' },
   { id: 'tooltip-close', codes: ['Escape'], keys: ['Escape'], files: ['src/components/SourceTag.jsx'],
-    touch: 'gesture', control: { file: 'src/components/SourceTag.jsx', has: 'a tap opens and closes the details' }, label: 'touch.dialog.focus' },
+    touch: 'gesture', control: { file: 'src/components/SourceTag.jsx', has: 'onPointerUp={onPointerUp}' }, label: 'touch.dialog.focus' },
   // A waypoint's x or z field: Enter commits, Esc restores. The on-screen keyboard's Done key and a tap outside both blur
   // the field, which commits it; restoring is retyping the old value.
   { id: 'waypoint-field', codes: ['Enter', 'Escape'], keys: ['Enter', 'Escape'], files: ['src/plan/RoutePanel.jsx'],
-    touch: 'gesture', control: { file: 'src/plan/RoutePanel.jsx', has: 'onBlur' }, label: 'touch.dialog.focus' },
+    touch: 'gesture', control: { file: 'src/plan/RoutePanel.jsx', has: 'onBlur={commit}' }, label: 'touch.dialog.focus' },
   { id: 'table-step', codes: ['ArrowLeft', 'ArrowRight'], keys: ['ArrowLeft', 'ArrowRight'], files: ['src/plan/MissionTable.jsx'],
-    touch: 'dialog', control: { file: 'src/plan/MissionTable.jsx', has: 'table-tab-' }, label: 'touch.table.step' },
+    touch: 'dialog', control: { file: 'src/plan/MissionTable.jsx', has: 'id={`table-tab-${item.id}`}' }, label: 'touch.table.step' },
 
   // The presentation (?present=1, src/present/control.js). Its touch controls arrive with #373 (swipe) and the on-screen
   // Back, Exit and Language buttons after it; until then actions.test.js lists them as pending, by name.

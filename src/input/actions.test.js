@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { ACTIONS, action, codeOf, keyForCode, touchBarActions } from './actions.js';
-import { sendKey } from './sendKey.js';
+import { holdKey, sendKey } from './sendKey.js';
 
 const SRC = join(import.meta.dirname, '..');
 
@@ -56,6 +56,11 @@ function keysInSource() {
   return pairs;
 }
 
+/** Source text without comments, so a control must be real code, never a line that only talks about it. */
+function code(text) {
+  return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`\\])\/\/.*$/gm, '$1');
+}
+
 /** True when an action of `file` binds `key`, as a code or a key value (a letter in either case). */
 function bound(file, key) {
   return ACTIONS.some((a) => a.files.includes(file)
@@ -89,7 +94,7 @@ describe('the action list (#365)', () => {
       }
       expect(a.control?.file && a.control?.has, `${a.id} names no control`).toBeTruthy();
       const path = join(ROOT, a.control.file);
-      const has = existsSync(path) && readFileSync(path, 'utf8').includes(a.control.has);
+      const has = existsSync(path) && code(readFileSync(path, 'utf8')).includes(a.control.has);
       if (a.id in PENDING) expect(has, `${a.id} is listed as pending but its control exists: remove it from PENDING`).toBe(false);
       else expect(has, `${a.id}: ${a.control.file} has no "${a.control.has}"`).toBe(true);
     }
@@ -151,5 +156,27 @@ describe('sendKey (#365)', () => {
 
   it('refuses an action without a key', () => {
     expect(() => sendKey('sample', 'keydown', { target: { dispatchEvent() {} }, KeyboardEventClass: FakeKeyboardEvent })).toThrow();
+  });
+});
+
+describe('holdKey (#365)', () => {
+  it('sends one keydown per press and one keyup per release, however many release events arrive', () => {
+    const sent = [];
+    const h = holdKey((id, type) => sent.push(`${type}:${id}`));
+    expect(h.release()).toBe(false);
+    expect(h.press('find')).toBe(true);
+    expect(h.press('find')).toBe(false);   // a second pointerdown while held
+    expect(h.release()).toBe(true);        // pointerup
+    expect(h.release()).toBe(false);       // then pointercancel
+    expect(sent).toEqual(['keydown:find', 'keyup:find']);
+  });
+});
+
+describe('the control check reads code, not comments (#365)', () => {
+  it('ignores a control that only a comment mentions', () => {
+    expect(code('// onClick={onClose}\nconst a = 1;')).not.toContain('onClick={onClose}');
+    expect(code('/* onPointerUp={up} */ x')).not.toContain('onPointerUp');
+    expect(code('{/* id={`table-tab-${item.id}`} */}<b />')).not.toContain('table-tab-');
+    expect(code("fetch('http://x/y'); <a onClick={go} />")).toContain('onClick={go}');
   });
 });

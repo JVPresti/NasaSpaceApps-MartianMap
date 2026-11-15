@@ -41,7 +41,8 @@ export function useMapPinch(boxRef, { crop, tile, min, setView, dragRef }) {
     const box = boxRef.current;
     if (!box) return undefined;
     const fingers = new Map();
-    let pinch = null;
+    let pinch = null, next = null, frame = 0;
+    const flush = () => { frame = 0; if (next) { live.current.setView(next); next = null; } };
     const points = () => [...fingers.values()].slice(0, 2);
     const down = (event) => {
       if (event.pointerType !== 'touch') return;
@@ -58,8 +59,10 @@ export function useMapPinch(boxRef, { crop, tile, min, setView, dragRef }) {
       fingers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       if (!pinch || fingers.size < 2) return;
       event.stopPropagation();
-      const { tile: t, min: m, setView: set } = live.current;
-      set(pinchCrop(pinch.start, pinch.from, points(), pinch.rect, t, m));
+      // one render per frame: two fingers send two moves a frame, so keep the newest crop and set it on the next frame
+      const { tile: t, min: m } = live.current;
+      next = pinchCrop(pinch.start, pinch.from, points(), pinch.rect, t, m);
+      if (!frame) frame = requestAnimationFrame(flush);
     };
     const up = (event) => {
       if (!fingers.delete(event.pointerId)) return;
@@ -72,6 +75,7 @@ export function useMapPinch(boxRef, { crop, tile, min, setView, dragRef }) {
     box.addEventListener('pointerup', up, true);
     box.addEventListener('pointercancel', up, true);
     return () => {
+      if (frame) cancelAnimationFrame(frame);
       box.removeEventListener('pointerdown', down, true);
       box.removeEventListener('pointermove', move, true);
       box.removeEventListener('pointerup', up, true);

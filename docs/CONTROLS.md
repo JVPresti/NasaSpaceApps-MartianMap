@@ -84,7 +84,7 @@ The canvas uses `touch-action: none` (src/App.css), so a touch on the scene neve
 | Open plan, Finish EVA (in the habitat cabin) | E and X at the table |
 | Sample, Photo, Stow, Case | Click, P, E and F. Each button shows only while its action does something, in its own row above Wrist and More |
 | Wrist | R. While the wrist is up: Page back, Next page, Row up, Row down, Select ([, ], K, J, Enter) |
-| More | Layer (L), Layer off (0), Hold: find (Q, hold 2 s), Partner (T), Slope grid (G), All gauges (I), Visor frame (V), Sources (C), Full screen |
+| More | Layer (L), Layer off (0), Hold to mark a find (Q, held 2 s), Partner (T), Slope grid (G), All gauges (I), Visor frame (V), Sources (C), Full screen |
 | Find card | Add to route and Dismiss (Y and N) are buttons on the card |
 
 The touch action bar (`src/components/TouchActions.jsx`, #365) shows on a coarse pointer, or after the first touch on

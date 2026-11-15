@@ -6,7 +6,7 @@
 }
 
 /* A phone held upright: the walk card spans the screen under the alerts instead of squeezing beside the HUD column. */
-@media (max-width: 600px) and (orientation: portrait) {
+@media (pointer: coarse) and (max-width: 600px) and (orientation: portrait) {
   .stop-card-walk {
     left: calc(8px + env(safe-area-inset-left));
     right: calc(8px + env(safe-area-inset-right));

@@ -18,3 +18,27 @@ export function sendKey(id, type = 'keydown', { target = globalThis.document?.bo
   target.dispatchEvent(event);
   return event;
 }
+
+/**
+ * One held key at a time for the touch bar's hold buttons (Q, #365): press sends keydown once, release sends one keyup
+ * and returns true, a second release or a release without a press does nothing.
+ * @param {(id: string, type: 'keydown' | 'keyup') => unknown} send
+ */
+export function holdKey(send) {
+  let held = null;
+  return {
+    press(id) {
+      if (held) return false;
+      held = id;
+      send(id, 'keydown');
+      return true;
+    },
+    release() {
+      if (!held) return false;
+      const id = held;
+      held = null;
+      send(id, 'keyup');
+      return true;
+    },
+  };
+}

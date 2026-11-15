@@ -68,7 +68,7 @@
 
 /* ------------------------------------------------------------------ stacked table (narrow or short windows) */
 
-@media (max-width: 900px), (max-height: 500px) {
+@media (pointer: coarse) and (max-width: 900px), (pointer: coarse) and (max-height: 500px) {
   .table-screen {
     --table-pad: 12px;
     gap: 8px;
@@ -160,7 +160,7 @@
 }
 
 /* Landscape phone: header in one row, the map left at full height, the panels right. */
-@media (max-height: 500px) and (orientation: landscape) {
+@media (pointer: coarse) and (max-height: 500px) and (orientation: landscape) {
   .table-top { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
   .table-tabs { grid-row: 1; grid-column: 1; }
   .table-tabs button { flex: 0 0 auto; min-width: 72px; padding: 6px 8px 8px; }
@@ -190,7 +190,7 @@
 }
 
 /* Portrait only: the bar under the map folds the panels away (in landscape the map is already as tall as the body). */
-@media (max-width: 900px) and (min-height: 501px) {
+@media (pointer: coarse) and (max-width: 900px) and (min-height: 501px) {
   .plan-sheet-toggle {
     display: flex;
     align-items: center;
