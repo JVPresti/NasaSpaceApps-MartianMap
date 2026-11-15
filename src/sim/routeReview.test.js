@@ -254,7 +254,7 @@ describe('judging a deviation', () => {
   it('calls a detour that follows a slope detour the system planned forced, and an off-route re-plan not', () => {
     const track = walk(detour);
     const detourPath = [[150, 0], [200, 60], [250, 0], [400, 0]];
-    const slope = review(track, { routeChanges: [{ atSec: 140, kind: 'slope', reason: 'Detour: steeper than 25° ahead', after: { path: detourPath } }] });
+    const slope = review(track, { routeChanges: [{ atSec: 140, kind: 'slope', reason: 'Detour: steeper than 20° ahead', after: { path: detourPath } }] });
     expect(slope.deviations[0]).toMatchObject({ verdict: 'forced', reason: { code: 'replan', kind: 'slope', atSec: 140 } });
     // Planned after the detour began: it did not cause it.
     const late = review(track, { routeChanges: [{ atSec: 9999, kind: 'slope', after: { path: detourPath } }] });

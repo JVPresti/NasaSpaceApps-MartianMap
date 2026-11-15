@@ -6,8 +6,8 @@ import { setLanguage } from '../i18n/index.js';
 import { radioShadowMask } from '../sim/radio.js';
 import { LAYERS } from './layers.js';
 import {
-  LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, contourLine, drawMapPosition, layerColour, layerPlaces, mapCrop, marsColour, paintMap, sampleRed, slopeGrid, tagFlips,
-  toMap, zoomCrop,
+  LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, contourLine, drawMapPosition, fromMap, layerColour, layerPlaces, mapCrop, marsColour, paintMap, sampleRed, slopeGrid, tagFlips,
+  toMap, waypointTaskTag, zoomCrop,
 } from './mapLayers.js';
 import { exposureText } from './routeExposure.js';
 
@@ -232,13 +232,54 @@ describe('mission table map', () => {
     expect(layerPlaces(LAYER.OUTCROP, { candidates }).find((p) => p.id === 'sortie')).toMatchObject({ label: 'Zona de tono claro', detail: 'otro objetivo' });
   });
 
-  it('marks the natural shelters on Exposure with their dose cut, and nothing on the other layers', () => {
+  it('marks the sampling task places off the route on Rocks and Outcrop, and why each was left out (#352)', () => {
+    const candidates = routeStopCandidates(readJson('public/data/stops.json'));
+    const tasks = [
+      { id: 't1', what: 'rock', count: 1, place: { type: 'stop', stopId: 'bright-angel' } },
+      { id: 't2', what: 'photo', count: 2, place: { type: 'stop', stopId: 'cheyava-falls' } },
+      { id: 't3', what: 'soil', count: 3, place: { type: 'point', id: 'P1', x: 560, z: 574 } },
+    ];
+    const waypoints = [{ name: 'HAB' }, { name: 'WP3 · Bright Angel outcrop', place: 'bright-angel', tasks: ['t1'] }];
+    const planTasks = [{ id: 't1', what: 'rock', count: 1, kept: true }, { id: 't2', what: 'photo', count: 2, kept: false, drop: { limit: 'o2' } }, { id: 't3', what: 'soil', count: 3, kept: false, drop: null }];
+    // Bright Angel is on the route: its stop marker names the task, so it gets no second mark
+    expect(layerPlaces(LAYER.ROCK, { candidates, tasks, planTasks, waypoints })).toEqual([
+      { id: 'task-cheyava-falls', kind: 'task', x: 0, z: 0, label: 'Photo ×2', detail: 'dropped: O2 margin', title: 'Cheyava Falls: Photo ×2: dropped: O2 margin', opens: 'left' },
+      { id: 'task-P1', kind: 'task', x: 560, z: 574, label: 'Soil ×3', detail: '', title: 'P1: Soil ×3', opens: 'left' },
+    ]);
+    expect(waypointTaskTag(LAYER.ROCK, waypoints[1], planTasks)).toBe('Rock ×1');
+    expect(waypointTaskTag(LAYER.OUTCROP, { tasks: ['t1', 't2'] }, [{ ...planTasks[0] }, { ...planTasks[1], kept: true }])).toBe('Rock ×1 · Photo ×2');
+    expect(waypointTaskTag(LAYER.TERRAIN, waypoints[1], planTasks)).toBeNull();
+    expect(waypointTaskTag(LAYER.ROCK, waypoints[0], planTasks)).toBeNull();
+    // on Outcrop a task place off the route takes the place of its stop's candidate mark; the other candidates stay
+    expect(layerPlaces(LAYER.OUTCROP, { candidates, tasks, planTasks, waypoints }).map((p) => p.id)).toEqual(['sortie', 'task-cheyava-falls', 'task-P1']);
+    // no tasks (any goal but Collect samples): the layers mark what they did before
+    expect(layerPlaces(LAYER.ROCK, { candidates })).toEqual([]);
+    expect(layerPlaces(LAYER.OUTCROP, { candidates }).map((p) => p.id)).toEqual(['bright-angel', 'cheyava-falls', 'sortie']);
+    expect(layerPlaces(LAYER.TERRAIN, { candidates, tasks })).toEqual([]);
+    setLanguage('es');
+    expect(layerPlaces(LAYER.ROCK, { candidates, tasks: tasks.slice(0, 1) })[0].label).toBe('Roca ×1');
+  });
+
+  it('turns a click on the map back into metres', () => {
+    const crop = { x0: 400, z0: 500, size: 150 };
+    expect(fromMap(0, 0, crop)).toEqual({ x: 400, z: 500 });
+    expect(fromMap(50, 100, crop)).toEqual({ x: 475, z: 650 });
+    const [u, v] = toMap(523.4, 611.2, crop);
+    const back = fromMap(u, v, crop);
+    expect(back.x).toBeCloseTo(523.4, 9);
+    expect(back.z).toBeCloseTo(611.2, 9);
+  });
+
+  it('marks the natural shelters on Exposure with the sky they hide, and nothing on the other layers', () => {
     const { shelters } = readJson('public/data/shelters.json');
     const places = layerPlaces(LAYER.EXPOSURE, { shelters });
     expect(places.map((p) => p.id)).toEqual(['SP1', 'SP2', 'SP3', 'SP4']);   // the habitat is the route's first marker
-    expect(places[0].label).toMatch(/^SP1 · −1[56] %$/);   // short: the legend says it is the dose; the title says it in full
+    expect(places[0].label).toMatch(/^SP1 · 1[56] % sky hidden$/);   // short: the sky, not the dose; the title gives the dose bound
     expect(places.every((p) => p.opens === 'left')).toBe(true);
-    expect(places[0].title).toMatch(/sky view 0\.8\d, up to 1[56] % less dose/);
+    // the dose cut is a SIM upper bound, beside what RAD measured (#296)
+    expect(places[0].title).toMatch(/sky view 0\.8\d, the terrain hides 1[56] % of the sky\. .*at most 1[56] % \(SIM, an upper bound from geometry\)\. RAD measured 4 % less dose/);
+    setLanguage('es');
+    expect(layerPlaces(LAYER.EXPOSURE, { shelters })[0].label).toMatch(/^SP1 · 1[56] % de cielo oculto$/);
     for (const layer of [LAYER.IMAGE, LAYER.TERRAIN, LAYER.ROCK, LAYER.RADIO]) expect(layerPlaces(layer, { shelters })).toEqual([]);
   });
 
@@ -247,7 +288,7 @@ describe('mission table map', () => {
     expect(exposureText({ mean: 0.934, min: 0.881 })).toEqual({
       label: 'Sky exposure on the route',
       value: '0.93 mean · 0.88 at its most sheltered',
-      note: 'In a solar particle event the dose scales with sky view: about 93 % of the open-ground dose on this route, an upper bound on the saving.',
+      note: 'If the dose scaled with sky view, this route would get about 93 % of the open-ground dose in a solar particle event, an upper bound on the saving (SIM). RAD measured only 4 % less dose with 19 % of the sky blocked.',
     });
     setLanguage('es');
     expect(exposureText({ mean: 0.934, min: 0.881 }).value).toBe('0,93 de media · 0,88 en su punto más resguardado');

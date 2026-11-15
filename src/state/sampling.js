@@ -9,6 +9,8 @@
 //   sample   the sample is in a container: in the sample bag (stow_sample, at 1.1 s) or landed in the partner's open case
 //   seal     the container is closed: the stow clip ended with the bag put away, or the partner closed the lid and took the case
 // A sample is counted when it is in a container (`sample`). A sealed checklist stays ticked until the next photo or scoop.
+// Every photo is also kept in `photoLog` with the point it was aimed at, so a sampling task (#352, src/sim/taskProgress.js)
+// can count photo records at its place.
 import { useMissionStore } from './store.js';
 
 export const SAMPLING_POLL_MS = 200;
@@ -45,21 +47,26 @@ export function nextChecklist(c, e) {
 }
 
 /**
- * The `sampling` slice after one engine event. Pure. A sample is added (and counted) when it is secured in a container.
- * @param {{ count: number, photos: number, samples: object[], checklist: object }} s
+ * The `sampling` slice after one engine event. Pure. A sample is added (and counted) when it is secured in a container;
+ * a photo is added to `photoLog` with the point it was aimed at ({ x, z, kind, site, atSec }, #352).
+ * @param {{ count: number, photos: number, samples: object[], checklist: object, photoLog?: object[] }} s
  * @param {object} e engine event
  * @param {number | null} atSec mission time of the event
  */
 export function applySamplingEvent(s, e, atSec = null) {
   const checklist = nextChecklist(s.checklist, e);
   let { count, photos, samples } = s;
-  if (e.type === 'photo') photos += 1;
+  const extra = {};
+  if (e.type === 'photo') {
+    photos += 1;
+    extra.photoLog = [...(s.photoLog ?? []), { x: e.x, z: e.z, kind: e.kind, site: e.site ?? null, atSec }];
+  }
   if (e.type === 'secured' && !samples.some((x) => x.id === e.id)) {
     count += 1;
     samples = [...samples, { id: e.id, kind: e.kind, site: e.site ?? null, x: e.x, z: e.z, into: e.into, photo: checklist.photo, texture: checklist.texture, sealed: false, atSec }];
   }
   if (e.type === 'sealed') samples = samples.map((x) => (x.id === e.id && !x.sealed ? { ...x, sealed: true, photo: x.photo || checklist.photo } : x));
-  return { ...s, count, photos, samples, checklist };
+  return { ...s, count, photos, samples, checklist, ...extra };
 }
 
 /**

@@ -70,8 +70,40 @@ export function droppedWhy(dropped) {
 }
 
 /**
+ * A sampling task's what and how many (#352): "1 rock sample", "2 photos". Lower case, to follow other text.
+ * @param {{ what: 'photo' | 'soil' | 'rock', count: number }} task
+ * @returns {string}
+ */
+export function taskText(task) {
+  const count = finite(task?.count) ? task.count : 1;
+  return t(`tasks.what.${task?.what}.${count === 1 ? 'one' : 'many'}`, { count });
+}
+
+/**
+ * The role of a task place in the stop line (stopLine's `role`), so the leg line names the tasks it serves: "for 1 rock
+ * sample · 2 photos". Null without a task.
+ * @param {Array<{ what: string, count: number }>} tasks the route.tasks entries kept at the place
+ * @returns {string | null}
+ */
+export function taskRole(tasks) {
+  const list = (Array.isArray(tasks) ? tasks : []).filter((task) => task && typeof task.what === 'string');
+  return list.length ? t('tasks.role', { tasks: list.map(taskText).join(' · ') }) : null;
+}
+
+/**
+ * Why a sampling task was left out of the plan (a route.tasks entry with its drop), as droppedWhy says it for a stop.
+ * Null for a task that was not dropped.
+ * @param {{ drop?: object | null }} task
+ * @returns {string | null}
+ */
+export function taskDroppedWhy(task) {
+  return task?.drop ? droppedWhy(task.drop) : null;
+}
+
+/**
  * The plan-level reasons as sentences, for the route panel: the crew rules, the risk setting and whether the plan fits
- * the crew's time, O2 and battery. Stops added or dropped are told in the stop list (stopLine, droppedWhy).
+ * the crew's time, O2 and battery. Stops added or dropped are told in the stop list (stopLine, droppedWhy), sampling
+ * tasks kept or dropped in the task list (taskRole, taskDroppedWhy).
  * @param {Array<{ code: string } & Record<string, unknown>>} reasons route.planReasons
  * @returns {string[]}
  */
@@ -118,11 +150,14 @@ export function planReasonLines(reasons) {
       case 'no-stops':
         lines.push(t('why.plan.no.stops'));
         break;
+      case 'no-tasks':
+        lines.push(t('tasks.plan.none'));
+        break;
       case 'unreachable':
         lines.push(t('why.plan.unreachable'));
         break;
       default:
-        break;   // stop-added and stop-dropped: in the stop list
+        break;   // stop-added and stop-dropped: in the stop list; task-added and task-dropped: in the task list
     }
   }
   return lines;

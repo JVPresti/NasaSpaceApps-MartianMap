@@ -49,8 +49,8 @@ const output = {
   title: 'Marswalk sky view factor',
   description:
     'Fraction of the upper hemisphere a crouching astronaut sees at each node of a 6 m grid over the terrain tile: 1 on open flat ground, lower where ' +
-    'the terrain hides part of the sky. During a solar particle event the dose scales with it. Read by the Exposure layer of the mission table and its ' +
-    'route readout (src/sim/skyView.js). Built by scripts/build-sky-view.mjs; do not edit by hand.',
+    'the terrain hides part of the sky. Less sky means less dose in a solar particle event, though far less than in proportion (see the provenance note). ' +
+    'Read by the Exposure layer of the mission table and its route readout (src/sim/skyView.js). Built by scripts/build-sky-view.mjs; do not edit by hand.',
   frame: 'Node (0, 0) is the north-west corner of the tile, the last node the south-east corner; rows run south. x east, z south, metres from Cheyava Falls.',
   n: sky.n,
   width_m: terrain.width,
@@ -79,8 +79,10 @@ const output = {
     data_url: 'https://www.uahirise.org/dtm/',
     license: 'HiRISE products are NASA/JPL/University of Arizona, public with no restriction of use (NASA SPD-41A).',
     note:
-      'Assumes an isotropic SEP flux above the horizon, so the dose on a route is its mean sky view times the open-ground dose. The real flux is stronger toward ' +
-      'the zenith, so hiding the low sky saves less: read 1 - sky view as an upper bound on the saving. Rays stop at the tile edge, which raises the sky view ' +
+      'The sky view is DERIVED geometry. Taking the dose on a route as its mean sky view times the open-ground dose assumes an isotropic SEP flux above the ' +
+      'horizon, our assumption (SIM). The real flux is stronger toward the zenith, so hiding the low sky saves less: read 1 - sky view as an upper bound on ' +
+      "the saving. The one measurement on Mars found a far smaller cut: Curiosity's RAD beside Butte M12, with 19 % of the sky blocked, measured about 4 % " +
+      'less dose (Ehresmann et al. 2021, JGR Planets 126, doi 10.1029/2021JE006851). Rays stop at the tile edge, which raises the sky view ' +
       `near the edge. On this 6 m grid the values span only ${round(stats.min, 2)} to ${round(stats.max, 2)}; the full 2 m grid reaches ` +
       `${fullStats.min} at its lowest node (public/data/shelters.json, sky_view.tile_stats), so the terrain never hides more than about ` +
       `${Math.round((1 - fullStats.min) * 100)} % of the sky.`,

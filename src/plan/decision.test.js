@@ -66,6 +66,25 @@ describe('go / no-go (P1)', () => {
     expect(decisionFor({ planner: ready, totals: nominal, limits: limitsOf({ o2 }), objective: 'cheyava' }).text).toMatch(/Choose the First sortie\.$/);
   });
 
+  it('offers a nearer first task, not the First sortie, as the way out for "Collect samples" (#352)', () => {
+    const time = { id: 'time', ok: false, spareSec: -1500, usedSec: 3960, usableSec: 2250, availableSec: 3000, reservePct: 25, needMin: 90 };
+    const d = decisionFor({ planner: ready, totals: nominal, limits: limitsOf({ time }), objective: 'samples' });
+    expect(d).toMatchObject({ go: false, reason: 'time', limit: 'time' });
+    expect(d.text).toContain('the plan needs 1 h 6 min, and you can use 38 min (50 min less the 25 % reserve)');
+    expect(d.text).toMatch(/Set the time to at least 1 h 30 min, or move task 1 nearer\.$/);
+    const o2 = { id: 'o2', ok: false, spareSec: -300, marginSec: -300, floorSec: 0, needPct: null };
+    expect(decisionFor({ planner: ready, totals: nominal, limits: limitsOf({ o2 }), objective: 'samples' }).text).toMatch(/ Move task 1 nearer\.$/);
+    setLanguage('es');
+    expect(decisionFor({ planner: ready, totals: nominal, limits: limitsOf({ time }), objective: 'samples' }).text).toMatch(/, o acerca la tarea 1\.$/);
+  });
+
+  it('tells the crew to add a task when the Collect samples list is empty, not that no route was found (#352)', () => {
+    const d = decisionFor({ planner: { status: 'error', error: 'No route found' }, totals: null, objective: 'samples', noTasks: true });
+    expect(d).toMatchObject({ go: false, tone: 'warning', reason: 'no-tasks', title: 'No-go' });
+    expect(d.text).toBe('No sampling task yet: add one to plan a route.');
+    expect(decisionFor({ planner: { status: 'error', error: 'No route found' }, totals: null, objective: 'samples' }).reason).toBe('error');
+  });
+
   it('is a no-go when the dust opacity is above the terrain-fix limit (#248)', () => {
     const d = decisionFor({ planner: ready, totals: nominal, limits: limitsOf(), dust: { tau: 1.4, limit: 1 } });
     expect(d).toMatchObject({ go: false, reason: 'dust', tone: 'warning' });

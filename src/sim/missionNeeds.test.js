@@ -6,8 +6,8 @@ import { startAtAirlock } from '../plan/routeStart.js';
 import { departRoute } from '../state/simulation.js';
 import { buildCostGrid, cellCost, heightAt } from './costGrid.js';
 import {
-  checkNeeds, CREW_SETTINGS, DEFAULT_NEEDS, normaliseNeeds, OBJECTIVE_DEFAULTS, OBJECTIVE_IDS, OBJECTIVES, planFromNeeds, RISK_IDS,
-  RISK_SETTINGS, riskPricing, siteStart, TIME_RANGE_MIN, timeRangeMin,
+  checkNeeds, cheapestInsertion, CREW_SETTINGS, DEFAULT_NEEDS, normaliseNeeds, OBJECTIVE_DEFAULTS, OBJECTIVE_IDS, OBJECTIVES, planFromNeeds,
+  RISK_IDS, RISK_SETTINGS, riskPricing, siteStart, TIME_RANGE_MIN, timeRangeMin,
 } from './missionNeeds.js';
 import { planProfiles, pricedProfileGrid, ROUTE_PROFILES } from './routeProfiles.js';
 import { suitConstantsFromHazards } from './suitModel.js';
@@ -57,7 +57,7 @@ const MAST = { x: -95, y: 5, z: 0 };
 describe('needs', () => {
   it('defaults to the first sortie for a pair, today\'s planner cost, 30 min, full suit', () => {
     expect(DEFAULT_NEEDS).toEqual({ objective: 'sortie', crew: 2, timeMin: 30, o2Pct: 100, batteryPct: 100, risk: 'standard' });
-    expect(OBJECTIVE_DEFAULTS).toEqual({ sortie: { timeMin: 30 }, cheyava: { timeMin: 120 }, 'bright-angel': { timeMin: 120 } });
+    expect(OBJECTIVE_DEFAULTS).toEqual({ sortie: { timeMin: 30 }, cheyava: { timeMin: 120 }, 'bright-angel': { timeMin: 120 }, samples: { timeMin: 120 } });
     expect(riskPricing('standard')).toBeNull();
     expect(normaliseNeeds({ objective: 'nope', crew: 3, timeMin: 5, o2Pct: 150, risk: 'wild' })).toEqual({ ...DEFAULT_NEEDS, timeMin: 10 });
   });
@@ -313,6 +313,162 @@ describe('the planned waypoints', () => {
   });
 });
 
+describe('Collect samples: the route from the crew\'s sampling tasks (#352)', () => {
+  const stop = (stopId) => ({ type: 'stop', stopId });
+  const point = (id, x, z) => ({ type: 'point', id, x, z });
+  const task = (id, what, count, place) => ({ id, what, count, place });
+  const samples = (tasks, extra = {}) => ({ objective: 'samples', timeMin: 120, tasks, ...extra });
+  const names = (plan) => plan.waypoints.map((w) => w.name);
+  const codes = (plan) => plan.reasons.map((r) => r.code);
+
+  it('leaves the three other goals as they were: the same plan with or without tasks, and no task in it', () => {
+    const tasks = [task('t1', 'rock', 3, point('P1', 0, 40))];
+    for (const objective of ['sortie', 'cheyava', 'bright-angel']) {
+      const plain = planFromNeeds({ objective, timeMin: 120 }, site());
+      const withTasks = planFromNeeds({ objective, timeMin: 120, tasks }, site());
+      expect(withTasks.waypoints, objective).toEqual(plain.waypoints);
+      expect(withTasks.budget, objective).toEqual(plain.budget);
+      expect(withTasks.reasons, objective).toEqual(plain.reasons);
+      expect(withTasks.tasks).toEqual([]);
+      expect(plain.stops.every((s) => !('tasks' in s))).toBe(true);
+    }
+  });
+
+  it('routes to each task place, with its work, its tasks and, for a clicked point, its own arrival radius', () => {
+    const plan = planFromNeeds(samples([task('t1', 'rock', 1, stop('bright-angel')), task('t2', 'photo', 1, point('P1', -50, 20))]), site());
+    expect(plan).toMatchObject({ ok: true, fits: true, dropped: [] });
+    // P1 is 2.5 m off the straight line to Bright Angel: it goes in on the way
+    expect(plan.waypoints).toEqual([
+      { name: 'HAB', x: -90, z: 0 },
+      { name: 'P1 · task point', label: 'P1', x: -50, z: 20, workSec: 120, stopId: null, required: true, place: 'P1', tasks: ['t2'], arrivalRadiusM: 8 },
+      { name: 'WP3 · Bright Angel outcrop', label: 'Bright Angel', x: 80, z: 30, workSec: 480, stopId: 'bright-angel', required: true, place: 'bright-angel', tasks: ['t1'] },
+    ]);
+    expect(plan.stops.map((s) => [s.id, s.name, s.place, s.tasks, s.workSec])).toEqual([['P1', 'P1', 'P1', ['t2'], 120], ['bright-angel', 'Bright Angel', 'bright-angel', ['t1'], 480]]);
+    expect(plan.tasks).toEqual([
+      {
+        id: 't1', what: 'rock', count: 1, workSec: 480, kept: true, drop: null,
+        place: { key: 'bright-angel', type: 'stop', stopId: 'bright-angel', x: 80, z: 30, radiusM: 5, label: 'Bright Angel', waypoint: 'WP3 · Bright Angel outcrop', reason: null },
+      },
+      {
+        id: 't2', what: 'photo', count: 1, workSec: 120, kept: true, drop: null,
+        place: { key: 'P1', type: 'point', stopId: null, x: -50, z: 20, radiusM: 8, label: 'P1', waypoint: 'P1 · task point', reason: null },
+      },
+    ]);
+    expect(codes(plan)).toEqual(['task-added', 'fits']);
+    const added = plan.reasons[0];
+    expect(added).toMatchObject({ task: 't2', place: 'P1', name: 'P1', workSec: 120 });
+    expect(added.extraM).toBeGreaterThan(0);
+    expect(added.extraM).toBeLessThan(15);
+    expect(plan.budget.workSec).toBe(600);
+  });
+
+  it('places each task where it adds the least walking, not in list order', () => {
+    // the sortie stop is on the straight line to the falls: listed second, walked first
+    const plan = planFromNeeds(samples([task('t1', 'rock', 1, stop('cheyava-falls')), task('t2', 'soil', 1, stop('sortie'))]), site());
+    expect(names(plan)).toEqual(['HAB', 'S1 · patch', 'Cheyava Falls']);
+    // going on past the last place costs the way there once: the falls after the sortie stop, not before it
+    expect(names(planFromNeeds(samples([task('t1', 'soil', 1, stop('sortie')), task('t2', 'rock', 1, stop('cheyava-falls'))]), site())))
+      .toEqual(['HAB', 'S1 · patch', 'Cheyava Falls']);
+  });
+
+  it('inserts by straight-line detour, the way on past the end counted once', () => {
+    const chain = [{ x: 0, z: 0 }, { x: 10, z: 0 }];
+    expect(cheapestInsertion(chain, { x: 5, z: 4 })).toBe(0);    // 2.8 m off the leg, against 6.4 m on past the end
+    expect(cheapestInsertion(chain, { x: 20, z: 0 })).toBe(1);   // 20 m round the leg, against 10 m on past the end
+    expect(cheapestInsertion([{ x: 0, z: 0 }], { x: 3, z: 4 })).toBe(0);
+  });
+
+  it('merges tasks at one place into one waypoint, its work the sum', () => {
+    const plan = planFromNeeds(samples([
+      task('t1', 'rock', 1, stop('bright-angel')), task('t2', 'photo', 2, stop('cheyava-falls')), task('t3', 'soil', 1, stop('bright-angel')),
+    ]), site());
+    expect(plan.waypoints.filter((w) => w.place === 'bright-angel')).toHaveLength(1);
+    expect(plan.waypoints.find((w) => w.place === 'bright-angel')).toMatchObject({ workSec: 480 + 240, tasks: ['t1', 't3'] });
+    expect(plan.tasks.map((t) => t.kept)).toEqual([true, true, true]);
+    expect(plan.reasons.find((r) => r.task === 't3')).toMatchObject({ code: 'task-added', extraM: 0, extraWalkSec: 0, workSec: 240 });
+    expect(plan.budget.workSec).toBe(480 + 240 + 240);
+  });
+
+  it('plans the work from the task table, times the count, 1.5 times as long alone, never the stop\'s own time', () => {
+    const tasks = [task('t1', 'rock', 2, stop('sortie')), task('t2', 'photo', 1, stop('cheyava-falls'))];
+    const pair = planFromNeeds(samples(tasks), site());
+    const solo = planFromNeeds(samples(tasks, { crew: 1 }), site());
+    expect(pair.tasks.map((t) => t.workSec)).toEqual([960, 120]);   // the falls' own 1200 s is not used
+    expect(solo.tasks.map((t) => t.workSec)).toEqual([1440, 180]);
+    expect(pair.budget.workSec).toBe(1080);
+    expect(solo.budget.workSec).toBe(1620);
+    expect(solo.reasons).toContainEqual({ code: 'solo-work', factor: 1.5 });
+  });
+
+  it('drops a later task that does not fit, says why, and still tries the next one (PO Q2)', () => {
+    // 15 min less the 15 % reserve: 765 s. Rock at the sortie stop: 20 s out, 480 s, 20 s back.
+    const plan = planFromNeeds(samples([
+      task('t1', 'rock', 1, stop('sortie')), task('t2', 'rock', 3, stop('cheyava-falls')), task('t3', 'photo', 1, point('P1', -60, 0)),
+    ], { timeMin: 15 }), site());
+    expect(plan).toMatchObject({ ok: true, fits: true, dropped: [] });
+    expect(plan.tasks.map((t) => [t.id, t.kept])).toEqual([['t1', true], ['t2', false], ['t3', true]]);
+    expect(plan.tasks[1].drop).toMatchObject({ limit: 'time' });
+    // with the falls: 170 s out, 480 + 1440 s of work, 170 s back
+    expect(plan.tasks[1].drop.overSec / 60).toBeCloseTo((170 + 1920 + 170 - 765) / 60, 0);
+    expect(plan.tasks[1].drop.extraM).toBeGreaterThan(290);   // 150 m on past the sortie stop, and back
+    expect(plan.tasks[2].drop).toBeNull();
+    expect(names(plan)).toEqual(['HAB', 'S1 · patch', 'P1 · task point']);
+    expect(codes(plan)).toEqual(['task-dropped', 'task-added', 'fits']);
+    expect(plan.reasons[0]).toMatchObject({ task: 't2', place: 'cheyava-falls', name: 'Cheyava Falls', limit: 'time', workSec: 1440 });
+  });
+
+  it('drops a later task for O2 or battery as for a stop', () => {
+    const tasks = [task('t1', 'photo', 1, stop('sortie')), task('t2', 'rock', 3, stop('cheyava-falls'))];
+    expect(planFromNeeds(samples(tasks, { timeMin: 240, o2Pct: 8 }), site()).tasks[1].drop).toMatchObject({ limit: 'o2' });
+    expect(planFromNeeds(samples(tasks, { timeMin: 240, batteryPct: 18 }), site()).tasks[1].drop).toMatchObject({ limit: 'battery' });
+  });
+
+  it('keeps the first task when it alone does not fit: a no-go that names the task and the limit', () => {
+    // 10 min less the reserve: 510 s; two rocks at the falls take 170 + 960 + 170 s
+    const plan = planFromNeeds(samples([task('t1', 'rock', 2, stop('cheyava-falls')), task('t2', 'photo', 1, stop('sortie'))], { timeMin: 10 }), site());
+    expect(plan).toMatchObject({ ok: true, fits: false });
+    expect(plan.tasks.map((t) => t.kept)).toEqual([true, false]);
+    expect(codes(plan)).toEqual(['task-dropped', 'required-over']);
+    const over = plan.reasons.at(-1);
+    expect(over).toMatchObject({ stops: ['cheyava-falls'], names: ['Cheyava Falls'], tasks: ['t1'], limit: 'time' });
+    expect(over.overSec / 60).toBeCloseTo((1300 - 510) / 60, 0);
+  });
+
+  it('refuses a plan whose first task cannot be reached, and leaves out a later one that cannot', () => {
+    // a ring of ground over 20 degrees, 30 to 36 m round (40, 0): nothing reaches inside it
+    const ring = flatGrid(101, (i, j) => { const r = Math.hypot(i - 70, j - 50); return r >= 15 && r <= 18 ? 25 : 0; });
+    const inside = point('P1', 40, 0);
+    const none = planFromNeeds(samples([task('t1', 'soil', 1, inside), task('t2', 'rock', 1, stop('sortie'))]), site(ring));
+    expect(none).toMatchObject({ ok: false, fits: false, route: null });
+    expect(none.reasons.at(-1)).toEqual({ code: 'unreachable', stops: ['P1'], names: ['P1'], tasks: ['t1'] });
+    expect(none.tasks.map((t) => [t.kept, t.drop?.limit ?? null])).toEqual([[false, 'unreachable'], [false, null]]);
+    const later = planFromNeeds(samples([task('t1', 'rock', 1, stop('sortie')), task('t2', 'soil', 1, inside)]), site(ring));
+    expect(later).toMatchObject({ ok: true, fits: true });
+    expect(later.tasks[1]).toMatchObject({ kept: false, drop: { limit: 'unreachable', overSec: null, extraM: null } });
+    expect(later.reasons[0]).toMatchObject({ code: 'task-dropped', task: 't2', limit: 'unreachable' });
+  });
+
+  it('has no route without a task, and plans the default rock sample at Bright Angel when the needs carry none', () => {
+    const empty = planFromNeeds(samples([]), site());
+    expect(empty).toMatchObject({ ok: false, fits: false, waypoints: [{ name: 'HAB', x: -90, z: 0 }], tasks: [], route: null });
+    expect(empty.reasons).toEqual([{ code: 'no-tasks' }]);
+    const fallback = planFromNeeds({ objective: 'samples', timeMin: 120 }, site());
+    expect(fallback.tasks).toMatchObject([{ id: 't1', what: 'rock', count: 1, kept: true, place: { key: 'bright-angel' } }]);
+  });
+
+  it('reports a task at a stop the candidates lack, and plans the next task as the goal', () => {
+    const plan = planFromNeeds(samples([task('t1', 'rock', 1, stop('olympus')), task('t2', 'photo', 1, stop('sortie'))]), site());
+    expect(plan).toMatchObject({ ok: true, fits: true });
+    expect(plan.reasons[0]).toEqual({ code: 'stop-missing', stop: 'olympus', name: 'Olympus' });
+    expect(plan.tasks[0]).toMatchObject({ kept: false, drop: { limit: 'unreachable' }, place: { key: 'olympus', label: 'Olympus', x: null } });
+    expect(plan.tasks[1].kept).toBe(true);
+    expect(codes(plan)).toEqual(['stop-missing', 'fits']);
+    const none = planFromNeeds(samples([task('t1', 'rock', 1, stop('olympus'))]), site());
+    expect(none).toMatchObject({ ok: false });
+    expect(codes(none)).toEqual(['stop-missing', 'no-stops']);
+  });
+});
+
 describe('on the real terrain', () => {
   const grid = buildCostGrid(readJson('public/marswalk/assets/terrain.json'));
   const route = readJson('public/marswalk/assets/route.json');
@@ -435,6 +591,66 @@ describe('on the real terrain', () => {
     expect(fastest.stops).toEqual(['bright-angel', 'cheyava-falls']);
     expect(columns('gentlest')).toEqual(fastest);
     expect(columns('radio')).toEqual(fastest);
+  });
+
+  // The two task lists of the PR (#352): two crews, two lists, two routes, for a reason they chose. Pair, standard
+  // risk, 2 h (the goal's default), full suit, fastest profile.
+  describe('Collect samples: two task lists, two routes (#352)', () => {
+    const stop = (stopId) => ({ type: 'stop', stopId });
+    const plan = (tasks) => planFromNeeds({ objective: 'samples', crew: 2, timeMin: 120, risk: 'standard', profile: 'fastest', tasks }, real);
+    // A: a rock at Bright Angel, then a photo of Cheyava Falls. The falls go in first: 7 m off the way to Bright Angel,
+    // against 51 m on past it.
+    const a = plan([{ id: 't1', what: 'rock', count: 1, place: stop('bright-angel') }, { id: 't2', what: 'photo', count: 1, place: stop('cheyava-falls') }]);
+    // B: two soil scoops on the light-toned patch, then a photo 65 m east of the airlock (P1, 9 degree ground).
+    const b = plan([{ id: 't1', what: 'soil', count: 2, place: stop('sortie') }, { id: 't2', what: 'photo', count: 1, place: { type: 'point', id: 'P1', x: 600, z: 570 } }]);
+    const o2Pct = (p) => (100 * p.budget.o2UsedG) / constants.o2UsableG;
+
+    it('A: rock x1 at Bright Angel + photo x1 at Cheyava Falls walks to the falls, then Bright Angel', () => {
+      expect(a).toMatchObject({ ok: true, fits: true, profile: 'fastest' });
+      expect(a.waypoints.map((w) => w.name)).toEqual(['HAB', 'Cheyava Falls', 'WP3 · Bright Angel outcrop']);
+      expect(a.tasks.map((t) => [t.id, t.kept, t.workSec])).toEqual([['t1', true, 480], ['t2', true, 120]]);
+      expect(a.budget.workSec).toBe(600);
+      expect(a.route.distance).toBeGreaterThan(870);
+      expect(a.route.distance).toBeLessThan(905);
+      expect(a.budget.usedSec / 60).toBeGreaterThan(44);
+      expect(a.budget.usedSec / 60).toBeLessThan(52);
+      expect(o2Pct(a)).toBeGreaterThan(14);
+      expect(o2Pct(a)).toBeLessThan(16.5);
+      expect(a.reasons.map((r) => r.code)).toEqual(['task-added', 'fits']);
+      expect(a.totals.status).toBe('nominal');
+    });
+
+    it('B: soil x2 at the light-toned patch + photo x1 at a point east of the habitat stays near home', () => {
+      expect(b).toMatchObject({ ok: true, fits: true, profile: 'fastest' });
+      expect(b.waypoints.map((w) => w.name)).toEqual(['HAB', 'S1 · light-toned patch', 'P1 · task point']);
+      expect(b.waypoints[2]).toMatchObject({ place: 'P1', stopId: null, arrivalRadiusM: 8, tasks: ['t2'] });
+      expect(b.tasks.map((t) => [t.id, t.kept, t.workSec])).toEqual([['t1', true, 480], ['t2', true, 120]]);
+      expect(b.budget.workSec).toBe(600);
+      expect(b.route.distance).toBeGreaterThan(150);
+      expect(b.route.distance).toBeLessThan(185);
+      expect(b.budget.usedSec / 60).toBeGreaterThan(15);
+      expect(b.budget.usedSec / 60).toBeLessThan(18.5);
+      expect(o2Pct(b)).toBeGreaterThan(3.7);
+      expect(o2Pct(b)).toBeLessThan(4.7);
+      expect(b.reasons.map((r) => r.code)).toEqual(['task-added', 'fits']);
+    });
+
+    it('draws the two as different lines on the map', () => {
+      const off = Math.max(...a.route.path.map(([x, z]) => Math.min(...b.route.path.map(([px, pz]) => Math.hypot(px - x, pz - z)))));
+      expect(off).toBeGreaterThan(500);
+    });
+
+    it('A for a cautious crew with 62 min: the rock fits, the photo is left out for time', () => {
+      // 62 min less the 25 % cautious reserve: 46.5 min; the rock alone takes about 45 min, the photo adds about 3
+      const tasks = a.tasks.map(({ id, what, count, place }) => ({ id, what, count, place: stop(place.stopId) }));
+      const tight = planFromNeeds({ objective: 'samples', crew: 2, timeMin: 62, risk: 'cautious', profile: 'fastest', tasks }, real);
+      expect(tight.fits).toBe(true);
+      expect(tight.waypoints.map((w) => w.name)).toEqual(['HAB', 'WP3 · Bright Angel outcrop']);
+      expect(tight.tasks.map((t) => [t.kept, t.drop?.limit ?? null])).toEqual([[true, null], [false, 'time']]);
+      expect(tight.tasks[1].drop.overSec / 60).toBeGreaterThan(0.5);
+      expect(tight.tasks[1].drop.overSec / 60).toBeLessThan(3.5);
+      expect(tight.reasons.map((r) => r.code)).toEqual(['risk', 'task-dropped', 'fits']);
+    });
   });
 
   it('keeps today\'s cost for the default needs, so the standard grids are the route profiles of #245', () => {

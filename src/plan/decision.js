@@ -11,7 +11,11 @@ const finite = (value) => typeof value === 'number' && Number.isFinite(value);
 const LIMITS = ['time', 'o2', 'battery', 'daylight'];
 const sunsetOf = (hours) => formatLmst(hours * 3600);
 
-/** The way out of a no-go: the least time, O2 or battery that lets the plan through, else an earlier egress or a shorter goal. */
+/**
+ * The way out of a no-go: the least time, O2 or battery that lets the plan through, else an earlier egress or a
+ * shorter goal. For "Collect samples" the shorter goal is a nearer first task (#352): the plan keeps a later task only
+ * when it fits, so a no-go means the first task alone does not.
+ */
 function wayOut(limit, objective) {
   let way;
   if (limit.id === 'time' && finite(limit.needMin)) way = t('table.way.time', { time: shortDuration(limit.needMin * 60) });
@@ -19,8 +23,10 @@ function wayOut(limit, objective) {
   else if (limit.id === 'battery' && finite(limit.needPct)) way = t('table.way.battery', { pct: limit.needPct });
   // daylight: leave early enough for this plan, or cut the plan to the daylight there is at this egress
   else if (limit.id === 'daylight') way = t('table.way.daylight', { latest: sunsetOf(limit.sunsetHours - limit.planSec / 3600), light: shortDuration(Math.max(0, limit.toSunsetSec)) });
+  else if (objective === 'samples') return t('tasktable.way.task');
   else if (objective !== 'sortie') return t('table.way.first');
   else return t('table.way.none');
+  if (objective === 'samples') return t('tasktable.way.or.task', { way });
   return objective && objective !== 'sortie' ? t('table.way.or.sortie', { way }) : t('table.way.end', { way });
 }
 
@@ -57,15 +63,17 @@ export function tightestText(limit) {
 /**
  * @param {{ planner: { status: string, error?: string | null }, totals: object | null,
  *   limits?: ReturnType<typeof import('./limits.js').planLimits> | null, dust?: { tau: number, limit: number } | null,
- *   objective?: string | null, radiationExpected?: boolean }} input
+ *   objective?: string | null, radiationExpected?: boolean, noTasks?: boolean }} input
  *   limits: planLimits() of the route on the table; dust: the opacity the crew would walk in and the terrain-fix
  *   limit (hazards.json dust.event.nav_fix_tau_max); objective: the crew's goal, for the way out; radiationExpected: the
- *   run's radiation alert is switched on and has not fired (the outlook beside the decision gives its time)
+ *   run's radiation alert is switched on and has not fired (the outlook beside the decision gives its time); noTasks: the
+ *   goal is "Collect samples" and the list is empty (#352), so the no-go says to add a task instead of "No route found"
  * @returns {{ tone: 'ok' | 'caution' | 'warning' | null, title: string, text: string, note?: string, go: boolean,
- *   reason: 'error' | 'planning' | 'time' | 'o2' | 'battery' | 'daylight' | 'reserve' | 'dust' | 'caution' | 'go', limit: string | null }}
+ *   reason: 'no-tasks' | 'error' | 'planning' | 'time' | 'o2' | 'battery' | 'daylight' | 'reserve' | 'dust' | 'caution' | 'go', limit: string | null }}
  */
-export function decisionFor({ planner, totals, limits = null, dust = null, objective = null, radiationExpected = false }) {
+export function decisionFor({ planner, totals, limits = null, dust = null, objective = null, radiationExpected = false, noTasks = false }) {
   const noGo = (reason, text, limit = null) => ({ tone: 'warning', title: t('table.decision.no.go'), text, go: false, reason, limit });
+  if (noTasks) return noGo('no-tasks', t('tasks.plan.none'));
   if (planner?.status === 'error') return noGo('error', planner.error ? translateText(planner.error) : t('table.decision.no.route'));
   if (!totals) return { tone: null, title: t('table.decision.planning'), text: t('table.decision.waiting'), go: false, reason: 'planning', limit: null };
   if (limits?.failing) {

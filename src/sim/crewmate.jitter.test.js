@@ -4,7 +4,7 @@
 // players ever turns back, so no reversal is excused.
 import { describe, expect, it } from 'vitest';
 import { CREWMATE, createCrewmate } from './crewmate.js';
-import { densePath, gaitToggles, makeTrack, makeWorld, reversals, yawFlips } from './crewmateFixtures.js';
+import { densePath, gaitToggles, makeTrack, makeWorld, reversals, withoutSteps, yawFlips } from './crewmateFixtures.js';
 
 const ROUTE = densePath([{ x: 0, z: 0 }, { x: 80, z: 0 }]);
 const SHELTER = { type: 'habitat', x: 80, z: 0 };
@@ -19,14 +19,17 @@ function run(fps, playerAt, senseAt, seconds, { stops = [] } = {}) {
     const p = playerAt(t);
     world.player = { x: p.x, z: p.z };
     const { state } = brain.update(DT, world, { present: true, phase: 'eva', path: ROUTE, stops, link: true, ...senseAt(t) });
-    frames.push({ t, x: state.x, z: state.z, yaw: state.yaw, gait: state.gait });
+    frames.push({ t, x: state.x, z: state.z, yaw: state.yaw, gait: state.gait, yielding: brain.inspect().yield });
     if (t > 5 && dist(state, p) < 1.2) near += DT;
   }
-  return { frames, near, flips: yawFlips(frames), reversals: reversals(frames, { minSpeed: 0.05 }), toggles: gaitToggles(frames) };
+  // a step aside out of the player's way (#377) is the player's doing: it is left out of the reversals
+  const own = withoutSteps(frames);
+  return { frames, near, flips: yawFlips(frames), reversals: reversals(own, { minSpeed: 0.05 }), toggles: gaitToggles(frames) };
 }
 
 const along = (v, z, stopX = 70) => (t) => ({ x: Math.min(stopX, v * t), z: typeof z === 'function' ? z(t) : z });
-const sway = (z0, amp, w = 1.3) => (t) => z0 + amp * Math.sin(t * w);
+// the sway starts at T+12 s, once the player has walked off from EV2's place beside them at the start
+const sway = (z0, amp, w = 1.3) => (t) => z0 + (t < 12 ? 0 : amp * Math.sin((t - 12) * w));
 
 // [name, player, sense, seconds, max yaw flips, max walk/idle toggles]
 const CASES = [
@@ -35,7 +38,8 @@ const CASES = [
   // lingering at a threshold
   ['radiation lead, player swaying across OFF_ROUTE_M (8 ± 0.4 m)', along(1, sway(CREWMATE.OFF_ROUTE_M, 0.4)), rad, 90, 2, 4],
   ['radiation lead, player stopped and swaying 10 m short of the end (the nearly-there mark)', along(1, sway(0, 0.3, 3)), rad, 90, 2, 4],
-  ['buddy walk, player swaying across OFF_ROUTE_M (7.5 ± 0.8 m)', along(1, sway(7.5, 0.8, 1)), calm, 90, 3, 6],
+  // the player walks past EV2's place at the start within 1.6 m: one step aside, a flip and two toggles more
+  ['buddy walk, player swaying across OFF_ROUTE_M (7.5 ± 0.8 m)', along(1, sway(7.5, 0.8, 1)), calm, 90, 4, 8],
   ['buddy walk, player creeping at 0.25 m/s, just over the STILL_MS line', along(0.25, 0), calm, 200, 0, 16],
   ['buddy walk, player strolling at 0.5 m/s', along(0.5, 0), calm, 150, 0, 4],
   // a slow player gets 10 m ahead, EV2 closes to 6 m and waits again: two toggles every 25 s
@@ -62,7 +66,7 @@ describe.each([10, 30, 60])('EV2 does not jitter at %i fps', (fps) => {
       const r = run(fps, (t) => track.at(t), (t) => (t >= radAt ? rad() : {}), leaveEnd, { stops: [{ id: 's', name: 'S', x: 40, z: 0, radiusM: 5 }] });
       const after = r.frames.filter((f) => f.t >= radAt);
       expect(yawFlips(after)).toBeLessThanOrEqual(2);
-      expect(reversals(after, { minSpeed: 0.05 })).toEqual([]);
+      expect(reversals(withoutSteps(after), { minSpeed: 0.05 })).toEqual([]);
       expect(r.near).toBe(0);
     }
   });

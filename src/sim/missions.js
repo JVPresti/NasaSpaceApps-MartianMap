@@ -5,8 +5,8 @@
  * the mission. There is no separate mission id in the store.
  * - 'sortie' is the first mission: a 55 m walk to one stop, with the dust storm and the radiation alert brought
  *   forward so a new player meets both in about three minutes of play.
- * - 'cheyava' and 'bright-angel' are the full EVA: the storm at T+480 s and the radiation alert at T+720 s, exactly
- *   as the event files have always run them.
+ * - 'cheyava', 'bright-angel' and 'samples' (#352) are the full EVA: the storm at T+480 s and the radiation alert at
+ *   T+720 s, exactly as the event files have always run them.
  *
  * The event files in src/sim/events/ say what each event is (timeline values, alert, planner request, end). This
  * module says when it starts in each mission (the trigger), and may compress its timeline for the first mission
@@ -28,8 +28,12 @@ export const FIRST_STOP = 'sortie';
 // a sample taken on the way, at a find, does not count (N1).
 const AT_STOP = Object.freeze({ stop: FIRST_STOP });
 const SAMPLE_SECURED = Object.freeze({ samplesAt: FIRST_STOP, atLeast: 1, forSec: 3 });
-/** How far past the stop's radius a sample still counts as taken there: the scoop reaches about 1.5 m ahead. Metres. */
-const SAMPLE_REACH_M = 2;
+/**
+ * How far past the stop's radius a sample still counts as taken there: the scoop reaches about 1.5 m ahead. Metres.
+ * One rule with the sampling tasks (#352, src/sim/taskProgress.js): a task's record counts within its place's radius
+ * plus this.
+ */
+export const SAMPLE_REACH_M = 2;
 // Within 10 m of the end area (25 m around the airlock): a crew on its way home, about 7 to 10 s before the area.
 const NEAR_HOME = Object.freeze({ nearEndM: 10 });
 const SCIENCE_DONE = Object.freeze({ anyOf: Object.freeze([SAMPLE_SECURED, Object.freeze({ stop: FIRST_STOP, forSec: 90 }), NEAR_HOME]) });
@@ -102,7 +106,8 @@ const FIRST_BEATS = Object.freeze([
 export const MISSIONS = Object.freeze({
   first: Object.freeze({ id: 'first', objectives: Object.freeze(['sortie']), events: FIRST_EVENTS, beats: FIRST_BEATS }),
   // The full EVA keeps today's screens: no beat lines and no recap.
-  full: Object.freeze({ id: 'full', objectives: Object.freeze(['cheyava', 'bright-angel']), events: FULL_EVENTS, beats: Object.freeze([]) }),
+  // Collecting samples (#352) is a full EVA too: its schedule, no beats.
+  full: Object.freeze({ id: 'full', objectives: Object.freeze(['cheyava', 'bright-angel', 'samples']), events: FULL_EVENTS, beats: Object.freeze([]) }),
 });
 export const MISSION_IDS = Object.freeze(Object.keys(MISSIONS));
 
@@ -297,7 +302,7 @@ export const MISSION_SOURCES = Object.freeze({
   }),
   [missionSourcePath('first', 'radiation')]: Object.freeze({
     tag: 'SIM', label: 'First mission timing', short: 'SIM · first mission',
-    source: 'first mission: the radiation alert starts 15 s after the storm, or sooner when the crew nears the habitat (by T+255 s at the latest); the 12-minute RAD profile compressed to 1 minute; plays at least 20 s. Dose rates from hazards.json (RAD, Gale)',
+    source: 'first mission: the radiation alert starts 15 s after the storm, or sooner when the crew nears the habitat (by T+255 s at the latest); the 12-minute RAD profile compressed to 1 minute; plays at least 20 s. Start and peak dose rates from hazards.json (RAD, Gale), our steps between them',
   }),
   [missionSourcePath('full', 'dust-storm')]: Object.freeze({
     tag: 'SIM', label: 'Scripted event time', short: 'SIM · scripted',
@@ -305,6 +310,6 @@ export const MISSION_SOURCES = Object.freeze({
   }),
   [missionSourcePath('full', 'radiation')]: Object.freeze({
     tag: 'SIM', label: 'Scripted event time', short: 'SIM · scripted',
-    source: 'full EVA: the radiation alert starts at T+720 s (scripted); the September 2017 RAD profile compressed to 12 minutes',
+    source: 'full EVA: the radiation alert starts at T+720 s (scripted); the September 2017 RAD profile compressed to 12 minutes, its measured start and peak rates with our steps between them',
   }),
 });

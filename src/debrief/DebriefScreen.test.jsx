@@ -26,7 +26,7 @@ const summary = {
   routeChanges: [
     { atSec: 700, kind: 'initial', reason: 'Planned route', before: null, after: { distanceM: 412 } },
     // The degree sign and the arrow are real summary/store text.
-    { atSec: 1200, kind: 'slope', reason: 'Detour: steeper than 25° ahead', before: { distanceM: 412 }, after: { distanceM: 388 } },
+    { atSec: 1200, kind: 'slope', reason: 'Detour: steeper than 20° ahead', before: { distanceM: 412 }, after: { distanceM: 388 } },
   ],
 };
 
@@ -55,7 +55,7 @@ describe('DebriefScreen', () => {
     const html = render();
     const planned = html.indexOf('Planned route');
     const started = html.indexOf('Event started');
-    const detour = html.indexOf('Detour: steeper than 25');
+    const detour = html.indexOf('Detour: steeper than 20');
     const ended = html.indexOf('Event ended');
 
     expect(planned).toBeGreaterThan(-1);
@@ -79,6 +79,15 @@ describe('DebriefScreen', () => {
     expect(html).toContain('aria-label="Route name"');
     // Without a planned path on the store the form is disabled, never throwing.
     expect(html).toMatch(/<button[^>]*disabled[^>]*>Save route<\/button>/);
+  });
+
+  it('reads the dose as the rates over the minutes the event played, beside the real event\'s dose tagged DATA (#295)', () => {
+    const html = render();
+    const note = html.match(/<p>Dose adds up[\s\S]*?<\/p>/)?.[0] ?? '';
+    expect(note).toContain('the minutes it plays here');
+    expect(note).toContain('added 544 µGy (in water)');
+    expect(note).toMatch(/data-tag="DATA"/);
+    expect(note).toMatch(/Zeitlin|sep_2017\.event_dose/);   // the tag's text names its source
   });
 
   it('names the planned stop a sample was taken at in the Samples note (D10)', () => {
@@ -123,13 +132,13 @@ describe('DebriefScreen', () => {
       'negativo significa por debajo de la reserva', 'Batería mínima', 'Registro de la misión', 'Evento iniciado', 'Evento terminado',
       'Alerta de radiación', 'Tormenta de polvo', 'Ruta planificada', 'Ruta inicial', 'Desvío por pendiente', 'Nueva ruta por peligro',
       'Vuelve al hábitat. (dust-storm)', 'Fuera de ruta: nueva ruta desde tu posición', 'Vuelta tras salir de la ruta', 'Cómo leer estas cifras',
-      'La dosis sigue el escenario', 'Continuar la EVA', 'Reiniciar la EVA', 'Fuentes', 'Reiniciando…', 'Esc no hace ninguna de las dos cosas.',
+      'La dosis suma la tasa de dosis', 'añadió 544 µGy (en agua)', 'Continuar la EVA', 'Reiniciar la EVA', 'Fuentes', 'Reiniciando…', 'Esc no hace ninguna de las dos cosas.',
     ]) expect(body, label).toContain(label);
     for (const english of ['EVA debrief', 'Time outside', 'Mission log', 'Event started', 'Initial route', 'How to read', 'Continue EVA', 'Planned route', 'Return to the habitat']) {
       expect(body, english).not.toContain(english);
     }
     // The slope detour reason was written in English by the HUD: the catalog cannot match its filled-in number.
-    expect(body).toContain('Detour: steeper than 25° ahead');
+    expect(body).toContain('Detour: steeper than 20° ahead');
   });
 
 });

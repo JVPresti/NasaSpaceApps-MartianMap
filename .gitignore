@@ -27,3 +27,7 @@ dist-ssr
 # Blender backups
 *.blend1
 *.blend@
+# Plan phase perf rig (#289): run output and council records stay local. Only the prompts are tracked.
+scripts/perf/out/
+scripts/perf/council/*
+!scripts/perf/council/prompts.md

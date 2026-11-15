@@ -13,7 +13,8 @@
  * - EVA phase: `stage` of the habitat-first flow ('habitat' | 'egress' | 'eva' | 'ingress' | 'debrief'), else
  *   `eva.phase` ('ready' | 'active' | 'ended').
  * - science stops: every stops.json entry, `stops` and the `route_stops` that #282 adds, matched to `route.waypoints`
- *   by waypoint name, the way the planner names them.
+ *   by waypoint name, the way the planner names them; and the place of a sampling task that stops.json does not have
+ *   (a point clicked on the table map, `place` on the waypoint, #352), so EV2 takes position there as at any stop.
  *
  * Plain JavaScript: no React and no three.js.
  */
@@ -66,6 +67,19 @@ export function stopCatalogue(data) {
 }
 
 /**
+ * The stop EV2 knows for a route waypoint: its stops.json entry by waypoint name, else, for a sampling task's place that
+ * is not in stops.json (a point the crew clicked on the table map, #352), the place itself, with at least the stop radius.
+ * @returns {{ id: string, name: string, radiusM: number } | null}
+ */
+function stopOfWaypoint(w, byWaypoint) {
+  if (!w) return null;
+  const c = byWaypoint.get(w.name);
+  if (c) return c;
+  if (typeof w.place !== 'string' || w.place === '') return null;
+  return { id: w.place, name: typeof w.label === 'string' && w.label ? w.label : w.place, radiusM: Math.max(CREWMATE.STOP_RADIUS_M, finite(w.arrivalRadiusM) ? w.arrivalRadiusM : 0) };
+}
+
+/**
  * What the crewmate knows this frame, from one store snapshot.
  * @param {object} state the mission store state
  * @param {Array<{ id: string, waypoint: string, name: string, radiusM: number }>} catalogue from stopCatalogue
@@ -76,11 +90,11 @@ export function crewmateSense(state, catalogue = []) {
   const waypoints = Array.isArray(route.waypoints) ? route.waypoints : [];
   const stops = [];
   waypoints.forEach((w) => {
-    const c = w && byWaypoint.get(w.name);
+    const c = stopOfWaypoint(w, byWaypoint);
     if (c && finite(w.x) && finite(w.z)) stops.push({ id: c.id, name: c.name, x: w.x, z: w.z, radiusM: c.radiusM });
   });
   const next = waypoints[route.nextIndex];
-  const nextCat = next && byWaypoint.get(next.name);
+  const nextCat = stopOfWaypoint(next, byWaypoint);
   return {
     present: crewmatePresent(state),
     phase: crewmatePhase(state),

@@ -150,6 +150,11 @@
 
 .table-text.small { font-size: 14px; }
 
+/* The step's title and description, boxed like the panels under it (#395), so the left column starts with a panel
+   level with the right column's first one. flex: none keeps it at its text's height when the column scrolls. */
+.table-intro { flex: none; display: flex; flex-direction: column; gap: 10px; }
+.table-intro .table-note { margin-top: 0; }
+
 .table-panel {
   padding: 16px 18px;
   background: var(--panel-bg);
@@ -449,6 +454,9 @@ button.table-stop-name {
 
 .table-map { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .table-map:active { cursor: grabbing; }
+/* placing a sampling task (#352): a click sets the point, a drag still moves the map */
+.table-map.picking,
+.table-map.picking:active { cursor: crosshair; }
 
 .table-map-fit {
   position: absolute;
@@ -498,7 +506,7 @@ button.table-stop-name {
 .map-traverse-shadow { stroke: #0a0d11; stroke-width: 3.4px; opacity: 0.5; }
 
 /* The pin of the stop images: a dot where the rover stood and a tag to its left, clear of the stop markers, whose
-   tags open to the right. Above the route and markers, under the stop details (.map-pop, z-index 2). */
+   tags open to the right. Above the route and markers, under the stop details (.map-pop, z-index 3). */
 .map-pins { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .map-pin { position: absolute; width: 0; height: 0; }
 .map-pin-dot {
@@ -854,7 +862,7 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
   .table-stops { gap: 2px; }
   .table-body-route .table-right { gap: 10px; }
   /* the goal's one-line description: the goal select and the stop list say the same on a short screen */
-  .table-body-route .table-left > .table-text { display: none; }
+  .table-body-route .table-intro > .table-text { display: none; }
 }
 
 @media (max-width: 1100px) {
@@ -936,6 +944,8 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
 .return-margin b { font: 600 48px/1 var(--font-display); font-variant-numeric: tabular-nums; }
 .return-margin small { margin-left: 6px; font: 400 15px var(--font-ui); color: var(--text-2); }
 .return-margin span { font-size: 14px; color: var(--text-2); }
+/* the other limit's margin, under the name of the one that sets the figure (#323) */
+.return-margin .return-margin-note { font-size: 12px; color: var(--dim); }
 
 /* ------------------------------------------------------------------ panels that share the column height */
 
@@ -1005,10 +1015,21 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
 /* Route step: the four numbers centred in their quarter of the panel */
 .table-fill > .table-grid2 { justify-items: center; text-align: center; }
 
-/* the window a stop opens on the map */
+/* Stacking on the mission table map, bottom to top (#380):
+   0  the image and the route lines
+   1  marks: the rover's image pins, the layer places, the route's stops and the crew position (mapLayers.css)
+   2  chrome: the caption, the legend, the rover key and the fit button
+   3  popups: the stop details and the rover images (placed by usePlacedPopup, never over the chrome)
+   1000  source tag details, in a portal on the page (SourceTag.css) */
+.table-map-caption, .table-map-legend, .table-map-traverse-key, .table-map-fit { z-index: 2; }
+
+/* the window a stop opens on the map; usePlacedPopup sets left and top */
 .map-pop {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
+  max-width: calc(100% - 16px);
+  max-height: calc(100% - 16px);
+  overflow: auto;
   width: 270px;
   padding: 12px 14px 14px;
   font-size: 13px;
@@ -1176,6 +1197,26 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
 .table-stops li.reached .table-stop-dist { color: var(--dim); }
 /* The plan's reasons under the route numbers, at the size of the profile note below them */
 .table-note.route-why { font-size: 12px; line-height: 1.4; }
+
+/* "Collect samples" (#352, TaskList.jsx): a task is a stop row of the same grid. What and how many on the first line,
+   where and Remove under them, then the stop line, the pick hint, a refusal or the rock warning under the code. */
+.table-stops .task-where { grid-column: 2; }
+/* The list takes the height the needs and the layer panels leave and scrolls inside, so the layer buttons stay in view
+   on a 1366 x 768 screen; rows from the top, as a list being edited grows. */
+.task-panel { min-height: 150px; }
+.task-panel > .table-stops { min-height: 0; overflow-y: auto; align-content: start; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+/* the list rests on the top of a row, never on half of one */
+.task-panel > .table-stops { scroll-snap-type: y proximity; }
+.task-panel > .table-stops > li { scroll-snap-align: start; }
+.table-stops > li > .table-note { grid-column: 2 / -1; margin: 0; font-size: 12px; line-height: 1.35; }   /* the size of the stop line */
+/* At 1366 x 768 the seventh layer button (#335) takes a third row from the list: a task row a little tighter (the
+   selects at the height of the needs panel's choice buttons) and the panel's padding smaller, so one whole row, why line
+   included, still shows in English and Spanish. */
+@media (max-height: 800px) {
+  .task-panel { padding-top: 8px; padding-bottom: 8px; }
+  .task-panel > .table-stops > li { row-gap: 2px; }
+  .task-panel .needs-select { min-height: 30px; }
+}
 
 /* ------------------------------------------------------------------ conditions outlook (#248) */
 

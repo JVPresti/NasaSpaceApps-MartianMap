@@ -85,7 +85,7 @@ export function suitConstantsFromHazards(hazards) {
     'suit.oxygenSec': { tag: 'DERIVED', source: 'suit model: O2 left / current O2 rate' },
     'suit.batteryPct': { tag: 'DERIVED', source: 'suit model: xEMU battery, draw split is SIM' },
     'suit.walkbackSec': { tag: combinedTag(hazards, SUIT_INPUTS.speed), label: 'Suit model', source: 'suit model: walk to the habitat, or to the shelter during an event, at constant effort (SIM rule)' },
-    'suit.marginSec': { tag: marginTag, label: 'Suit model', source: 'suit model: margin now, the O2 left after the padded walkback and the Apollo 30 min reserve, capped at the 8 h EVA limit minus the walkback; thresholds SIM' },
+    'suit.marginSec': { tag: marginTag, label: 'Suit model', source: 'suit model: margin now, the O2 left after the padded walkback and the Apollo 30 min reserve, or the 8 h EVA limit less the EVA time and the walkback, whichever is tighter; thresholds SIM' },
     'suit.status': { tag: marginTag, label: 'Suit model', source: 'suit model: margin now against the caution and warning thresholds (SIM)' },
     'suit.effort': { tag: 'DERIVED', source: 'suit model: metabolic power between rest and design peak' },
   };
@@ -253,6 +253,17 @@ export function evaMargin(elapsedSec, walkbackSec, c, limitSec = c.evaMaxSec) {
   return limitSec - elapsedSec - walkbackSec;
 }
 
+/**
+ * Which of the two margins sets the one shown: the 8 h EVA clock ('eva') when it leaves less than the O2 does,
+ * the oxygen ('o2') otherwise. One rule for the live readout and the plan's totals (#323).
+ * @param {number} o2MarginSec
+ * @param {number} evaMarginSec
+ * @returns {'o2' | 'eva'}
+ */
+export function marginLimitOf(o2MarginSec, evaMarginSec) {
+  return evaMarginSec < o2MarginSec ? 'eva' : 'o2';
+}
+
 /** 'warning' at or under the warning margin (0 min), 'caution' under the caution margin (15 min), else 'nominal'. */
 export function marginStatus(marginSec, c) {
   return marginSec <= c.warningSec ? 'warning' : marginSec < c.cautionSec ? 'caution' : 'nominal';
@@ -267,7 +278,8 @@ export function walkingO2RateGs(c) {
  * Values for the store's suit section.
  * O2 margin = O2 time left - (walkback O2 with the pad, as time at the current rate) - 30 min reserve
  * (suit.alert.caution_margin note). EVA margin = suit.eva_duration_max - EVA time so far - walkback time.
- * The margin shown is the smaller of the two: at rest the O2 alone would last far past the 8 h EVA limit.
+ * The margin shown is the smaller of the two, and marginLimit says which one it is (#323): at rest the O2 alone
+ * would last far past the 8 h EVA limit, so the clock sets the figure.
  * @param {{ elapsedSec?: number | null }} [options] elapsedSec: EVA time so far (mission.elapsedSec)
  */
 export function suitReadout(state, walkback, c, { elapsedSec = 0 } = {}) {
@@ -291,7 +303,7 @@ export function suitReadout(state, walkback, c, { elapsedSec = 0 } = {}) {
     marginSec,
     o2MarginSec,
     evaMarginSec,
-    marginLimit: evaMarginSec < o2MarginSec ? 'eva' : 'o2',
+    marginLimit: marginLimitOf(o2MarginSec, evaMarginSec),
     status,
   };
 }

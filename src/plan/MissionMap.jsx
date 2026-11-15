@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { loadDataFile, TERRAIN_PATH } from '../data/dataFiles.js';
 import { t, translateText } from '../i18n/index.js';
 import { decodeTerrain } from '../sim/costGrid.js';
@@ -6,13 +6,15 @@ import { radioShadowMask } from '../sim/radio.js';
 import { mastKey } from '../sim/routeProfiles.js';
 import { waypointNumber } from '../sim/waypointNumber.js';
 import { useMissionStore } from '../state/store.js';
-import { LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, mapCrop, paintMap, slopeGrid, tagFlips, toMap, zoomCrop } from './mapLayers.js';
+import { LAYER, MAP_MIN_SPAN_M, acrossLabel, fromMap, mapCrop, paintMap, slopeGrid, tagFlips, toMap, waypointTaskTag } from './mapLayers.js';
 import { SLOPE_LIMITS, cautionDeg } from './layers.js';
+import { createMapGesture, cropTransform } from './mapGesture.js';
 import LayerPlaces from './LayerPlaces.jsx';
 import MapPosition from './MapPosition.jsx';
 import { useLayerPlaces } from './useLayerPlaces.js';
 import { useSkyView } from './routeExposure.js';
-import TraverseLayer from './TraverseLayer.jsx';
+import TraverseLayer, { TraverseKey } from './TraverseLayer.jsx';
+import { useMapTipPlacement, usePlacedPopup } from './usePlacedPopup.js';
 import ReturnZoneLayer from '../zone/ReturnZoneLayer.jsx';
 import { useReturnZone, zoneFrameKey, zoneFramePoints } from '../zone/useReturnZone.js';
 import './mapLayers.css';
@@ -29,8 +31,21 @@ const PIXELS = 768;
 const NO_ALTERNATIVES = [];
 /** A stop this close to the end of an event's route is its shelter (the habitat's stop is its airlock). Metres. */
 const SHELTER_SNAP_M = 8;
+/** While a task place is being chosen, a press that moves less than this is a click on the map, not a drag. Pixels. */
+const PICK_DRAG_PX = 4;
 let dataRequest = null;
 const radioMasks = new Map();   // by mast position: one mask for every map on the page, as the planner keeps one
+// The overlays render again only when their own props change: a gesture moves them as one transform (mapGesture.js).
+const TraverseOverlay = memo(TraverseLayer);
+const PlacesOverlay = memo(LayerPlaces);
+const ZoneOverlay = memo(ReturnZoneLayer);
+const PositionOverlay = memo(MapPosition);
+// The whole tile at low resolution under the exact picture, shown while a gesture moves the map past the picture's
+// edge: BACKDROP_TILES x BACKDROP_TILES squares of BACKDROP_TILE px, one per idle callback (about 40 ms each).
+const BACKDROP_TILES = 4;
+const BACKDROP_TILE = 512;
+const idle = (fn) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(fn, { timeout: 1000 }) : setTimeout(fn, 50));
+const cancelIdle = (id) => (typeof cancelIdleCallback === 'function' ? cancelIdleCallback(id) : clearTimeout(id));
 
 /**
  * Where the habitat mast cannot be seen, on the planner's 10 m mask (radio.radioShadowMask), computed once per mast
@@ -128,13 +143,18 @@ function markerName(waypoint, index) {
  *   stop. planPath: [[x, z], ...] the approved plan, drawn thin in the plan colour under an event route
  *   flipTags: false keeps every stop tag to the right of its marker, even near the map's right edge (the debrief's
  *   review map, where a flipped tag would land on the deviation chips and the walked track)
+ *   picking: a sampling task's place is being chosen (#352, src/plan/useTaskPlace.js): the map shows a crosshair, and a
+ *   click (under PICK_DRAG_PX of drag; a longer drag still moves the map) or a click on a stop marker calls onPick with
+ *   the point in metres ({ x, z }) instead of opening the stop's window
  * Clicking a stop opens a small window with its height, slope and the leg that reaches it.
  */
-export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, alternatives = NO_ALTERNATIVES, routeClass = '', traverse = false, track = null, stretches = NO_ALTERNATIVES, marks = NO_ALTERNATIVES, focus = null, mast = null, minSpanM = MAP_MIN_SPAN_M, position = null, eventRoute = false, planPath = null, flipTags = true }) {
+export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, alternatives = NO_ALTERNATIVES, routeClass = '', traverse = false, track = null, stretches = NO_ALTERNATIVES, marks = NO_ALTERNATIVES, focus = null, mast = null, minSpanM = MAP_MIN_SPAN_M, position = null, eventRoute = false, planPath = null, flipTags = true, picking = false, onPick = null }) {
   const canvasRef = useRef(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const caution = useMissionStore((s) => cautionDeg(s.needs?.risk));
+  // the plan's sampling tasks, while the goal is "Collect samples" (#352): named on their stop markers on Rocks and Outcrop
+  const planTasks = useMissionStore((s) => (s.needs?.objective === 'samples' ? s.route?.tasks ?? NO_ALTERNATIVES : NO_ALTERNATIVES));
   const sky = useSkyView(layer === LAYER.EXPOSURE);
   const radio = useRadioShadow(layer === LAYER.RADIO ? data?.terrain : null, mast);
   const zone = useReturnZone(layer === LAYER.ZONE);
@@ -149,6 +169,36 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const pathPoints = useMemo(() => (path ?? []).map(([x, z]) => ({ x, z })), [path]);
   const altPoints = useMemo(() => alternatives.flatMap((a) => a.path.map(([x, z]) => ({ x, z }))), [alternatives]);
   const trackPoints = useMemo(() => (track ?? []).map(([x, z]) => ({ x, z })), [track]);
+  // Pan and zoom (#390): the layers that move together, the crops they show and the gesture that moves them
+  const stageRef = useRef(null);
+  const backdropRef = useRef(null);
+  const paintedRef = useRef(null);   // the crop the canvas shows
+  const shownRef = useRef(null);     // the crop the overlays were rendered for
+  const pxRef = useRef(0);           // the box width, read when a gesture starts
+  const wheelRectRef = useRef(null);
+  const limitsRef = useRef({ tile: { width: 1422.5, depth: 1500 }, min: 120 });
+  const setViewRef = useRef(null);
+  const backdropCrop = (t) => { const side = Math.max(t.width, t.depth); return { x0: -side / 2, z0: -side / 2, size: side }; };
+  const applyView = () => {
+    const stage = stageRef.current, canvas = canvasRef.current, backdrop = backdropRef.current;
+    const target = gestureRef.current?.live() ?? shownRef.current;
+    const px = pxRef.current;
+    if (stage) stage.style.transform = cropTransform(shownRef.current, target, px);
+    const moved = canvas ? cropTransform(paintedRef.current, target, px) : '';
+    if (canvas) canvas.style.transform = moved;
+    if (backdrop) {
+      backdrop.style.transform = moved ? cropTransform(backdropCrop(limitsRef.current.tile), target, px) : '';
+      backdrop.style.visibility = moved && backdrop.dataset.ready ? 'visible' : 'hidden';
+    }
+  };
+  const applyRef = useRef(applyView);
+  const gestureRef = useRef(null);
+  gestureRef.current ??= createMapGesture({
+    tile: () => limitsRef.current.tile,
+    minSize: () => limitsRef.current.min,
+    preview: () => applyRef.current(),
+    commit: (crop) => setViewRef.current(crop),
+  });
   const planPoints = useMemo(() => (eventRoute && planPath ? planPath.map(([x, z]) => ({ x, z })) : []), [eventRoute, planPath]);
   // candidate stops (Outcrop) and shelters (Exposure) are drawn where the view is; they never move the framing
   const places = useLayerPlaces(route ? layer : LAYER.IMAGE);
@@ -172,6 +222,9 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const [open, setOpen] = useState(null);   // index of the stop whose details are open
   const crop = view ?? fit;
   const boxRef = useRef(null);
+  // the stop details open beside the stop's marker, inside the map and clear of its caption, legend and key (#380)
+  const [popRef, popStyle] = usePlacedPopup(() => boxRef.current?.querySelector(`[data-stop="${open}"]`), [open, crop]);
+  useMapTipPlacement(boxRef);
   const dragRef = useRef(null);
 
   // Repaint at most once per frame while zooming or dragging.
@@ -183,9 +236,47 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
       const image = context.createImageData(PIXELS, PIXELS);
       paintMap(image.data, PIXELS, crop, layer, { ...data, radio, sky }, { cautionDeg: caution });
       context.putImageData(image, 0, 0);
+      paintedRef.current = crop;
+      applyRef.current();
     });
     return () => cancelAnimationFrame(frame);
   }, [data, crop, layer, radio, sky, caution]);
+
+  // After each render: the overlays show `crop`, so their transform starts again from it, and a finished gesture ends.
+  // Runs after every render on purpose (no dependency list): applyView reads refs that any render may have changed.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    applyRef.current = applyView;
+    setViewRef.current = setView;   // stores the setter for the gesture's commit; nothing is set here
+    limitsRef.current = { tile, min: Math.min(120, minSpanM) };
+    if (shownRef.current !== crop) {
+      shownRef.current = crop;
+      gestureRef.current.settled(crop, Boolean(dragRef.current));
+      if (!gestureRef.current.live()) wheelRectRef.current = null;
+    }
+    applyView();
+  });
+
+  // The backdrop: the whole tile, painted in squares while the page is idle, once per picture (layer and its inputs)
+  useEffect(() => {
+    const backdrop = backdropRef.current;
+    if (!backdrop || !data) return undefined;
+    delete backdrop.dataset.ready;
+    const context = backdrop.getContext('2d');
+    const whole = backdropCrop(tile);
+    const side = whole.size / BACKDROP_TILES;
+    let k = 0;
+    let id = idle(function next() {
+      const i = k % BACKDROP_TILES, j = Math.floor(k / BACKDROP_TILES);
+      const image = context.createImageData(BACKDROP_TILE, BACKDROP_TILE);
+      paintMap(image.data, BACKDROP_TILE, { x0: whole.x0 + i * side, z0: whole.z0 + j * side, size: side }, layer, { ...data, radio, sky }, { cautionDeg: caution });
+      context.putImageData(image, i * BACKDROP_TILE, j * BACKDROP_TILE);
+      k += 1;
+      if (k < BACKDROP_TILES * BACKDROP_TILES) id = idle(next);
+      else { backdrop.dataset.ready = '1'; id = 0; }
+    });
+    return () => { if (id) cancelIdle(id); };
+  }, [data, layer, radio, sky, caution]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Wheel zoom needs a non-passive listener to keep the page from scrolling.
   useEffect(() => {
@@ -193,9 +284,11 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
     if (!box) return undefined;
     const onWheel = (event) => {
       event.preventDefault();
-      const rect = box.getBoundingClientRect();
+      // one layout read per run of wheel steps, not per step
+      const rect = wheelRectRef.current ??= box.getBoundingClientRect();
+      pxRef.current = rect.width;
       const fx = (event.clientX - rect.left) / rect.width, fz = (event.clientY - rect.top) / rect.height;
-      setView((current) => zoomCrop(current ?? fit, event.deltaY > 0 ? 1.18 : 1 / 1.18, fx, fz, tile, Math.min(120, minSpanM)));
+      gestureRef.current.wheel(event.deltaY, fx, fz, shownRef.current);
     };
     box.addEventListener('wheel', onWheel, { passive: false });
     return () => box.removeEventListener('wheel', onWheel);
@@ -204,15 +297,29 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const onPointerDown = (event) => {
     if (event.button !== 0 && event.button !== 2) return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    dragRef.current = { x: event.clientX, y: event.clientY, crop, width: event.currentTarget.getBoundingClientRect().width };
+    const width = event.currentTarget.getBoundingClientRect().width;   // the drag's one layout read
+    pxRef.current = width;
+    dragRef.current = { x: event.clientX, y: event.clientY, crop: gestureRef.current.live() ?? crop, width, button: event.button };
   };
   const onPointerMove = (event) => {
     const drag = dragRef.current;
     if (!drag) return;
-    const metres = drag.crop.size / drag.width;
-    setView(clampCrop({ ...drag.crop, x0: drag.crop.x0 - (event.clientX - drag.x) * metres, z0: drag.crop.z0 - (event.clientY - drag.y) * metres }, tile));
+    gestureRef.current.drag(drag, event.clientX, event.clientY);   // a transform, no render (mapGesture.js)
   };
-  const endDrag = () => { dragRef.current = null; };
+  const endDrag = () => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (drag) gestureRef.current.up();
+  };
+  const resetView = () => { gestureRef.current.cancel(); setView(null); };
+  // While a task place is being chosen, a left click that hardly moved is the point (#352); a drag still moves the map.
+  const onPointerUp = (event) => {
+    const drag = dragRef.current;
+    endDrag();
+    if (!picking || !onPick || !drag || drag.button !== 0 || Math.hypot(event.clientX - drag.x, event.clientY - drag.y) >= PICK_DRAG_PX) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    onPick(fromMap(((event.clientX - rect.left) / rect.width) * 100, ((event.clientY - rect.top) / rect.height) * 100, drag.crop));
+  };
 
   useEffect(() => {
     if (open === null) return undefined;
@@ -231,18 +338,20 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
 
   return (
     <div
-      className="table-map"
+      className={picking ? 'table-map picking' : 'table-map'}
       ref={boxRef}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={endDrag}
+      onPointerUp={onPointerUp}
       onPointerCancel={endDrag}
-      onDoubleClick={() => setView(null)}
+      onDoubleClick={resetView}
       onContextMenu={(event) => event.preventDefault()}
     >
-      <canvas ref={canvasRef} width={PIXELS} height={PIXELS} role="img" aria-label={title} />
-      {layer === LAYER.ZONE && <ReturnZoneLayer zone={zone} crop={crop} />}
-      {traverse && <TraverseLayer crop={crop} />}
+      <canvas ref={backdropRef} className="table-map-backdrop" width={BACKDROP_TILES * BACKDROP_TILE} height={BACKDROP_TILES * BACKDROP_TILE} aria-hidden="true" />
+      <canvas ref={canvasRef} className="table-map-picture" width={PIXELS} height={PIXELS} role="img" aria-label={title} />
+      <div ref={stageRef} className="table-map-stage">
+      {layer === LAYER.ZONE && <ZoneOverlay zone={zone} crop={crop} />}
+      {traverse && <TraverseOverlay crop={crop} withKey={false} />}
       <svg className="table-map-marks" viewBox="0 0 100 100" aria-hidden="true">
         {route && alternatives.map((a) => (
           <polyline key={a.id} points={toLine(a.path.map(([x, z]) => ({ x, z })))} className={'map-route-alt profile-' + a.id} />
@@ -259,7 +368,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
         ))}
       </svg>
       {/* candidate stops on Outcrop and shelters on Exposure, under the route's own stop markers */}
-      <LayerPlaces places={places} crop={crop} />
+      <PlacesOverlay places={places} crop={crop} />
       {/* Stops as numbered markers with a label, as on the 3D plan map: HTML, so the text stays sharp at any zoom. The
           numbers are the app's one numbering (#220, src/sim/waypointNumber.js): HAB is 0 and WP1 is 1. */}
       <ol className="map-markers map-stops">
@@ -268,19 +377,22 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
           if (u < -5 || u > 105 || v < -5 || v > 105) return null;
           if (!route && k !== 0 && k !== last) return null;
           const name = route ? markerName(w, k) : k === 0 ? t('table.habitat') : translateText(w.label ?? w.name);
+          // on Rocks and Outcrop a sampling task's place says what it collects (#352), as other places on those layers do
+          const taskLine = route ? waypointTaskTag(layer, w, planTasks) : null;
           const target = science.has(w.name) || k === last;
           return (
             <li key={k} className={'map-marker' + (target ? ' target' : '') + (flipTags && tagFlips(u) ? ' flip' : '')} style={{ left: `${u}%`, top: `${v}%` }}>
               <button
                 type="button"
                 className="map-marker-hit"
+                data-stop={k}
                 aria-expanded={open === k}
                 aria-label={t('map.marker.details', { name: route ? `${waypointNumber(k)} ${name}` : name })}
                 onPointerDown={(event) => event.stopPropagation()}
-                onClick={() => setOpen(open === k ? null : k)}
+                onClick={() => (picking && onPick ? onPick({ x: w.x, z: w.z }) : setOpen(open === k ? null : k))}
               >
                 {route ? <span className="map-marker-num">{waypointNumber(k)}</span> : <span className={k === 0 ? 'map-marker-home' : 'map-marker-num'} />}
-                <span className="map-marker-tag"><b>{name}</b>{k === shelterAt && <small className="map-tag-shelter">{t('ui.shelter.89')}</small>}</span>
+                <span className="map-marker-tag"><b>{name}</b>{k === shelterAt && <small className="map-tag-shelter">{t('ui.shelter.89')}</small>}{taskLine && <small>{taskLine}</small>}</span>
               </button>
             </li>
           );
@@ -295,7 +407,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
           );
         })()}
       </ol>
-      {here && <MapPosition position={here} crop={crop} />}
+      {here && <PositionOverlay position={here} crop={crop} />}
       {marks.length > 0 && (
         <ul className="map-markers map-marks" aria-hidden="true">
           {marks.map((m) => {
@@ -305,16 +417,15 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
           })}
         </ul>
       )}
+      </div>
       {open !== null && waypoints[open] && (() => {
         const w = waypoints[open];
-        const [u, v] = toMap(w.x, w.z, crop);
         const name = markerName(w, open);
         const fact = data ? pointFacts(data, w) : null;
         const leg = open > 0 ? legs[open - 1] : null;
         const walked = legs.slice(0, open).reduce((sum, l) => sum + (l?.distanceM ?? 0), 0);
-        const style = { left: u > 60 ? undefined : `calc(${u}% + 18px)`, right: u > 60 ? `calc(${100 - u}% + 18px)` : undefined, top: `clamp(8px, calc(${v}% - 40px), calc(100% - 260px))` };
         return (
-          <div className="map-pop" style={style} role="dialog" aria-label={t('map.marker.details', { name })} onPointerDown={(event) => event.stopPropagation()}>
+          <div className="map-pop" ref={popRef} style={popStyle} role="dialog" aria-label={t('map.marker.details', { name })} onPointerDown={(event) => event.stopPropagation()}>
             <div className="map-pop-head">
               <div><b>{name}</b></div>
               <button type="button" className="map-pop-close" aria-label={t('menu.close')} onClick={() => setOpen(null)}>×</button>
@@ -338,8 +449,9 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
         <span>{t('map.north.up')} · {acrossLabel(crop.size)}{layer === LAYER.RADIO && !radio ? ` · ${t('layers.radio.waiting')}` : ''}</span>
       </p>
       {legend}
+      {traverse && <TraverseKey />}
       {view && (
-        <button type="button" className="table-map-fit" onPointerDown={(event) => event.stopPropagation()} onClick={() => setView(null)}>
+        <button type="button" className="table-map-fit" onPointerDown={(event) => event.stopPropagation()} onClick={resetView}>
           {t('map.fit.route')}
         </button>
       )}

@@ -16,10 +16,12 @@
 .map-place .map-marker-tag { min-width: 0; }
 .map-place-candidate > i { background: #c9d0d8; border: 2px solid #0a0d11; border-radius: 50%; }
 .map-place-shelter > i { background: #0a0d11; border: 2px solid #f2f4f6; }
+/* a sampling task's place, "Collect samples" only (#352): the candidate's dot in the main action's colour */
+.map-place-task > i { background: var(--accent); border: 2px solid #0a0d11; border-radius: 50%; }
 /* above the rover's image pin (.map-pins, z-index 1, earlier in the map): on Outcrop and Exposure the places are the layer */
 .map-places { z-index: 1; }
 /* the route's own stops above both (later in the map, same layer), so a place or a pin never hides a stop; the stop
-   details (.map-pop, z-index 2) stay on top */
+   details (.map-pop, z-index 3) stay on top, see the stacking list in table.css */
 .map-stops { z-index: 1; }
 
 /* Near the map's right edge a tag opens to the left of its symbol, so the edge never cuts it (mapLayers.tagFlips); the
@@ -42,3 +44,11 @@
 
 /* The crew's position (MapPosition.jsx): the HUD's marker on a canvas over the map, above the stops */
 .table-map-position { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+
+/* Pan and zoom (MissionMap.jsx, mapGesture.js): the picture, the backdrop and the overlays move as transforms from
+   their top-left corner while a gesture lasts; the backdrop shows only then, under the picture's moved edge */
+.table-map-picture,
+.table-map-backdrop,
+.table-map-stage { transform-origin: 0 0; will-change: transform; }
+.table-map-backdrop { visibility: hidden; }
+.table-map-stage { position: absolute; inset: 0; }

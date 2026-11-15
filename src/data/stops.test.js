@@ -196,6 +196,8 @@ describe('route stops without a card (#265)', () => {
       ['sortie', 120, false],
     ]);
     expect(candidates.find((s) => s.id === 'cheyava-falls')).toMatchObject({ waypoint: 'Cheyava Falls', x: 0, z: 0 });
+    // the arrival radius of each, where a sampling task there counts (#352)
+    expect(candidates.map((s) => [s.id, s.arrivalRadiusM])).toEqual([['bright-angel', 2], ['cheyava-falls', 2], ['sortie', 8]]);
   });
 
   it('rejects a route stop with an id already used, or without a work time', () => {
