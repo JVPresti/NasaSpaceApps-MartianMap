@@ -13,7 +13,7 @@ import MapPosition from './MapPosition.jsx';
 import { useLayerPlaces } from './useLayerPlaces.js';
 import { useSkyView } from './routeExposure.js';
 import TraverseLayer from './TraverseLayer.jsx';
-import { usePlacedPopup } from './usePlacedPopup.js';
+import { useMapTipPlacement, usePlacedPopup } from './usePlacedPopup.js';
 import ReturnZoneLayer from '../zone/ReturnZoneLayer.jsx';
 import { useReturnZone, zoneFrameKey, zoneFramePoints } from '../zone/useReturnZone.js';
 import './mapLayers.css';
@@ -182,6 +182,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const boxRef = useRef(null);
   // the stop details open beside the stop's marker, inside the map and clear of its caption, legend and key (#380)
   const [popRef, popStyle] = usePlacedPopup(() => boxRef.current?.querySelector(`[data-stop="${open}"]`), [open, crop]);
+  useMapTipPlacement(boxRef);
   const dragRef = useRef(null);
 
   // Repaint at most once per frame while zooming or dragging.
