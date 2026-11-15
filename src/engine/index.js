@@ -8,7 +8,7 @@ import { subscribeLanguage } from '../i18n/index.js';
 //   engine.setMode('plan' | 'walk');
 //   engine.setLayer(0..4); engine.setSky('clear_day'); engine.setRoute([[x, z], ...]);
 //   engine.setSkyTime(17.75 | null); engine.getSun();   // sky and Sun from the mission clock (#73), missionSky.js
-//   engine.habitatZoneAt(x, z); engine.setHabitatPrompt({ key, text } | null);   // the habitat and its end-of-EVA prompt (#244)
+//   engine.habitatZoneAt(x, z); engine.setHabitatPrompt({ rows } | null); engine.inHabitatCabin();   // the habitat and its table prompt (#244)
 //   engine.requestPointerLock(); engine.releasePointerLock(); engine.setInputEnabled(false);
 //   engine.setQuality('auto' | 'high' | 'low'); engine.getQuality(); engine.resetSession();
 //   engine.subscribeTouch(listener); engine.subscribeGamepad(listener);   // UI hints for touch and gamepad (#103)
@@ -582,11 +582,16 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     },
     /**
      * Prompt floating over the habitat's planning table (habitatPrompt.js, #244), shown only while the player is in the
-     * cabin: `{ key: 'X', text: 'End the EVA' }`, or null to hide it.
+     * cabin: `{ rows: [{ key: 'E', text: 'Open plan' }, { key: 'X', text: 'Finish EVA', dim: false }] }` (up to two rows;
+     * a `dim` row does not apply now), `{ key, text }` for a single row, or null to hide it.
      */
     setHabitatPrompt(prompt) {
       pending.habitatPrompt = prompt || null;
       if (sys.habitat && sys.habitat.prompt) sys.habitat.prompt.set(pending.habitatPrompt);
+    },
+    /** True while the player walks in the habitat's cabin ('main' or 'inner' zone): where the table prompt shows and its keys act. */
+    inHabitatCabin() {
+      return !!(sys.habitat && sys.habitat.root && sys.habitat.inCabin());
     },
     /** The habitat walk zone at (x, z): 'stairs', 'porch', 'hatch', 'airlock', 'inner' or 'main' (collide.js), or null. */
     habitatZoneAt(x, z) {
