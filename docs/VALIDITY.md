@@ -1,6 +1,6 @@
 # Validity audit
 
-Every number Marswalk shows carries a tag: DATA (measured by a NASA mission or stated in a NASA document), DERIVED (we calculated it from DATA) or SIM (our model, our assumption or a scripted event). This page checks that each tag is true. For every number, someone opened the primary source, found the sentence or table it comes from, and compared it with the value in `public/data/` or `src/sim/`.
+Every number Marswalk shows carries a tag: DATA (measured by a NASA mission or stated in a NASA document), DERIVED (we calculated it from DATA) or SIM (our model, our assumption or a scripted event). This page checks that each tag is true. For every number, an AI research agent opened the primary source, found the sentence or table it comes from, and compared it with the value in `public/data/` or `src/sim/`. We reviewed each finding, recomputed the walking model with a script, and had the table read by a reviewer playing a NASA planetary scientist.
 
 Audit done 2026-11-15 on `main` at `013f2d5`. It repeats the research behind `public/data/hazards.json` (#18) from scratch rather than trusting the quotes stored in that file. Downloaded copies of every source and the script that recomputes the walking model stayed outside the repository.
 
@@ -17,25 +17,27 @@ Audit done 2026-11-15 on `main` at `013f2d5`. It repeats the research behind `pu
 
 ## Result
 
-106 numbers checked. 81 match their source or round to it. 13 are our own assumptions, and the app labels them SIM. 9 carry the wrong tag, page or wording. 2 are wrong on screen. 1 could not be opened.
+109 numbers checked. 79 match their source or round to it. 11 are our own assumptions, labelled SIM in the app. 14 are defensible numbers with the wrong tag, page or wording around them. 2 are wrong on screen. 3 come from a paper the publisher would not let us open.
 
 | Verdict | Count |
 |---|---|
-| matches | 74 |
+| matches | 72 |
 | rounded | 7 |
-| assumption we state | 13 |
-| mislabelled | 9 |
+| assumption we state | 11 |
+| mislabelled | 14 |
 | wrong | 2 |
-| not verified | 1 |
+| not verified | 3 |
 
 The two wrong numbers:
 
 - The elevation profile turns red above 25°. The planner, the slope layer and NASA's suited limit all say 20° ([#293](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/293)).
-- The Sun uses an 11° declination, a value from another season. On sol 1210 the real noon Sun at Cheyava Falls is about 47° up. The game draws it at 82.5° ([#294](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/294)).
+- The Sun uses an 11° declination, a value from another season. On sol 1210 the real noon Sun at Cheyava Falls is about 48° up. The game draws it at 82.5° ([#294](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/294)).
 
-The one not verified: the September 2017 rates in Zeitlin et al. 2018, Table 1. The publisher blocked every scripted download. The abstract and three papers that quote the table agree with our numbers.
+The three not verified all come from Zeitlin et al. 2018: the event rates in Table 1, the 544 µGy event dose and the 7 h doubling time. The publisher blocked every scripted download. The abstract and three papers that quote it agree with our numbers.
 
-No measured value in the dust, weather, terrain, suit or physiology rows disagreed with its source. Where the audit found trouble, it was in what we built on top of the data: a ramp step tagged DATA, a reserve held at the wrong rate, a shelter dose cut that assumes every part of the sky counts the same.
+Each row counts one number. A row can match and still carry a wrong page number or a loose note, so [#300](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/300) collects 19 such slips, more than the 14 mislabelled rows.
+
+No measured value in the weather, terrain, suit or physiology rows disagreed with its source. The trouble sat in what we built on top of the data: a ramp step tagged DATA, a reserve held at the wrong rate, a shelter dose cut that treats every part of the sky the same, a rock layer read from image brightness.
 
 ## Measured: terrain and imagery
 
@@ -47,8 +49,9 @@ The map, the slope layer, the cost grid and the route planner all read one heigh
 | HiRISE orthomosaic | 25 cm | "Pixel Resolution (meters/pixel) 0.25" | [USGS, doi 10.5066/P9QJDP48](https://doi.org/10.5066/P9QJDP48) | matches |
 | CTX DEM (horizon ring) | 20 m | "Pixel Resolution (meters/pixel) 20" | [USGS, doi 10.5066/P906QQT8](https://doi.org/10.5066/P906QQT8) | matches |
 | CTX orthomosaic | 6 m | "Pixel Resolution (meters/pixel) 6" | [USGS, doi 10.5066/P9GV1ND3](https://doi.org/10.5066/P9GV1ND3) | matches |
-| Tile origin, Cheyava Falls | 18.4975 N, 77.3053 E, sol 1210 | Waypoint 55_434, sol 1210, the same coordinates to 8 decimals | [MMGIS M20_waypoints.json](https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_waypoints.json) | matches |
+| Tile origin, Cheyava Falls | 18.4975 N, 77.3053 E, sol 1210 | Waypoint 55_434, sol 1210, at 18.49751379 N, 77.30527379 E | [MMGIS M20_waypoints.json](https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_waypoints.json) | rounded (4 decimals, about 1.7 m) |
 | Base elevation | -2393.37 m MOLA | Lowest point of the HiRISE tile, read from the DTM | Same USGS DTM | matches (read from the file, not a printed number) |
+| Our grid against Mars Trek | 0.14 m RMS over the tile | Mars Trek serves the same JEZ_hirise_soc_006 DTM | [mars-trek-check](data/mars-trek-check/README.md) | matches. This proves our resampling reproduces the USGS DTM. It does not prove the DTM is true, and the rover positions it was also compared with are tied to orbital maps, so they are not independent |
 
 ## Measured: Perseverance at the site
 
@@ -76,7 +79,7 @@ The map, the slope layer, the cost grid and the route planner all read one heigh
 
 | Number | We use | Source says | Source | Verdict |
 |---|---|---|---|---|
-| Clear season optical depth | 0.45 | "observed 880-nm optical depths of 0.4 to 0.5" | [Bell et al. 2022, Sci. Adv. 8, eabo4856](https://doi.org/10.1126/sciadv.abo4856) | rounded (midpoint of the range) |
+| Clear season optical depth | 0.45, the sky before the storm | "observed 880-nm optical depths of 0.4 to 0.5" over sols 0 to 275, Ls 20 to 135 | [Bell et al. 2022, Sci. Adv. 8, eabo4856](https://doi.org/10.1126/sciadv.abo4856) | mislabelled. The number matches its season, but the mission clock says Ls 294, in the dusty season ([below](#measured-dust)). The game starts from a clearer sky than that date had. It is also an 880 nm value, while the storm values are visible-band |
 | Seasonal minimum | 0.25 | "an optical depth (τ) of ~0.25" | Bell et al. 2022 | matches |
 | January 2022 storm, before | 0.3 | "visible optical depth was near 0.3" | [Lemmon et al. 2022, GRL 49, e2022GL100126](https://doi.org/10.1029/2022GL100126), section 3.2 | matches |
 | January 2022 storm, peak | 2.0 | "Peak visible optical depth was ∼2" | Lemmon et al. 2022, abstract | matches |
@@ -95,22 +98,24 @@ The map, the slope layer, the cost grid and the route planner all read one heigh
 
 ## Measured: radiation
 
-Curiosity's RAD measured every dose number below in Gale crater, about 2 km lower than Jezero. No instrument has measured surface radiation at Jezero. The HUD says "Gale crater, not Jezero" next to each value.
+Curiosity's RAD measured every dose number below in Gale crater, about 2 km lower than Jezero. No instrument has measured surface radiation at Jezero. Zeitlin et al. 2018 put about 23 g/cm² of CO2 over Gale. Jezero has roughly a tenth less air above it, so doses there would be somewhat higher, more so for solar particles. The HUD says "Gale crater, not Jezero" next to each value.
+
+RAD has two detectors. B reports dose in silicon, which the papers convert to water. E is tissue-like. The rows name the detector where it matters, because mixing them shifts a rate by 15 % or more ([#295](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/295)).
 
 | Number | We use | Source says | Source | Verdict |
 |---|---|---|---|---|
 | Background dose rate | 0.210 mGy/day, shown as 8.75 µGy/h | "an average total GCR dose rate at Gale Crater (-4.4 km MOLA) of 0.210 +/- 0.040 mGy/day". Table 1: E detector, tissue-like | [Hassler et al. 2014, Science 343, 1244797](https://doi.org/10.1126/science.1244797) | matches (210 / 24 = 8.75). The entry does not name the detector |
 | Background dose equivalent | 0.64 mSv/day | "0.64 ± 0.12 mSv/day" | Hassler et al. 2014 | matches |
-| Solar cycle range | 0.35 to 1.15 mSv/day | "ranges from about 0.35 mSv/day to about 1.15 mSv/day" | [Guo et al. 2015, ApJ 810, 24](https://doi.org/10.1088/0004-637X/810/1/24) | matches. Both ends are uncertainty extremes, not central values |
+| Solar cycle range | 0.35 to 1.15 mSv/day, tagged DERIVED | "ranges from about 0.35 mSv/day to about 1.15 mSv/day" | [Guo et al. 2015, ApJ 810, 24](https://doi.org/10.1088/0004-637X/810/1/24) | matches. A model extends the measurement, so DERIVED is the right tag. Both ends are uncertainty extremes, not central values |
 | Career limit | 600 mSv | "total career effective radiation dose ... shall be less than 600 mSv", p. 4 | [NASA OCHMO-TB-020 Rev E](https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf) | matches |
 | Solar event design limit | 250 mSv | "to less than a NASA effective dose of 250 mSv", p. 6 | Same | matches |
 | September 2017 flare | X8.2, begin 15:35Z, peak 16:06Z, end 16:31Z | FLR 2017-09-10T15:35:00-FLR-001, same times and class | [DONKI](https://ccmc.gsfc.nasa.gov/DONKI/WS/get/FLR?startDate=2017-09-10&endDate=2017-09-10) | matches |
 | First alert | 16:07Z | 20170910-AL-001 at 16:07Z, a flare alert (M5 threshold). The first particle alert is AL-002 at 16:41Z | [DONKI notifications](https://ccmc.gsfc.nasa.gov/DONKI/WS/get/notifications?startDate=2017-09-10&endDate=2017-09-10&type=all) | mislabelled. Call it a flare alert |
 | Onset at Mars | 19:50Z | "the earliest possible onset of > 100 MeV protons is at 19:50 UT" | [Guo et al. 2018](https://arxiv.org/pdf/1803.00461), co-authored by Zeitlin | matches. The note gives the light time as 10 to 20 min. On that date Mars was 2.61 AU away, about 21.7 min |
-| Warning lead time | 224 min | 19:50 minus 16:06 | Arithmetic | mislabelled. That is flare seen at Earth to dose rise at Mars. A crew at Mars hears the DONKI alert about 22 min after it is issued |
+| Warning lead time | 224 min | 19:50 minus 16:06 | Arithmetic | mislabelled. That is flare seen at Earth to dose rise at Mars. A crew at Mars hears the DONKI alert about 22 min after it is issued. This event was poorly connected to Mars. A well-connected event can bring protons within tens of minutes, less than the relay time |
 | Event rates, before, peak, after | 240, 718, 208 µGy/day (B, water) | Abstract: rates rose "by factors of 2 to 3" (718 / 240 = 2.99) | [Zeitlin et al. 2018, GRL 45, 5845](https://doi.org/10.1029/2018GL077760) | not verified. The publisher blocked every scripted request, so Table 1 stayed closed. The abstract and the papers that cite it agree |
-| Event dose | 544 µGy (B, water) | "the SPE contributed 544 μGy of dose in water as measured by the B detector". Berger 2018 cites 418 µGy in silicon | Zeitlin et al. 2018, through quoting papers | matches (secondary) |
-| Doubling time | 7 h | "dose rates roughly doubled within about 7 hours" | Same | matches (secondary) |
+| Event dose | 544 µGy (B, water) | "the SPE contributed 544 μGy of dose in water as measured by the B detector", as quoted by papers that cite Zeitlin. Berger 2018 cites 418 µGy in silicon | Zeitlin et al. 2018 | not verified (same closed paper). For scale: 544 µGy is about 2.3 sols of background at the B rate, and far under 1 % of NASA's 250 mSv limit for a solar event. Sheltering is right because forecasts are uncertain, not because this event was dangerous on the surface |
+| Doubling time | 7 h | "dose rates roughly doubled within about 7 hours", as quoted | Zeitlin et al. 2018 | not verified (same closed paper) |
 | Event duration | 57 h | 19:50Z on 10 September to the shock at 05:00Z on 13 September | Zeitlin et al. 2018 | rounded. Guo et al. 2018 puts the shock at about 02:50 UT, which gives 55 h |
 | May 2024 event dose | 8100 µGy | "a radiation dose of 8,100 micrograys" | [NASA, updated 10 June 2024](https://www.nasa.gov/missions/maven/nasa-watches-mars-light-up-during-epic-solar-storm/) | matches. The note says DONKI missed it. DONKI logged the far-side CME, so phrase that as our reading |
 | Event in the game, background step | 10 µGy/h | 240 / 24 = 10.0 | Zeitlin, B detector | matches. Outside the event the HUD shows 8.75 µGy/h (Hassler, E detector), so the rate jumps 14 % at the start with no particles yet ([#295](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/295)) |
@@ -121,7 +126,7 @@ Curiosity's RAD measured every dose number below in Gale crater, about 2 km lowe
 
 ## Measured: suit specification
 
-The suit is the xEMU, NASA's Artemis suit design. It is the only suit with every consumable published in NASA documents at the same design level.
+The suit is the xEMU, NASA's Artemis suit design. It is the only suit with every consumable published in NASA documents at the same design level. It was designed for the Moon. Its CO2 scrubber and its evaporative cooler vent to vacuum, and Mars has about 700 Pa of CO2, so a Mars suit needs different CO2 removal and heat rejection. We model oxygen and battery only. On Mars, CO2 or heat could end a walk before oxygen does.
 
 | Number | We use | Source says | Source | Verdict |
 |---|---|---|---|---|
@@ -133,7 +138,7 @@ The suit is the xEMU, NASA's Artemis suit design. It is the only suit with every
 | Suit pressure | 4.3 psid (29.6 kPa) | "a nominal EVA pressure of 4.3 psid", p. 36 | Same | matches |
 | Design average metabolic rate | 1200 BTU/hr (352 W) | "1200 BTU/hr (352 Watts)", p. 4 | [Ogilvie et al. 2026, ICES-2026-127, NTRS 20260003038](https://ntrs.nasa.gov/citations/20260003038) | matches (the paper cites its reference 7) |
 | Design peak | 3000 BTU/hr for 10 min | "a 3000 BTU/hr peak rate for 10 minutes", p. 4 | Same | matches |
-| No-go slope | 20° | "Walking up/down/across a slope of up to 20°", p. 38. Also "Surface slope limit for EVA (2km): <20 deg", p. 21 | EVA-EXP-0042 Rev B; [NTRS 20250009323](https://ntrs.nasa.gov/citations/20250009323) | matches in the planner and the slope layer. **Wrong** in the elevation profile, which still uses 25° ([#293](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/293)) |
+| No-go slope | 20° | "Walking up/down/across a slope of up to 20°", p. 38. Also "Surface slope limit for EVA (2km): <20 deg", p. 21 | EVA-EXP-0042 Rev B; [NTRS 20250009323](https://ntrs.nasa.gov/citations/20250009323) | matches in the planner and the slope layer. The source states a suit capability ("up to 20°"), and we use it as a limit. Slope is a central difference over ±2 m, so features under 4 m are smoothed. **Wrong** in the elevation profile, which still uses 25° ([#293](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/293)) |
 | Reserve | 30 min "at the current metabolic rate" | "30 MINUTES RESERVES MAINTAINED ON ALL PLSS CONSUMABLES AT STATION METABOLIC RATE", Tables 2.4-2 and 2.4-3 | [Apollo 17 Lunar Surface Procedures vol. 2](https://pds-geosciences.wustl.edu/Lunar/urn-nasa-pds-apollodoc/document_a17/mission/a17_final_lunar_surface_procedures_vol2_contingency.pdf) | mislabelled. 30 min is right. Apollo held it at the fixed station rate, which Bellcomm gives as 1050 BTU/hr (308 W). We hold it at the current rate, so a crew member standing still at 144 W keeps about half the O2 Apollo held back |
 | Walkback pad | 20 % | "A 20% pad is required for emergency walkback, making the metabolic rate 1440 BTU/hr at a speed of 3.3 km/hr", p. 1 | [Bellcomm B70 10028, Apollo 15](https://webarchive.library.unt.edu/eot2008/20090109180220id_/http://www.hq.nasa.gov/alsj/19790073512_1979073512.pdf) | matches |
 
@@ -163,7 +168,7 @@ The suit is the xEMU, NASA's Artemis suit design. It is the only suit with every
 |---|---|---|---|---|
 | Sol length | 88,775 s | "24 hours 39 minutes 35.244 seconds" | [NASA GISS Mars24 notes](https://www.giss.nasa.gov/tools/mars24/help/notes.html) | rounded (0.244 s per sol) |
 | Local mean solar time | Mars time + 77.3053 / 15 h | "adding a number of Mars hours equal to the location's east longitude divided by 15" | Mars24 notes | matches |
-| Mars gravity | 3.71 m/s², tagged DATA, citing the plan | "Surface gravity (mean) 3.73" | [NSSDC Mars fact sheet](https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html) | rounded. 3.71 is the widely quoted equatorial value, 0.5 % under the mean. Cite NSSDC, not the plan |
+| Mars gravity | 3.71 m/s², tagged DATA, citing the plan | "Surface gravity (mean) 3.73", equatorial 3.69 | [NSSDC Mars fact sheet](https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html) | rounded. 3.71 sits between the two NSSDC values, 0.5 % off each. Cite NSSDC, not the plan |
 
 ## Calculated by us (DERIVED)
 
@@ -175,7 +180,7 @@ The suit is the xEMU, NASA's Artemis suit design. It is the only suit with every
 | Walking model, 1 km along a 20° slope at 0.5 m/s | 946 W, 129 g O2 | Recomputed: 946.1 W, 129.4 g | matches |
 | Level walking constants | 2.2 and 2.5 J/kg/m | Recomputed from the Walkback Test costs: 2.193 and a slope of 2.49 per m/s | matches |
 | Grade factor | 1.3, "the middle of the IST-2 speed range", any value from 1.06 to 1.6 fits | Recomputed: matching the measured 17.0 mL/kg/min at 30 % grade needs 1.27 at the fastest IST-2 speed (0.97 m/s), 1.6 at the middle (0.77 m/s) and 2.2 at the slowest (0.56 m/s) | mislabelled. 1.3 fits the fastest speed, not the middle. With 1.6, a 20° climb at 0.5 m/s costs 14 % more power than we show. With 2.2 it costs 42 % more. Uphill legs are the expensive ones, so this is the number most worth a second look |
-| Visibility in the 2022 Jezero storm | 31 km | 3.912 / (1.3 / 10.5 km) = 31.6 km | rounded |
+| Visibility in the 2022 Jezero storm | 31 km | 3.912 / (1.3 / 10.5 km) = 31.6 km | rounded down. 32 is the nearer value |
 | Slope, climb, distance of a route | from the height grid | Our A* path sampled every 10 m on the HiRISE grid | matches the method. A 2 m grid misses rocks under about 2 m, and CONTEXT.md rule 5 says so |
 | Sky view of natural shelters | 0.81 to 0.85 | Ray cast on the height grid, 48 azimuths | matches the method. The dose reduction built on it, 1 minus sky view (15 %), is about 4 times what RAD measured: 4 % with 19 % of the sky blocked ([Ehresmann et al. 2021](https://doi.org/10.1029/2021JE006851), [#296](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/296)). No screen shows it, but it picks the shelters |
 
@@ -186,7 +191,7 @@ These numbers have no NASA source, and the app says so. The verdict column check
 | Number | We use | What it rests on | Verdict |
 |---|---|---|---|
 | Caution slope | 15° | No NASA value. Sits between 11.3° (20 % grade, where Norcross 2010 saw suited climbing cost rise sharply, printed p. 83, not p. 98 as the locator says) and the 20° limit | assumption we state |
-| Walking speed on flat ground | 1.0 m/s | Minetti's cheapest level speed is 1.0 ± 0.3 m/s. Waypoint ETAs use it on straight-line distance | assumption we state |
+| Walking speed on flat ground | 1.0 m/s | Minetti's cheapest level speed is 1.0 ± 0.3 m/s. Waypoint ETAs use it on straight-line distance. NASA plans traverses at 2 km/h (0.56 m/s), and Apollo 14 EVA-2 averaged 0.69 m/s | assumption we state. Our walk times come out 1.45 to 1.8 times shorter than NASA's planning pace. O2 per km changes less, but the 8 h cap, the battery and the reserve all depend on time. Show a 2 km/h time beside ours |
 | Jog | 1.5 m/s | Capped at the fastest suited speed tested at 3/8 g (1.52 m/s) | assumption we state |
 | Slowest walk | 0.3 m/s | Floor for the constant-effort rule on steep climbs | assumption we state |
 | Constant-effort speed rule | keeps the 589 W of flat walking on slopes | Apollo 14 crews "maintained a comfortable walking effort" (SP-368 p. 123). No NASA source gives suited speed by slope | assumption we state |
@@ -194,11 +199,13 @@ These numbers have no NASA source, and the app says so. The verdict column check
 | O2 caution and warning margins | 15 min and 0 min | Our thresholds on top of the Apollo reserve | assumption we state |
 | Dead-reckoning drift | 2 % of distance walked | MER's design goal was under 10 % over 100 m. No source gives a figure for a walking astronaut | assumption we state |
 | Terrain fix time | 5 s standing still | Perseverance needs about 2 min per fix (JPL, February 2026) | assumption we state. Say "24 times faster than the rover" if asked |
-| Nav fix blocked above optical depth | 1.0 | Based on Sánchez-Lavega et al. 2025. The note says the paper defines a storm as τ ≥ 1. The paper detects storm A at τ ≥ 0.6 and reports τ ≥ 1 only on sols 417 to 472 | assumption we state, with a misread note |
-| Dust storm ramp | 0.45 to 8.0 in 90 s | Real onset took up to one sol (Lemmon 2022). The end value is Curiosity's Gale 2018 reading, and the banner says "Gale 2018 storm, not Jezero" | assumption we state. Provenance tags the curve DERIVED. SIM fits the scripted 90 s ramp better |
+| Nav fix blocked above optical depth | 1.0 | Based on Sánchez-Lavega et al. 2025. The note says the paper defines a storm as τ ≥ 1. The paper detects storm A at τ ≥ 0.6 and reports τ ≥ 1 only on sols 417 to 472 | mislabelled. The SIM value is fine, the note misreads the paper |
+| Dust storm ramp | 0.45 to 8.0 in 90 s | Real onset took up to one sol (Lemmon 2022). The end value is Curiosity's Gale 2018 reading, and the banner says "Gale 2018 storm, not Jezero" | mislabelled. The banner is honest, but provenance tags the curve DERIVED, and a scripted 90 s ramp is SIM |
 | Partner separation | 100 m, caution from 80 m | Our rule from the pair-walk mockup | assumption we state |
 | Radio weak-signal range | 800 m | No source. The HUD shows the range and LINKED, WEAK or LOST with no tag | mislabelled. Every number on screen needs a tag (CONTEXT.md rule 1) |
-| Sun declination | 11° all year | Picked so the demo start at 17:45 puts the Sun 7° up in the west. Tagged SIM | **wrong** for the sol shown. The clock says sol 1210 (Ls 294) and the weather is sol 1187 (Ls 279.6). The real declination on those sols is -23° to -25°. Real noon elevation is about 47°. The game draws 82.5°, and the shadows point the wrong way for the date |
+| Rock abundance layer | HiRISE brightness mapped to rock cover, sizes from Golombek et al. 2003. Tagged DERIVED | Golombek gives rock sizes for a known rock abundance. Brightness to abundance is our step, and brightness also follows lithology, dust and slopes facing the Sun | mislabelled. It is a SIM proxy, and it carries 0.6 of every cell cost ([#311](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/311)) |
+| Route cost constants | 1 + (slope / 9°)² + 0.6 x rock | From the test bench placeholder. The code comment calls them DERIVED | mislabelled. No source sets 9° or 0.6. They choose between routes ([#311](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/311)) |
+| Sun declination | 11° all year | Picked so the demo start at 17:45 puts the Sun 7° up in the west. Tagged SIM | **wrong** for the sol shown. The clock says sol 1210 (Ls 294) and the weather is sol 1187 (Ls 279.6). The real declination on those sols is -23° to -25°. Real noon elevation is about 48° on sol 1210 (46° on sol 1187). The game draws 82.5°, and the shadows point the wrong way for the date |
 | Demo epoch | sol 1210, 17:45 LMST | Chosen by us, labelled "not a historical date" | assumption we state |
 
 ## Problems found
@@ -214,6 +221,7 @@ Each problem has an issue with the source and the corrected value. None of them 
 | [#297](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/297) | Radio range and link state have no tag, and 800 m has no source | app | P2 |
 | [#298](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/298) | O2 reserve held at the current rate, Apollo held it at 1050 BTU/hr | app | P2 |
 | [#299](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/299) | Grade factor 1.3 fits the fastest IST-2 speed, not the middle | app | P2 |
+| [#311](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/311) | Rock abundance layer is a brightness proxy, and the route cost constants have no source, both tagged DERIVED | route | P2 |
 | [#300](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/300) | Nineteen citation, page and label slips | app | P3 |
 
 ## What the app does not use
