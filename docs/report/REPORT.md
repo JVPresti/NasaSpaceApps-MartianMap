@@ -62,9 +62,9 @@ We also wanted a place with a reason to walk there. Cheyava Falls is the rock in
 
 Marswalk is a planning map and a walking test for one marswalk on real terrain. The astronaut leaves a habitat in Neretva Vallis, walks to Cheyava Falls and the Bright Angel outcrop, takes a sample and walks home. The site is a 1422.5 m by 1500 m tile cut from the HiRISE terrain model that NASA and USGS made to land Perseverance. It is centred on the spot where the rover stood on sol 1210 (18.4975 N, 77.3053 E).
 
-The crew plans at a mission table inside the habitat. They see the site from above with data layers and Perseverance's 47 real drives. `main` has five layers, and #282 brings them to six with the Radio and Exposure layers. On #282 the crew also sets its needs: goal, crew of one or two, time, oxygen, battery and risk. The planner builds a route from those needs and costs every leg in minutes and grams of oxygen. Then it compares three versions of the same route (fastest, gentlest and in radio contact) and gives a go or no-go with the tightest limit named.
+The crew plans at a mission table inside the habitat. They see the site from above with data layers and Perseverance's 47 real drives. There are six layers, Radio and Exposure among them. The crew also sets its needs: goal, crew of one or two, time, oxygen, battery and risk. The planner builds a route from those needs and costs every leg in minutes and grams of oxygen. Then it compares three versions of the same route (fastest, gentlest and in radio contact) and gives a go or no-go with the tightest limit named.
 
-Then the astronaut walks the plan in first person, with a helmet display and a wrist screen. A dust storm and a replay of the September 2017 solar particle event each break the plan and re-route the crew to shelter. A low-oxygen warning would do the same, but on this tile the margin never drops under its 15-minute trigger unless the run forces it. Back inside, a debrief judges the walked route against the approved plan (#282).
+Then the astronaut walks the plan in first person, with a helmet display and a wrist screen. A dust storm and a replay of the September 2017 solar particle event each break the plan and re-route the crew to shelter. A low-oxygen warning would do the same, but on this tile the margin never drops under its 15-minute trigger unless the run forces it. Back inside, a debrief judges the walked route against the approved plan.
 
 Every number on screen carries a tag. DATA means a NASA mission measured it or a NASA document states it. DERIVED means we calculated it from DATA. SIM means we assumed it or scripted it. We checked 109 of those numbers against their primary sources and list the 16 we got wrong (Appendix A).
 
@@ -84,16 +84,16 @@ The data to answer the question exists, spread across HiRISE, CTX, MEDA, RAD, DO
 Marswalk turns the walkback question into a number the crew can act on. On the table it is the go or no-go and the margin left at the end of the plan. In the helmet it is MARGIN NOW, the minutes left after the walk home and the 30-minute reserve. Every input to that number is a NASA measurement, a calculation from one, or an assumption we name on screen.
 
 1. **A walkability map from HiRISE.** Each 2 m cell costs 1 + (slope / 9°)² + 0.6 × rock abundance. Ground steeper than 20° is closed. An A* planner finds the cheapest route through it in a Web Worker, and a suit model turns each leg into minutes, grams of oxygen and watt-hours.
-2. **A mission table that plans from the crew's needs (#282).** The goal, crew, time, oxygen, battery and risk choose which stops fit and in what order. A solo astronaut must keep radio contact with the habitat, so the planner forces the radio route. Each layer says which decision it drives. Terrain decides where the route bends, Radio decides the contact route and Exposure decides which shelter a re-plan picks.
-3. **A walk that tests the plan.** The helmet shows only what a walker needs: oxygen, the margin, the next waypoint with its elevation profile, slope ahead, radio link and a position estimate with its error ring. Events replay real NASA records and re-plan to shelter. On #282 the debrief scores each detour as worth it, forced, costly or risky.
+2. **A mission table that plans from the crew's needs.** The goal, crew, time, oxygen, battery and risk choose which stops fit and in what order. A solo astronaut must keep radio contact with the habitat, so the planner forces the radio route. Each layer says which decision it drives. Terrain decides where the route bends, Radio decides the contact route and Exposure decides which shelter a re-plan picks.
+3. **A walk that tests the plan.** The helmet shows only what a walker needs: oxygen, the margin, the next waypoint with its elevation profile, slope ahead, radio link and a position estimate with its error ring. Events replay real NASA records and re-plan to shelter. The debrief scores each detour as worth it, forced, costly or risky.
 
 ### What is new
 
 - **The map prices each metre in oxygen.** Mars Trek shows slope and elevation. Ours shows what each metre costs to walk out and back, from NASA suited treadmill tests at 3/8 g (Norcross et al. 2008 and 2010), and redraws the cost when an event hits.
-- **The plan comes from the crew's needs (#282).** Changing a crew of two to a crew of one drops Bright Angel from the plan, because a solo astronaut works 1.5 times as long at each stop and the 2-hour budget no longer fits both (Image 2.5).
+- **The plan comes from the crew's needs.** Changing a crew of two to a crew of one drops Bright Angel from the plan, because a solo astronaut works 1.5 times as long at each stop and the 2-hour budget no longer fits both (Image 2.5).
 - **Every number says where it came from.** Hover any tag to see the mission, instrument, sol and reference. We also publish the 16 numbers our own audit found mislabelled or wrong, each with an issue (Appendix A).
 - **Navigation without GPS.** Position drifts by 2 % of the distance walked (SIM) and resets when the astronaut stands still for a terrain fix. Perseverance has done the same since February 2026. In a dust storm above optical depth 1 the fix is unavailable.
-- **The debrief reviews the walked route (#282).** It compares the track with the plan the crew approved at Begin EVA. It prices every detour in seconds and grams and gives one verdict per detour.
+- **The debrief reviews the walked route.** It compares the track with the plan the crew approved at Begin EVA. It prices every detour in seconds and grams and gives one verdict per detour.
 
 ## Technical implementation
 
@@ -117,11 +117,11 @@ Marswalk is a static web app with no backend on the critical path. Everything ru
 
 The app uses Vite 8 and React 19 in plain JavaScript, linted with oxlint. three.js 0.187 draws the terrain, the astronaut, the habitat, the sky and the dust. The terrain mesh and the height grid come out of one Blender scene, so the ground the astronaut stands on and the ground the planner costs never disagree. On start the engine measures the frame rate and picks a High or Low graphics tier. On integrated GPUs it drops texture sizes and the astronaut's shadow pass.
 
-The interface runs on keyboard, mouse, touch and gamepad, in English and Spanish. We test every step at 1366 by 768. The mission table and HUD fit. The wrist screen does not yet. It is unreadable at that size and the HUD draws over the arm (#286, open). The app synthesizes the suit sounds (fans, breathing, footsteps, wind, dosimeter clicks and radio) in code with the Web Audio API. The app ships no sound files.
+The interface runs on keyboard, mouse, touch and gamepad, in English and Spanish. We test every step at 1366 by 768. The mission table and HUD fit. The wrist screen was unreadable at that size, with the HUD over the arm (#286). #331 closed that issue on 15 November, after we took Image 2.15. The app synthesizes the suit sounds (fans, breathing, footsteps, wind, dosimeter clicks and radio) in code with the Web Audio API. The app ships no sound files.
 
 ### The simulation (`src/sim/`)
 
-**Cost grid** (`costGrid.js`). The grid reads the 751 by 751 height grid (1.90 m east-west by 2.00 m north-south cells) and the rock abundance map. Slope comes from a central difference over ±2 m, so features under 4 m are smoothed. Each open cell costs `1 + (slope / 9)^2 + 0.6 × rock`. The 9° and 0.6 are our choice, carried over from the test bench, and no source sets them (#311). They only rank routes against each other. The suit model, not the cost, prices the oxygen. Cells over 20° are closed for every risk setting. Caution starts at 15° on `main`. On #282 the Terrain layer marks 12° to 20° as caution when the crew picks cautious risk. `costGrid.test.js` fails if those limits drift from `public/data/hazards.json`.
+**Cost grid** (`costGrid.js`). The grid reads the 751 by 751 height grid (1.90 m east-west by 2.00 m north-south cells) and the rock abundance map. Slope comes from a central difference over ±2 m, so features under 4 m are smoothed. Each open cell costs `1 + (slope / 9)^2 + 0.6 × rock`. The 9° and 0.6 are our choice, carried over from the test bench, and no source sets them (#311). They only rank routes against each other. The suit model, not the cost, prices the oxygen. Cells over 20° are closed for every risk setting. Caution starts at 15°. At cautious risk the Terrain layer marks 12° to 20° as caution. `costGrid.test.js` fails if those limits drift from `public/data/hazards.json`.
 
 **Route planner** (`routePlanner.js`). A* runs on the 8-connected grid in a Web Worker, off the render thread. Normal routes use the exact Euclidean heuristic. Emergency re-plans use weighted A* with three times the heuristic, which can return a longer route but answers faster. `npm run bench` (#133) times an emergency re-plan from five places on the tile at 0.2 to 47.7 ms, against a 100 ms target. `findDetour.js` prices a marked find by trying each insertion point with two A* runs. `replan.js` compares complete routes to every reachable shelter and keeps the cheapest. A close shelter behind a steep band loses to a farther one on open ground. `offRoute.js` re-plans when the walker stays more than 20 m off the route for 5 s.
 
@@ -129,7 +129,7 @@ The interface runs on keyboard, mouse, touch and gamepad, in English and Spanish
 
 **Crew needs** (`missionNeeds.js`, PR #282). Goal, crew, time, oxygen, battery and risk choose the stops and check the budget. Each leg's walk out, work at the stop and walk home must fit. The 20° limit never moves with risk. At 17° no route reaches Cheyava Falls.
 
-**Suit model** (`suitModel.js`). The suit is NASA's xEMU design: 771 g of usable primary oxygen, a 756 Wh battery, 8 hours maximum and 4.3 psi. Walking power comes from Minetti et al. 2002 (13 gradient values, 1.64 J/kg/m on the level), scaled to Mars gravity and calibrated to NASA's suited tests at 3/8 g. On a slope the astronaut slows to hold the same effort as flat walking (589 W), down to 0.3 m/s. The walk home gets Apollo 15's 20 % pad, and the margin holds Apollo 17's 30-minute reserve. MARGIN NOW is the smaller of two numbers. One is the oxygen margin, which is oxygen left minus the padded walk home and the reserve, divided by the current burn rate. The other is the time left before the 8-hour EVA cap, minus the walk home. Just outside the airlock the cap wins. On the first sortie of #282 the HUD reads +479 min there (Image 2.14), the Suit step +285 min and the debrief's lowest margin +224 min, while walking at 589 W. On `main`'s full EVA the same screens read +457 and +245 (`docs/CHALLENGE_FIT.md` in open PR #328). Two definitions of one number on two screens is a known problem (#323). The pitch's 13-minute margin comes from a different, SIM scenario, late in a long EVA with 205 g of oxygen left. A margin under 15 minutes raises a caution. At zero it raises a warning, and the crew turns back.
+**Suit model** (`suitModel.js`). The suit is NASA's xEMU design: 771 g of usable primary oxygen, a 756 Wh battery, 8 hours maximum and 4.3 psi. Walking power comes from Minetti et al. 2002 (13 gradient values, 1.64 J/kg/m on the level), scaled to Mars gravity and calibrated to NASA's suited tests at 3/8 g. On a slope the astronaut slows to hold the same effort as flat walking (589 W), down to 0.3 m/s. The walk home gets Apollo 15's 20 % pad, and the margin holds Apollo 17's 30-minute reserve. MARGIN NOW is the smaller of two numbers. One is the oxygen margin, which is oxygen left minus the padded walk home and the reserve, divided by the current burn rate. The other is the time left before the 8-hour EVA cap, minus the walk home. Just outside the airlock the cap wins. On the first sortie the HUD reads +479 min there (Image 2.14), the Suit step +285 min and the debrief's lowest margin +224 min, while walking at 589 W. On the full EVA the same screens read +457 and +245, measured before #282 merged (`docs/CHALLENGE_FIT.md`, #328). Two definitions of one number on two screens is a known problem (#323). The pitch's 13-minute margin comes from a different, SIM scenario, late in a long EVA with 205 g of oxygen left. A margin under 15 minutes raises a caution. At zero it raises a warning, and the crew turns back.
 
 The xEMU was designed for the Moon. Its CO2 scrubber and cooler vent to vacuum, and Mars has about 700 Pa of CO2, so on Mars CO2 or heat could end a walk before oxygen does. We model oxygen and battery only. The flat walking speed of 1.0 m/s is our assumption. NASA plans traverses at 2 km/h, so our walk times run 1.45 to 1.8 times shorter than NASA's planning pace.
 
@@ -145,7 +145,7 @@ The xEMU was designed for the Moon. Its CO2 scrubber and cooler vent to vacuum, 
 
 **Route review** (`routeReview.js`, PR #282). The EVA log keeps one track point every 2 m. A deviation starts 15 m off the approved path and ends back within 10 m. Each deviation gets its extra minutes, grams of oxygen, lowest margin and steepest slope. Then it gets one verdict. "Risky" means it crossed 20° or broke the reserve, "forced" means an event caused it, "worth it" means it reached a find or a sample, and "costly" covers the rest.
 
-Vitest runs the tests in Node, with no browser. `main` has 1,013 test cases in 126 files and the #282 branch has 1,402 in 152 files.
+Vitest runs the tests in Node, with no browser. `main` at `cfcf299` has 1,672 test cases in 170 files.
 
 ### Data processing
 
@@ -183,7 +183,13 @@ Perseverance's drives draw on top as a seventh, DATA-tagged overlay. We dropped 
 
 Cloudflare Workers serves the built `dist/` folder as static assets on the free plan. Every merge to `main` builds and deploys in about a minute. Every pull request gets its own preview URL, posted as a comment, so a change can be tried on a live link before it merges. The largest served file is 2.4 MB.
 
-Online play is in progress, not on `main`. One Durable Object per room code holds the room state, and the event engine's deterministic triggers keep every client's events in step. The room object, its client connection, shared markers and samples, and remote astronauts are merged into the `feat/online` branch (#252, #273, #280). The join screen and seat choice (#308) and the habitat seat, which sends routes and go or no-go calls to the surface crew (#306), are open pull requests. `main` already carries the Worker entry and the Room migration (#234).
+Online play is in progress, not on `main`. One Durable Object per room code holds the room state, and the event engine's deterministic triggers keep every client's events in step. The room object, its client connection, shared markers and samples, remote astronauts, and the join screen with its seat choice are merged into the `feat/online` branch (#252, #273, #280, #308). The habitat seat, which sends routes and go or no-go calls to the surface crew, is an open pull request against that branch (#306). `main` already carries the Worker entry and the Room migration (#234).
+
+### Presentation mode
+
+`?present=1` turns the app into the pitch (#330). One camera move falls from Mars orbit onto the engine's HiRISE terrain at Cheyava Falls. It crosses the Viking colour globe (MDIM 2.1), THEMIS day infrared at 100 m and the CTX mosaic at 6 m on the way down. Ten beats in `src/present/beats.js` each answer one judge question: where we are, why Cheyava Falls, the danger (the 8-hour suit limit and the 30-minute reserve), the 913 m route with its leg costs, the walkback zone, the radiation alert, the dust storm, the DATA, DERIVED and SIM tags, and the live app. In the alert the walkback zone drops from 14.3 ha to 1.1 ha. The last beat presses the start screen's own button, so the live demo starts with no reload.
+
+A clicker steps the beats. Right, Space, PageDown and Enter go forward, Left and PageUp go back, L switches English and Spanish and Esc leaves. Under `&autoplay=1` the ten beats run 111 seconds. One clock drives the globe, the engine and every label, so `scripts/present/record.mjs` records a frame-exact 1080p60 video for a backup. Every number on screen reads `public/present/plan.json`. `scripts/present/build-plan.mjs` writes that file by running the app's own cost grid, route planner and suit model, and the zone from `computeReturnZone`. That function lands with #335, which is still open, so only a rebuild of `plan.json` needs it. The committed file runs the presentation on `main` today. If WebGL fails, the presentation shows each beat's captions over a still image and the keys keep working. It loads as a separate chunk, so the normal app downloads none of it.
 
 ### Technologies used
 
@@ -191,15 +197,15 @@ JavaScript, React 19, Vite 8, three.js 0.187, Zustand 5, Web Workers, Web Audio 
 
 ## Results
 
-Marswalk runs at https://martian-map.fernando-haro-c.workers.dev. We built it in 126 merged pull requests. The screenshots below come from the build of pull request #282 (head `8ec6f72`), which is open and waiting for review. Each caption marked #282 or #290 shows something the live app does not have until that pull request merges. #290, also open, builds on #282 and starts the EVA inside the habitat. Captions with no mark show features already on `main`, though the screens around them carry #282's layout. We took every screenshot from the running app at 1366 × 768 in Chrome on an RTX 3070. None is a mockup.
+Marswalk runs at https://martian-map.fernando-haro-c.workers.dev. By 8:52 PST on 15 November we had merged 142 pull requests into `main`. The screenshots below come from pull request #282 at `8ec6f72`, which merged into `main` as `cfcf299`. Captions marked #290 show the habitat-first flow, which starts the EVA inside the habitat and is still an open pull request. Two later merges changed screens after we took them. #331 put the Walk HUD on the #232 design system, and #346 made EV2 a crewmate. We took every screenshot from the running app at 1366 × 768 in Chrome on an RTX 3070. None is a mockup.
 
 The demo runs the first mission, a 55 m sortie from the airlock to a light-toned patch, with the dust storm and the radiation alert brought forward so both play before the crew is home. Walking speed stays at 1.0 m/s and the clock runs at real time. Only the event times are shortened, and they are tagged SIM. A player reaches the debrief in about 3.5 minutes.
 
 ![Image 2.1. Start screen.](img/01-start.jpg)
 
-*Image 2.1. Start screen. The two-mission choice needs #282.*
+*Image 2.1. Start screen.*
 
-The start screen offers two missions. "Open the mission table" starts the first sortie. "Full EVA · Sample Cheyava Falls" starts the full walk: 934 m out from the habitat by Bright Angel to the rock on the fastest profile. The walk home from Cheyava Falls is 913 m by the route, the figure the pitch uses. `main` has only the full EVA. Controls and Sources are one click away. The background video is artwork generated with Higgsfield, an SI tool (SI, Super Intelligence, is the 2026 Space Apps term for AI), and the caption on screen says so. It is not a mission image.
+The start screen offers two missions. "Open the mission table" starts the first sortie. "Full EVA · Sample Cheyava Falls" starts the full walk: 934 m out from the habitat by Bright Angel to the rock on the fastest profile. The walk home from Cheyava Falls is 913 m by the route, the figure the pitch uses. Controls and Sources are one click away. The background video is artwork generated with Higgsfield, an SI tool (SI, Super Intelligence, is the 2026 Space Apps term for AI), and the caption on screen says so. It is not a mission image.
 
 ![Image 2.2. Mission table, Site step.](img/02-site.jpg)
 
@@ -209,7 +215,7 @@ The mission table has four steps: Site, Route, Hazards and Suit. Site answers "w
 
 ![Image 2.3. Route step with the Terrain layer, goal "Sample Cheyava Falls", cautious risk.](img/03-route-terrain.jpg)
 
-*Image 2.3. Route step with the Terrain layer, goal "Sample Cheyava Falls", cautious risk. Needs #282.*
+*Image 2.3. Route step with the Terrain layer, goal "Sample Cheyava Falls", cautious risk.*
 
 The Route step plans from the crew's needs on the left. With a pair, 2 hours and cautious risk, the planner keeps both stops: Bright Angel, then Cheyava Falls. On the fastest profile at cautious risk the route is 0.94 km with 55 minutes out, a 29 m climb and a 20° steepest point. At cautious risk the Terrain layer paints 12° to 20° amber and over 20° red. The route bends around the red bands, which is why it is not a straight line. The summary names time as the tightest limit, with 14 minutes to spare.
 
@@ -223,7 +229,7 @@ The Rocks layer shows the rock cover that a cautious plan prices higher. The Out
 
 ![Image 2.5. Radio layer with a crew of one.](img/06-layer-radio.jpg)
 
-*Image 2.5. Radio layer with a crew of one. Needs #282.*
+*Image 2.5. Radio layer with a crew of one.*
 
 Switching the crew to one astronaut changes the plan. A solo walker must stay in radio contact, so the planner walks the radio profile. Blue marks ground the habitat mast cannot see. The route now follows the channel and is out of contact for 21 % of its length, against 76 % on the fastest line. A solo astronaut also works 1.5 times as long at each stop. Bright Angel no longer fits the 2-hour budget, and the stop list says "left out: 5 min over your time".
 
@@ -231,7 +237,7 @@ Switching the crew to one astronaut changes the plan. A solo walker must stay in
 |---|---|
 | ![Image 2.6a. Exposure layer.](img/07-layer-exposure.jpg) | ![Image 2.6b. Perseverance's drives.](img/08-layer-rover.jpg) |
 
-*Image 2.6. Exposure layer (left, needs #282) and Perseverance's drives (right).*
+*Image 2.6. Exposure layer (left) and Perseverance's drives (right).*
 
 Exposure shows the sky view of each cell, from 0.82 to 1.00. In a solar particle event the dose scales with visible sky, so this layer decides which shelter a re-plan picks. The white lines are Perseverance's 47 real drives from sols 1140 to 1266. The cautious risk setting prefers ground the rover already drove.
 
@@ -239,7 +245,7 @@ Exposure shows the sky view of each cell, from 0.82 to 1.00. In a solar particle
 |---|---|
 | ![Image 2.7a. Plan A: solo, cautious, 100 minutes.](img/09-plan-a.jpg) | ![Image 2.7b. Plan B: pair, bold, 2 hours.](img/10-plan-b.jpg) |
 
-*Image 2.7. Two plans from different needs. Needs #282.*
+*Image 2.7. Two plans from different needs.*
 
 Plan A is a solo crew, cautious, with 100 minutes. It walks 0.88 km to Cheyava Falls only and leaves Bright Angel out for time. Plan B is a pair, bold, with 2 hours. It walks 0.91 km to both stops.
 
@@ -263,7 +269,7 @@ The Hazards step lists the three events for this run, with when each one comes, 
 
 ![Image 2.11. Suit step with the conditions outlook and the go decision.](img/14-suit-go.jpg)
 
-*Image 2.11. Suit step with the conditions outlook and the go decision. The outlook needs #282.*
+*Image 2.11. Suit step with the conditions outlook and the go decision.*
 
 The Suit step is the go or no-go. The outlook shows MEDA pressure and temperature for the planned local time, dust opacity and a 224-minute space weather warning. The budget bars split time, oxygen and battery into way out, work, way back and spare. For the first sortie the verdict is Go, with time as the tightest limit (21 minutes to spare) and +285 minutes of oxygen margin over the 30-minute reserve. The Z-2 suit is NASA's 3D model, and the numbers come from the xEMU documents.
 
@@ -321,13 +327,13 @@ Fifteen seconds after the storm, the radiation alert takes over the banner, and 
 
 *Image 2.21. EV2 brings the sample case.*
 
-EV2, the partner astronaut, walks with the crew and keeps within the 100 m separation limit (caution from 80 m). F calls EV2 with the sample case. Where EV2 sets it down, the astronaut pours in a second sample. EV2 runs on a partner source interface, so a second human player can take the role in online play.
+EV2 is a crewmate with its own decisions (#346). A state machine in `src/sim/crewmate.js` walks the approved route with the astronaut. It steers at a point 3 m ahead on the route, never at the player, so it does not turn round when the player does. It waits 5 m away when the astronaut stops and steps to the gentler side of any slope of 15° or more ahead. At a science stop it sets the tool case down 1.6 m beside the astronaut. Events change what it does. In the dust storm it closes to 3 m behind. In the radiation alert it leads the way to the shelter, 5 m ahead. When its own margin drops under 15 minutes it says so and turns for home. It calls each of these out on the radio, in English or Spanish, and only with line of sight to the habitat. The separation limit stays 100 m, with a caution from 80 m. F calls EV2 with the case, and the astronaut pours a second sample into it. A crew of one has no EV2. EV2 runs on a partner source interface (`docs/PARTNER.md`), so a second human player can take the role in online play. Image 2.21 predates #346.
 
 | | |
 |---|---|
 | ![Image 2.22a. Debrief.](img/27-debrief.jpg) | ![Image 2.22b. Route review.](img/28-review.jpg) |
 
-*Image 2.22. Debrief with the route review (left) and the verdict rules (right). The route review needs #282.*
+*Image 2.22. Debrief with the route review (left) and the verdict rules (right).*
 
 Back inside, the debrief gives the run: 3 min 37 s outside, 171 m walked, 2 samples, 0.57 µGy of dose and a lowest oxygen margin of +224 min. The dose is the game's compressed event, not what the 2017 event delivered (#295). The route review draws the walked track (green and orange) over the approved plan. It reported "1 deviation: 1 worth it. +20 s and +1 g O2 over the plan" for the detour to the find. The right image is the review's key. It gives one rule per verdict, checked in a fixed order.
 
@@ -349,7 +355,7 @@ The pipeline takes a HiRISE DTM as input, and the HiRISE team publishes DTMs of 
 
 **Creativity.** Mars Trek and the USGS geologic maps answer "what is here?". Marswalk answers "can I get there and back on what is in my tank?", and it re-asks the question as the astronaut walks. A replayed NASA solar storm changes the route. NASA's suit numbers set the turnaround point. A crew of one gets a different mission from a crew of two (Images 2.5 and 2.7). The walked-route review judges the crew's decisions after the walk (Image 2.22).
 
-**Validity.** We checked 109 numbers against their primary sources (Appendix A). 72 match, 7 round to the source and 11 are our stated assumptions tagged SIM. 14 carry the wrong tag, page or wording, 2 are wrong on screen, and 3 come from a paper the publisher would not let us open. The audit is `docs/VALIDITY.md` in open PR #314. The 16 problems are grouped into 9 issues (#293 to #300 and #311), each with the source and the corrected value. Our grid reproduces the HiRISE model that NASA Mars Trek serves to 0.14 m RMS over 564,001 nodes (Image 1.2). The app has 1,402 unit tests on the #282 branch, and CI runs them on every pull request. We also list what the app does not do. It has no live data, no Earth-Mars delay and no radiation measured at Jezero.
+**Validity.** We checked 109 numbers against their primary sources (Appendix A). 72 match, 7 round to the source and 11 are our stated assumptions tagged SIM. 14 carry the wrong tag, page or wording, 2 are wrong on screen, and 3 come from a paper the publisher would not let us open. The audit is `docs/VALIDITY.md` (#314). The 16 problems are grouped into 9 issues (#293 to #300 and #311), each with the source and the corrected value. Our grid reproduces the HiRISE model that NASA Mars Trek serves to 0.14 m RMS over 564,001 nodes (Image 1.2). The app has 1,672 unit tests on `main`, and CI runs them on every pull request. We also list what the app does not do. It has no live data, no Earth-Mars delay and no radiation measured at Jezero.
 
 **Relevance.** The statement asks for a layered view of one route, built from several NASA missions, that helps an astronaut plan and carry out a marswalk while doing science. Marswalk covers each part with a named source:
 
@@ -360,29 +366,29 @@ The pipeline takes a HiRISE DTM as input, and the HiRISE team publishes DTMs of 
 - A route around obstacles, in part: the planner closes ground over 20°, so it avoids scarps and steep outcrops. Rock cover comes from a brightness proxy, so no single boulder is avoided, and the fastest route crosses a ripple field Perseverance drove around (#311, #322).
 - Habitat and visor displays: the mission table and the HUD.
 - Rover point-of-view images: the stop cards.
-- Astronauts in pairs: EV2, a scripted partner that follows, keeps within 100 m and carries the sample case. It does no science of its own.
+- Astronauts in pairs: EV2 walks the approved route with the astronaut, leads to shelter in the radiation alert, closes in during the storm and carries the sample case (#346). It does no science of its own.
 
 Of the five official challenge resources, it uses one directly, the Perseverance raw images, on the stop cards and as the colour reference. We also checked our terrain against the HiRISE DEM that Mars Trek serves, and took the traverse from JPL's MMGIS layers rather than from Mars Trek itself.
 
-**Presentation.** The team presents a 5-minute pitch with a live demo [confirm: the organisers' page still says 3 minutes]. The script is `docs/pitch/script-5min-en.md` (open PR #329), and the live demo runs 2 minutes 25 seconds of it. The layer legends, beat lines and tags explain each screen, so the demo reads with the sound off. The pitch opens on one thesis: "On Mars, the question isn't where you can go. It's where you can go and still get home."
+**Presentation.** The team presents a 5-minute pitch with a live demo [confirm: the organisers' page still says 3 minutes]. The script is `docs/pitch/script-5min-en.md` (open PR #329), and the live demo runs 2 minutes 25 seconds of it. The team presents from the app itself, in presentation mode (`?present=1`, #330), and its last beat hands over to the live demo. The layer legends, beat lines and tags explain each screen, so the demo reads with the sound off. The pitch opens on one thesis: "On Mars, the question isn't where you can go. It's where you can go and still get home."
 
 ## Future work
 
 1. **Fix the audit's open issues before anything else.** Set the elevation profile's no-go to 20° (#293), the Sun's declination for sol 1210 (#294) and the radiation event's tags (#295).
 2. **Show the walkback zone on the map.** The pitch already draws it with two Dijkstra passes over our cost grid, one from home over reversed edges and one from the astronaut. A cell is in the zone when walk out + walk back + reserve ≤ oxygen left. The live map version is in progress.
-3. **Merge online play.** One surface crew and one habitat seat per room on Cloudflare Durable Objects (#306, #308).
+3. **Merge online play.** One surface crew and one habitat seat per room on Cloudflare Durable Objects. That means merging #306 into `feat/online`, then `feat/online` into `main`.
 4. **Heart rate in the loop.** Feed a wearable heart rate sensor into the suit model, so oxygen use follows the walker's real effort instead of the SIM constant-effort rule.
 5. **A second site.** Run the pipeline on Curiosity's boxwork terrain at Mount Sharp, the example in the challenge statement, to prove it works beyond Jezero.
 
 ## Team contributions
 
-The six of us are Teresa Rivas Gómez, Andrea Rivas Gómez, Fernando Haro Calvo, Jorge Antonio Vazquez Guzmán, Antonio Ramos Gonzalez and Brayan Iván Pérez Ventura. Between 8:47 and 22:38 PST on 14 November we merged 126 pull requests into `main`. 38 of them got a review from a teammate on GitHub, 33 of those an approval. The other 88 merged without one. CI arrived with #81 at 11:06. Before that, #3, #75 and #80 merged with no CI run, and after it #118, #163 and #182 merged with "Lint and build" failing. The paragraphs below come from that history.
+The six of us are Teresa Rivas Gómez, Andrea Rivas Gómez, Fernando Haro Calvo, Jorge Antonio Vazquez Guzmán, Antonio Ramos Gonzalez and Brayan Iván Pérez Ventura. Between 8:47 and 22:38 PST on 14 November we merged 126 pull requests into `main`. 38 of them got a review from a teammate on GitHub, 33 of those an approval. The other 88 merged without one. By 8:52 on 15 November the count was 142, with 53 reviewed and 48 approved. CI arrived with #81 at 11:06. #1, #3, #75 and #80 merged with no checks at all, and #76, #77 and #82 had no "Lint and build" run. #118, #163 and #182 merged with "Lint and build" failing. The Cloudflare "Workers Builds" check failed on 20 merged pull requests, all before 22:38 on 14 November. The paragraphs below come from that history.
 
 **Teresa Rivas Gómez (UI/UX and 3D art).** In Blender she made the HiRISE terrain tile, the rigged and animated Z-2 astronaut, the habitat interior on NASA's Habitat Demonstration Unit, and the original three.js test bench that loads them. Brayan ported the engine from that test bench, and the first asset commit came through Andrea's account. She moved the Blender sources into Git LFS (#108) and wrote the export script that keeps the mesh and the height grid in step (#115). She modelled the layered outcrop at Bright Angel, a 6.7 × 3.4 m rock with about 60 thin beds and three detail levels (#148). She designed the Figma HUD and the mission table. She then built the table's four steps, the start, pause, controls and sources screens in the new design (#232), the helmet visor frame with alert rings (#264), the walk controls card (#271) and the Settings view (#272). She generated the start screen video and the hazard illustrations with Higgsfield (#232, #259).
 
 **Andrea Rivas Gómez (graphics, effects and audio) [confirm role].** Andrea wrote the graphics and audio that follow the simulation state. She drew the planned route as a visor projection on the ground (#97) and highlighted the chosen shelter (#114). She built the dust storm from one dust level that drives particles, sky and light (#124, #151, #165). She added boot prints that stay on the ground (#141) and the slope grid and dust plume when sampling (#176). She rendered the layer preview images with the engine itself (#187) and drew the habitat wall screens from mission data (#230). She made the Sun and sky follow mission time and dust opacity (#237). She wrote all of the suit audio in code with the Web Audio API: fans, breathing, footsteps, wind, dosimeter and radio (#243). She also fixed how an EVA ends at the habitat (#251).
 
-**Fernando Haro Calvo (full stack and data).** He set up Cloudflare deploys with a preview per pull request (#83, #234) and researched the sourced hazard numbers behind the suit, dust and radiation models (#85, #88). He wrote the MEDA and RAD pipelines (#116), the shelters from terrain sky view (#96), the time, oxygen and battery per leg (#107) and the science stops (#109, #144). He checked the terrain against Mars Trek (#119). He built the provenance registry, the SourceTag component and the Sources screen (#138, #140, #118). He added the partner panel and separation limit (#171) and the find marking with its detour price (#215), and he made 15 fixes and additions to the HUD, map, terrain and storm lighting (#209 to #224). He leads online play on Durable Objects (#252, #273, #280, open #306 and #308) and the habitat-first flow (open #290).
+**Fernando Haro Calvo (full stack and data).** He set up Cloudflare deploys with a preview per pull request (#83, #234) and researched the sourced hazard numbers behind the suit, dust and radiation models (#85, #88). He wrote the MEDA and RAD pipelines (#116), the shelters from terrain sky view (#96), the time, oxygen and battery per leg (#107) and the science stops (#109, #144). He checked the terrain against Mars Trek (#119). He built the provenance registry, the SourceTag component and the Sources screen (#138, #140, #118). He added the partner panel and separation limit (#171) and the find marking with its detour price (#215), and he made 15 fixes and additions to the HUD, map, terrain and storm lighting (#209 to #224). He leads online play on Durable Objects (#252, #273, #280 and #308 on `feat/online`, open #306) and the habitat-first flow (open #290). On 15 November he merged EV2 the crewmate (#346), the presentation mode (#330), the Walk HUD on the #232 system (#331), the source audit (#314), the rules and submission drafts (#315, #316) and the challenge fit (#328).
 
 **Jorge Antonio Vazquez Guzmán (backend and analyst: route planner and events).** Jorge wrote the code that decides where the crew can walk. He wrote the walkability cost grid (#76), the A* planner in a Web Worker (#77), the re-plan to the cheapest shelter (#79) and the data-driven event engine (#80). He built the first top-down map with layers and the route panel (#104, #106). He built the dust storm, radiation and low-oxygen events (#110, #111, #120) and re-planning when the walker leaves the route (#122), with a benchmark for re-plan time (#133). He added the elevation profile, the slope no-go warning with its detour, and the radio link and shadow layer (#143, #146, #156). He built the navigation drift model with terrain fixes and radio ranging (#229). He dropped the geology layer after measuring USGS SIM 3464 against our tile (#233), and he removed labels that overstated the data (#255). He also drove the legs, arm swing and prints from distance walked (#253) and loaded every asset behind the start screen (#275).
 
@@ -462,7 +468,7 @@ three.js, React and Zustand (MIT). Barlow, Barlow Condensed and IBM Plex Mono (S
 
 ### Appendix A. Measured versus simulated
 
-Every number in Marswalk carries one of three tags. The audit in `docs/VALIDITY.md` (PR #314) checked 109 of them against their primary sources on `main` at `013f2d5`.
+Every number in Marswalk carries one of three tags. The audit in `docs/VALIDITY.md` (#314) checked 109 of them against their primary sources on `main` at `013f2d5`.
 
 | Verdict | Count |
 |---|---|
@@ -511,8 +517,8 @@ What Marswalk does not use or model: CRISM, THEMIS, a geology map, the Earth-Mar
 
 We built Marswalk with SI tools and checked their output ourselves.
 
-- **Code.** AI coding agents (Claude Code) wrote most of the code from our issues. After 10:02 PST on 14 November every change reached `main` through a pull request. Before that, the repository setup, the asset import and two commits of agent skills went in directly. CI checks start with #81 at 11:06, so #3, #75 and #80 merged with none, and #118, #163 and #182 merged with "Lint and build" failing. A teammate reviewed 38 of the 126 pull requests merged into `main` by 22:38 PST on 14 November. The other 88 merged without a teammate review.
-- **Research.** AI research agents found and opened the NASA reports and papers behind our numbers. An audit run with AI agents and reviewed by us checked 109 numbers on screen against their sources (`docs/VALIDITY.md`, open PR #314).
+- **Code.** AI coding agents (Claude Code) wrote most of the code from our issues. After 10:02 PST on 14 November every change reached `main` through a pull request. Before that, the repository setup, the asset import and two commits of agent skills went in directly. CI checks start with #81 at 11:06. #1, #3, #75 and #80 merged with no checks, #76, #77 and #82 with no "Lint and build" run, and #118, #163 and #182 with "Lint and build" failing. The Cloudflare "Workers Builds" check failed on 20 merged pull requests. A teammate reviewed 38 of the 126 pull requests merged into `main` by 22:38 PST on 14 November, and the other 88 merged without a teammate review. By 8:52 PST on 15 November, 53 of 142 had a teammate review.
+- **Research.** AI research agents found and opened the NASA reports and papers behind our numbers. An audit run with AI agents and reviewed by us checked 109 numbers on screen against their sources (`docs/VALIDITY.md`, #314).
 - **Writing.** Language models helped write the documentation, the Spanish translation and this report.
 - **Images and video.** The start screen video, its poster and the three hazard illustrations were generated with Higgsfield. They are artwork, not mission images, contain no NASA marks, and are captioned or credited as AI-generated. A visible "SI-generated" watermark on each is tracked in #301. [confirm: update this line once #301 is done]
 - **Ideation.** One of us worked through the challenge choice and the concept with a conversational assistant on 13 November.
@@ -527,6 +533,7 @@ The repository opened at 8:47 on 14 November (`710ed48`), with the Vite scaffold
 - App: https://martian-map.fernando-haro-c.workers.dev
 - Repository: https://github.com/JVPresti/NasaSpaceApps-MartianMap [confirm: public before submission]
 - Figma: [confirm: add the link]
-- Demo script and measurement: `docs/DEMO.md` (PR #282)
-- Validity audit: `docs/VALIDITY.md` (open PR #314)
+- Demo script and measurement: `docs/DEMO.md` (#282)
+- Presentation mode: https://martian-map.fernando-haro-c.workers.dev/?present=1 (#330)
+- Validity audit: `docs/VALIDITY.md` (#314)
 - Credits and licences: `docs/credits.md`
