@@ -67,6 +67,29 @@ describe('stopCatalogue and crewmateSense', () => {
     expect(sense.path).toBe(s.route.path);
   });
 
+  it('treats the place of a sampling task as a stop: a known stop by its catalogue entry, a clicked point by itself (#352)', () => {
+    const s = createInitialState();
+    s.route.waypoints = [
+      { name: 'HAB', x: 535.1, z: 574.1 },
+      { name: 'P1 · task point', label: 'P1', x: 470, z: 560, stopId: null, required: true, place: 'P1', tasks: ['t2'], arrivalRadiusM: 8, workSec: 240 },
+      { name: 'WP3 · Bright Angel outcrop', label: 'Bright Angel', x: -11, z: -50, stopId: 'bright-angel', required: true, place: 'bright-angel', tasks: ['t1'], workSec: 480 },
+      { name: 'WP9 · a route point', x: 100, z: 100 },
+    ];
+    s.route.nextIndex = 1;
+    s.navigation.waypointRangeM = 12;
+    const sense = crewmateSense(s, stopCatalogue(STOPS_282));
+    expect(sense.stops).toEqual([
+      { id: 'P1', name: 'P1', x: 470, z: 560, radiusM: 8 },   // its 8 m, more than the 5 m stop radius
+      { id: 'bright-angel', name: 'Bright Angel', x: -11, z: -50, radiusM: 5 },
+    ]);
+    expect(sense.nextStop).toEqual({ name: 'P1', rangeM: 12 });
+    // a point without its own radius still counts within the stop radius; a plain route point is no stop
+    s.route.waypoints[1] = { ...s.route.waypoints[1], arrivalRadiusM: undefined };
+    expect(crewmateSense(s, stopCatalogue(STOPS_282)).stops[0].radiusM).toBe(5);
+    s.route.nextIndex = 3;
+    expect(crewmateSense(s, stopCatalogue(STOPS_282)).nextStop).toBeNull();
+  });
+
   it('has no stops on main\'s route.json walk until the route reaches a science stop', () => {
     const s = createInitialState();
     s.route.waypoints = [{ name: 'HAB', x: 520, z: 600 }, { name: 'WP1 · channel floor', x: 330, z: 300 }, { name: 'Cheyava Falls', x: 0, z: 0 }];
