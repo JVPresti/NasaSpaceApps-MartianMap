@@ -37,12 +37,12 @@ describe('beat lines (#265)', () => {
     expect(catalogs.en['mission.beat.plan']).toMatch(/HiRISE/);
   });
 
-  it('never says GPS, and keeps each Walk beat on one line beside the HUD at 1366 px (about 92 characters)', () => {
+  it('never says GPS, and keeps each Walk beat on one line beside the HUD at 1366 px (about 76 characters, clear of the NAV box in Spanish)', () => {
     for (const language of ['en', 'es']) {
       for (const beat of MISSIONS.first.beats) expect(catalogs[language][beat.text]).not.toMatch(/GPS/);
       for (const id of ['walk', 'dust-storm', 'radiation']) {
         const beat = MISSIONS.first.beats.find((entry) => entry.id === id);
-        expect(catalogs[language][beat.text].length).toBeLessThanOrEqual(92);
+        expect(catalogs[language][beat.text].length).toBeLessThanOrEqual(76);
       }
     }
   });
