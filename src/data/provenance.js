@@ -126,6 +126,15 @@ export const STORE_PATHS = Object.freeze({
   'route.shelter': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'shelters.json: sky view ray cast on the HiRISE height grid', from: HIRISE },
   'route.decision': sim('go or no-go chosen by the crew'),
   'route.skipped': sim('waypoints the event route leaves out'),
+  // route profiles compared on the mission table (#245, src/sim/routeProfiles.js); time and oxygen as route.totals
+  'route.profile': sim('route profile chosen by the crew at the mission table'),
+  'route.profiles.distanceM': PLANNER,
+  'route.profiles.steepestSlopeDeg': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'slope of the HiRISE height map, sampled every metre along the route', from: HIRISE },
+  'route.profiles.overCautionM': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'route length on HiRISE slopes over the 15 degree caution limit', from: HIRISE },
+  'route.profiles.shadowShare': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'line of sight on the HiRISE height map from the suit to the habitat mast', from: HIRISE },
+  'route.profiles.weights': sim('profile weights are our choice: slope cubed for the gentlest, three times the cost out of sight of the mast for radio contact'),
+  'route.profiles.timeSec': LEG_TIME,
+  'route.profiles.o2G': LEG_O2,
   ...prefixed('route.legs.', LEG_FIELDS),
   ...prefixed('route.totals.', TOTAL_FIELDS),
 

@@ -12,6 +12,7 @@ import { SLOPE_LIMITS } from './layers.js';
 
 const BASE = import.meta.env.BASE_URL + 'marswalk/assets/';
 const PIXELS = 768;
+const NO_ALTERNATIVES = [];
 
 let dataRequest = null;
 
@@ -64,9 +65,11 @@ function markerLabel(name, index) {
  *   science: waypoint names with a science stop, their markers drawn in the route colour
  *   route: false shows only the start and the target (the Site step), without the route or the stops between
  *   legs: route.legs, for the distance and time to each stop; onScience: opens a stop's science card
+ *   alternatives: [{ id, path }] the route profiles not in use (#245), dashed in their colours under the route;
+ *   routeClass: class on the route line, for the colour of the profile in use
  * Clicking a stop opens a small window with its height, slope and the leg that reaches it.
  */
-export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null }) {
+export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, alternatives = NO_ALTERNATIVES, routeClass = '' }) {
   const canvasRef = useRef(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -79,7 +82,8 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
 
   const tile = data ? { width: data.terrain.width, depth: data.terrain.depth } : { width: 1422.5, depth: 1500 };
   const pathPoints = useMemo(() => (path ?? []).map(([x, z]) => ({ x, z })), [path]);
-  const fit = useMemo(() => mapCrop([...waypoints, ...pathPoints], tile), [waypoints, pathPoints, tile.width, tile.depth]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const altPoints = useMemo(() => alternatives.flatMap((a) => a.path.map(([x, z]) => ({ x, z }))), [alternatives]);
+  const fit = useMemo(() => mapCrop([...waypoints, ...pathPoints, ...altPoints], tile), [waypoints, pathPoints, altPoints, tile.width, tile.depth]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [view, setView] = useState(null);   // null: framed on the route
   const [open, setOpen] = useState(null);   // index of the stop whose details are open
   const crop = view ?? fit;
@@ -133,7 +137,8 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
     return () => window.removeEventListener('keydown', onKey, true);
   }, [open]);
 
-  const line = (pathPoints.length > 1 ? pathPoints : waypoints).map((p) => toMap(p.x, p.z, crop).map((v) => v.toFixed(2)).join(',')).join(' ');
+  const toLine = (points) => points.map((p) => toMap(p.x, p.z, crop).map((v) => v.toFixed(2)).join(',')).join(' ');
+  const line = toLine(pathPoints.length > 1 ? pathPoints : waypoints);
   const last = waypoints.length - 1;
 
   return (
@@ -149,8 +154,11 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
     >
       <canvas ref={canvasRef} width={PIXELS} height={PIXELS} role="img" aria-label={title} />
       <svg className="table-map-marks" viewBox="0 0 100 100" aria-hidden="true">
+        {route && alternatives.map((a) => (
+          <polyline key={a.id} points={toLine(a.path.map(([x, z]) => ({ x, z })))} className={'map-route-alt profile-' + a.id} />
+        ))}
         {route && line && <polyline points={line} className="map-route-shadow" />}
-        {route && line && <polyline points={line} className="map-route" />}
+        {route && line && <polyline points={line} className={routeClass ? 'map-route ' + routeClass : 'map-route'} />}
       </svg>
       {/* Stops as numbered markers with a label, as on the 3D plan map: HTML, so the text stays sharp at any zoom. The
           numbers are the app's one numbering (#220, src/sim/waypointNumber.js): HAB is 0 and WP1 is 1. */}

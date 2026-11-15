@@ -17,7 +17,7 @@ export function createInitialState() {
     },
     suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
     navigation: { x: null, z: null, trueX: null, trueZ: null, headingDeg: null, slopeDeg: null, waypointRangeM: null, waypointBearingDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // x/z: the estimate the HUD shows (#42); trueX/trueZ: the true position, engine bridge only
-    route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [] },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js
+    route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [], profiles: null, profile: 'fastest' },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js; profiles and profile: the routes the table compares and the one chosen (#245, src/sim/routeProfiles.js)
     environment: { dustOpacity: 0, tempC: null, windMs: null, pressurePa: null, doseRateUgyH: null, doseUgy: null },
     // Active hazard areas for the minimap (#60): [{ id, x, z, radiusM, active }], metres. Empty means
     // "no zone known", not "safe". No writer yet; the event work (#24-#26) fills it. The minimap draws
@@ -102,6 +102,37 @@ export const setRoutePath = (path) => storeAdapter.set('route.path', path);
 export const setRouteDecision = (decision) => {
   if (!['pending', 'go', 'no-go'].includes(decision)) throw new Error('route decision must be pending, go or no-go');
   storeAdapter.set('route.decision', decision);
+};
+/**
+ * The route with one of its planned profiles (#245) as the route to walk: the path and the planner's numbers. Walk,
+ * the per-leg costs (src/sim/legCosts.js) and go / no-go all follow route.path. Null when that profile has no route.
+ * @param {object} route the store's route
+ * @param {string} id profile id (src/sim/routeProfiles.js)
+ * @returns {object | null}
+ */
+export function withRouteProfile(route, id) {
+  const profile = route?.profiles?.[id];
+  if (!profile?.ok || !Array.isArray(profile.path) || profile.path.length < 2) return null;
+  return {
+    ...route,
+    profile: id,
+    path: profile.path,
+    distanceM: profile.distanceM,
+    climbM: profile.climbM,
+    steepestSlopeDeg: profile.steepestSlopeDeg,
+    etaSec: profile.timeSec,
+    reason: 'Planned route',
+    nextIndex: 0,
+    visited: [],
+  };
+}
+/** Choose a route profile at the mission table (#245). Does nothing when that profile has no route. */
+export const chooseRouteProfile = (id) => {
+  useMissionStore.setState((state) => {
+    if (state.route.profile === id && state.route.path === state.route.profiles?.[id]?.path) return state;
+    const route = withRouteProfile(state.route, id);
+    return route ? { route } : state;
+  });
 };
 /** Switch an event on or off for this run (mission table, #11). Read once, when the EVA's event runner starts. */
 export const setHazardEnabled = (eventId, enabled) => {
