@@ -1,0 +1,22 @@
+/* The sources screen on phones and tablets (#365). Only inside media queries, so a desktop window keeps sources.css. */
+
+@media (max-width: 900px), (max-height: 500px) {
+  .sources {
+    width: calc(100vw - 16px - env(safe-area-inset-left) - env(safe-area-inset-right));
+    height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+  /* one scroll for the whole screen: the statement and the cards together, so the cards never shrink to nothing */
+  .sources-frame { padding: 18px 16px 0; overflow-y: auto; overscroll-behavior: contain; }
+  .sources-head { gap: 12px; }
+  .sources-head h2 { font-size: 32px; }
+  .sources-statement { padding: 14px 0 12px; }
+  .sources-body { flex: none; overflow: visible; margin: 0; padding: 0 0 calc(20px + env(safe-area-inset-bottom)); }
+}
+
+@media (pointer: coarse) {
+  .sources-close { min-height: 44px; min-width: 44px; }
+  .sources-entry .sources-licence,
+  .sources-entry a,
+  .sources-notes { font-size: 14px; }
+  .sources-entry a { display: inline-flex; align-items: center; min-height: 44px; }
+}

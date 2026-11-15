@@ -1,0 +1,20 @@
+/* The debrief and its route review on phones and tablets (#365). Only inside media queries, so a desktop window keeps
+   debrief.css. */
+
+@media (max-width: 900px), (max-height: 500px) {
+  .modal.debrief-dialog { width: calc(100% - 16px - env(safe-area-inset-left) - env(safe-area-inset-right)); }
+  .debrief-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px; }
+  .debrief-review-map .table-map { width: 100%; max-width: min(100%, 70dvh); height: auto; }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .debrief-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* small labels at a readable size on a phone */
+@media (pointer: coarse) {
+  .debrief-metric dt { font-size: 12px; }
+  .debrief-metric-note { font-size: 13px; }
+  .debrief-review-row { min-height: 44px; }
+  .debrief-review-map .table-map-fit { min-height: 44px; }
+}
