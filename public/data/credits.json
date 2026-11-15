@@ -157,7 +157,7 @@
         "https://www.uahirise.org/dtm/"
       ],
       "used_in": [
-        "Slope, elevation and route layers, cost grid and route planner",
+        "Terrain, radio shadow and sky exposure layers, cost grid and route planner",
         "public/data/shelters.json: shelters[SP1].values.dose_reduction",
         "public/data/shelters.json: shelters[SP1].values.route_from_hab",
         "public/data/shelters.json: shelters[SP1].values.sky_view_factor",
@@ -170,6 +170,7 @@
         "public/data/shelters.json: shelters[SP4].values.dose_reduction",
         "public/data/shelters.json: shelters[SP4].values.route_from_hab",
         "public/data/shelters.json: shelters[SP4].values.sky_view_factor",
+        "public/data/sky_view.json: ",
         "public/marswalk/assets/normal_ao.jpg",
         "public/marswalk/assets/terrain.json (751 x 751 heights)"
       ],

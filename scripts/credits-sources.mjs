@@ -128,7 +128,7 @@ export const CURATED = [
     used_in: [
       'public/marswalk/assets/terrain.json (751 x 751 heights)',
       'public/marswalk/assets/normal_ao.jpg',
-      'Slope, elevation and route layers, cost grid and route planner',
+      'Terrain, radio shadow and sky exposure layers, cost grid and route planner',
     ],
     match: ['https://www.uahirise.org/dtm/'],
   },
