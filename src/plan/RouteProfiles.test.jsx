@@ -2,10 +2,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setLanguage } from '../i18n/index.js';
 
-// Server rendering reads the store's initial state, so the mock store starts with three planned profiles, the
-// gentlest in use.
+// The mock store has three planned profiles, the gentlest in use; mock.patch changes the snapshot for one test.
+const mock = vi.hoisted(() => ({ patch: (state) => state }));
 vi.mock('../state/store.js', async () => {
-  const { create } = await import('zustand');
   const { createInitialState } = await vi.importActual('../state/store.js');
   const base = createInitialState();
   const profile = (id, d, t, o2, steep, over, shadow) => ({
@@ -26,14 +25,14 @@ vi.mock('../state/store.js', async () => {
       'route.profiles.distanceM': terrain, 'route.profiles.timeSec': suit, 'route.profiles.weights': { tag: 'SIM', source: 'ours' },
     },
   };
-  return { useMissionStore: create(() => state), chooseRouteProfile: vi.fn() };
+  return { useMissionStore: (selector) => selector(mock.patch(state)), chooseRouteProfile: vi.fn() };
 });
 
 const { default: RouteProfiles } = await import('./RouteProfiles.jsx');
 const render = (props) => renderToStaticMarkup(<RouteProfiles {...props} />);
 const text = (html) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 
-afterEach(() => setLanguage('en'));
+afterEach(() => { setLanguage('en'); mock.patch = (state) => state; });
 
 describe('route profiles panel (#245)', () => {
   it('shows one column per profile, the one in use pressed', () => {
@@ -71,6 +70,19 @@ describe('route profiles panel (#245)', () => {
     const html = render({ locked: true });
     expect(html.match(/disabled=""/g)).toHaveLength(3);
     expect(text(html)).toContain('chosen before the EVA began');
+  });
+
+  it('keeps a solo crew on the radio route while it exists, and says why', () => {
+    const radio = { id: 'radio', ok: true, path: [[0, 0], [950, 0]], distanceM: 950, climbM: 30, steepestSlopeDeg: 19, overCautionM: 90, timeSec: 1200, o2G: 47, shadowShare: 0.2 };
+    mock.patch = (state) => ({ ...state, needs: { ...state.needs, crew: 1 }, route: { ...state.route, profiles: { ...state.route.profiles, radio }, path: radio.path } });
+    const html = render();
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Fastest/);
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Gentlest/);
+    expect(html).toMatch(/<button[^>]*aria-pressed="true"(?![^>]*disabled)[^>]*>Radio/);
+    expect(text(html)).toContain('A solo crew keeps radio contact');
+    // with no radio route (the mast not loaded yet) a solo crew may still choose
+    mock.patch = (state) => ({ ...state, needs: { ...state.needs, crew: 1 } });
+    expect(render().match(/disabled=""/g)).toHaveLength(1);
   });
 
   it('speaks Spanish', () => {
