@@ -10,9 +10,9 @@ import { acquireFigure, cachedFigure, dropFigure } from './suitFigureCache.js';
 //
 // One small renderer and one parsed model serve the whole session (#305, suitFigureCache.js). The first Suit step makes
 // them and later steps move the same canvas back in. Each step used to make a WebGL context, parse the GLB again and
-// compile its shaders. On the RTX 3070 (scripts/perf/plan.mjs) the second visit spent 164 ms in long tasks on main and
-// 601 ms on #282, and 0 ms with the cache. The renderer draws only while the step is open. A failed download or a
-// lost context drops the figure, so the next Suit step makes a new one.
+// compile its shaders. On the RTX 3070 (scripts/perf/plan.mjs, #305) the second visit ran 2 or 3 long tasks of 160 to
+// 710 ms in all on main and 2 on #282, and none with the cache. The renderer draws only while the step is open. A
+// failed download or a lost context drops the figure, so the next Suit step makes a new one.
 
 const MODEL = import.meta.env.BASE_URL + 'marswalk/assets_astronaut/z2_astronaut.glb';
 const HEIGHT_M = 1.94;   // astronaut.json
