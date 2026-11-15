@@ -29,7 +29,10 @@ export default function LayerPreview({ layer }) {
     button.addEventListener('pointerleave', hide);
     button.addEventListener('focus', onFocus);
     button.addEventListener('blur', hide);
+    // a click picks the layer: the map shows it now, and the card would cover the panel above the buttons
+    button.addEventListener('pointerdown', hide);
     return () => {
+      button.removeEventListener('pointerdown', hide);
       button.removeEventListener('pointerenter', show);
       button.removeEventListener('pointerleave', hide);
       button.removeEventListener('focus', onFocus);
