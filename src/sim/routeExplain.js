@@ -81,7 +81,8 @@ function tally(grid, path, { weights, shadowMask, shadowMultiplier, traverseMask
     out.slopeCost += slopeTerm * metres;
     out.rockCost += w * rock * metres;
     if (shadowMask && shadowMultiplier !== 1 && inRadioShadow(shadowMask, x, z)) out.shadowCost += (shadowMultiplier - 1) * base * metres;
-    if (traverseMask && traverseDiscount !== 1 && onTraverse(traverseMask, x, z)) out.traverseCost += (traverseDiscount - 1) * base * metres;
+    // the rover-ground discount is a premium on the other ground, as on the profile grid (routeProfiles.profileGrid)
+    if (traverseMask && traverseDiscount !== 1 && !onTraverse(traverseMask, x, z)) out.traverseCost += (1 / traverseDiscount - 1) * base * metres;
   });
   return out;
 }
@@ -118,8 +119,8 @@ export function explainLeg(grid, legPath, {
   if (!open) {
     block = 'slope';
   } else if (bent) {
-    // The detour saves most on this term (the straight line's integral minus the route's). The traverse term is a
-    // discount, so the route saves by having more of it.
+    // The detour saves most on this term: the straight line's integral minus the route's. The traverse term is the
+    // premium on ground the rover did not drive, so the route saves on it by keeping to the rover's tracks.
     const savings = [
       ['steep', line.slopeCost - route.slopeCost],
       ['rock', line.rockCost - route.rockCost],
