@@ -180,8 +180,9 @@
 .event-banner-walk.caution { border-color: var(--caution); }
 .event-banner-walk.warning { border-color: var(--warning); }
 .event-banner-walk.danger { border-color: var(--danger); }
-/* the source note, skipped stops and other alerts are detail: I shows them with the rest of the instruments (#283) */
-.app:not(:has(.hud-detail)) .event-banner-walk .event-banner-meta { display: none; }
+/* the consequence stays (skipped stops, other alerts); the source note of the value is detail that I shows (#283) */
+.event-banner-walk .event-banner-meta { font-size: var(--text-s); color: var(--ink); }
+.app:not(:has(.hud-detail)) .event-banner-walk .event-banner-meta > span:has([class*="source-tag"]) { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .event-banner {
