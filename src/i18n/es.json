@@ -835,7 +835,7 @@
   "table.hazard.radiation.art": "Ilustración: una astronauta corre al hábitat mientras el Sol lanza una ráfaga de partículas.",
   "table.hazard.radiation.happens": "Un evento de partículas solares sube la tasa de dosis a {rate} µGy/h, unas tres veces el fondo, y luego vuelve a {background} µGy/h al pasar el evento acortado.",
   "table.hazard.radiation.act": "Refúgiate pronto en el hábitat (ALARA), el único refugio completo del mapa. Las paradas que quedan en la ruta se omiten. La alerta termina a {radius} m de la esclusa.",
-  "table.hazard.radiation.basis": "Las dos tasas las midió RAD en Curiosity durante el evento de septiembre de 2017 (detector B, dosis en agua), en el cráter Gale, no en Jezero; los pasos intermedios son nuestros. Fuera del evento la tasa del HUD viene del detector E de RAD (equivalente a tejido), así que el salto al empezar es un cambio de detector, no más radiación. Se acorta a {length} para esta EVA.",
+  "table.hazard.radiation.basis": "Ambas tasas las midió RAD en Curiosity en septiembre de 2017, en el cráter Gale, no en Jezero; los pasos intermedios son nuestros. Se acorta a {length} para esta EVA.",
   "table.hazard.oxygen.art": "Ilustración: una pantalla de muñeca con un indicador casi vacío.",
   "table.hazard.oxygen.name": "Oxígeno bajo",
   "table.hazard.oxygen.when": "Cuando el margen baja de {min} min, y otra vez en cero",

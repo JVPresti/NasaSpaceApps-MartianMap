@@ -835,7 +835,7 @@
   "table.hazard.radiation.art": "Illustration: an astronaut hurries to the habitat as the Sun sends out a burst of particles.",
   "table.hazard.radiation.happens": "A solar particle event raises the dose rate to {rate} µGy/h, about three times the background, then it falls back to {background} µGy/h as the shortened event passes.",
   "table.hazard.radiation.act": "Shelter in the habitat early (ALARA), the only full shelter on the map. The stops left on the route are skipped. The alert ends within {radius} m of the airlock.",
-  "table.hazard.radiation.basis": "Both rates were measured by RAD on Curiosity in the September 2017 event (B detector, dose in water), in Gale crater, not Jezero; the steps between them are ours. Outside the event the HUD rate comes from RAD's E detector (tissue-like), so the step up at the start is a change of detector, not more radiation. Shortened to {length} for this EVA.",
+  "table.hazard.radiation.basis": "Both rates were measured by RAD on Curiosity in September 2017, in Gale crater, not Jezero; the steps between them are ours. Shortened to {length} for this EVA.",
   "table.hazard.oxygen.art": "Illustration: a wrist display with a nearly empty gauge.",
   "table.hazard.oxygen.name": "Low oxygen",
   "table.hazard.oxygen.when": "When the margin falls under {min} min, and again at zero",

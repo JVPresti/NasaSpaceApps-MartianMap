@@ -67,8 +67,8 @@ const MEDA = { tag: 'DATA', label: 'MEDA · Perseverance', short: 'MEDA · Perse
 const RAD = { tag: 'DATA', label: 'RAD · Curiosity (Gale)', short: 'RAD · Curiosity', site: 'Gale crater, not Jezero' };
 // RAD reports dose with two detectors (#295). The HUD's background is the E detector and the radiation event's rates are
 // the B detector, so the rate steps up when the event starts before any particle arrives. The note says why.
-const RAD_DETECTORS = 'Two RAD detectors: outside the radiation event the rate is the E detector, tissue-like (Hassler et al. 2014, 8.75 µGy/h); the event\'s rates are the B detector, dose in water (Zeitlin et al. 2018, 10 µGy/h before the event). The step between 8.75 and 10 µGy/h when the event starts or ends is a change of detector, not a change in radiation.';
-const EVENT_DOSE_NOTE = 'Not the dose of the 2017 event: the EVA plays its 57 h in 12 min, or 1 min in the first mission. The real event added 544 µGy in water over about 57 h (Zeitlin et al. 2018, B detector, hazards.json radiation.sep_2017.event_dose).';
+const RAD_DETECTORS = 'Two RAD detectors: outside the radiation event the rate is the E detector, tissue-like (Hassler et al. 2014, 8.75 µGy/h); the event\'s rates are the B detector, dose in water (Zeitlin et al. 2018, 10 µGy/h before the event). The step between 8.75 and 10 µGy/h when the event starts or ends is a change of detector, not a change in radiation';
+const EVENT_DOSE_NOTE = 'Not the dose of the 2017 event: the EVA plays its 57 h in 12 min, or 1 min in the first mission. The real event added 544 µGy in water over about 57 h (Zeitlin et al. 2018, B detector, hazards.json radiation.sep_2017.event_dose)';
 
 /**
  * Declared entries for every path a writer puts in the store's `sources` map (docs/STATE_AND_ENGINE.md).
