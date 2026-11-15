@@ -8,6 +8,7 @@ Implemented for #101. Include these entries in the controls help from #64:
 | L | Next data layer. |
 | Shift+L | Previous data layer. |
 | 0 (top row or numeric keypad) | Turn off the data layer. |
+| V | Walk only: hide or show the visor frame and alert ring, for screenshots (#28). |
 
 Layers wrap in this order: None, Slope hazard, Elevation, Rock abundance,
 Outcrop, then None again. Reverse cycling wraps from None to Outcrop.

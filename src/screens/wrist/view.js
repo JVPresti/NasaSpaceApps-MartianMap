@@ -7,6 +7,7 @@
 import { provenance, TAGS } from '../../data/provenance.js';
 import { CHECKLIST } from '../../hud/samplingPrompt.js';
 import { formatMinutes, formatValue } from '../../hud/format.js';
+import { t } from '../../i18n/index.js';
 import { LAYERS } from '../../plan/layers.js';
 import { clampRow, PAGE_TITLES, PAGES, rowCount } from './layout.js';
 
@@ -88,21 +89,21 @@ function withUnit(value, digits, unit) {
 /** Minutes with the unit, signed when asked: '+41 min'; the dash stays bare. */
 function withMinutes(sec, signed = false) {
   const text = formatMinutes(sec, { signed });
-  return Number.isFinite(sec) ? text + ' min' : text;
+  return Number.isFinite(sec) ? text + t('units.minutesSuffix') : text;
 }
 
 function suitContent(state) {
   const suit = state?.suit ?? {};
   const fields = [
-    { label: 'O2', path: 'suit.oxygenPct', value: withUnit(suit.oxygenPct, 0, '%') },
-    { label: 'BATTERY', path: 'suit.batteryPct', value: withUnit(suit.batteryPct, 0, '%') },
-    { label: 'PRESSURE', path: 'suit.pressurePsi', value: withUnit(suit.pressurePsi, 1, 'psi') },
-    { label: 'O2 TIME', path: 'suit.oxygenSec', value: withMinutes(suit.oxygenSec) },
-    { label: 'MARGIN', path: 'suit.marginSec', value: withMinutes(suit.marginSec, true) },
+    { label: t('wrist.row.o2'), path: 'suit.oxygenPct', value: withUnit(suit.oxygenPct, 0, '%') },
+    { label: t('wrist.row.battery'), path: 'suit.batteryPct', value: withUnit(suit.batteryPct, 0, '%') },
+    { label: t('wrist.row.pressure'), path: 'suit.pressurePsi', value: withUnit(suit.pressurePsi, 1, t('ui.psi')) },
+    { label: t('wrist.row.o2time'), path: 'suit.oxygenSec', value: withMinutes(suit.oxygenSec) },
+    { label: t('wrist.row.margin'), path: 'suit.marginSec', value: withMinutes(suit.marginSec, true) },
   ];
   const rows = fields.map((field) => makeRow(field.label, field.value, { tag: tagFor(state, field.path) }));
   const status = LEVELS.includes(suit.status) ? suit.status : null;
-  return { status: status ? status.toUpperCase() : DASH, level: status, rows };
+  return { status: status ? t('wrist.status.' + status) : DASH, level: status, rows };
 }
 
 /**

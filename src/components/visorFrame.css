@@ -1,0 +1,61 @@
+/* Visor frame and alert ring (#28). Sits over the 3D view and under every interface layer (App renders it right
+   after the engine view, with no z-index), so HUD panels and text stay on top in every alert state. */
+.visor-frame {
+  --visor-caution: #ffc56b;                     /* same colours as the HUD (src/hud/hud.css) */
+  --visor-warning: #ff6a4d;
+  --visor-size: cover;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.visor-bezel,
+.visor-ring,
+.visor-ring-glow {
+  position: absolute;
+  inset: 0;
+}
+
+/* Both layers size the same 16:9 art the same way, so the ring always follows the bezel's inner edge.
+   From 4:3 to 16:9 (16:10 included) the art is stretched to the screen, at most about 11 % at 16:10, so the whole
+   bezel stays visible; cover would crop its sides. Wider or taller screens use cover and crop the frame, never the
+   opening's centre. */
+@media (min-aspect-ratio: 4/3) and (max-aspect-ratio: 16/9) {
+  .visor-frame { --visor-size: 100% 100%; }
+}
+
+.visor-bezel {
+  background-position: center;
+  background-size: var(--visor-size);
+  background-repeat: no-repeat;
+}
+
+.visor-ring {
+  opacity: 0;
+  transition: opacity 0.35s ease;               /* the issue asks for a change within half a second */
+}
+
+.visor-ring-glow {
+  background-color: var(--visor-caution);
+  transition: background-color 0.35s ease;
+  -webkit-mask: var(--visor-ring-mask) center / var(--visor-size) no-repeat;
+  mask: var(--visor-ring-mask) center / var(--visor-size) no-repeat;
+}
+
+.visor-frame[data-alert='caution'] .visor-ring { opacity: 0.7; }
+.visor-frame[data-alert='warning'] .visor-ring { opacity: 0.9; }
+.visor-frame[data-alert='warning'] .visor-ring-glow {
+  background-color: var(--visor-warning);
+  animation: visor-ring-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes visor-ring-pulse {
+  50% { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visor-ring,
+  .visor-ring-glow { transition: none; }
+  .visor-frame[data-alert='warning'] .visor-ring-glow { animation: none; }
+}

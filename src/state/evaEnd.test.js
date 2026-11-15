@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { setWristKeyOwner } from '../screens/wrist/ownership.js';
 import { canEndEva, connectEvaEnd, END_EVA_KEY } from './evaEnd.js';
 import { resetStore, useMissionStore } from './store.js';
 
@@ -17,6 +18,7 @@ const atHabitat = (patch = {}) => useMissionStore.setState((s) => ({
 }));
 
 beforeEach(() => resetStore());
+afterEach(() => setWristKeyOwner(false));
 
 describe('ending the EVA at the habitat (#244)', () => {
   it('applies only during the EVA, back at the habitat, walking with the mission running', () => {
@@ -46,5 +48,19 @@ describe('ending the EVA at the habitat (#244)', () => {
     expect(engine.setHabitatPrompt).toHaveBeenLastCalledWith(null);
     off();
     expect(target.handlers.size).toBe(0);
+  });
+
+  it('leaves X to the wrist screen while it is up (#231)', () => {
+    const engine = { setHabitatPrompt: vi.fn() }, target = keyTarget();
+    const off = connectEvaEnd(engine, useMissionStore, target);
+    atHabitat();
+    setWristKeyOwner(true);
+    const e = target.press('KeyX');
+    expect(useMissionStore.getState().eva.endRequested).toBe(false);
+    expect(e.preventDefault).not.toHaveBeenCalled();
+    setWristKeyOwner(false);
+    target.press('KeyX');
+    expect(useMissionStore.getState().eva.endRequested).toBe(true);
+    off();
   });
 });
