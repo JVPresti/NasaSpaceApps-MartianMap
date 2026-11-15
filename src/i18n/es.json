@@ -828,6 +828,8 @@
   "table.site.where": "Dónde",
   "table.site.latitude": "Latitud",
   "table.site.longitude": "Longitud",
+  "table.site.this.run.out": "Esta salida, ida hasta la última parada",
+  "table.site.from.habitat.falls": "Cheyava Falls desde el hábitat, más allá de esta salida",
   "table.site.from.habitat": "Desde el hábitat, en línea recta",
   "table.site.relief": "Relieve, del punto más bajo al más alto",
   "table.site.area": "Área del terreno",

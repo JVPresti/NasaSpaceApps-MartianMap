@@ -137,6 +137,7 @@
 .table-text.small { font-size: 14px; }
 
 /* the goal of this run on the Site step, when it is not Cheyava Falls (#340) */
+.site-this-run dd b { color: var(--cyan); }
 .table-site-goal { margin: 10px 0 0; padding: 8px 10px; font-size: 14px; line-height: 1.45; color: var(--ink); border-left: 2px solid var(--cyan); background: var(--surface-sunk); }
 
 .table-panel {

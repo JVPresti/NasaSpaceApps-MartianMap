@@ -583,9 +583,13 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           <div className="table-panel table-fill">
             <p className="table-label">{t('table.site.where')}</p>
             <dl className="table-stats">
+              {/* this run's walk first, when it stops short of the rock the rest of the panel describes (#340) */}
+              {objective !== 'cheyava' && totals && (
+                <div className="site-this-run"><dd><b>{Math.round(totals.distanceM)}</b><span>m</span></dd><dt>{t('table.site.this.run.out')}</dt></div>
+              )}
               <div><dd><b>18.4975</b><span>° N</span></dd><dt>{t('table.site.latitude')}</dt></div>
               <div><dd><b>77.3053</b><span>° E</span></dd><dt>{t('table.site.longitude')}</dt></div>
-              <div><dd><b>785</b><span>m</span></dd><dt>{t('table.site.from.habitat')}</dt></div>
+              <div><dd><b>785</b><span>m</span></dd><dt>{t(objective !== 'cheyava' ? 'table.site.from.habitat.falls' : 'table.site.from.habitat')}</dt></div>
               <div><dd><b>221</b><span>m</span></dd><dt>{t('table.site.relief')}</dt></div>
               <div><dd><b>1422 × 1500</b><span>m</span></dd><dt>{t('table.site.area')}</dt></div>
             </dl>
