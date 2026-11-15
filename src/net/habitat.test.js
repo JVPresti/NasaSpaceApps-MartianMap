@@ -3,6 +3,9 @@ import { create } from 'zustand';
 import { addHabitatNote, sendGoCall, sendHabitatRoute } from '../state/habitatHooks.js';
 import { HABITAT_END_NAME } from '../state/habitatRoute.js';
 import { createInitialState } from '../state/store.js';
+
+/** resetStore() for a test store: the initial state with the settings kept, replacing the whole state. */
+const resetStore = (store) => store.setState((s) => ({ ...createInitialState(), settings: s.settings }), true);
 import { CREW_MS, GO_NOTICE_MS, HABITAT_OFFLINE, ROUTE_NOTICE_MS, crewView, routeToDecimetres, routeToMetres } from './habitat.js';
 import { resetIdentityMemory } from './identity.js';
 import { startOnline } from './index.js';
@@ -186,6 +189,21 @@ describe('the habitat slice through startOnline', () => {
     s = store.getState();
     expect(s.route.nextIndex).toBe(2);
     expect(s.habitat.notice).toBeNull();
+  });
+
+  it('a restart that resets the store takes the habitat route again once the waypoints are back', () => {
+    const welcome = start('surface', ANA);
+    const stops = [{ name: 'HAB', x: 0, z: 0 }, { name: 'WP1', x: 100, z: 0 }];
+    store.setState((s) => ({ route: { ...s.route, waypoints: stops } }));
+    welcome({ route: { pts: [[0, 0], [1000, 0]], by: 'h1', at: 42 } });
+    expect(store.getState().route.origin?.at).toBe(42);
+    resetStore(store);   // what restartEva does
+    expect(store.getState().route.origin).toBeNull();
+    store.setState((s) => ({ route: { ...s.route, waypoints: stops, path: [[0, 0], [5, 5], [100, 0]] } }));   // route.json and the table's planner
+    const s = store.getState();
+    expect(s.route.origin).toEqual({ kind: 'habitat', by: 'h1', at: 42 });
+    expect(s.route.path).toEqual([[0, 0], [100, 0]]);
+    expect(s.habitat.notice?.key).toBe('route');
   });
 
   it('after a reload the route comes from the welcome once the table has loaded the waypoints', () => {

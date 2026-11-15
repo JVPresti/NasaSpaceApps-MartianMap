@@ -18,7 +18,7 @@
  * Surface player:
  *   - A route from the habitat becomes the active route (src/state/habitatRoute.js) with a visor notice "New route
  *     from <name>", live or from the welcome. The same route (same `at`) is not adopted twice in one session, so a
- *     reconnect does not reset the walk; a reload adopts it again.
+ *     reconnect does not reset the walk; a reload, or a restart that resets the store, adopts it again.
  *   - A go or no-go call shows as a visor banner (habitat.notice) the first time this session sees it.
  *
  * The UI reaches sendRoute, sendGo and addNote through src/state/habitatHooks.js, never by importing this module.
@@ -101,8 +101,10 @@ export function createHabitatState({ store, room, playerId, shared = null, poses
   const heard = new Map();
 
   const online = () => store.getState().online;
-  const me = () => online()?.me?.id ?? playerId;
-  const role = () => online()?.me?.role ?? null;
+  // From the last welcome too: resetStore() (restartEva) puts the offline `online` slice back and nothing rewrites it.
+  let seat = { id: playerId, role: null };
+  const me = () => online()?.me?.id ?? seat.id;
+  const role = () => online()?.me?.role ?? seat.role;
   const nameOf = (id) => (online()?.crew || []).find((e) => e.id === id)?.name ?? null;
 
   function write() {
@@ -144,6 +146,7 @@ export function createHabitatState({ store, room, playerId, shared = null, poses
   const routeFrom = (m) => ({ path: routeToMetres(m.pts), by: m.by, at: m.at });
 
   function onWelcome(m) {
+    seat = { id: m.you?.id ?? playerId, role: m.you?.role ?? null };
     route = m.route ? routeFrom(m.route) : null;
     go = m.go ? { go: m.go.go, why: m.go.why ?? '', by: m.go.by, at: m.go.at } : null;
     if (sent.route === 'pending' && route?.by !== me()) sent.route = null;   // lost while the socket was down
@@ -232,6 +235,9 @@ export function createHabitatState({ store, room, playerId, shared = null, poses
     // A route that waited for the waypoints; resetStore() putting the offline defaults back, while the room's state holds
     store.subscribe((s, prev) => {
       if (stopped) return;
+      // resetStore() (restartEva) puts back a route with no origin and no waypoints: the habitat route is gone from this
+      // player's visor, so take it again once route.json brings the waypoints back.
+      if (s.route !== prev?.route && !s.route?.origin && prev?.route?.origin?.kind === 'habitat') adoptedAt = null;
       if (s.route?.waypoints !== prev?.route?.waypoints) adopt();
       if (store.getState().habitat !== written) write();
     }),
