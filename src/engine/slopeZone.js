@@ -1,26 +1,21 @@
-// Red ground patch for cells over the slope limit (#69). The cells come from
-// src/sim/slopeAhead.js and are drawn as small quads on the visible terrain.
+// Red ground tint for cells over the slope limit (#69). The cells come from src/sim/slopeAhead.js. The terrain shader draws
+// the tint (TERRAIN_FRAG, tZone), not separate quads, so the zone takes the terrain's own sun, shadow and lamp light and has no
+// gaps between cells (#200). This module only fills the mask texture and its placement uniforms.
 import * as THREE from 'three';
+import { zoneMask, ZONE_TEXELS } from './slopeZoneRules.js';
 
 export function createSlopeZone(ctx) {
-  const group = new THREE.Group();
-  ctx.scene.add(group);
-  const material = new THREE.MeshBasicMaterial({
-    color: 0xe63a1f,
-    transparent: true,
-    opacity: 0.38,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-    polygonOffset: true,
-    polygonOffsetFactor: -6,
-    polygonOffsetUnits: -10,
-  });
+  const { U } = ctx;
+  const n = ZONE_TEXELS;
+  const texture = new THREE.DataTexture(new Uint8Array(n * n), n, n, THREE.RedFormat, THREE.UnsignedByteType);
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+  texture.needsUpdate = true;
+  U.tZone.value = texture;
 
   function clear() {
-    for (const mesh of [...group.children]) {
-      group.remove(mesh);
-      mesh.geometry.dispose();
-    }
+    U.uZoneOn.value = 0;
   }
 
   /**
@@ -28,41 +23,19 @@ export function createSlopeZone(ctx) {
    * @param {number} [cellM]
    */
   function set(cells, cellM = 3) {
-    clear();
-    if (!Array.isArray(cells) || cells.length === 0) return;
-    const half = cellM * 0.45;
-    const positions = new Float32Array(cells.length * 4 * 3);
-    const indices = [];
-    let p = 0;
-    cells.forEach((cell, index) => {
-      const base = index * 4;
-      const corners = [
-        [cell.x - half, cell.z - half],
-        [cell.x + half, cell.z - half],
-        [cell.x + half, cell.z + half],
-        [cell.x - half, cell.z + half],
-      ];
-      for (const [x, z] of corners) {
-        positions[p++] = x;
-        positions[p++] = ctx.terrain.meshH(x, z) + 0.16;
-        positions[p++] = z;
-      }
-      indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
-    });
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setIndex(indices);
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.frustumCulled = false;
-    mesh.renderOrder = 3;
-    group.add(mesh);
+    const mask = zoneMask(cells, cellM, n);
+    if (!mask) { clear(); return; }
+    texture.image.data.set(mask.data);
+    texture.needsUpdate = true;
+    U.uZoneBox.value.set(mask.x0, mask.z0, mask.span);
+    U.uZoneOn.value = 1;
   }
 
   function dispose() {
     clear();
-    material.dispose();
-    ctx.scene.remove(group);
+    U.tZone.value = null;
+    texture.dispose();
   }
 
-  return { group, set, clear, dispose };
+  return { set, clear, dispose };
 }
