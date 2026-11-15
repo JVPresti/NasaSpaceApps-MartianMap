@@ -98,6 +98,12 @@ Source: `docs/marswalk-assets/README.md`.
 | [Rocks Ground 04 (Poly Haven)](https://polyhaven.com/a/rocks_ground_04) | Rocks Ground 04 by Rob Tuytel, Poly Haven | CC0 1.0, no attribution required (Poly Haven license) ([terms](https://polyhaven.com/license)) | public/marswalk/assets/gravel_nl.jpg, slab_nl.jpg (ground detail; the terrain scene links this texture, the README records the detail textures as Poly Haven) |
 | [Steel Frame Shelves 01 (Poly Haven)](https://polyhaven.com/a/steel_frame_shelves_01) | Steel Frame Shelves 01 by James Ray Cock, Poly Haven | CC0 1.0, no attribution required (Poly Haven license) ([terms](https://polyhaven.com/license)) | public/marswalk/assets_habitat/furniture/shelves.glb |
 
+## Sound
+
+| Source | Credit | Licence | Used in |
+|---|---|---|---|
+| [Suit sounds: fans, breathing, footsteps, wind, habitat cabin, dosimeter, alert tones and radio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) | Made in code at run time with the Web Audio API (src/audio/). No recordings and no sound files | Original work of the Marswalk team. No third-party sound is used | Suit audio (src/audio/) |
+
 ## Software libraries and fonts
 
 | Source | Credit | Licence | Used in |

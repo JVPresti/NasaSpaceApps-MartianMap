@@ -1,6 +1,7 @@
 import { formatNumber, t, translateText, setLanguage } from '../i18n/index.js';
 import { useLanguage } from '../i18n/useLanguage.js';
 import { useEffect, useRef } from 'react';
+import AudioSettings from '../audio/AudioSettings.jsx';
 import { LOOK_SENSITIVITY_MAX, LOOK_SENSITIVITY_MIN, LOOK_SENSITIVITY_STEP } from '../engine/lookSettings.js';
 import { setLookSettings, useMissionStore } from '../state/store.js';
 import { ControlsPanel } from './ControlsHelp.jsx';
@@ -129,6 +130,8 @@ export default function PauseMenu({
             </select>
             <p className="menu-note">{t('languageHelp')}</p>
           </div>
+
+          <AudioSettings />
 
           <div className="quality-block">
             <h3 id="quality-label">{t('menu.scene.quality')}</h3>

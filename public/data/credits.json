@@ -39,6 +39,10 @@
       "label": "3D models and textures"
     },
     {
+      "id": "sound",
+      "label": "Sound"
+    },
+    {
       "id": "software",
       "label": "Software libraries and fonts"
     }
@@ -1301,6 +1305,25 @@
       "data_urls": [],
       "used_in": [
         "public/marswalk/assets_habitat/furniture/shelves.glb"
+      ],
+      "origin": "manual"
+    },
+    {
+      "id": "marswalk-suit-audio",
+      "name": "Suit sounds: fans, breathing, footsteps, wind, habitat cabin, dosimeter, alert tones and radio",
+      "kind": "sound",
+      "provider": "Marswalk team",
+      "mission": null,
+      "instrument": null,
+      "credit_line": "Made in code at run time with the Web Audio API (src/audio/). No recordings and no sound files",
+      "citation": "How quiet and dull the outside is follows the first sound recordings on Mars: Maurice et al. 2022, Nature 605, 653-658 (Perseverance SuperCam microphone)",
+      "license": "Original work of the Marswalk team. No third-party sound is used",
+      "license_url": null,
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API",
+      "source_urls": [],
+      "data_urls": [],
+      "used_in": [
+        "Suit audio (src/audio/)"
       ],
       "origin": "manual"
     },

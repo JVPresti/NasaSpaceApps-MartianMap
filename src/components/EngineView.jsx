@@ -7,6 +7,7 @@ import { connectSlopeGridKey } from '../state/slopeGrid.js';
 import { connectHabitatScreens } from '../state/habitatScreens.js';
 import { startSimulation } from '../state/simulation.js';
 import { connectWrist } from '../screens/wrist/controller.js';
+import { connectAudio } from '../audio/connectAudio.js';
 
 const ASSET_BASE = import.meta.env.BASE_URL + 'marswalk/';
 
@@ -41,7 +42,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
 
     let engine;
     let live = true;
-    let disconnect = null, stopSimulation = null, disconnectSampling = null, disconnectSlopeGridKey = null, disconnectWrist = null, disconnectHabitatScreens = null;
+    let disconnect = null, stopSimulation = null, disconnectSampling = null, disconnectSlopeGridKey = null, disconnectWrist = null, disconnectHabitatScreens = null, disconnectAudio = null;
     const mock = new URLSearchParams(window.location.search).get('mock') === '1';
     const current = () => live && (engine === undefined || engineRef.current === engine);
 
@@ -88,6 +89,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
         disconnectSlopeGridKey = connectSlopeGridKey();   // G: slope grid on the ground in Walk mode (#50)
         disconnectWrist = connectWrist(engine);   // wrist screen app (#67)
         disconnectHabitatScreens = connectHabitatScreens(engine);   // the habitat's wall screens and planning table (#47)
+        disconnectAudio = connectAudio(engine);   // suit audio (#72): starts on the first click or key press
         startCurrentSimulation();
         pauseMission();   // the start screen is a real pause, including ?mock=1 where nothing starts
         callbacks.current.onEngine?.(engine, {
@@ -112,6 +114,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
       if (disconnectSlopeGridKey) disconnectSlopeGridKey();
       if (disconnectWrist) disconnectWrist();
       if (disconnectHabitatScreens) disconnectHabitatScreens();
+      if (disconnectAudio) disconnectAudio();
       engine.dispose();
     };
   }, []);

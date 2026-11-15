@@ -782,7 +782,8 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     },
     getPlayer() {
       const v = ctx.view, deg = ((v.yaw * 180 / Math.PI) % 360 + 360) % 360;
-      return { x: v.eye.x, z: v.eye.z, headingDeg: deg, mode: v.mode === 'eye' ? 'walk' : 'plan' };
+      const zone = sys.habitat && sys.habitat.zone(v.eye.x, v.eye.z);   // habitat walk zone under the player (collide.js), for the suit audio (#72)
+      return { x: v.eye.x, z: v.eye.z, headingDeg: deg, mode: v.mode === 'eye' ? 'walk' : 'plan', habitatZone: zone ? zone.n : null };
     },
     dispose() {
       if (!alive) return;

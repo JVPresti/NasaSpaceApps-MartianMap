@@ -166,7 +166,7 @@ await engine.ready;
 | `getSampling()` | `{ phase, holding, target, caseState, caseInReach, actions }` (see [Sampling](#sampling-36)); `null` before `ready`. Runs one aim test, so poll it, never per frame. |
 | `onSampling(listener)` | Sampling events `{ type: 'photo' \| 'collect' \| 'texture' \| 'secured' \| 'sealed' \| 'input', ... }`. Returns an unsubscribe function. Available once ready. |
 | `clearPrints()` | Removes every boot print (`src/engine/bootPrints.js`, #46). The bridge calls it when `mission.startedAtMs` changes, the start of a new EVA. |
-| `getPlayer()` | `{ x, z, headingDeg, mode }`. This is the true position, so only the bridge reads it: it writes `navigation.trueX` / `trueZ` and the drift model turns them into the estimate the interface reads (`navigation.x` / `z`, #42). |
+| `getPlayer()` | `{ x, z, headingDeg, mode, habitatZone }`. This is the true position, so only the bridge reads it: it writes `navigation.trueX` / `trueZ` and the drift model turns them into the estimate the interface reads (`navigation.x` / `z`, #42). The suit audio (#72) also reads it, for footsteps and `habitatZone`: the habitat walk zone the player stands in (`'stairs'`, `'porch'`, `'hatch'`, `'airlock'`, `'inner'`, `'main'`, `collide.js`), or `null` outside. |
 | `dispose()` | Stops everything and frees the GPU. |
 
 Options: `inputEnabled: false` starts with gameplay input gated off (the app shell passes this for the start
