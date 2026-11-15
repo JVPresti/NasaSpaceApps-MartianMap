@@ -297,13 +297,14 @@ function KeyHint({ detail }) {
  */
 export default function Hud({ engine, minimapRoute }) {
   const detail = useHudDetail();
-  // the sampling checklist joins the default set while a rock or the soil is in view, or a sample is under way
+  // the sampling checklist joins the default set while a rock or the soil is in view, a sample is under way, or a
+  // science stop card is open (hud.css)
   const sampling = useMissionStore((s) => {
     const c = s.sampling.checklist;
     return !!(s.sampling.status && s.sampling.status.target) || c.photo || c.texture || c.sample;
   });
   return (
-    <div className={detail ? 'hud hud-detail' : 'hud'} aria-label={t('ui.helmet.display')}>
+    <div className={'hud' + (detail ? ' hud-detail' : '') + (sampling ? ' hud-sampling-on' : '')} aria-label={t('ui.helmet.display')}>
       <HeadingTape />
       <WaypointMarker engine={engine} />
       <SlopeAhead engine={engine} />
@@ -315,7 +316,7 @@ export default function Hud({ engine, minimapRoute }) {
       {/* One flex column on the right (#191): each panel sits under the one above, so none can cover another. */}
       <div className="hud-right">
         <Minimap tracker={minimapRoute} />
-        {(detail || sampling) && <SamplingChecklist />}
+        <SamplingChecklist />
         <EnvStrip />
         <NavLine><SourceTag path="navigation.errorM" /></NavLine>
         <RadioLink engine={engine} />
