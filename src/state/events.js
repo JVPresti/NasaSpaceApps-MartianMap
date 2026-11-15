@@ -15,6 +15,7 @@ import { heightAt } from '../sim/costGrid.js';
 import { createRoutePlannerClient } from '../sim/routePlannerClient.js';
 import { suitConstantsFromHazards, walkCost } from '../sim/suitModel.js';
 import { createStoreAdapter, useMissionStore } from './store.js';
+import { truePosition } from '../sim/navigation.js';
 
 const EVENT_DEFINITIONS = [dustStorm, radiation, lowOxygenCaution, lowOxygenWarning];
 
@@ -143,9 +144,11 @@ export function startEventRunner({ store = useMissionStore, setInterval: si = se
 
   const requestReplan = ({ eventId, target, reason }) => {
     const state = store.getState();
+    // The route leads home from where the astronaut really is (#42), not from the estimate.
+    const truth = truePosition(state.navigation);
     const from = {
-      x: Number.isFinite(state.navigation.x) ? state.navigation.x : 520,
-      z: Number.isFinite(state.navigation.z) ? state.navigation.z : 600,
+      x: Number.isFinite(truth.x) ? truth.x : 520,
+      z: Number.isFinite(truth.z) ? truth.z : 600,
     };
     getPlanner()
       .then((service) => {
@@ -194,8 +197,10 @@ export function startEventRunner({ store = useMissionStore, setInterval: si = se
     }
   };
 
+  // Events switched off at the mission table (#11) are left out of this EVA.
+  const off = store.getState().hazards?.off ?? [];
   const engine = createEventEngine({
-    events: EVENT_DEFINITIONS,
+    events: EVENT_DEFINITIONS.filter((event) => !off.includes(event.id)),
     store: createEventStoreAdapter(store),
     getMissionTime: missionTime,
     requestReplan,
@@ -205,9 +210,8 @@ export function startEventRunner({ store = useMissionStore, setInterval: si = se
   const tick = () => {
     if (stopped) return;
     const state = store.getState();
-    const position = Number.isFinite(state.navigation.x) && Number.isFinite(state.navigation.z)
-      ? { x: state.navigation.x, z: state.navigation.z }
-      : undefined;
+    const truth = truePosition(state.navigation);
+    const position = Number.isFinite(truth.x) && Number.isFinite(truth.z) ? truth : undefined;
     engine.update(missionTime(), position);
   };
 

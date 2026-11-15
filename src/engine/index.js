@@ -7,8 +7,10 @@ import { subscribeLanguage } from '../i18n/index.js';
 //   await engine.ready;          // resolves after the first frame is actually rendered, rejects on failure
 //   engine.setMode('plan' | 'walk');
 //   engine.setLayer(0..4); engine.setSky('clear_day'); engine.setRoute([[x, z], ...]);
+//   engine.setSkyTime(17.75 | null); engine.getSun();   // sky and Sun from the mission clock (#73), missionSky.js
 //   engine.requestPointerLock(); engine.releasePointerLock(); engine.setInputEnabled(false);
 //   engine.setQuality('auto' | 'high' | 'low'); engine.getQuality(); engine.resetSession();
+//   engine.subscribeTouch(listener); engine.subscribeGamepad(listener);   // UI hints for touch and gamepad (#103)
 //   engine.heightAt(x, z); engine.slopeAt(x, z); engine.lineOfSight(a, b); engine.getPlayer();
 //   // wrist screen app (#67), wrist.js: the interface draws the canvas, the engine shows it on the arm
 //   engine.setWristScreen(canvas | null); engine.invalidateWristScreen(); engine.setWristOpen(true | false);
@@ -24,6 +26,7 @@ import { decodeTerrainJson, decodeRingJson } from './queries.js';
 import { createRouteGlow, validPath } from './routeGlow.js';
 import { createBootPrints } from './bootPrints.js';
 import { createDust, clampDust } from './dust.js';
+import { createMissionSky } from './missionSky.js';
 import { createShelterHighlight } from './shelterHighlight.js';
 import { validShelter } from './shelterRules.js';
 import { createSlopeZone } from './slopeZone.js';
@@ -50,6 +53,8 @@ import { createSampleDust } from './sampleDust.js';
 import { createSlopeGrid } from './slopeGrid.js';
 import { createHabitat } from './habitat.js';
 import { createView, createViewState, CHEYAVA_VIEW } from './view.js';
+import { planTouches } from './planTouch.js';
+import { LOOK_DEFAULTS, clampLookSettings } from './lookSettings.js';
 import { airlockExit, atTable, partnerPatrol, tableSpawn } from './spawn.js';
 import { canOpenWrist, wristRestoreState } from './wrist.js';
 import { createLoadLifecycle } from './lifecycle.js';
@@ -64,12 +69,15 @@ export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
  * @param {{ assetBase: string, mode?: 'plan' | 'walk', tier?: 'high' | 'low' | null, inputEnabled?: boolean,
  *   debug?: boolean,
  *   onStatus?: (text: string) => void, onProgress?: (progress: { loaded: number, failed: number, total: number, ratio: number }) => void,
- *   onError?: (err: Error) => void, onLockChange?: (locked: boolean) => void }} options
+ *   onError?: (err: Error) => void, onLockChange?: (locked: boolean) => void,
+ *   onGamepadAction?: (action: 'mode' | 'layer-prev' | 'layer-next') => void }} options
  *   tier: force a quality tier and turn off the automatic choice (the app passes ?tier=high|low).
  *   inputEnabled: false starts with gameplay input gated off, for a start screen or a menu.
+ *   onGamepadAction: a gamepad button press, once per press. The app routes it through the same mode and layer
+ *   actions as the keyboard (#103, #174).
  *   debug: expose window.__marswalk for measuring (development builds only).
  */
-export function createEngine(container, { assetBase, mode = 'plan', tier = null, inputEnabled: inputEnabledOption = true, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {}, onLockChange = () => {} } = {}) {
+export function createEngine(container, { assetBase, mode = 'plan', tier = null, inputEnabled: inputEnabledOption = true, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {}, onLockChange = () => {}, onGamepadAction = () => {} } = {}) {
   if (!assetBase) throw new Error('createEngine: assetBase is required');
   assertWebGL2();
 
@@ -77,7 +85,13 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   let inputEnabled = inputEnabledOption !== false;
   let pendingLock = null, pendingLockResolve = null;
   let pendingReset = false;
-  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false, wristScreen: null };   // set before boot ends, applied when ready
+  // UI subscriptions for the inputs that appear only after use (#103). Touch and gamepad states are also pushed
+  // to a listener added later, so a component mounted after the first use still shows its hint.
+  const touchListeners = new Set(), gamepadListeners = new Set();
+  // A UI listener is a hint overlay: if it throws, the scene must keep rendering.
+  const emitTouch = (state) => { for (const listener of touchListeners) { try { listener(state); } catch { /* keep the frame */ } } };
+  const emitGamepad = (state) => { for (const listener of gamepadListeners) { try { listener(state); } catch { /* keep the frame */ } } };
+  const pending = { sky: null, skyBlend: null, skyTime: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false, wristScreen: null, habitatScreens: null, lookSettings: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -113,6 +127,9 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   const camera = new THREE.PerspectiveCamera(62, 1, 0.15, 30000);
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.495; controls.minDistance = 5; controls.maxDistance = 9000; controls.enabled = false;
+  // Plan is a north-up map (#135, #213): one finger pans and two pan and pinch-zoom, never orbit. Walk uses its
+  // own touch controller (view.js), and OrbitControls stays disabled there.
+  controls.touches = planTouches(THREE.TOUCH);
 
   // The quality tier decides which ortho texture belongs in the initial manifest, so detect it before
   // registering the total. Everything else is the same for both tiers.
@@ -164,6 +181,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     renderer.setPixelRatio(Math.min(devicePixelRatio, t.pixelRatio)); resize();
     U.uRockR.value.set(t.radius[0] || 1, t.radius[1], t.radius[2]);
     ctx.terrain.buildTerrain(t); ctx.terrain.computeShadows(t.shadowRes); sys.rocks.reset();
+    if (sys.sky) sys.sky.shadowsBaked();
     sys.habitat.reground();   // the rebuilt mesh has slightly different heights
     if (ctx.outcrop) ctx.outcrop.userData.place(name);
     if (sys.routeGlow) sys.routeGlow.rebuild();  // re-drape the route on the new mesh
@@ -197,6 +215,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     sys.routeGlow.update(dt, eyeMode ? ctx.view.eye : null);
     sys.shelter.update(dt, ctx.view.eye, camera);
     sys.prints.update(dt);
+    sys.sky.update(dt);   // before the dust: a new sky is then scaled by the storm light in the same frame
     sys.dust.update(dt);
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
@@ -245,7 +264,11 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     viewCtl = createView(ctx, canvas, signal, {
       inputEnabled,
       onLockChange: (locked) => { if (alive) onLockChange(locked); },
+      onTouch: (state) => { if (alive) emitTouch(state); },
+      onGamepad: (state) => { if (alive) emitGamepad(state); },
+      onGamepadAction: (action) => { if (alive) onGamepadAction(action); },
     });
+    viewCtl.setLookSettings(pending.lookSettings ?? LOOK_DEFAULTS);   // a call made before ready must not be lost
     if (pendingLockResolve) {
       // A request made before ready has no live user gesture left by now; report the browser's real outcome.
       const resolvePending = pendingLockResolve;
@@ -290,6 +313,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     status('Loading the habitat…');
     U.uRelief.value = tj.range_m; sys.route.data = await assets.json('route.json'); if (!alive) return;
     await sys.habitat.init(); if (!alive) return;
+    if (pending.habitatScreens) sys.habitat.screens.setData(pending.habitatScreens);
     placeInHabitat();   // the astronaut starts inside, at the mission table (habitat-first flow)
 
     if (!alive) return;
@@ -306,6 +330,9 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     sys.radioShadow = createRadioShadow(ctx);
     sys.radioShadow.set(pending.radioShadow);
     if (pending.skyBlend) applySkyBlend(ctx, pending.skyBlend.from, pending.skyBlend.to, pending.skyBlend.t);
+    sys.sky = createMissionSky(ctx);
+    sys.sky.setStorm(pending.sky === 'dust_storm' ? 1 : pending.skyBlend && pending.skyBlend.to === 'dust_storm' ? pending.skyBlend.t : 0);
+    if (pending.skyTime !== null) sys.sky.setTime(pending.skyTime);
     waypoints.set(pending.waypoints);
     waypoints.group.visible = requestedMode === 'plan';
     ctx.onSurface = false;
@@ -374,6 +401,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
         const h = sys.habitat, d = h.dir, x = h.pos.x + d.x * 17 - d.z * 7, z = h.pos.z + d.z * 17 + d.x * 7;
         place(x, z, Math.atan2(h.pos.x + d.x * 2 - x, -(h.pos.z + d.z * 2 - z)), -0.05);
       },
+      sun: () => sys.sky.sun,   // the Sun while the mission clock drives the sky (#73), else null
       habitatY: () => sys.habitat.pos.y,
       groundUnderHabitat: () => ctx.terrain.meshH(sys.habitat.pos.x, sys.habitat.pos.z),
       setTier: (name) => quality.request(name),
@@ -446,6 +474,30 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     setInputEnabled(enabled) {
       inputEnabled = enabled === true;
       if (viewCtl) viewCtl.setInputEnabled(inputEnabled);
+    },
+    /**
+     * Follow the Walk touch stick for the on-screen overlay (#103). The listener receives the current state as
+     * soon as it subscribes and then on every touch event, never per frame.
+     * @param {(state: { visible: boolean, active: boolean, knobX: number, knobY: number, jog: boolean }) => void} listener
+     * @returns {() => void} unsubscribe
+     */
+    subscribeTouch(listener) {
+      if (typeof listener !== 'function') return () => {};
+      touchListeners.add(listener);
+      if (viewCtl) listener(viewCtl.touchState());
+      return () => touchListeners.delete(listener);
+    },
+    /**
+     * Follow whether a gamepad has been used (#103). The listener is told immediately, so a hint mounted after
+     * the first press still appears, and again when the pad is used for the first time.
+     * @param {(state: { used: boolean, connected: boolean }) => void} listener
+     * @returns {() => void} unsubscribe
+     */
+    subscribeGamepad(listener) {
+      if (typeof listener !== 'function') return () => {};
+      gamepadListeners.add(listener);
+      if (viewCtl) listener(viewCtl.gamepadState());
+      return () => gamepadListeners.delete(listener);
     },
     /**
      * Ask the browser for pointer lock on the engine canvas. Supports the legacy void form and the promise
@@ -536,7 +588,8 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     /**
      * Return the scene to the start of a new EVA: clear input, release the lock, drop the route/shelter markers and
      * put the player back inside the habitat at the mission table, on foot. The store reset and simulation restart are
-     * the caller's job (src/state/evaSession.js) because the engine owns no simulation. Quality is deliberately untouched.
+     * the caller's job (src/state/evaSession.js) because the engine owns no simulation. Quality and the look settings
+     * (#102) are deliberately untouched: they are player preferences, not session state.
      * @returns {boolean} false when called before ready (the reset is applied at the end of boot)
      */
     resetSession() {
@@ -551,6 +604,13 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       return true;
     },
     /** Data layer drawn on the terrain: 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop. */
+    /**
+     * Data for the habitat's wall screens and planning table (habitatScreens.js, #47): the plain object built by
+     * habitatScreenData() in src/state/habitatScreens.js. The screens redraw from it while someone is near them.
+     */
+    setHabitatScreens(data) {
+      if (sys.habitat && sys.habitat.screens && sys.habitat.root) sys.habitat.screens.setData(data); else pending.habitatScreens = data;
+    },
     setLayer(n) {
       if (!Number.isInteger(n) || n < 0 || n >= LAYERS.length) throw new Error('setLayer: expected 0-' + (LAYERS.length - 1) + ', got ' + n);
       U.uLayer.value = n;
@@ -598,10 +658,27 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       return tex ? tex.image : null;
     },
     /** Atmosphere preset: 'clear_day' | 'dust_storm' | 'late_afternoon' | 'night'. */
+    // While the mission clock drives the sky (setSkyTime) a preset only says whether to show the storm look.
     setSky(name) {
       if (!SKIES.includes(name)) throw new Error('setSky: expected one of ' + SKIES.join(', ') + ', got ' + name);
-      if (started) applyPreset(ctx, name); else pending.sky = name;
+      pending.sky = name;
+      if (!started) return;
+      if (sys.sky.active) sys.sky.setStorm(name === 'dust_storm' ? 1 : 0); else applyPreset(ctx, name);
     },
+    /**
+     * Sky from the mission clock (#73): the Sun moves with the local solar time at the site and the sky blends between
+     * the presets by its height, toward the storm look as the dust rises. null goes back to the last setSky preset.
+     * @param {number | null} hours local solar time, 0 to 24
+     */
+    setSkyTime(hours) {
+      if (hours !== null && !Number.isFinite(hours)) throw new Error('setSkyTime: expected hours from 0 to 24, or null');
+      if (!started) { pending.skyTime = hours; return; }
+      const was = sys.sky.active;
+      sys.sky.setTime(hours);
+      if (was && hours === null) applyPreset(ctx, pending.sky || 'clear_day');
+    },
+    /** @returns {{ hours: number, elevationDeg: number, azimuthDeg: number } | null} the Sun while the clock drives the sky */
+    getSun() { return started ? sys.sky.sun : null; },
     /**
     /**
      * Blend two atmosphere presets without changing the scene geometry.
@@ -614,12 +691,24 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       if (!SKIES.includes(from) || !SKIES.includes(to)) throw new Error('setSkyBlend: expected two known presets');
       if (!Number.isFinite(t)) throw new Error('setSkyBlend: t must be a number');
       const clamped = Math.max(0, Math.min(1, t));
-      if (started) applySkyBlend(ctx, from, to, clamped);
+      if (started && sys.sky.active && to === 'dust_storm') sys.sky.setStorm(clamped);
+      else if (started) applySkyBlend(ctx, from, to, clamped);
       else pending.skyBlend = { from, to, t: clamped };
     },
     /** Slope grid in Walk mode (slopeGrid.js, #50): lines on the ground around the player coloured by slope. */
     setSlopeGrid(on) {
       if (started) sys.slopeGrid.set(!!on); else pending.slopeGrid = !!on;
+    },
+    /**
+     * Mouse look (#102): `sensitivity` multiplies the base rate of both pointer-locked and drag look (0.5-2,
+     * default 1, rounded to 0.1), and `invertY` flips only the vertical axis (default false). Values are
+     * clamped, never thrown, and a call before `ready` is applied at the end of boot. A restart keeps them.
+     * @param {{ sensitivity?: number, invertY?: boolean }} settings
+     */
+    setLookSettings(settings) {
+      const next = clampLookSettings(settings);
+      pending.lookSettings = next;
+      if (viewCtl) viewCtl.setLookSettings(next);
     },
     /**
      * Storm dust (dust.js, #27), 0 = clear (the scene as before) to 1 = global storm: thicker, drifting haze on everything
@@ -746,7 +835,8 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     },
     getPlayer() {
       const v = ctx.view, deg = ((v.yaw * 180 / Math.PI) % 360 + 360) % 360;
-      return { x: v.eye.x, z: v.eye.z, headingDeg: deg, mode: v.mode === 'eye' ? 'walk' : 'plan' };
+      const zone = sys.habitat && sys.habitat.zone(v.eye.x, v.eye.z);   // habitat walk zone under the player (collide.js), for the suit audio (#72)
+      return { x: v.eye.x, z: v.eye.z, headingDeg: deg, mode: v.mode === 'eye' ? 'walk' : 'plan', habitatZone: zone ? zone.n : null };
     },
     dispose() {
       if (!alive) return;
@@ -762,6 +852,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       }
       resolveDisposed();
       if (viewCtl) viewCtl.dispose();
+      touchListeners.clear(); gamepadListeners.clear();
       quality.dispose();
       ac.abort(); ro.disconnect(); controls.dispose();
       if (sys.prints) sys.prints.dispose();

@@ -100,14 +100,16 @@ export const STORE_PATHS = Object.freeze({
   'crew.0.link': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'radio line of sight between the two suits on the HiRISE height map', from: HIRISE },
   'crew.0.separationLimitM': sim('our rule: 100 m from the pair-walk mockup, caution from 80 m; hazards.json has no separation value'),
 
-  // navigation: the engine writes the true position until the navigation model (#42) estimates it
-  'navigation.x': sim('player position from the engine; no GPS on Mars, the estimate comes with #42'),
-  'navigation.z': sim('player position from the engine; no GPS on Mars, the estimate comes with #42'),
+  // navigation (#42): trueX/trueZ is the simulated truth from the engine, x/z the estimate the drift model shows
+  'navigation.x': sim('simulated position estimate: true position plus the drift offset (src/sim/navigationDrift.js)'),
+  'navigation.z': sim('simulated position estimate: true position plus the drift offset (src/sim/navigationDrift.js)'),
+  'navigation.trueX': sim('simulated true position from the engine (src/state/engineBridge.js); the HUD never shows it'),
+  'navigation.trueZ': sim('simulated true position from the engine (src/state/engineBridge.js); the HUD never shows it'),
   'navigation.headingDeg': sim('player heading from the engine'),
   'navigation.slopeDeg': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'slope of the HiRISE height map under the player', from: HIRISE },
-  'navigation.errorM': sim('navigation error model (#42)'),
-  'navigation.fixMode': sim('navigation fix model (#42)'),
-  'navigation.lastFixSec': sim('navigation fix model (#42)'),
+  'navigation.errorM': sim('navigation error model: dead reckoning, terrain fixes and radio ranging (src/sim/navigationDrift.js)'),
+  'navigation.fixMode': sim('navigation fix model: terrain fix, dead reckoning or radio ranging (src/sim/navigationDrift.js)'),
+  'navigation.lastFixSec': sim('mission time of the last terrain fix (src/sim/navigationDrift.js)'),
   'navigation.waypointRangeM': sim('distance from the player position to the next waypoint or shelter (src/sim/waypointRunner.js)'),
   'navigation.waypointBearingDeg': sim('bearing from the player position to the next waypoint or shelter (src/sim/waypointRunner.js)'),
 

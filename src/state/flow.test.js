@@ -41,7 +41,7 @@ function planned() {
   const waypoints = startAtAirlock(route.waypoints, files['shelters.json']);
   useMissionStore.setState((s) => ({
     route: { ...s.route, waypoints, path: waypoints.map((w) => [w.x, w.z]), decision: 'go' },
-    navigation: { ...s.navigation, x: 0, z: 0, headingDeg: 0 },   // inside the habitat, far from the airlock entry
+    navigation: { ...s.navigation, trueX: 0, trueZ: 0, headingDeg: 0 },   // inside the habitat, far from the airlock entry
   }));
 }
 
@@ -184,7 +184,7 @@ describe('the simulator flow with the real simulation', () => {
     beginEgress();
     vi.advanceTimersByTime(AIRLOCK_CYCLE_MS);
     expect(useMissionStore.getState().suit.oxygenPct).toBeNull();
-    useMissionStore.setState((st) => ({ navigation: { ...st.navigation, x: entry.x - 0.4, z: entry.z - 0.5 } }));   // exitAirlock()
+    useMissionStore.setState((st) => ({ navigation: { ...st.navigation, trueX: entry.x - 0.4, trueZ: entry.z - 0.5 } }));   // exitAirlock()
     completeEgress();
     useMissionStore.setState((st) => ({ mission: { ...st.mission, paused: false } }));
     await flush();

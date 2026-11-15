@@ -4,8 +4,8 @@ import { resetStore, useMissionStore } from './store.js';
 
 function fakeEngine() {
   return {
-    setMode: vi.fn(), setSlopeGrid: vi.fn(), setLayer: vi.fn(), setSky: vi.fn(), setSkyBlend: vi.fn(),
-    setRoute: vi.fn(), setShelter: vi.fn(), setDust: vi.fn(), clearPrints: vi.fn(),
+    setMode: vi.fn(), setSlopeGrid: vi.fn(), setLayer: vi.fn(), setSky: vi.fn(), setSkyBlend: vi.fn(), setSkyTime: vi.fn(),
+    setRoute: vi.fn(), setShelter: vi.fn(), setDust: vi.fn(), clearPrints: vi.fn(), setLookSettings: vi.fn(),
     getPlayer: () => ({ x: 0, z: 0, headingDeg: 0 }),
   };
 }
@@ -28,6 +28,22 @@ describe('engine bridge sky', () => {
     expect(engine.setSkyBlend).toHaveBeenLastCalledWith('late_afternoon', 'dust_storm', 0.4);
     useMissionStore.setState((s) => ({ view: { ...s.view, skyBlend: 0 } }));
     expect(engine.setSkyBlend).toHaveBeenLastCalledWith('late_afternoon', 'dust_storm', 0);
+    disconnect();
+  });
+});
+
+describe('engine bridge mission sky (#73)', () => {
+  it('sends the local solar time as the clock runs, and nothing when it has not changed', () => {
+    const engine = fakeEngine();
+    const disconnect = connectEngine(engine);
+    expect(engine.setSkyTime).toHaveBeenLastCalledWith(null);   // no mission time yet: the view.sky preset stays
+    useMissionStore.setState((s) => ({ mission: { ...s.mission, initialLmst: '17:45', elapsedSec: 0 } }));
+    expect(engine.setSkyTime).toHaveBeenLastCalledWith(17.75);
+    const calls = engine.setSkyTime.mock.calls.length;
+    useMissionStore.setState((s) => ({ mission: { ...s.mission, paused: true } }));
+    expect(engine.setSkyTime.mock.calls.length).toBe(calls);
+    useMissionStore.setState((s) => ({ mission: { ...s.mission, elapsedSec: 60 } }));
+    expect(engine.setSkyTime.mock.calls.at(-1)[0]).toBeGreaterThan(17.75);
     disconnect();
   });
 });
@@ -65,5 +81,27 @@ describe('engine bridge habitat prompts', () => {
     expect(useMissionStore.getState().habitat).toEqual({ nearTable: false, zone: null });
     disconnect();
     vi.useRealTimers();
+  });
+});
+
+describe('engine bridge look settings', () => {
+  it('pushes the store look settings once when it connects', () => {
+    const engine = fakeEngine();
+    const disconnect = connectEngine(engine);
+    expect(engine.setLookSettings).toHaveBeenCalledTimes(1);
+    expect(engine.setLookSettings).toHaveBeenCalledWith(useMissionStore.getState().settings.look);
+    disconnect();
+  });
+
+  it('pushes a new look object again, and nothing for an unrelated update', () => {
+    const engine = fakeEngine();
+    const disconnect = connectEngine(engine);
+    const next = { sensitivity: 1.6, invertY: true };
+    useMissionStore.setState((s) => ({ settings: { ...s.settings, look: next } }));
+    expect(engine.setLookSettings).toHaveBeenCalledTimes(2);
+    expect(engine.setLookSettings).toHaveBeenLastCalledWith(next);
+    useMissionStore.setState((s) => ({ view: { ...s.view, layer: 3 } }));
+    expect(engine.setLookSettings).toHaveBeenCalledTimes(2);
+    disconnect();
   });
 });

@@ -2,6 +2,7 @@ import { t } from '../i18n/index.js';
 import { useEffect, useState } from 'react';
 import { useMissionStore } from '../state/store.js';
 import { radioLinkState } from '../sim/radio.js';
+import { truePosition } from '../sim/navigation.js';
 import * as I from './icons.jsx';
 
 const LABEL = { get linked() { return t('linked'); }, get weak() { return t('weak'); }, get lost() { return t('ui.no.link'); } };
@@ -18,11 +19,13 @@ export default function RadioLink({ engine }) {
     const update = () => {
       const nav = useMissionStore.getState().navigation;
       const mast = engine.getHabitatMast();
-      if (!mast || !Number.isFinite(nav.x) || !Number.isFinite(nav.z)) {
+      // The link is a measurement: the signal travels from where the astronaut really is (#42).
+      const point = truePosition(nav);
+      if (!mast || !Number.isFinite(point.x) || !Number.isFinite(point.z)) {
         setLink(null);
         return;
       }
-      setLink(radioLinkState({ point: nav, mast, lineOfSight: engine.lineOfSight }));
+      setLink(radioLinkState({ point, mast, lineOfSight: engine.lineOfSight }));
     };
     update();
     const timer = setInterval(update, 250);

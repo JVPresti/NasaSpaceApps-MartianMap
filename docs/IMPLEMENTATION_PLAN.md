@@ -199,7 +199,7 @@ Implementation is small. The simulation knows the true position. A navigation mo
 | **Radiation** | RAD, in the Curiosity archive on PDS | Dose on the HUD, radiation event numbers | **P0** | Constants and one event curve |
 | **Optical, from the surface** | Perseverance Mastcam-Z images of Bright Angel, sols 1187 to 1217; Navcam and WATSON images of Cheyava Falls | Science stop cards, reference match at the rock, colour matching of terrain and sky | **P1** | Colour matching done (see `docs/marswalk-assets/README.md`). Curate 10 to 15 images for the stops |
 | **Chemical and spectral** | PIXL, SHERLOC and SuperCam results for Cheyava Falls; CRISM for regional minerals | Science card at the rock; optional mineral view | **P1** | Write the card; a mineral view is P2 |
-| **Geologic map** | USGS map SIM 3464 of Jezero (349 MB database) | Geology layer | **P2** | Coarse at this scale: few units cross our site |
+| **Geologic map** | USGS map SIM 3464 of Jezero (349 MB database) | Geology layer | **P2** | Dropped (#48): boundaries are registered to a semi-controlled CTX mosaic, 100–200 m off our ortho. See `docs/data/geology-layer-decision.md` |
 | **Rover track** | Perseverance localisation data (PLACES) | “Perseverance drove here” line as ground truth on the map | **P2** | Optional |
 | **Thermal** | THEMIS on Mars Odyssey (day and night IR, thermal inertia, 100 m); MEDA ground temperature | Thermal view: dropped. THEMIS puts 15 x 15 pixels on the tile. See `docs/data/thermal-view-decision.md` | – | Dropped (#49) |
 
@@ -334,6 +334,7 @@ The backlog in 7.4 is the team's Marswalk - Pendientes list, kept in its six are
 | **Partner: automatic or real player (A14)** | Importante, undecided | Automatic for the MVP, behind one interface. Real players are the stretch. | The demo must not depend on a network. |
 | **Shelters (R3)** | Importante | Define the habitat and at least one natural shelter before the events work starts. | Every event ends at the nearest shelter. |
 | **Thermal view (D7, G5)** | Si da tiempo, undecided | Drop it. | THEMIS pixels are 100 m wide. There is nothing to show on a site this small. |
+| **Geology layer (D6)** | Si da tiempo | Drop it. | SIM 3464 is registered to a semi-controlled CTX mosaic, 100–200 m off our ortho: the unit boundaries would visibly disagree with the terrain. |
 | **Owners** | Graphics only | Put a name on every P0 row before work starts. | Six areas, one named owner. |
 
 ### 7.3 Areas and first deliverables
@@ -393,7 +394,7 @@ Sizes are for one person: S is two to three hours, M is most of a day, L is one 
 | D3* | MEDA sol and RAD curve as data files with provenance | **P0** | S | Each number on the HUD resolves to a mission and a sol |
 | D4 | Check slope, elevation and rock layers against NASA Mars Trek | **P1** | S | Three spot checks recorded with screenshots |
 | D5 | Science stops with short texts: Bright Angel, Cheyava Falls | **P1** | M | Each stop has a text, an image and a credit |
-| D6 | Geology layer from USGS map SIM 3464 of Jezero | **P2** | M | The layer aligns with the terrain |
+| D6 | Geology layer from USGS map SIM 3464 of Jezero | **P2** | M | Dropped (#48): six units cross the tile but the boundaries are registered to a semi-controlled mosaic, 100–200 m off the terrain. See `docs/data/geology-layer-decision.md` |
 | D7 | Thermal or mineral data for the thermal view, or drop it | **P2** | S | Decision recorded |
 
 **Graphics (owner: Andrea)**

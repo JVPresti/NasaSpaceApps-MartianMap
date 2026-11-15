@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createEventEngine } from '../sim/eventEngine.js';
 import exampleEvent from '../sim/events/example-event.json';
-import { createInitialState, resetStore, setMode, setRouteDecision, storeAdapter, useMissionStore } from './store.js';
+import { LOOK_DEFAULTS, LOOK_STORAGE_KEY } from '../engine/lookSettings.js';
+import { createInitialState, resetStore, setLookSettings, setMode, setRouteDecision, storeAdapter, useMissionStore } from './store.js';
 import { createMockState } from './mock.js';
 
 beforeEach(() => resetStore());
@@ -91,5 +92,72 @@ describe('actions and mock data', () => {
     expect([...tags]).toEqual(['SIM']);
     expect(mock.sources['suit.oxygenPct']).toBeDefined();
     expect(mock.route.path.length).toBe(5);
+  });
+});
+
+describe('look settings (#102)', () => {
+  // resetStore() keeps the preference on purpose, so each case puts the defaults back instead of relying on it.
+  afterEach(() => {
+    useMissionStore.setState((s) => ({ settings: { ...s.settings, look: { ...LOOK_DEFAULTS } } }));
+    vi.unstubAllGlobals();
+  });
+
+  it('starts from the defaults in a fresh state', () => {
+    expect(createInitialState().settings.look).toEqual(LOOK_DEFAULTS);
+    expect(createInitialState().settings.look).not.toBe(LOOK_DEFAULTS);   // a private copy, not the frozen default
+    expect(useMissionStore.getState().settings.look).toEqual(LOOK_DEFAULTS);
+  });
+
+  it('clamps the sensitivity, rounds it and keeps the inverted axis', () => {
+    expect(setLookSettings({ sensitivity: 3, invertY: true })).toEqual({ sensitivity: 2, invertY: true });
+    expect(useMissionStore.getState().settings.look).toEqual({ sensitivity: 2, invertY: true });
+    expect(setLookSettings({ sensitivity: 1.44 })).toEqual({ sensitivity: 1.4, invertY: true });
+  });
+
+  it('applies a partial patch and keeps the other field', () => {
+    setLookSettings({ sensitivity: 0.8 });
+    expect(useMissionStore.getState().settings.look).toEqual({ sensitivity: 0.8, invertY: false });
+    setLookSettings({ invertY: true });
+    expect(useMissionStore.getState().settings.look).toEqual({ sensitivity: 0.8, invertY: true });
+    expect(setLookSettings(undefined)).toEqual({ sensitivity: 0.8, invertY: true });
+  });
+
+  it('saves the clamped value in this browser', () => {
+    const setItem = vi.fn();
+    vi.stubGlobal('localStorage', { setItem });
+    setLookSettings({ sensitivity: 1.7, invertY: true });
+    expect(setItem).toHaveBeenCalledWith(LOOK_STORAGE_KEY, '{"sensitivity":1.7,"invertY":true}');
+    setLookSettings({ sensitivity: 9 });
+    expect(setItem).toHaveBeenLastCalledWith(LOOK_STORAGE_KEY, '{"sensitivity":2,"invertY":true}');
+  });
+
+  it('still applies for the session when storage refuses the write', () => {
+    vi.stubGlobal('localStorage', { setItem: () => { throw new Error('quota'); } });
+    expect(setLookSettings({ sensitivity: 1.5 })).toEqual({ sensitivity: 1.5, invertY: false });
+    expect(useMissionStore.getState().settings.look.sensitivity).toBe(1.5);
+  });
+
+  it('keeps the preference across a reset while the mission state goes back to its defaults', () => {
+    setLookSettings({ sensitivity: 1.6, invertY: true });
+    setMode('walk');
+    storeAdapter.set('suit.oxygenSec', 3600);
+    resetStore();
+    expect(useMissionStore.getState().settings.look).toEqual({ sensitivity: 1.6, invertY: true });
+    expect(useMissionStore.getState().mode).toBe('walk');   // on foot in the habitat
+    expect(useMissionStore.getState().stage).toBe('habitat');
+    expect(useMissionStore.getState().suit.oxygenSec).toBeNull();
+    expect(useMissionStore.getState().mission.elapsedSec).toBe(0);
+  });
+
+  it('re-reads the saved value on a fresh page load and falls back when it is corrupt', async () => {
+    vi.stubGlobal('localStorage', { getItem: () => JSON.stringify({ sensitivity: 1.3, invertY: true }) });
+    vi.resetModules();
+    const fresh = await import('./store.js');
+    expect(fresh.useMissionStore.getState().settings.look).toEqual({ sensitivity: 1.3, invertY: true });
+    expect(fresh.createInitialState().settings.look).toEqual(LOOK_DEFAULTS);
+
+    vi.stubGlobal('localStorage', { getItem: () => '{ not json' });
+    vi.resetModules();
+    expect((await import('./store.js')).useMissionStore.getState().settings.look).toEqual(LOOK_DEFAULTS);
   });
 });

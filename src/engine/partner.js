@@ -9,6 +9,9 @@ export function createPartner(ctx) {
   const { scene, U, assets, sys, view } = ctx;
   const { meshH } = ctx.terrain;
 
+  // The case bend eases in and out over this long (#226), instead of snapping in one frame.
+  const BEND_EASE_SEC = 0.25;
+
   // what a source sees of the world: the player, the habitat and where it makes a walker stoop
   const world = {
     player: { x: 0, z: 0 },
@@ -26,7 +29,7 @@ export function createPartner(ctx) {
     source: null, state: null,
     // read by props (case in hand, lid), habitat (hatch opens for a walker), legs (shared model) and view (collision)
     root: null, carrying: true, bending: false, wantCarry: true, blob: null, gltf: null, map: null, accent: null,
-    mixer: null, acts: {}, bend: null, glow: null, stoop: 0, nw: 1,
+    mixer: null, acts: {}, bend: null, glow: null, stoop: 0, nw: 1, bendW: 0,
     uPlayer: { value: new THREE.Vector3(1, 0.32, 0.03) },
 
     /** @param {object | null} source a partner source; null hides the partner */
@@ -77,9 +80,17 @@ export function createPartner(ctx) {
       this.wantCarry = st.action ? st.action.carryingAfter : st.carrying;
       if (st.action) {
         if (!this.bend.isRunning() && !this.bend.paused) this.bend.reset().play();
-        this.bend.paused = true; this.bend.setEffectiveWeight(1); this.bend.time = Math.min(st.action.timeSec, CASE_CLIP.seconds);
-      } else if (this.bend.paused || this.bend.isRunning()) { this.bend.stop(); this.bend.paused = false; }
-      this.acts.walk.setEffectiveWeight(this.bending ? 0 : nw * (1 - this.stoop)); this.acts.walk_stoop.setEffectiveWeight(this.bending ? 0 : nw * this.stoop); this.acts.idle.setEffectiveWeight(this.bending ? 0 : 1 - nw);
+        this.bend.paused = true;
+        this.bend.time = Math.min(st.action.timeSec, CASE_CLIP.seconds);
+      }
+      // The bend weight eases in and out over BEND_EASE_SEC (#226): the feet and hands blend from the walk into the
+      // crouch instead of snapping, and standing back up blends from the held final pose into the swaying idle.
+      this.bendW += ((st.action ? 1 : 0) - this.bendW) * Math.min(1, dt / BEND_EASE_SEC);
+      if (!st.action && this.bendW < 0.005 && (this.bend.paused || this.bend.isRunning())) { this.bend.stop(); this.bend.paused = false; }
+      this.bend.setEffectiveWeight(this.bendW);
+      this.acts.walk.setEffectiveWeight(nw * (1 - this.stoop) * (1 - this.bendW));
+      this.acts.walk_stoop.setEffectiveWeight(nw * this.stoop * (1 - this.bendW));
+      this.acts.idle.setEffectiveWeight((1 - nw) * (1 - this.bendW));
       if (this.carrying && !st.carrying) sys.props.dropCase();   // the case was just released: it settles on the ground
       this.carrying = st.carrying;
 

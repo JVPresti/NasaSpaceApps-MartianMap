@@ -2,9 +2,12 @@ import { t, translateText } from './i18n/index.js';
 import { useLanguage } from './i18n/useLanguage.js';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import EngineView from './components/EngineView.jsx';
+import GamepadHint from './components/GamepadHint.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
 import PauseMenu from './components/PauseMenu.jsx';
 import StartScreen from './components/StartScreen.jsx';
+import TouchStick from './components/TouchStick.jsx';
+import { cycleLayer } from './components/shortcuts.js';
 import { useShortcuts } from './components/useShortcuts.js';
 import DebriefScreen from './debrief/DebriefScreen.jsx';
 import EventBanner from './events/EventBanner.jsx';
@@ -19,15 +22,14 @@ import { WalkStopCard } from './stops/ScienceStops.jsx';
 import { createRouteProgress } from './hud/minimapRoute.js';
 import { openSources } from './sources/sourcesStore.js';
 import { pauseMission, resumeMission, setMode, useMissionStore } from './state/store.js';
-import { STAGE, beginEgress, beginIngress, completeEgress, completeIngress, runAirlockCycle } from './state/flow.js';
 import { EVA_PHASE, PAUSE_VIEW, pauseEva, requestEvaLock, restartEva, resumeEva } from './state/evaSession.js';
+import { STAGE, beginEgress, beginIngress, completeEgress, completeIngress, runAirlockCycle } from './state/flow.js';
 import './App.css';
 import './components/menu.css';
 
 const HINTS = {
   get walk() { return t('menu.esc.to.pause.wasd.to.walk.shift.to'); },
   get drag() { return t('menu.esc.to.pause.drag.to.look'); },
-  get plan() { return t('menu.right.drag.to.pan.scroll.to.zoom.esc'); },
   get habitat() { return t('habitat.hint'); },
   get habitatDrag() { return t('habitat.hint.drag'); },
 };
@@ -88,7 +90,8 @@ function loadReducer(state, action) {
 export default function App() {
   useLanguage();
   const mode = useMissionStore((s) => s.mode);
-  // Where the astronaut is in the flow (src/state/flow.js): habitat, egress, eva, ingress or debrief.
+  // Where the astronaut is in the flow (src/state/flow.js): habitat, egress, eva, ingress or debrief. It replaces the
+  // old evaBegun flag: the EVA has begun once the stage leaves 'habitat', and the table only opens in the habitat.
   const stage = useMissionStore((s) => s.stage);
   // The EVA runner freezes this once the astronaut re-enters the habitat. Non-null means the EVA is over:
   // the debrief owns the screen and no menu behind it can resume the mission.
@@ -204,9 +207,10 @@ export default function App() {
     setBusyState(true);
     setNotice(null);
     setQualityError(null);
+    // Planning costs no mission time (#11): in the habitat, on foot or at the mission table, the clock waits for the
+    // end of the airlock cycle after Begin EVA.
+    const holdClock = useMissionStore.getState().stage !== STAGE.EVA;
     try {
-      // Inside the habitat the mission clock waits for the airlock: walking around and planning cost no mission time.
-      const holdClock = useMissionStore.getState().stage !== STAGE.EVA;
       const result = await resumeEva({ engine: instance, mode: resumeMode, isCurrent, capture: !freeLookRef.current, holdClock });
       // A superseded attempt stays paused and silent: the action that ended it owns the menu and its message.
       if (result.stale) return;
@@ -238,14 +242,20 @@ export default function App() {
     handleResume();
   }, [handleResume]);
 
-  const handleModeChange = useCallback(async (next) => {
+  const handleModeChange = useCallback(async (next, { capture = true } = {}) => {
     if (busyRef.current) return;
     if (next === useMissionStore.getState().mode) return;
     // Any mode change ends a pending resume; setMode also makes the engine cancel a pending Walk lock.
     resumeSeqRef.current += 1;
     const attempt = ++walkLockSeqRef.current;
     setMode(next);
-    if (phaseRef.current === EVA_PHASE.PLAYING && next === 'walk' && !freeLookRef.current) {
+    // A gamepad press is not a user gesture, so the browser can only refuse a lock request (#103). The pad
+    // switch keeps drag-to-look, the same fallback as #197, instead of pausing behind a failed capture.
+    if (!capture && next === 'walk' && !freeLookRef.current) {
+      freeLookRef.current = true;
+      setFreeLookState(true);
+    }
+    if (phaseRef.current === EVA_PHASE.PLAYING && next === 'walk' && capture && !freeLookRef.current) {
       // The click itself is the user gesture. If the lock is refused, stay paused and explain.
       const instance = engineRef.current;
       const lock = await requestEvaLock(instance);
@@ -262,12 +272,65 @@ export default function App() {
         try { instance?.releasePointerLock?.(); } catch { /* nothing to release */ }
         return;
       }
-      if (phaseRef.current === EVA_PHASE.PLAYING && !lock.ok) {
+      if (phaseRef.current !== EVA_PHASE.PLAYING) return;
+      if (!lock.ok) {
         pauseFor(PAUSE_VIEW.MENU, lock.message);
         setLockFailed(true);
       }
     }
   }, [pauseFor]);
+
+  /** E or a click at the table in the habitat: open the mission table. The table needs no pointer lock. */
+  const openTable = useCallback(() => {
+    const state = useMissionStore.getState();
+    if (busyRef.current || phaseRef.current !== EVA_PHASE.PLAYING) return;
+    if (state.stage !== STAGE.HABITAT || state.mode !== 'walk' || !state.habitat?.nearTable) return;
+    handleModeChange('plan');
+  }, [handleModeChange]);
+
+  /** "Back to the habitat" on the mission table: walk again by the table. The click captures the mouse. */
+  const closeTable = useCallback((options) => {
+    if (useMissionStore.getState().mode !== 'plan') return;
+    handleModeChange('walk', options);
+  }, [handleModeChange]);
+
+  /**
+   * Begin EVA on the mission table: the route is fixed and the astronaut goes out through the airlock. The click is
+   * the user gesture for the pointer lock the surface needs, so it is asked for here; the cycle (effect below) moves
+   * the player outside while the screen is dark and starts the EVA at its end. A refused capture waits behind the
+   * pause menu, which offers drag-to-look (#197); the cycle stands still until Resume.
+   */
+  const handleBeginEva = useCallback(async () => {
+    const instance = engineRef.current;
+    if (!instance || busyRef.current || phaseRef.current !== EVA_PHASE.PLAYING) return;
+    if (useMissionStore.getState().stage !== STAGE.HABITAT) return;
+    resumeSeqRef.current += 1;
+    const attempt = ++walkLockSeqRef.current;
+    beginEgress();   // stage 'egress' and mode 'walk' in one write: the table closes as the cycle starts
+    instance.setInputEnabled(false);   // nobody walks inside the airlock while it cycles
+    if (freeLookRef.current) return;
+    const lock = await requestEvaLock(instance);
+    if (attempt !== walkLockSeqRef.current) {
+      if (lock.ok) { try { instance.releasePointerLock?.(); } catch { /* the newer screen stays in charge */ } }
+      return;
+    }
+    if (!lock.ok && phaseRef.current === EVA_PHASE.PLAYING) {
+      pauseFor(PAUSE_VIEW.MENU, lock.message);
+      setLockFailed(true);
+    }
+  }, [pauseFor]);
+
+  // Gamepad buttons reach the same actions as the keyboard (#101, #103). The engine reports them only while
+  // gameplay input is enabled, so a press behind the pause menu cannot act; the phase check is a second guard.
+  const handleGamepadAction = useCallback((action) => {
+    if (phaseRef.current !== EVA_PHASE.PLAYING || busyRef.current) return;
+    if (action === 'mode') {
+      // The pad's view button opens the mission table at the table and closes it again; outside it does nothing.
+      if (useMissionStore.getState().mode === 'plan') closeTable({ capture: false });
+      else openTable();
+    } else if (action === 'layer-prev') cycleLayer(-1);
+    else if (action === 'layer-next') cycleLayer(1);
+  }, [closeTable, openTable]);
 
   const handleQuality = useCallback(async (option) => {
     const instance = engineRef.current;
@@ -319,9 +382,9 @@ export default function App() {
   }, [minimapRoute, setBusyState, setOverlay, setPhase]);
 
   /**
-   * Restart the EVA and land in the habitat instead of on the start screen: at the mission table ('table', the pause
+   * Restart the EVA and land in the habitat instead of on the start screen: at the mission table ('table': the pause
    * menu's "End the EVA" and the debrief's "Plan the next EVA") or on foot by the table ('habitat'). The click that
-   * called this is the user gesture for the pointer lock that walking needs; the table needs none.
+   * called this is the user gesture for the pointer lock walking needs; the table needs none.
    * @param {'table' | 'habitat'} target
    */
   const restartInto = useCallback((target) => {
@@ -330,45 +393,19 @@ export default function App() {
     handleResume();
   }, [handleRestartConfirm, handleResume]);
 
-  /** E or a click at the table in the habitat: open the mission table. The table needs no pointer lock. */
-  const openTable = useCallback(() => {
-    const state = useMissionStore.getState();
-    if (busyRef.current || phaseRef.current !== EVA_PHASE.PLAYING) return;
-    if (state.stage !== STAGE.HABITAT || state.mode !== 'walk' || !state.habitat?.nearTable) return;
-    handleModeChange('plan');
-  }, [handleModeChange]);
-
-  /** "Back to the habitat" on the mission table: walk again. The click captures the mouse (handleModeChange). */
-  const closeTable = useCallback(() => {
-    if (useMissionStore.getState().mode !== 'plan') return;
-    handleModeChange('walk');
-  }, [handleModeChange]);
-
-  /**
-   * Begin EVA on the mission table: the route is fixed and the astronaut goes out through the airlock. The click is
-   * the user gesture for the pointer lock the surface needs, so it is asked for here; the cycle (effect below) moves
-   * the player outside while the screen is dark and starts the EVA at its end.
-   */
-  const handleBeginEva = useCallback(async () => {
-    const instance = engineRef.current;
-    if (!instance || busyRef.current || phaseRef.current !== EVA_PHASE.PLAYING) return;
-    if (useMissionStore.getState().stage !== STAGE.HABITAT) return;
-    resumeSeqRef.current += 1;
-    const attempt = ++walkLockSeqRef.current;
-    beginEgress();   // stage 'egress' and mode 'walk' in one write: the table closes as the cycle starts
-    instance.setInputEnabled(false);   // nobody walks inside the airlock while it cycles
-    if (freeLookRef.current) return;
-    const lock = await requestEvaLock(instance);
-    if (attempt !== walkLockSeqRef.current) {
-      if (lock.ok) { try { instance.releasePointerLock?.(); } catch { /* the newer screen stays in charge */ } }
-      return;
-    }
-    if (!lock.ok && phaseRef.current === EVA_PHASE.PLAYING) {
-      // The cycle waits behind the pause menu; Resume (or drag-to-look) carries on from where it stopped.
-      pauseFor(PAUSE_VIEW.MENU, lock.message);
-      setLockFailed(true);
-    }
-  }, [pauseFor]);
+  // Controls opened from the mission table close back to the table; opened from the pause menu, back to the menu.
+  // The ref serves the handlers; the state labels the dialog's close button.
+  const controlsFromMenuRef = useRef(false);
+  const [controlsFromMenu, setControlsFromMenuState] = useState(false);
+  const setControlsFromMenu = useCallback((value) => { controlsFromMenuRef.current = value; setControlsFromMenuState(value); }, []);
+  const openControls = useCallback((fromMenu) => {
+    setControlsFromMenu(fromMenu);
+    showOverlay(PAUSE_VIEW.CONTROLS);
+  }, [setControlsFromMenu, showOverlay]);
+  const closeControls = useCallback(() => {
+    if (controlsFromMenuRef.current || useMissionStore.getState().mode !== 'plan') setOverlay(PAUSE_VIEW.MENU);
+    else handleResume();
+  }, [handleResume, setOverlay]);
 
   const handleRetry = useCallback(() => {
     resumeSeqRef.current += 1;
@@ -420,13 +457,14 @@ export default function App() {
       if (event.key === 'h' || event.key === 'H') {
         if (phaseRef.current === EVA_PHASE.PLAYING) {
           event.preventDefault();
+          setControlsFromMenu(false);
           pauseFor(PAUSE_VIEW.CONTROLS);
         }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [pauseFor]);
+  }, [pauseFor, setControlsFromMenu]);
 
   // The EVA runner pauses the mission clock at the instant the summary is frozen. Close the interactive EVA here as
   // well: disable engine input and release the pointer before a lock-change handler can open the pause menu, and
@@ -459,14 +497,11 @@ export default function App() {
         instance.setInputEnabled(false);
       },
       onDone: () => {
-        if (out) {
-          completeEgress();
-          if (phaseRef.current === EVA_PHASE.PLAYING) {
-            engineRef.current?.setInputEnabled(true);
-            resumeMission();
-          }
-        } else {
-          completeIngress();
+        if (!out) { completeIngress(); return; }
+        completeEgress();
+        if (phaseRef.current === EVA_PHASE.PLAYING) {
+          engineRef.current?.setInputEnabled(true);
+          resumeMission();
         }
       },
     });
@@ -506,11 +541,11 @@ export default function App() {
   const inHabitat = stage === STAGE.HABITAT;
   // The surface top bar and the EVA HUD belong outside. In the habitat the suit is on standby: only the habitat HUD.
   const showTopbar = playing && onSurface;
-  // Data layer keys (L, Shift+L, 0) work where a layer is visible: on the surface and at the mission table.
+  // Data layer keys (L, Shift+L, 0) work where a layer shows: on the surface and at the mission table.
   useShortcuts(playing && (onSurface || mode === 'plan'));
 
   return (
-    <div className="app">
+    <div className={load.status === 'ready' && phase === EVA_PHASE.START ? 'app at-start' : 'app'}>
       <EngineView
         key={`engine-${load.attempt}`}
         onStatus={handleStatus}
@@ -519,6 +554,7 @@ export default function App() {
         onError={handleError}
         onLockChange={handleLockChange}
         onEngine={handleEngine}
+        onGamepadAction={handleGamepadAction}
       />
 
       {ready && (
@@ -527,14 +563,16 @@ export default function App() {
           engine={engine}
           active={mode === 'plan' && inHabitat}
           onBeginEva={handleBeginEva}
-          onClose={closeTable}
+          onClose={() => closeTable()}
+          onControls={() => openControls(false)}
         />
       )}
       {/* Plan mode places the banner in its own alert region; Walk puts it under the heading box, the HUD's only alert. */}
       {ready && mode === 'walk' && onSurface && <EventBanner className="event-banner-walk" />}
       {ready && DEBUG_EVENTS && <EventDebug />}
 
-      {onSurface && (
+      {/* The mission table has its own top bar and the habitat its own HUD; this one is for the surface. */}
+      {mode === 'walk' && onSurface && (
         <header className="topbar" inert={showTopbar ? undefined : true}>
           <h1>{t('app.brandSpaced')}<span>{t('ui.cheyava.falls.neretva.vallis.jezero.crater')}</span>
           </h1>
@@ -545,6 +583,9 @@ export default function App() {
 
       {ready && mode === 'walk' && onSurface && <Hud engine={engine} minimapRoute={minimapRoute} />}
       {ready && mode === 'walk' && inHabitat && !evaSummary && phase !== EVA_PHASE.START && <HabitatHud />}
+      {/* Inputs appear only after they are used (#103): the stick on the first touch, the pad hint on the first press. */}
+      {load.status === 'ready' && mode === 'walk' && !evaSummary && <TouchStick engine={engine} />}
+      {load.status === 'ready' && mode === 'walk' && !evaSummary && <GamepadHint engine={engine} />}
       {ready && <Finds engine={engine} mode={onSurface ? mode : 'plan'} />}
 
       {ready && <WalkStopCard active={mode === 'walk' && onSurface} />}
@@ -559,13 +600,14 @@ export default function App() {
 
       {load.status === 'ready' && !evaSummary && loadingDone && phase === EVA_PHASE.START && (
         <StartScreen
-          mode={mode}
           busy={busy}
           notice={notice}
           freeLook={freeLook}
           lockFailed={lockFailed}
+          // Start puts the astronaut on foot in the habitat, next to the mission table; the click captures the mouse.
           onStart={handleResume}
           onStartWithoutCapture={handleResumeWithoutCapture}
+          onSources={openSources}
         />
       )}
 
@@ -573,6 +615,7 @@ export default function App() {
         <PauseMenu
           view={overlay}
           mode={mode}
+          evaBegun={onSurface}
           busy={busy}
           notice={notice}
           freeLook={freeLook}
@@ -585,11 +628,13 @@ export default function App() {
           onResumeWithoutCapture={handleResumeWithoutCapture}
           onRestartRequest={() => showOverlay(PAUSE_VIEW.RESTART)}
           onRestartConfirm={handleRestartConfirm}
-          onControls={() => showOverlay(PAUSE_VIEW.CONTROLS)}
+          controlsToMenu={controlsFromMenu || mode !== 'plan'}
+          onControls={() => openControls(true)}
+          onControlsClose={closeControls}
           onSources={openSources}
           onMenu={() => setOverlay(PAUSE_VIEW.MENU)}
           onQuality={handleQuality}
-          onEndRequest={onSurface ? () => showOverlay(PAUSE_VIEW.END) : null}
+          onEndRequest={() => showOverlay(PAUSE_VIEW.END)}
           onEndConfirm={() => restartInto('table')}
           onCancel={handlePauseCancel}
         />

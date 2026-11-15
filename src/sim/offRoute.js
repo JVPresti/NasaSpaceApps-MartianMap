@@ -11,6 +11,7 @@
  */
 
 import { applyPlannedRoute } from './routeUpdate.js';
+import { truePosition } from './navigation.js';
 
 /** Defaults from issue #98: about 20 m, about 5 s, one re-plan every few seconds. */
 export const OFF_ROUTE_DEFAULTS = Object.freeze({
@@ -155,9 +156,9 @@ export function startOffRouteRunner({
   async function tick() {
     if (stopped || planning) return;
     const state = store.getState();
-    const point = Number.isFinite(state.navigation?.x) && Number.isFinite(state.navigation?.z)
-      ? { x: state.navigation.x, z: state.navigation.z }
-      : null;
+    // Physical position: leaving the route happens in the real world, not in the estimate (#42).
+    const truth = truePosition(state.navigation);
+    const point = Number.isFinite(truth.x) && Number.isFinite(truth.z) ? truth : null;
 
     if (state.mode !== 'walk') {
       monitor.reset();

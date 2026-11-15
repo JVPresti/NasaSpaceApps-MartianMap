@@ -1,357 +1,436 @@
-/* Start screen and pause menu. They share the existing Mars tokens and panel treatment so the new
-   screens feel like the loading screen, plan panel and top bar around them. */
+/* Start screen, pause menu and controls (#11 design). Tokens are in src/index.css: dark panels with a thin line,
+   square corners, titles in the display face, one orange main action. Sentence case; only the MARSWALK wordmark is
+   set in capitals. */
 
 .modal {
-  width: min(620px, calc(100% - 32px));
+  width: min(520px, calc(100% - 32px));
   max-width: none;
-  max-height: min(88vh, 760px);
+  max-height: min(90vh, 820px);
   margin: auto;
   padding: 0;
   overflow-y: auto;
   color: var(--ink);
-  background: linear-gradient(180deg, rgba(28, 17, 12, 0.97), rgba(19, 12, 9, 0.96));
-  border: 1px solid var(--line);
-  border-radius: 18px;
+  background: rgba(10, 13, 17, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-m);
   box-shadow: 0 32px 80px rgba(0, 0, 0, 0.55);
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 214, 170, 0.28) transparent;
+  scrollbar-color: var(--line-strong) transparent;
 }
 
 .modal::backdrop {
-  background: radial-gradient(ellipse at 50% 45%, rgba(26, 16, 12, 0.58), rgba(10, 6, 4, 0.88));
-  backdrop-filter: blur(2px);
+  background: rgba(5, 7, 10, 0.7);
 }
 
-.modal:focus {
-  outline: none;
+.modal:focus { outline: none; }
+
+.dialog-body { padding: 36px 36px 34px; }
+
+.dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
 }
 
-.start-dialog {
-  width: min(760px, calc(100% - 32px));
-}
-
-/* The start screen holds the intro, the full controls help and, after a refused mouse capture, a notice and a second
-   button. These tighter values keep all of it inside the 674 px the dialog gets at 1366 x 768 (#199). */
-.start-dialog .dialog-body {
-  padding: 22px 28px 20px;
-}
-
-.start-dialog .dialog-site {
-  margin-bottom: 14px;
-}
-
-.start-dialog .dialog-mission,
-.start-dialog .dialog-source {
-  max-width: 76ch;
-}
-
-.start-dialog .dialog-notice {
-  margin-top: 12px;
-}
-
-.start-dialog .dialog-actions {
-  margin-top: 16px;
-}
-
-.pause-dialog {
-  width: min(520px, calc(100% - 32px));
-}
-
-.dialog-body {
-  padding: 26px 28px 24px;
-}
+.dialog-head .ui-button { min-width: 74px; }
 
 .dialog-kicker {
-  margin: 0 0 6px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--accent);
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--dim);
 }
 
 .dialog-title {
   margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-.dialog-site {
-  margin: 5px 0 20px;
-  font-size: 12.5px;
-  letter-spacing: 0.02em;
-  color: var(--dim);
+  font: 600 44px/1.05 var(--font-display);
 }
 
 .dialog-mission {
-  max-width: 58ch;
-  margin: 0 0 10px;
-  font-size: 14.5px;
+  margin: 16px 0 0;
+  font-size: 15px;
   line-height: 1.55;
+  color: #c9d0d8;
 }
 
-.dialog-source {
-  max-width: 58ch;
+/* ------------------------------------------------------------------ buttons */
+
+.ui-button {
+  min-height: 46px;
+  padding: 10px 18px;
+  font: 600 15px/1.2 var(--font-ui);
+  color: var(--ink);
+  border: 1px solid transparent;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.ui-button.primary {
+  color: #140a05;
+  background: var(--accent);
+}
+
+.ui-button.primary:hover { background: #ff8148; }
+
+.ui-button.ghost {
+  background: rgba(10, 13, 17, 0.6);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.ui-button.ghost:hover { background: rgba(255, 255, 255, 0.08); }
+
+.ui-button.danger {
+  color: #1c0704;
+  background: var(--danger);
+}
+
+.ui-button.danger:hover { background: #ff6d60; }
+
+.ui-button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.ui-button:focus-visible,
+.quality-options button:focus-visible,
+.start-primary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 26px; }
+
+.dialog-notice {
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  background: rgba(255, 176, 32, 0.08);
+  border: 1px solid rgba(255, 176, 32, 0.4);
+  border-left: 3px solid var(--caution);
+}
+
+.dialog-error { margin: 8px 0 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; color: var(--danger); }
+
+.dialog-footnote { margin: 24px 0 0; font-size: 14px; line-height: 1.5; color: var(--dim); }
+
+/* ------------------------------------------------------------------ pause menu */
+
+.menu-actions { display: grid; gap: 10px; margin-top: 22px; }
+
+.menu-actions .ui-button { width: 100%; text-align: left; }
+
+.menu-actions .menu-resume {
+  min-height: 56px;
+  padding-left: 28px;
+  font: 600 26px/1 var(--font-display);
+}
+
+.quality-block,
+.look-block {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* Mouse look settings in the pause menu (#102) */
+.look-sensitivity-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.look-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.look-block input[type="range"] {
+  width: 100%;
+  height: 44px;   /* same touch target as the buttons; the native track stays thin */
   margin: 0;
-  font-size: 10.5px;
-  line-height: 1.45;
-  letter-spacing: 0.02em;
-  color: rgba(143, 211, 238, 0.8);
+  accent-color: var(--cyan);
+  cursor: pointer;
 }
 
-/* Three columns of short one-line rows, so the start screen fits 1366 x 768 without scrolling (#199). The pause
-   dialog is narrower and wraps to two. Each group aligns its descriptions on its widest key. */
+.look-block input[type="range"]:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+.look-invert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.look-invert input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--cyan);
+}
+
+.look-invert input[type="checkbox"]:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+.look-block .menu-note { margin-top: 6px; }
+
+/* Interface language (#177): the select follows the quality buttons' look. */
+.language-block {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.language-block label {
+  display: block;
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--dim);
+}
+
+.language-block select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  font: 500 15px var(--font-ui);
+  color: var(--ink);
+  background: rgba(10, 13, 17, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0;
+}
+
+.language-block select:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+.menu-note { margin: 8px 0 0; font-size: 12px; line-height: 1.45; color: var(--dim); }
+
+.quality-block h3,
+.look-block h3,
+.controls-group h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--dim);
+}
+
+.quality-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+
+.quality-options button {
+  min-height: 44px;
+  padding: 8px;
+  font: 500 15px var(--font-ui);
+  color: var(--ink);
+  background: rgba(10, 13, 17, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.quality-options button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
+
+.quality-options button.on {
+  color: #0a0d11;
+  background: #f2f4f6;
+  border-color: #f2f4f6;
+}
+
+.quality-options button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.quality-status { margin: 8px 0 0; font-size: 12px; color: var(--dim); }
+
+/* Short screens (1366 x 768 and similar): the menu with the language select keeps its actions and settings on
+   screen; a notice or the drag-to-look offer may still scroll the dialog, with Resume at the top. */
+@media (max-height: 820px) {
+  .pause-dialog > .dialog-body { padding: 26px 32px 24px; }
+  .pause-dialog .dialog-title { font-size: 38px; }
+  .menu-actions { gap: 8px; margin-top: 16px; }
+  .menu-actions .ui-button { min-height: 42px; }
+  .menu-actions .menu-resume { min-height: 50px; }
+  .language-block,
+  .quality-block { margin-top: 16px; padding-top: 14px; }
+}
+
+/* ------------------------------------------------------------------ controls */
+
+/* Three columns of every key (#199), wide enough that each row stays on one line, so the controls fit 1366 x 768
+   without scrolling from the start screen and from the pause menu. Narrower windows wrap to two columns, then one. */
+.controls-dialog { width: min(1040px, calc(100% - 32px)); }
+
 .controls-help {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(196px, 1fr));
-  gap: 14px 22px;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px 36px;
 }
 
 .controls-column {
   display: grid;
   align-content: start;
-  gap: 12px;
+  gap: 24px;
 }
 
 .controls-group h3 {
-  margin: 0 0 6px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--dim);
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
 }
 
-.controls-list {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 3px 10px;
-  align-items: baseline;
-  margin: 0;
-}
+.controls-list { display: grid; gap: 10px; margin: 0; }
 
 .controls-row {
-  display: contents;
-}
-
-.controls-row dt {
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.35;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink);
-}
-
-.controls-row dd {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.35;
-  color: var(--dim);
-}
-
-.dialog-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 22px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.ui-button {
-  min-height: 44px;
-  padding: 9px 20px;
-  font: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
+.controls-row dt { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.controls-or { font-size: 13px; color: var(--dim); }
+
+.controls-row kbd {
+  min-width: 30px;
+  padding: 5px 8px;
+  font: 500 13px/1.2 var(--font-mono);
+  text-align: center;
   color: var(--ink);
-  border: 1px solid transparent;
-  border-radius: 999px;
-  cursor: pointer;
+  background: rgba(10, 13, 17, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: var(--radius-s);
 }
 
-.ui-button.primary {
-  color: var(--bg);
-  background: var(--ink);
+.controls-row dd { margin: 0; font-size: 14px; text-align: right; }
+
+@media (max-width: 900px) {
+  .controls-help { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-.ui-button.primary:hover {
-  background: #ffffff;
+/* Short screens (1366 x 768 and similar): a tighter rhythm keeps the whole reference on screen. */
+@media (max-height: 820px) {
+  .controls-panel.dialog-body { padding: 26px 32px 24px; }
+  .controls-panel .dialog-head { margin-bottom: 16px; }
+  .controls-panel .dialog-title { font-size: 38px; }
+  .controls-panel .dialog-footnote { margin-top: 16px; }
+  .controls-list { gap: 8px; }
 }
 
-.ui-button.ghost {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--line);
-}
+/* ------------------------------------------------------------------ start screen */
 
-.ui-button.ghost:hover {
-  background: rgba(255, 255, 255, 0.11);
-}
-
-.ui-button.danger {
-  color: #2a0f0a;
-  background: var(--danger);
-}
-
-.ui-button.danger:hover {
-  background: #ffa99b;
-}
-
-.ui-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.ui-button:focus-visible,
-.quality-options button:focus-visible {
-  outline: 2px solid var(--cyan);
-  outline-offset: 3px;
-}
-
-.dialog-notice {
-  margin: 16px 0 0;
-  padding: 10px 12px;
-  font-size: 12.5px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-  color: #ffe1d6;
-  background: rgba(255, 138, 122, 0.1);
-  border: 1px solid rgba(255, 138, 122, 0.36);
-  border-radius: 10px;
-}
-
-.dialog-error {
-  margin: 8px 0 0;
-  font-size: 11.5px;
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-  color: var(--danger);
-}
-
-.dialog-footnote {
-  margin: 14px 0 0;
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--dim);
-}
-
-.menu-actions {
-  display: grid;
-  gap: 8px;
-  margin-top: 18px;
-}
-
-.menu-actions .ui-button {
+/* Fills the window: a picture of the surface (rendered from the app's own scene), dark on the left for the text. */
+.start-dialog {
+  inset: 0;
   width: 100%;
-  text-align: left;
-}
-
-.menu-note {
+  height: 100%;
+  max-height: none;
   margin: 0;
-  padding: 0 4px;
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--dim);
+  overflow: hidden;
+  background: url('../assets/ui/surface.webp') center / cover no-repeat, var(--bg);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-.quality-block {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-}
+.start-dialog::backdrop { background: var(--bg); }
 
-.language-block { margin-top: 18px; }
-.language-block label { display: block; margin-bottom: 8px; font-weight: 600; }
-.language-block select {
+.start-dialog.showing-controls { display: grid; place-items: center; }
+
+/* the video fills the window behind the text; a dark wash on the left keeps the text readable */
+.start-video {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  min-height: 44px;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--bg);
-  color: var(--ink);
-  font: inherit;
-}
-.language-block select:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
-
-.quality-block h3 {
-  margin: 0 0 9px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--dim);
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
 }
 
-.quality-options {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+/* dark on the left, clear on the right, so the text reads over the video */
+.start-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(10, 13, 17, 0.94) 0%, rgba(10, 13, 17, 0.86) 28%, rgba(10, 13, 17, 0.5) 48%, rgba(10, 13, 17, 0.12) 66%, rgba(10, 13, 17, 0) 80%);
 }
 
-.quality-options button {
-  min-height: 44px;
-  padding: 7px 8px;
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--ink);
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid transparent;
-  border-radius: 9px;
-  cursor: pointer;
-}
-
-.quality-options button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.09);
-}
-
-.quality-options button.on {
-  color: var(--bg);
-  background: var(--ink);
-  border-color: var(--ink);
-}
-
-.quality-options button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.quality-status {
-  margin: 9px 0 0;
-  font-size: 11.5px;
-  color: var(--dim);
-}
-
-.quality-device {
-  margin: 3px 0 0;
-  overflow-wrap: anywhere;
-  font-size: 10.5px;
-  font-variant-numeric: tabular-nums;
-  color: var(--dim);
-}
-
-@media (max-width: 560px) {
-  .dialog-body,
-  .start-dialog .dialog-body {
-    padding: 22px 20px 20px;
-  }
-
-  .controls-help {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .dialog-title {
-    font-size: 21px;
-  }
-}
+.start-layout { position: relative; }
 
 @media (prefers-reduced-motion: reduce) {
-  .ui-button,
-  .quality-options button {
-    transition: none;
-  }
+  .start-video { display: none; }
+}
+
+.start-controls {
+  width: min(1040px, calc(100% - 32px));
+  max-height: 100%;
+  overflow-y: auto;
+  background: rgba(10, 13, 17, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.start-layout {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
+  padding: clamp(28px, 6.5vh, 64px) clamp(24px, 6.7vw, 96px);
+}
+
+.start-hero { width: min(560px, 100%); }
+
+.start-kicker {
+  margin: 0 0 18px;
+  font: 500 26px/1 var(--font-display);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.start-title {
+  margin: 0;
+  font: 600 clamp(56px, 6.3vw, 96px)/0.95 var(--font-display);
+}
+
+.start-site { margin: 14px 0 0; font-size: 17px; color: #c9d0d8; }
+
+.start-text { margin: 18px 0 0; max-width: 540px; font-size: 17px; line-height: 1.55; color: #e3e7eb; }
+
+.start-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: min(360px, 100%);
+  margin-top: 28px;
+}
+
+.start-primary {
+  grid-column: 1 / -1;
+  min-height: 60px;
+  font: 600 26px/1 var(--font-display);
+  color: #140a05;
+  background: var(--accent);
+  border: 0;
+  cursor: pointer;
+}
+
+.start-primary:hover { background: #ff8148; }
+.start-primary:disabled { opacity: 0.6; cursor: wait; }
+
+.start-note { margin: 16px 0 0; max-width: 420px; font-size: 14px; line-height: 1.5; color: var(--dim); }
+
+.start-credit {
+  position: absolute;
+  left: clamp(24px, 6.7vw, 96px);
+  bottom: clamp(20px, 4vh, 40px);
+  margin: 0;
+  font-size: 13px;
+  color: var(--dim);
+}
+
+/* ------------------------------------------------------------------ smaller screens */
+
+@media (max-width: 640px) {
+  .dialog-body { padding: 26px 22px 24px; }
+  .dialog-title { font-size: 34px; }
+  .controls-help { grid-template-columns: 1fr; gap: 22px; }
+  .start-dialog { background: linear-gradient(rgba(10, 13, 17, 0.86), rgba(10, 13, 17, 0.86)), url('../assets/ui/surface.webp') center / cover no-repeat; }
+  .start-credit { position: static; margin-top: 32px; }
 }
