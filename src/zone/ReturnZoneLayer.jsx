@@ -1,11 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { t } from '../i18n/index.js';
-import { zoneStatus } from './zoneStatus.js';
 import { drawZoneWorld } from './zonePaint.js';
 import './zone.css';
 
 // The return zone on the mission table map (src/sim/returnZone.js through the zone service): a canvas over the map's
-// own picture, drawn for the map's current view, and one line on what the zone was computed from and what closes it.
+// own picture, drawn for the map's current view. What bounds it is written in its legend (ZoneLegendLine.jsx).
 
 const PIXELS = 768;   // the table map's canvas (MissionMap.jsx)
 /**
@@ -28,18 +26,5 @@ export default function ReturnZoneLayer({ zone, crop }) {
     });
     return () => cancelAnimationFrame(frame);
   }, [zone, crop.x0, crop.z0, crop.size]);
-  const status = zoneStatus(zone);
-  return (
-    <>
-      <canvas ref={ref} className="zone-layer" width={PIXELS} height={PIXELS} aria-hidden="true" />
-      <p className="zone-status" role="status" aria-live="polite">
-        {status ? (
-          <>
-            <b>{status.limit}</b>
-            <span>{status.head} · {status.reach} · {t('layers.zone.cells')}</span>
-          </>
-        ) : t('layers.zone.waiting')}
-      </p>
-    </>
-  );
+  return <canvas ref={ref} className="zone-layer" width={PIXELS} height={PIXELS} aria-hidden="true" />;
 }
