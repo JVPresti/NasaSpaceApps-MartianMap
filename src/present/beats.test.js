@@ -189,7 +189,7 @@ describe('the presentation story', () => {
     expect(duration - team.at).toBeGreaterThanOrEqual(8);
     expect(team.people.split(' · ')).toEqual(['Teresa Rivas Gómez', 'Andrea Rivas Gómez', 'Fernando Haro Calvo', 'Jorge Antonio Vazquez Guzmán', 'Antonio Ramos Gonzalez', 'Brayan Iván Pérez Ventura']);
     expect(team.people).not.toMatch(/@/);
-    expect(team.url).toBe('https://martian-map.fernando-haro-c.workers.dev');
+    expect(team.url).toBe('https://marswalk.study');
     expect(readFileSync(new URL(`../../public/present/${team.qr}`, import.meta.url), 'utf8')).toMatch(/^<svg/);
   });
 
