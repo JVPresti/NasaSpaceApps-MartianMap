@@ -8,8 +8,10 @@
  * - rock: `sampling.samples` of kind 'rock', the same.
  *
  * A record counts AT a place when its point lies within the place's arrival radius plus SAMPLE_REACH_M (2 m, the scoop's
- * reach: the same rule as the first sortie's "sample secured at the stop", src/sim/missions.js). Counting has two passes,
- * and each record counts once:
+ * reach: the same rule as the first sortie's "sample secured at the stop", src/sim/missions.js), or, at a known stop,
+ * when the engine named the record's site after that stop (`site` 'Bright Angel': a chip of the outcrop itself, at any
+ * distance; the outcrop is centred 4.2 m from its waypoint and is 6.7 m long, more than its 4 m count radius). Counting
+ * has two passes, and each record counts once:
  *   1. tasks in list order take the unused matching records at their place, oldest first, up to their count (`here`);
  *   2. tasks still short take unused matching records anywhere, oldest first, up to what is missing (`elsewhere`).
  * A task is 'done' with all its items at the place, 'elsewhere' when the count is complete only with records from
@@ -61,8 +63,15 @@ function rowPlace(place) {
   };
 }
 
+/** The site name the engine gives a record taken at this place: a known stop's name ('Bright Angel'), else null. */
+function siteOf(place) {
+  const stop = place?.type === 'stop' || (place?.type === undefined && !!place?.stopId);
+  return stop && typeof place.label === 'string' && place.label ? place.label : null;
+}
+
 const distance = (place, record) => Math.hypot(record.x - place.x, record.z - place.z);
-const atPlace = (place, record) => place.x !== null && distance(place, record) <= place.radiusM + SAMPLE_REACH_M;
+const atPlace = (place, site, record) => (site !== null && record.site === site)
+  || (place.x !== null && distance(place, record) <= place.radiusM + SAMPLE_REACH_M);
 
 /**
  * One row per task, in list order: what was collected at its place and elsewhere.
@@ -83,6 +92,7 @@ export function taskProgress(tasks, sampling = {}) {
   const rows = list.map((task) => ({
     task,
     place: rowPlace(task.place),
+    site: siteOf(task.place),
     count: finite(task.count) && task.count > 0 ? Math.round(task.count) : 1,
     here: [],
     elsewhere: [],
@@ -92,7 +102,7 @@ export function taskProgress(tasks, sampling = {}) {
   for (const row of rows) {
     for (const item of pool(row.task.what)) {
       if (row.here.length >= row.count) break;
-      if (!item.used && atPlace(row.place, item.record)) { item.used = true; row.here.push(item.record); }
+      if (!item.used && atPlace(row.place, row.site, item.record)) { item.used = true; row.here.push(item.record); }
     }
   }
   // Pass 2: what is still missing, from anywhere.

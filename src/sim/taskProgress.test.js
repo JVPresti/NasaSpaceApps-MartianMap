@@ -47,6 +47,22 @@ describe('taskProgress', () => {
     expect(far.distanceM).toBeCloseTo(edge + 0.01, 6);
   });
 
+  it('counts a record the engine named after the stop at that stop at any distance: the far half of the outcrop (PO 5)', () => {
+    // Bright Angel's outcrop is centred 4.2 m from its waypoint and is 6.7 m long; its count radius is 2 + 2 m
+    const chip = { ...sample(1, 'rock', BRIGHT_ANGEL.x + 6.5, BRIGHT_ANGEL.z, 400), site: 'Bright Angel' };
+    const [row] = taskProgress([task('t1', 'rock', 1, BRIGHT_ANGEL)], { samples: [chip] });
+    expect(row).toMatchObject({ here: 1, elsewhere: 0, state: 'done', atSec: 400 });
+    expect(row.distanceM).toBeCloseTo(6.5, 6);
+    // a photo of the outcrop counts the same way; a record named after another stop does not
+    const photoRow = taskProgress([task('t2', 'photo', 1, BRIGHT_ANGEL)], { photoLog: [{ ...photo(BRIGHT_ANGEL.x + 7, BRIGHT_ANGEL.z, 10), site: 'Bright Angel' }] })[0];
+    expect(photoRow.state).toBe('done');
+    const other = { ...sample(2, 'rock', BRIGHT_ANGEL.x + 6.5, BRIGHT_ANGEL.z, 400), site: 'Cheyava Falls' };
+    expect(taskProgress([task('t1', 'rock', 1, BRIGHT_ANGEL)], { samples: [other] })[0].state).toBe('elsewhere');
+    // a clicked point has no site name: only the distance counts there
+    const atP1 = { ...sample(3, 'rock', P1.x + 20, P1.z, 50), site: 'P1' };
+    expect(taskProgress([task('t3', 'rock', 1, P1)], { samples: [atP1] })[0].state).toBe('elsewhere');
+  });
+
   it('stays open with what it has, and has no time or distance with nothing counted', () => {
     const rows = taskProgress([task('t1', 'rock', 2, P1), task('t2', 'photo', 1, BRIGHT_ANGEL)], { samples: [sample(1, 'rock', 472, 561, 300)], photoLog: [] });
     expect(rows[0]).toMatchObject({ here: 1, elsewhere: 0, state: 'open', atSec: null });
