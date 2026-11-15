@@ -23,7 +23,7 @@ export default function TaskBanner() {
   const alerted = useMissionStore((s) => Object.values(s.alerts ?? {}).some((alert) => alert && alert.active));
   const reached = Array.isArray(visited) ? near.filter((row) => row.place.waypoint && visited.includes(row.place.waypoint)) : [];
   if (alerted || reached.length === 0) return null;
-  const place = reached[0].place;
+  const place = reached[0].place;   // the nearest place reached (useTaskProgress orders `near` nearest first)
   const rows = reached.filter((row) => row.place.key === place.key);   // the tasks of one place (merged into one waypoint)
   return (
     <div className="event-banner info event-banner-walk mission-stop" role="status" data-task-place={place.key}>

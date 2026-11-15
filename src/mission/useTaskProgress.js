@@ -9,8 +9,9 @@ import { useMissionStore } from '../state/store.js';
  * the place (TaskBanner.jsx) and the sampling panel's line (src/hud/SamplingPanel.jsx) read it. route.tasks is empty for
  * the goals without tasks, so nothing is counted or shown for them.
  *
- * The nearby rows are selected as a string of ids, so the 5 Hz position updates re-render only when a place comes into
- * reach or goes out of it.
+ * The nearby rows come nearest place first (two task places can be in reach at once: the banner shows the one the crew
+ * stands at), in list order within a place. They are selected as a string of ids, so the 5 Hz position updates re-render
+ * only when a place comes into reach, goes out of it or becomes the nearest.
  * @returns {{ rows: ReturnType<typeof taskProgress>, near: ReturnType<typeof taskProgress> }}
  */
 export function useTaskProgress() {
@@ -18,12 +19,17 @@ export function useTaskProgress() {
   const samples = useMissionStore((s) => s.sampling?.samples);
   const photoLog = useMissionStore((s) => s.sampling?.photoLog);
   const rows = useMemo(() => (Array.isArray(tasks) && tasks.length > 0 ? taskProgress(tasks, { samples, photoLog }) : []), [tasks, samples, photoLog]);
-  const nearIds = useMissionStore((s) => (rows.length === 0 ? '' : tasksAt(rows, s.navigation).filter((row) => row.kept).map((row) => row.id).join(',')));
-  const near = useMemo(() => {
-    const ids = nearIds ? nearIds.split(',') : [];
-    return rows.filter((row) => ids.includes(row.id));
-  }, [rows, nearIds]);
+  const nearIds = useMissionStore((s) => (rows.length === 0 ? '' : nearestFirst(tasksAt(rows, s.navigation).filter((row) => row.kept), s.navigation).join(',')));
+  const near = useMemo(() => (nearIds ? nearIds.split(',').map((id) => rows.find((row) => row.id === id)).filter(Boolean) : []), [rows, nearIds]);
   return { rows, near };
+}
+
+/** The ids of the rows, nearest place first; a stable sort, so the rows of one place keep their list order. */
+function nearestFirst(rows, position) {
+  return rows
+    .map((row) => ({ id: row.id, d: Math.hypot(position.x - row.place.x, position.z - row.place.z) }))
+    .sort((a, b) => a.d - b.d)
+    .map((entry) => entry.id);
 }
 
 /** "1 rock sample", "2 photos": what a task asks for, with its count, in the mission table's words (routeWhy.taskText). */

@@ -70,6 +70,21 @@ describe('the task banner (#352)', () => {
     expect(banner()).toBe('');
   });
 
+  it('shows the place the crew stands at when two reached places are in reach (found in the browser: P2 read P1)', () => {
+    const first = { ...P1, x: 510, z: 552 };
+    const P2 = { ...P1, key: 'P2', label: 'P2', x: 493, z: 539, waypoint: 'P2 · task point' };
+    const near = [
+      { id: 't1', what: 'soil', count: 1, place: first, workSec: 240, kept: true, drop: null },
+      { id: 't2', what: 'photo', count: 1, place: P2, workSec: 120, kept: true, drop: null },
+    ];
+    useMissionStore.setState((s) => ({ mode: 'walk', route: { ...s.route, tasks: near, visited: ['HAB', 'P1 · task point', 'P2 · task point'] }, navigation: { ...s.navigation, x: 500.4, z: 544.4 } }));
+    const html = banner();   // 12 m from P1 and 9 m from P2: both in reach
+    expect(html).toContain('data-task-place="P2"');
+    expect(html).toContain('Take 1 photo here · 0 of 1');
+    expect(html).not.toContain('soil');
+    expect(renderToStaticMarkup(<SamplingChecklist />)).toContain('Task · 1 photo · 0 of 1; 1 soil sample · 0 of 1');
+  });
+
   it('shows nothing for a goal without tasks', () => {
     useMissionStore.setState((s) => ({ mode: 'walk', route: { ...s.route, tasks: [], visited: ['HAB', 'S1 · light-toned patch'] }, navigation: { ...s.navigation, x: 493, z: 539 } }));
     expect(banner()).toBe('');
