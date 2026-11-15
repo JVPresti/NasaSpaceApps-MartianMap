@@ -9,13 +9,15 @@ import { wristKey } from './keys.js';
 import { setWristKeyOwner } from './ownership.js';
 import { loadDataFile } from '../../data/dataFiles.js';
 import { SHELTERS_PATH } from '../../sim/shelters.js';
+import { WALK_LAYERS, walkRow } from '../../plan/layers.js';
 
 /** Connect after engine.ready; owns one canvas and cleans up before engine disposal. */
 export function connectWrist(engine, store = useMissionStore) {
   const canvas = document.createElement('canvas');
   canvas.width = WRIST_WIDTH; canvas.height = WRIST_HEIGHT;
   const g = canvas.getContext('2d');
-  let pageIndex = 0, row = store.getState().view.layer, open = false, painted = '', disposed = false;
+  // The layers page lists only the layers the ground draws (layers.js WALK_LAYERS): a row is not a store index.
+  let pageIndex = 0, row = walkRow(store.getState().view.layer), open = false, painted = '', disposed = false;
   let shelters = [], resourceVersion = 0, qHeld = false;
   const diagnostics = { canvas, snapshot: () => ({ open, page: PAGES[pageIndex], row, draws: Number(canvas.dataset.drawCount ?? 0), engine: engine.getWristState() }) };
   if (import.meta.env.DEV) window.__marswalkWrist = diagnostics;
@@ -24,7 +26,7 @@ export function connectWrist(engine, store = useMissionStore) {
     if (disposed) return;
     const state = store.getState(), page = PAGES[pageIndex];
     const model = wristView(state, page, row);
-    const map = page === 'map' ? wristMapView(state) : null;
+    const map = page === 'map' ? wristMapView(withLiveHeading(state)) : null;
     const signature = JSON.stringify([model, map, page === 'map' ? resourceVersion : 0]);
     if (signature === painted) return;
     painted = signature;
@@ -62,12 +64,12 @@ export function connectWrist(engine, store = useMissionStore) {
       }
     } else if (action.endsWith('page')) {
       pageIndex = (pageIndex + (action === 'next-page' ? 1 : PAGES.length - 1)) % PAGES.length;
-      row = PAGES[pageIndex] === 'layers' ? state.view.layer : 0;
+      row = PAGES[pageIndex] === 'layers' ? walkRow(state.view.layer) : 0;
     } else if (action.endsWith('row')) {
       const count = rowCount(PAGES[pageIndex]);
       row = (row + (action === 'next-row' ? 1 : count - 1)) % count;
     } else if (action === 'confirm') {
-      if (PAGES[pageIndex] === 'layers') setLayer(row);
+      if (PAGES[pageIndex] === 'layers') setLayer(WALK_LAYERS[row].index);
       engine.setWristPointer({ ...rowTarget(PAGES[pageIndex], row), pressed: true });
     }
     if (open) {
@@ -88,9 +90,24 @@ export function connectWrist(engine, store = useMissionStore) {
       resourceVersion++;
       if (open && PAGES[pageIndex] === 'map') scheduler.request('shelters');
     }).catch(() => {});
+  // The map page's heading wedge follows the engine, not the 5 Hz store copy (#307): while the map is up, a frame loop
+  // asks for a repaint when the heading moved a degree. The scheduler still caps the canvas texture at its own rate.
+  let liveHeading = null, frame = 0;
+  function withLiveHeading(state) {
+    return Number.isFinite(liveHeading) ? { ...state, navigation: { ...state.navigation, headingDeg: liveHeading } } : state;
+  }
+  const watchHeading = () => {
+    if (disposed) return;
+    if (open && PAGES[pageIndex] === 'map') {
+      const h = engine.getPlayer().headingDeg;
+      if (!Number.isFinite(liveHeading) || Math.abs(((h - liveHeading + 540) % 360) - 180) >= 1) { liveHeading = h; scheduler.request('heading'); }
+    }
+    frame = requestAnimationFrame(watchHeading);
+  };
+  frame = requestAnimationFrame(watchHeading);
   scheduler.request('init');
   return () => {
-    disposed = true; off(); offLanguage(); scheduler.dispose();
+    disposed = true; cancelAnimationFrame(frame); off(); offLanguage(); scheduler.dispose();
     setWristKeyOwner(false);
     window.removeEventListener('keydown', onKey);
     window.removeEventListener('keyup', onKeyUp);

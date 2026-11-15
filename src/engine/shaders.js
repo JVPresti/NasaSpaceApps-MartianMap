@@ -102,7 +102,7 @@ void main(){ vec4 wp = modelMatrix * vec4(position, 1.0); vW = wp.xyz; gl_Positi
 
 export const TERRAIN_FRAG = /* glsl */`
 ${COMMON}
-uniform sampler2D tOrtho, tNrmAo, tMask, tGravel, tSlab, tRing, tShadow, tZone;
+uniform sampler2D tOrtho, tNrmAo, tMask, tGravel, tSlab, tRing, tShadow, tZone, tDensity;
 uniform vec2 uSize; uniform float uFadeStart, uFadeEnd, uLayer, uRelief, uRingSize, uZoneOn; uniform vec3 uZoneBox;
 varying vec3 vW;
 vec3 ramp(float g){
@@ -167,23 +167,20 @@ void main(){
 
   float sun = texture2D(tShadow, uv).r;
   vec3 col = shade(alb, nd, ao, sun * castShadow(vW)) + lamp(alb, nd, toFrag);
-  if(uLayer > 0.5){
+  // Layers of src/plan/layers.js: 1 terrain, 2 rock abundance, 3 outcrop. 4 radio shadow and 5 exposure are drawn on the
+  // mission table only, so the ground stays plain for them.
+  if(uLayer > 0.5 && uLayer < 3.5){
     vec3 lay = vec3(0.0); float a = 0.0;
-    if(uLayer < 1.5){            // slope hazard (from the 1 m DEM)
+    if(uLayer < 1.5){            // terrain: slope hazard (from the 1 m DEM) and 5 m contours
       float hatch = step(0.5, fract((vW.x + vW.z)/3.0));
       if(slope > ${SLOPE_NO_GO}){ lay = vec3(0.9,0.08,0.05); a = mix(0.35,0.7,hatch); }
       else if(slope > ${SLOPE_CAUTION}){ lay = vec3(0.95,0.6,0.1); a = 0.32; }
       else { lay = vec3(0.2,0.8,0.4); a = 0.10; }
-    } else if(uLayer < 2.5){     // elevation bands + 5 m contours
-      float t = clamp(vW.y/uRelief, 0.0, 1.0);
-      lay = mix(vec3(0.1,0.3,0.9), vec3(0.2,0.85,0.5), smoothstep(0.0,0.35,t));
-      lay = mix(lay, vec3(0.98,0.85,0.2), smoothstep(0.35,0.7,t));
-      lay = mix(lay, vec3(0.9,0.2,0.1), smoothstep(0.7,1.0,t)); a = 0.42;
       float c = vW.y/5.0; float line = 1.0 - smoothstep(0.0, 1.5, abs(fract(c-0.5)-0.5)/fwidth(c));
       lay = mix(lay, vec3(1.0), line*0.8); a = max(a, line*0.75);
-    } else if(uLayer < 3.5){     // rock abundance estimate (HiRISE brightness -> Golombek density factor)
-      float d = clamp(0.08 + (g-0.25)/0.55*0.92, 0.08, 1.0);
-      lay = mix(vec3(0.15,0.2,0.6), vec3(1.0,0.75,0.1), d); a = 0.5;
+    } else if(uLayer < 2.5){     // rock abundance: the density grid of terrain.json the planner prices, nearest cell (costGrid.rockAbundanceAt)
+      float d = clamp(0.08 + (texture2D(tDensity, vec2(vW.x/uSize.x + 0.5, vW.z/uSize.y + 0.5)).r - 0.25)/0.55*0.92, 0.08, 1.0);
+      lay = mix(vec3(0.15,0.2,0.6), vec3(1.0,0.75,0.1), d); a = 0.08 + 0.57*smoothstep(0.25, 0.9, d);   // bare ground almost clear, as the table map
     } else {                     // science targets: light-toned outcrop
       lay = vec3(0.3,0.9,0.95); a = smoothstep(0.05,0.45,texture2D(tMask,uv).r)*0.5;
     }

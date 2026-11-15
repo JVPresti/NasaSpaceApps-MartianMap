@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CLOCK_STORAGE_KEY, createClockSession, readClockSession, startMissionClock, writeClockSession } from '../sim/missionClock.js';
-import { resetStore, useMissionStore } from './store.js';
+import { resetStore, setMode, setNeeds, useMissionStore } from './store.js';
 import { pauseEva, resumeEva, restartEva } from './evaSession.js';
 
 function memoryStorage() {
@@ -324,5 +324,16 @@ describe('EVA restart', () => {
     expect(result.message).toMatch(/simulation stop: stop failed/);
     expect(startSimulation).not.toHaveBeenCalled();
     expect(useMissionStore.getState().mission.paused).toBe(true);
+  });
+
+  it('keeps the needs of the crew and the route profile for the next EVA, unlocked (D9)', () => {
+    setNeeds({ objective: 'cheyava', crew: 1, risk: 'cautious' });
+    useMissionStore.setState((state) => ({ route: { ...state.route, profile: 'gentlest' } }));
+    setMode('walk');   // Begin EVA locks them
+    restartEva({ engine: fakeEngine(), storage: memoryStorage() });
+    const { needs, route, mode } = useMissionStore.getState();
+    expect(needs).toMatchObject({ objective: 'cheyava', crew: 1, risk: 'cautious', locked: false });
+    expect(route.profile).toBe('gentlest');
+    expect(mode).toBe('plan');
   });
 });

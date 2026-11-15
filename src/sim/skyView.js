@@ -18,7 +18,7 @@
  * Cheyava Falls.
  */
 
-import { sampleHeights } from './costGrid.js';
+import { decodeBase64Bytes, sampleHeights } from './costGrid.js';
 
 /**
  * Defaults for the ray cast. All DERIVED choices, explained in
@@ -165,28 +165,127 @@ export function skyViewAt(grid, x, z, options = {}) {
 }
 
 /**
- * Sky view factor for every node of the grid.
+ * Sky view factor for every node of the grid, or for every `stride`-th node in both directions.
+ *
+ * The full 751 x 751 tile takes about 15 s in Node, far too long for the interface, so the app reads a coarse copy
+ * made once by `npm run skyview` (scripts/build-sky-view.mjs, public/data/sky_view.json) instead of calling this.
  * @param {{n: number, width: number, depth: number, heights: Float32Array}} grid
- * @param {Partial<typeof SKY_VIEW_DEFAULTS>} [options]
- * @returns {{n: number, skyView: Float32Array, options: typeof SKY_VIEW_DEFAULTS,
- *   samplesPerRay: number, elapsedMs: number}}
+ * @param {Partial<typeof SKY_VIEW_DEFAULTS> & { stride?: number }} [options] stride: keep nodes 0, stride, 2 stride…
+ *   of the grid; (grid.n - 1) must be a multiple of it so the last node is the tile edge. 1 by default.
+ * @returns {{n: number, stride: number, skyView: Float32Array, options: typeof SKY_VIEW_DEFAULTS,
+ *   samplesPerRay: number, elapsedMs: number}} n: nodes per side of the result
  */
 export function computeSkyView(grid, options = {}) {
   const started = globalThis.performance?.now?.() ?? Date.now();
-  const opts = resolveOptions(options);
+  const { stride = 1, ...rayOptions } = options;
+  if (!Number.isInteger(stride) || stride < 1 || (grid.n - 1) % stride !== 0) {
+    throw new Error(`sky view stride must be a whole divisor of ${grid.n - 1}`);
+  }
+  const opts = resolveOptions(rayOptions);
   const rays = buildRays(grid, opts);
   const { n, heights } = grid;
+  const count = (n - 1) / stride + 1;
   const hMax = maxHeight(heights);
-  const skyView = new Float32Array(n * n);
+  const skyView = new Float32Array(count * count);
   const tangents = new Float64Array(rays.count);
-  for (let j = 0; j < n; j += 1) {
-    for (let i = 0; i < n; i += 1) {
-      const index = j * n + i;
-      const eye = heights[index] + opts.observerHeightM;
+  for (let row = 0; row < count; row += 1) {
+    for (let col = 0; col < count; col += 1) {
+      const i = col * stride;
+      const j = row * stride;
+      const eye = heights[j * n + i] + opts.observerHeightM;
       horizonTangents(grid, rays, i, j, eye, hMax, tangents);
-      skyView[index] = skyViewFromTangents(tangents);
+      skyView[row * count + col] = skyViewFromTangents(tangents);
     }
   }
   const ended = globalThis.performance?.now?.() ?? Date.now();
-  return { n, skyView, options: opts, samplesPerRay: rays.steps, elapsedMs: ended - started };
+  return { n: count, stride, skyView, options: opts, samplesPerRay: rays.steps, elapsedMs: ended - started };
+}
+
+// --- The coarse grid the app reads ---------------------------------------------------------------------------------
+
+/** Where the app finds the sky view grid made by `npm run skyview`, under the app's base URL. */
+export const SKY_VIEW_PATH = 'data/sky_view.json';
+/** Spacing of the samples along a route for {@link skyViewAlongPath}, as radio.js samples the radio shadow. Metres. */
+export const SKY_PATH_STEP_M = 5;
+
+/**
+ * Turn public/data/sky_view.json into a grid laid out like the height grid: node (0, 0) is the north-west corner of
+ * the tile, the last node the south-east corner.
+ * @param {object} json the parsed file
+ * @returns {{ n: number, width: number, depth: number, values: Float32Array, min: number, max: number }}
+ *   values: sky view per node, 0 to 1; min and max: the range found on the tile
+ */
+export function decodeSkyViewGrid(json) {
+  if (!json || typeof json !== 'object') throw new TypeError('sky view data must be an object');
+  const { n, width_m: width, depth_m: depth, encoding, sky_view_u8_b64: payload } = json;
+  if (!Number.isInteger(n) || n < 2) throw new Error('sky view n must be an integer of at least 2');
+  if (!(width > 0) || !(depth > 0)) throw new Error('sky view width and depth must be positive');
+  if (!encoding || !(encoding.max > encoding.min)) throw new Error('sky view encoding needs min < max');
+  const bytes = decodeBase64Bytes(payload);
+  if (bytes.length !== n * n) throw new Error(`expected ${n * n} sky view samples, got ${bytes.length}`);
+  const values = new Float32Array(bytes.length);
+  let min = Infinity;
+  let max = -Infinity;
+  for (let k = 0; k < bytes.length; k += 1) {
+    const value = encoding.min + (bytes[k] / 255) * (encoding.max - encoding.min);
+    values[k] = value;
+    if (value < min) min = value;
+    if (value > max) max = value;
+  }
+  return { n, width, depth, values, min, max };
+}
+
+/**
+ * Sky view at a world position, bilinear between the four nearest nodes; a point outside the tile takes the edge.
+ * @param {{ n: number, width: number, depth: number, values: Float32Array }} sky
+ * @param {number} x east, metres
+ * @param {number} z south, metres
+ * @returns {number}
+ */
+export function sampleSkyView(sky, x, z) {
+  const fx = Math.max(0, Math.min(sky.n - 1, (x / sky.width + 0.5) * (sky.n - 1)));
+  const fy = Math.max(0, Math.min(sky.n - 1, (z / sky.depth + 0.5) * (sky.n - 1)));
+  return sampleHeights(sky.values, sky.n, fx, fy);
+}
+
+/**
+ * How open the sky is along a route: the exposure readout of the Exposure layer (DERIVED from the HiRISE DTM).
+ *
+ * During a solar particle event the dose scales with the visible sky (see the top of this file and
+ * docs/route/shelters.md), so `mean` is the dose on this route as a share of the dose on open flat ground, an upper
+ * bound on the saving because the real flux is not isotropic. Sampled every few metres and weighted by length, like
+ * radio.js `radioShadowAlongPath`.
+ * @param {{ n: number, width: number, depth: number, values: Float32Array }} sky decodeSkyViewGrid's result
+ * @param {Array<[number, number]>} path [[x, z], ...] in walking order, as route.path
+ * @param {number} [stepM]
+ * @returns {{ lengthM: number, mean: number, min: number, max: number, lowest: { x: number, z: number } } | null}
+ *   lowest: where the sky is most hidden along the route; null without a path or a grid
+ */
+export function skyViewAlongPath(sky, path, stepM = SKY_PATH_STEP_M) {
+  if (!sky || !Array.isArray(path) || path.length < 2 || !(stepM > 0)) return null;
+  let lengthM = 0;
+  let sum = 0;
+  let min = Infinity;
+  let max = -Infinity;
+  let lowest = null;
+  for (let k = 0; k < path.length - 1; k += 1) {
+    const [ax, az] = path[k];
+    const [bx, bz] = path[k + 1];
+    const length = Math.hypot(bx - ax, bz - az);
+    if (!(length > 0)) continue;
+    const steps = Math.max(1, Math.ceil(length / stepM));
+    const piece = length / steps;
+    for (let s = 0; s < steps; s += 1) {
+      const t = (s + 0.5) / steps;
+      const x = ax + (bx - ax) * t;
+      const z = az + (bz - az) * t;
+      const value = sampleSkyView(sky, x, z);
+      lengthM += piece;
+      sum += value * piece;
+      if (value < min) { min = value; lowest = { x, z }; }
+      if (value > max) max = value;
+    }
+  }
+  if (!(lengthM > 0)) return null;
+  return { lengthM, mean: sum / lengthM, min, max, lowest };
 }

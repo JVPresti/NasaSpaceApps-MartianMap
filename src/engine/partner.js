@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import * as SH from './shaders.js';
 import { CASE_CLIP } from './partnerSource.js';
 import { clipTimeScale, STOOP_SPEED_MS, WALK_SPEED_MS } from './gait.js';
+import { addCircle, pushOut, PARTNER_GAP, WALKER_RADIUS } from './collide.js';
 
 export function createPartner(ctx) {
   const { scene, U, assets, sys, view } = ctx;
@@ -18,7 +19,19 @@ export function createPartner(ctx) {
     player: { x: 0, z: 0 },
     habitat: null,
     duck: (x, z) => (sys.habitat.root ? sys.habitat.duck(x, z) : 0),
+    // Optional queries for a source that walks by itself (the crewmate, #288): the habitat walk zone at a point, and
+    // one step from (x0, z0) to p ({ x, z }, changed in place) with the walker's collisions: rocks of 0.35 m and larger,
+    // the player, then the habitat walls (collide.js), the same solve view.js runs for the player.
+    zone: (x, z) => { const q = sys.habitat.root ? sys.habitat.zone(x, z) : null; return q ? q.n : null; },
+    collide(x0, z0, p) {
+      obs.length = 0;
+      if (sys.rocks) sys.rocks.obstacles(p, obs);
+      addCircle(obs, view.eye.x, view.eye.z, PARTNER_GAP - WALKER_RADIUS);
+      pushOut(p, obs, WALKER_RADIUS);
+      return sys.habitat.slide(x0, z0, p);
+    },
   };
+  const obs = [];
   function refreshWorld() {
     world.player.x = view.eye.x; world.player.z = view.eye.z;
     const h = sys.habitat;
@@ -33,8 +46,16 @@ export function createPartner(ctx) {
     mixer: null, acts: {}, bend: null, glow: null, stoop: 0, nw: 1, bendW: 0,
     uPlayer: { value: new THREE.Vector3(1, 0.32, 0.03) },
 
-    /** @param {object | null} source a partner source; null hides the partner */
-    setSource(source) {
+    /**
+     * @param {object | null} source a partner source; null hides the partner
+     * @param {{ chosen?: boolean }} [options] chosen: set through engine.setPartnerSource. The engine places the crew
+     *   again at the EVA start and on a restart and sets its scripted partner then; a source the app chose comes back
+     *   instead (the crewmate, #288). A chosen null hides the partner and clears the choice, so the next placement
+     *   brings the engine's own partner back (a crew of one in #282 decides that).
+     */
+    setSource(source, { chosen = false } = {}) {
+      if (chosen) this.chosen = source;
+      else if (!chosen && this.chosen) source = this.chosen;
       this.source = source;
       if (source && source.color) this.uPlayer.value.set(...source.color);
     },

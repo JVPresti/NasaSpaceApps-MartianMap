@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { CHECKLIST } from '../../hud/samplingPrompt.js';
 import { setLanguage } from '../../i18n/index.js';
-import { LAYERS } from '../../plan/layers.js';
+import { LAYERS, WALK_LAYERS } from '../../plan/layers.js';
 import { createInitialState } from '../../state/store.js';
-import { PAGES } from './layout.js';
+import { PAGES, rowCount } from './layout.js';
 import { wristView } from './view.js';
 
 afterEach(() => setLanguage('en'));
@@ -26,25 +26,38 @@ function suitState(overrides = {}) {
 }
 
 describe('wristView', () => {
-  it('shows the real layer catalog, the active layer and the row selection independently', () => {
+  it('shows the layers the ground draws, the active layer and the row selection independently', () => {
     const state = createInitialState();
     state.view = { ...state.view, layer: 3 };
 
     const model = wristView(state, 'layers', 0);
-    expect(model.rows.map((row) => row.label)).toEqual(LAYERS.map((layer) => layer.name));
+    expect(model.rows.map((row) => row.label)).toEqual(WALK_LAYERS.map((layer) => layer.name));
+    expect(model.rows).toHaveLength(rowCount('layers'));
     expect(model.rows.filter((row) => row.active).map((row) => row.label)).toEqual([LAYERS[3].name]);
     expect(model.rows[0].active).toBe(false);
     expect(model.confirmable).toBe(true);
 
-    const otherRow = wristView(state, 'layers', 4);
-    expect(otherRow.row).toBe(4);
+    const otherRow = wristView(state, 'layers', 2);
+    expect(otherRow.row).toBe(2);
     expect(otherRow.rows.filter((row) => row.active).map((row) => row.label)).toEqual([LAYERS[3].name]);
     expect(JSON.stringify(otherRow)).not.toBe(JSON.stringify(model));
+    expect(wristView(state, 'layers', 9).row).toBe(rowCount('layers') - 1);
 
     state.view = { ...state.view, layer: 1 };
     const otherLayer = wristView(state, 'layers', 0);
     expect(otherLayer.rows.filter((row) => row.active).map((row) => row.label)).toEqual([LAYERS[1].name]);
     expect(JSON.stringify(otherLayer)).not.toBe(JSON.stringify(model));
+  });
+
+  it('leaves the table-only layers out and shows none active while one of them is chosen', () => {
+    const state = createInitialState();
+    for (const layer of LAYERS.filter((l) => !l.walk)) {
+      state.view = { ...state.view, layer: layer.index };
+      const model = wristView(state, 'layers', 0);
+      expect(model.rows.map((row) => row.label)).not.toContain(layer.name);
+      expect(model.rows.filter((row) => row.active).map((row) => row.label)).toEqual([LAYERS[0].name]);
+      expect(model.status).toBe(LAYERS[0].name.toUpperCase());
+    }
   });
 
   it('ticks checklist rows only from the real store state', () => {

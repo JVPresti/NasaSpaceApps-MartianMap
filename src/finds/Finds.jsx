@@ -1,7 +1,8 @@
 // Unexpected find (#71, plan section 3.4 scenario 3). Hold Q for 2 s while looking at the ground: the right arm points,
 // a ring fills around the centre of the view and a marker drops where the view meets the terrain. A card then prices
 // the detour (time, O2, walkback margin before and after, go or no-go) and the crew chooses: Y adds the find to the
-// route, N or Esc dismisses it. The card closes after the choice, so nothing stays on the visor.
+// route, N or Esc dismisses it. The card closes after the choice, so nothing stays on the visor. In the habitat's cabin an
+// unanswered card waits, keys included, so it never covers the table prompt (#244); it comes back outside the cabin.
 //
 // App mounts this once the scene is ready, in both modes: the markers in the scene follow the store in Walk and in Plan,
 // the ring and the card show only in Walk. The ring is redrawn through refs, never by a React render per frame.
@@ -13,6 +14,9 @@ import { createFindService, markFind, pruneFinds } from '../state/finds.js';
 import { useMissionStore } from '../state/store.js';
 import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import { formatMinutes } from '../hud/format.js';
+import { useInCabin } from '../hud/useInCabin.js';
+import { inCabin } from '../state/tableActions.js';
+import { canPointFind, findMarkers } from './markers.js';
 import { formatNumber, t, translateText } from '../i18n/index.js';
 import '../hud/hud.css';
 import './finds.css';
@@ -75,7 +79,7 @@ function FindPointer({ engine, service }) {
       if (!hold) return;
       hold.frame = requestAnimationFrame(step);
       const s = useMissionStore.getState();
-      if (s.mission.paused || s.mode !== 'walk' || wristOwnsKeys()) { stop(); return; }
+      if (!canPointFind(s, { cabin: inCabin(engine), wrist: wristOwnsKeys() })) { stop(); return; }
       const now = performance.now(), aim = engine.aimGround(FIND_RANGE_M);
       if (!aim) { hold.anchor = null; hold.t0 = now; draw(0, 'none'); return; }   // sky or ground past 50 m
       if (!hold.anchor || Math.hypot(aim.x - hold.anchor.x, aim.z - hold.anchor.z) > FIND_STEADY_M) { hold.anchor = aim; hold.t0 = now; }
@@ -91,7 +95,7 @@ function FindPointer({ engine, service }) {
       if (e.code === 'Escape') { stop(); return; }
       if (e.code !== FIND_KEY || !plainKey(e) || hold) return;
       const s = useMissionStore.getState();
-      if (s.mode !== 'walk' || s.mission.paused || wristOwnsKeys()) return;
+      if (!canPointFind(s, { cabin: inCabin(engine), wrist: wristOwnsKeys() })) return;   // not in the cabin either (#244)
       const blocked = markBlocker(s.finds);
       if (blocked) { flash(blocked); return; }
       hold = { t0: performance.now(), anchor: null, frame: 0 };
@@ -214,18 +218,16 @@ export default function Finds({ engine, mode }) {
     return () => service.stop();
   }, [service]);
 
-  // Markers in the scene. In Plan an accepted find is already a numbered waypoint marker, so only the
-  // undecided one keeps its own marker there.
+  // Markers in the scene (findMarkers). In Plan an accepted find is already a numbered waypoint marker, so only the
+  // undecided one keeps its own marker there. The cabin check runs on every store change, as the position moves.
   useEffect(() => {
     if (!engine) return undefined;
     let last = null;
     const sync = () => {
-      const s = useMissionStore.getState();
-      if (last && last.list === s.finds.list && last.mode === s.mode) return;
-      last = { list: s.finds.list, mode: s.mode };
-      engine.setFinds(s.finds.list
-        .filter((f) => s.mode === 'walk' || f.status !== 'accepted')
-        .map((f) => ({ id: f.id, label: f.label, x: f.x, z: f.z, status: f.status, verdict: f.detour?.verdict ?? null })));
+      const s = useMissionStore.getState(), cabin = s.mode === 'walk' && inCabin(engine);
+      if (last && last.list === s.finds.list && last.mode === s.mode && last.cabin === cabin) return;
+      last = { list: s.finds.list, mode: s.mode, cabin };
+      engine.setFinds(findMarkers(s, cabin));
     };
     sync();
     const unsubscribe = useMissionStore.subscribe(sync);
@@ -237,11 +239,14 @@ export default function Finds({ engine, mode }) {
     if (s.route.visited !== prev.route.visited || s.route.waypoints !== prev.route.waypoints) pruneFinds();
   }), []);
 
+  // In the cabin the table prompt is the interface (#244): an unanswered card waits, keys included, until the crew is out.
+  const cabin = useInCabin(engine);
+
   if (mode !== 'walk') return null;
   return (
     <div className="hud finds-layer">
       <FindPointer engine={engine} service={service} />
-      <FindCard service={service} />
+      {!cabin && <FindCard service={service} />}
     </div>
   );
 }

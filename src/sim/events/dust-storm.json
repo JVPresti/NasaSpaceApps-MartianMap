@@ -1,7 +1,7 @@
 {
   "id": "dust-storm",
   "label": "Dust storm",
-  "trigger": { "type": "missionTime", "atSec": 480 },
+  "trigger": { "type": "manual" },
   "timeline": [
     { "atSec": 0, "set": { "environment.dustOpacity": 0.45, "view.skyBlend": 0 } },
     { "atSec": 9, "set": { "environment.dustOpacity": 0.53, "view.skyBlend": 0.1 } },
@@ -22,5 +22,5 @@
   "planner": { "action": "replan", "target": "habitat" },
   "end": { "type": "area", "x": 535.1, "z": 574.1, "radius": 25 },
   "endSet": { "environment.dustOpacity": 0.45, "view.skyBlend": 0 },
-  "notes": "A global dust storm that keeps getting worse (#126): optical depth rises from dust.tau.clear_season 0.45 to dust.tau.gale_global_storm_2018 8.0 (Curiosity, Gale crater 2018, not Jezero) in public/data/hazards.json. In between it follows clear + (peak - clear) x (t / ramp)^2, slow at first and faster at every step (SIM). Ramp duration 90 s is dust.event.ramp_duration (SIM). The sky blend uses clear_day and dust_storm from atmosphere_presets.json."
+  "notes": "A global dust storm that keeps getting worse (#126): optical depth rises from dust.tau.clear_season 0.45 to dust.tau.gale_global_storm_2018 8.0 (Curiosity, Gale crater 2018, not Jezero) in public/data/hazards.json. In between it follows clear + (peak - clear) x (t / ramp)^2, slow at first and faster at every step (SIM). Ramp duration 90 s is dust.event.ramp_duration (SIM). The sky blend uses clear_day and dust_storm from atmosphere_presets.json. When it starts, and how fast this ramp runs, comes from the mission the crew's objective defines (src/sim/missions.js, #265): T+480 s and this 90 s ramp in the full EVA; in the first mission T+75 s at the earliest, once the crew has been at the sortie stop 20 s and is outside the 25 m end area, with the ramp compressed to 30 s (SIM)."
 }

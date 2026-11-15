@@ -6,9 +6,10 @@ import { connectSampling } from '../state/sampling.js';
 import { connectSlopeGridKey } from '../state/slopeGrid.js';
 import { connectHabitatScreens } from '../state/habitatScreens.js';
 import { startSimulation } from '../state/simulation.js';
+import { startCrewmate } from '../state/crewmate.js';
 import { connectWrist } from '../screens/wrist/controller.js';
 import { connectAudio } from '../audio/connectAudio.js';
-import { connectEvaEnd } from '../state/evaEnd.js';
+import { connectTableActions } from '../state/tableActions.js';
 
 const ASSET_BASE = import.meta.env.BASE_URL + 'marswalk/';
 
@@ -26,15 +27,16 @@ function tierFromUrl() {
  *
  * The engine starts with gameplay input disabled and the simulation paused, so the start screen is a real
  * stop: no mission clock, suit consumption or walking happens behind it. `onEngine` also receives the
- * simulation controls used by the restart flow in src/state/evaSession.js.
+ * simulation controls used by the restart flow in src/state/evaSession.js. `onOpenPlan` is the habitat table's Open plan
+ * (src/state/tableActions.js): open the mission table on its Route step, returning false when that is not possible now.
  */
-export default function EngineView({ onStatus, onProgress, onReady, onError, onLockChange, onEngine, onGamepadAction }) {
+export default function EngineView({ onStatus, onProgress, onReady, onError, onLockChange, onEngine, onGamepadAction, onOpenPlan }) {
   const containerRef = useRef(null);
   const engineRef = useRef(null);
-  const callbacks = useRef({ onStatus, onProgress, onReady, onError, onLockChange, onEngine, onGamepadAction });
+  const callbacks = useRef({ onStatus, onProgress, onReady, onError, onLockChange, onEngine, onGamepadAction, onOpenPlan });
 
   useEffect(() => {
-    callbacks.current = { onStatus, onProgress, onReady, onError, onLockChange, onEngine, onGamepadAction };
+    callbacks.current = { onStatus, onProgress, onReady, onError, onLockChange, onEngine, onGamepadAction, onOpenPlan };
   });
 
   useEffect(() => {
@@ -43,8 +45,9 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
 
     let engine;
     let live = true;
-    let disconnect = null, stopSimulation = null, disconnectSampling = null, disconnectSlopeGridKey = null, disconnectWrist = null, disconnectHabitatScreens = null, disconnectAudio = null, disconnectEvaEnd = null;
+    let disconnect = null, stopSimulation = null, disconnectSampling = null, disconnectSlopeGridKey = null, disconnectWrist = null, disconnectHabitatScreens = null, disconnectAudio = null, tableActions = null;
     const mock = new URLSearchParams(window.location.search).get('mock') === '1';
+    let crewmate = null;   // EV2, the crewmate (#288): one per engine, it outlives a restart
     const current = () => live && (engine === undefined || engineRef.current === engine);
 
     const stopCurrentSimulation = () => {
@@ -72,7 +75,8 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
         onProgress: (progress) => { if (current()) callbacks.current.onProgress?.(progress); },
         onError: (err) => { if (current()) callbacks.current.onError?.(err); },
         onLockChange: (locked) => { if (current()) callbacks.current.onLockChange?.(locked); },
-        onGamepadAction: (action) => { if (current()) callbacks.current.onGamepadAction?.(action); },
+        // A and X belong to the habitat table (tableActions.js); every other pad action goes to the app.
+        onGamepadAction: (action) => { if (current() && !tableActions?.padAction(action)) callbacks.current.onGamepadAction?.(action); },
       });
     } catch (err) {
       // Missing WebGL 2, or a synchronous WebGLRenderer failure.
@@ -89,9 +93,11 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
         disconnectSampling = connectSampling(engine);   // checklist, sample count and the sampling prompt (#36)
         disconnectSlopeGridKey = connectSlopeGridKey();   // G: slope grid on the ground in Walk mode (#50)
         disconnectWrist = connectWrist(engine);   // wrist screen app (#67)
+        if (!mock) crewmate = startCrewmate(engine);   // EV2 walks with the player; ?mock=1 keeps the scripted partner (#288)
         disconnectHabitatScreens = connectHabitatScreens(engine);   // the habitat's wall screens and planning table (#47)
         disconnectAudio = connectAudio(engine);   // suit audio (#72): starts on the first click or key press
-        disconnectEvaEnd = connectEvaEnd(engine);   // X ends the EVA back in the habitat, prompt over the table (#244)
+        // the habitat table (#244): E opens the plan, X finishes the EVA, in the cabin, with a prompt over the table
+        tableActions = connectTableActions(engine, { onOpenPlan: () => (current() ? callbacks.current.onOpenPlan?.() ?? false : false) });
         startCurrentSimulation();
         pauseMission();   // the start screen is a real pause, including ?mock=1 where nothing starts
         callbacks.current.onEngine?.(engine, {
@@ -114,10 +120,11 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
       if (disconnect) disconnect();
       if (disconnectSampling) disconnectSampling();
       if (disconnectSlopeGridKey) disconnectSlopeGridKey();
+      if (crewmate) crewmate.stop();
       if (disconnectWrist) disconnectWrist();
       if (disconnectHabitatScreens) disconnectHabitatScreens();
       if (disconnectAudio) disconnectAudio();
-      if (disconnectEvaEnd) disconnectEvaEnd();
+      if (tableActions) tableActions.disconnect();
       engine.dispose();
     };
   }, []);

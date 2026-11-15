@@ -3,7 +3,7 @@ import { imageUrl } from '../data/stops.js';
 import { groupImages, loadTraverse } from '../data/traverse.js';
 import { t } from '../i18n/index.js';
 import { useStops } from '../stops/useStops.js';
-import { toMap } from './mapLayers.js';
+import { tagFlips, toMap } from './mapLayers.js';
 import SourceTag from './SourceTag.jsx';
 
 // Perseverance on the mission table map (#249): the drives the rover made across the tile, under our route, and a pin
@@ -66,7 +66,7 @@ export default function TraverseLayer({ crop }) {
           const [u, v] = toMap(p.x, p.z, crop);
           if (u < -5 || u > 105 || v < -5 || v > 105) return null;
           return (
-            <div key={k} className="map-pin" style={{ left: `${u}%`, top: `${v}%` }}>
+            <div key={k} className={tagFlips(u, 'left') ? 'map-pin flip' : 'map-pin'} style={{ left: `${u}%`, top: `${v}%` }}>
               <span className="map-pin-dot" aria-hidden="true" />
               <button
                 type="button"
@@ -117,9 +117,13 @@ export default function TraverseLayer({ crop }) {
           );
         })()}
       </div>
+      {/* The key says what the drives decide: a cautious crew's route prefers ground the rover crossed (missionNeeds.js) */}
       <p className="table-map-traverse-key">
         <i aria-hidden="true" />
-        {t('map.traverse.key', { from: data.sols[0], to: data.sols[1] })}
+        <span>
+          {t('map.traverse.key', { from: data.sols[0], to: data.sols[1] })}
+          <small>{t('layers.traverse.prefer')}</small>
+        </span>
         <SourceTag path="map.traverse" requireSource={false} source={null} />
       </p>
     </>

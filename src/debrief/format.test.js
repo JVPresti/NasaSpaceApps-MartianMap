@@ -6,11 +6,34 @@ import {
   formatDuration,
   formatMissionTime,
   formatPercent,
+  formatMinutes,
   formatSamples,
+  formatSignedDelta,
+  formatSignedGrams,
+  formatSignedMetres,
   formatSignedMinutes,
+  plannedStopAt,
   routeDistanceChange,
   routeKindLabel,
+  waypointCode,
 } from './format.js';
+import { REVIEW_RULES } from '../sim/routeReview.js';
+
+describe('the planned stop a sample was taken at (D10)', () => {
+  const waypoints = [
+    { name: 'HAB', label: null, x: 535.1, z: 574.1 },
+    { name: 'S1 · light-toned patch', label: 'Light-toned patch', x: 493, z: 539 },
+    { name: 'WP3 · Bright Angel outcrop', x: -11, z: -50 },
+  ];
+  it('names the nearest planned stop within the review reach, by its own label or its waypoint name', () => {
+    expect(plannedStopAt({ x: 495, z: 541 }, waypoints)).toBe('Light-toned patch');
+    expect(plannedStopAt({ x: -9, z: -48 }, waypoints)).toBe('Bright Angel outcrop');
+    expect(plannedStopAt({ x: 493 + REVIEW_RULES.reachM + 1, z: 539 }, waypoints)).toBeNull();
+    expect(plannedStopAt({ x: 535, z: 574 }, waypoints)).toBeNull();   // the habitat is not a stop
+    expect(plannedStopAt({ x: 495, z: 541 }, null)).toBeNull();
+    expect(plannedStopAt({ x: null, z: 541 }, waypoints)).toBeNull();
+  });
+});
 
 describe('debrief formats', () => {
   it('shows distance in metres below a kilometre and in kilometres above it', () => {
@@ -58,6 +81,25 @@ describe('debrief formats', () => {
     expect(routeDistanceChange({ before: null, after: { distanceM: 388 } })).toBe('— → 388 m');
     expect(routeDistanceChange({ before: { distanceM: 412 }, after: null })).toBe('412 m → —');
     expect(routeDistanceChange({ before: null, after: null })).toBeNull();
+  });
+
+  it('signs the route review costs and names stops by their map code (#274)', () => {
+    expect(formatSignedDelta(40)).toBe('+40 s');
+    expect(formatSignedDelta(420)).toBe('+7 min');
+    expect(formatSignedDelta(-130)).toBe('-2 min');
+    expect(formatSignedDelta(0.2)).toBe('0 s');
+    expect(formatSignedDelta(null)).toBe('—');
+    expect(formatSignedGrams(41.4)).toBe('+41 g');
+    expect(formatSignedGrams(-5.2)).toBe('-5 g');
+    expect(formatSignedGrams(0.3)).toBe('0 g');
+    expect(formatSignedMetres(120.2)).toBe('+120 m');
+    expect(formatMinutes(720)).toBe('12 min');
+    expect(formatMinutes(-180)).toBe('-3 min');
+    expect(formatMinutes(-10)).toBe('0 min');
+    expect(formatMinutes(null)).toBe('—');
+    expect(waypointCode('WP2 · dune field edge', 2)).toBe('WP2');
+    expect(waypointCode('Cheyava Falls', 4)).toBe('Cheyava Falls');
+    expect(waypointCode('HAB', 0)).toBe('HAB');
   });
 });
 

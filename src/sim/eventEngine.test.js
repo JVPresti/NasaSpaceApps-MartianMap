@@ -312,3 +312,186 @@ describe('event validation', () => {
     expect(() => engine.end('missing-event')).toThrow('Unknown event id "missing-event"')
   })
 })
+
+describe('trigger conditions for the first mission (#265)', () => {
+  const HOME = { x: 0, z: 0 }
+  const OUT = { x: 60, z: 0 }
+  const homeEnd = { type: 'area', x: 0, z: 0, radius: 25 }
+
+  it('holds a due event while the position is inside its own end area, then starts it outside', () => {
+    const event = makeEvent({ trigger: { type: 'missionTime', atSec: 75, holdInsideEnd: true }, end: homeEnd })
+    const { engine } = setup([event])
+
+    expect(engine.update(80, HOME).started).toEqual([])
+    expect(engine.update(120, { x: 10, z: 10 }).started).toEqual([])
+    // Without the hold it would start and end in the same update and never play again.
+    expect(engine.update(121, OUT).started).toEqual(['test-event'])
+    expect(engine.getActive().map((active) => active.id)).toEqual(['test-event'])
+    expect(engine.update(140, HOME).ended).toEqual(['test-event'])
+  })
+
+  it('starts and ends at once inside the end area without the hold, as the full EVA always did', () => {
+    const event = makeEvent({ trigger: { type: 'missionTime', atSec: 75 }, end: homeEnd })
+    const { engine } = setup([event])
+    expect(engine.update(80, HOME)).toEqual({ started: ['test-event'], ended: ['test-event'] })
+  })
+
+  it('waits until a store threshold has held for forSec', () => {
+    const event = makeEvent({
+      trigger: { type: 'missionTime', atSec: 75, requires: [{ path: 'route.nextIndex', op: 'gte', value: 2, forSec: 20 }] },
+    })
+    const { engine, store } = setup([event], { initial: { route: { nextIndex: 1 } } })
+
+    expect(engine.update(90).started).toEqual([])   // due, but the stop is not reached yet
+    store.set('route.nextIndex', 2)                  // the stop is reached at T+100
+    expect(engine.update(100).started).toEqual([])
+    expect(engine.update(119).started).toEqual([])
+    expect(engine.update(120).started).toEqual(['test-event'])
+  })
+
+  it('counts forSec from the first time the threshold held, so an early arrival keeps atSec', () => {
+    const event = makeEvent({
+      trigger: { type: 'missionTime', atSec: 75, requires: [{ path: 'route.nextIndex', op: 'gte', value: 2, forSec: 20 }] },
+    })
+    const { engine } = setup([event], { initial: { route: { nextIndex: 2 } } })
+    expect(engine.update(40).started).toEqual([])
+    expect(engine.update(74).started).toEqual([])
+    expect(engine.update(75).started).toEqual(['test-event'])
+  })
+
+  it('waits until another event has run afterSec, and ignores an event this engine does not run', () => {
+    const storm = makeEvent({ id: 'storm', trigger: { type: 'missionTime', atSec: 75 } })
+    const radiation = makeEvent({ id: 'radiation', trigger: { type: 'missionTime', atSec: 80, requires: [{ event: 'storm', afterSec: 15 }] } })
+    const { engine } = setup([storm, radiation])
+    expect(engine.update(85).started).toEqual(['storm'])
+    expect(engine.update(99).started).toEqual([])
+    expect(engine.update(100).started).toEqual(['radiation'])
+
+    const alone = setup([radiation])   // the storm switched off at the mission table
+    expect(alone.engine.update(80).started).toEqual(['radiation'])
+  })
+
+  it('starts at latestSec even when a requirement never holds, and from then on even inside the end area', () => {
+    const event = makeEvent({
+      trigger: { type: 'missionTime', atSec: 75, requires: [{ path: 'route.nextIndex', op: 'gte', value: 2 }], latestSec: 180, holdInsideEnd: true },
+      end: { ...homeEnd, minSec: 20 },
+    })
+    const { engine } = setup([event], { initial: { route: { nextIndex: 1 } } })
+    expect(engine.update(100, HOME).started).toEqual([])
+    expect(engine.update(179, OUT).started).toEqual([])
+    // A crew that never leaves the end area still meets the event, and it plays its minimum time (N14).
+    expect(engine.update(180, HOME)).toEqual({ started: ['test-event'], ended: [] })
+    expect(engine.update(199, HOME).ended).toEqual([])
+    expect(engine.update(200, HOME).ended).toEqual(['test-event'])
+  })
+
+  it('keeps an event requirement after latestSec, so two late events still come in order', () => {
+    const storm = makeEvent({ id: 'storm', trigger: { type: 'missionTime', atSec: 75, latestSec: 180, holdInsideEnd: true }, end: homeEnd })
+    const radiation = makeEvent({
+      id: 'radiation',
+      trigger: { type: 'missionTime', atSec: 95, requires: [{ event: 'storm', afterSec: 15 }], latestSec: 210, holdInsideEnd: true },
+      end: homeEnd,
+    })
+    const { engine } = setup([storm, radiation])
+    expect(engine.update(179, HOME).started).toEqual([])
+    expect(engine.update(180, HOME).started).toEqual(['storm'])       // its latestSec, inside the end area
+    expect(engine.update(209, HOME).started).toEqual([])              // 15 s after the storm, but still held inside
+    expect(engine.update(210, HOME).started).toEqual(['radiation'])   // its own latestSec
+  })
+
+  it('holds an event inside its end area only until latestSec', () => {
+    const event = makeEvent({ trigger: { type: 'missionTime', atSec: 75, latestSec: 120, holdInsideEnd: true }, end: homeEnd })
+    const { engine } = setup([event])
+    expect(engine.update(100, HOME).started).toEqual([])
+    expect(engine.update(120, HOME).started).toEqual(['test-event'])
+  })
+
+  it('counts a place reached for good: leaving it, or a re-plan, changes nothing (R5)', () => {
+    const STOP = { x: 60, z: 0, radius: 5 }
+    const event = makeEvent({ trigger: { type: 'missionTime', atSec: 75, requires: [{ area: STOP, forSec: 20 }] } })
+    const { engine } = setup([event])
+    expect(engine.update(50, { x: 30, z: 0 }).started).toEqual([])    // a find on the way: not the stop
+    expect(engine.update(80, { x: 30, z: 0 }).started).toEqual([])    // due, the stop not reached
+    expect(engine.update(90, { x: 58, z: 1 }).started).toEqual([])    // at the stop from T+90
+    expect(engine.update(100, { x: 40, z: 0 }).started).toEqual([])   // walked away again
+    expect(engine.update(110, { x: 40, z: 0 }).started).toEqual(['test-event'])
+  })
+
+  it('starts with any one of anyOf: a sample secured, or long enough at the stop', () => {
+    const STOP = { x: 60, z: 0, radius: 5 }
+    const trigger = {
+      type: 'missionTime', atSec: 75,
+      requires: [{ area: STOP }, { anyOf: [{ path: 'sampling.count', op: 'gte', value: 1, forSec: 3 }, { area: STOP, forSec: 90 }] }],
+    }
+    const sampled = setup([makeEvent({ trigger })], { initial: { sampling: { count: 0 } } })
+    expect(sampled.engine.update(60, { x: 60, z: 0 }).started).toEqual([])   // at the stop at T+60
+    expect(sampled.engine.update(100, { x: 60, z: 0 }).started).toEqual([])  // still sampling
+    sampled.store.set('sampling.count', 1)                                   // secured at T+110
+    expect(sampled.engine.update(110, { x: 60, z: 0 }).started).toEqual([])
+    expect(sampled.engine.update(113, { x: 60, z: 0 }).started).toEqual(['test-event'])
+
+    const idle = setup([makeEvent({ trigger })], { initial: { sampling: { count: 0 } } })
+    expect(idle.engine.update(60, { x: 60, z: 0 }).started).toEqual([])
+    expect(idle.engine.update(149, { x: 60, z: 0 }).started).toEqual([])
+    expect(idle.engine.update(150, { x: 60, z: 0 }).started).toEqual(['test-event'])   // 90 s at the stop, no sample
+  })
+
+  it('starts on the way home, before the end area, with nearEndM; anyOf may hold an event requirement', () => {
+    const storm = makeEvent({ id: 'storm', trigger: { type: 'missionTime', atSec: 10 } })
+    const radiation = makeEvent({
+      id: 'radiation',
+      trigger: { type: 'missionTime', atSec: 10, requires: [{ event: 'storm', afterSec: 0 }, { anyOf: [{ event: 'storm', afterSec: 15 }, { nearEndM: 10 }] }] },
+      end: homeEnd,
+    })
+    const { engine } = setup([storm, radiation])
+    expect(engine.update(10, { x: 50, z: 0 }).started).toEqual(['storm'])
+    expect(engine.update(14, { x: 40, z: 0 }).started).toEqual([])       // 40 m out, 4 s after the storm
+    expect(engine.update(18, { x: 34, z: 0 }).started).toEqual(['radiation'])   // within 25 + 10 m: before the end area
+  })
+
+  it('counts list entries inside an area: a sample taken elsewhere does not count (N1)', () => {
+    const STOP = { x: 60, z: 0, radius: 10 }
+    const event = makeEvent({ trigger: { type: 'missionTime', atSec: 0, requires: [{ path: 'sampling.samples', inArea: STOP, atLeast: 1, forSec: 3 }] } })
+    const { engine, store } = setup([event], { initial: { sampling: { samples: [{ x: 20, z: 0 }] } } })   // a sample at a find
+    expect(engine.update(50).started).toEqual([])
+    store.set('sampling.samples', [{ x: 20, z: 0 }, { x: 61, z: 1 }])   // a sample at the stop at T+60
+    expect(engine.update(60).started).toEqual([])
+    expect(engine.update(63).started).toEqual(['test-event'])
+    expect(validateEvent(makeEvent({ trigger: { type: 'manual', requires: [{ path: 'a.b', inArea: { x: 0, z: 0, radius: 1 }, atLeast: 0 }] } })).errors)
+      .toContain('trigger.requires[0].atLeast must be a whole number >= 1')
+  })
+
+  it('does not end an event before end.minSec', () => {
+    const event = makeEvent({ trigger: { type: 'missionTime', atSec: 10 }, end: { ...homeEnd, minSec: 20 } })
+    const { engine } = setup([event])
+    expect(engine.update(10, HOME)).toEqual({ started: ['test-event'], ended: [] })
+    expect(engine.update(29, HOME).ended).toEqual([])
+    expect(engine.update(30, HOME).ended).toEqual(['test-event'])
+  })
+
+  it('never starts a manual event from latestSec', () => {
+    const { engine } = setup([makeEvent({ trigger: { type: 'manual', latestSec: 10 } })])
+    expect(engine.update(20).started).toEqual([])
+  })
+
+  it('validates the new trigger fields', () => {
+    expect(validateEvent(makeEvent({ trigger: { type: 'missionTime', atSec: 75, holdInsideEnd: true } })).errors)
+      .toContain('trigger.holdInsideEnd needs an end of type "area"')
+    expect(validateEvent(makeEvent({ trigger: { type: 'missionTime', atSec: 75, latestSec: 10 } })).errors)
+      .toContain('trigger.latestSec must not be before trigger.atSec')
+    expect(validateEvent(makeEvent({ trigger: { type: 'missionTime', atSec: 75, requires: [{ event: 'x', afterSec: -1 }] } })).errors)
+      .toContain('trigger.requires[0].afterSec must be a finite number of seconds >= 0')
+    expect(validateEvent(makeEvent({ trigger: { type: 'missionTime', atSec: 75, requires: [{ path: 'a.b', op: 'eq', value: 1 }] } })).ok)
+      .toBe(false)
+    expect(validateEvent(makeEvent({ trigger: { type: 'missionTime', atSec: 75, requires: {} } })).errors)
+      .toContain('trigger.requires must be an array')
+    expect(validateEvent(makeEvent({ trigger: { type: 'missionTime', atSec: 75, requires: [{ anyOf: [] }] } })).errors)
+      .toContain('trigger.requires[0].anyOf must be a non-empty array')
+    expect(validateEvent(makeEvent({ trigger: { type: 'missionTime', atSec: 75, requires: [{ nearEndM: 5 }] } })).errors)
+      .toContain('a nearEndM requirement needs an end of type "area"')
+    expect(validateEvent(makeEvent({ trigger: { type: 'missionTime', atSec: 75, requires: [{ area: { x: 0, z: 0, radius: 0 } }] } })).errors)
+      .toContain('trigger.requires[0].area.radius must be a finite number of metres greater than 0')
+    expect(validateEvent(makeEvent({ trigger: { type: 'manual' }, end: { type: 'duration', afterSec: 5, minSec: -1 } })).errors)
+      .toContain('end.minSec must be a finite number of seconds >= 0')
+  })
+})

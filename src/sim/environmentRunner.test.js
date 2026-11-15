@@ -139,7 +139,8 @@ describe('environment strip values during the events (#189)', () => {
   it('has a tagged temperature, wind, tau and dose through the dust storm and the radiation alert', () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));   // keep the planner load pending
     const env = startEnvironmentRunner({ store: useMissionStore, meda, rad, ...noTimer });
-    const events = startEventRunner({ store: useMissionStore, ...noTimer });
+    // The full EVA's times and timelines (T+480 s, T+720 s; src/sim/missions.js).
+    const events = startEventRunner({ store: useMissionStore, objective: 'cheyava', ...noTimer });
     const at = (sec) => { setMission({ elapsedSec: sec }); events.tick(); env.tick(); };
     const paths = ['environment.tempC', 'environment.windMs', 'environment.dustOpacity', 'environment.doseUgy'];
 

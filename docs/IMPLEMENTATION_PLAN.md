@@ -435,19 +435,28 @@ Sizes are for one person: S is two to three hours, M is most of a day, L is one 
 
 ## 8. Demo script
 
-Three minutes, one take. Each beat exists to prove one thing the track asks for.
+Eight minutes at most (target 7:30), start screen to sources, on the **first mission** (#265): a 55 m sortie from the
+airlock with the dust storm and the radiation alert brought forward, so the map table gets most of the time and both
+events still play. The full script, the budget per segment, which feature shows where, and how to measure it
+(`npm run measure:demo`) are in [docs/DEMO.md](DEMO.md).
 
-| Time | What the audience sees | What it proves |
-| --- | --- | --- |
-| **0:00** | Plan mode. The site from above, slope and rock layers switched on, the planner draws the route to Cheyava Falls with time and oxygen per leg. | Plan, with layered data; a route that avoids obstacles |
-| **0:30** | Switch to Walk. The visor starts. The navigation line reads “terrain fix · ±0.4 m”. | An interface for the surface; no GPS assumed |
-| **0:50** | Walking along the glowing route. Layer switched from the wrist. Walkback margin on the visor. | Hyperlocal layers in use; suit limits |
-| **1:20** | Cheyava Falls. Perseverance's image beside the rock, science card, one sample taken. | The science goal and point-of-view imagery |
-| **1:50** | Radiation alert. Rings on the visor, dose rate jumps, the nearest shelter turns green and a route leads to it. | Radiation and space weather; safety first |
-| **2:20** | Dust storm. The sky closes in, the position ring grows, the route is recalculated to the habitat. | Atmospheric data driving a safety decision |
-| **2:45** | Debrief and the sources screen. | Every number has a mission and a date |
+| # | Segment | Budget | What it proves |
+| --- | --- | --- | --- |
+| 1 | Start screen, the first sortie | 0:15 | One click to the product |
+| 2 | Table: the goal set to Cheyava Falls, one decision per layer on its 934 m route | 1:05 | A layered, integrated view from several missions |
+| 3 | Two contrasting plans from the crew's needs, why the route bends, the Cheyava Falls card | 0:55 | Plan a Marswalk; a route that avoids obstacles and says why |
+| 4 | Hazards, outlook, go / no-go, Begin EVA, keys, help | 0:35 | Conditions and safety before leaving |
+| 5 | Walk out: visor HUD, wrist, slope grid, visor frame, mark a find | 1:35 | An interface for the surface; no GPS assumed |
+| 6 | The science stop and a sample | 0:20 | Science along the way |
+| 7 | Dust storm and its re-plan on the map | 0:20 | Atmospheric data driving a safety decision |
+| 8 | Radiation alert, the walk back, the hand-over to the partner | 1:10 | Radiation and space weather; ALARA; working in pairs |
+| 9 | Habitat: settings and language, Open plan, Finish EVA | 0:20 | The habitat display |
+| 10 | Debrief: the walked route against the plan, the beat recap | 0:45 | What happened, judged against the plan |
+| 11 | Sources | 0:10 | Every number has a mission and a date |
+| | **Total** | **7:30** | |
 
-The beat at 1:20 depends on the two recommendations in 7.2. If the stretch is ready, a second player joins at 0:50 and takes the sample.
+The 3-minute script this section held before #265 needed the full 15-minute EVA to Cheyava Falls; Cheyava Falls and
+its Perseverance images now show at the table (segment 3), and the full EVA stays available as the longer mission.
 
 ## 9. Stretch: players online
 

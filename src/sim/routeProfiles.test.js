@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { startAtAirlock } from '../plan/routeStart.js';
-import { buildCostGrid, cellCost, heightAt, rockAbundanceAt } from './costGrid.js';
+import { buildCostGrid, cellCost, heightAt, rockAbundanceAt, traverseMask } from './costGrid.js';
 import { routeLegCosts } from './legCosts.js';
 import { radioShadowMask } from './radio.js';
-import { mastKey, planProfiles, PROFILE_IDS, profileGrid, profileSources, ROUTE_PROFILES, slopeAlongPath, summariseProfiles } from './routeProfiles.js';
+import { mastKey, planProfiles, PROFILE_IDS, profileGrid, profileSources, ROUTE_PROFILES, slopeAlongPath, summariseProfiles, traverseKey } from './routeProfiles.js';
 import { planRoute } from './routePlanner.js';
 import { suitConstantsFromHazards } from './suitModel.js';
 
@@ -74,6 +74,12 @@ describe('route profiles on the route.json stops (#245)', () => {
     expect(blind.fastest.shadowShare).toBeNull();
     expect(summariseProfiles(blind, waypoints, (x, z) => heightAt(grid, x, z), suitConstantsFromHazards(hazards)).radio)
       .toEqual({ id: 'radio', ok: false, reason: 'no-mast' });
+  });
+
+  it('explains every leg of every profile (#246)', () => {
+    for (const id of PROFILE_IDS) {
+      expect(profiles[id].explain.map((leg) => leg.to)).toEqual(waypoints.slice(1).map((w) => w.name));
+    }
   });
 
   it('plans only the profiles asked for', () => {
@@ -151,5 +157,46 @@ describe('slope along a path', () => {
     expect(overCautionM).toBeGreaterThan(4);
     expect(overCautionM).toBeLessThan(20);
     expect(slopeAlongPath(grid, [[-40, -40], [-30, -40]]).overCautionM).toBe(0);
+  });
+});
+
+describe('risk pricing on the profile grids', () => {
+  const grid = syntheticGrid(11, (i) => i * 2);   // 0 to 20 degrees, west to east
+  const fastest = ROUTE_PROFILES.find((p) => p.id === 'fastest');
+  const gentlest = ROUTE_PROFILES.find((p) => p.id === 'gentlest');
+
+  it('puts the risk weights under the profile weights and keeps the closed cells', () => {
+    const cautious = profileGrid(grid, fastest, null, { weights: { slopePenaltyDeg: 7, rockWeight: 1 } });
+    const rock = rockAbundanceAt(grid, 0, 0);
+    expect(cautious.cost[5 * 11 + 9]).toBeCloseTo(1 + (18 / 7) ** 2 + rock, 4);
+    expect(cautious.blocked).toBe(grid.blocked);
+    const both = profileGrid(grid, gentlest, null, { weights: { slopePenaltyDeg: 7, rockWeight: 1 } });
+    expect(both.cost[5 * 11 + 9]).toBeCloseTo(1 + (18 / 7) ** 3 + rock, 4);
+  });
+
+  it('makes the ground Perseverance drove cheaper than the rest', () => {
+    const flat = syntheticGrid(11);
+    const traverse = traverseMask(flat, [[[-10, 0], [10, 0]]], 1);
+    const priced = profileGrid(flat, fastest, null, { traverseDiscount: 0.5, traverse });
+    // half the cost of other ground, as a premium of 2 on the other ground so that no multiplier drops under 1 (A*)
+    expect(priced.cost[5 * 11 + 5]).toBeCloseTo(flat.cost[5 * 11 + 5], 6);
+    expect(priced.cost[0]).toBeCloseTo(2 * flat.cost[0], 5);
+    expect(Math.min(...priced.cost)).toBeGreaterThanOrEqual(1);
+    expect(profileGrid(flat, fastest, null, { traverseDiscount: 0.5, traverse: null })).toBe(flat);
+  });
+
+  it('draws the route onto the rover ground with a discount, through planProfiles', () => {
+    const flat = syntheticGrid(101);
+    // A drive that bows 40 m north of the straight line between the two stops.
+    const drives = [{ sol: 1, points: [[-80, 0], [-50, -40], [50, -40], [80, 0]] }];
+    const stops = [{ name: 'A', x: -80, z: 0 }, { name: 'B', x: 80, z: 0 }];
+    const plain = planProfiles(flat, stops, { only: ['fastest'] }).fastest;
+    const cautious = planProfiles(flat, stops, { only: ['fastest'], pricing: { id: 'cautious', traverseDiscount: 0.5 }, traverse: drives }).fastest;
+    expect(plain.distance).toBeCloseTo(160, 0);
+    expect(cautious.distance).toBeGreaterThan(190);   // along the drive: 200 m, a little less inside its 3 m band
+    expect(Math.min(...cautious.path.map(([, z]) => z))).toBeLessThan(-35);
+    expect(cautious.explain[0].block).toBe('traverse');
+    expect(traverseKey(drives)).not.toBe('');
+    expect(traverseKey([])).toBe('');
   });
 });

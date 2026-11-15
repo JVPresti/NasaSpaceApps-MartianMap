@@ -1,5 +1,5 @@
-/* Layer preview (#51): a small card beside the Plan panel while a layer button is hovered or focused. It never takes
-   the mouse and adds nothing to the panel's layout. Colours and radii come from the app's theme variables. */
+/* Layer preview (#51): a small card above a layer button while it is hovered or focused, clear of the map's legend. It
+   never takes the mouse and adds nothing to the panel's layout. Colours and radii come from the app's theme variables. */
 .layer-preview-anchor { display: none; }
 
 .layer-preview {
@@ -7,7 +7,7 @@
   z-index: 40;
   margin: 0;
   padding: 6px;
-  transform: translateY(-50%);
+  transform: translateY(-100%);
   pointer-events: none;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -34,7 +34,7 @@
 }
 
 @keyframes layer-preview-in {
-  from { opacity: 0; transform: translateY(-50%) translateX(-4px); }
+  from { opacity: 0; transform: translateY(-100%) translateY(4px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

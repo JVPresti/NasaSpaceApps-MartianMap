@@ -6,7 +6,7 @@
     "source": "docs/marswalk-assets/README.md",
     "real": "terrain shape and photo (HiRISE DTM 1 m + orthomosaic 25 cm), background (CTX DEM 20 m + mosaic 6 m), position of Cheyava Falls, slope values, sun shadows.",
     "artistic": "the Mars colour (HiRISE and CTX are grayscale), sky and haze presets, night lamp, the start screen video and the hazard illustrations (AI-generated with Higgsfield, not mission images).",
-    "modelled": "rock positions (statistical model, not individual real rocks), rock shapes and close-up textures (Earth scans), the Cheyava Falls rock (hand-made after NASA PIA26401), the layered outcrop at Bright Angel (hand-made in the style of the Mastcam-Z images of sol 1217, not a copy of a specific rock), rock-abundance layer.",
+    "modelled": "rock positions (statistical model, not individual real rocks), rock shapes and close-up textures (Earth scans), the Cheyava Falls rock (hand-made after NASA PIA26401), the layered outcrop at Bright Angel (hand-made in the style of the Mastcam-Z images of sol 1217, not a copy of a specific rock), the rock-abundance layer (tagged DERIVED: HiRISE brightness through the Golombek et al. 2003 model, an estimate of rock cover, not a rock count).",
     "notes": [
       "Real spot for the \"dangerous slope\" scene: about 200 m west of Cheyava Falls (x -201, z -52), 34 deg average.",
       "There is no mesa overhang in this area; elevation data cannot contain overhangs."
@@ -114,7 +114,8 @@
       "source_urls": [],
       "data_urls": [],
       "used_in": [
-        "public/marswalk/assets/ring_gray.jpg (background terrain photo)"
+        "public/marswalk/assets/ring_gray.jpg (background terrain photo)",
+        "public/present/jezero_ctx.jpg (the presentation's fall into Jezero, through NASA Mars Trek tiles, tinted)"
       ],
       "origin": "manual"
     },
@@ -157,7 +158,7 @@
         "https://www.uahirise.org/dtm/"
       ],
       "used_in": [
-        "Slope, elevation and route layers, cost grid and route planner",
+        "Terrain, radio shadow and sky exposure layers, cost grid and route planner",
         "public/data/shelters.json: shelters[SP1].values.dose_reduction",
         "public/data/shelters.json: shelters[SP1].values.route_from_hab",
         "public/data/shelters.json: shelters[SP1].values.sky_view_factor",
@@ -170,6 +171,7 @@
         "public/data/shelters.json: shelters[SP4].values.dose_reduction",
         "public/data/shelters.json: shelters[SP4].values.route_from_hab",
         "public/data/shelters.json: shelters[SP4].values.sky_view_factor",
+        "public/data/sky_view.json: ",
         "public/marswalk/assets/normal_ao.jpg",
         "public/marswalk/assets/terrain.json (751 x 751 heights)"
       ],
@@ -191,7 +193,8 @@
       "data_urls": [],
       "used_in": [
         "public/marswalk/assets/ortho_hi.jpg, ortho_lo.jpg",
-        "public/marswalk/assets/outcrop_mask.jpg and the rock density map in terrain.json"
+        "public/marswalk/assets/outcrop_mask.jpg, the Outcrop layer: a brightness mask of light-toned ground, so bright dust or sand reads the same as outcrop",
+        "the rock density map in terrain.json, the Rocks layer (DERIVED, an estimate of rock cover)"
       ],
       "origin": "manual"
     },
@@ -224,6 +227,44 @@
         "public/data/traverse.json: traverse"
       ],
       "origin": "provenance"
+    },
+    {
+      "id": "themis-day-ir-100m",
+      "name": "Mars Odyssey THEMIS day IR controlled global mosaic, 100 m",
+      "kind": "terrain_imagery",
+      "provider": "Arizona State University, served by NASA Mars Trek",
+      "mission": "Mars Odyssey",
+      "instrument": "THEMIS",
+      "credit_line": "NASA/JPL-Caltech/Arizona State University",
+      "citation": "Edwards, C. S. et al. 2011, Mosaicking of global planetary image datasets: 1. Techniques and data processing for Thermal Emission Imaging System (THEMIS) multi-spectral data, JGR Planets 116, E10008",
+      "license": "NASA material, not subject to copyright in the United States. NASA insignia and logos are not public domain (NASA Images and Media Usage Guidelines)",
+      "license_url": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "url": "https://trek.nasa.gov/mars/",
+      "source_urls": [],
+      "data_urls": [],
+      "used_in": [
+        "public/present/jezero_region.jpg (the presentation's view of Jezero crater, tinted)"
+      ],
+      "origin": "manual"
+    },
+    {
+      "id": "viking-mdim21-colour",
+      "name": "Mars Viking MDIM 2.1 colorized global mosaic, 232 m",
+      "kind": "terrain_imagery",
+      "provider": "USGS Astrogeology Science Center, served by NASA Mars Trek",
+      "mission": "Viking",
+      "instrument": "Viking Orbiter cameras",
+      "credit_line": "NASA/JPL/USGS",
+      "citation": null,
+      "license": "NASA material, not subject to copyright in the United States. NASA insignia and logos are not public domain (NASA Images and Media Usage Guidelines)",
+      "license_url": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "url": "https://astrogeology.usgs.gov/search/map/mars_viking_mdim21_colorized_global_mosaic_232m",
+      "source_urls": [],
+      "data_urls": [],
+      "used_in": [
+        "public/present/globe_4k.jpg, globe_2k.jpg (the presentation's globe, scripts/present/build_assets.py)"
+      ],
+      "origin": "manual"
     },
     {
       "id": "bell-2022-mastcam-z",

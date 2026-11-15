@@ -8,6 +8,7 @@ Research notes for `hazards.json` (what was checked, what could not be confirmed
 |---|---|---|
 | `hazards.json` | Dust storm, radiation, suit, walking cost, speed and slope numbers, plus the walking O2 model and the September 2017 radiation event profile | #18 |
 | `shelters.json` | The habitat and natural safe points with their sky view and dose reduction, built by `npm run shelters`. Method in `docs/route/shelters.md` | #40 |
+| `sky_view.json` | The sky view factor of the whole tile on a 6 m grid (251 x 251 nodes, one byte each), built by `npm run skyview` because the full 2 m grid takes about 15 s to compute. Read by the Exposure layer of the mission table and its route readout (`src/sim/skyView.js`, `skyViewAlongPath`). Method in `docs/route/shelters.md`, why the layer exists in `docs/data/map-layers-decision.md` | #242 |
 | `meda_sol.json`, `rad.json` | One MEDA sol (sol 1187 at Cheyava Falls, wind from sol 312) in one-minute bins, and the RAD background plus the September 2017 event curve. Built by `npm run meda` and `npm run rad`. Loader: `src/data/medaRad.js`. Notes in `docs/data/meda-rad-notes.md` | #31 |
 | `stops.json` | The Bright Angel and Cheyava Falls science stops: text, Perseverance images in `images/`, sampling checklist. Loader: `src/data/stops.js` | #37 |
 

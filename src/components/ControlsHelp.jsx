@@ -14,7 +14,8 @@ const COLUMNS = [
         [['menu.mouse'], 'menu.help.look'],
         [['ui.esc'], 'menu.help.release.pause'],
         [['H'], 'menu.help.this.help'],
-        [['X'], 'menu.help.end.eva'],
+        // src/state/tableActions.js: in the habitat's cabin, E opens the plan and X finishes the EVA (#244)
+        [['E', '/', 'X'], 'tableprompt.help'],
       ],
     },
     {
@@ -60,7 +61,8 @@ const COLUMNS = [
       rows: [
         [['Q'], 'menu.help.mark.find.hold'],
         [['Y', '/', 'N'], 'menu.help.add.or.dismiss'],
-        [['T'], 'menu.help.partner.detail'],
+        // I: every HUD instrument and source tag (src/hud/Hud.jsx, #283). It shares the T row so the help keeps its height.
+        [['I', '/', 'T'], 'menu.help.instruments.partner'],
         [['G'], 'menu.help.slope.grid'],
         [['R', 'menu.help.key.brackets', 'menu.help.key.jk', 'Enter'], 'menu.help.wrist'],
       ],

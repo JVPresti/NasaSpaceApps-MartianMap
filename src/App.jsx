@@ -1,4 +1,5 @@
 import { t, translateText } from './i18n/index.js';
+import PresentGate from './present/PresentGate.jsx';   // ?present=1, the pitch inside the app (#291)
 import { useLanguage } from './i18n/useLanguage.js';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import EngineView from './components/EngineView.jsx';
@@ -9,10 +10,13 @@ import StartScreen from './components/StartScreen.jsx';
 import TouchStick from './components/TouchStick.jsx';
 import VisorFrame from './components/VisorFrame.jsx';
 import { cycleLayer } from './components/shortcuts.js';
+import { modeSwitchAllowed } from './components/modeGuard.js';
 import { useShortcuts } from './components/useShortcuts.js';
 import DebriefScreen from './debrief/DebriefScreen.jsx';
 import EventBanner from './events/EventBanner.jsx';
 import EventDebug from './events/EventDebug.jsx';
+import { StopBanner, WalkBeat } from './mission/MissionBeat.jsx';
+import { chooseMission } from './mission/chooseMission.js';
 import Finds from './finds/Finds.jsx';
 import Hud from './hud/Hud.jsx';
 import PlanMode from './plan/PlanMode.jsx';
@@ -21,6 +25,7 @@ import { WalkStopCard } from './stops/ScienceStops.jsx';
 import { createRouteProgress } from './hud/minimapRoute.js';
 import { openSources } from './sources/sourcesStore.js';
 import { pauseMission, resumeMission, setMode, useMissionStore } from './state/store.js';
+import { FIRST_OBJECTIVE, FULL_OBJECTIVE } from './sim/missions.js';
 import { EVA_PHASE, PAUSE_VIEW, pauseEva, requestEvaLock, restartEva, resumeEva } from './state/evaSession.js';
 import { continueEva } from './state/eva.js';
 import { preloadAppAssets } from './preload.js';
@@ -306,9 +311,23 @@ export default function App() {
   const handleGamepadAction = useCallback((action) => {
     if (phaseRef.current !== EVA_PHASE.PLAYING || busyRef.current) return;
     if (action === 'mode') {
-      handleModeChange(useMissionStore.getState().mode === 'walk' ? 'plan' : 'walk', { capture: false });
+      const next = useMissionStore.getState().mode === 'walk' ? 'plan' : 'walk';
+      // As M (handleShortcutMode): before the EVA has begun, Start must not leave the table past the Go / No-go check.
+      if (!modeSwitchAllowed(next, evaBegunRef.current)) return;
+      handleModeChange(next, { capture: false });
     } else if (action === 'layer-prev') cycleLayer(-1);
     else if (action === 'layer-next') cycleLayer(1);
+  }, [handleModeChange]);
+
+  // The habitat table's Open plan (src/state/tableActions.js: E or gamepad A in the cabin) opens the mission table on its
+  // Route step; M, Start and the menus still open it on the default step. False when it cannot open now.
+  const [planTab, setPlanTab] = useState(undefined);
+  useEffect(() => useMissionStore.subscribe((s, prev) => { if (prev.mode === 'plan' && s.mode !== 'plan') setPlanTab(undefined); }), []);
+  const handleOpenPlan = useCallback(() => {
+    if (phaseRef.current !== EVA_PHASE.PLAYING || busyRef.current || useMissionStore.getState().mode !== 'walk') return false;
+    setPlanTab('route');
+    handleModeChange('plan');
+    return true;
   }, [handleModeChange]);
 
   const handleQuality = useCallback(async (option) => {
@@ -484,10 +503,20 @@ export default function App() {
   // through the same handler, so it also captures the mouse in Walk (#174).
   // Before the EVA has begun, M must not leave the table: Begin EVA is the only way out, behind the Go / No-go check.
   const handleShortcutMode = useCallback((next) => {
-    if (next === 'walk' && !evaBegunRef.current) return;
+    if (!modeSwitchAllowed(next, evaBegunRef.current)) return;
     handleModeChange(next);
   }, [handleModeChange]);
   useShortcuts(playing, handleShortcutMode);
+
+  // The start screen always opens the mission table, on the mission the player chose (#265): the main action opens the
+  // first sortie, the secondary button the full EVA. The objective defines the mission and stays editable at the table
+  // until Begin EVA. The table needs no pointer lock, so a refused capture is met at Begin EVA, where the pause menu
+  // offers drag-to-look. Both actions are disabled until the scene is ready; this guard keeps a stale click harmless.
+  const startMission = (objective) => {
+    if (load.status !== 'ready') return;
+    chooseMission(objective);
+    handleResume();
+  };
 
   // The start screen is up from the first frame: the scene loads behind it, and the screen also owns the failure
   // panel. The class hides the top bar and the table behind it, as it did once the scene was ready.
@@ -504,6 +533,7 @@ export default function App() {
         onLockChange={handleLockChange}
         onEngine={handleEngine}
         onGamepadAction={handleGamepadAction}
+        onOpenPlan={handleOpenPlan}
       />
 
       {/* Helmet bezel and alert ring (#28): over the 3D view, under every interface layer, so HUD text stays on top. */}
@@ -517,10 +547,15 @@ export default function App() {
           evaBegun={evaBegun}
           onBeginEva={handleBeginEva}
           onControls={() => openControls(false)}
+          // During the EVA the table opens on its Route step, where an event's re-plan to the habitat shows on the map
+          // (#265: the storm and radiation beats say "M: open plan"); before Begin EVA it starts at the Site step.
+          initialTab={planTab ?? (evaBegun ? 'route' : undefined)}
         />
       )}
       {/* Plan mode places the banner in its own alert region; Walk puts it under the heading box, the HUD's only alert. */}
       {load.status === 'ready' && mode === 'walk' && <EventBanner className="event-banner-walk" />}
+      {/* The first mission's science stop (D10): why it is worth the walk, in the banner's place before any alert. */}
+      {playing && mode === 'walk' && <StopBanner evaBegun={evaBegun} />}
       {load.status === 'ready' && DEBUG_EVENTS && <EventDebug />}
 
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={translateText(SITE)} onRetry={handleRetry} />
@@ -534,6 +569,8 @@ export default function App() {
       {load.status === 'ready' && <WalkStopCard active={mode === 'walk'} />}
 
       {playing && mode === 'walk' && wristOpen && <p className="hint">{t(WRIST_HINT)}</p>}
+      {/* The first mission's beat line (#265) takes the key strip's place while the wrist screen is down. */}
+      {playing && mode === 'walk' && !wristOpen && <WalkBeat evaBegun={evaBegun} />}
 
       {atStart && (
         <StartScreen
@@ -541,14 +578,8 @@ export default function App() {
           notice={notice}
           freeLook={freeLook}
           scene={load}
-          onStart={() => {
-            // The start screen always opens the mission table; the EVA begins from there. The table needs no
-            // pointer lock, so a refused capture is met at Begin EVA, where the pause menu offers drag-to-look.
-            // The main action is disabled until the scene is ready; this guard keeps a stale click harmless.
-            if (load.status !== 'ready') return;
-            if (useMissionStore.getState().mode !== 'plan') setMode('plan');
-            handleResume();
-          }}
+          onStart={() => startMission(FIRST_OBJECTIVE)}
+          onFullEva={() => startMission(FULL_OBJECTIVE)}
           onSources={openSources}
         />
       )}
@@ -597,6 +628,7 @@ export default function App() {
       {/* Last, so its native dialog is created after the debrief and its top layer sits above it. Mounted from the
           first frame (#266): Sources is usable on the start screen while the scene still loads. */}
       <SourcesRoot />
+      <PresentGate engine={engine} />
     </div>
   );
 }

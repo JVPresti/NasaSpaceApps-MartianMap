@@ -40,7 +40,7 @@ export default function GamepadHint({ engine }) {
   return (
     <div className="gamepad-hint" role="status" aria-live="polite">
       <strong>{t('menu.gamepad')}</strong>
-      <span>{t('menu.gamepad.hint.left.stick.walk.l3.jog.right.stick.look.start.plan.walk.lb.rb.layer')}</span>
+      <span>{t('menu.gamepad.hint.left.stick.walk.l3.jog.right.stick.look.start.plan.walk.lb.rb.layer')} {t('tableprompt.gamepad')}</span>
     </div>
   );
 }

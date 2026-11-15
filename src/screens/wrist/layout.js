@@ -2,6 +2,7 @@
 // The screen is a fixed 512 × 352 texture; coordinates are texture pixels, independent of display DPR.
 // Plain JavaScript, no React, no three.js, no DOM.
 import { t } from '../../i18n/index.js';
+import { WALK_LAYERS } from '../../plan/layers.js';
 
 /** Logical canvas size in CSS pixels. */
 export const WRIST_WIDTH = 512;
@@ -26,11 +27,11 @@ export const FOOTER_Y = 336;
 /** Area inside the frame that belongs to the page content. The map page paints into this rect. */
 export const WRIST_CONTENT = Object.freeze({ x: 24, y: ROWS_TOP, w: WRIST_WIDTH - 48, h: ROWS_BOTTOM - ROWS_TOP });
 
-const ROW_COUNTS = Object.freeze({ layers: 5, map: 1, checklist: 4, suit: 5 });
+const ROW_COUNTS = Object.freeze({ layers: WALK_LAYERS.length, map: 1, checklist: 4, suit: 5 });
 
 /**
- * Number of selectable rows on a page: the five layers, one map, the four checklist items, the five suit
- * readouts.
+ * Number of selectable rows on a page: the layers the ground draws in Walk (four: none, terrain, rocks, outcrop;
+ * the table-only layers are not listed), one map, the four checklist items, the five suit readouts.
  * @param {'layers' | 'map' | 'checklist' | 'suit'} page
  * @returns {number}
  */

@@ -6,9 +6,9 @@ import { subscribeLanguage } from '../i18n/index.js';
 //   const engine = createEngine(container, { assetBase, mode, onStatus, onProgress, onError });
 //   await engine.ready;          // resolves after the first frame is actually rendered, rejects on failure
 //   engine.setMode('plan' | 'walk');
-//   engine.setLayer(0..4); engine.setSky('clear_day'); engine.setRoute([[x, z], ...]);
+//   engine.setLayer(0..5); engine.setSky('clear_day'); engine.setRoute([[x, z], ...]);
 //   engine.setSkyTime(17.75 | null); engine.getSun();   // sky and Sun from the mission clock (#73), missionSky.js
-//   engine.habitatZoneAt(x, z); engine.setHabitatPrompt({ key, text } | null);   // the habitat and its end-of-EVA prompt (#244)
+//   engine.habitatZoneAt(x, z); engine.setHabitatPrompt({ rows } | null); engine.inHabitatCabin();   // the habitat and its table prompt (#244)
 //   engine.requestPointerLock(); engine.releasePointerLock(); engine.setInputEnabled(false);
 //   engine.setQuality('auto' | 'high' | 'low'); engine.getQuality(); engine.resetSession();
 //   engine.subscribeTouch(listener); engine.subscribeGamepad(listener);   // UI hints for touch and gamepad (#103)
@@ -22,12 +22,14 @@ import { subscribeLanguage } from '../i18n/index.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as SH from './shaders.js';
+import { createCinematic } from './cinematic.js';   // the presentation's camera and overlays (#291)
 import { createAssets, b64u16, b64u8 } from './assets.js';
 import { buildAssetManifest, ROCK_NAMES } from './assetManifest.js';
 import { decodeTerrainJson, decodeRingJson } from './queries.js';
 import { createRouteGlow, validPath } from './routeGlow.js';
 import { createBootPrints } from './bootPrints.js';
 import { createDust, clampDust } from './dust.js';
+import { hiddenFrame } from './hiddenFrame.js';
 import { createMissionSky } from './missionSky.js';
 import { createShelterHighlight } from './shelterHighlight.js';
 import { validShelter } from './shelterRules.js';
@@ -64,7 +66,9 @@ import { createLoadLifecycle } from './lifecycle.js';
 import { createProgressTracker } from './progress.js';
 import { assertWebGL2, rendererFailure } from './webgl.js';
 
-export const LAYERS = ['none', 'slope hazard', 'elevation', 'rock abundance', 'outcrop'];
+// The layers of src/plan/layers.js, in `view.layer` order. The ground draws 1 to 3; radio shadow and exposure are drawn
+// on the mission table only, so the ground stays plain for them (TERRAIN_FRAG in shaders.js).
+export const LAYERS = ['none', 'terrain', 'rock abundance', 'outcrop', 'radio shadow', 'exposure'];
 export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
 
 /**
@@ -73,11 +77,11 @@ export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
  *   debug?: boolean,
  *   onStatus?: (text: string) => void, onProgress?: (progress: { loaded: number, failed: number, total: number, ratio: number }) => void,
  *   onError?: (err: Error) => void, onLockChange?: (locked: boolean) => void,
- *   onGamepadAction?: (action: 'mode' | 'layer-prev' | 'layer-next') => void }} options
+ *   onGamepadAction?: (action: 'mode' | 'layer-prev' | 'layer-next' | 'open-plan' | 'end-eva') => void }} options
  *   tier: force a quality tier and turn off the automatic choice (the app passes ?tier=high|low).
  *   inputEnabled: false starts with gameplay input gated off, for a start screen or a menu.
  *   onGamepadAction: a gamepad button press, once per press. The app routes it through the same mode and layer
- *   actions as the keyboard (#103, #174).
+ *   actions as the keyboard (#103, #174), and the habitat table's actions through src/state/tableActions.js.
  *   debug: expose window.__marswalk for measuring (development builds only).
  */
 export function createEngine(container, { assetBase, mode = 'plan', tier = null, inputEnabled: inputEnabledOption = true, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {}, onLockChange = () => {}, onGamepadAction = () => {} } = {}) {
@@ -209,8 +213,9 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   }
   function renderFrame() {
     const now = performance.now(), ft = now - last; last = now;
-    const dt = Math.min(ft / 1000, 0.1);
+    const dt = sys.cine ? sys.cine.frameDt(ft) : Math.min(ft / 1000, 0.1);   // the presentation can fix the step (#291)
     viewCtl.update(dt);
+    if (sys.cine) sys.cine.apply(dt);
     camera.getWorldDirection(U.uCamDir.value);
     const eyeMode = ctx.view.mode === 'eye';
     if (sys.arms.L) sys.arms.L.g.visible = sys.arms.R.g.visible = eyeMode;   // first-person arms only in Walk
@@ -223,6 +228,9 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     sys.prints.update(dt);
     sys.sky.update(dt);   // before the dust: a new sky is then scaled by the storm light in the same frame
     sys.dust.update(dt);
+    // No draw while App.css hides the canvas under the opaque mission table (hiddenFrame.js, #304)
+    const hidden = hiddenFrame(renderer.domElement, firstFrame);
+    if (hidden) { ({ frames, acc, worst, slowWindows } = hidden); lastStats = hidden.stats; return; }
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
     if (waypoints?.group.visible) waypoints.update(camera, container.clientHeight);   // fixed-size labels (#198)
@@ -241,7 +249,8 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       // auto tier: three slow seconds in a row on High -> Low. The controller serialises this with a
       // user choice made from the pause menu, so the two can never interleave.
       const q = quality.get();
-      if (q.auto && !q.pending && ctx.tier === 'high' && now - booted > 3000) {
+      if (sys.cine) slowWindows = 0;   // never rebuild the terrain under the presentation's meshes (#291)
+      else if (q.auto && !q.pending && ctx.tier === 'high' && now - booted > 3000) {
         slowWindows = (fps < 40 && worst < 250 && !document.hidden) ? slowWindows + 1 : 0;
         if (slowWindows >= 3) {
           slowWindows = 0;
@@ -294,8 +303,10 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     ]);
     if (!alive) return;
     ctx.orthoCache[ctx.tier] = ortho; U.tRing.value = ring;
+    // the rock abundance layer reads the density grid of terrain.json, the one the route planner prices (costGrid.rockAbundanceAt)
+    const density = new THREE.DataTexture(ctx.T.dens, ctx.T.dn, ctx.T.dn, THREE.RedFormat, THREE.UnsignedByteType); density.needsUpdate = true;
     ctx.terrain.material = new THREE.ShaderMaterial({
-      uniforms: { ...U, tOrtho: { value: ortho }, tNrmAo: { value: nrm }, tMask: { value: mask }, tGravel: { value: gravel }, tSlab: { value: slab } },
+      uniforms: { ...U, tOrtho: { value: ortho }, tNrmAo: { value: nrm }, tMask: { value: mask }, tGravel: { value: gravel }, tSlab: { value: slab }, tDensity: { value: density } },
       vertexShader: SH.TERRAIN_VERT, fragmentShader: SH.TERRAIN_FRAG,
     });
 
@@ -358,7 +369,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
 
   /** Last one-second measurement. Plain data, safe to poll; the engine never calls back from its frame loop. */
   function stats() {
-    const r = renderer.info.render;
+    const r = lastStats.hidden ? { triangles: 0, calls: 0 } : renderer.info.render;   // a hidden canvas draws nothing (#304)
     return { ...lastStats, tier: ctx.tier, auto: quality.get().auto, gpu: ctx.gpu, triangles: r.triangles, drawCalls: r.calls };
   }
 
@@ -395,11 +406,13 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       },
       sun: () => sys.sky.sun,   // the Sun while the mission clock drives the sky (#73), else null
       habitatY: () => sys.habitat.pos.y,
+      // the habitat origin and the unit vector toward its airlock end, so scripts/measure-demo.mjs can walk back into the cabin
+      habitat: () => ({ x: sys.habitat.pos.x, z: sys.habitat.pos.z, dirX: sys.habitat.dir.x, dirZ: sys.habitat.dir.z }),
       groundUnderHabitat: () => ctx.terrain.meshH(sys.habitat.pos.x, sys.habitat.pos.z),
       setTier: (name) => quality.request(name),
       walking: (on) => { ctx.view.keys.KeyW = !!on; },
       partnerCommand: (name) => sys.partner.command(name),
-      setPartnerSource: (source) => sys.partner.setSource(source),
+      setPartnerSource: (source) => sys.partner.setSource(source, { chosen: true }),
       partnerState: () => sys.partner.state,
       prints: () => sys.prints.stats(),
       // camera and player pose, for checking speed and that the camera follows the ground smoothly
@@ -572,7 +585,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       if (waypoints) waypoints.set(null);
       return true;
     },
-    /** Data layer drawn on the terrain: 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop. */
+    /** Data layer drawn on the terrain: 0 none, 1 terrain (slope and contours), 2 rock abundance, 3 outcrop; 4 and 5 are table-only (plain ground). */
     /**
      * Data for the habitat's wall screens and planning table (habitatScreens.js, #47): the plain object built by
      * habitatScreenData() in src/state/habitatScreens.js. The screens redraw from it while someone is near them.
@@ -582,11 +595,16 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     },
     /**
      * Prompt floating over the habitat's planning table (habitatPrompt.js, #244), shown only while the player is in the
-     * cabin: `{ key: 'X', text: 'End the EVA' }`, or null to hide it.
+     * cabin: `{ rows: [{ key: 'E', text: 'Open plan' }, { key: 'X', text: 'Finish EVA', dim: false }] }` (up to two rows;
+     * a `dim` row does not apply now), `{ key, text }` for a single row, or null to hide it.
      */
     setHabitatPrompt(prompt) {
       pending.habitatPrompt = prompt || null;
       if (sys.habitat && sys.habitat.prompt) sys.habitat.prompt.set(pending.habitatPrompt);
+    },
+    /** True while the player walks in the habitat's cabin ('main' or 'inner' zone): where the table prompt shows and its keys act. */
+    inHabitatCabin() {
+      return !!(sys.habitat && sys.habitat.root && sys.habitat.inCabin());
     },
     /** The habitat walk zone at (x, z): 'stairs', 'porch', 'hatch', 'airlock', 'inner' or 'main' (collide.js), or null. */
     habitatZoneAt(x, z) {
@@ -783,6 +801,11 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
         visible: inFront && Math.abs(p.x) <= 1 && Math.abs(p.y) <= 1,
       };
     },
+    /** The presentation's camera and scene overlays (cinematic.js, #291), until its release(). Null before ready. */
+    cinematic() {
+      if (!started) return null;
+      return (sys.cine ||= createCinematic(ctx, { render: renderFrame, loop: (on) => renderer.setAnimationLoop(on ? tick : null), release: () => { sys.cine = null; viewCtl.setMode(requestedMode); } }));
+    },
     /** Removes every boot print (bootPrints.js): the start of a new EVA. */
     clearPrints() { if (sys.prints) sys.prints.clear(); },
     /** Player position and heading (degrees clockwise from north), and the current mode. */
@@ -793,7 +816,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     setPartnerSource(source) {
       if (source !== null && !(source && typeof source.update === 'function')) throw new Error('setPartnerSource: expected a partner source with update(dt, world), or null');
       if (!sys.partner) throw new Error('engine is not ready: wait for engine.ready');
-      sys.partner.setSource(source);
+      sys.partner.setSource(source, { chosen: true });   // it comes back when the engine places the crew again (#288)
     },
     /** Scripted actions of the current source: 'toggleCase', 'visitHabitat'. Returns false if the source ignores it. */
     partnerCommand(name) { return sys.partner ? sys.partner.command(name) : false; },

@@ -12,14 +12,18 @@ import { SHELTERS_PATH } from '../sim/shelters.js';
  * waypoints to the engine (the minimap and the 3D markers use them); the table itself is plain interface over a
  * picture of the habitat, with its own flat map (MissionMap.jsx).
  *
- * @param {{ engine: object | null, active: boolean, evaBegun?: boolean, onBeginEva?: () => void, onControls?: () => void }} props
+ * @param {{ engine: object | null, active: boolean, evaBegun?: boolean, onBeginEva?: () => void, onControls?: () => void,
+ *   initialTab?: 'site' | 'route' | 'hazards' | 'suit' }} props
+ *   initialTab: the table step to open on (the habitat table's "Open plan" passes 'route'); the Site step by default
  */
-export default function PlanMode({ engine, active, evaBegun = false, onBeginEva, onControls }) {
+export default function PlanMode({ engine, active, evaBegun = false, onBeginEva, onControls, initialTab = 'site' }) {
   const waypoints = useMissionStore((s) => s.route.waypoints);
   const planner = useRoutePlanner({ waypoints, enabled: active, engine });
 
   // route.json holds the five placeholder waypoints from the assets team. The route starts at the airlock (#166);
-  // without shelters.json it starts at the HAB waypoint as before.
+  // without shelters.json it starts at the HAB waypoint as before. The planner chooses the stops from the crew's needs
+  // (useRoutePlanner, src/sim/missionNeeds.js), so these anchors are only the fallback while nothing has planned yet
+  // (or when stops.json gives nothing to choose from): they never replace a planned list.
   useEffect(() => {
     let cancelled = false;
     const shelters = loadDataFile(SHELTERS_PATH).catch(() => null);
@@ -27,7 +31,7 @@ export default function PlanMode({ engine, active, evaBegun = false, onBeginEva,
       .then(async (route) => {
         const start = await shelters;
         if (cancelled) return;
-        useMissionStore.setState((state) => ({
+        useMissionStore.setState((state) => (state.route.waypoints.length > 0 ? state : {
           route: { ...state.route, waypoints: startAtAirlock(route.waypoints ?? [], start) },
         }));
       })
@@ -52,5 +56,5 @@ export default function PlanMode({ engine, active, evaBegun = false, onBeginEva,
 
   if (!active) return null;
 
-  return <MissionTable planner={planner} waypoints={waypoints} evaBegun={evaBegun} onBeginEva={onBeginEva} onControls={onControls} />;
+  return <MissionTable planner={planner} waypoints={waypoints} evaBegun={evaBegun} onBeginEva={onBeginEva} onControls={onControls} initialTab={initialTab} />;
 }

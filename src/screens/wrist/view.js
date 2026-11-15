@@ -8,7 +8,7 @@ import { provenance, TAGS } from '../../data/provenance.js';
 import { CHECKLIST } from '../../hud/samplingPrompt.js';
 import { formatMinutes, formatValue } from '../../hud/format.js';
 import { t } from '../../i18n/index.js';
-import { LAYERS } from '../../plan/layers.js';
+import { WALK_LAYERS, walkRow } from '../../plan/layers.js';
 import { clampRow, PAGE_TITLES, PAGES, rowCount } from './layout.js';
 
 const DASH = '–';
@@ -58,19 +58,19 @@ function makeRow(label, value, { tag, active, checked } = {}) {
   return out;
 }
 
-function activeLayerIndex(state) {
+/** Row of the layer Walk shows: the wrist lists only the layers the ground draws, so a table-only layer reads as none. */
+function activeLayerRow(state) {
   const raw = state?.view?.layer;
-  const index = Number.isFinite(raw) ? Math.trunc(raw) : 0;
-  return Math.max(0, Math.min(LAYERS.length - 1, index));
+  return walkRow(Number.isFinite(raw) ? Math.trunc(raw) : 0);
 }
 
 function layersContent(state) {
-  const active = activeLayerIndex(state);
-  const rows = LAYERS.map((layer, index) => makeRow(layer.name, layer.unit, {
+  const active = activeLayerRow(state);
+  const rows = WALK_LAYERS.map((layer, index) => makeRow(layer.name, layer.unit, {
     tag: catalogTag(layer),
     active: index === active,
   }));
-  return { status: LAYERS[active].name.toUpperCase(), level: null, rows };
+  return { status: WALK_LAYERS[active].name.toUpperCase(), level: null, rows };
 }
 
 function checklistContent(state) {
