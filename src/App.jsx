@@ -9,7 +9,6 @@ import StartScreen from './components/StartScreen.jsx';
 import TouchStick from './components/TouchStick.jsx';
 import VisorFrame from './components/VisorFrame.jsx';
 import { cycleLayer } from './components/shortcuts.js';
-import { modeSwitchAllowed } from './components/modeGuard.js';
 import { useShortcuts } from './components/useShortcuts.js';
 import DebriefScreen from './debrief/DebriefScreen.jsx';
 import EventBanner from './events/EventBanner.jsx';
@@ -317,9 +316,8 @@ export default function App() {
     if (phaseRef.current !== EVA_PHASE.PLAYING || busyRef.current) return;
     if (action === 'mode') {
       const next = useMissionStore.getState().mode === 'walk' ? 'plan' : 'walk';
-      // As M (handleShortcutMode): in the habitat the table closes back to walking there (#260). handleModeChange
-      // refuses every switch during the airlock cycle.
-      if (!modeSwitchAllowed(next, true)) return;
+      // As M: in the habitat the table closes back to walking there (#260); handleModeChange refuses every switch
+      // during the airlock cycle.
       handleModeChange(next, { capture: false });
     } else if (action === 'layer-prev') cycleLayer(-1);
     else if (action === 'layer-next') cycleLayer(1);
@@ -528,17 +526,10 @@ export default function App() {
   }, []);
 
   const playing = load.status === 'ready' && !evaSummary && phase === EVA_PHASE.PLAYING;
-  // Only while the EVA is playing: off while loading, on the start screen and in the pause menu. There is no mode button any
-  // more (#11: the EVA begins on the mission table and returns to it from the pause menu), but M still goes
-  // through the same handler, so it also captures the mouse in Walk (#174).
-  // Before the EVA has begun, M must not leave the table: Begin EVA is the only way out, behind the Go / No-go check.
-  const handleShortcutMode = useCallback((next) => {
-    // Habitat-first (#260): leaving the table on foot is walking in the habitat before the EVA, so #282's guard lets it
-    // through; handleModeChange refuses every switch during the airlock cycle.
-    if (!modeSwitchAllowed(next, true)) return;
-    handleModeChange(next);
-  }, [handleModeChange]);
-  useShortcuts(playing, handleShortcutMode);
+  // Only while playing: off while loading, on the start screen and in the pause menu. M goes through the mode handler,
+  // so it also captures the mouse in Walk (#174). Before the EVA, leaving the table on foot is walking in the habitat
+  // (#260), so M may close it as well as open it; handleModeChange refuses every switch during the airlock cycle.
+  useShortcuts(playing, handleModeChange);
 
   // The start screen puts the astronaut on foot in the habitat, on the mission the player chose (#265, #260): the main
   // action starts the first sortie, the secondary button the full EVA. The objective defines the mission and stays

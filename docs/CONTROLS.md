@@ -49,7 +49,7 @@ returns to Walk. The pause menu's End the EVA is a different action: it discards
 | --- | --- |
 | Right-drag | Pan the map |
 | Scroll | Zoom in and out |
-| Back to the habitat | Before the EVA: close the table and walk again by it; the click captures the mouse (#260) |
+| Back to the habitat | Before the EVA, close the table and walk again by it. The click captures the mouse (#260) |
 | Begin EVA | Fix the route and the crew's needs, then go out through the airlock cycle (#260) |
 | Esc | Pause and open the menu |
 

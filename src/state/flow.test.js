@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  AIRLOCK_CYCLE_MS, AIRLOCK_MIN_DARK_MS, STAGE, beginEgress, canAdvance, canSwitchMode, completeEgress, continueFromDebrief, inAirlock, isOnSurface,
-  isPlanning, runAirlockCycle, showDebrief,
+  AIRLOCK_CYCLE_MS, AIRLOCK_MIN_DARK_MS, STAGE, beginEgress, canAdvance, canSwitchMode, completeEgress, continueFromDebrief,
+  runAirlockCycle, showDebrief,
 } from './flow.js';
 import { pauseMission, resetStore, setMode, useMissionStore } from './store.js';
 import { pauseEva, restartEva, resumeEva } from './evaSession.js';
@@ -64,8 +64,7 @@ describe('flow stages', () => {
     const s = useMissionStore.getState();
     expect(s.stage).toBe(STAGE.HABITAT);
     expect(s.mode).toBe('walk');
-    expect(isPlanning(s)).toBe(true);
-    expect(isOnSurface(s)).toBe(false);
+    expect(s.stage).toBe(STAGE.HABITAT);
   });
 
   it('goes habitat, egress, eva, debrief, and back to eva only through Continue EVA', () => {
@@ -78,14 +77,14 @@ describe('flow stages', () => {
     setMode('plan');   // at the mission table
     beginEgress();
     expect(useMissionStore.getState()).toMatchObject({ stage: STAGE.EGRESS, mode: 'walk' });   // the table closes
-    expect(inAirlock(useMissionStore.getState())).toBe(true);
+    expect(useMissionStore.getState().stage).toBe(STAGE.EGRESS);
     completeEgress();
-    expect(isOnSurface(useMissionStore.getState())).toBe(true);
-    expect(inAirlock(useMissionStore.getState())).toBe(false);
+    expect(useMissionStore.getState().stage).toBe(STAGE.EVA);
+    expect(useMissionStore.getState().stage).not.toBe(STAGE.EGRESS);
     showDebrief();   // X at the table (#244) froze the summary
     expect(useMissionStore.getState().stage).toBe(STAGE.DEBRIEF);
     continueFromDebrief();   // Continue EVA
-    expect(isOnSurface(useMissionStore.getState())).toBe(true);
+    expect(useMissionStore.getState().stage).toBe(STAGE.EVA);
   });
 
   it('refuses every Plan / Walk switch during the airlock cycle, so the table cannot open over the new EVA', () => {
@@ -247,7 +246,7 @@ describe('the simulator flow with the real simulation', () => {
     expect(engine.resets).toBe(1);
     // The pause menu's "End the EVA and go back to the mission table" opens the table right after.
     setMode('plan');
-    expect(isPlanning(useMissionStore.getState())).toBe(true);
+    expect(useMissionStore.getState().stage).toBe(STAGE.HABITAT);
     stopSim();
   });
 });

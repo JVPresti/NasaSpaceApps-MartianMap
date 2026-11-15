@@ -27,7 +27,7 @@ export default function HabitatHud() {
         <p className="habitat-site">{t('habitat.site')}</p>
         <p className="habitat-time">
           {sol != null && <span>{t('sol')} {sol}</span>}
-          <span><b>{lmst || '––:––'}</b> {t('ui.lmst')}</span>
+          <span><b>{lmst || '--:--'}</b> {t('ui.lmst')}</span>
         </p>
       </section>
 

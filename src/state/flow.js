@@ -53,14 +53,8 @@ export function canAdvance(from, to) {
   return (NEXT[from] ?? []).includes(to);
 }
 
-/** True while the astronaut is inside before the EVA. The table opens here, and from the cabin during the EVA (#282). */
-export const isPlanning = (state) => (state.stage ?? STAGE.HABITAT) === STAGE.HABITAT;
 /** False during the airlock cycle, which owns the screen: no Plan / Walk switch from any key, pad or menu. */
 export const canSwitchMode = (state) => state.stage !== STAGE.EGRESS;
-/** True while the EVA runners own the mission: the suit HUD, events, sampling and the wrist. */
-export const isOnSurface = (state) => state.stage === STAGE.EVA;
-/** True during the airlock cycle out. */
-export const inAirlock = (state) => state.stage === STAGE.EGRESS;
 
 function advance(store, to) {
   const from = store.getState().stage ?? STAGE.HABITAT;

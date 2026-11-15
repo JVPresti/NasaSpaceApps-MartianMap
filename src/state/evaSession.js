@@ -12,7 +12,7 @@
  *     EVA can reappear after a remount.
  */
 import { clearClockSession, defaultSessionStorage } from '../sim/missionClock.js';
-import { pauseMission, resetStore, resumeMission, useMissionStore } from './store.js';
+import { holdMission, pauseMission, resetStore, resumeMission, useMissionStore } from './store.js';
 
 export const EVA_PHASE = Object.freeze({ START: 'start', PLAYING: 'playing', PAUSED: 'paused' });
 // END: confirm ending the EVA and going back to the mission table (#11), a restart that lands on the table.
@@ -76,7 +76,7 @@ export async function resumeEva({ engine, mode = 'walk', isCurrent = null, captu
   } catch (cause) {
     return { ok: false, message: (cause && cause.message) || 'The scene input could not be enabled.' };
   }
-  if (!holdClock) resumeMission();
+  if (holdClock) holdMission(); else resumeMission();
   return { ok: true, message: null };
 }
 

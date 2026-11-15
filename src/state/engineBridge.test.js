@@ -63,11 +63,10 @@ describe('engine bridge boot prints', () => {
   });
 });
 
-describe('engine bridge habitat prompts', () => {
-  it('writes the table prompt state inside the habitat and clears it on the surface', () => {
+describe('engine bridge habitat zone', () => {
+  it('writes the habitat walk zone before the EVA and clears it on the surface', () => {
     vi.useFakeTimers();
-    const engine = { ...fakeEngine(), slopeAt: () => 0, habitat: { inside: true, zone: 'main' } };
-    engine.getHabitat = () => engine.habitat;
+    const engine = { ...fakeEngine(), slopeAt: () => 0, getPlayer: () => ({ x: 0, z: 0, headingDeg: 0, habitatZone: 'main' }) };
     const disconnect = connectEngine(engine);
     vi.advanceTimersByTime(200);
     expect(useMissionStore.getState().habitat).toEqual({ zone: 'main' });

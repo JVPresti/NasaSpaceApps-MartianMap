@@ -3,7 +3,7 @@ import { setLanguage, t } from '../i18n/index.js';
 import { setWristKeyOwner } from '../screens/wrist/ownership.js';
 import { startEvaRunner } from './eva.js';
 import { canEndEva, canOpenPlan, connectTableActions, END_EVA_KEY, inCabin, OPEN_PLAN_KEY, tablePrompt } from './tableActions.js';
-import { resetStore, useMissionStore } from './store.js';
+import { holdMission, pauseMission, resetStore, setMode, useMissionStore } from './store.js';
 
 function keyTarget() {
   const handlers = new Set();
@@ -150,15 +150,18 @@ describe('the habitat table actions (#244)', () => {
     }
   });
 
-  it('offers Open plan in the habitat before the EVA, while the clock is held (#260)', () => {
+  it('offers Open plan in the habitat before the EVA while the clock is held, and nothing behind a menu (#260)', () => {
     const engine = fakeEngine();
     const { target, onOpenPlan } = connect(engine);
-    useMissionStore.setState((s) => ({ mode: 'walk', stage: 'habitat', mission: { ...s.mission, paused: true } }));
+    setMode('walk');
+    holdMission();   // walking in the habitat: the clock waits for the airlock
     expect(rowTexts(engine)).toEqual([[OPEN_PLAN_KEY, t('tableprompt.make.plan'), false], [END_EVA_KEY, t('tableprompt.no.eva'), true]]);
     target.press('KeyE');
     expect(onOpenPlan).toHaveBeenCalledTimes(1);
-    useMissionStore.setState({ stage: 'egress' });   // the airlock cycle: a held clock is a pause again
+    pauseMission();   // the pause menu over the habitat
     expect(engine.setHabitatPrompt).toHaveBeenLastCalledWith(null);
+    target.press('KeyE');
+    expect(onOpenPlan).toHaveBeenCalledTimes(1);
   });
 
   it('ignores a paused mission, Plan, key repeat, modifier keys and typing in a field', () => {

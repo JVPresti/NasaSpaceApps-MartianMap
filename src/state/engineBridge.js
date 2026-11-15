@@ -39,15 +39,12 @@ export function connectEngine(engine, store = useMissionStore) {
     if (prev && s.stage !== prev.stage) writePlayer();
   };
 
-  const pollHabitat = () => {
-    const state = store.getState();
-    const inside = state.stage === 'habitat' && typeof engine.getHabitat === 'function' ? engine.getHabitat() : null;
-    const zone = inside?.zone ?? null;
-    if (zone !== state.habitat?.zone) store.setState({ habitat: { zone } });
-  };
 
   function writePlayer() {
-    const p = engine.getPlayer(), nav = store.getState().navigation;
+    const p = engine.getPlayer(), state = store.getState(), nav = state.navigation;
+    // Inside the habitat before the EVA: the walk zone, for the habitat HUD's airlock line (#260).
+    const zone = state.stage === 'habitat' ? p.habitatZone ?? null : null;
+    if (zone !== state.habitat?.zone) store.setState({ habitat: { zone } });
     const x = Math.round(p.x * 100) / 100, z = Math.round(p.z * 100) / 100, headingDeg = Math.round(p.headingDeg * 10) / 10;
     if (x === nav.trueX && z === nav.trueZ && headingDeg === nav.headingDeg && nav.slopeDeg !== null) return;   // standing still: no store update, no re-render
     const slopeDeg = Math.round(engine.slopeAt(x, z) * 10) / 10;   // terrain slope under the player, for the HUD (DERIVED from the HiRISE DTM)
@@ -57,10 +54,7 @@ export function connectEngine(engine, store = useMissionStore) {
   apply(store.getState(), null);
   const unsubscribe = store.subscribe(apply);
 
-  const timer = setInterval(() => {
-    pollHabitat();
-    writePlayer();
-  }, PLAYER_POLL_MS);
+  const timer = setInterval(writePlayer, PLAYER_POLL_MS);
 
   return () => { unsubscribe(); clearInterval(timer); };
 }

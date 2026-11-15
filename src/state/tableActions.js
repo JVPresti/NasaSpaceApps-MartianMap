@@ -22,9 +22,9 @@ const CODES = { KeyE: 'open-plan', KeyX: 'end-eva' };
 /** The gamepad actions (gamepadInput.js) that belong to the table; they never reach the app's own gamepad handler. */
 export const TABLE_PAD_ACTIONS = Object.freeze(['open-plan', 'end-eva']);
 
-// In the habitat before the EVA the mission clock is held (mission.paused) while the astronaut walks (#260), so the
-// table's actions count as walking there too; App's onOpenPlan still refuses while a menu is open.
-const walking = (state) => !!state && state.mode === 'walk' && (!state.mission?.paused || state.stage === 'habitat');
+// In the habitat before the EVA the mission clock is held (mission.paused with mission.held) while the astronaut walks
+// (#260), so that counts as walking. A pause menu clears `held`, so the prompt goes and the keys do nothing behind it.
+const walking = (state) => !!state && state.mode === 'walk' && (!state.mission?.paused || state.mission?.held === true);
 
 /**
  * The player walks in the habitat's cabin (engine.inHabitatCabin): where the table prompt shows and its keys act. There

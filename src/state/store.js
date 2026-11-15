@@ -19,7 +19,9 @@ export function createInitialState() {
     // Clock fields: docs/STATE_AND_ENGINE.md. anchorMs is the wall timestamp elapsedSec is measured from;
     // startedAtMs is the first start. The mission clock fills anchorMs and the fields after it when it starts.
     mission: {
-      startedAtMs: null, elapsedSec: 0, paused: false, sol: null, lmst: null,
+      // held: the clock is stopped because the astronaut is in the habitat before the EVA, not because a menu is open
+      // (#260). Walking and the table's prompt go on while held; a pause menu clears it.
+      startedAtMs: null, elapsedSec: 0, paused: false, held: false, sol: null, lmst: null,
       anchorMs: null, timeScale: 1, initialSol: null, initialLmst: null, longitudeDeg: null, sky: null,
     },
     suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
@@ -245,10 +247,12 @@ export const setVisorFrame = (on) => {
 // happen. The clock never overwrites a pause with its own value.
 export const setMissionPaused = (paused) => {
   if (typeof paused !== 'boolean') throw new Error('mission.paused must be a boolean');
-  storeAdapter.set('mission.paused', paused);
+  useMissionStore.setState((s) => ({ mission: { ...s.mission, paused, held: false } }));
 };
 export const pauseMission = () => setMissionPaused(true);
 export const resumeMission = () => setMissionPaused(false);
+/** The habitat before the EVA (#260): the clock stays stopped while the astronaut walks and plans. */
+export const holdMission = () => useMissionStore.setState((s) => ({ mission: { ...s.mission, paused: true, held: true } }));
 export const setMissionTimeScale = (scale) => {
   if (typeof scale !== 'number' || !Number.isFinite(scale) || scale <= 0) throw new Error('mission.timeScale must be a finite number greater than 0');
   storeAdapter.set('mission.timeScale', scale);

@@ -589,30 +589,6 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       return true;
     },
     /**
-     * Come back in through the airlock: the player stands at the mission table, the outer hatch shuts behind them and
-     * the partner is out of sight. The app calls this while the return cycle has the screen dark.
-     * @returns {boolean} false before ready
-     */
-    enterHabitat() {
-      if (!started || !alive) return false;
-      setWrist(false);
-      resetToHabitat();
-      viewCtl.setInputEnabled(inputEnabled);
-      return true;
-    },
-    /**
-     * Where the player stands relative to the habitat, for the habitat prompts. Read by the bridge 5 times per second.
-     * @returns {{ inside: boolean, zone: string | null } | null} null before ready
-     */
-    getHabitat() {
-      if (!started || !sys.habitat.root) return null;
-      const h = sys.habitat, e = ctx.view.eye, zone = h.zone(e.x, e.z);
-      return {
-        inside: !ctx.onSurface,
-        zone: zone ? zone.n : null,
-      };
-    },
-    /**
      * Return the scene to the start of a new EVA: clear input, release the lock, drop the route/shelter markers and
      * put the player back inside the habitat at the mission table, on foot. The store reset and simulation restart are
      * the caller's job (src/state/evaSession.js) because the engine owns no simulation. Quality and the look settings

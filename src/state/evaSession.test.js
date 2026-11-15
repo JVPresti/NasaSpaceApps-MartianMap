@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CLOCK_STORAGE_KEY, createClockSession, readClockSession, startMissionClock, writeClockSession } from '../sim/missionClock.js';
-import { resetStore, setNeeds, useMissionStore } from './store.js';
+import { resetStore, resumeMission, setNeeds, useMissionStore } from './store.js';
 import { pauseEva, resumeEva, restartEva } from './evaSession.js';
 import { beginEgress } from './flow.js';
 
@@ -137,7 +137,11 @@ describe('EVA pause and resume', () => {
     await expect(resumeEva({ engine, mode: 'walk', holdClock: true })).resolves.toMatchObject({ ok: true });
     expect(engine.requested).toBe(1);
     expect(engine.inputEnabled).toBe(true);
-    expect(useMissionStore.getState().mission.paused).toBe(true);
+    expect(useMissionStore.getState().mission).toMatchObject({ paused: true, held: true });
+    pauseEva({ engine });   // a menu over the habitat is a real pause, no longer a held clock
+    expect(useMissionStore.getState().mission).toMatchObject({ paused: true, held: false });
+    resumeMission();
+    expect(useMissionStore.getState().mission).toMatchObject({ paused: false, held: false });
   });
 
   it('abandons a late lock grant instead of resuming behind the menu', async () => {
