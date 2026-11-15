@@ -1,0 +1,17 @@
+{"round": "q0", "kind": "comprehension", "shots": "base (main + qa hook)", "correct": 6, "total": 9,
+ "states": {
+  "walk": {"judge": "opus", "right": {"o2": true, "where": true, "danger": true, "controls": false},
+    "truth": "o2 100 %, margin +479 min, WP1 327 m, no alert, H opens controls",
+    "confused_by": "'MARGIN NOW - home in 1 min' under +479 min; DERIVED/DATA/SIM tags add noise; nothing says which key opens controls",
+    "faster_if": "a visible 'H Help' hint; plain margin label; one status line"},
+  "walk-storm": {"judge": "fable", "right": {"o2": true, "where": true, "danger": true, "controls": false},
+    "truth": "o2 99 %, margin ~+241 min, HAB 830 m, dust storm warning, H",
+    "confused_by": "'shelter in 19 min' vs ETA 14 min; banner second and third lines dense; skipped list unclear; tags; no controls hint",
+    "faster_if": "visible 'H controls'; one time to shelter; shorter banner; turn cue toward the habitat"},
+  "debrief": {"judge": "opus", "right": {"outcome": false},
+    "truth": "went well: back in the habitat, lowest margin positive",
+    "answer": "safe but unproductive, the screen never gives a verdict",
+    "confused_by": "no result or grade; objective unknown; planned 913 m vs walked 1.66 km not reconciled",
+    "faster_if": "one-line verdict at the top with each stat marked against a target"}
+ },
+ "recurring_failures": ["controls key not discoverable in Walk (2 of 2)", "debrief outcome not stated"]}
