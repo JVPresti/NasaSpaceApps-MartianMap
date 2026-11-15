@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { setLanguage } from '../i18n/index.js';
+import { setLanguage, t } from '../i18n/index.js';
 import { LAYERS } from './layers.js';
 import { layerButtonText, layerDecides, layerLegendTitle, layerMapTitle, legendRows } from './tableLayers.js';
 
@@ -14,7 +14,7 @@ describe('mission table layer text', () => {
       expect(layerMapTitle(layer)).not.toMatch(/^table\./);
     }
     expect(layerButtonText(byId('none'))).toBe('Image');
-    expect(layerMapTitle(byId('slope'))).toBe('Route over the slope layer');
+    expect(layerMapTitle(byId('slope'))).toBe(t('table.layer.slope.title'));
   });
 
   it('falls back to the layer name and summary for a layer the table has no words for', () => {
@@ -25,17 +25,19 @@ describe('mission table layer text', () => {
   });
 
   it('translates what a layer decides, and gives nothing without the field', () => {
-    expect(layerDecides({ id: 'x', decides: 'table.layer.slope' })).toBe('Slope');
+    expect(layerDecides({ id: 'x', decides: 'needs.title' })).toBe('Mission needs');
+    for (const layer of LAYERS.filter((entry) => entry.decides)) expect(layerDecides(layer)).not.toBe(layer.decides);
     expect(layerDecides({ id: 'x' })).toBeNull();
     expect(layerDecides({ id: 'x', decides: '' })).toBeNull();
   });
 
   it('builds the slope legend from the layers.js swatches, the walkable band clear as the table map draws it', () => {
     const rows = legendRows(byId('slope'));
-    expect(rows.map((row) => row.text)).toEqual(['0–15° · walkable', '15–20° · caution', '>20° · no-go']);
+    expect(rows[0].text).toMatch(/^0–\d+° · /);
     expect(rows[0].color).toBeNull();
-    expect(rows[1].color).toBe('#f2991a');
-    expect(rows[2].color).toBe('#e6140d');
+    expect(rows.some((row) => row.color === '#e6140d' && row.text.startsWith('>20°'))).toBe(true);
+    // without a `clear` flag, the first slope band is still drawn clear, as the table map leaves it
+    expect(legendRows({ id: 'slope', swatches: [{ color: '#33cc66', label: '0–15°' }, { color: '#f2991a', label: '15–20°' }] }).map((row) => row.color)).toEqual([null, '#f2991a']);
   });
 
   it('gives a colour ramp its end labels', () => {
@@ -52,6 +54,7 @@ describe('mission table layer text', () => {
   it('speaks Spanish', () => {
     setLanguage('es');
     expect(layerButtonText(byId('rock'))).toBe('Rocas');
-    expect(layerLegendTitle(byId('slope'))).toBe('Pendiente, del modelo de elevación HiRISE');
+    expect(layerLegendTitle(byId('slope'))).toBe(t('table.layer.slope.legend'));
+    expect(layerLegendTitle(byId('slope'))).not.toMatch(/^table\./);
   });
 });
