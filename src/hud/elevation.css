@@ -67,9 +67,9 @@
 .route-panel .elevation-profile {
   margin-top: 10px;
   padding: 8px 8px 4px;
-  background: rgba(0, 0, 0, 0.18);
+  background: var(--surface-sunk);
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: var(--radius-m);
 }
 
 .route-panel .elevation-profile svg {

@@ -23,7 +23,8 @@ const MIN_MOVE_M = 0.002;
  * track returns how many steps it emitted. yaw: the way the toe points, in radians, 0 = north (-z), clockwise positive
  * (the same convention as view.yaw). Feet point the way the walker faces, not the way they move: walking backwards or
  * sideways still leaves the toes facing forward. Without facingYaw the direction of movement is used.
- * jog: the walker's gait (the player's Shift key), not a guess from speed: walking diagonally is 1.41 m/s.
+ * jog: the walker's gait (the player's Shift key): movement is normalised so a diagonal is never faster than
+ * straight (#227), and jogging strides are longer than walking ones.
  */
 export function createStepTracker() {
   let started = false, lx = 0, lz = 0, travelled = 0, side = 1;

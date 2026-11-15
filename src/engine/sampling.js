@@ -204,6 +204,11 @@ export function createSampling(ctx, canvas, signal) {
 
   return {
     act, update, status,
+    /**
+     * True while a sampling clip pins the player at the stand point: view.update must not apply movement keys,
+     * so moveSpeed stays 0 and the legs never walk on the spot during the clip (#227).
+     */
+    pinned: () => !!stand,
     /** The sampling phase ('idle' | 'collecting' | 'holding' | 'stowing' | 'pouring'); read by the wrist gate (#67). */
     phase: () => phase,
     /** @param {(event: { type: string }) => void} fn @returns {() => void} unsubscribe */
