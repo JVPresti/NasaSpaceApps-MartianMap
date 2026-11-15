@@ -28,6 +28,7 @@ import { decodeTerrainJson, decodeRingJson } from './queries.js';
 import { createRouteGlow, validPath } from './routeGlow.js';
 import { createBootPrints } from './bootPrints.js';
 import { createDust, clampDust } from './dust.js';
+import { hiddenFrame } from './hiddenFrame.js';
 import { createMissionSky } from './missionSky.js';
 import { createShelterHighlight } from './shelterHighlight.js';
 import { validShelter } from './shelterRules.js';
@@ -223,9 +224,9 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     sys.prints.update(dt);
     sys.sky.update(dt);   // before the dust: a new sky is then scaled by the storm light in the same frame
     sys.dust.update(dt);
-    // A hidden canvas (App.css hides it under the opaque mission table) costs no GPU work: the systems above keep
-    // their time, the shadow pass and the draw wait until it shows again. The quality check skips that time too.
-    if (firstFrame && renderer.domElement.checkVisibility?.({ visibilityProperty: true }) === false) { frames = 0; acc = 0; worst = 0; return; }
+    // No draw while App.css hides the canvas under the opaque mission table (hiddenFrame.js, #304)
+    const hidden = hiddenFrame(renderer.domElement, firstFrame);
+    if (hidden) { ({ frames, acc, worst, slowWindows } = hidden); lastStats = hidden.stats; return; }
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
     if (waypoints?.group.visible) waypoints.update(camera, container.clientHeight);   // fixed-size labels (#198)
@@ -361,7 +362,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
 
   /** Last one-second measurement. Plain data, safe to poll; the engine never calls back from its frame loop. */
   function stats() {
-    const r = renderer.info.render;
+    const r = lastStats.hidden ? { triangles: 0, calls: 0 } : renderer.info.render;   // a hidden canvas draws nothing (#304)
     return { ...lastStats, tier: ctx.tier, auto: quality.get().auto, gpu: ctx.gpu, triangles: r.triangles, drawCalls: r.calls };
   }
 
