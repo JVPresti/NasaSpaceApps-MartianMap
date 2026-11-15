@@ -467,16 +467,23 @@ describe('route review inputs (#274)', () => {
     expect(eva().routeChanges[1]).toMatchObject({ kind: 'offroute', x: 500, z: 590 });
   });
 
-  it('keeps every marked find with the time it was marked, after it leaves the finds list', () => {
+  it('keeps every marked find with the time it was marked and its card verdict when added, after it leaves the list', () => {
     place(HAB.x, HAB.z);
     mission(40);
     runnerAt();
     const find = { id: 'find-1', label: 'M01', x: 480, z: 620, status: 'pricing', detour: null, error: null, basis: null };
-    useMissionStore.setState((state) => ({ finds: { ...state.finds, list: [find] } }));
+    const other = { id: 'find-2', label: 'M02', x: 400, z: 600, status: 'pricing', detour: null, error: null, basis: null };
+    useMissionStore.setState((state) => ({ finds: { ...state.finds, list: [find, other] } }));
     mission(55);
-    useMissionStore.setState((state) => ({ finds: { ...state.finds, list: [{ ...find, status: 'accepted' }] } }));
+    const priced = { ...find, status: 'priced', detour: { ok: true, verdict: 'go', extraSec: 60 } };
+    useMissionStore.setState((state) => ({ finds: { ...state.finds, list: [priced, { ...other, status: 'priced', detour: { ok: true, verdict: 'no-go' } }] } }));
+    expect(eva().finds.map((f) => f.verdict)).toEqual([null, null]);   // priced, not added: no verdict recorded
+    useMissionStore.setState((state) => ({ finds: { ...state.finds, list: [{ ...priced, status: 'accepted' }, state.finds.list[1]] } }));
     useMissionStore.setState((state) => ({ finds: { ...state.finds, list: [] } }));   // reached: pruneFinds drops it
-    expect(eva().finds).toEqual([{ id: 'find-1', label: 'M01', x: 480, z: 620, atSec: 40, accepted: true }]);
+    expect(eva().finds).toEqual([
+      { id: 'find-1', label: 'M01', x: 480, z: 620, atSec: 40, accepted: true, verdict: 'go' },
+      { id: 'find-2', label: 'M02', x: 400, z: 600, atSec: 40, accepted: false, verdict: null },
+    ]);
   });
 
   it('puts the point of the lowest margin into the summary track, so the chart and the headline agree', () => {

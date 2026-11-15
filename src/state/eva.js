@@ -59,7 +59,7 @@ export function createInitialEvaState() {
     track: [],                   // [{ x, z, atSec, marginSec, slopeDeg, eventId, o2G, home }] every TRACK_STEP_M walked (#274)
     lowPoint: null,              // a track point at the reading of minOxygenMarginSec; the summary's track includes it
     plan: null,                  // the approved route at Begin EVA: { atSec, decision, profile, path, waypoints, legs, totals } (#274)
-    finds: [],                   // [{ id, label, x, z, atSec, accepted }] every find marked this EVA (#274)
+    finds: [],                   // [{ id, label, x, z, atSec, accepted, verdict }] every find marked this EVA (#274)
     summary: null,               // final frozen snapshot; null until phase 'ended'
     atHabitat: false,            // during the EVA: the astronaut is back at the habitat, where the EVA can be ended (#244)
     endRequested: false,         // the astronaut asked to end the EVA; the runner ends it on its next tick
@@ -169,7 +169,9 @@ function keepPlan(store) {
 }
 
 /**
- * Keep every find marked this EVA with the mission time it was first seen, and whether it was added to the route.
+ * Keep every find marked this EVA with the mission time it was first seen, whether it was added to the route and the
+ * verdict its card read when it was added ('go' | 'no-go' | 'unknown', the priced detour, src/state/finds.js). The
+ * review lets an alert that starts on the way to a find added on a GO card pass (#274, D7).
  * finds.list drops a find once it is reached (pruneFinds), so the review could not see it at the end otherwise.
  */
 function recordFinds(store) {
@@ -181,12 +183,13 @@ function recordFinds(store) {
   for (const find of Array.isArray(state.finds?.list) ? state.finds.list : []) {
     if (typeof find?.id !== 'string' || !isFiniteNumber(find.x) || !isFiniteNumber(find.z)) continue;
     const accepted = find.status === 'accepted';
+    const verdict = accepted && typeof find.detour?.verdict === 'string' ? find.detour.verdict : null;
     const index = next.findIndex((f) => f.id === find.id);
     if (index < 0) {
-      next.push({ id: find.id, label: typeof find.label === 'string' ? find.label : null, x: find.x, z: find.z, atSec: missionTimeSec(state), accepted });
+      next.push({ id: find.id, label: typeof find.label === 'string' ? find.label : null, x: find.x, z: find.z, atSec: missionTimeSec(state), accepted, verdict });
       changed = true;
     } else if (accepted && !next[index].accepted) {
-      next[index] = { ...next[index], accepted: true };
+      next[index] = { ...next[index], accepted: true, verdict };
       changed = true;
     }
   }
