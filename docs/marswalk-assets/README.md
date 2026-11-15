@@ -99,10 +99,11 @@ so the GPU check now starts AMD integrated graphics on Low. On High, walking stu
   uRockH = 1.0). v is flipped after loading (uv.y = 1 - uv.y): glTF stores v flipped and these textures are loaded the three.js way,
   like the Cheyava ones. The three meshes go into one THREE.LOD: LOD1 from 30 m and LOD2 from 90 m on High, 14 m and 60 m on Low.
 - Placement: computed from the "WP3" waypoint in route.json (outcropPlacement in src/engine/rocks.js), not stored anywhere else, so
-  it follows the waypoint if the route team moves it. The ground at WP3 is a steady 30 degree slope. The outcrop is laid on that
-  slope 4.2 m uphill of the waypoint (outside the 2 m arrival circle), tilted to the ground plane, with its buried end uphill and its
-  broken face towards the walker, and sunk 20 cm so the lowest beds and the loose chips are half buried. The beds dip 24 degrees
-  inside the model, so on this slope they end up nearly level: strata cropping out of a hillside. It is placed on the drawn mesh and
+  it follows the waypoint if the route team moves it. WP3 is the stance point at (-11, -50), on 14 degree ground (#192; it was at
+  (-40, -60) on a 29 degree slope, inside the 20 degree no-go limit). The outcrop is laid on the 22 degree slope 4.2 m uphill of the
+  waypoint (outside the 2 m arrival circle), tilted to the ground plane, with its buried end uphill and its broken face towards the
+  walker, and sunk 20 cm so the lowest beds and the loose chips are half buried. The beds dip 24 degrees inside the model, so on
+  this slope they end up nearly level: strata cropping out of a hillside. It is placed on the drawn mesh and
   placed again when the tier changes, so it does not float or sink on either tier. Scattered rocks keep 4.2 m clear of it.
   It has no collision yet: the walker can pass through it.
 - Cost: at most 16k triangles, one draw call, two textures (2048 px on High, 1024 px on Low), in a scene that draws about 400k

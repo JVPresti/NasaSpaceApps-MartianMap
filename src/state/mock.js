@@ -7,7 +7,7 @@ const WAYPOINTS = [
   { name: 'HAB', x: 520, z: 600 },
   { name: 'WP1 · channel floor', x: 330, z: 300 },
   { name: 'WP2 · dune field edge', x: 150, z: 120 },
-  { name: 'WP3 · Bright Angel outcrop', x: -40, z: -60 },
+  { name: 'WP3 · Bright Angel outcrop', x: -11, z: -50 },
   { name: 'Cheyava Falls', x: 0, z: 0 },
 ];
 

@@ -14,8 +14,8 @@
    "id": "bright-angel",
    "name": "Bright Angel",
    "waypoint": "WP3 · Bright Angel outcrop",
-   "x": -40,
-   "z": -60,
+   "x": -11,
+   "z": -50,
    "position": {
     "tag": "SIM",
     "label": "SIM · placeholder waypoint",
