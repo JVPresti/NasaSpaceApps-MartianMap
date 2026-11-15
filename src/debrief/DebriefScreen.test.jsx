@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it } from 'vitest';
-import { setLanguage } from '../i18n/index.js';
+import { setLanguage, translateText } from '../i18n/index.js';
 import DebriefScreen from './DebriefScreen.jsx';
 
 afterEach(() => setLanguage('en'));
@@ -88,7 +88,8 @@ describe('DebriefScreen', () => {
     const body = text(render({ summary: { ...summary, plan, samples, sampleCount: 3 } }));
     expect(body).toContain('soil · at Light-toned patch; rock · Cheyava Falls; rock');
     setLanguage('es');
-    expect(text(render({ summary: { ...summary, plan, samples, sampleCount: 3 } }))).toContain('suelo · en Light-toned patch; roca · Cheyava Falls; roca');
+    // The stop name goes through the catalog, as on the map (it reads "Zona de tono claro" in Spanish).
+    expect(text(render({ summary: { ...summary, plan, samples, sampleCount: 3 } }))).toContain(`suelo · en ${translateText('Light-toned patch')}; roca · Cheyava Falls; roca`);
   });
 
   it('speaks Spanish: labels, log wording, route kinds, samples, notes and buttons, with known reasons translated', () => {
