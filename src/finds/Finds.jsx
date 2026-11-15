@@ -15,6 +15,8 @@ import { useMissionStore } from '../state/store.js';
 import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import { formatMinutes } from '../hud/format.js';
 import { useInCabin } from '../hud/useInCabin.js';
+import { inCabin } from '../state/tableActions.js';
+import { findMarkers } from './markers.js';
 import { formatNumber, t, translateText } from '../i18n/index.js';
 import '../hud/hud.css';
 import './finds.css';
@@ -216,18 +218,16 @@ export default function Finds({ engine, mode }) {
     return () => service.stop();
   }, [service]);
 
-  // Markers in the scene. In Plan an accepted find is already a numbered waypoint marker, so only the
-  // undecided one keeps its own marker there.
+  // Markers in the scene (findMarkers). In Plan an accepted find is already a numbered waypoint marker, so only the
+  // undecided one keeps its own marker there. The cabin check runs on every store change, as the position moves.
   useEffect(() => {
     if (!engine) return undefined;
     let last = null;
     const sync = () => {
-      const s = useMissionStore.getState();
-      if (last && last.list === s.finds.list && last.mode === s.mode) return;
-      last = { list: s.finds.list, mode: s.mode };
-      engine.setFinds(s.finds.list
-        .filter((f) => s.mode === 'walk' || f.status !== 'accepted')
-        .map((f) => ({ id: f.id, label: f.label, x: f.x, z: f.z, status: f.status, verdict: f.detour?.verdict ?? null })));
+      const s = useMissionStore.getState(), cabin = s.mode === 'walk' && inCabin(engine);
+      if (last && last.list === s.finds.list && last.mode === s.mode && last.cabin === cabin) return;
+      last = { list: s.finds.list, mode: s.mode, cabin };
+      engine.setFinds(findMarkers(s, cabin));
     };
     sync();
     const unsubscribe = useMissionStore.subscribe(sync);

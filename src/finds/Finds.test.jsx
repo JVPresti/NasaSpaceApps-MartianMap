@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { resetStore, useMissionStore } from '../state/store.js';
 import Finds from './Finds.jsx';
+import { findMarkers } from './markers.js';
 
 // Render the current mission snapshot in SSR (Zustand normally uses the creation-time state), as interface.test.jsx does.
 vi.mock('../state/store.js', async (importOriginal) => {
@@ -35,5 +36,14 @@ describe('the find card and the habitat table (#244)', () => {
     expect(html).not.toContain('find-card');
     expect(html).toContain('find-ring');   // the pointing ring stays mounted (hidden until Q is held)
     expect(useMissionStore.getState().finds.activeId).toBe('f1');   // the find still waits for an answer
+  });
+
+  it('draws no find marker in the cabin, where its label would show through the wall onto the prompt', () => {
+    pending();
+    const s = useMissionStore.getState();
+    expect(findMarkers(s, false)).toEqual([{ id: 'f1', label: 'M01', x: 540, z: 580, status: 'priced', verdict: 'go' }]);
+    expect(findMarkers(s, true)).toEqual([]);
+    const accepted = { ...s, mode: 'plan', finds: { ...s.finds, list: [{ ...FIND, status: 'accepted' }] } };
+    expect(findMarkers(accepted, false)).toEqual([]);   // in Plan an accepted find is a waypoint marker already
   });
 });
