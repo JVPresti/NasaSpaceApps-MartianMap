@@ -5,7 +5,7 @@ Martian Map", Ensenada local event). Built on the presentation mode on `main` (#
 
 > **Format.** The talk is at 2:30 pm on 15 November. The organisers' official guidelines: at most 4 minutes, 5 to 6
 > slides, judged on Impact, Creativity, Validation ("is it well founded"), Presentation and Relevance. The talk is
-> `script-en.md`: six beats, one per slide, about 3:15 on the presentation mode
+> `script-en.md`: six beats, one per slide, 3:00 on the presentation mode
 > (https://martian-map.fernando-haro-c.workers.dev/?present=1), which autoplays; Right or Left takes over if the
 > timing slips. A video of the real app replaces a live demo. The script has two versions, two presenters (A) or one
 > (B). The guidelines name no language; English is the main script and `script-es.md` is a ready Spanish alternative.
@@ -20,9 +20,10 @@ Martian Map", Ensenada local event). Built on the presentation mode on `main` (#
 | File | What it is |
 |---|---|
 | `beats.md` | The presentation's beats on `main` (captions, chips, source lines, numbers) with the line the presenter says over each, generated from `src/present/beats.js` and `script-en.md` by `tools/sync-present.mjs`. `src/present/beats.js` on `main` is the source; this file follows it |
-| `script-en.md`, `script-es.md` | **The talk**, about 3:15, in English (the Spanish one is a ready alternative), in two versions (two presenters, one presenter): one row per beat, the video's chapter cues, the criteria it answers, the claims checked against `main`, and where each spoken number comes from |
+| `script-en.md`, `script-es.md` | **The talk**, 3:00, in English (the Spanish one is a ready alternative), in two versions (two presenters, one presenter): one row per beat, the video's chapter cues, the criteria it answers, the claims checked against `main`, and where each spoken number comes from |
 | `demo-run-sheet.md` | How to run the talk: autoplay, who speaks when and the handovers, how to take over with the keys, setup on the live site, what to do if the video or the whole presentation fails, the PDF slide per beat, and a rehearsal checklist |
-| `qa.md` | The judge Q&A sheet, Validation questions first: 21 questions, each with a two-sentence answer and what backs it, plus the hard questions on our limits |
+| `qa.md` | The judge Q&A sheet, Validation questions first: 22 questions, each with a two-sentence answer and what backs it, plus the hard questions on our limits |
+| `sources-apa.md` | The sources the presentation names, in APA 7, alphabetical, with DOI or URL |
 | `video-30s.md` | The 30-second video script and frame-accurate shot list |
 | `deck-global.html`, `out/deck-global.pdf`, `out/deck-global/*.png` | The 7-slide global deck: one self-contained HTML file (fonts and images inlined), its PDF and one PNG per slide |
 | `fallback/stills/` | Real screenshots of the app from #282, for when the video beat fails |
