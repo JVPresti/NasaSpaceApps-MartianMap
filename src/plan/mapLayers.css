@@ -21,7 +21,7 @@
 /* above the rover's image pin (.map-pins, z-index 1, earlier in the map): on Outcrop and Exposure the places are the layer */
 .map-places { z-index: 1; }
 /* the route's own stops above both (later in the map, same layer), so a place or a pin never hides a stop; the stop
-   details (.map-pop, z-index 2) stay on top */
+   details (.map-pop, z-index 3) stay on top, see the stacking list in table.css */
 .map-stops { z-index: 1; }
 
 /* Near the map's right edge a tag opens to the left of its symbol, so the edge never cuts it (mapLayers.tagFlips); the
