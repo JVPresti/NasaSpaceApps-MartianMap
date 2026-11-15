@@ -12,10 +12,28 @@ import {
   formatSignedGrams,
   formatSignedMetres,
   formatSignedMinutes,
+  plannedStopAt,
   routeDistanceChange,
   routeKindLabel,
   waypointCode,
 } from './format.js';
+import { REVIEW_RULES } from '../sim/routeReview.js';
+
+describe('the planned stop a sample was taken at (D10)', () => {
+  const waypoints = [
+    { name: 'HAB', label: null, x: 535.1, z: 574.1 },
+    { name: 'S1 · light-toned patch', label: 'Light-toned patch', x: 493, z: 539 },
+    { name: 'WP3 · Bright Angel outcrop', x: -11, z: -50 },
+  ];
+  it('names the nearest planned stop within the review reach, by its own label or its waypoint name', () => {
+    expect(plannedStopAt({ x: 495, z: 541 }, waypoints)).toBe('Light-toned patch');
+    expect(plannedStopAt({ x: -9, z: -48 }, waypoints)).toBe('Bright Angel outcrop');
+    expect(plannedStopAt({ x: 493 + REVIEW_RULES.reachM + 1, z: 539 }, waypoints)).toBeNull();
+    expect(plannedStopAt({ x: 535, z: 574 }, waypoints)).toBeNull();   // the habitat is not a stop
+    expect(plannedStopAt({ x: 495, z: 541 }, null)).toBeNull();
+    expect(plannedStopAt({ x: null, z: 541 }, waypoints)).toBeNull();
+  });
+});
 
 describe('debrief formats', () => {
   it('shows distance in metres below a kilometre and in kilometres above it', () => {

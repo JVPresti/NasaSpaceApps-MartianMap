@@ -2,11 +2,33 @@
 // frozen `eva.summary` only. Every helper returns a dash for a value that was not known when the EVA ended.
 // Words come from src/i18n (debrief.*) and decimals follow the interface language; SI unit symbols stay as they are.
 import { formatNumber, t, translateText } from '../i18n/index.js';
+import { REVIEW_RULES } from '../sim/routeReview.js';
 
 const DASH = '—';
 
 const isNumber = (value) => typeof value === 'number' && Number.isFinite(value);
 const pad2 = (value) => String(value).padStart(2, '0');
+
+/**
+ * The name of the planned stop a point lies at, or null: the nearest stop of the approved plan (not the habitat, the
+ * first waypoint) within REVIEW_RULES.reachM, the distance at which the route review counts a sample as at a place.
+ * The name is the stop's own label ("Light-toned patch"), else the part of the waypoint name after its code.
+ * @param {{ x?: number, z?: number } | null} point
+ * @param {Array<{ name?: string | null, label?: string | null, x: number, z: number }> | null} waypoints summary.plan.waypoints
+ */
+export function plannedStopAt(point, waypoints, reachM = REVIEW_RULES.reachM) {
+  if (!isNumber(point?.x) || !isNumber(point?.z) || !Array.isArray(waypoints)) return null;
+  let best = null;
+  for (const [index, w] of waypoints.entries()) {
+    if (index === 0 || !isNumber(w?.x) || !isNumber(w?.z)) continue;
+    const d = Math.hypot(w.x - point.x, w.z - point.z);
+    if (d <= reachM && (!best || d < best.d)) best = { d, w };
+  }
+  if (!best) return null;
+  if (typeof best.w.label === 'string' && best.w.label) return best.w.label;
+  const name = typeof best.w.name === 'string' ? best.w.name : '';
+  return name.includes(' · ') ? name.split(' · ').slice(1).join(' · ') : name || null;
+}
 
 /** Horizontal distance: metres below one kilometre, kilometres with two decimals above it. */
 export function formatDistance(m) {

@@ -141,9 +141,10 @@ function planSnapshot(route, atSec) {
     decision: typeof route.decision === 'string' ? route.decision : null,
     profile: typeof route.profile === 'string' ? route.profile : null,
     path: clone(route.path),
+    // label: the planned stop's own name ("Light-toned patch", src/sim/missionNeeds.js), for the debrief's samples note
     waypoints: (Array.isArray(route.waypoints) ? route.waypoints : [])
       .filter((w) => isFiniteNumber(w?.x) && isFiniteNumber(w?.z))
-      .map((w) => ({ name: typeof w.name === 'string' ? w.name : null, x: w.x, z: w.z })),
+      .map((w) => ({ name: typeof w.name === 'string' ? w.name : null, label: typeof w.label === 'string' ? w.label : null, x: w.x, z: w.z })),
     legs: (Array.isArray(route.legs) ? route.legs : []).map((leg) => ({ from: leg?.from ?? null, to: leg?.to ?? null, ...pickNumbers(leg, LEG_KEYS) })),
     totals: route.totals ? pickNumbers(route.totals, TOTAL_KEYS) : null,
   };

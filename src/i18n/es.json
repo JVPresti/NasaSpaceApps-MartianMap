@@ -644,6 +644,7 @@
   "debrief.samples.many": "{n} muestras",
   "debrief.sample.rock": "roca",
   "debrief.sample.soil": "suelo",
+  "debrief.sample.at": "en {stop}",
   "debrief.log.title": "Registro de la misión",
   "debrief.log.empty": "No se registraron eventos ni cambios de ruta fuera del hábitat.",
   "debrief.log.event": "Evento",

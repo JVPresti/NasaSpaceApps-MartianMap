@@ -427,13 +427,15 @@ describe('route review inputs (#274)', () => {
   });
 
   it('keeps the plan approved at Begin EVA when re-plans change the route', () => {
-    setRoute();
+    // A planned stop carries its own name as label (src/sim/missionNeeds.js); the debrief names samples by it.
+    setRoute({ waypoints: ROUTE.waypoints.map((w, i) => (i === 1 ? { ...w, label: 'Channel floor', stopId: 'wp1' } : w)) });
     place(HAB.x, HAB.z);
     mission(5);
     runnerAt();
     const plan = eva().plan;
     expect(plan).toMatchObject({ atSec: 5, decision: 'go', profile: 'fastest', path: PLAN_PATH });
     expect(plan.waypoints.map((w) => w.name)).toEqual(['HAB', 'WP1 · channel floor', 'Cheyava Falls']);
+    expect(plan.waypoints.map((w) => w.label)).toEqual([null, 'Channel floor', null]);
     expect(plan.legs).toEqual([
       { from: 'HAB', to: 'WP1 · channel floor', distanceM: 100, timeSec: 400, o2G: 25, walkSec: 100, workSec: 300, workO2G: 15, climbM: 1, maxSlopeDeg: 4 },
       { from: 'WP1 · channel floor', to: 'Cheyava Falls', distanceM: 100, timeSec: 100, o2G: 10, walkSec: 100, workSec: 0, workO2G: 0, climbM: 1, maxSlopeDeg: 4 },

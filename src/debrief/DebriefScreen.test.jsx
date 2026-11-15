@@ -70,6 +70,27 @@ describe('DebriefScreen', () => {
     expect(html).toContain('T+0:20:00');
   });
 
+  it('names the planned stop a sample was taken at in the Samples note (D10)', () => {
+    const plan = {
+      path: [[535.1, 574.1], [493, 539], [0, 0]],
+      waypoints: [
+        { name: 'HAB', label: null, x: 535.1, z: 574.1 },
+        { name: 'S1 · light-toned patch', label: 'Light-toned patch', x: 493, z: 539 },
+        { name: 'Cheyava Falls', label: 'Cheyava Falls', x: 0, z: 0 },
+      ],
+      legs: [],
+    };
+    const samples = [
+      { id: 1, kind: 'ground', site: null, x: 494.5, z: 540.2, atSec: 100 },
+      { id: 2, kind: 'rock', site: 'Cheyava Falls', x: 1, z: 1, atSec: 900 },   // the site already names the stop
+      { id: 3, kind: 'rock', site: null, x: 300, z: 300, atSec: 600 },           // away from any stop
+    ];
+    const body = text(render({ summary: { ...summary, plan, samples, sampleCount: 3 } }));
+    expect(body).toContain('soil · at Light-toned patch; rock · Cheyava Falls; rock');
+    setLanguage('es');
+    expect(text(render({ summary: { ...summary, plan, samples, sampleCount: 3 } }))).toContain('suelo · en Light-toned patch; roca · Cheyava Falls; roca');
+  });
+
   it('speaks Spanish: labels, log wording, route kinds, samples, notes and buttons, with known reasons translated', () => {
     setLanguage('es');
     const spanish = {

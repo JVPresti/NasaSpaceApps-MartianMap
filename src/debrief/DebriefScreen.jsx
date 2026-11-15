@@ -10,6 +10,7 @@ import {
   formatPercent,
   formatSamples,
   formatSignedMinutes,
+  plannedStopAt,
   routeDistanceChange,
   routeKindLabel,
   routeReasonText,
@@ -22,10 +23,16 @@ import './debrief.css';
 /** The tag chip stays small next to a large metric value and is not interactive inside the modal. */
 const TAG_CLASS = () => 'source-tag-chip debrief-tag';
 
-function sampleDetail(samples) {
+/** "rock · Cheyava Falls; soil · at Light-toned patch": each sample's kind, its site, and the planned stop it was taken at. */
+function sampleDetail(samples, plan) {
   if (!Array.isArray(samples) || samples.length === 0) return null;
   return samples
-    .map((sample) => [t(sample?.kind === 'ground' ? 'debrief.sample.soil' : 'debrief.sample.rock'), sample?.site ? translateText(sample.site) : null].filter(Boolean).join(' · '))
+    .map((sample) => {
+      const site = sample?.site ? translateText(sample.site) : null;
+      const stop = plannedStopAt(sample, plan?.waypoints);
+      const at = stop && translateText(stop) !== site ? t('debrief.sample.at', { stop: translateText(stop) }) : null;
+      return [t(sample?.kind === 'ground' ? 'debrief.sample.soil' : 'debrief.sample.rock'), site, at].filter(Boolean).join(' · ');
+    })
     .join('; ');
 }
 
@@ -95,7 +102,7 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
   const loadedReserveSec = useReserveSec();
   const reserveSec = reserveOverride === undefined ? loadedReserveSec : reserveOverride;
   const log = buildMissionLog(summary);
-  const samples = sampleDetail(summary.samples);
+  const samples = sampleDetail(summary.samples, summary.plan);
   const hasWindow = Number.isFinite(summary.startedAtSec) && Number.isFinite(summary.endedAtSec);
 
   return (
