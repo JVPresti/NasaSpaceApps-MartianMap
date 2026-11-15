@@ -252,6 +252,10 @@
   .quality-block { margin-top: 16px; padding-top: 14px; }
 }
 
+/* Settings view of the pause dialog: the language block follows the title, so it needs no divider of its own. */
+.settings-panel .dialog-head { margin-bottom: 18px; }
+.settings-panel .dialog-head + .language-block { margin-top: 0; padding-top: 0; border-top: 0; }
+
 /* ------------------------------------------------------------------ controls */
 
 /* Three columns of every key (#199), wide enough that each row stays on one line, so the controls fit 1366 x 768
@@ -356,6 +360,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .start-video { display: none; }
+  .start-progress-fill { transition: none; }
 }
 
 .start-controls {
@@ -403,6 +408,8 @@
 
 .start-primary {
   grid-column: 1 / -1;
+  position: relative;
+  overflow: hidden;
   min-height: 60px;
   font: 600 26px/1 var(--font-display);
   color: #140a05;
@@ -411,8 +418,35 @@
   cursor: pointer;
 }
 
+/* The real scene progress while the start screen waits for the engine (#266): a fill along the bottom edge of the
+   main action, whose label carries the percentage. */
+.start-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: rgba(20, 10, 5, 0.2);
+}
+
+.start-progress-fill {
+  display: block;
+  height: 100%;
+  background: #140a05;
+  transform-origin: left center;
+  transition: transform 260ms ease;
+}
+
 .start-primary:hover { background: #ff8148; }
-.start-primary:disabled { opacity: 0.6; cursor: wait; }
+.start-primary:disabled { opacity: 0.7; cursor: wait; }
+
+.start-status {
+  margin: 16px 0 0;
+  max-width: 420px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #c9d0d8;
+}
 
 .start-note { margin: 16px 0 0; max-width: 420px; font-size: 14px; line-height: 1.5; color: var(--dim); }
 

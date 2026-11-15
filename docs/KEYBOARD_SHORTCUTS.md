@@ -7,6 +7,7 @@ Implemented for #101. The controls help (#64) lists these entries:
 | L | Next data layer. |
 | Shift+L | Previous data layer. |
 | 0 (top row or numeric keypad) | Turn off the data layer. |
+| V | Walk only: hide or show the visor frame and alert ring, for screenshots (#28). |
 
 There is no Plan / Walk key any more. M used to switch between them; the habitat-first flow replaced that with a
 place: E or a click while facing the mission table in the habitat opens the table, "Back to the habitat" closes it,

@@ -4,6 +4,7 @@ import { groupEntries, linkHost } from './credits.js';
 import { loadDataFile } from '../data/dataFiles.js';
 import { CREDITS_PATH } from '../data/provenance.js';
 import { SOURCES_KEY, closeSources, openSources, useSourcesStore } from './sourcesStore.js';
+import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import './sources.css';
 
 // Not bundled. The provenance registry has usually loaded it already, and the shared loader
@@ -58,7 +59,7 @@ export default function SourcesRoot() {
   useEffect(() => {
     const onKey = (event) => {
       if (event.code !== SOURCES_KEY || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
-      if (typingTarget(event.target)) return;
+      if (typingTarget(event.target) || wristOwnsKeys()) return;
       if (useSourcesStore.getState().open) closeSources();
       else openSources();
     };

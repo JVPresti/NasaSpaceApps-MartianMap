@@ -10,24 +10,36 @@ import { FOCUSABLE, focusTarget } from './focus.js';
 /**
  * The start screen (#11): the title over a looping video of an astronaut walking on Mars (AI-generated, credited in
  * Sources as artistic; the first frame is the poster and stays still with reduced motion) and one main action, which
- * puts the astronaut inside the habitat next to the mission table (habitat-first flow). Controls and Sources are
- * secondary. It is a modal dialog, so the scene behind it is inert. Nothing runs behind it: the EVA's clock, suit and
- * events start when the airlock cycle after Begin EVA ends. Walking in the habitat needs the mouse, so the click
- * captures it; after a refused capture the screen offers drag-to-look (#197).
+ * puts the astronaut on foot inside the habitat, next to the mission table (habitat-first flow).
+ * It is the first screen (#266): App mounts it before the scene is ready, so the video and text show at once, while
+ * the scene loads behind it. The main action stays unavailable until then and shows the real progress; Controls and
+ * Sources already work. It is a modal dialog, so the scene behind it is inert (App also hides the top
+ * bar and the table while it is open). Nothing runs behind it: the EVA's clock, suit and events start when the
+ * airlock cycle after Begin EVA ends. Walking in the habitat needs the mouse, so the click captures it; after a
+ * refused capture the screen offers drag-to-look (#197).
+ * @param {{ busy: boolean, notice: string|null, freeLook?: boolean,
+ *   scene?: { status: string, stage?: string, progress?: number }|null,
+ *   lockFailed?: boolean, onStart: () => void, onStartWithoutCapture?: () => void, onSources?: () => void }} props
+ *   scene is App's load state. A null scene counts as ready, so a caller that already has the engine can use the screen as it was.
  */
-export default function StartScreen({ busy, notice, freeLook = false, lockFailed = false, onStart, onStartWithoutCapture, onSources }) {
+export default function StartScreen({ busy, notice, freeLook = false, lockFailed = false, scene = null, onStart, onStartWithoutCapture, onSources }) {
   const [controls, setControls] = useState(false);
   const startRef = useRef(null);
   const closeRef = useRef(null);
+  const ready = scene == null || scene.status === 'ready';
+  const progress = Math.min(1, Math.max(0, Number(scene?.progress) || 0));
+  const percent = Math.round(progress * 100);
 
   // Modal focuses the marked primary only when it opens. Switching between the intro and the controls replaces the
   // focused button, so focus the new view's primary as well: Enter must always have a button to press (#207).
+  // While the scene loads the primary is disabled, so focus goes to Controls; it moves to the primary when the
+  // scene becomes ready and the main action can be pressed.
   useEffect(() => {
     if (busy) return;
     const primary = controls ? closeRef.current : startRef.current;
     const dialog = primary?.closest?.('dialog') || null;
     focusTarget(primary, dialog ? [...dialog.querySelectorAll(FOCUSABLE)] : [])?.focus();
-  }, [busy, controls]);
+  }, [busy, controls, ready]);
 
   return (
     <Modal labelledBy={controls ? 'start-controls-title' : 'start-title'} className={controls ? 'start-dialog showing-controls' : 'start-dialog'} onCancel={() => setControls(false)}>
@@ -52,8 +64,23 @@ export default function StartScreen({ busy, notice, freeLook = false, lockFailed
             {notice && <p className="dialog-notice" role="alert">{translateText(notice)}</p>}
 
             <div className="start-actions">
-              <button type="button" className="start-primary" ref={startRef} onClick={onStart} disabled={busy} data-autofocus="true">
-                {busy ? (freeLook ? t('menu.opening') : t('menu.capturing.the.mouse')) : t('menu.enter.habitat')}
+              <button
+                type="button"
+                className="start-primary"
+                ref={startRef}
+                onClick={onStart}
+                disabled={busy || !ready}
+                aria-busy={busy || !ready}
+                data-autofocus="true"
+              >
+                {ready
+                  ? (busy ? (freeLook ? t('menu.opening') : t('menu.capturing.the.mouse')) : t('menu.enter.habitat'))
+                  : t('menu.loading.scene', { p0: percent })}
+                {!ready && (
+                  <span className="start-progress" aria-hidden="true">
+                    <span className="start-progress-fill" style={{ transform: `scaleX(${progress})` }} />
+                  </span>
+                )}
               </button>
               {lockFailed && !freeLook && onStartWithoutCapture && (
                 <button type="button" className="ui-button ghost" onClick={onStartWithoutCapture} disabled={busy}>
@@ -63,6 +90,11 @@ export default function StartScreen({ busy, notice, freeLook = false, lockFailed
               <button type="button" className="ui-button ghost" onClick={() => setControls(true)}>{t('menu.controls')}</button>
               {onSources && <button type="button" className="ui-button ghost" onClick={onSources}>{t('ui.sources.188')}</button>}
             </div>
+            {!ready && (
+              <p className="start-status" role="status">
+                {translateText(scene?.stage) || t('menu.loading.scene', { p0: percent })}
+              </p>
+            )}
             {freeLook && <p className="start-note">{t('menu.drag.to.look.table')}</p>}
           </div>
           <p className="start-credit">{t('menu.start.credit')}</p>

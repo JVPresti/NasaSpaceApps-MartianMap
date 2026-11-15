@@ -28,7 +28,7 @@ it('renders the existing modes, legends, sampling, navigation and active alerts 
   });
   const ui = () => renderToStaticMarkup(<>
     <HabitatHud />
-    <AirlockCycle direction="out" running />
+    <AirlockCycle running />
     <LayerPanel layer={1} onLayer={() => {}} radioShadow={false} onRadioShadow={() => {}} />
     <SamplingPanel />
     <EventBanner />

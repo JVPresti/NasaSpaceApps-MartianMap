@@ -11,6 +11,7 @@ import SharedSourceTag from '../components/SourceTag.jsx';
 import { FIND_HOLD_MS, FIND_RANGE_M, FIND_STEADY_M, MAX_FINDS } from '../sim/findDetour.js';
 import { createFindService, markFind, pruneFinds } from '../state/finds.js';
 import { useMissionStore } from '../state/store.js';
+import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import { formatMinutes } from '../hud/format.js';
 import { formatNumber, t, translateText } from '../i18n/index.js';
 import '../hud/hud.css';
@@ -74,7 +75,7 @@ function FindPointer({ engine, service }) {
       if (!hold) return;
       hold.frame = requestAnimationFrame(step);
       const s = useMissionStore.getState();
-      if (s.mission.paused || s.mode !== 'walk') { stop(); return; }
+      if (s.mission.paused || s.mode !== 'walk' || wristOwnsKeys()) { stop(); return; }
       const now = performance.now(), aim = engine.aimGround(FIND_RANGE_M);
       if (!aim) { hold.anchor = null; hold.t0 = now; draw(0, 'none'); return; }   // sky or ground past 50 m
       if (!hold.anchor || Math.hypot(aim.x - hold.anchor.x, aim.z - hold.anchor.z) > FIND_STEADY_M) { hold.anchor = aim; hold.t0 = now; }
@@ -90,7 +91,7 @@ function FindPointer({ engine, service }) {
       if (e.code === 'Escape') { stop(); return; }
       if (e.code !== FIND_KEY || !plainKey(e) || hold) return;
       const s = useMissionStore.getState();
-      if (s.mode !== 'walk' || s.mission.paused) return;
+      if (s.mode !== 'walk' || s.mission.paused || wristOwnsKeys()) return;
       const blocked = markBlocker(s.finds);
       if (blocked) { flash(blocked); return; }
       hold = { t0: performance.now(), anchor: null, frame: 0 };
@@ -146,7 +147,7 @@ function FindCard({ service }) {
   useEffect(() => {
     if (!id) return undefined;
     const onKey = (e) => {
-      if (!plainKey(e) || useMissionStore.getState().mode !== 'walk') return;
+      if (!plainKey(e) || wristOwnsKeys() || useMissionStore.getState().mode !== 'walk') return;
       if (e.code === ACCEPT_KEY && canAdd) { e.preventDefault(); service.accept(id); }
       else if (e.code === DISMISS_KEY || e.code === 'Escape') { if (e.code === DISMISS_KEY) e.preventDefault(); service.dismiss(id); }
     };

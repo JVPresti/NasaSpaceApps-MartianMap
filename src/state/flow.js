@@ -1,9 +1,10 @@
 /**
  * Where the astronaut is in the simulator, from the habitat to the debrief (habitat-first flow).
  *
- *   habitat ──Begin EVA──▶ egress ──cycle done──▶ eva ──back at the airlock──▶ ingress ──cycle done──▶ debrief
- *      ▲                                                                                                │
- *      └──────────────────────────── restart (Plan the next EVA, Back to the habitat) ◀──────────────────┘
+ *   habitat ──Begin EVA──▶ egress ──cycle done──▶ eva ──X at the table, back inside (#244)──▶ debrief
+ *      ▲                                             ▲                                          │
+ *      │                                             └──────────── Continue EVA ◀───────────────┤
+ *      └────────────────────────── restart (Restart, End the EVA: a new EVA at the table) ◀──────┘
  *
  * - `habitat`: inside, before the EVA. The astronaut walks around in first person and plans at the mission table
  *   (store `mode` 'plan' while the table is open). The mission clock is held, no suit or event runner exists yet,
@@ -12,8 +13,9 @@
  *   screen is dark.
  * - `eva`: on the surface. `startSimulation` starts the EVA runners on this transition: a new clock at 0:00, full
  *   consumables, the terrain fix at the airlock, events, partner and statistics.
- * - `ingress`: the airlock cycle after the EVA runner froze `eva.summary` at the habitat entry.
- * - `debrief`: back inside with the summary on screen. Only a restart leaves it.
+ * - `debrief`: the astronaut walked back in through the airlock and ended the EVA with X at the table (#244), so the
+ *   EVA runner froze `eva.summary`. There is no cycle on the way in: the player already came through the real hatch.
+ *   Continue EVA goes back to `eva` with the statistics still counting; a restart goes back to `habitat`.
  *
  * Restarting (pause menu, debrief) resets the store, which puts the stage back to `habitat`. There is no other way
  * back: a transition that is not in NEXT throws, so a late timer or a double click cannot skip a stage.
@@ -26,16 +28,14 @@ export const STAGE = Object.freeze({
   HABITAT: 'habitat',
   EGRESS: 'egress',
   EVA: 'eva',
-  INGRESS: 'ingress',
   DEBRIEF: 'debrief',
 });
 
 const NEXT = Object.freeze({
   [STAGE.HABITAT]: [STAGE.EGRESS],
   [STAGE.EGRESS]: [STAGE.EVA],
-  [STAGE.EVA]: [STAGE.INGRESS],
-  [STAGE.INGRESS]: [STAGE.DEBRIEF],
-  [STAGE.DEBRIEF]: [],
+  [STAGE.EVA]: [STAGE.DEBRIEF],
+  [STAGE.DEBRIEF]: [STAGE.EVA],
 });
 
 /** Length of one airlock cycle on screen, in ms. A real cycle takes minutes; the demo shortens it. */
@@ -54,8 +54,8 @@ export function canAdvance(from, to) {
 export const isPlanning = (state) => (state.stage ?? STAGE.HABITAT) === STAGE.HABITAT;
 /** True while the EVA runners own the mission: the suit HUD, events, sampling and the wrist. */
 export const isOnSurface = (state) => state.stage === STAGE.EVA;
-/** True during either airlock cycle. */
-export const inAirlock = (state) => state.stage === STAGE.EGRESS || state.stage === STAGE.INGRESS;
+/** True during the airlock cycle out. */
+export const inAirlock = (state) => state.stage === STAGE.EGRESS;
 
 function advance(store, to) {
   const from = store.getState().stage ?? STAGE.HABITAT;
@@ -76,11 +76,11 @@ export function beginEgress(store = useMissionStore) {
 /** The cycle is over and the player stands outside: the EVA starts (see startSimulation). */
 export const completeEgress = (store = useMissionStore) => advance(store, STAGE.EVA);
 
-/** The EVA runner froze the summary at the habitat entry: cycle back in. */
-export const beginIngress = (store = useMissionStore) => advance(store, STAGE.INGRESS);
+/** The EVA runner froze the summary: the debrief owns the screen until Continue EVA or a restart. */
+export const showDebrief = (store = useMissionStore) => advance(store, STAGE.DEBRIEF);
 
-/** Back inside: the debrief owns the screen until a restart. */
-export const completeIngress = (store = useMissionStore) => advance(store, STAGE.DEBRIEF);
+/** Continue EVA on the debrief (#244): back on the surface, the statistics still counting. */
+export const continueFromDebrief = (store = useMissionStore) => advance(store, STAGE.EVA);
 
 /**
  * Progress of an airlock cycle that only advances while `running()` is true, so a pause menu stops it.

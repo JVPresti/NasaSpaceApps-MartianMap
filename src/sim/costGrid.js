@@ -46,6 +46,22 @@ export const COST_CONSTANTS = Object.freeze({
 const DEG_PER_RAD = 180 / Math.PI;
 
 /**
+ * Cost multiplier of one open cell: `1 + (slope / slopePenaltyDeg)^slopeExponent + rockWeight * rock`.
+ * The defaults are today's planner (COST_CONSTANTS); the route profiles (routeProfiles.js) change the weights.
+ * @param {number} slope degrees
+ * @param {number} rock rock abundance, 0.08 to 1
+ * @param {{ slopePenaltyDeg?: number, slopeExponent?: number, rockWeight?: number }} [weights]
+ * @returns {number}
+ */
+export function cellCost(slope, rock, {
+  slopePenaltyDeg = COST_CONSTANTS.SLOPE_PENALTY_DEG,
+  slopeExponent = 2,
+  rockWeight = COST_CONSTANTS.ROCK_PENALTY_WEIGHT,
+} = {}) {
+  return 1 + (slope / slopePenaltyDeg) ** slopeExponent + rockWeight * rock;
+}
+
+/**
  * Decode a base64 string into bytes without depending on Node or the DOM.
  * @param {string} base64
  * @returns {Uint8Array}
@@ -301,11 +317,7 @@ export function buildCostGrid(terrainJson, options = {}) {
       const rock = rockAbundanceAt(densityGrid, xs[i], zs[j]);
       slopes[index] = slope;
       blocked[index] = isBlocked ? 1 : 0;
-      cost[index] = isBlocked
-        ? Infinity
-        : 1 +
-          (slope / COST_CONSTANTS.SLOPE_PENALTY_DEG) ** 2 +
-          COST_CONSTANTS.ROCK_PENALTY_WEIGHT * rock;
+      cost[index] = isBlocked ? Infinity : cellCost(slope, rock);
     }
   }
 

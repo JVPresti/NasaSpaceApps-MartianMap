@@ -126,8 +126,30 @@ export const STORE_PATHS = Object.freeze({
   'route.shelter': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'shelters.json: sky view ray cast on the HiRISE height grid', from: HIRISE },
   'route.decision': sim('go or no-go chosen by the crew'),
   'route.skipped': sim('waypoints the event route leaves out'),
+  // route profiles compared on the mission table (#245, src/sim/routeProfiles.js); time and oxygen as route.totals
+  'route.profile': sim('route profile chosen by the crew at the mission table'),
+  'route.profiles.distanceM': PLANNER,
+  'route.profiles.steepestSlopeDeg': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'slope of the HiRISE height map, sampled every metre along the route', from: HIRISE },
+  'route.profiles.overCautionM': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'route length on HiRISE slopes over the 15 degree caution limit', from: HIRISE },
+  'route.profiles.shadowShare': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'line of sight on the HiRISE height map from the suit to the habitat mast', from: HIRISE },
+  'route.profiles.weights': sim('profile weights are our choice: slope cubed for the gentlest, three times the cost out of sight of the mast for radio contact'),
+  'route.profiles.timeSec': LEG_TIME,
+  'route.profiles.o2G': LEG_O2,
   ...prefixed('route.legs.', LEG_FIELDS),
   ...prefixed('route.totals.', TOTAL_FIELDS),
+
+  // Perseverance on the mission table map (#249, public/data/traverse.json from scripts/build-traverse.mjs). Not store
+  // values: the map shows them as fixed tags. An image pin passes its own tag, DERIVED when the position is deduced.
+  'map.traverse': {
+    tag: 'DATA', label: 'Mars 2020 traverse · MMGIS', short: 'Mars 2020 · MMGIS',
+    source: "Perseverance's drives across the tile, from the MMGIS traverse of the Mars 2020 Where is the rover map",
+    from: { credits: 'm2020-rover-waypoint' },
+  },
+  'map.imagePins': {
+    tag: 'DATA', label: 'Mars 2020 waypoints · MMGIS', short: 'Mars 2020 · MMGIS',
+    source: 'where the rover stood for each image: the site and drive in the image ID, or its stop on the image sol (MMGIS waypoints)',
+    from: { credits: 'm2020-rover-waypoint' },
+  },
 
   // EVA history and debrief (#43): the frozen summary copied from the store when the astronaut re-entered the HAB
   'eva.distanceM': { tag: 'DERIVED', source: 'sum of horizontal steps between navigation readings in Walk mode while the mission ran' },
@@ -147,8 +169,8 @@ export const STORE_PATHS = Object.freeze({
   // values in between are DERIVED. The event banner prints `caption` next to this tag (#196).
   'environment.dustOpacity': {
     tag: 'DERIVED', label: 'Dust storm model', short: 'Dust storm model',
-    source: 'dust storm event: tau from the Jezero clear season 0.45 up to the 2018 global storm 8.0 in Gale crater, not Jezero; the ramp timing is SIM',
-    caption: 'global storm profile · up to Curiosity\'s Gale 2018 storm, not Jezero',
+    source: 'dust storm event: tau from the Jezero clear season 0.45 up to the 2018 global storm 8.0 in Gale crater, not Jezero; a worst case, and the ramp timing is SIM',
+    caption: 'global storm worst case · up to Curiosity\'s Gale 2018 storm, not Jezero',
     from: { hazards: ['dust.tau.gale_global_storm_2018', 'dust.tau.clear_season', 'dust.event.ramp_duration'] },
   },
   // The radiation event (src/sim/events/radiation.json) plays the September 2017 solar particle event from

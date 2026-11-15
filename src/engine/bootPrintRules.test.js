@@ -49,6 +49,15 @@ describe('createStepTracker', () => {
     expect(t.track(50, 50, undefined, false, emit)).toBe(0);
     expect(out).toEqual([]);
   });
+  it('starts from a travelled seed: the first print lands at step - seed, on the shared gait phase (#228)', () => {
+    const t = createStepTracker(), prints = [], emit = (x, z, yaw, side) => prints.push({ x, z, yaw, side });
+    let z = 0;
+    t.track(0, z, undefined, false, emit, 0.3);   // the gait is 0.3 m into the current step
+    for (let i = 0; i < 120; i++) { z -= 1 / 60; t.track(0, z, undefined, false, emit, 0.3); }
+    expect(prints.length).toBeGreaterThan(0);
+    expect(Math.abs(prints[0].z)).toBeCloseTo(STEP_WALK_M - 0.3, 2);   // 0.2 m walked, then a print
+    expect(Math.abs(prints[1].z - prints[0].z)).toBeCloseTo(STEP_WALK_M, 2);
+  });
 });
 
 describe('createPrintStore', () => {

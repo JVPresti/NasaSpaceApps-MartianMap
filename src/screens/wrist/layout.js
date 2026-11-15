@@ -1,6 +1,7 @@
 // Wrist screen geometry (#67): fixed pixel frame, page order and the row targets the selection uses.
 // The screen is a fixed 512 × 352 texture; coordinates are texture pixels, independent of display DPR.
 // Plain JavaScript, no React, no three.js, no DOM.
+import { t } from '../../i18n/index.js';
 
 /** Logical canvas size in CSS pixels. */
 export const WRIST_WIDTH = 512;
@@ -9,12 +10,12 @@ export const WRIST_HEIGHT = 352;
 /** Page order in the wrist carousel, toggled with [ and ]. */
 export const PAGES = Object.freeze(['layers', 'map', 'checklist', 'suit']);
 
-/** Page titles, uppercase as the rest of the interface. */
+/** Page titles, uppercase as the rest of the interface, resolved from the language catalog. */
 export const PAGE_TITLES = Object.freeze({
-  layers: 'LAYERS',
-  map: 'MAP',
-  checklist: 'CHECKLIST',
-  suit: 'SUIT',
+  get layers() { return t('wrist.page.layers'); },
+  get map() { return t('wrist.page.map'); },
+  get checklist() { return t('wrist.page.checklist'); },
+  get suit() { return t('wrist.page.suit'); },
 });
 
 /** Top and bottom of the row band, and the footer baseline (pixels). */

@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import * as SH from './shaders.js';
 import { CASE_CLIP } from './partnerSource.js';
+import { clipTimeScale, STOOP_SPEED_MS, WALK_SPEED_MS } from './gait.js';
 
 export function createPartner(ctx) {
   const { scene, U, assets, sys, view } = ctx;
@@ -52,6 +53,9 @@ export function createPartner(ctx) {
       scene.add(this.root); this.mixer = new THREE.AnimationMixer(this.root);
       gltf.animations.forEach(a => { if (a.name === 'walk' || a.name === 'idle' || a.name === 'walk_stoop') this.acts[a.name] = this.mixer.clipAction(a); });
       this.acts.walk.play(); this.acts.idle.play(); this.acts.idle.setEffectiveWeight(0); this.acts.walk_stoop.play(); this.acts.walk_stoop.setEffectiveWeight(0);   // walk and walk_stoop run in step (same 1.2 s loop) so they can cross-fade
+      // The walk clips play at the rate the source reports (#228): retimed so the planted foot matches the ground.
+      // At speedMs = 0 the clip holds its pose until the walk weight comes back.
+      this.acts.walk.timeScale = 0; this.acts.walk_stoop.timeScale = 0;
       // the case clip is scrubbed to the time the source reports, so it is played paused
       const bend = gltf.animations.find(c => c.name === CASE_CLIP.name); this.bend = this.mixer.clipAction(bend); this.bend.setLoop(THREE.LoopOnce, 1); this.bend.clampWhenFinished = true;
       const q = new THREE.CircleGeometry(0.8, 24); q.rotateX(-Math.PI / 2);
@@ -74,6 +78,10 @@ export function createPartner(ctx) {
       const yT = sys.habitat.root ? sys.habitat.ground(x, z) : meshH(x, z), y = this.root.position.y + (yT - this.root.position.y) * (Math.abs(yT - this.root.position.y) > 1.5 ? 1 : Math.min(1, dt * 10));   // habitat floor, steps and sills
       this.stoop += ((world.duck(x, z) > 0.15 ? 1 : 0) - this.stoop) * Math.min(1, dt * 5);
       this.nw += ((st.gait === 'walk' ? 1 : 0) - this.nw) * Math.min(1, dt * 4); const nw = this.nw;
+      // The walk clips follow the ground the body covers (#228): timeScale from the reported speed, so the planted
+      // foot stays on its ground point at every speed the source walks.
+      this.acts.walk.timeScale = clipTimeScale(st.speedMs, WALK_SPEED_MS);
+      this.acts.walk_stoop.timeScale = clipTimeScale(st.speedMs, STOOP_SPEED_MS);
 
       // one-shot action (the case clip), scrubbed to the source's time
       this.bending = !!st.action;

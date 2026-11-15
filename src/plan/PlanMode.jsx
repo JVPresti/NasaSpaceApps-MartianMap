@@ -17,7 +17,7 @@ import { SHELTERS_PATH } from '../sim/shelters.js';
  */
 export default function PlanMode({ engine, active, onBeginEva, onClose, onControls }) {
   const waypoints = useMissionStore((s) => s.route.waypoints);
-  const planner = useRoutePlanner({ waypoints, enabled: active });
+  const planner = useRoutePlanner({ waypoints, enabled: active, engine });
 
   // route.json holds the five placeholder waypoints from the assets team. The route starts at the airlock (#166);
   // without shelters.json it starts at the HAB waypoint as before.

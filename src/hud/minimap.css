@@ -75,13 +75,20 @@
   border-top: 2px dashed var(--caution);
 }
 
+/* Perseverance's drives (#249), the same warm white as on the mission table map */
+.hud-map-key-traverse {
+  width: 1.35em;
+  height: 0;
+  border-top: 2px solid #f4f1ea;
+}
+
 .hud-map-key-wp {
   width: 1.15em;
   height: 1.15em;
   border-radius: 50%;
   background: var(--ink);
   color: #1b110d;
-  font: 700 0.68em/1 system-ui, 'Segoe UI', sans-serif;
+  font: 700 max(var(--hud-min-text), 0.68em)/1 system-ui, 'Segoe UI', sans-serif;
 }
 
 .hud-map-key-shelter {

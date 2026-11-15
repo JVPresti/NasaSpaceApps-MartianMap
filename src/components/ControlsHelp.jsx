@@ -14,6 +14,7 @@ const COLUMNS = [
         [['menu.mouse'], 'menu.help.look'],
         [['ui.esc'], 'menu.help.release.pause'],
         [['H'], 'menu.help.this.help'],
+        [['X'], 'menu.help.end.eva'],
       ],
     },
     {
@@ -54,14 +55,15 @@ const COLUMNS = [
   [
     {
       // Walk only: src/finds/Finds.jsx (Q, Y, N), src/hud/PartnerPanel.jsx (T), src/state/slopeGrid.js (G) and
-      // src/screens/wrist/keys.js (R; the wrist screen lists its own page and row keys).
+      // src/screens/wrist/keys.js (R, brackets, J/K, Enter). The wrist keys share one row so the help keeps the
+      // start dialog height at 1366 x 768 (#199, #231).
       title: 'menu.help.finds.panels',
       rows: [
         [['Q'], 'menu.help.mark.find.hold'],
         [['Y', '/', 'N'], 'menu.help.add.or.dismiss'],
         [['T'], 'menu.help.partner.detail'],
         [['G'], 'menu.help.slope.grid'],
-        [['R'], 'menu.help.wrist'],
+        [['R', 'menu.help.key.brackets', 'menu.help.key.jk', 'Enter'], 'menu.help.wrist'],
       ],
     },
   ],

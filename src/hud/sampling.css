@@ -1,17 +1,18 @@
 /* Sampling on the helmet HUD (#36). Uses the variables of .hud (hud.css): --u, --ink, --dim, --unit, --glass, --edge, --ok. */
 
-/* checklist: in the HUD's right column (hud.css .hud-right), under the minimap, as wide as the suit panel */
+/* checklist: in the HUD's right column (hud.css .hud-right), under the minimap, at least as wide as the suit panel.
+   It may grow to the column's width, so the notes (floored at --hud-min-text) never spill out of the panel. */
 .hud-sampling {
-  width: calc(var(--u) * 14.5);
+  min-width: calc(var(--u) * 14.5);
   padding: 0.9em 1.2em 0.8em; border-radius: 0.9em;
 }
 .hud-sampling-head { display: flex; align-items: baseline; gap: 0.45em; margin-bottom: 0.55em; }
-.hud-sampling-head span { flex: 1; font-size: 0.7em; letter-spacing: 0.16em; color: var(--dim); }
+.hud-sampling-head span { flex: 1; font-size: max(var(--hud-min-text), 0.7em); letter-spacing: 0.16em; color: var(--dim); }
 .hud-sampling-head b { font-size: 1.9em; line-height: 1; }
 .hud-checklist { list-style: none; margin: 0; padding: 0; }
 .hud-checklist li { display: flex; align-items: center; gap: 0.5em; padding: 0.22em 0; color: var(--dim); }
 .hud-checklist li span { font-size: 1.05em; }
-.hud-checklist li em { margin-left: auto; font-style: normal; font-size: 0.62em; letter-spacing: 0.06em; color: var(--dim); white-space: nowrap; }
+.hud-checklist li em { margin-left: auto; font-style: normal; font-size: max(var(--hud-min-text), 0.62em); letter-spacing: 0.06em; color: var(--dim); white-space: nowrap; }
 .hud-checklist li.hud-done { color: var(--ink); }
 .hud-checklist li.hud-done .hud-check { color: var(--ok); }
 .hud-sampling-last { margin-top: 0.6em; padding-top: 0.55em; border-top: 1px solid rgba(255, 245, 235, 0.45); letter-spacing: 0.08em; }

@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  AIRLOCK_CYCLE_MS, AIRLOCK_MIN_DARK_MS, STAGE, beginEgress, beginIngress, canAdvance, completeEgress, completeIngress, inAirlock, isOnSurface,
-  isPlanning, runAirlockCycle,
+  AIRLOCK_CYCLE_MS, AIRLOCK_MIN_DARK_MS, STAGE, beginEgress, canAdvance, completeEgress, continueFromDebrief, inAirlock, isOnSurface,
+  isPlanning, runAirlockCycle, showDebrief,
 } from './flow.js';
 import { pauseMission, resetStore, setMode, useMissionStore } from './store.js';
 import { pauseEva, restartEva, resumeEva } from './evaSession.js';
@@ -68,12 +68,12 @@ describe('flow stages', () => {
     expect(isOnSurface(s)).toBe(false);
   });
 
-  it('goes habitat, egress, eva, ingress, debrief and nowhere else', () => {
+  it('goes habitat, egress, eva, debrief, and back to eva only through Continue EVA', () => {
     expect(canAdvance(STAGE.HABITAT, STAGE.EGRESS)).toBe(true);
     expect(canAdvance(STAGE.HABITAT, STAGE.EVA)).toBe(false);
     expect(canAdvance(STAGE.EGRESS, STAGE.HABITAT)).toBe(false);
-    expect(canAdvance(STAGE.EVA, STAGE.DEBRIEF)).toBe(false);
-    expect(canAdvance(STAGE.DEBRIEF, STAGE.HABITAT)).toBe(false);   // only a restart (resetStore) leaves the debrief
+    expect(canAdvance(STAGE.EVA, STAGE.HABITAT)).toBe(false);
+    expect(canAdvance(STAGE.DEBRIEF, STAGE.HABITAT)).toBe(false);   // only a restart (resetStore) goes back inside
 
     setMode('plan');   // at the mission table
     beginEgress();
@@ -81,10 +81,11 @@ describe('flow stages', () => {
     expect(inAirlock(useMissionStore.getState())).toBe(true);
     completeEgress();
     expect(isOnSurface(useMissionStore.getState())).toBe(true);
-    beginIngress();
-    expect(inAirlock(useMissionStore.getState())).toBe(true);
-    completeIngress();
+    expect(inAirlock(useMissionStore.getState())).toBe(false);
+    showDebrief();   // X at the table (#244) froze the summary
     expect(useMissionStore.getState().stage).toBe(STAGE.DEBRIEF);
+    continueFromDebrief();   // Continue EVA
+    expect(isOnSurface(useMissionStore.getState())).toBe(true);
   });
 
   it('refuses a skipped or repeated transition', () => {
@@ -216,8 +217,7 @@ describe('the simulator flow with the real simulation', () => {
     let stopSim = startSimulation(ENGINE);
     beginEgress();
     completeEgress();
-    beginIngress();
-    completeIngress();
+    showDebrief();
     useMissionStore.setState((s) => ({ eva: { ...s.eva, phase: 'ended', summary: { distanceM: 10 } } }));
     pauseEva({ engine });
 

@@ -6,11 +6,16 @@ import { TILE_WIDTH_M, TILE_DEPTH_M } from '../../hud/minimapGeometry.js';
 describe('wrist keyboard ownership', () => {
   it('opens with R and navigates only while open without taking movement or global keys', () => {
     expect(wristKey({ code: 'KeyR' }, false)).toBe('toggle');
-    for (const [code, action] of Object.entries({ BracketLeft: 'previous-page', BracketRight: 'next-page', KeyJ: 'next-row', KeyK: 'previous-row', Enter: 'confirm' })) {
+    for (const [code, action] of Object.entries({ BracketLeft: 'previous-page', BracketRight: 'next-page', KeyJ: 'next-row', KeyK: 'previous-row', Enter: 'confirm', NumpadEnter: 'confirm' })) {
       expect(wristKey({ code }, false)).toBeNull();
       expect(wristKey({ code }, true)).toBe(action);
     }
     for (const code of ['KeyM', 'KeyL', 'Digit0', 'Escape', 'KeyP', 'KeyW']) expect(wristKey({ code }, true)).toBeNull();
+  });
+  it('does not raise the wrist in the middle of the Q find gesture, but always lowers it', () => {
+    expect(wristKey({ code: 'KeyR' }, false, { qHeld: true })).toBeNull();
+    expect(wristKey({ code: 'KeyR' }, true, { qHeld: true })).toBe('toggle');
+    expect(wristKey({ code: 'KeyR' }, false, { qHeld: false })).toBe('toggle');
   });
   it('ignores repeats, modifiers, handled events and typing', () => {
     for (const extra of [{ repeat: true }, { defaultPrevented: true }, { isComposing: true }, { ctrlKey: true }, { metaKey: true }, { altKey: true }, { target: { isContentEditable: true } }, ...['INPUT','TEXTAREA','SELECT'].map(tagName => ({ target: { tagName } }))]) {

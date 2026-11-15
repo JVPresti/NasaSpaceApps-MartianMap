@@ -4,6 +4,7 @@
 import {
   FOOTER_Y, PAGE_TITLES, ROWS_BOTTOM, ROWS_TOP, WRIST_CONTENT, WRIST_HEIGHT, WRIST_WIDTH,
 } from './layout.js';
+import { t } from '../../i18n/index.js';
 
 const COLORS = {
   base: '#1b110d',
@@ -188,7 +189,7 @@ export function drawWristFrame(g, model) {
   const content = { ...WRIST_CONTENT };
   if (!g) return content;
   const page = model?.page;
-  const title = model?.title || PAGE_TITLES[page] || 'WRIST';
+  const title = model?.title || (page ? PAGE_TITLES[page] : null) || t('wrist.title');
 
   g.save();
   g.clearRect(0, 0, WRIST_WIDTH, WRIST_HEIGHT);
@@ -229,8 +230,8 @@ export function drawWristFrame(g, model) {
   g.font = mono(12, 600);
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  const enter = model?.confirmable ? 'ENTER SELECT' : 'ENTER READ';
-  g.fillText('R CLOSE · [ ] PAGE · J/K ROW · ' + enter, WRIST_WIDTH / 2, FOOTER_Y, WRIST_WIDTH - 28);
+  const action = t(model?.confirmable ? 'wrist.action.select' : 'wrist.action.read');
+  g.fillText(t('wrist.footer', { action }), WRIST_WIDTH / 2, FOOTER_Y, WRIST_WIDTH - 28);
   hairline(g, 320);
 
   g.restore();

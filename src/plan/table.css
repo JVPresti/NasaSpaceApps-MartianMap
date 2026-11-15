@@ -483,6 +483,77 @@ button.table-stop-name {
 .map-route { stroke: #8fd3ee; stroke-width: 2px; vector-effect: non-scaling-stroke; }
 .map-route-shadow { stroke: #0a0d11; stroke-width: 4px; opacity: 0.45; vector-effect: non-scaling-stroke; }
 
+/* Perseverance's drives (#249): warm white under the route, thinner, so it never reads as the route or a route profile (#245 draws those in cyan, lavender and lime) */
+.table-map-traverse { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.map-traverse,
+.map-traverse-shadow { fill: none; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.map-traverse { stroke: #f4f1ea; stroke-width: 1.6px; }
+.map-traverse-shadow { stroke: #0a0d11; stroke-width: 3.4px; opacity: 0.5; }
+
+/* The pin of the stop images: a dot where the rover stood and a tag to its left, clear of the stop markers, whose
+   tags open to the right. Above the route and markers, under the stop details (.map-pop, z-index 2). */
+.map-pins { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.map-pin { position: absolute; width: 0; height: 0; }
+.map-pin-dot {
+  position: absolute;
+  left: -5px;
+  top: -5px;
+  width: 10px;
+  height: 10px;
+  background: #f4f1ea;
+  border: 2px solid #0a0d11;
+  border-radius: 50%;
+}
+.map-pin-hit {
+  position: absolute;
+  right: 10px;
+  top: 0;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 6px;
+  font: 600 11px var(--font-ui);
+  white-space: nowrap;
+  color: #f2f4f6;
+  background: rgba(10, 8, 7, 0.88);
+  border: 1px solid #f4f1ea;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.map-pin-hit:hover, .map-pin-hit[aria-expanded='true'] { background: #221a33; }
+.map-pin-hit:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.map-pin-icon { width: 14px; height: 14px; fill: none; stroke: #f4f1ea; stroke-width: 1.4; }
+
+.map-pop-images { width: 300px; pointer-events: auto; }
+.map-pop-head span .src-tag { margin-left: 4px; }
+.map-pop-figure { margin: 0; }
+.map-pop-figure img { display: block; width: 100%; height: auto; max-height: 190px; object-fit: cover; background: #000; }
+.map-pop-figure figcaption { display: grid; gap: 2px; margin-top: 6px; }
+.map-pop-figure figcaption b { font-size: 13px; }
+.map-pop-figure figcaption span { font-size: 11px; color: var(--dim); overflow-wrap: anywhere; }
+.map-pop-switch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+.map-pop-switch button { height: 44px; padding: 0; overflow: hidden; background: #000; border: 1px solid rgba(255, 255, 255, 0.2); cursor: pointer; }
+.map-pop-switch button[aria-pressed='true'] { border-color: #f4f1ea; box-shadow: inset 0 0 0 1px #f4f1ea; }
+.map-pop-switch img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.map-pop-link { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--cyan); }
+
+.table-map-traverse-key {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #e3e7eb;
+  background: rgba(10, 13, 17, 0.8);
+}
+.table-map-traverse-key i { width: 18px; height: 0; border-top: 2px solid #f4f1ea; }
+
 .map-markers { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; pointer-events: none; }
 .map-marker-hit { display: flex; align-items: center; gap: 4px; padding: 0; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; pointer-events: auto; }
 .map-marker-hit:hover .map-marker-tag, .map-marker-hit[aria-expanded='true'] .map-marker-tag { border-color: rgba(255, 255, 255, 0.5); }
@@ -619,6 +690,25 @@ button.table-stop-name {
   background: #f2f4f6;
   border-color: #f2f4f6;
 }
+
+/* Perseverance's drives on or off (#249): the sixth cell of the layer grid, set apart by its white line */
+.table-layers .table-overlay-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 8px;
+  font: 600 14px var(--font-ui);
+  color: var(--dim);
+  background: rgba(10, 13, 17, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  cursor: pointer;
+}
+.table-overlay-toggle i { flex: none; width: 14px; height: 0; border-top: 2px solid currentColor; }
+.table-layers .table-overlay-toggle.on { color: var(--ink); background: rgba(10, 13, 17, 0.6); border-color: #f4f1ea; }
+.table-overlay-toggle.on i { border-color: #f4f1ea; }
+.table-layers .table-overlay-toggle:hover { background: rgba(255, 255, 255, 0.08); }
 
 /* the suit check: big numbers in a column, the suit model in the middle */
 .table-list { display: grid; gap: 14px; }
@@ -880,6 +970,12 @@ button.table-stop-name {
 .table-check input:hover { border-color: rgba(255, 255, 255, 0.75); }
 .table-check input:checked:hover { background-color: #ff8148; border-color: #ff8148; }
 
+/* Locked once the EVA has begun: the run keeps the events it started with. */
+.table-check:has(input:disabled) { cursor: default; opacity: 0.55; }
+.table-check input:disabled { cursor: default; }
+.table-check input:disabled:hover { border-color: rgba(255, 255, 255, 0.45); }
+.table-check input:checked:disabled:hover { background-color: var(--accent); border-color: var(--accent); }
+
 /* Route step: the four numbers centred in their quarter of the panel */
 .table-fill > .table-grid2 { justify-items: center; text-align: center; }
 
@@ -934,3 +1030,68 @@ button.table-stop-name {
 }
 .table-hazard-cards > li:nth-child(3) .table-hazard-art { object-position: center 45%; }
 .table-hazard-cards > li:nth-child(-n+2) .table-hazard-art { object-position: center 80%; }   /* the astronauts stand low in these two */
+
+/* Route profiles (#245): one colour per profile, on the map and in the comparison. Cyan is the route colour as
+   before; none of the three is an alert colour. */
+.profile-fastest { --profile-colour: #8fd3ee; }
+.profile-gentlest { --profile-colour: #c7a4ff; }
+.profile-radio { --profile-colour: #d9f27e; }
+
+.map-route.profile-fastest,
+.map-route.profile-gentlest,
+.map-route.profile-radio { stroke: var(--profile-colour); stroke-width: 2.5px; }
+.map-route-alt {
+  fill: none;
+  stroke: var(--profile-colour);
+  stroke-width: 1.5px;
+  stroke-dasharray: 5 4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.85;
+  vector-effect: non-scaling-stroke;
+}
+
+.profile-swatch { display: inline-block; flex: none; width: 12px; height: 3px; margin-right: 6px; vertical-align: middle; background: var(--profile-colour); border-radius: 1px; }
+
+/* Profiles as columns, metrics as rows: three columns fit the side panel at 1366 px. */
+.profiles-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+/* read by screen readers only (plan.css, which had .visually-hidden, is no longer loaded) */
+.profiles-table caption { position: absolute; width: 1px; height: 1px; overflow: hidden; white-space: nowrap; clip-path: inset(50%); }
+.profiles-table thead td { width: 37%; }
+.profiles-table th,
+.profiles-table td { padding: 2px; font-weight: 400; text-align: center; white-space: nowrap; }
+.profiles-table thead th { padding: 0; vertical-align: bottom; }
+.profiles-table tbody th { overflow: hidden; text-align: left; text-overflow: ellipsis; color: var(--text-2); }
+.profiles-table .unit { margin-left: 3px; font-size: 11px; color: var(--unit); }
+.profiles-table td.on,
+.profiles-table thead th.on { background: rgba(255, 255, 255, 0.07); }
+.profiles-table td.on { color: var(--ink); font-weight: 600; }
+.profiles-table .profiles-group th { padding: 5px 0 1px; font-size: 12px; color: var(--dim); text-align: left; }
+.profiles-table .profiles-none { font-size: 11px; line-height: 1.2; color: var(--dim); white-space: normal; }
+
+/* Each profile's name over a bar in its map colour: the legend of the map lines. */
+.profiles-pick {
+  display: block;
+  width: 100%;
+  padding: 6px 0 4px;
+  overflow: hidden;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: none;
+  border: 0;
+  border-bottom: 3px solid var(--profile-colour);
+  cursor: pointer;
+}
+.profiles-pick:hover:not(:disabled) { color: var(--ink); }
+.profiles-pick[aria-pressed='true'] { color: var(--ink); font-weight: 600; }
+.profiles-pick:disabled { cursor: default; }
+.profiles-pick:disabled:not([aria-pressed='true']) { opacity: 0.5; }
+.profiles-pick:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.profiles-panel .table-note { font-size: 12px; line-height: 1.4; }
+.profiles-panel .profiles-what { margin-top: 8px; }
+
+/* The actions stay in view at the foot of a side column that has to scroll (a short window, a long table). */
+.table-right .table-actions { position: sticky; bottom: 0; padding-top: 10px; background: linear-gradient(transparent, rgba(10, 13, 17, 0.9) 10px); }

@@ -1,0 +1,767 @@
+{
+  "schema_version": 1,
+  "title": "Perseverance on the Marswalk tile: traverse and image positions",
+  "description": "The drives Perseverance made across the tile, and where the rover stood for each surface image the science stops show. Field definitions are in public/data/README.md. Built by scripts/build-traverse.mjs; do not edit by hand.",
+  "frame": "x east, z south, metres from Cheyava Falls (engine frame, same as route.json)",
+  "projection": "Equirectangular, lat_ts=0, lon_0=0, R=3396190 m; origin 18.49751379 N, 77.30527379 E, the sol 1210 waypoint (blender/data/jezero_cheyava_meta.json)",
+  "traverse": {
+    "tag": "DATA",
+    "label": "Mars 2020 traverse · MMGIS",
+    "sols": [1140, 1266],
+    "length_m": 2827,
+    "provenance": {
+      "mission": "Mars 2020",
+      "instrument": null,
+      "product_id": "MMGIS layer M20_traverse",
+      "site": "Jezero crater, Neretva Vallis: the part of the traverse inside the Marswalk tile",
+      "sol_or_date": "sols 1140 to 1266",
+      "reference": "NASA/JPL-Caltech, Mars 2020 \"Where is the rover\" map, MMGIS traverse layer",
+      "url": "https://mars.nasa.gov/mars2020/mission/where-is-the-rover/",
+      "locator": "M20_traverse.json: one line per drive, with its sol and the RMC it drove from and to",
+      "data_url": "https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_traverse.json",
+      "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+      "note": "Each drive clipped to the 1422.5 x 1500 m tile, simplified to 0.5 m and rounded to 0.1 m: 47 drives, 2827 m. The rover's own path, not a route for walking."
+    },
+    "drives": [
+      {
+        "sol": 1140,
+        "from": "52_870",
+        "to": "52_1146",
+        "points": [
+          [711.3, 450.2],
+          [698.4, 450.4],
+          [689.2, 452.1],
+          [684.3, 451.4],
+          [671.6, 452.6]
+        ]
+      },
+      {
+        "sol": 1142,
+        "from": "52_1146",
+        "to": "52_1468",
+        "points": [
+          [671.6, 452.6],
+          [655.2, 458.4],
+          [645.4, 459.1],
+          [642.8, 460.3],
+          [627, 448.3],
+          [618, 447.4],
+          [607.4, 445.2]
+        ]
+      },
+      {
+        "sol": 1143,
+        "from": "52_1468",
+        "to": "52_1700",
+        "points": [
+          [607.4, 445.2],
+          [604.1, 447.1],
+          [594.5, 446.6],
+          [589.3, 458.4],
+          [575.4, 457.2]
+        ]
+      },
+      {
+        "sol": 1144,
+        "from": "52_1700",
+        "to": "52_1950",
+        "points": [
+          [575.4, 457.2],
+          [579.9, 456.3],
+          [576.8, 450.9],
+          [567, 449.8],
+          [554.8, 446.3],
+          [550, 442.1],
+          [547.1, 438.4],
+          [541.6, 435]
+        ]
+      },
+      {
+        "sol": 1145,
+        "from": "52_1950",
+        "to": "52_2266",
+        "points": [
+          [541.6, 435],
+          [532.4, 434.4],
+          [524.4, 436.4],
+          [519, 435.8],
+          [504.1, 426.1],
+          [503.7, 426.6]
+        ]
+      },
+      {
+        "sol": 1148,
+        "from": "52_2266",
+        "to": "52_2540",
+        "points": [
+          [503.7, 426.6],
+          [494.3, 429.3],
+          [472.1, 411.8]
+        ]
+      },
+      {
+        "sol": 1150,
+        "from": "52_2540",
+        "to": "52_2638",
+        "points": [
+          [472.1, 411.8],
+          [473.1, 411.1],
+          [474.8, 403.6],
+          [467.5, 403.2]
+        ]
+      },
+      {
+        "sol": 1154,
+        "from": "52_2638",
+        "to": "52_2644",
+        "points": [
+          [467.5, 403.2],
+          [467.9, 403.2]
+        ]
+      },
+      {
+        "sol": 1156,
+        "from": "52_2644",
+        "to": "52_2750",
+        "points": [
+          [467.9, 403.2],
+          [466, 402.4],
+          [465.4, 400.6],
+          [453, 397.9]
+        ]
+      },
+      {
+        "sol": 1157,
+        "from": "52_2750",
+        "to": "52_2824",
+        "points": [
+          [453, 397.9],
+          [443.2, 388.6]
+        ]
+      },
+      {
+        "sol": 1158,
+        "from": "52_2824",
+        "to": "52_3018",
+        "points": [
+          [443.2, 388.6],
+          [433.2, 380.9],
+          [420.1, 365.4]
+        ]
+      },
+      {
+        "sol": 1159,
+        "from": "52_3018",
+        "to": "52_3158",
+        "points": [
+          [420.1, 365.4],
+          [422.1, 365.4],
+          [414.1, 360],
+          [414.4, 349.6]
+        ]
+      },
+      {
+        "sol": 1162,
+        "from": "52_3158",
+        "to": "52_4312",
+        "points": [
+          [414.4, 349.6],
+          [404.9, 343.9],
+          [404.4, 334.4],
+          [402.7, 326.3],
+          [402.7, 317],
+          [403.2, 308.6],
+          [407.8, 286.2],
+          [407.4, 269.8],
+          [415.2, 253.5],
+          [420.4, 246.2],
+          [431, 238.7],
+          [453.2, 229.3],
+          [467.3, 218.2],
+          [471.4, 214.1],
+          [487.5, 209.7],
+          [489.6, 207.7],
+          [492, 203.2]
+        ]
+      },
+      {
+        "sol": 1168,
+        "from": "52_4312",
+        "to": "52_5032",
+        "points": [
+          [492, 203.2],
+          [490.7, 202.8],
+          [485.4, 194.2],
+          [487.1, 184.5],
+          [487.4, 175],
+          [486.8, 172.1],
+          [466.8, 139.4],
+          [465.8, 136.7],
+          [468.2, 126.3],
+          [475.7, 105.5],
+          [478.4, 95.2],
+          [479.7, 85.4]
+        ]
+      },
+      {
+        "sol": 1170,
+        "from": "52_5032",
+        "to": "52_5844",
+        "points": [
+          [479.7, 85.4],
+          [474.8, 85.6],
+          [472.9, 90.4],
+          [470.2, 89.7],
+          [465.8, 90.8],
+          [452.5, 100.5],
+          [443.2, 105.4],
+          [430.6, 108],
+          [422, 107.3],
+          [413, 112.9],
+          [405.1, 116.1],
+          [386.1, 120.1],
+          [366.6, 121],
+          [363, 119.5]
+        ]
+      },
+      {
+        "sol": 1171,
+        "from": "52_5844",
+        "to": "52_6980",
+        "points": [
+          [363, 119.5],
+          [334.8, 120.7],
+          [310.4, 123.3],
+          [298.3, 121.9],
+          [293.7, 122.7],
+          [285.4, 121.9],
+          [277.2, 123.2],
+          [270.8, 123.1],
+          [257.7, 126.1],
+          [245.4, 125.8],
+          [232, 127.4],
+          [205.2, 133.5],
+          [186.1, 133.5],
+          [171.5, 137.1]
+        ]
+      },
+      {
+        "sol": 1174,
+        "from": "52_6980",
+        "to": "52_7624",
+        "points": [
+          [171.5, 137.1],
+          [168.9, 136.8],
+          [164.5, 133],
+          [158.8, 130.7],
+          [152.1, 129.9],
+          [136, 133.4],
+          [124.3, 138.1],
+          [113.8, 140.3],
+          [102.1, 141.1],
+          [89.3, 139.7],
+          [82.4, 140],
+          [56.6, 148.9]
+        ]
+      },
+      {
+        "sol": 1175,
+        "from": "52_7624",
+        "to": "53_0",
+        "points": [
+          [56.6, 148.9],
+          [31, 155.4],
+          [27.1, 155.3],
+          [20.4, 156.8],
+          [18.2, 155.1],
+          [15.2, 154.8],
+          [-3.2, 157.7],
+          [-17.5, 155.9],
+          [-29.8, 151],
+          [-39.9, 148.9],
+          [-43.4, 147.5],
+          [-50.1, 142.4],
+          [-56.4, 139.9],
+          [-76.5, 136.8]
+        ]
+      },
+      {
+        "sol": 1176,
+        "from": "53_0",
+        "to": "53_130",
+        "points": [
+          [-76.5, 136.8],
+          [-78.7, 135.7],
+          [-79.8, 133.5],
+          [-82.4, 108.9]
+        ]
+      },
+      {
+        "sol": 1177,
+        "from": "53_130",
+        "to": "54_0",
+        "points": [
+          [-82.4, 108.9],
+          [-80, 99.4],
+          [-79.5, 89.6],
+          [-77, 82.8],
+          [-80.8, 83.1]
+        ]
+      },
+      {
+        "sol": 1182,
+        "from": "54_0",
+        "to": "54_702",
+        "points": [
+          [-80.8, 83.1],
+          [-77.5, 67.2],
+          [-75.5, 64],
+          [-64.8, 54.2],
+          [-50.8, 43.1],
+          [-46.1, 39.9],
+          [-38.3, 36.6],
+          [-32.3, 30.9],
+          [-26.5, 27.7],
+          [-20.2, 25.8],
+          [-9.6, 24.7],
+          [4.7, 19.7]
+        ]
+      },
+      {
+        "sol": 1183,
+        "from": "54_702",
+        "to": "54_866",
+        "points": [
+          [4.7, 19.7],
+          [6.2, 19.9],
+          [5.3, 14.1],
+          [6.1, 9.7],
+          [2.7, 9.8]
+        ]
+      },
+      {
+        "sol": 1185,
+        "from": "54_866",
+        "to": "54_1010",
+        "points": [
+          [2.7, 9.8],
+          [-4, 6.6],
+          [-4.3, 2.7],
+          [-4.8, 2.6]
+        ]
+      },
+      {
+        "sol": 1189,
+        "from": "54_1010",
+        "to": "54_1152",
+        "points": [
+          [-4.8, 2.6],
+          [-5.9, 6.3],
+          [-9.1, 7.1],
+          [-7.8, 3.9]
+        ]
+      },
+      {
+        "sol": 1195,
+        "from": "54_1152",
+        "to": "55_0",
+        "points": [
+          [-7.8, 3.9],
+          [-7.9, 4.2]
+        ]
+      },
+      {
+        "sol": 1204,
+        "from": "55_0",
+        "to": "55_144",
+        "points": [
+          [-7.9, 4.2],
+          [-8.4, 5.7],
+          [-11.5, 4.3],
+          [-10.9, -1.3],
+          [-8.1, -5]
+        ]
+      },
+      {
+        "sol": 1206,
+        "from": "55_144",
+        "to": "55_340",
+        "points": [
+          [-8.1, -5],
+          [-8.9, -3.6],
+          [-5.5, -1.9],
+          [6.5, 1.6],
+          [8, 1.6],
+          [8.5, -1.9]
+        ]
+      },
+      {
+        "sol": 1210,
+        "from": "55_340",
+        "to": "56_0",
+        "points": [
+          [8.5, -1.9],
+          [8.3, -0.7],
+          [2.1, -0.7],
+          [-4.7, 1.7]
+        ]
+      },
+      {
+        "sol": 1219,
+        "from": "56_0",
+        "to": "56_784",
+        "points": [
+          [-4.7, 1.7],
+          [-5.7, 13.5],
+          [-9.7, 22.3],
+          [-12.1, 25.4],
+          [-18.6, 29.7],
+          [-37, 34.7],
+          [-44.7, 40.4],
+          [-54.9, 46],
+          [-80.2, 65.5],
+          [-82.4, 69.9],
+          [-88.6, 90.6]
+        ]
+      },
+      {
+        "sol": 1220,
+        "from": "56_784",
+        "to": "56_1010",
+        "points": [
+          [-88.6, 90.6],
+          [-89.5, 108.2],
+          [-87.2, 131.4]
+        ]
+      },
+      {
+        "sol": 1224,
+        "from": "56_1010",
+        "to": "56_1998",
+        "points": [
+          [-87.2, 131.4],
+          [-88.4, 124.5],
+          [-91.2, 129.3],
+          [-92.2, 133.9],
+          [-82.4, 164.6],
+          [-80.7, 175.6],
+          [-87.9, 209.9],
+          [-87.5, 231.9],
+          [-89.9, 238.3],
+          [-95.7, 248.3],
+          [-108.8, 262.7],
+          [-114.4, 267.6]
+        ]
+      },
+      {
+        "sol": 1226,
+        "from": "56_1998",
+        "to": "56_2784",
+        "points": [
+          [-114.4, 267.6],
+          [-128.1, 256.8],
+          [-141.1, 247.9],
+          [-158.4, 238.4],
+          [-164, 236.4],
+          [-176.8, 235],
+          [-192.5, 235.6],
+          [-221.4, 243.8],
+          [-235, 244.3]
+        ]
+      },
+      {
+        "sol": 1227,
+        "from": "56_2784",
+        "to": "56_2932",
+        "points": [
+          [-235, 244.3],
+          [-235.3, 251.7],
+          [-240.1, 264.8]
+        ]
+      },
+      {
+        "sol": 1230,
+        "from": "56_2932",
+        "to": "56_3368",
+        "points": [
+          [-240.1, 264.8],
+          [-233.4, 269.8],
+          [-227.6, 277.7],
+          [-226.6, 280.5],
+          [-229.6, 295.3],
+          [-235.1, 305.4],
+          [-236.5, 309.9],
+          [-237.8, 319.3],
+          [-238, 332.6]
+        ]
+      },
+      {
+        "sol": 1231,
+        "from": "56_3368",
+        "to": "56_3438",
+        "points": [
+          [-238, 332.6],
+          [-235.3, 327.6],
+          [-235.2, 329.8]
+        ]
+      },
+      {
+        "sol": 1244,
+        "from": "56_3438",
+        "to": "56_4106",
+        "points": [
+          [-235.2, 329.8],
+          [-235.2, 326.8],
+          [-239.8, 334.1],
+          [-233.2, 337.5],
+          [-231.9, 339.1],
+          [-237.8, 355.6],
+          [-240.6, 360.3],
+          [-246.3, 359.9],
+          [-247.9, 360.7],
+          [-248.6, 362.3],
+          [-247.2, 375],
+          [-244, 378.2],
+          [-239.5, 378.9],
+          [-240.9, 380],
+          [-243.7, 379.1],
+          [-244.3, 377.8]
+        ]
+      },
+      {
+        "sol": 1245,
+        "from": "56_4106",
+        "to": "56_4306",
+        "points": [
+          [-244.3, 377.8],
+          [-251.5, 372.7],
+          [-261.5, 368.8],
+          [-264.7, 373.8],
+          [-259.7, 378.9],
+          [-258.5, 381]
+        ]
+      },
+      {
+        "sol": 1246,
+        "from": "56_4306",
+        "to": "56_4926",
+        "points": [
+          [-258.5, 381],
+          [-256.4, 387.3],
+          [-260.6, 389.2],
+          [-267.4, 387.6],
+          [-266.4, 395.1],
+          [-273.7, 393.1],
+          [-288.4, 391.8],
+          [-296.2, 397.4],
+          [-299.7, 403.4],
+          [-296.5, 418.5],
+          [-297.4, 421.7],
+          [-297, 420.5],
+          [-298.8, 421.1],
+          [-300.4, 423],
+          [-301, 425.3]
+        ]
+      },
+      {
+        "sol": 1247,
+        "from": "56_4926",
+        "to": "56_5250",
+        "points": [
+          [-301, 425.3],
+          [-301.3, 421.2],
+          [-306.4, 426.2],
+          [-311.7, 433],
+          [-314.6, 434.8],
+          [-320, 440.3],
+          [-323.1, 448.2],
+          [-329.7, 455.5],
+          [-332.8, 465.8],
+          [-339.2, 476.7],
+          [-341.8, 484.8]
+        ]
+      },
+      {
+        "sol": 1250,
+        "from": "56_5250",
+        "to": "57_0",
+        "points": [
+          [-341.8, 484.8],
+          [-341.3, 481.5],
+          [-339, 478.6],
+          [-346.7, 480.3],
+          [-350.7, 483.8],
+          [-351.9, 487],
+          [-352.4, 493.8],
+          [-353.7, 498.4],
+          [-359.8, 509.6]
+        ]
+      },
+      {
+        "sol": 1251,
+        "from": "57_0",
+        "to": "58_0",
+        "points": [
+          [-359.8, 509.6],
+          [-375.3, 536.1]
+        ]
+      },
+      {
+        "sol": 1252,
+        "from": "58_0",
+        "to": "59_0",
+        "points": [
+          [-375.3, 536.1],
+          [-373.5, 533.5],
+          [-374.7, 538.1],
+          [-374.2, 547.2],
+          [-378.8, 554.7],
+          [-383.6, 566.6],
+          [-386.7, 572],
+          [-387.5, 576.3]
+        ]
+      },
+      {
+        "sol": 1253,
+        "from": "59_0",
+        "to": "59_18",
+        "points": [
+          [-387.5, 576.3],
+          [-388.1, 579.3]
+        ]
+      },
+      {
+        "sol": 1254,
+        "from": "59_18",
+        "to": "59_204",
+        "points": [
+          [-388.1, 579.3],
+          [-385.9, 575.7],
+          [-381.5, 572.7],
+          [-379.6, 579.9]
+        ]
+      },
+      {
+        "sol": 1264,
+        "from": "59_204",
+        "to": "59_330",
+        "points": [
+          [-379.6, 579.9],
+          [-379.9, 578.4],
+          [-385.7, 586.5],
+          [-388.6, 594.8],
+          [-389.5, 601.3],
+          [-394, 609.3]
+        ]
+      },
+      {
+        "sol": 1265,
+        "from": "59_330",
+        "to": "59_1024",
+        "points": [
+          [-394, 609.3],
+          [-389.9, 604.4],
+          [-387, 604.3],
+          [-369.2, 610.7],
+          [-348.2, 615],
+          [-325.6, 621.5],
+          [-317.7, 622.5],
+          [-315.1, 623.7],
+          [-303.7, 635.2],
+          [-298.5, 644.7],
+          [-295.9, 654.5]
+        ]
+      },
+      {
+        "sol": 1266,
+        "from": "59_1024",
+        "to": "59_1914",
+        "points": [
+          [-295.9, 654.5],
+          [-286, 654.3],
+          [-283.7, 666.6],
+          [-284.1, 679.8],
+          [-271.4, 727.4],
+          [-268, 750]
+        ]
+      }
+    ]
+  },
+  "images": [
+    {
+      "stop": "bright-angel",
+      "file": "images/bright-angel-zl0-sol1187.jpg",
+      "image_id": "ZL0_1187_0772321307_818EBY_N0541010ZCAM09237_0630LMJ",
+      "sol": 1187,
+      "camera": "Left Mastcam-Z (MCZ_LEFT)",
+      "rmc": "54_1010",
+      "x": -4.8,
+      "z": 2.6,
+      "tag": "DATA",
+      "label": "Mars 2020 waypoints · MMGIS",
+      "provenance": {
+        "mission": "Mars 2020",
+        "instrument": null,
+        "product_id": "MMGIS layer M20_waypoints, RMC 54_1010",
+        "site": "Jezero crater, Neretva Vallis, at Cheyava Falls",
+        "sol_or_date": "sol 1185 (rover localization), image sol 1187",
+        "reference": "NASA/JPL-Caltech, Mars 2020 \"Where is the rover\" map, MMGIS waypoint layer",
+        "url": "https://mars.nasa.gov/mars2020/mission/where-is-the-rover/",
+        "locator": "M20_waypoints.json, RMC 54_1010: End-of-drive localization, lon 77.30518822, lat 18.49746952",
+        "data_url": "https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_waypoints.json",
+        "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+        "note": "The image ID names the rover site and drive, RMC 54_1010. Where the rover stood, not where the camera pointed. Projected like the traverse."
+      }
+    },
+    {
+      "stop": "cheyava-falls",
+      "file": "images/cheyava-falls-pia26401.jpg",
+      "image_id": "PIA26401",
+      "sol": 1217,
+      "camera": "Mastcam-Z",
+      "rmc": "56_0",
+      "x": -4.7,
+      "z": 1.7,
+      "tag": "DERIVED",
+      "label": "Mars 2020 waypoints · MMGIS",
+      "provenance": {
+        "mission": "Mars 2020",
+        "instrument": null,
+        "product_id": "MMGIS layer M20_waypoints, RMC 56_0",
+        "site": "Jezero crater, Neretva Vallis, at Cheyava Falls",
+        "sol_or_date": "sol 1210 (rover localization), image sol 1217",
+        "reference": "NASA/JPL-Caltech, Mars 2020 \"Where is the rover\" map, MMGIS waypoint layer",
+        "url": "https://mars.nasa.gov/mars2020/mission/where-is-the-rover/",
+        "locator": "M20_waypoints.json, RMC 56_0: End-of-drive localization, lon 77.30519089, lat 18.49748444",
+        "data_url": "https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_waypoints.json",
+        "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+        "note": "The rover did not drive on sol 1217; it stood at RMC 56_0, the end of its last drive before that sol. Where the rover stood, not where the camera pointed. Projected like the traverse."
+      }
+    },
+    {
+      "stop": "cheyava-falls",
+      "file": "images/cheyava-falls-pia26368.jpg",
+      "image_id": "PIA26368",
+      "sol": 1212,
+      "camera": "SHERLOC WATSON",
+      "rmc": "56_0",
+      "x": -4.7,
+      "z": 1.7,
+      "tag": "DERIVED",
+      "label": "Mars 2020 waypoints · MMGIS",
+      "provenance": {
+        "mission": "Mars 2020",
+        "instrument": null,
+        "product_id": "MMGIS layer M20_waypoints, RMC 56_0",
+        "site": "Jezero crater, Neretva Vallis, at Cheyava Falls",
+        "sol_or_date": "sol 1210 (rover localization), image sol 1212",
+        "reference": "NASA/JPL-Caltech, Mars 2020 \"Where is the rover\" map, MMGIS waypoint layer",
+        "url": "https://mars.nasa.gov/mars2020/mission/where-is-the-rover/",
+        "locator": "M20_waypoints.json, RMC 56_0: End-of-drive localization, lon 77.30519089, lat 18.49748444",
+        "data_url": "https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_waypoints.json",
+        "license": "NASA material, not copyrighted in the United States; credit NASA/JPL-Caltech (NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/)",
+        "note": "The rover did not drive on sol 1212; it stood at RMC 56_0, the end of its last drive before that sol. Where the rover stood, not where the camera pointed. Projected like the traverse."
+      }
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import { useShallow } from 'zustand/react/shallow';
 import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
 import { crewCss } from './crewColor.js';
+import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import { batteryLevel, formatValue } from './format.js';
 import * as I from './icons.jsx';
 import './partner.css';
@@ -29,7 +30,7 @@ function usePartnerKey() {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const onKey = (e) => {
-      if (e.code !== PARTNER_KEY || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typingTarget(e.target)) return;
+      if (e.code !== PARTNER_KEY || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typingTarget(e.target) || wristOwnsKeys()) return;
       setOpen((v) => !v);
     };
     window.addEventListener('keydown', onKey);

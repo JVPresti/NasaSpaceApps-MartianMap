@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import * as SH from './shaders.js';
 import { HAB_ZONES, HAB_SOLIDS, habZone, habCanStand, habSlideWorld } from './collide.js';
 import { createHabitatScreens } from './habitatScreens.js';
+import { createHabitatPrompt } from './habitatPrompt.js';
 
 export function createHabitat(ctx) {
   const { scene, camera, U, assets, sys, view, T } = ctx;
@@ -26,7 +27,8 @@ export function createHabitat(ctx) {
     update(dt) {
       if (this.lights) { const on = U.uLamp.value.x > 0; for (const l of this.lights) l.visible = on; U.uHabGlow.value.set(1.0, 0.84, 0.62).multiplyScalar(on ? 0.16 : 0); }
       this.screens.update(dt || 0.016, camera.position.distanceToSquared(this.pos) < 200);   // the wall screens refresh 4 times a second, only when someone is near (habitatScreens.js)
-      if (!this.hatch) return; const l = this.local(view.eye.x, view.eye.z, this._l), pl = sys.partner.root ? this.local(sys.partner.root.position.x, sys.partner.root.position.z, { x: 0, v: 0 }) : null, near = !this.sealed && ((view.mode === 'eye' && l.x > 3.0 && l.x < 11.5 && Math.abs(l.v) < 3.0) || (pl && sys.partner.root.visible && pl.x > 3.0 && pl.x < 11.6 && Math.abs(pl.v) < 2.0));   // reference: the hatch opens when a walker is near; shut before Begin EVA (habitat-first flow)
+      const z = view.mode === 'eye' && this.zone(view.eye.x, view.eye.z); this.prompt.update(dt, !!z && (z.n === 'main' || z.n === 'inner'));   // end-of-EVA prompt over the table, in the cabin only (#244)
+      if (!this.hatch) return; const l = this.local(view.eye.x, view.eye.z, this._l), pl = sys.partner.root ? this.local(sys.partner.root.position.x, sys.partner.root.position.z, { x: 0, v: 0 }) : null, near = !this.sealed && ((view.mode === 'eye' && l.x > 3.0 && l.x < 11.5 && Math.abs(l.v) < 3.0) || (pl && sys.partner.root.visible && pl.x > 3.0 && pl.x < 11.6 && Math.abs(pl.v) < 2.0));   // shut before Begin EVA (habitat-first flow)   // reference: the hatch opens when a walker is near
       this.open += ((near ? 1 : 0) - this.open) * Math.min(1, (dt || 0.016) * 3); this.hatch.rotation.y = 1.65 * this.open;
     },
     // Wall screens and planning table: drawn from mission data by habitatScreens.js (#47); created in createHabitat below.
@@ -73,6 +75,7 @@ export function createHabitat(ctx) {
       this.hatch = gltf.scene.getObjectByName('HabitatHatch');
       // planning table top: the EVA map, drawn from the store's route by habitatScreens.js (#47); route.json's waypoints until data arrives
       const disc = this.screens.table.mesh; disc.position.set(0, 1.10 + 0.966, 0); gltf.scene.add(disc); this.screens.table.drawPlaceholder();
+      gltf.scene.add(this.prompt.sprite);   // floats over the table (habitatPrompt.js, #244)
       // night lights (reference): a warm work light over the outer hatch and a red beacon on the comms mast
       const gc = document.createElement('canvas'); gc.width = gc.height = 64; const g2 = gc.getContext('2d'), gr = g2.createRadialGradient(32, 32, 0, 32, 32, 32);
       gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,.5)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g2.fillStyle = gr; g2.fillRect(0, 0, 64, 64);
@@ -85,5 +88,6 @@ export function createHabitat(ctx) {
     },
   };
   habitat.screens = createHabitatScreens(ctx);
+  habitat.prompt = createHabitatPrompt();
   return habitat;
 }

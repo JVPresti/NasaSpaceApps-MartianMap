@@ -7,6 +7,7 @@ import stopsJson from '../../public/data/stops.json';
 import { createInitialState, pauseMission, resetStore, resumeMission, setMode, useMissionStore } from './store.js';
 import { departRoute, startSimulation } from './simulation.js';
 import { beginEgress, completeEgress } from './flow.js';
+import { requestEvaEnd } from './eva.js';
 import { startAtAirlock } from '../plan/routeStart.js';
 import { nextTarget } from '../sim/waypointRunner.js';
 import { resetDataFiles } from '../data/dataFiles.js';
@@ -264,7 +265,7 @@ describe('EVA start at the end of the airlock cycle', () => {
 });
 
 describe('startSimulation EVA wiring', () => {
-  it('starts the EVA runner outside once the real shelters.json HAB loads, then ends on re-entry', async () => {
+  it('starts the EVA runner outside once the real shelters.json HAB loads, then ends at the habitat when asked (#244)', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-11-14T12:00:00Z'));
     let answerShelters;
@@ -285,6 +286,9 @@ describe('startSimulation EVA wiring', () => {
     expect(started.eva.startedAtSec).not.toBeNull();
 
     useMissionStore.setState((state) => ({ navigation: { ...state.navigation, trueX: 535.1, trueZ: 574.1 } }));
+    await vi.advanceTimersByTimeAsync(300);
+    expect(useMissionStore.getState().eva).toMatchObject({ phase: 'active', atHabitat: true });   // back, not ended
+    expect(requestEvaEnd(useMissionStore)).toBe(true);
     await vi.advanceTimersByTimeAsync(300);
 
     const ended = useMissionStore.getState();

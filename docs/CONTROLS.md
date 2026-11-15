@@ -25,9 +25,15 @@ sampling, finds, the wrist screen and the slope grid only work on the surface, a
 | Y / N | Add the marked find to the route or dismiss it |
 | T | Partner detail |
 | G | Slope grid |
-| R | Wrist screen |
+| V | Hide or show the visor frame and alert ring, for screenshots (#28) |
+| R | Wrist screen: open or close |
+| [ / ] | Wrist screen up: previous / next page |
+| J / K | Wrist screen up: next / previous row |
+| Enter | Wrist screen up: select the highlighted layer |
 | C | Sources |
 | Esc | Release the pointer and pause |
+
+While the wrist screen is up it owns the keyboard (#231): Q, Y/N, T, G, C, X, L, Shift+L and 0 do nothing, and Enter selects the wrist row instead of closing a science card. Esc still pauses and lowers the wrist. R does not raise the wrist while Q is held.
 
 ### Mission table
 
