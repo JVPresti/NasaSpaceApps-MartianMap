@@ -7,6 +7,7 @@ import { subscribeLanguage } from '../i18n/index.js';
 //   await engine.ready;          // resolves after the first frame is actually rendered, rejects on failure
 //   engine.setMode('plan' | 'walk');
 //   engine.setLayer(0..4); engine.setSky('clear_day'); engine.setRoute([[x, z], ...]);
+//   engine.setSkyTime(17.75 | null); engine.getSun();   // sky and Sun from the mission clock (#73), missionSky.js
 //   engine.requestPointerLock(); engine.releasePointerLock(); engine.setInputEnabled(false);
 //   engine.setQuality('auto' | 'high' | 'low'); engine.getQuality(); engine.resetSession();
 //   engine.heightAt(x, z); engine.slopeAt(x, z); engine.lineOfSight(a, b); engine.getPlayer();
@@ -24,6 +25,7 @@ import { decodeTerrainJson, decodeRingJson } from './queries.js';
 import { createRouteGlow, validPath } from './routeGlow.js';
 import { createBootPrints } from './bootPrints.js';
 import { createDust, clampDust } from './dust.js';
+import { createMissionSky } from './missionSky.js';
 import { createShelterHighlight } from './shelterHighlight.js';
 import { validShelter } from './shelterRules.js';
 import { createSlopeZone } from './slopeZone.js';
@@ -77,7 +79,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   let inputEnabled = inputEnabledOption !== false;
   let pendingLock = null, pendingLockResolve = null;
   let pendingReset = false;
-  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false, wristScreen: null, habitatScreens: null };   // set before boot ends, applied when ready
+  const pending = { sky: null, skyBlend: null, skyTime: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false, wristScreen: null, habitatScreens: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -164,6 +166,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     renderer.setPixelRatio(Math.min(devicePixelRatio, t.pixelRatio)); resize();
     U.uRockR.value.set(t.radius[0] || 1, t.radius[1], t.radius[2]);
     ctx.terrain.buildTerrain(t); ctx.terrain.computeShadows(t.shadowRes); sys.rocks.reset();
+    if (sys.sky) sys.sky.shadowsBaked();
     sys.habitat.reground();   // the rebuilt mesh has slightly different heights
     if (ctx.outcrop) ctx.outcrop.userData.place(name);
     if (sys.routeGlow) sys.routeGlow.rebuild();  // re-drape the route on the new mesh
@@ -197,6 +200,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     sys.routeGlow.update(dt, eyeMode ? ctx.view.eye : null);
     sys.shelter.update(dt, ctx.view.eye, camera);
     sys.prints.update(dt);
+    sys.sky.update(dt);   // before the dust: a new sky is then scaled by the storm light in the same frame
     sys.dust.update(dt);
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
@@ -307,6 +311,9 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     sys.radioShadow = createRadioShadow(ctx);
     sys.radioShadow.set(pending.radioShadow);
     if (pending.skyBlend) applySkyBlend(ctx, pending.skyBlend.from, pending.skyBlend.to, pending.skyBlend.t);
+    sys.sky = createMissionSky(ctx);
+    sys.sky.setStorm(pending.sky === 'dust_storm' ? 1 : pending.skyBlend && pending.skyBlend.to === 'dust_storm' ? pending.skyBlend.t : 0);
+    if (pending.skyTime !== null) sys.sky.setTime(pending.skyTime);
     waypoints.set(pending.waypoints);
     waypoints.group.visible = requestedMode === 'plan';
     viewCtl.setMode(requestedMode); started = true; walked = requestedMode === 'walk';
@@ -360,6 +367,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
         const h = sys.habitat, d = h.dir, x = h.pos.x + d.x * 17 - d.z * 7, z = h.pos.z + d.z * 17 + d.x * 7;
         place(x, z, Math.atan2(h.pos.x + d.x * 2 - x, -(h.pos.z + d.z * 2 - z)), -0.05);
       },
+      sun: () => sys.sky.sun,   // the Sun while the mission clock drives the sky (#73), else null
       habitatY: () => sys.habitat.pos.y,
       groundUnderHabitat: () => ctx.terrain.meshH(sys.habitat.pos.x, sys.habitat.pos.z),
       setTier: (name) => quality.request(name),
@@ -553,10 +561,27 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       return tex ? tex.image : null;
     },
     /** Atmosphere preset: 'clear_day' | 'dust_storm' | 'late_afternoon' | 'night'. */
+    // While the mission clock drives the sky (setSkyTime) a preset only says whether to show the storm look.
     setSky(name) {
       if (!SKIES.includes(name)) throw new Error('setSky: expected one of ' + SKIES.join(', ') + ', got ' + name);
-      if (started) applyPreset(ctx, name); else pending.sky = name;
+      pending.sky = name;
+      if (!started) return;
+      if (sys.sky.active) sys.sky.setStorm(name === 'dust_storm' ? 1 : 0); else applyPreset(ctx, name);
     },
+    /**
+     * Sky from the mission clock (#73): the Sun moves with the local solar time at the site and the sky blends between
+     * the presets by its height, toward the storm look as the dust rises. null goes back to the last setSky preset.
+     * @param {number | null} hours local solar time, 0 to 24
+     */
+    setSkyTime(hours) {
+      if (hours !== null && !Number.isFinite(hours)) throw new Error('setSkyTime: expected hours from 0 to 24, or null');
+      if (!started) { pending.skyTime = hours; return; }
+      const was = sys.sky.active;
+      sys.sky.setTime(hours);
+      if (was && hours === null) applyPreset(ctx, pending.sky || 'clear_day');
+    },
+    /** @returns {{ hours: number, elevationDeg: number, azimuthDeg: number } | null} the Sun while the clock drives the sky */
+    getSun() { return started ? sys.sky.sun : null; },
     /**
     /**
      * Blend two atmosphere presets without changing the scene geometry.
@@ -569,7 +594,8 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       if (!SKIES.includes(from) || !SKIES.includes(to)) throw new Error('setSkyBlend: expected two known presets');
       if (!Number.isFinite(t)) throw new Error('setSkyBlend: t must be a number');
       const clamped = Math.max(0, Math.min(1, t));
-      if (started) applySkyBlend(ctx, from, to, clamped);
+      if (started && sys.sky.active && to === 'dust_storm') sys.sky.setStorm(clamped);
+      else if (started) applySkyBlend(ctx, from, to, clamped);
       else pending.skyBlend = { from, to, t: clamped };
     },
     /** Slope grid in Walk mode (slopeGrid.js, #50): lines on the ground around the player coloured by slope. */

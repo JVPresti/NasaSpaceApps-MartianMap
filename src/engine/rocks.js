@@ -19,7 +19,7 @@ export function createRocks(ctx) {
   const { scene, U, sys, T } = ctx;
   const { meshH, density } = ctx.terrain;
   const rocks = {
-    meshes: [], heights: [], feet: [], hero: null, blob: null, cache: new Map(), large: null, last: new THREE.Vector3(1e9, 0, 0), enabled: true, total: 0,
+    meshes: [], heights: [], feet: [], hero: null, sunV: 1, blob: null, cache: new Map(), large: null, last: new THREE.Vector3(1e9, 0, 0), enabled: true, total: 0,
     init(data, maps) {
       ROCK_NAMES.forEach((name, ti) => {
         const mat = new THREE.ShaderMaterial({ uniforms: { ...U, tMap: { value: maps[ti] }, uRockH: f1(data[name].lods[0].height) }, vertexShader: SH.ROCK_VERT, fragmentShader: SH.ROCK_FRAG });
@@ -40,10 +40,8 @@ export function createRocks(ctx) {
     // deterministic rocks for one cell (or the whole tile for the large class)
     gen(ci, x0, z0, w, d, seed) {
       const cls = CLASSES[ci], r = mulberry(seed), nExp = cls.dens * w * d, n = Math.floor(nExp) + (r() < nExp % 1 ? 1 : 0);
-      const mat = [], bmat = [], meta = [];
+      const mat = [], meta = [], bsrc = [];
       const M = new THREE.Matrix4(), P = new THREE.Vector3(), Q = new THREE.Quaternion(), Qy = new THREE.Quaternion(), Sc = new THREE.Vector3(), Nrm = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), E = new THREE.Euler();
-      const sun = U.uSunDir.value, sh = Math.hypot(sun.x, sun.z) || 1e-3, sdx = -sun.x / sh, sdz = -sun.z / sh, tanE = Math.max(sun.y, 0.08) / sh;
-      const X = new THREE.Vector3(), Z = new THREE.Vector3();
       for (let i = 0; i < n; i++) {
         const x = x0 + r() * w, z = z0 + r() * d, acc = r(), u = r(), tp = r(), yaw = r() * 6.2832, t1 = (r() - 0.5) * 0.5, t2 = (r() - 0.5) * 0.5;
         if (Math.abs(x) > T.W / 2 - 2 || Math.abs(z) > T.H / 2 - 2) continue;
@@ -57,15 +55,15 @@ export function createRocks(ctx) {
         Q.setFromUnitVectors(up, Nrm); Qy.setFromEuler(E.set(t1, yaw, t2, 'YXZ')); Q.multiply(Qy);
         P.set(x, y - cls.sink * hgt, z); Sc.set(D, D, D); M.compose(P, Q, Sc);
         for (let k = 0; k < 16; k++) mat.push(M.elements[k]);
-        // soft contact shadow quad, stretched away from the sun, lying on the slope
-        const len = Math.min(hgt / tanE, D * 5) + D * 0.9, wid = D * 1.05, off = (len - D * 0.9) * 0.5;
-        X.set(sdx, 0, sdz); X.addScaledVector(Nrm, -X.dot(Nrm)).normalize(); Z.crossVectors(X, Nrm);
-        const cxp = x + X.x * off, cyp = y + X.y * off + 0.02, czp = z + X.z * off;
-        bmat.push(X.x * len, X.y * len, X.z * len, 0, Nrm.x, Nrm.y, Nrm.z, 0, Z.x * wid, Z.y * wid, Z.z * wid, 0, cxp, cyp, czp, 1);
+        bsrc.push(x, y, z, D, hgt, Nrm.x, Nrm.y, Nrm.z);   // what the contact shadow needs, to turn it with the sun (resun)
         meta.push(x, z, D, type);
       }
-      return { n: meta.length / 4, mat: new Float32Array(mat), bmat: new Float32Array(bmat), meta: new Float32Array(meta) };
+      const count = meta.length / 4;
+      // bmat (the contact shadows) is filled when a rock is first drawn near the camera, and again after the sun moved (sunAt)
+      return { n: count, mat: new Float32Array(mat), bmat: new Float32Array(count * 16), meta: new Float32Array(meta), bsrc: new Float32Array(bsrc), sunAt: new Uint32Array(count) };
     },
+    // the moving sun (#73): the contact shadows turn the next time each rock is drawn, without generating the rocks again
+    resun() { this.sunV++; this.last.set(1e9, 0, 0); },
     cell(ci, cx, cz) {
       const key = ci + ':' + cx + ':' + cz; let c = this.cache.get(key);
       if (!c) { c = this.gen(ci, cx * CELL, cz * CELL, CELL, CELL, (cx * 73856093) ^ (cz * 19349663) ^ ((ci + 1) * 83492791)); this.cache.set(key, c); }
@@ -98,7 +96,10 @@ export function createRocks(ctx) {
           if (counts[mi] >= CAP) continue;
           const arr = this.meshes[mi].instanceMatrix.array, o = counts[mi]++ * 16, so = i * 16;
           for (let k = 0; k < 16; k++) arr[o + k] = c.mat[so + k];
-          if (tier.blobs && ci > 0 && d2 < 8100 && nb < CAP) { const bo = nb++ * 16; for (let k = 0; k < 16; k++) barr[bo + k] = c.bmat[so + k]; }
+          if (tier.blobs && ci > 0 && d2 < 8100 && nb < CAP) {
+            if (c.sunAt[i] !== this.sunV) { blob(c, i, U.uSunDir.value); c.sunAt[i] = this.sunV; }
+            const bo = nb++ * 16; for (let k = 0; k < 16; k++) barr[bo + k] = c.bmat[so + k];
+          }
         }
       };
       if (this.enabled) {
@@ -117,6 +118,20 @@ export function createRocks(ctx) {
     },
   };
   return rocks;
+}
+
+// Soft contact shadow quad of rock i, stretched away from the sun and lying on the slope.
+const BX = new THREE.Vector3(), BZ = new THREE.Vector3(), BN = new THREE.Vector3();
+function blob(c, i, sun) {
+  const sh = Math.hypot(sun.x, sun.z) || 1e-3, tanE = Math.max(sun.y, 0.08) / sh;
+  const b = c.bsrc, k = i * 8, x = b[k], y = b[k + 1], z = b[k + 2], D = b[k + 3], hgt = b[k + 4], m = c.bmat, o = i * 16;
+  BN.set(b[k + 5], b[k + 6], b[k + 7]);
+  const len = Math.min(hgt / tanE, D * 5) + D * 0.9, wid = D * 1.05, off = (len - D * 0.9) * 0.5;
+  BX.set(-sun.x / sh, 0, -sun.z / sh); BX.addScaledVector(BN, -BX.dot(BN)).normalize(); BZ.crossVectors(BX, BN);
+  m[o] = BX.x * len; m[o + 1] = BX.y * len; m[o + 2] = BX.z * len; m[o + 3] = 0;
+  m[o + 4] = BN.x; m[o + 5] = BN.y; m[o + 6] = BN.z; m[o + 7] = 0;
+  m[o + 8] = BZ.x * wid; m[o + 9] = BZ.y * wid; m[o + 10] = BZ.z * wid; m[o + 11] = 0;
+  m[o + 12] = x + BX.x * off; m[o + 13] = y + BX.y * off + 0.02; m[o + 14] = z + BX.z * off; m[o + 15] = 1;
 }
 // Cheyava Falls hero rock (bench lines 293-300)
 export async function buildCheyava(ctx, maps) {
