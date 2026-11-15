@@ -5,6 +5,8 @@ import { wristView } from './view.js';
 import { drawWrist } from './draw.js';
 import { drawWristMap, wristMapView } from './map.js';
 import { wristKey } from './keys.js';
+import { loadDataFile } from '../../data/dataFiles.js';
+import { SHELTERS_PATH } from '../../sim/shelters.js';
 
 /** Connect after engine.ready; owns one canvas and cleans up before engine disposal. */
 export function connectWrist(engine, store = useMissionStore) {
@@ -15,7 +17,6 @@ export function connectWrist(engine, store = useMissionStore) {
   let shelters = [], resourceVersion = 0;
   const diagnostics = { canvas, snapshot: () => ({ open, page: PAGES[pageIndex], row, draws: Number(canvas.dataset.drawCount ?? 0), engine: engine.getWristState() }) };
   if (import.meta.env.DEV) window.__marswalkWrist = diagnostics;
-  const ac = new AbortController();
   engine.setWristScreen(canvas);
   const scheduler = createRedrawScheduler({ draw() {
     if (disposed) return;
@@ -65,8 +66,7 @@ export function connectWrist(engine, store = useMissionStore) {
     }
   };
   window.addEventListener('keydown', onKey);
-  fetch(import.meta.env.BASE_URL + 'data/shelters.json', { signal: ac.signal })
-    .then(r => { if (!r.ok) throw new Error('shelters unavailable'); return r.json(); })
+  loadDataFile(SHELTERS_PATH)   // shared with the HUD minimap and the planner (#205)
     .then(data => {
       if (disposed) return;
       shelters = (data.shelters ?? []).filter(s => Number.isFinite(s.x) && Number.isFinite(s.z));
@@ -75,7 +75,7 @@ export function connectWrist(engine, store = useMissionStore) {
     }).catch(() => {});
   scheduler.request('init');
   return () => {
-    disposed = true; ac.abort(); off(); scheduler.dispose();
+    disposed = true; off(); scheduler.dispose();
     window.removeEventListener('keydown', onKey);
     if (import.meta.env.DEV && window.__marswalkWrist === diagnostics) delete window.__marswalkWrist;
     engine.setWristOpen(false); engine.setWristScreen(null);
