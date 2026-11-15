@@ -24,8 +24,9 @@
  *
  * The slope limits match `slope.no_go` and `slope.caution` in
  * `public/data/hazards.json` (20 deg is NASA's suited walking limit, xEVA con
- * ops EVA-EXP-0042 Rev B p. 38). The engine's slope layer reads them from here,
- * and `costGrid.test.js` fails if they drift from `hazards.json`.
+ * ops EVA-EXP-0042 Rev B p. 38). The engine's slope layer, the slope-ahead
+ * warning and the elevation profile read them from here, and
+ * `costGrid.test.js` fails if they drift from `hazards.json`.
  */
 export const COST_CONSTANTS = Object.freeze({
   /** Ground steeper than this is NO-GO. Degrees. hazards.json `slope.no_go`. */

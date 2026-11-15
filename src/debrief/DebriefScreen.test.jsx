@@ -26,7 +26,7 @@ const summary = {
   routeChanges: [
     { atSec: 700, kind: 'initial', reason: 'Planned route', before: null, after: { distanceM: 412 } },
     // The degree sign and the arrow are real summary/store text.
-    { atSec: 1200, kind: 'slope', reason: 'Detour: steeper than 25° ahead', before: { distanceM: 412 }, after: { distanceM: 388 } },
+    { atSec: 1200, kind: 'slope', reason: 'Detour: steeper than 20° ahead', before: { distanceM: 412 }, after: { distanceM: 388 } },
   ],
 };
 
@@ -55,7 +55,7 @@ describe('DebriefScreen', () => {
     const html = render();
     const planned = html.indexOf('Planned route');
     const started = html.indexOf('Event started');
-    const detour = html.indexOf('Detour: steeper than 25');
+    const detour = html.indexOf('Detour: steeper than 20');
     const ended = html.indexOf('Event ended');
 
     expect(planned).toBeGreaterThan(-1);
@@ -129,7 +129,7 @@ describe('DebriefScreen', () => {
       expect(body, english).not.toContain(english);
     }
     // The slope detour reason was written in English by the HUD: the catalog cannot match its filled-in number.
-    expect(body).toContain('Detour: steeper than 25° ahead');
+    expect(body).toContain('Detour: steeper than 20° ahead');
   });
 
 });
