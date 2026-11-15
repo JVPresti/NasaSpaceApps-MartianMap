@@ -32,11 +32,12 @@ describe('mission table', () => {
     expect(selectedTab(render({ initialTab: 'nowhere' }))).toBe('site');
   });
 
-  it('times the hazards from the first sortie\'s mission as its triggers allow (#265, N5)', () => {
+  // The cards no longer say when each event starts (#399); what happens still follows the first sortie's mission.
+  it("describes the hazards as the first sortie's mission runs them, without a When row (#265, N5, #399)", () => {
     const text = render({ initialTab: 'hazards' }).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-    expect(text).toContain('After the sample at the science stop');
-    expect(text).toContain('15 s after the dust storm');
-    expect(text).not.toContain('45 s into the EVA');
+    expect(text).not.toContain('When');
+    expect(text).not.toContain('After the sample at the science stop');
+    expect(text).not.toContain('15 s after the dust storm');
     expect(text).toContain('in 30 s');   // the storm ramp, compressed for the first sortie
     expect(text).toContain('Shortened to 60 s for this EVA');
     expect(text).toContain('The storm ends within 25 m of the airlock');
