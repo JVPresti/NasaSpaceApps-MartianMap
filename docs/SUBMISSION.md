@@ -66,7 +66,7 @@ Paste everything inside the box. The form takes rich text, so the headings survi
 
 > **What it does**
 >
-> Marswalk is a planning map and a walking test for one marswalk. The astronaut leaves the habitat in Neretva Vallis, Jezero crater, walks to the Bright Angel outcrop and Cheyava Falls, takes a sample and walks home. The site is a 1422 m by 1500 m tile of real terrain centred on the spot where Perseverance stood on sol 1210.
+> Marswalk is a planning map and a walking test for one marswalk. The astronaut leaves the habitat in Neretva Vallis, Jezero crater, walks to the Bright Angel outcrop and Cheyava Falls, takes a sample and walks home. The site is a 1422.5 m by 1500 m tile of real terrain centred on the spot where Perseverance stood on sol 1210.
 >
 > The map comes first. On the mission table the crew sees the site from above with a photo layer and four data layers: slope hazard, elevation, rock abundance (estimated from image brightness) and outcrop. Perseverance's 47 real drives across the tile and the places it photographed the rock from are drawn on top. The planner offers three routes, fastest, gentlest and in radio contact with the habitat. For each one it shows the distance, the climb, the steepest slope, the metres spent above 15°, the walking time, the oxygen used and the oxygen left after the walk home and the reserve. The crew picks one and makes the go or no-go call.
 >
@@ -92,7 +92,7 @@ Paste everything inside the box. The form takes rich text, so the headings survi
 >
 > Weather and radiation. Temperature, pressure and humidity replay sol 1187 from Perseverance's MEDA weather station, recorded within 12 m of the scene origin. Wind comes from sol 312, because MEDA's wind sensor was damaged and the archive has no wind after sol 315. The label says so. Radiation comes from Curiosity's RAD in Gale crater, the only surface radiation measurement on Mars. The display says "Gale crater, not Jezero" every time. Jezero sits about 2 km higher, under less air, so its dose would be somewhat higher.
 >
-> Provenance. Every number on screen carries a tag: DATA (a NASA mission measured it or a NASA document states it), DERIVED (we calculated it from data) or SIM (our model or a scripted event). Hover a tag to see the mission, instrument, sol and reference. One exception today is the radio range, which has no tag yet. We checked 109 numbers against their primary sources. 79 match, 11 are our stated assumptions, 16 had a wrong value, tag or wording, and 3 come from a paper we could not open. Each problem has an issue in our repository: https://github.com/JVPresti/NasaSpaceApps-MartianMap/blob/main/docs/VALIDITY.md
+> Provenance. Almost every number on screen carries a tag: DATA (a NASA mission measured it or a NASA document states it), DERIVED (we calculated it from data) or SIM (our model or a scripted event). Hover a tag to see the mission, instrument, sol and reference. The radio range is the one number still missing its tag. We checked 109 numbers against their primary sources. 79 match, 11 are our stated assumptions, 16 had a wrong value, tag or wording, and 3 come from a paper we could not open. The full table, with an issue for each problem, is at https://github.com/JVPresti/NasaSpaceApps-MartianMap/blob/main/docs/VALIDITY.md
 >
 > **Benefits**
 >
@@ -100,7 +100,7 @@ Paste everything inside the box. The form takes rich text, so the headings survi
 >
 > **What we hope to achieve**
 >
-> An EVA plan that shows the oxygen cost of every metre of a real route. The route is advice, not a safety certificate: a 2 m height grid does not see a 30 cm rock, and the app says so. The planner needs only a height grid and a rock layer. We have run it on one site. Jezero comes first because Perseverance is there: its weather, its drives and its photos of Cheyava Falls are all on the map.
+> An EVA plan that shows the oxygen cost of every metre of a real route. The route is advice, not a safety certificate. A 2 m height grid does not see a 30 cm rock, and the app says so. The planner needs only a height grid and a rock layer. We have run it on one site. Jezero comes first because Perseverance is there. Its weather, its drives and its photos of Cheyava Falls are all on the map.
 >
 > **How it is creative**
 >
@@ -108,7 +108,7 @@ Paste everything inside the box. The form takes rich text, so the headings survi
 >
 > **Factors we considered**
 >
-> Observations are labelled historical, never live. Radiation is labelled with its real site. Navigation never claims GPS. We dropped a THEMIS thermal view because its 100 m pixels put 15 by 15 pixels on the whole site. We dropped a geology map because it sits 100 to 200 m off the terrain. A judge without a gamepad or a strong GPU can still finish the walk: it reads keyboard, mouse, touch and gamepad, switches between English and Spanish, and measures the frame rate at load to choose a High or Low graphics tier.
+> We label every observation as historical, never live. Radiation carries the name of the crater where Curiosity measured it. Navigation never claims GPS. We dropped a THEMIS thermal view because its 100 m pixels put 15 by 15 pixels on the whole site. We dropped a geology map because it sits 100 to 200 m off the terrain. A judge without a gamepad or a strong GPU can still finish the walk. It reads keyboard, mouse, touch and gamepad, and switches between English and Spanish. It starts on a Low graphics tier when the GPU name shows integrated or mobile graphics, and drops from High to Low after three seconds in a row under 40 frames per second.
 >
 > **Tools and languages**
 >
@@ -120,17 +120,17 @@ Paste everything inside the box. The form takes rich text, so the headings survi
 >
 > **Use of SI**
 >
-> we built Marswalk with SI tools and reviewed their output. We used an AI assistant to compare challenges and talk through the concept on 13 November. AI coding agents (Claude Code) wrote most of the code from our issues. Almost every change reached main through a pull request that CI checked with lint, build and our test suite, and teammates reviewed 41 of the 134 pull requests merged by 15 November. AI research agents found and opened the NASA reports and papers behind our numbers. An audit run with AI agents and reviewed by us traced 109 numbers to their sources, and 3 of them come from a paper we could not open (docs/VALIDITY.md). Language models helped write the docs and the Spanish translation. The start screen video, its poster and the three hazard illustrations were generated with Higgsfield. They are artwork, not mission images. None shows a NASA logo, flag or mission identifier, and each is captioned or credited as AI-generated. No SI model runs inside the app. The terrain, the weather, the radiation and the rover data are NASA measurements, and the route planner is plain A* on the HiRISE height grid.
+> We built Marswalk with SI tools and reviewed their output. We used an AI assistant to compare challenges and talk through the concept on 13 November. AI coding agents (Claude Code) wrote most of the code from our issues. Almost every change reached main through a pull request that CI checked with lint, build and our test suite, and a teammate other than the author reviewed 38 of the 134 pull requests merged by 15 November. AI research agents found and opened the NASA reports and papers behind our numbers. An audit run with AI agents and reviewed by us traced 109 numbers to their sources, and 3 of them come from a paper we could not open (docs/VALIDITY.md). Language models helped write the docs and the Spanish translation. We generated the start screen video, its poster and the three hazard illustrations with Higgsfield. They are artwork, not mission images. None shows a NASA logo, flag or mission identifier. The start screen caption and our credits list mark each one as AI-generated. No SI model runs inside the app. The terrain, the weather, the radiation and the rover data are NASA measurements, and the route planner is plain A* on the HiRISE height grid.
 >
 > **Prior work**
 >
-> before the hackathon started at 9:00 am on 14 November, our graphics team prepared assets on 12 and 13 November: the HiRISE and CTX terrain tile of Neretva Vallis cut for Blender (heights, orthophotos, the first waypoint list and the rock layout), the NASA Z-2 suit rigged and animated, the habitat built on NASA's Habitat Demonstration Unit, two props, and a three.js test bench that loads them. They arrived in one commit at 9:49 am on 14 November (`9fb29fc`), and `docs/marswalk-assets/README.md` dates each pass. During the event we ported the app's rendering engine from that test bench, and wrote everything else: the route planner and cost grid, the suit and oxygen model, the event engine, the dust storm, radiation and low-oxygen events, the shelters, the source tags on every number, the HUD and Plan mode, and the MEDA, RAD, DONKI and Perseverance traverse and image pipelines. We chose the challenge and the concept on 13 November, with help from an AI assistant.
+> Before the hackathon started at 9:00 am on 14 November, our graphics team prepared assets on 12 and 13 November: the HiRISE and CTX terrain tile of Neretva Vallis cut for Blender (heights, orthophotos, the first waypoint list and the rock layout), the NASA Z-2 suit rigged and animated, the habitat built on NASA's Habitat Demonstration Unit, two props, and a three.js test bench that loads them. They arrived in one commit at 9:49 am on 14 November (`9fb29fc`), and `docs/marswalk-assets/README.md` dates each pass. During the event we ported the app's rendering engine from that test bench, and wrote everything else: the route planner and cost grid, the suit and oxygen model, the event engine, the dust storm, radiation and low-oxygen events, the shelters, the source tags on every number, the HUD and Plan mode, and the MEDA, RAD, DONKI and Perseverance traverse and image pipelines. We chose the challenge and the concept on 13 November, with help from an AI assistant.
 
 **Fernando to confirm before pasting the prior-work paragraph.** It stops at what is true today. Once the local lead has answered, add one sentence at its end that says so, for example "We told our local lead before submitting." Do not add it before it is true.
 
 ## Use of Super Intelligence (SI)
 
-The form answer is not shown to judges. Tick the boxes listed in `docs/RULES.md`, section 2. Do not tick "Building SI/ML Into the Project": Marswalk runs no model.
+The form answer is not shown to judges. Tick the boxes listed in `docs/RULES.md`, section 2. Do not tick "Building SI/ML Into the Project", because Marswalk runs no model.
 
 ## NASA Data
 
