@@ -19,6 +19,7 @@ import Minimap from './Minimap.jsx';
 import './hud.css';
 import { SamplingChecklist, SamplingCrosshair } from './SamplingPanel.jsx';
 import PartnerPanel from './PartnerPanel.jsx';
+import { useInCabin } from './useInCabin.js';
 
 // Shared source tag (#62). The HUD never takes the pointer, so the tag shows its tag text only and puts the full
 // source in the title and the screen reader text.
@@ -265,10 +266,13 @@ function WaypointMarker({ engine }) {
  * `minimapRoute` is App's route tracker: it outlives this component so Plan mode does not reset the walk.
  */
 export default function Hud({ engine, minimapRoute }) {
+  // In the habitat's cabin the table prompt is the interface (#244): the next-waypoint panel and marker, centred and about
+  // the walk outside, give way to it so they neither cover it nor point the crew back out.
+  const cabin = useInCabin(engine);
   return (
     <div className="hud" aria-label={t('ui.helmet.display')}>
       <HeadingTape />
-      <WaypointMarker engine={engine} />
+      {!cabin && <WaypointMarker engine={engine} />}
       <SlopeAhead engine={engine} />
       <Clocks />
       <SuitPanel />
@@ -282,7 +286,7 @@ export default function Hud({ engine, minimapRoute }) {
         <NavLine><SourceTag path="navigation.errorM" /></NavLine>
         <RadioLink engine={engine} />
       </div>
-      <WaypointPanel heightAt={engine?.heightAt} slopeAt={engine?.slopeAt} />
+      {!cabin && <WaypointPanel heightAt={engine?.heightAt} slopeAt={engine?.slopeAt} />}
       <SamplingCrosshair />
     </div>
   );
