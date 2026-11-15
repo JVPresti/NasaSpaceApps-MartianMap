@@ -15,7 +15,7 @@ The English version of `script-5min-es.md`, line for line, for rehearsal with no
 | 1:19 | 4 · Demo | P2 | (Demo, cut A, 2:25. Lines below.) |
 | 3:44 | 5 · The answer and the data | P3 | And the astronaut at Cheyava Falls? With the alert, she has fourteen minutes of margin. Marswalk sends her back now, on the route around the slopes. That slope is the HiRISE model. The rock is the one Perseverance photographed. The storm reaches the opacity Curiosity measured in 2018, and the radiation replays real dose rates from 2017. |
 | 4:11 | 6 · Measured or simulated | P3 | Every reading says whether it is measured, calculated or assumed: walking at one metre per second is assumed. Curiosity measured the storm and the radiation in Gale, not Jezero, and the alert says so. The Jezero weather is Perseverance's MEDA station. |
-| 4:30 | 7 · Who, and one fact | P3 | It is for whoever plans a walk, comparing three routes before approving one, and for a class in Ensenada, in a browser. One last number: we process the same HiRISE model NASA Mars Trek serves, and the typical difference is fourteen centimetres. |
+| 4:30 | 7 · Who, and one fact | P3 | It could serve whoever plans a walk, comparing three routes before approving one, and a class in Ensenada, in a browser. One last number: we process the same HiRISE model NASA Mars Trek serves, and the typical difference is fourteen centimetres. |
 | 4:51 | | | (End. 9 seconds of slack.) |
 
 ## Demo lines (P2, cut A)
@@ -23,7 +23,7 @@ The English version of `script-5min-es.md`, line for line, for rehearsal with no
 | Beat | Demo time | Text |
 |---|---|---|
 | D1 | 0:00 | The mission table: Jezero, on the HiRISE terrain. |
-| D2 | 0:06 | Terrain layer: the slope. The route goes around yellow and never crosses red, over twenty degrees. |
+| D2 | 0:06 | Terrain layer: the slope. The route goes around yellow. The planner treats red, over twenty degrees, as blocked. |
 | D3 | 0:25 | If the crew asks for Cheyava Falls, the route grows and the plan reprices time and oxygen. Live, we walk the first stop: 55 metres. |
 | D4 | 0:45 | I play the end of an EVA: I leave with 20 % oxygen. The plan says go. We start. |
 | D5 | 0:55 | On the left, the margin: minutes I have left after walking home and keeping the reserve. It reads at my pace: walking lowers it, climbing lowers it more. Below, position: no GPS, so the error grows as I walk and resets when I stop with a clear horizon. That model is ours, and it says SIM. |

@@ -1,4 +1,4 @@
-# Q&A prep: the 12 hardest questions
+# Q&A prep: the 14 hardest questions, plus three quick ones
 
 Short, honest answers. Say the number, name the source, stop. If you don't know, say so and say where it would come from. Spanish first for the local judges, English under it for the global round. Sources are in `public/data/hazards.json`, `docs/credits.md` and `docs/data/`.
 
@@ -52,7 +52,7 @@ Short, honest answers. Say the number, name the source, stop. If you don't know,
 
 ## 7. How do you navigate without GPS?
 
-**ES.** La app separa la posición real de la estimada. Al caminar, el error crece 2 % de la distancia. Si te detienes 5 segundos con horizonte despejado, el modelo supone una fijación con el terreno y el error baja a 0.4 m. No calculamos la comparación de imágenes; modelamos su resultado, la idea de cómo Perseverance se ubica sobre el mapa orbital. El 2 % y los 0.4 m son valores nuestros, sin fuente todavía. Con línea de vista a la antena del hábitat, el radio limita el error a 2 m. Todo esto está marcado SIM: es nuestro modelo, no una medición.
+**ES.** La app separa la posición real de la estimada. Al caminar, el error crece 2 % de la distancia. Si te detienes 5 segundos con horizonte despejado, el modelo supone que el traje ubicó su posición comparando el terreno, y el error baja a 0.4 m. No calculamos la comparación de imágenes; modelamos su resultado, la idea de cómo Perseverance se ubica sobre el mapa orbital. El 2 % y los 0.4 m son valores nuestros, sin fuente todavía. Con línea de vista a la antena del hábitat, el radio limita el error a 2 m. Todo esto está marcado SIM: es nuestro modelo, no una medición.
 
 **EN.** The app keeps the true position apart from the estimate. Walking adds 2 % of the distance as error. Stand still 5 s with a clear horizon and the model assumes a terrain fix, cutting the error to 0.4 m. We don't compute the image matching; we model its result, after the way Perseverance localizes on orbital maps. The 2 % and 0.4 m are our values, not yet sourced. In line of sight of the habitat mast, radio ranging caps the error at 2 m. All tagged SIM: our model, not a measurement.
 
@@ -64,7 +64,7 @@ Short, honest answers. Say the number, name the source, stop. If you don't know,
 
 ## 9. The blue walkback zone in the presentation. Is that in the app?
 
-(Asked by a NASA-background judge in the council: answer it before they ask, the zone carries a caption on screen.)
+(Raised by an AI reviewer playing a NASA judge in our council, `council/`, not by a person. Answer it before a real judge asks. The zone carries a caption on screen.)
 
 **ES.** En la app, el mismo cálculo es un número: el margen en el visor y en la mesa. La zona azul del modo de presentación la dibujamos con el mismo código de la app (planificador, malla de costos y modelo del traje) y dos pasadas de Dijkstra; el escenario de 205 g de oxígeno es nuestro y está marcado SIM. Mostrarla en la mesa de misión es el siguiente paso.
 
@@ -72,19 +72,19 @@ Short, honest answers. Say the number, name the source, stop. If you don't know,
 
 ## 10. How did you use AI?
 
-**ES.** (Confirmar con el equipo antes de decirlo, y nombrar la herramienta.) Usamos asistentes de programación con IA (SI, en el término de 2026) para escribir y revisar código y documentos; cada cambio pasó por un issue y un pull request revisado. Las imágenes generadas por IA son solo el video de inicio y las ilustraciones de peligros, y dicen que son IA. Ningún número de la app sale de una IA: cada uno cita su fuente.
+**ES.** (Confirmar con el equipo antes de decirlo, y nombrar la herramienta.) Usamos asistentes de programación con IA (SI, en el término de 2026) para escribir y revisar código y documentos. Los cambios entraron a main por pull request: 126 fusionados, y 38 de ellos tuvieron la revisión de un integrante distinto al autor. Las imágenes generadas por IA son solo el video de inicio y las ilustraciones de peligros, y dicen que son IA. Ningún número de la app sale de una IA: cada uno cita su fuente.
 
-**EN.** (Team to confirm before saying it, and name the tool.) We used AI (SI, the 2026 term) coding assistants to write and review code and documents; every change went through an issue and a reviewed pull request. The only AI-generated images are the start screen video and the hazard illustrations, and they are labelled as AI. No number in the app comes from an AI; each one cites its source.
+**EN.** (Team to confirm before saying it, and name the tool.) We used AI (SI, the 2026 term) coding assistants to write and review code and documents. Changes reached main through pull requests: 126 merged, and 38 of them got a review from a teammate other than the author. The only AI-generated images are the start screen video and the hazard illustrations, and they are labelled as AI. No number in the app comes from an AI; each one cites its source.
 
 ## 11. What did you build during the hackathon, and what existed before?
 
-**ES.** (Confirmar con el equipo; ver `docs/RULES.md`, PR #315.) El repositorio se creó el 14 de noviembre a las 8:47 am, 13 minutos antes del inicio, vacío. Los recursos del banco de pruebas anterior (terreno, traje, hábitat) tienen fecha del 12 y 13 de noviembre, y lo declaramos a los organizadores. Durante el evento hicimos la app: la mesa de misión, el planificador sobre el terreno real, el modelo del traje y el margen, los eventos con datos de la NASA, la navegación sin GPS, las fuentes, el resumen y la primera misión. El historial está en GitHub: cada cambio tiene su issue y su pull request.
+**ES.** (Confirmar con el equipo; ver `docs/RULES.md`, PR #315.) El repositorio se creó el 14 de noviembre a las 8:47 am, 13 minutos antes del inicio, vacío. Los recursos del banco de pruebas anterior (terreno, traje, hábitat) tienen fecha del 12 y 13 de noviembre, y lo declaramos a los organizadores. Durante el evento hicimos la app: la mesa de misión, el planificador sobre el terreno real, el modelo del traje y el margen, los eventos con datos de la NASA, la navegación sin GPS, las fuentes, el resumen y la primera misión. El historial está en GitHub, en los 126 pull requests fusionados a main.
 
-**EN.** (Team to confirm; see `docs/RULES.md`, PR #315.) The repo was created on 14 November at 8:47 am, 13 minutes before the start, empty. Assets from the earlier test bench (terrain tile, suit rig, habitat) are dated 12 and 13 November, and we disclose that to the organisers. During the event we built the app: the mission table, the planner on real terrain, the suit model and the margin, the NASA-data events, navigation without GPS, the sources screen, the debrief and the first mission. The history is on GitHub: every change has its issue and pull request.
+**EN.** (Team to confirm; see `docs/RULES.md`, PR #315.) The repo was created on 14 November at 8:47 am, 13 minutes before the start, empty. Assets from the earlier test bench (terrain tile, suit rig, habitat) are dated 12 and 13 November, and we disclose that to the organisers. During the event we built the app: the mission table, the planner on real terrain, the suit model and the margin, the NASA-data events, navigation without GPS, the sources screen, the debrief and the first mission. The history is on GitHub, in the 126 pull requests merged into main.
 
 ## 12. What's next, and who would use it?
 
-**ES.** Un sensor de ritmo cardiaco real que mueva el consumo de oxígeno, con el modelo de la NASA que estima el gasto metabólico desde el pulso (Hoffmann 2021). Tripulaciones en línea, de dos a seis personas. Y cualquier sitio con modelo HiRISE, porque el pipeline no depende de Jezero. Nadie fuera del equipo lo ha usado todavía. Los primeros usuarios que buscamos: quien planea una EVA, para comparar las tres rutas en el modelo HiRISE antes de aprobar una, y una clase en Ensenada que planee la caminata a Cheyava Falls (por confirmar con el equipo).
+**ES.** Un sensor de ritmo cardiaco real que mueva el consumo de oxígeno, con el modelo de la NASA que estima el gasto metabólico desde el pulso (Hoffmann 2021). Tripulaciones en línea, de dos a seis personas. Y cualquier sitio con modelo HiRISE, porque ningún paso del proceso depende de Jezero. Nadie fuera del equipo lo ha usado todavía. Los primeros usuarios que buscamos: quien planea una EVA, para comparar las tres rutas en el modelo HiRISE antes de aprobar una, y una clase en Ensenada que planee la caminata a Cheyava Falls (por confirmar con el equipo).
 
 **EN.** A real heart rate sensor driving oxygen use, through NASA's model of metabolic rate from heart rate (Hoffmann 2021). Crews online, two to six people. Any site with a HiRISE terrain model, since nothing in the pipeline depends on Jezero. Nobody outside the team has used it yet. The first users we want: an EVA planner comparing the three routes on the HiRISE model before approving one, and a class in Ensenada planning the walk to Cheyava Falls (team to confirm).
 
