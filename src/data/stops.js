@@ -185,13 +185,15 @@ export function allStops(data) {
  * science stops with a card, then the route stops without one.
  * @param {object} data parsed `stops.json`
  * @returns {Array<{ id: string, name: string, waypoint: string, x: number, z: number, workSec: number, card: boolean,
- *   reason: { en: string, es: string, tag: string } | null }>} workSec: the work time for a pair of astronauts (#247);
- *   reason: why a stop without a card is worth the walk
+ *   reason: { en: string, es: string, tag: string } | null, arrivalRadiusM: number }>} workSec: the work time for a pair
+ *   of astronauts (#247); reason: why a stop without a card is worth the walk; arrivalRadiusM: the stop's arrival_radius
+ *   (a sampling task there counts within it, #352)
  */
 export function routeStopCandidates(data) {
   const reason = (r) => (r ? { en: r.en, es: r.es, tag: r.tag } : null);
   const plain = (stop, card) => ({
     id: stop.id, name: stop.name, waypoint: stop.waypoint, x: stop.x, z: stop.z, workSec: workTimeSec(stop), card, reason: reason(stop.reason),
+    arrivalRadiusM: stop.arrival_radius.value,
   });
   return [...parseStops(data).map((s) => plain(s, true)), ...parseRouteStops(data).map((s) => plain(s, false))];
 }

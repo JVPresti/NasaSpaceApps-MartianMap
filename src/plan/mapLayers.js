@@ -11,6 +11,7 @@ import { SLOPE_LIMITS } from './layers.js';
 import { formatNumber, t, translateText } from '../i18n/index.js';
 import { rockAbundanceAt, sampleHeights } from '../sim/costGrid.js';
 import { inRadioShadow } from '../sim/radio.js';
+import { resolvePlace, TASK_KINDS } from '../sim/sampleTasks.js';
 import { sampleSkyView } from '../sim/skyView.js';
 
 /** Layer indices of src/plan/layers.js, as in the store's `view.layer` and the engine's `uLayer`. */
@@ -74,6 +75,15 @@ export function toMap(x, z, crop) {
 }
 
 /**
+ * A share (0 to 100) of the map square back to a world position: the inverse of {@link toMap}, for a click on the map
+ * (a task place picked on the table, #352).
+ * @returns {{ x: number, z: number }} metres
+ */
+export function fromMap(u, v, crop) {
+  return { x: crop.x0 + (u / 100) * crop.size, z: crop.z0 + (v / 100) * crop.size };
+}
+
+/**
  * Draw the crew's position on the table map (MapPosition.jsx): the HUD's marker, dot, heading wedge and uncertainty
  * ring, without its text label. Beside a stop the label covered the stop's name, and the stop list ("Here") and the
  * HUD's NAV line already give the position and the fix.
@@ -113,32 +123,88 @@ export function acrossLabel(size) {
   return t('map.across', { m: Math.round(size / step) * step });
 }
 
+/** Why the plan left a stop or a task out, as a place's tag says it. */
+const droppedDetail = (limit) => t('layers.stop.dropped.' + (['time', 'o2', 'battery'].includes(limit) ? limit : 'unreachable'));
+
+/** A task as a map tag says it: "Rock ×1". */
+function taskTag(task) {
+  return `${t('tasktable.what.' + task.what)} ${t('tasktable.count', { n: task.count })}`;
+}
+
+/**
+ * One mark per task place the route does not reach (several tasks at one place share it): a task the plan left out,
+ * with why, or a place the plan has not reached yet. A place on the route has its numbered stop marker, whose tag names
+ * the tasks there instead (waypointTaskTag), so no second mark sits on it.
+ */
+function taskPlaceMarks(tasks, planTasks, candidates, waypoints) {
+  const routed = new Set(waypoints.map((w) => w?.place).filter(Boolean));
+  const marks = new Map();
+  for (const task of Array.isArray(tasks) ? tasks : []) {
+    const place = resolvePlace(task?.place, candidates);
+    if (!place || !TASK_KINDS.includes(task.what) || routed.has(place.key)) continue;
+    const planned = (Array.isArray(planTasks) ? planTasks : []).find((entry) => entry?.id === task.id);
+    const mark = marks.get(place.key) ?? { place, tasks: [], limit: null };
+    mark.tasks.push(task);
+    if (planned?.kept === false && planned.drop) mark.limit ??= planned.drop.limit;
+    marks.set(place.key, mark);
+  }
+  return [...marks.values()].map(({ place, tasks: here, limit }) => {
+    const label = here.map(taskTag).join(' · ');
+    const detail = limit ? droppedDetail(limit) : '';
+    const name = place.type === 'stop' ? translateText(place.label) : place.label;
+    return { id: 'task-' + place.key, kind: 'task', x: place.x, z: place.z, label, detail, title: [name, label, detail].filter(Boolean).join(': '), opens: 'left' };
+  });
+}
+
+/**
+ * What a stop of the route collects, for the second line of its marker's tag on Rocks and Outcrop (#352): "Rock ×1 ·
+ * Photo ×2", the tasks the plan kept at that place. Null on the other layers and for a stop with no task.
+ * @param {number} layer
+ * @param {{ tasks?: string[] }} waypoint a route waypoint; a task place lists the ids of its tasks
+ * @param {Array<{ id: string, what: string, count: number, kept: boolean }>} planTasks route.tasks
+ * @returns {string | null}
+ */
+export function waypointTaskTag(layer, waypoint, planTasks) {
+  if ((layer !== LAYER.ROCK && layer !== LAYER.OUTCROP) || !Array.isArray(waypoint?.tasks) || !Array.isArray(planTasks)) return null;
+  const here = planTasks.filter((task) => task?.kept && waypoint.tasks.includes(task.id) && TASK_KINDS.includes(task.what));
+  return here.length ? here.map(taskTag).join(' · ') : null;
+}
+
 /**
  * The places a layer marks on the table map (LayerPlaces.jsx), beside the route's own stop markers:
  * - Outcrop: the candidate stops of stops.json the route does not visit, with why: dropped by the plan (route.dropped,
  *   with its limit) or part of another objective. The stops it visits already have their numbered markers.
  * - Exposure: the natural shelters of shelters.json with the sky they hide. The habitat is the route's first marker.
+ * - Rocks and Outcrop, for "Collect samples" (#352): the places of the crew's sampling tasks the route does not reach,
+ *   what is collected there ("Rock ×1") and why the plan left them out (a place on the route says its tasks on its stop
+ *   marker, waypointTaskTag). On Outcrop such a place takes the place of its stop's candidate mark.
  * @param {number} layer
  * @param {{ candidates?: Array<{ id: string, name: string, waypoint: string, x: number, z: number }>,
  *   stops?: Array<{ id: string }>, dropped?: Array<{ id: string, limit: string }>, waypoints?: Array<{ name: string }>,
- *   shelters?: Array<object> }} data candidates: stops.routeStopCandidates; stops, dropped, waypoints: the store's route
- * @returns {Array<{ id: string, kind: 'candidate' | 'shelter', x: number, z: number, label: string, detail: string, title: string,
- *   opens: 'right' | 'left' }>} opens: the side the tag opens to: a candidate's to the right, as a stop's; a shelter's to the
- *   left, because shelters sit off the route and a stop's tag beside them takes the row to the right
+ *   shelters?: Array<object>, tasks?: Array<object>, planTasks?: Array<object> }} data candidates: stops.routeStopCandidates;
+ *   stops, dropped, waypoints: the store's route; tasks: needs.tasks, only while the goal is 'samples'; planTasks:
+ *   route.tasks, the plan's kept and dropped tasks
+ * @returns {Array<{ id: string, kind: 'candidate' | 'shelter' | 'task', x: number, z: number, label: string, detail: string,
+ *   title: string, opens: 'right' | 'left' }>} opens: the side the tag opens to: a candidate's to the right, as a stop's; a
+ *   shelter's to the left, because shelters sit off the route and a stop's tag beside them takes the row to the right; a
+ *   task place's to the left, as the shelters', clear of the stop tags beside the route
  */
-export function layerPlaces(layer, { candidates = [], stops = [], dropped = [], waypoints = [], shelters = [] } = {}) {
+export function layerPlaces(layer, { candidates = [], stops = [], dropped = [], waypoints = [], shelters = [], tasks = [], planTasks = [] } = {}) {
+  const taskPlaces = layer === LAYER.ROCK || layer === LAYER.OUTCROP ? taskPlaceMarks(tasks, planTasks, candidates, waypoints) : [];
+  if (layer === LAYER.ROCK) return taskPlaces;
   if (layer === LAYER.OUTCROP) {
     const visited = new Set(stops.map((s) => s.id));
     const names = new Set(waypoints.map((w) => w.name));
     const why = new Map(dropped.map((d) => [d.id, d.limit]));
-    return candidates
-      .filter((c) => Number.isFinite(c.x) && Number.isFinite(c.z) && !visited.has(c.id) && !names.has(c.waypoint))
+    const tasked = new Set(tasks.filter((task) => task?.place?.type === 'stop').map((task) => task.place.stopId));
+    return [...candidates
+      .filter((c) => Number.isFinite(c.x) && Number.isFinite(c.z) && !visited.has(c.id) && !names.has(c.waypoint) && !tasked.has(c.id))
       .map((c) => {
         const label = translateText(c.name);   // the stop's one display name (P8), never its waypoint code
         const limit = why.get(c.id);
-        const detail = limit ? t('layers.stop.dropped.' + (['time', 'o2', 'battery'].includes(limit) ? limit : 'unreachable')) : t('layers.stop.other');
+        const detail = limit ? droppedDetail(limit) : t('layers.stop.other');
         return { id: c.id, kind: 'candidate', x: c.x, z: c.z, label, detail, title: `${translateText(c.name)}: ${detail}`, opens: 'right' };
-      });
+      }), ...taskPlaces];
   }
   if (layer === LAYER.EXPOSURE) {
     return shelters

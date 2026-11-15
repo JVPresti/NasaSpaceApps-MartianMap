@@ -16,6 +16,8 @@
 .map-place .map-marker-tag { min-width: 0; }
 .map-place-candidate > i { background: #c9d0d8; border: 2px solid #0a0d11; border-radius: 50%; }
 .map-place-shelter > i { background: #0a0d11; border: 2px solid #f2f4f6; }
+/* a sampling task's place, "Collect samples" only (#352): the candidate's dot in the main action's colour */
+.map-place-task > i { background: var(--accent); border: 2px solid #0a0d11; border-radius: 50%; }
 /* above the rover's image pin (.map-pins, z-index 1, earlier in the map): on Outcrop and Exposure the places are the layer */
 .map-places { z-index: 1; }
 /* the route's own stops above both (later in the map, same layer), so a place or a pin never hides a stop; the stop

@@ -449,6 +449,9 @@ button.table-stop-name {
 
 .table-map { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .table-map:active { cursor: grabbing; }
+/* placing a sampling task (#352): a click sets the point, a drag still moves the map */
+.table-map.picking,
+.table-map.picking:active { cursor: crosshair; }
 
 .table-map-fit {
   position: absolute;
@@ -1178,6 +1181,26 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
 .table-stops li.reached .table-stop-dist { color: var(--dim); }
 /* The plan's reasons under the route numbers, at the size of the profile note below them */
 .table-note.route-why { font-size: 12px; line-height: 1.4; }
+
+/* "Collect samples" (#352, TaskList.jsx): a task is a stop row of the same grid. What and how many on the first line,
+   where and Remove under them, then the stop line, the pick hint, a refusal or the rock warning under the code. */
+.table-stops .task-where { grid-column: 2; }
+/* The list takes the height the needs and the layer panels leave and scrolls inside, so the layer buttons stay in view
+   on a 1366 x 768 screen; rows from the top, as a list being edited grows. */
+.task-panel { min-height: 150px; }
+.task-panel > .table-stops { min-height: 0; overflow-y: auto; align-content: start; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+/* the list rests on the top of a row, never on half of one */
+.task-panel > .table-stops { scroll-snap-type: y proximity; }
+.task-panel > .table-stops > li { scroll-snap-align: start; }
+.table-stops > li > .table-note { grid-column: 2 / -1; margin: 0; font-size: 12px; line-height: 1.35; }   /* the size of the stop line */
+/* At 1366 x 768 the seventh layer button (#335) takes a third row from the list: a task row a little tighter (the
+   selects at the height of the needs panel's choice buttons) and the panel's padding smaller, so one whole row, why line
+   included, still shows in English and Spanish. */
+@media (max-height: 800px) {
+  .task-panel { padding-top: 8px; padding-bottom: 8px; }
+  .task-panel > .table-stops > li { row-gap: 2px; }
+  .task-panel .needs-select { min-height: 30px; }
+}
 
 /* ------------------------------------------------------------------ conditions outlook (#248) */
 

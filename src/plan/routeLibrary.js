@@ -7,8 +7,12 @@
  *
  * Persistence follows src/engine/lookSettings.js: one JSON blob in localStorage, read once at load; a missing,
  * blocked or corrupt entry leaves an empty library and never throws. Plain JavaScript, no React, no three.js.
+ *
+ * A route saved from a "Collect samples" plan (#352) also keeps its sampling tasks (route.tasks) and what each task
+ * place serves, so loading it back can put the same tasks on the table (savedRouteTasks).
  */
 import { COST_CONSTANTS } from '../sim/costGrid.js';
+import { checkTasks } from '../sim/sampleTasks.js';
 
 export const ROUTE_LIBRARY_KEY = 'marswalk.routes';
 export const MAX_SAVED_ROUTES = 8;
@@ -52,7 +56,39 @@ function copyWaypoint(w) {
   if (finite(w.workSec)) point.workSec = w.workSec;
   if (typeof w.stopId === 'string') point.stopId = w.stopId;
   if (w.required === true) point.required = true;
+  // a sampling task's place (#352, only these waypoints have `place`): its name, the tasks it serves and its arrival
+  // radius, so a loaded route still names its tasks and arrives at a clicked point as the plan did
+  if (typeof w.place === 'string') {
+    point.place = w.place;
+    if (typeof w.label === 'string') point.label = w.label;
+    if (Array.isArray(w.tasks)) point.tasks = w.tasks.filter((id) => typeof id === 'string');
+    if (finite(w.arrivalRadiusM)) point.arrivalRadiusM = w.arrivalRadiusM;
+  }
   return point;
+}
+
+/** A sampling task's place in the crew's list, from the place the plan resolved it to (sampleTasks.resolvePlace). */
+function taskPlaceOf(place) {
+  if (place?.type === 'point') return { type: 'point', id: place.key, x: place.x, z: place.z };
+  return { type: 'stop', stopId: place?.stopId ?? place?.key };
+}
+
+/**
+ * The sampling tasks a saved route carries (#352): `plan`, a copy of the plan's tasks as route.tasks holds them (kept and
+ * left out, with their places), and `list`, the crew's task list they were planned from, rebuilt from each task's
+ * place (needs.tasks). Both empty for a route saved without tasks, or one whose tasks no longer read as a task list.
+ * @param {object | null} entry a saved route
+ * @returns {{ plan: Array<object>, list: Array<object> }}
+ */
+export function savedRouteTasks(entry) {
+  const plan = Array.isArray(entry?.tasks) ? entry.tasks : [];
+  if (plan.length === 0) return { plan: [], list: [] };
+  try {
+    const list = checkTasks(plan.map((task) => ({ id: task?.id, what: task?.what, count: task?.count, place: taskPlaceOf(task?.place) })));
+    return { plan: JSON.parse(JSON.stringify(plan)), list };
+  } catch {
+    return { plan: [], list: [] };
+  }
 }
 
 /**
@@ -78,6 +114,8 @@ export function saveRoute(list, { name, route, nowMs = Date.now() }) {
     risk: routeRisk(route),
     record: { attempts: 0, completed: 0, samples: 0, distanceM: 0, doseUgy: null, lastRunAtMs: null },
   };
+  // a "Collect samples" plan's tasks (#352); the other goals' routes have none and save as before
+  if (Array.isArray(route.tasks) && route.tasks.length > 0) entry.tasks = JSON.parse(JSON.stringify(route.tasks));
   return [entry, ...(Array.isArray(list) ? list : [])].slice(0, MAX_SAVED_ROUTES);
 }
 

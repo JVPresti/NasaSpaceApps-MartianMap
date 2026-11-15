@@ -9,6 +9,7 @@ import {
   routeRisk,
   routeSignature,
   saveRoute,
+  savedRouteTasks,
   writeRouteLibrary,
 } from './routeLibrary.js';
 
@@ -104,6 +105,49 @@ describe('saveRoute', () => {
     for (let i = 0; i < MAX_SAVED_ROUTES + 3; i += 1) list = saveRoute(list, { name: 'Route ' + i, route, nowMs: 1000 + i });
     expect(list).toHaveLength(MAX_SAVED_ROUTES);
     expect(list[0].name).toBe('Route ' + (MAX_SAVED_ROUTES + 2));
+  });
+});
+
+describe('a saved "Collect samples" route (#352)', () => {
+  const pointPlace = { key: 'P1', type: 'point', stopId: null, x: 60.25, z: 20, radiusM: 8, label: 'P1', waypoint: 'P1 · task point', reason: null };
+  const stopPlace = { key: 'bright-angel', type: 'stop', stopId: 'bright-angel', x: 120, z: 40, radiusM: 4, label: 'Bright Angel', waypoint: 'WP3', reason: null };
+  const tasks = [
+    { id: 't1', what: 'soil', count: 2, place: pointPlace, workSec: 480, kept: true, drop: null },
+    { id: 't2', what: 'rock', count: 1, place: stopPlace, workSec: 480, kept: false, drop: { limit: 'time', overSec: 90 } },
+  ];
+  const samplesRoute = {
+    ...route,
+    waypoints: [
+      waypoints[0],
+      { name: 'P1 · task point', label: 'P1', x: 60.25, z: 20, workSec: 480, stopId: null, required: true, place: 'P1', tasks: ['t1'], arrivalRadiusM: 8 },
+    ],
+    tasks,
+  };
+
+  it('keeps its tasks and what each task place serves; a route of another goal saves as before', () => {
+    const [entry] = saveRoute([], { name: 'Soil', route: samplesRoute, nowMs: 1 });
+    expect(entry.waypoints[1]).toEqual({ name: 'P1 · task point', x: 60.25, z: 20, workSec: 480, required: true, place: 'P1', label: 'P1', tasks: ['t1'], arrivalRadiusM: 8 });
+    expect(entry.tasks).toEqual(tasks);
+    expect(entry.tasks[0]).not.toBe(tasks[0]);
+    const [plain] = saveRoute([], { name: 'Ridge', route: { ...route, tasks: [] }, nowMs: 1 });
+    expect(plain).not.toHaveProperty('tasks');
+    expect(plain.waypoints).toEqual(waypoints);
+  });
+
+  it('gives back the tasks of the plan and the crew list they came from', () => {
+    const [entry] = saveRoute([], { name: 'Soil', route: samplesRoute, nowMs: 1 });
+    const { plan, list } = savedRouteTasks(JSON.parse(JSON.stringify(entry)));
+    expect(plan).toEqual(tasks);
+    expect(list).toEqual([
+      { id: 't1', what: 'soil', count: 2, place: { type: 'point', id: 'P1', x: 60.25, z: 20 } },
+      { id: 't2', what: 'rock', count: 1, place: { type: 'stop', stopId: 'bright-angel' } },
+    ]);
+  });
+
+  it('gives no tasks for a route saved without any, or with tasks that no longer read as a list', () => {
+    expect(savedRouteTasks({ waypoints })).toEqual({ plan: [], list: [] });
+    expect(savedRouteTasks(null)).toEqual({ plan: [], list: [] });
+    expect(savedRouteTasks({ tasks: [{ id: 't1', what: 'sand', count: 1, place: stopPlace }] })).toEqual({ plan: [], list: [] });
   });
 });
 

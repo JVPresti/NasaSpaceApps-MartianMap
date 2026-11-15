@@ -611,3 +611,85 @@ describe('route review inputs (#274)', () => {
     expect(after.deviations[0].cost).toEqual(before.deviations[0].cost);
   });
 });
+
+describe('sampling tasks in the debrief (#352)', () => {
+  // route.tasks as the planner writes it for "Collect samples": a rock at Bright Angel, two soil scoops at a clicked
+  // point, and a photo at Cheyava Falls left out of the plan for time.
+  const BRIGHT_ANGEL = { key: 'bright-angel', type: 'stop', stopId: 'bright-angel', x: HAB.x - 100, z: HAB.z, radiusM: 2, label: 'Bright Angel', waypoint: 'WP3 · Bright Angel outcrop', reason: null };
+  const P1 = { key: 'P1', type: 'point', stopId: null, x: HAB.x - 200, z: HAB.z, radiusM: 8, label: 'P1', waypoint: 'P1 · task point', reason: null };
+  const CHEYAVA = { key: 'cheyava-falls', type: 'stop', stopId: 'cheyava-falls', x: 0, z: 0, radiusM: 2, label: 'Cheyava Falls', waypoint: 'Cheyava Falls', reason: null };
+  const TASKS = [
+    { id: 't1', what: 'rock', count: 1, place: BRIGHT_ANGEL, workSec: 480, kept: true, drop: null },
+    { id: 't2', what: 'soil', count: 2, place: P1, workSec: 480, kept: true, drop: null },
+    { id: 't3', what: 'photo', count: 1, place: CHEYAVA, workSec: 120, kept: false, drop: { limit: 'time', overSec: 300, marginShortSec: 0, batteryShortWh: 0, extraWalkSec: 900, extraM: 900 } },
+  ];
+  const ROUTE = {
+    path: [[HAB.x, HAB.z], [HAB.x - 200, HAB.z]],
+    distanceM: 200,
+    reason: 'Planned route',
+    decision: 'go',
+    waypoints: [{ name: 'HAB', x: HAB.x, z: HAB.z }, { name: 'WP3 · Bright Angel outcrop', label: 'Bright Angel', x: HAB.x - 100, z: HAB.z }, { name: 'P1 · task point', label: 'P1', x: HAB.x - 200, z: HAB.z }],
+    legs: [],
+    totals: null,
+    tasks: TASKS,
+  };
+
+  it('keeps the approved plan\'s tasks and freezes one row per task: done, done elsewhere and left out', () => {
+    useMissionStore.setState((state) => ({ route: { ...state.route, ...ROUTE } }));
+    place(HAB.x, HAB.z);
+    mission(0);
+    const runner = runnerAt();
+    expect(eva().plan.tasks).toEqual(TASKS);
+    expect(eva().plan.tasks).not.toBe(TASKS);   // a detached copy
+
+    // a later re-plan cannot change what was approved
+    useMissionStore.setState((state) => ({ route: { ...state.route, path: [[0, 0], [1, 1]], tasks: [] } }));
+    expect(eva().plan.tasks).toHaveLength(3);
+
+    useMissionStore.setState((state) => ({
+      sampling: {
+        ...state.sampling,
+        samples: [
+          { id: 1, kind: 'rock', site: 'Bright Angel', x: HAB.x - 101, z: HAB.z, into: 'pouch', atSec: 300 },
+          { id: 2, kind: 'ground', site: null, x: HAB.x - 205, z: HAB.z, into: 'pouch', atSec: 500 },
+          { id: 3, kind: 'ground', site: null, x: HAB.x - 150, z: HAB.z, into: 'case', atSec: 520 },
+        ],
+        photoLog: [{ x: 10, z: 10, kind: 'ground', site: null, atSec: 50 }],
+      },
+    }));
+    place(HAB.x - 10, HAB.z);
+    runner.tick();
+    place(HAB.x, HAB.z);
+    mission(600);
+    runner.tick();
+    requestEvaEnd(useMissionStore);
+    runner.tick();
+
+    const { summary } = eva();
+    expect(summary.tasks.map((r) => [r.id, r.state, r.here, r.elsewhere, r.kept, r.atSec])).toEqual([
+      ['t1', 'done', 1, 0, true, 300],
+      ['t2', 'elsewhere', 1, 1, true, 520],
+      ['t3', 'open', 0, 0, false, null],   // a photo 14 m from Cheyava Falls is not the photo asked for (decision 11)
+    ]);
+    expect(summary.tasks[1].distanceM).toBeCloseTo(50, 6);
+    expect(Object.isFrozen(summary.tasks)).toBe(true);
+    expect(Object.isFrozen(summary.tasks[0].place)).toBe(true);
+    expect(Object.isFrozen(summary.plan.tasks[0])).toBe(true);
+  });
+
+  it('has no task rows for a goal without tasks, or a plan from before the field existed', () => {
+    const { tasks, ...older } = ROUTE;
+    expect(tasks).toHaveLength(3);
+    useMissionStore.setState((state) => ({ route: { ...state.route, ...older, tasks: undefined } }));
+    place(HAB.x, HAB.z);
+    const runner = runnerAt();
+    expect(eva().plan.tasks).toEqual([]);
+    place(HAB.x - 10, HAB.z);
+    runner.tick();
+    place(HAB.x, HAB.z);
+    runner.tick();
+    requestEvaEnd(useMissionStore);
+    runner.tick();
+    expect(eva().summary.tasks).toEqual([]);
+  });
+});

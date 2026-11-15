@@ -37,6 +37,7 @@
  * getState / setState / subscribe, as `src/state/store.js` provides.
  */
 import { truePosition } from '../sim/navigation.js';
+import { taskProgress } from '../sim/taskProgress.js';
 import { recordRouteRun, routeSignature } from '../plan/routeLibrary.js';
 
 /** Arrival radius at the habitat, in metres. The same radius as a non-science waypoint (#61). */
@@ -59,7 +60,7 @@ export function createInitialEvaState() {
     routeChanges: [],            // [{ atSec, kind, reason, before, after, x, z }], see routeSnapshot below; x, z: where it happened
     track: [],                   // [{ x, z, atSec, marginSec, slopeDeg, eventId, o2G, home }] every TRACK_STEP_M walked (#274)
     lowPoint: null,              // a track point at the reading of minOxygenMarginSec; the summary's track includes it
-    plan: null,                  // the approved route at Begin EVA: { atSec, decision, profile, path, waypoints, legs, totals } (#274)
+    plan: null,                  // the approved route at Begin EVA: { atSec, decision, profile, path, waypoints, legs, totals, tasks } (#274, #352)
     finds: [],                   // [{ id, label, x, z, atSec, accepted, verdict }] every find marked this EVA (#274)
     summary: null,               // final frozen snapshot; null until phase 'ended'
     atHabitat: false,            // during the EVA: the astronaut is back at the habitat, where the EVA can be ended (#244)
@@ -151,6 +152,8 @@ function planSnapshot(route, atSec) {
       .map((w) => ({ name: typeof w.name === 'string' ? w.name : null, label: typeof w.label === 'string' ? w.label : null, x: w.x, z: w.z })),
     legs: (Array.isArray(route.legs) ? route.legs : []).map((leg) => ({ from: leg?.from ?? null, to: leg?.to ?? null, ...pickNumbers(leg, LEG_KEYS) })),
     totals: route.totals ? pickNumbers(route.totals, TOTAL_KEYS) : null,
+    // the sampling tasks of the approved plan (#352), kept and left out: the debrief reports each one
+    tasks: Array.isArray(route.tasks) ? clone(route.tasks) : [],
   };
 }
 
@@ -358,6 +361,9 @@ function buildSummary(state, eva, endedAtSec) {
     sampleCount: Number.isInteger(sampling.count) ? sampling.count : samples.length,
     photos: Number.isInteger(sampling.photos) ? sampling.photos : 0,
     samples,
+    // One row per sampling task of the approved plan (#352): done at its place, done elsewhere or not done, counted
+    // from the samples and photos of this EVA (src/sim/taskProgress.js). Empty for the goals without tasks.
+    tasks: taskProgress(eva.plan?.tasks ?? [], { samples: sampling.samples, photoLog: sampling.photoLog }),
     // Current radiation values from the store. The radiation event is still the one that writes them; this module
     // only copies the reading at the end, it does not integrate dose itself.
     doseUgy: isFiniteNumber(environment.doseUgy) ? environment.doseUgy : null,

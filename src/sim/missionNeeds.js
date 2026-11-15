@@ -7,7 +7,8 @@
  * events.js and simulation.js expect), then the stops it chose from the candidates of public/data/stops.json.
  *
  * Inputs and what each one changes:
- * - objective: the required and the optional stops (OBJECTIVES).
+ * - objective: the required and the optional stops (OBJECTIVES); 'samples' (#352) routes to the places of the crew's
+ *   sampling tasks instead (needs.tasks, src/sim/sampleTasks.js).
  * - crew: a solo astronaut must stay in radio contact (the radio-contact profile is forced) and works 1.5 times as
  *   long at each stop; a pair shares the work (the stops.json work times are for a pair).
  * - timeMin, o2Pct, batteryPct: the budget. Optional stops are added in the objective's order while the plan still fits,
@@ -29,8 +30,10 @@
  * Plain JavaScript with no React and no three.js: it runs in the planner worker and in tests.
  */
 import { COST_CONSTANTS, heightAt } from './costGrid.js';
+import { rankInsertions } from './findDetour.js';
 import { routeLegCosts, startConsumables } from './legCosts.js';
 import { DEFAULT_PROFILE, planOnProfile, pricedProfileGrid, PROFILE_IDS, ROUTE_PROFILES } from './routeProfiles.js';
+import { normaliseTasks, resolvePlace, STOP_RADIUS_DEFAULT_M, taskWorkSec } from './sampleTasks.js';
 
 /**
  * What each objective visits, by stop id (stops.json). Optional stops are added in the `optional` order while the plan
@@ -44,6 +47,9 @@ export const OBJECTIVES = Object.freeze({
   sortie: Object.freeze({ required: Object.freeze(['sortie']), optional: Object.freeze([]), order: Object.freeze(['sortie']) }),
   cheyava: Object.freeze({ required: Object.freeze(['cheyava-falls']), optional: Object.freeze(['bright-angel']), order: FULL_EVA_ORDER }),
   'bright-angel': Object.freeze({ required: Object.freeze(['bright-angel']), optional: Object.freeze(['cheyava-falls']), order: FULL_EVA_ORDER }),
+  // Collect samples (#352): no fixed stops; the crew's sampling tasks (needs.tasks, src/sim/sampleTasks.js) give the
+  // places, routed by cheapest insertion (planFromNeeds).
+  samples: Object.freeze({ required: Object.freeze([]), optional: Object.freeze([]), order: Object.freeze([]) }),
 });
 export const OBJECTIVE_IDS = Object.freeze(Object.keys(OBJECTIVES));
 
@@ -97,13 +103,15 @@ export const CONSUMABLE_RANGE_PCT = Object.freeze([1, 100]);
 /**
  * The time each objective plans for by default (our choice, SIM). The first sortie is about 2 min of walking and 5 min
  * of work, so 30 min leaves a wide margin; the full EVA to Cheyava Falls with Bright Angel uses about 76 min for a
- * pair (walk 19 min, work 35 min, walk home 22 min), so 2 h keeps both stops. setNeeds applies it when the objective
- * changes and the update gives no time of its own (store.js).
+ * pair (walk 19 min, work 35 min, walk home 22 min), so 2 h keeps both stops. Collecting samples plans 2 h too: the
+ * default task, a rock sample at Bright Angel, is the full EVA's walk with 8 min of work. setNeeds applies it when the
+ * objective changes and the update gives no time of its own (store.js).
  */
 export const OBJECTIVE_DEFAULTS = Object.freeze({
   sortie: Object.freeze({ timeMin: 30 }),
   cheyava: Object.freeze({ timeMin: 120 }),
   'bright-angel': Object.freeze({ timeMin: 120 }),
+  samples: Object.freeze({ timeMin: 120 }),
 });
 
 /** Needs before the crew changes anything: the first sortie (the default mission, #265), two astronauts, 30 min. */
@@ -226,11 +234,40 @@ function checkBudget(totals, budget) {
   };
 }
 
+/** What a stop or a task left out for want of a path reports: no figures. */
+const UNREACHABLE = Object.freeze({ limit: 'unreachable', overSec: null, marginShortSec: null, batteryShortWh: null, extraWalkSec: null, extraM: null });
+
+/**
+ * Where a sampling task's place goes in the chain (#352): after chain[k] for the k that adds the least straight-line
+ * walking (findDetour.rankInsertions, the finds' cheapest insertion). Going on past the last place costs the way there
+ * once, not there and back, since the walk home retraces the path either way (legCosts.routeLegCosts): its straight
+ * detour is halved. Ties go to the smaller k.
+ * @param {Array<{ x: number, z: number }>} chain the start first
+ * @param {{ x: number, z: number }} place
+ * @returns {number} k: the place goes in at k + 1
+ */
+export function cheapestInsertion(chain, place) {
+  const last = chain.length - 1;
+  let best = null;
+  for (const option of rankInsertions(chain, place)) {
+    const straight = option.k === last ? option.straight / 2 : option.straight;
+    if (!best || straight < best.straight || (straight === best.straight && option.k < best.k)) best = { k: option.k, straight };
+  }
+  return best.k;
+}
+
 /**
  * Plan the route from the crew's needs.
  *
+ * For the 'samples' objective (#352) the stops are the places of the crew's sampling tasks (needs.tasks, see
+ * planTasks below); `tasks` then lists every task in list order, kept or dropped:
+ * `{ id, what, count, place: ResolvedPlace, workSec, kept, drop: null | { limit, overSec, marginShortSec,
+ * batteryShortWh, extraWalkSec, extraM } }`, and `dropped` is empty. A task waypoint carries `place` (its place key),
+ * `tasks` (the ids of the tasks kept there) and, for a clicked point, `arrivalRadiusM`. Every other objective returns
+ * `tasks: []`.
+ *
  * @param {{ objective?: string, crew?: number, timeMin?: number, o2Pct?: number, batteryPct?: number, risk?: string,
- *   profile?: string }} needs the store's needs plus the profile chosen at the table (route.profile)
+ *   profile?: string, tasks?: Array<object> }} needs the store's needs plus the profile chosen at the table (route.profile)
  * @param {{ grid: object, start: { name: string, x: number, z: number },
  *   stops: Array<{ id: string, name: string, waypoint: string, x: number, z: number, workSec: number }>,
  *   constants: object, mast?: { x: number, y?: number, z: number } | null, traverse?: Array<object> | null,
@@ -239,7 +276,7 @@ function checkBudget(totals, budget) {
  *   shared with routeProfiles.planProfiles so the comparison reuses the routes searched here
  * @returns {{
  *   ok: boolean, fits: boolean, needs: object, waypoints: Array<object>, stops: Array<object>, dropped: Array<object>,
- *   profile: string, requestedProfile: string, referenceProfile: string, pricing: object | null, weights: object,
+ *   tasks: Array<object>, profile: string, requestedProfile: string, referenceProfile: string, pricing: object | null, weights: object,
  *   budget: object, reasons: Array<object>, route: object | null, totals: object | null
  * }} profile: the route walked and budgeted; referenceProfile: the route the stops were chosen on
  */
@@ -302,13 +339,6 @@ export function planFromNeeds(needs, site) {
 
   const byId = new Map((site.stops ?? []).map((s) => [s.id, s]));
   const nameOf = (id) => byId.get(id)?.name ?? nameFromId(id);
-  const kept = [];
-  for (const id of objective.required) {
-    const stop = byId.get(id);
-    if (!stop) { reasons.push({ code: 'stop-missing', stop: id, name: nameOf(id) }); continue; }
-    kept.push(stopWaypoint(stop, crew.workFactor, true));
-  }
-  let chain = walkingOrder(start, kept, objective.order);
 
   const result = (fields) => ({
     needs: n,
@@ -325,11 +355,162 @@ export function planFromNeeds(needs, site) {
       workFactor: crew.workFactor,
     },
     reasons,
+    tasks: [],
     ...fields,
     stops: fields.waypoints.slice(1).map((w) => ({
-      id: w.stopId, name: w.label, waypoint: w.name, x: w.x, z: w.z, workSec: w.workSec, required: w.required, reason: byId.get(w.stopId)?.reason ?? null,
+      id: w.stopId ?? w.place, name: w.label, waypoint: w.name, x: w.x, z: w.z, workSec: w.workSec, required: w.required, reason: byId.get(w.stopId)?.reason ?? null,
+      ...(Array.isArray(w.tasks) ? { place: w.place, tasks: w.tasks } : {}),
     })),
   });
+  const noRoute = (fields) => result({ ok: false, fits: false, budget: { ...budget, fits: false, limit: null }, route: null, totals: null, ...fields });
+
+  // The route walked: the profile in use on the stops chosen. Its budget is the plan's verdict. `required`: the stops
+  // (and, for sampling, the task) whose plan alone does not fit when the verdict is required-over.
+  const conclude = ({ chain, current, dropped, tasks = [], required }) => {
+    const walkedPlan = reference === priced ? current : evaluate(chain, priced);
+    if (!walkedPlan.ok) {
+      reasons.push({ code: 'profile-unreachable', profile: profileId });
+      return noRoute({ waypoints: chain, dropped, tasks });
+    }
+    const { check, totals } = walkedPlan;
+    const over = { limit: check.limit, limits: check.limits, overSec: Math.max(0, check.overSec), marginShortSec: check.marginShortSec, batteryShortWh: check.batteryShortWh };
+    if (check.fits) {
+      reasons.push({ code: 'fits', spareSec: -check.overSec });
+    } else if (!current.check.fits) {
+      reasons.push({ code: 'required-over', ...required, ...over });
+    } else {
+      // the stops fit on the reference route, not on the profile chosen at the table
+      reasons.push({ code: 'profile-over', profile: profileId, reference: referenceProfile, ...over });
+    }
+
+    return result({
+      ok: true,
+      fits: check.fits,
+      waypoints: chain,
+      dropped,
+      tasks,
+      budget: {
+        ...budget,
+        usedSec: check.usedSec,
+        spareSec: -check.overSec,
+        walkSec: totals.walkSec,
+        workSec: totals.workSec,
+        returnSec: totals.roundTrip ? 0 : totals.returnTimeSec,
+        o2UsedG: totals.o2G + totals.returnO2G,
+        marginSec: totals.marginSec,
+        batteryUsedWh: totals.batteryWh + totals.returnBatteryWh,
+        arrivalBatteryWh: totals.arrivalBatteryWh,
+        fits: check.fits,
+        limit: check.limit,
+      },
+      route: walkedPlan.route,
+      totals,
+    });
+  };
+
+  // What a candidate that does not fit reports: the limit it breaks and by how much, and what it adds to the walk.
+  const shortfall = (tried, current) => (tried.ok
+    ? {
+      limit: tried.check.limit, overSec: Math.max(0, tried.check.overSec), marginShortSec: tried.check.marginShortSec,
+      batteryShortWh: tried.check.batteryShortWh, extraWalkSec: walking(tried) - walking(current), extraM: walked(tried) - walked(current),
+    }
+    : { ...UNREACHABLE });
+
+  /**
+   * Collect samples (#352): the crew's sampling tasks give the places. Each task in list order goes in where it adds
+   * the least straight-line walking (findDetour.rankInsertions, as the finds); a task at a place already on the route
+   * adds its work there. The first task is the goal: kept even when it does not fit. Each later one is kept only when
+   * the plan with it still fits the time, O2 and battery, and a task left out does not stop the next one being tried
+   * (PO Q2: the optional stops' rule).
+   */
+  const planTasks = () => {
+    const tasks = normaliseTasks(needs?.tasks);
+    if (tasks.length === 0) {
+      reasons.push({ code: 'no-tasks' });
+      return noRoute({ waypoints: [start], dropped: [] });
+    }
+    let chain = [start];
+    let current = null;
+    let first = null;   // the goal task and its place, once one is on the route
+    const planned = [];
+    // the tasks after a goal task with no path: not tried, so neither kept nor dropped
+    const unplanned = (from) => tasks.slice(from).map((task) => taskEntry(task, resolvePlace(task.place, site.stops)));
+    const taskEntry = (task, place) => ({
+      id: task.id, what: task.what, count: task.count, place: place ?? missingPlace(task.place), workSec: taskWorkSec(task, crew.workFactor), kept: false, drop: null,
+    });
+    const missingPlace = (place) => ({
+      key: place.stopId, type: 'stop', stopId: place.stopId, x: null, z: null, radiusM: STOP_RADIUS_DEFAULT_M, label: nameOf(place.stopId), waypoint: null, reason: null,
+    });
+
+    for (const [index, task] of tasks.entries()) {
+      const place = resolvePlace(task.place, site.stops);
+      const entry = taskEntry(task, place);
+      planned.push(entry);
+      if (!place) {
+        reasons.push({ code: 'stop-missing', stop: task.place.stopId, name: nameOf(task.place.stopId) });
+        entry.drop = { ...UNREACHABLE };
+        continue;
+      }
+      const at = chain.findIndex((w) => w.place === place.key);
+      let candidate;
+      if (at > 0) {
+        candidate = chain.map((w, k) => (k === at ? { ...w, workSec: w.workSec + entry.workSec, tasks: [...w.tasks, task.id] } : w));
+      } else {
+        const waypoint = {
+          name: place.waypoint, label: place.label, x: place.x, z: place.z, workSec: entry.workSec, stopId: place.stopId, required: true,
+          place: place.key, tasks: [task.id], ...(place.type === 'point' ? { arrivalRadiusM: place.radiusM } : {}),
+        };
+        const k = cheapestInsertion(chain, place);
+        candidate = [...chain.slice(0, k + 1), waypoint, ...chain.slice(k + 1)];
+      }
+      const tried = evaluate(candidate, reference);
+
+      if (!first) {
+        // the goal task: kept whatever it costs, and without a path there is no plan
+        if (!tried.ok) {
+          reasons.push({ code: 'unreachable', stops: [place.key], names: [place.label], tasks: [task.id] });
+          entry.drop = { ...UNREACHABLE };
+          return noRoute({ waypoints: candidate, dropped: [], tasks: [...planned, ...unplanned(index + 1)] });
+        }
+        first = { task, place };
+        entry.kept = true;
+        chain = candidate;
+        current = tried;
+        continue;
+      }
+      if (tried.ok && tried.check.fits) {
+        reasons.push({
+          code: 'task-added', task: task.id, place: place.key, name: place.label,
+          extraWalkSec: walking(tried) - walking(current), extraM: walked(tried) - walked(current), workSec: entry.workSec,
+        });
+        entry.kept = true;
+        chain = candidate;
+        current = tried;
+        continue;
+      }
+      entry.drop = shortfall(tried, current);
+      reasons.push({ code: 'task-dropped', task: task.id, place: place.key, name: place.label, ...entry.drop, workSec: entry.workSec });
+    }
+
+    if (!first) {
+      reasons.push({ code: 'no-stops' });
+      return noRoute({ waypoints: chain, dropped: [], tasks: planned });
+    }
+    return conclude({
+      chain, current, dropped: [], tasks: planned,
+      required: { stops: [first.place.key], names: [first.place.label], tasks: [first.task.id] },
+    });
+  };
+  if (n.objective === 'samples') return planTasks();
+
+  const kept = [];
+  for (const id of objective.required) {
+    const stop = byId.get(id);
+    if (!stop) { reasons.push({ code: 'stop-missing', stop: id, name: nameOf(id) }); continue; }
+    kept.push(stopWaypoint(stop, crew.workFactor, true));
+  }
+  let chain = walkingOrder(start, kept, objective.order);
+
   const failed = (code) => {
     reasons.push(code === 'no-stops' ? { code } : { code, stops: objective.required.slice(), names: objective.required.map(nameOf) });
     return result({ ok: false, fits: false, waypoints: chain, dropped: [], budget: { ...budget, fits: false, limit: null }, route: null, totals: null });
@@ -363,45 +544,7 @@ export function planFromNeeds(needs, site) {
     reasons.push({ code: 'stop-dropped', stop: id, name: stop.name, ...entry, workSec: waypoint.workSec });
   }
 
-  // The route walked: the profile in use on the same stops. Its budget is the plan's verdict.
-  const walkedPlan = reference === priced ? current : evaluate(chain, priced);
-  if (!walkedPlan.ok) {
-    reasons.push({ code: 'profile-unreachable', profile: profileId });
-    return result({ ok: false, fits: false, waypoints: chain, dropped, budget: { ...budget, fits: false, limit: null }, route: null, totals: null });
-  }
-  const { check, totals } = walkedPlan;
-  const over = { limit: check.limit, limits: check.limits, overSec: Math.max(0, check.overSec), marginShortSec: check.marginShortSec, batteryShortWh: check.batteryShortWh };
-  if (check.fits) {
-    reasons.push({ code: 'fits', spareSec: -check.overSec });
-  } else if (!current.check.fits) {
-    reasons.push({ code: 'required-over', stops: objective.required.slice(), names: objective.required.map(nameOf), ...over });
-  } else {
-    // the stops fit on the reference route, not on the profile chosen at the table
-    reasons.push({ code: 'profile-over', profile: profileId, reference: referenceProfile, ...over });
-  }
-
-  return result({
-    ok: true,
-    fits: check.fits,
-    waypoints: chain,
-    dropped,
-    budget: {
-      ...budget,
-      usedSec: check.usedSec,
-      spareSec: -check.overSec,
-      walkSec: totals.walkSec,
-      workSec: totals.workSec,
-      returnSec: totals.roundTrip ? 0 : totals.returnTimeSec,
-      o2UsedG: totals.o2G + totals.returnO2G,
-      marginSec: totals.marginSec,
-      batteryUsedWh: totals.batteryWh + totals.returnBatteryWh,
-      arrivalBatteryWh: totals.arrivalBatteryWh,
-      fits: check.fits,
-      limit: check.limit,
-    },
-    route: walkedPlan.route,
-    totals,
-  });
+  return conclude({ chain, current, dropped, required: { stops: objective.required.slice(), names: objective.required.map(nameOf) } });
 }
 
 /** Key of the needs that change the plan (not `locked`), so an equal update does not plan again. */

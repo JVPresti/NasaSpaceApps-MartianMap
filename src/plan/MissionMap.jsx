@@ -6,7 +6,7 @@ import { radioShadowMask } from '../sim/radio.js';
 import { mastKey } from '../sim/routeProfiles.js';
 import { waypointNumber } from '../sim/waypointNumber.js';
 import { useMissionStore } from '../state/store.js';
-import { LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, mapCrop, paintMap, slopeGrid, tagFlips, toMap, zoomCrop } from './mapLayers.js';
+import { LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, fromMap, mapCrop, paintMap, slopeGrid, tagFlips, toMap, waypointTaskTag, zoomCrop } from './mapLayers.js';
 import { SLOPE_LIMITS, cautionDeg } from './layers.js';
 import LayerPlaces from './LayerPlaces.jsx';
 import MapPosition from './MapPosition.jsx';
@@ -29,6 +29,8 @@ const PIXELS = 768;
 const NO_ALTERNATIVES = [];
 /** A stop this close to the end of an event's route is its shelter (the habitat's stop is its airlock). Metres. */
 const SHELTER_SNAP_M = 8;
+/** While a task place is being chosen, a press that moves less than this is a click on the map, not a drag. Pixels. */
+const PICK_DRAG_PX = 4;
 let dataRequest = null;
 const radioMasks = new Map();   // by mast position: one mask for every map on the page, as the planner keeps one
 
@@ -128,13 +130,18 @@ function markerName(waypoint, index) {
  *   stop. planPath: [[x, z], ...] the approved plan, drawn thin in the plan colour under an event route
  *   flipTags: false keeps every stop tag to the right of its marker, even near the map's right edge (the debrief's
  *   review map, where a flipped tag would land on the deviation chips and the walked track)
+ *   picking: a sampling task's place is being chosen (#352, src/plan/useTaskPlace.js): the map shows a crosshair, and a
+ *   click (under PICK_DRAG_PX of drag; a longer drag still moves the map) or a click on a stop marker calls onPick with
+ *   the point in metres ({ x, z }) instead of opening the stop's window
  * Clicking a stop opens a small window with its height, slope and the leg that reaches it.
  */
-export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, alternatives = NO_ALTERNATIVES, routeClass = '', traverse = false, track = null, stretches = NO_ALTERNATIVES, marks = NO_ALTERNATIVES, focus = null, mast = null, minSpanM = MAP_MIN_SPAN_M, position = null, eventRoute = false, planPath = null, flipTags = true }) {
+export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, alternatives = NO_ALTERNATIVES, routeClass = '', traverse = false, track = null, stretches = NO_ALTERNATIVES, marks = NO_ALTERNATIVES, focus = null, mast = null, minSpanM = MAP_MIN_SPAN_M, position = null, eventRoute = false, planPath = null, flipTags = true, picking = false, onPick = null }) {
   const canvasRef = useRef(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const caution = useMissionStore((s) => cautionDeg(s.needs?.risk));
+  // the plan's sampling tasks, while the goal is "Collect samples" (#352): named on their stop markers on Rocks and Outcrop
+  const planTasks = useMissionStore((s) => (s.needs?.objective === 'samples' ? s.route?.tasks ?? NO_ALTERNATIVES : NO_ALTERNATIVES));
   const sky = useSkyView(layer === LAYER.EXPOSURE);
   const radio = useRadioShadow(layer === LAYER.RADIO ? data?.terrain : null, mast);
   const zone = useReturnZone(layer === LAYER.ZONE);
@@ -204,7 +211,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const onPointerDown = (event) => {
     if (event.button !== 0 && event.button !== 2) return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    dragRef.current = { x: event.clientX, y: event.clientY, crop, width: event.currentTarget.getBoundingClientRect().width };
+    dragRef.current = { x: event.clientX, y: event.clientY, crop, width: event.currentTarget.getBoundingClientRect().width, button: event.button };
   };
   const onPointerMove = (event) => {
     const drag = dragRef.current;
@@ -213,6 +220,14 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
     setView(clampCrop({ ...drag.crop, x0: drag.crop.x0 - (event.clientX - drag.x) * metres, z0: drag.crop.z0 - (event.clientY - drag.y) * metres }, tile));
   };
   const endDrag = () => { dragRef.current = null; };
+  // While a task place is being chosen, a left click that hardly moved is the point (#352); a drag still moves the map.
+  const onPointerUp = (event) => {
+    const drag = dragRef.current;
+    endDrag();
+    if (!picking || !onPick || !drag || drag.button !== 0 || Math.hypot(event.clientX - drag.x, event.clientY - drag.y) >= PICK_DRAG_PX) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    onPick(fromMap(((event.clientX - rect.left) / rect.width) * 100, ((event.clientY - rect.top) / rect.height) * 100, drag.crop));
+  };
 
   useEffect(() => {
     if (open === null) return undefined;
@@ -231,11 +246,11 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
 
   return (
     <div
-      className="table-map"
+      className={picking ? 'table-map picking' : 'table-map'}
       ref={boxRef}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={endDrag}
+      onPointerUp={onPointerUp}
       onPointerCancel={endDrag}
       onDoubleClick={() => setView(null)}
       onContextMenu={(event) => event.preventDefault()}
@@ -268,6 +283,8 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
           if (u < -5 || u > 105 || v < -5 || v > 105) return null;
           if (!route && k !== 0 && k !== last) return null;
           const name = route ? markerName(w, k) : k === 0 ? t('table.habitat') : translateText(w.label ?? w.name);
+          // on Rocks and Outcrop a sampling task's place says what it collects (#352), as other places on those layers do
+          const taskLine = route ? waypointTaskTag(layer, w, planTasks) : null;
           const target = science.has(w.name) || k === last;
           return (
             <li key={k} className={'map-marker' + (target ? ' target' : '') + (flipTags && tagFlips(u) ? ' flip' : '')} style={{ left: `${u}%`, top: `${v}%` }}>
@@ -277,10 +294,10 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
                 aria-expanded={open === k}
                 aria-label={t('map.marker.details', { name: route ? `${waypointNumber(k)} ${name}` : name })}
                 onPointerDown={(event) => event.stopPropagation()}
-                onClick={() => setOpen(open === k ? null : k)}
+                onClick={() => (picking && onPick ? onPick({ x: w.x, z: w.z }) : setOpen(open === k ? null : k))}
               >
                 {route ? <span className="map-marker-num">{waypointNumber(k)}</span> : <span className={k === 0 ? 'map-marker-home' : 'map-marker-num'} />}
-                <span className="map-marker-tag"><b>{name}</b>{k === shelterAt && <small className="map-tag-shelter">{t('ui.shelter.89')}</small>}</span>
+                <span className="map-marker-tag"><b>{name}</b>{k === shelterAt && <small className="map-tag-shelter">{t('ui.shelter.89')}</small>}{taskLine && <small>{taskLine}</small>}</span>
               </button>
             </li>
           );
