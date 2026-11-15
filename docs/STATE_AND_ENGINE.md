@@ -25,24 +25,6 @@ Rules:
 
 ## The mission store
 
-### Wrist screen (#67)
-
-The wrist controller (`src/screens/wrist/controller.js`) reads this same store and paints a fixed 512 × 352 canvas. The engine owns the `CanvasTexture` on the arm's `Screen` material, while the interface owns the canvas content. No React or store imports enter the engine.
-
-In Walk, `R` raises or lowers the wrist, `[`/`]` changes pages, `J`/`K` selects the next/previous row, and `Enter` confirms a layer through `setLayer`. Checklist and suit rows are read-only. Typing, held keys, modifier shortcuts, paused missions and dialogs do not operate the wrist. Point indicates the selected row; confirmation briefly uses the existing pinch pose. The walking controls view that opens the EVA names R; while the wrist is up a key strip lists the wrist keys, and `engine.subscribeWrist` reports the change to the interface (#231).
-
-Every visible wrist string comes from `src/i18n/en.json` and `es.json` through `t()`: page titles and footer, suit row labels and status, and the map's missing-image and uncertainty lines. Page metadata resolves its text through getters, so a language switch repaints an open wrist through `subscribeLanguage` without reopening it. DATA/DERIVED/SIM tags and HiRISE stay invariant.
-
-One key has one consumer (#231). While the wrist is up, `src/screens/wrist/ownership.js` marks it as the keyboard owner and the science stop card, the finds gesture (Q, Y, N), the partner panel (T), the slope grid (G), the sources shortcut (C), the end-EVA key at the habitat (X) and the mode/layer shortcuts (M, L, Shift+L, 0) leave their keys alone. The wrist takes precedence over an open science card; a sources screen or a modal still owns the keyboard. `R` does not raise the wrist while Q is held, so the arm cannot stay in the point pose after the wrist comes down. Escape keeps its pause path and lowers the wrist with the rest of the session.
-
-Opening is rejected during sampling clips. A held sample survives opening and its tool pose is restored on closing; sampling inputs are disabled while reading the wrist. Entering Plan or pausing closes the wrist. Page/selection live in the controller session, survive a Plan round trip, and reset when the engine is replaced or retried.
-
-The map shows the entire real HiRISE tile north-up with an isotropic metre scale, route, waypoints, refuges and the store's navigation estimate and uncertainty. Missing image/position data are reported or omitted, never replaced with simulated fixes. Navigation remains subject to the existing estimate contract above.
-
-The controller signs only the current page's displayed content and repaints/uploads the texture when that signature changes. Hidden pages and unchanged store updates do not repaint it; coalescing caps work at 10 Hz. Opening refreshes a page that changed while closed. The engine's fallback layer painter never overwrites an external canvas.
-
-Engine methods (after `ready`): `setWristScreen(canvas|null)`, `invalidateWristScreen()`, `setWristOpen(boolean)` (returns success), `setWristPointer({x,y,pressed})` (canvas pixels), `getWristState()`, `subscribeWrist(listener)` and `getOrthoImage()`. Disconnect the controller before disposing the engine. Development-only `window.__marswalkWrist` exposes the canvas and a read-only snapshot for verification.
-
 ```js
 import { useMissionStore, storeAdapter, setMode } from './state/store.js';
 
@@ -309,6 +291,24 @@ The runner subscribes to `mission.paused` and `mission.timeScale`, so the suit r
 | Seal | the container is closed: the stow clip ended, or the partner took the case back with the lid closed |
 
 A sealed checklist stays ticked until the next photo or scoop starts a new one. Out of scope here: the dust puff and the mark in the soil (#50).
+
+## Wrist screen (#67)
+
+The wrist controller (`src/screens/wrist/controller.js`) reads the mission store and paints a fixed 512 × 352 canvas. The engine owns the `CanvasTexture` on the arm's `Screen` material, while the interface owns the canvas content. No React or store imports enter the engine.
+
+In Walk, `R` raises or lowers the wrist, `[`/`]` changes pages, `J`/`K` selects the next/previous row, and `Enter` (or the numeric keypad's Enter) confirms a layer through `setLayer`. Checklist and suit rows are read-only. Typing, held keys, modifier shortcuts, paused missions and dialogs do not operate the wrist. Point indicates the selected row; confirmation briefly uses the existing pinch pose. The walking controls view that opens the EVA names R; while the wrist is up a key strip lists the wrist keys, and `engine.subscribeWrist` reports the change to the interface (#231).
+
+Every visible wrist string comes from `src/i18n/en.json` and `es.json` through `t()`: page titles and footer, suit row labels and status, and the map's missing-image and uncertainty lines. Page metadata resolves its text through getters, so a language switch repaints an open wrist through `subscribeLanguage` without reopening it. DATA/DERIVED/SIM tags and HiRISE stay invariant.
+
+One key has one consumer (#231). While the wrist is up, `src/screens/wrist/ownership.js` marks it as the keyboard owner and the science stop card, the finds gesture (Q, Y, N), the partner panel (T), the slope grid (G), the sources shortcut (C), the end-EVA key at the habitat (X) and the mode/layer shortcuts (M, L, Shift+L, 0) leave their keys alone. The wrist takes precedence over an open science card; a sources screen or a modal still owns the keyboard. `R` does not raise the wrist while Q is held, so the arm cannot stay in the point pose after the wrist comes down. Escape keeps its pause path and lowers the wrist with the rest of the session.
+
+Opening is rejected during sampling clips. A held sample survives opening and its tool pose is restored on closing; sampling inputs are disabled while reading the wrist, and the sampling crosshair and prompt hide until it comes down (`subscribeWristKeyOwner` in `ownership.js`). Entering Plan or pausing closes the wrist. Page/selection live in the controller session, survive a Plan round trip, and reset when the engine is replaced or retried.
+
+The map shows the entire real HiRISE tile north-up with an isotropic metre scale, route, waypoints, refuges and the store's navigation estimate and uncertainty. Missing image/position data are reported or omitted, never replaced with simulated fixes. Navigation follows the estimate contract in the mission store snapshot.
+
+The controller signs only the current page's displayed content and repaints/uploads the texture when that signature changes. Hidden pages and unchanged store updates do not repaint it; coalescing caps work at 10 Hz. Opening refreshes a page that changed while closed. The engine's fallback layer painter never overwrites an external canvas.
+
+Engine methods (after `ready`): `setWristScreen(canvas|null)`, `invalidateWristScreen()`, `setWristOpen(boolean)` (returns success), `setWristPointer({x,y,pressed})` (canvas pixels), `getWristState()`, `subscribeWrist(listener)` and `getOrthoImage()`. Disconnect the controller before disposing the engine. Development-only `window.__marswalkWrist` exposes the canvas and a read-only snapshot for verification.
 
 ## The helmet HUD
 
