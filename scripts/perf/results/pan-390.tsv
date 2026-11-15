@@ -1,0 +1,7 @@
+dist	run	p50	p95	max	longTasks	longMs	commits	putImageData	note
+main416	0	16.7	133.5	183.4	65	8156	68	65	
+pan	0	16.7	16.8	83.4	2	185	2	2	
+main416	1	16.7	16.8	16.8	0	0	0	0	gesture did not reach the map: not used
+pan	1	16.7	16.8	150.1	2	270	2	2	
+main416	2	16.7	133.4	150.1	65	8149	65	65	
+pan	2	16.7	16.8	83.4	2	173	2	2	

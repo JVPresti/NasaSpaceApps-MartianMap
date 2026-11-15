@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { imageUrl } from '../data/stops.js';
 import { groupImages, loadTraverse } from '../data/traverse.js';
 import { t } from '../i18n/index.js';
 import { useStops } from '../stops/useStops.js';
 import { tagFlips, toMap } from './mapLayers.js';
 import SourceTag from './SourceTag.jsx';
+import { usePlacedPopup } from './usePlacedPopup.js';
 
 // Perseverance on the mission table map (#249): the drives the rover made across the tile, under our route, and a pin
 // where it stood to take the stop images, which opens them. A second NASA mission on the map, beside the MRO HiRISE
@@ -54,6 +55,9 @@ export default function TraverseLayer({ crop, withKey = true }) {
   const stops = useStops();
   const [open, setOpen] = useState(null);   // index of the pin whose images are open
   const [shown, setShown] = useState(0);    // image shown in the open pin
+  // placed like the stop details, beside the pin and clear of the map's chrome (#380)
+  const anchor = useRef(null);
+  const [popRef, popStyle] = usePlacedPopup(() => anchor.current?.querySelector(`[data-pin="${open}"]`), [open, crop]);
 
   const pins = useMemo(() => {
     if (!data) return [];
@@ -79,7 +83,7 @@ export default function TraverseLayer({ crop, withKey = true }) {
         {data.drives.map((drive, k) => <polyline key={k} points={points(drive.points, crop)} className="map-traverse-shadow" />)}
         {data.drives.map((drive, k) => <polyline key={k} points={points(drive.points, crop)} className="map-traverse" />)}
       </svg>
-      <div className="map-pins">
+      <div className="map-pins" ref={anchor}>
         {pins.map((p, k) => {
           const [u, v] = toMap(p.x, p.z, crop);
           if (u < -5 || u > 105 || v < -5 || v > 105) return null;
@@ -89,6 +93,7 @@ export default function TraverseLayer({ crop, withKey = true }) {
               <button
                 type="button"
                 className="map-pin-hit"
+                data-pin={k}
                 aria-expanded={open === k}
                 aria-label={t('map.images.pin.label', { n: p.images.length })}
                 onPointerDown={(event) => event.stopPropagation()}
@@ -101,11 +106,8 @@ export default function TraverseLayer({ crop, withKey = true }) {
           );
         })}
         {pin && image && (() => {
-          // Placed like the stop details in MissionMap: beside the pin, on the side with more room.
-          const [u, v] = toMap(pin.x, pin.z, crop);
-          const style = { left: u > 60 ? undefined : `calc(${u}% + 18px)`, right: u > 60 ? `calc(${100 - u}% + 18px)` : undefined, top: `clamp(8px, calc(${v}% - 40px), calc(100% - 420px))` };
           return (
-            <div className="map-pop map-pop-images" style={style} role="dialog" aria-label={t('map.images.title')} onPointerDown={(event) => event.stopPropagation()}>
+            <div className="map-pop map-pop-images" ref={popRef} style={popStyle} role="dialog" aria-label={t('map.images.title')} onPointerDown={(event) => event.stopPropagation()}>
               <div className="map-pop-head">
                 <div><b>{t('map.images.title')}</b><span>{t('map.images.rover.stop', { rmc: image.rmc })} <SourceTag path="map.imagePins" requireSource={false} source={{ tag: image.tag, label: image.label, source: image.provenance?.note?.replace(/\.$/, '') }} /></span></div>
                 <button type="button" className="map-pop-close" aria-label={t('map.images.close')} onClick={() => setOpen(null)}>×</button>
