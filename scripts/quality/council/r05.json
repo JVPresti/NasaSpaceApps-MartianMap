@@ -1,0 +1,52 @@
+{
+ "round": "r05",
+ "before": "scripts/quality/out/c04",
+ "after": "scripts/quality/out/c05",
+ "states": [
+  "walk-stop"
+ ],
+ "judges": {
+  "j1": {
+   "walk-stop": {
+    "new": "A"
+   }
+  },
+  "j2": {
+   "walk-stop": {
+    "new": "A"
+   }
+  },
+  "j3": {
+   "walk-stop": {
+    "new": "A"
+   }
+  }
+ },
+ "change": "c05 Walk science card: 30 --u wide, 13 px body minimum, --surface fill, square corners, under the alert",
+ "issue": 287,
+ "personas": {
+  "j1": "opus c",
+  "j2": "opus a",
+  "j3": "fable b"
+ },
+ "verdicts": {
+  "j1": {
+   "walk-stop": "new",
+   "why": "title, description and close hint readable, matches the other panels; a bit wide"
+  },
+  "j2": {
+   "walk-stop": "new",
+   "why": "the card is the content of the moment and is now the clear focus"
+  },
+  "j3": {
+   "walk-stop": "new",
+   "why": "readable without leaning in, one system; narrow it to about 280 px"
+  }
+ },
+ "decision": "keep",
+ "reason": "3 of 3 prefer it for legibility and consistency; all three say it is a bit wide, a later attempt can trim it",
+ "next_asks": [
+  "narrow the card about 15%",
+  "add Next: Photo (P) line"
+ ]
+}
