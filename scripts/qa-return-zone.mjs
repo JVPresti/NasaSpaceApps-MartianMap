@@ -49,7 +49,11 @@ const key = async (code) => { await page.keyboard.down(code); await page.keyboar
 const zoneNow = () => S(() => { const z = window.__returnZone; return z ? { kind: z.kind, events: z.events, ...z.stats, bounds: undefined } : null; });
 async function fps(label, seconds = 4) {
   const samples = [];
-  for (let k = 0; k < seconds * 2; k += 1) { await sleep(0.5); samples.push(await S(() => window.__marswalk.stats().fps)); }
+  for (let k = 0; k < seconds * 2; k += 1) {
+    if (await paused()) await resume();
+    await sleep(0.5);
+    if (!(await paused())) samples.push(await S(() => window.__marswalk.stats().fps));
+  }
   const sorted = samples.filter(Number.isFinite).sort((a, b) => a - b);
   report.fps[label] = { min: sorted[0], median: sorted[Math.floor(sorted.length / 2)] };
   console.log(`  fps ${label}: min ${sorted[0]?.toFixed(1)}, median ${sorted[Math.floor(sorted.length / 2)]?.toFixed(1)}`);
@@ -57,6 +61,7 @@ async function fps(label, seconds = 4) {
 async function walkTo(x, z, tolerance = 2, timeoutS = 120) {
   const t0 = Date.now();
   while ((Date.now() - t0) / 1000 < timeoutS) {
+    if (await paused()) await resume();
     const d = await S((tx, tz) => {
       const m = window.__marswalk, p = m.pose();
       const yaw = Math.atan2(tx - p.x, -(tz - p.z));
@@ -69,6 +74,7 @@ async function walkTo(x, z, tolerance = 2, timeoutS = 120) {
   }
   await S(() => window.__marswalk.walking(false));
 }
+const paused = () => S(() => window.__missionStore.getState().mission.paused || !!document.querySelector('dialog[open].pause-dialog'));
 async function resume() {
   for (let i = 0; i < 20; i += 1) {
     if (await S(() => !window.__missionStore.getState().mission.paused && !document.querySelector('dialog[open].pause-dialog'))) return true;
@@ -118,13 +124,19 @@ try {
   report.zone.start = await zoneNow();
   await shot('02-walk-start');
   const stop = await S(() => { const w = window.__missionStore.getState().route.waypoints[1]; return { x: w.x, z: w.z }; });
+  // half the way out, the frame rate while walking, then the rest
+  const start = await S(() => window.__marswalk.pose());
+  await walkTo((start.x + stop.x) / 2, (start.z + stop.z) / 2, 2.5);
+  await S(() => window.__marswalk.walking(true));
+  await fps('walking with the minimap zone', 3);
   await walkTo(stop.x, stop.z, 2.5);
+  report.walkedM = await S(() => window.__missionStore.getState().eva.distanceM);
   await sleep(2.5);
   report.zone.atStop = await zoneNow();
   console.log('  at the stop: ' + JSON.stringify(report.zone.atStop));
   await shot('03-walk-at-stop');
   await shotOf('.hud-map-wrap', '03b-minimap-at-stop');
-  await fps('walk with the minimap zone');
+  await fps('standing at the stop with the minimap zone');
 
   // 3. The wrist map --------------------------------------------------------------------------------------------------
   await key('KeyR');
