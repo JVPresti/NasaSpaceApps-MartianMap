@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { waypointsForCosts } from '../sim/legCosts.js';
 import { DEFAULT_NEEDS } from '../sim/missionNeeds.js';
+import { nextTarget } from '../sim/waypointRunner.js';
 import {
-  afterNeedsPlan, afterWaypointPlan, createLatestOnly, decidePlan, emptyPlannerMemory, needsPlanKey, needsPlanPending,
-  plansFromNeeds,
+  afterNeedsPlan, afterWaypointPlan, alertRouteActive, createLatestOnly, decidePlan, emptyPlannerMemory, needsPlanKey,
+  needsPlanPending, plansFromNeeds, resumeStops,
 } from './plannerState.js';
+import { keepWalkProgress } from './useRoutePlanner.js';
 
 const SITE = { start: { name: 'HAB', x: 0, z: 0 }, stops: [{ id: 'sortie' }] };
 const needs = (patch = {}) => ({ ...DEFAULT_NEEDS, locked: false, ...patch });
@@ -104,6 +107,54 @@ describe('planning the waypoints once the EVA has begun', () => {
 
   it('plans nothing for fewer than two waypoints', () => {
     expect(decidePlan(locked({ waypointCount: 1, waypointsKey: 'HAB:0:0' }), atLock).action).toBe('none');
+  });
+});
+
+describe('Re-plan after a shelter return brings the stops back (D12)', () => {
+  const HAB = { name: 'HAB', x: 535, z: 574 };
+  const BA = { name: 'WP3 · Bright Angel outcrop', x: -11, z: -50, workSec: 900, stopId: 'bright-angel' };
+  const CF = { name: 'Cheyava Falls', x: 0, z: 0, workSec: 1200, stopId: 'cheyava-falls' };
+  const locked = (patch = {}) => input({ fromNeeds: false, needs: needs({ locked: true }), waypointsKey: 'full', waypointCount: 3, ...patch });
+  const atLock = afterNeedsPlan(emptyPlannerMemory(), { key: 'k', waypointsKey: 'full', nonce: 0, mastId: '' });
+  /** What the hook writes when the Re-plan answer lands: the planned route, the walk kept, the stops back. */
+  const replan = (current, resume) => resumeStops(keepWalkProgress({ ...current, path: [[535, 574], [0, 0]], nextIndex: 0, visited: [] }, current, true), resume);
+
+  it('knows an alert route from the shelter or an active alert with a route, not from a caution alert', () => {
+    expect(alertRouteActive({ shelter: { id: 'HAB' } }, {})).toBe(true);
+    expect(alertRouteActive({ shelter: null }, { 'dust-storm': { id: 'dust-storm', eventId: 'dust-storm', active: true } })).toBe(true);
+    expect(alertRouteActive({ shelter: null }, { 'low-oxygen-caution': { eventId: 'low-oxygen-caution', active: true } })).toBe(false);
+    expect(alertRouteActive({ shelter: null }, { 'dust-storm': null, radiation: null })).toBe(false);
+  });
+
+  it('restores the stops after a shelter return, and the next target is the next stop not reached', () => {
+    // the storm sent the crew home before Bright Angel: both stops skipped; back inside, the shelter is clear
+    const decision = decidePlan(locked({ nonce: 1 }), atLock);
+    expect(decision).toMatchObject({ action: 'plan-waypoints', resume: true });
+    const before = { waypoints: [HAB, BA, CF], visited: ['HAB'], nextIndex: 1, skipped: [BA.name, CF.name], shelter: null };
+    const after = replan(before, decision.resume);
+    expect(after).toMatchObject({ skipped: [], visited: ['HAB'], nextIndex: 1 });
+    expect(nextTarget(after)).toMatchObject({ kind: 'waypoint', name: BA.name });
+    expect(waypointsForCosts(after).map((w) => w.workSec ?? 0)).toEqual([0, 900, 1200]);   // route.totals costs them again
+    // reached Bright Angel before the storm: the falls come back, Bright Angel stays done
+    const past = replan({ ...before, visited: ['HAB', BA.name], nextIndex: 2, skipped: [CF.name] }, true);
+    expect(nextTarget(past)).toMatchObject({ kind: 'waypoint', name: CF.name });
+    expect(waypointsForCosts(past).map((w) => w.workSec ?? 0)).toEqual([0, 0, 1200]);
+    // a find's waypoints planned with no Re-plan bring nothing back
+    expect(decidePlan(locked({ waypointsKey: 'with-find' }), atLock)).toMatchObject({ action: 'plan-waypoints', resume: false });
+  });
+
+  it('does nothing to the route during an alert', () => {
+    expect(decidePlan(locked({ nonce: 1, sheltered: true }), atLock).action).toBe('none');
+    const during = { waypoints: [HAB, BA, CF], visited: ['HAB'], nextIndex: 1, skipped: [BA.name, CF.name], shelter: { id: 'HAB' } };
+    expect(resumeStops(during, false)).toBe(during);
+  });
+
+  it('leaves the first mission complete when its stop was reached', () => {
+    const S1 = { name: 'S1 · light-toned patch', x: 493, z: 539, workSec: 120, stopId: 'sortie' };
+    const done = { waypoints: [HAB, S1], visited: ['HAB', S1.name], nextIndex: 2, skipped: [], shelter: null };
+    const after = replan(done, decidePlan(locked({ nonce: 1, waypointsKey: 'sortie', waypointCount: 2 }), atLock).resume);
+    expect(nextTarget(after)).toEqual({ kind: 'complete', index: 2 });
+    expect(after.visited).toEqual(['HAB', S1.name]);
   });
 });
 

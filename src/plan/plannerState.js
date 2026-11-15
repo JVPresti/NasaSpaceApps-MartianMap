@@ -5,7 +5,41 @@
  *
  * Plain JavaScript with no React and no three.js.
  */
+import dustStorm from '../sim/events/dust-storm.json';
+import lowOxygenCaution from '../sim/events/low-oxygen-caution.json';
+import lowOxygenWarning from '../sim/events/low-oxygen-warning.json';
+import radiation from '../sim/events/radiation.json';
 import { needsKey } from '../sim/missionNeeds.js';
+
+/** The events that send the crew on a route of their own (a planner block): the storm, radiation, low O2 warning. */
+const ROUTE_EVENTS = new Set([dustStorm, radiation, lowOxygenCaution, lowOxygenWarning].filter((event) => event.planner).map((event) => event.id));
+
+/**
+ * Whether an alert's route is the route, or about to be: route.shelter is set, or an event with a route is active (its
+ * alert in the store; the shelter route may still be on its way from the planner). A waypoint plan then leaves
+ * route.path alone (B1), and Re-plan brings no stop back (D12).
+ * @param {{ shelter?: object | null } | null} route the store's route
+ * @param {Record<string, { active?: boolean, id?: string, eventId?: string } | null> | null} alerts the store's alerts
+ */
+export function alertRouteActive(route, alerts) {
+  if (route?.shelter) return true;
+  return Object.values(alerts ?? {}).some((alert) => alert?.active === true && ROUTE_EVENTS.has(alert.eventId ?? alert.id));
+}
+
+/** The Re-plan count of a plan id (`${nonce}|${waypointKey}`), -1 for none. */
+const planNonce = (planId) => (planId ? Number(String(planId).split('|')[0]) : -1);
+
+/**
+ * The route a waypoint plan writes, with the stops an event left out back in it when the plan answers Re-plan (D12):
+ * once no alert route is active, Re-plan at the table clears route.skipped, so the remaining stops are the route again
+ * and route.totals costs their work. route.visited and route.nextIndex stay (keepWalkProgress), so the next target is
+ * the next stop not reached yet; a mission whose stops are all reached stays complete.
+ * @param {object | null} route the planned route, the walk so far kept
+ * @param {boolean} resume the plan answers Re-plan during the EVA
+ */
+export function resumeStops(route, resume) {
+  return route && resume ? { ...route, skipped: [] } : route;
+}
 
 /**
  * What the hook remembers between renders.
@@ -50,7 +84,8 @@ export function needsPlanPending({ fromNeeds, key }, memory) {
  * - 'restore-waypoints': this needs plan is on the table, but something else wrote route.waypoints (Plan mode loads
  *   route.json's anchors when it opens): put the planned stops back
  * - 'plan-needs': plan from the needs (key)
- * - 'plan-waypoints': plan the waypoints as they stand (planId)
+ * - 'plan-waypoints': plan the waypoints as they stand (planId); `resume` when it answers Re-plan (a new nonce since the
+ *   plan on the table), which brings the stops an event left out back (resumeStops, D12)
  * - 'refresh-mast': only the mast arrived for a route already on the table: refresh the comparison, keep the route
  * - 'consume-find': a find accepted in Walk already re-planned these waypoints from the player (#71); planning again
  *   from the habitat would lose the walk so far, so take the route as it is and clear finds.routeKey
@@ -83,7 +118,7 @@ export function decidePlan(input, memory) {
   if (sameRoute && mastId === memory.lastMast) {
     // Planned already. A plan cancelled before it landed (the table closed for Walk meanwhile) is planned again.
     if (memory.appliedPlanId === planId) return { action: 'none', memory };
-    return sheltered ? dropped(memory) : { action: 'plan-waypoints', planId, memory };
+    return sheltered ? dropped(memory) : { action: 'plan-waypoints', planId, resume: nonce !== planNonce(memory.appliedPlanId), memory };
   }
   const next = { ...memory, lastMast: mastId };
   // The mast arrived (the habitat loads after the terrain) for the route already on the table. If the first plan was
@@ -93,7 +128,7 @@ export function decidePlan(input, memory) {
     return { action: 'consume-find', planId, memory: { ...next, lastKey: waypointsKey, appliedPlanId: planId } };
   }
   if (sheltered) return dropped(next);
-  return { action: 'plan-waypoints', planId, memory: { ...next, lastKey: waypointsKey, lastNonce: nonce } };
+  return { action: 'plan-waypoints', planId, resume: nonce !== planNonce(memory.appliedPlanId), memory: { ...next, lastKey: waypointsKey, lastNonce: nonce } };
 }
 
 /**
