@@ -38,6 +38,15 @@ describe('zoneInput', () => {
     expect(zoneInput(s, habitat, c)).toMatchObject({ kind: 'live', home: habitat, from: { x: 501, z: 561 }, suit: { o2G: 700, elapsedSec: 120 } });
   });
 
+  it('leaves the battery out when batteryPct is not a number, and does not recompute for it', () => {
+    const walk = { ...base, mode: 'walk', suit: { oxygenG: 700, batteryPct: NaN }, mission: { elapsedSec: 120 } };
+    const a = zoneInput(walk, habitat, c);
+    expect(a.suit.batteryWh).toBeUndefined();
+    expect(zoneChange(a, zoneInput(walk, habitat, c)).needed).toBe(false);
+    // a reading that comes back counts as a change
+    expect(zoneChange(a, zoneInput({ ...walk, suit: { oxygenG: 700, batteryPct: 80 } }, habitat, c)).needed).toBe(true);
+  });
+
   it('turns homeward and heads for the shelter while the storm is on', () => {
     const s = {
       ...base, mode: 'walk', suit: { oxygenG: 700 },
@@ -133,5 +142,16 @@ describe('returnZoneService', () => {
     expect(ca[0].evaLimitSec).toBe(1530);
     expect(cb[0].evaLimitSec).toBe(600);
     expect(seen).toEqual(['plan']);
+  });
+
+  it('keeps the plan memo per store: two stores with the same route objects each build their own plan', async () => {
+    const a = fakeStore(base), b = fakeStore(base);
+    const ca = [], cb = [];
+    returnZoneService(a, deps(ca)).subscribe(() => {});
+    returnZoneService(b, deps(cb)).subscribe(() => {});
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(cb[0].plan).toEqual(ca[0].plan);
+    expect(cb[0].plan).not.toBe(ca[0].plan);
   });
 });

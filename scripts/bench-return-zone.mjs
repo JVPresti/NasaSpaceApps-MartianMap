@@ -1,6 +1,6 @@
 // On-demand benchmark for the return zone (src/sim/returnZone.js, #309) on the real HiRISE tile.
 //
-//   node scripts/bench-return-zone.mjs > docs/qa/return-zone-bench.txt
+//   node scripts/bench-return-zone.mjs > docs/qa/return-zone/bench-node.txt
 //
 // It runs the first sortie's moments from src/sim/returnZone.test.js, warms each case up once, and prints the area,
 // reach, limit and the time of 3 runs. It also times the whole tile on the grid's own spacing (step 1) against the

@@ -188,8 +188,8 @@ try {
   await shot('07-table-event');
   await shotOf('.table-map', '07b-table-map-event');
 } finally {
-  writeFileSync(`${SHOTS}/report.json`, JSON.stringify(report, null, 2));
   report.loadEnd = loadavg();
+  writeFileSync(`${SHOTS}/report.json`, JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
   await browser.close();
   await server.close();
