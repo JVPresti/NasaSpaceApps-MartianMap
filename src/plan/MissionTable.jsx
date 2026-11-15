@@ -685,6 +685,11 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
                   : t('table.budget.key.out', { min: evaMinutes(totals).out })}
                 {' · '}
                 {totals.roundTrip ? t('table.budget.key.round.trip') : t('table.budget.key.back', { min: evaMinutes(totals).back })}
+                {/* the rest of the crew's time, as the Suit step's time bar splits it, so the numbers add up to the limit */}
+                {limits?.time && route.budget && (limits.time.ok
+                  ? <>{' · '}{t('table.budget.key.spare', { min: Math.round(limits.time.spareSec / 60) })}</>
+                  : <>{' · '}<span className="tone-warning">{t('table.budget.key.time.over', { min: Math.ceil(-limits.time.spareSec / 60) })}</span></>)}
+                {limits?.time && route.budget && <>{' · '}{t('table.budget.key.time.reserve', { min: Math.round((route.budget.reserveSec ?? 0) / 60) })}</>}
               </p>
             )}
             {remaining && remaining.count === 0 && !evaProgress.skipped.length && (
