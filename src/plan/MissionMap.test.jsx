@@ -50,24 +50,24 @@ describe('MissionMap', () => {
   it('names each stop once, by its number and its label, never by its waypoint code (P8)', () => {
     const html = render();
     expect(html).toContain('<span class="map-marker-num">1</span><span class="map-marker-tag"><b>Light-toned patch</b></span>');
-    expect(html).toContain('<b>Habitat airlock</b>');
+    expect(html).toContain('<b>Habitat</b>');   // as the Stops list names the start, short enough for the map edge
     expect(html).not.toMatch(/>S1<|>HAB<|light-toned patch</);
     setLanguage('es');
     expect(render()).toContain('<b>Zona de tono claro</b>');
-    expect(render()).toContain('<b>Esclusa del hábitat</b>');
+    expect(render()).toContain('<b>Hábitat</b>');
   });
 
   it('opens a tag to the left near the right edge of the map, so the edge does not cut it (N8)', () => {
     // the habitat sits at the east end of the sortie, past 70 % of a map framed on the route
     const html = render({ minSpanM: 60 });
-    expect(html).toMatch(/class="map-marker flip"[^>]*>[\s\S]*?Habitat airlock/);
+    expect(html).toMatch(/class="map-marker flip"[^>]*>[\s\S]*?<b>Habitat<\/b>/);
     expect(html).toMatch(/class="map-marker target"/);   // the stop, west of it, opens to the right as before
   });
 
   it('keeps every tag to the right when the screen turns flipping off, as the debrief review map does (A3)', () => {
     const html = render({ minSpanM: 60, flipTags: false });
     expect(html).not.toContain('flip');
-    expect(html).toContain('<b>Habitat airlock</b>');
+    expect(html).toContain('<b>Habitat</b>');
   });
 
   it('says SHELTER in the interface language', () => {

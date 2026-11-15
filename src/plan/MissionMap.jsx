@@ -90,13 +90,14 @@ function pointFacts({ terrain, slopes }, { x, z }) {
 }
 
 /**
- * A stop's one display name (P8): the habitat airlock for the first waypoint, else the planned waypoint's `label` (the
+ * A stop's one display name (P8): "Habitat" for the first waypoint (the airlock), as the table's Stops list names it and
+ * short enough for a tag at the map's edge, else the planned waypoint's `label` (the
  * stops.json name) in the interface language, as the table's Stops list words it. `name` ("WP3 · Bright Angel outcrop")
  * is only the link key; it is shown whole only for a waypoint that has no label, such as a route.json anchor.
  * The marker's number is its position in the list (waypointNumber).
  */
 function markerName(waypoint, index) {
-  if (index === 0) { const text = t('map.habitat.airlock'); return text.charAt(0).toUpperCase() + text.slice(1); }
+  if (index === 0) return t('table.habitat');
   return translateText(waypoint.label ?? waypoint.name);
 }
 
