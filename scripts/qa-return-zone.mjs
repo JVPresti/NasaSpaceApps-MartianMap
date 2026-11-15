@@ -74,7 +74,8 @@ async function walkTo(x, z, tolerance = 2, timeoutS = 120) {
   }
   await S(() => window.__marswalk.walking(false));
 }
-const paused = () => S(() => window.__missionStore.getState().mission.paused || !!document.querySelector('dialog[open].pause-dialog'));
+// only a pause in Walk counts: the mission is paused at the table before the EVA, by design
+const paused = () => S(() => window.__missionStore.getState().mode === 'walk' && (window.__missionStore.getState().mission.paused || !!document.querySelector('dialog[open].pause-dialog')));
 async function resume() {
   for (let i = 0; i < 20; i += 1) {
     if (await S(() => !window.__missionStore.getState().mission.paused && !document.querySelector('dialog[open].pause-dialog'))) return true;
