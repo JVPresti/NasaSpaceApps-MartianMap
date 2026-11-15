@@ -73,11 +73,11 @@ export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
  *   debug?: boolean,
  *   onStatus?: (text: string) => void, onProgress?: (progress: { loaded: number, failed: number, total: number, ratio: number }) => void,
  *   onError?: (err: Error) => void, onLockChange?: (locked: boolean) => void,
- *   onGamepadAction?: (action: 'mode' | 'layer-prev' | 'layer-next') => void }} options
+ *   onGamepadAction?: (action: 'mode' | 'layer-prev' | 'layer-next' | 'open-plan' | 'end-eva') => void }} options
  *   tier: force a quality tier and turn off the automatic choice (the app passes ?tier=high|low).
  *   inputEnabled: false starts with gameplay input gated off, for a start screen or a menu.
  *   onGamepadAction: a gamepad button press, once per press. The app routes it through the same mode and layer
- *   actions as the keyboard (#103, #174).
+ *   actions as the keyboard (#103, #174), and the habitat table's actions through src/state/tableActions.js.
  *   debug: expose window.__marswalk for measuring (development builds only).
  */
 export function createEngine(container, { assetBase, mode = 'plan', tier = null, inputEnabled: inputEnabledOption = true, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {}, onLockChange = () => {}, onGamepadAction = () => {} } = {}) {
