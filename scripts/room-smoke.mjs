@@ -207,7 +207,8 @@ async function hibernation(idleMs) {
   console.log('waking room ' + room + ' at ' + new Date().toISOString());
   const c = client(room);
   const w = await c.ready;
-  check('after the idle period the crew list is intact', w.crew.map((e) => e.id).join() === [a.id, b.id, c.id].join(), w.crew.map((e) => `${e.role}/${e.color}`).join(', '));
+  // a and b join at the same moment, so either can come first: compare the sets
+  check('after the idle period the crew list is intact', w.crew.map((e) => e.id).sort().join() === [a.id, b.id, c.id].sort().join(), w.crew.map((e) => `${e.role}/${e.color}`).join(', '));
   check('and the mission start survived', w.startedAt === started.startedAt && w.seed === started.seed, `startedAt ${w.startedAt}, seed ${w.seed}`);
   for (const x of [a, b, c]) x.ws.close();
 }
@@ -243,7 +244,10 @@ async function sharedState() {
     b.send({ type: 'smp', sid });
     const [wa] = await Promise.all(won);
     const loser = wa.by === a.id ? b : a;
-    const lost = await loser.wait('smp', (x) => x.sid === sid && x.ok === false).catch(() => null);
+    // the loser's ok:false can arrive right behind the broadcast, before a new wait() would see it: read what came in
+    const lostIn = () => loser.msgs.find((x) => x.type === 'smp' && x.sid === sid && x.ok === false);
+    for (let t = 0; t < 100 && !lostIn(); t++) await sleep(30);
+    const lost = lostIn() || null;
     await sleep(80);
     const oks = [a, b].map((c) => c.msgs.filter((x) => x.type === 'smp' && x.sid === sid && x.ok).length);
     const ok = oks[0] === 1 && oks[1] === 1 && lost && lost.by === wa.by;
