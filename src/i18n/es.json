@@ -667,6 +667,7 @@
   "mission.beat.debrief": "Informe · tu recorrido frente al plan aprobado, y la fuente de cada número.",
   "taskwalk.level": "Tarea · {place}",
   "taskwalk.todo": "Recoge {what} aquí · {here} de {count}",
+  "taskwalk.todo.photo": "Toma {what} aquí · {here} de {count}",
   "taskwalk.done": "✓ Hecha · {what} aquí · {here} de {count}",
   "taskwalk.hud": "Tarea · {list}",
   "taskwalk.hud.item": "{what} · {here} de {count}",

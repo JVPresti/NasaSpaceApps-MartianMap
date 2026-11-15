@@ -667,6 +667,7 @@
   "mission.beat.debrief": "Debrief · your walked track against the approved plan, and the source of every number.",
   "taskwalk.level": "Task · {place}",
   "taskwalk.todo": "Collect {what} here · {here} of {count}",
+  "taskwalk.todo.photo": "Take {what} here · {here} of {count}",
   "taskwalk.done": "✓ Done · {what} here · {here} of {count}",
   "taskwalk.hud": "Task · {list}",
   "taskwalk.hud.item": "{what} · {here} of {count}",
