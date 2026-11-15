@@ -2,11 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { recordEvaEvent } from './eva.js';
 import { startEventRunner } from './events.js';
 import { resetStore, useMissionStore } from './store.js';
+import { resetDataFiles } from '../data/dataFiles.js';
 
 beforeEach(() => resetStore());
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  resetDataFiles();
   vi.useRealTimers();
 });
 

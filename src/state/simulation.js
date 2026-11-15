@@ -15,7 +15,9 @@ import { startOffRoute } from './offRoute.js';
 import { startSlopeDetourService } from './slopeDetour.js';
 import { startWaypointRunner } from '../sim/waypointRunner.js';
 import { loadStops } from '../data/stops.js';
-import { parseShelters } from '../sim/shelters.js';
+import { parseShelters, SHELTERS_PATH } from '../sim/shelters.js';
+import { HAZARDS_PATH } from '../data/provenance.js';
+import { loadDataFile } from '../data/dataFiles.js';
 import { suitConstantsFromHazards } from '../sim/suitModel.js';
 import { startSuitRunner } from '../sim/suitRunner.js';
 import { startPartnerRunner } from '../sim/partnerRunner.js';
@@ -24,15 +26,10 @@ import { initNavigation } from '../sim/navigation.js';
 import { startEnvironmentRunner } from '../sim/environmentRunner.js';
 import { MEDA_SOL_PATH, parseMedaSol, parseRad, RAD_PATH } from '../data/medaRad.js';
 
-const HAZARDS_URL = import.meta.env.BASE_URL + 'data/hazards.json';
-const SHELTERS_URL = import.meta.env.BASE_URL + 'data/shelters.json';
-const MEDA_URL = import.meta.env.BASE_URL + MEDA_SOL_PATH;
-const RAD_URL = import.meta.env.BASE_URL + RAD_PATH;
-
-// Fetch and check one data file. null when it is missing or invalid, with the reason in the console.
-function loadDataFile(url, name, parse) {
-  return fetch(url)
-    .then((r) => { if (!r.ok) throw new Error(name + ' ' + r.status); return r.json(); })
+// One parsed environment file through the shared loader (provenance reads the same files). null when it is missing
+// or invalid, with the reason in the console.
+function loadEnvironmentFile(path, name, parse) {
+  return loadDataFile(path)
     .then(parse)
     .catch((e) => { console.warn(name + ' not loaded, its environment values stay empty:', e); return null; });
 }
@@ -64,8 +61,8 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
   const stopsReady = loadStops().catch((e) => { console.error('stops.json not loaded, arrival radius 5 m:', e); return null; });
   let stopped = false, suit = null, legs = null, clock = null, eva = null, partner = null, environment = null;
   const environmentData = Promise.all([
-    loadDataFile(MEDA_URL, 'meda_sol.json', parseMedaSol),
-    loadDataFile(RAD_URL, 'rad.json', parseRad),
+    loadEnvironmentFile(MEDA_SOL_PATH, 'meda_sol.json', parseMedaSol),
+    loadEnvironmentFile(RAD_PATH, 'rad.json', parseRad),
   ]);
 
   const startClock = (restore) => {
@@ -80,9 +77,7 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
   // fetch must not stop the EVA timer.
   startClock(true);
 
-  const shelters = fetch(SHELTERS_URL)
-    .then((r) => { if (!r.ok) throw new Error('shelters.json ' + r.status); return r.json(); })
-    .catch(() => null);
+  const shelters = loadDataFile(SHELTERS_PATH).catch(() => null);
   // The habitat entry is the first shelter in the real file (the foot of the airlock steps), not the HAB route waypoint.
   // null when the file is missing or invalid: the suit runner then uses its DEFAULT_HABITAT and the EVA statistics do not start.
   const habitatEntry = shelters.then((data) => {
@@ -94,7 +89,7 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
   });
 
   const suitData = Promise.all([
-    fetch(HAZARDS_URL).then((r) => { if (!r.ok) throw new Error('hazards.json ' + r.status); return r.json(); }),
+    loadDataFile(HAZARDS_PATH),
     habitatEntry,
   ])
     .then(([hazards, entry]) => {

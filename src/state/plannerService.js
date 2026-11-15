@@ -1,22 +1,15 @@
 // One planner worker shared by the off-route watcher (#98) and the slope
 // detour (#69). The terrain and cost grid are loaded once and released when the
 // last consumer stops.
-import { buildCostGrid } from '../sim/costGrid.js';
+import { loadCostGrid } from '../data/dataFiles.js';
 import { createRoutePlannerClient } from '../sim/routePlannerClient.js';
-
-const TERRAIN_URL = import.meta.env.BASE_URL + 'marswalk/assets/terrain.json';
 
 let servicePromise = null;
 let references = 0;
 
 function load() {
-  return fetch(TERRAIN_URL)
-    .then((response) => {
-      if (!response.ok) throw new Error(`terrain.json ${response.status}`);
-      return response.json();
-    })
-    .then(async (terrainJson) => {
-      const grid = buildCostGrid(terrainJson);
+  return loadCostGrid()
+    .then(async (grid) => {
       const client = createRoutePlannerClient();
       await client.setGrid(grid);
       return client;

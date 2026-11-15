@@ -14,6 +14,7 @@ import { t, translateText } from '../i18n/index.js';
  * Plain JavaScript, no React and no three.js. The component is src/components/SourceTag.jsx.
  */
 import { hudLabel, MEDA_SOL_PATH, parseMedaSol, parseRad, RAD_PATH } from './medaRad.js';
+import { loadDataFile } from './dataFiles.js';
 
 export const HAZARDS_PATH = 'data/hazards.json';
 export const CREDITS_PATH = 'data/credits.json';
@@ -310,12 +311,14 @@ export const provenance = createProvenanceRegistry({ entries: STORE_PATHS });
 
 /**
  * Fetch the data files and fill the registry. A file that fails keeps its declared entries and logs a warning.
+ * Without `fetchFn` the files come from the shared loader (src/data/dataFiles.js), one request per file per page.
  * @param {{ registry?: ReturnType<typeof createProvenanceRegistry>, fetchFn?: typeof fetch, base?: string }} [options]
  */
-export async function loadProvenance({ registry = provenance, fetchFn = fetch, base = import.meta.env?.BASE_URL ?? '/' } = {}) {
+export async function loadProvenance({ registry = provenance, fetchFn, base = import.meta.env?.BASE_URL ?? '/' } = {}) {
   const files = { hazards: HAZARDS_PATH, meda: MEDA_SOL_PATH, rad: RAD_PATH, credits: CREDITS_PATH };
   const keys = Object.keys(files);
   const results = await Promise.allSettled(keys.map(async (k) => {
+    if (!fetchFn) return loadDataFile(files[k], base);
     const r = await fetchFn(base + files[k]);
     if (!r.ok) throw new Error(`${files[k]} ${r.status}`);
     return r.json();

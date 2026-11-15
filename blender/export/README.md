@@ -38,6 +38,10 @@ column 0 = west), 751 x 751 points, about 2 m apart, with normals and UVs. It is
 source mesh `Jezero_SRC` with the same resampling as `assets/terrain.json`, so the visible ground and
 the height grid used by the route planner agree. `assets/terrain_tiles.json` records the extent.
 
+The app does not load the tiles. It builds the ground from `terrain.json`. Both files stay in
+`public/marswalk/assets/` for these scripts, and `vite.config.js` deletes them from `dist/` after
+the build, so they are not deployed (#205). To ship them, remove them from `NOT_DEPLOYED` there.
+
 The tiles are Draco-compressed (1.7 MB). In three.js they need a `DRACOLoader`:
 
 ```js

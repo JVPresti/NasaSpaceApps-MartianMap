@@ -11,6 +11,7 @@
  *
  * Plain JavaScript, no React and no three.js.
  */
+import { loadDataFile } from './dataFiles.js';
 
 /** Where the app serves the file, relative to the Vite base URL. */
 export const STOPS_PATH = 'data/stops.json';
@@ -149,11 +150,13 @@ export function imageUrl(image, base = import.meta.env?.BASE_URL ?? '/') {
 }
 
 /**
- * Fetch and check `stops.json`.
+ * Fetch and check `stops.json`. Without `fetch` the file comes from the shared loader (src/data/dataFiles.js).
  * @param {{fetch?: typeof fetch, base?: string, signal?: AbortSignal}} [options]
  * @returns {Promise<Array<object>>}
  */
-export async function loadStops({ fetch: fetchImpl = globalThis.fetch, base = import.meta.env?.BASE_URL ?? '/', signal } = {}) {
+export async function loadStops({ fetch: fetchImpl, base = import.meta.env?.BASE_URL ?? '/', signal } = {}) {
+  if (!fetchImpl && !signal) return parseStops(await loadDataFile(STOPS_PATH, base));
+  fetchImpl ??= globalThis.fetch;
   const response = await fetchImpl(base + STOPS_PATH, signal ? { signal } : undefined);
   if (!response.ok) throw new Error(`stops.json ${response.status}`);
   return parseStops(await response.json());
