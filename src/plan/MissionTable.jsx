@@ -308,7 +308,7 @@ export function BeginButton({ planner, totals, evaBegun, onBeginEva }) {
  */
 export default function MissionTable({ planner, waypoints, evaBegun = false, onBeginEva, onControls }) {
   const [tab, setTab] = useState('site');   // the table opens on step 1
-  const tabs = useOnlineTabs(TABS);   // online (#52): adds the Crew tab
+  const tabs = useOnlineTabs(TABS, tab, setTab);   // online (#52): adds the Crew tab, leaves it after Leave
   const route = useMissionStore((s) => s.route);
   const layer = useMissionStore((s) => s.view.layer);
   const clock = useMissionStore(useShallow((s) => ({ lmst: s.mission.lmst, elapsedSec: s.mission.elapsedSec })));

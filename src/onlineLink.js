@@ -93,6 +93,9 @@ export function createOnlineController({
   let netPromise = null;
   let startSent = false;
   let stopSync = null;
+  const joinListeners = new Set();
+  // A join counts once, when joinSeq goes up, including a welcome that lands inside join() itself.
+  session.subscribe((s, prev) => { if (s.joinSeq > prev.joinSeq) for (const fn of [...joinListeners]) fn(); });
 
   function ensureNet() {
     if (!netPromise) {
@@ -127,7 +130,9 @@ export function createOnlineController({
   }
 
   // Follows the connection while a handle exists: the join outcome, the seats and the mission start.
-  store.subscribe((state) => {
+  store.subscribe((state, previous) => {
+    // Only the room and the mode matter here; the simulation writes the store several times a second.
+    if (state.online === previous?.online && state.mode === previous?.mode) return;
     const s = session.getState();
     if (!s.handle) return;
     const online = state.online || {};
@@ -203,6 +208,14 @@ export function createOnlineController({
       net.newPlayerId();
       session.setState({ joining: false });
       return api.join();
+    },
+    /**
+     * Calls fn after every join from now on (the room seated the player, or gave up and the game goes on solo).
+     * A listener added after a join is not called for it. Returns a function that removes the listener.
+     */
+    onJoined(fn) {
+      joinListeners.add(fn);
+      return () => joinListeners.delete(fn);
     },
     /** After 4001: the other seat, at once. */
     switchRole(role) {

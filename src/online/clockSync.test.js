@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { create } from 'zustand';
-import { startMissionClock } from '../sim/missionClock.js';
+import { readClockSession, startMissionClock } from '../sim/missionClock.js';
 import { createInitialState } from '../state/store.js';
 import { sharedStartMs, startClockSync } from './clockSync.js';
 
@@ -76,6 +76,21 @@ describe('shared mission clock', () => {
     const stopSync = startClockSync(store);
     const clock = startMissionClock({ store, now: () => server, storage: null, setInterval: () => null, clearInterval: () => {}, restore: false });
     expect(store.getState().mission.elapsedSec).toBeCloseTo(90, 6);
+    clock.stop(); stopSync();
+  });
+
+  it('saves a shared session paused, so a reload waits for the room instead of running on its own', () => {
+    const server = 4_000_000;
+    const saved = new Map();
+    const storage = { getItem: (k) => saved.get(k) ?? null, setItem: (k, v) => saved.set(k, v), removeItem: (k) => saved.delete(k) };
+    const store = create(() => createInitialState());
+    store.setState((s) => ({ online: { ...s.online, code: 'ABCD', status: 'open', startedAtMs: server - 20_000, offsetMs: 0 } }));
+    const stopSync = startClockSync(store);
+    const clock = startMissionClock({ store, now: () => server, storage, setInterval: () => null, clearInterval: () => {} });
+    expect(store.getState().mission.paused).toBe(false);
+    const stored = readClockSession(storage);
+    expect(stored).toMatchObject({ paused: true });
+    expect(stored.elapsedSec).toBeCloseTo(20, 6);
     clock.stop(); stopSync();
   });
 

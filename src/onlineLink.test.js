@@ -240,6 +240,34 @@ describe('the join counter that moves the start screen on', () => {
     await c.join();
     expect(c.session.getState()).toMatchObject({ joined: true, joinSeq: 1 });
   });
+
+  it('onJoined (what the start screen listens to) fires once per join, and not for a join before it listened', async () => {
+    const store = create(() => createInitialState());
+    const net = fakeNet(store);
+    const c = createOnlineController({ store, load: () => Promise.resolve(net), storage: memoryStorage(), ...fakeLocation(), warn: () => {} });
+    c.openRoom('ABCD');
+    const first = vi.fn();
+    const off = c.onJoined(first);
+    // a welcome inside startOnline: joining and joined land in the same tick
+    const start = net.startOnline;
+    net.startOnline = (opts) => { const h = start(opts); patch(store, { status: 'open' }); return h; };
+    await c.join();
+    expect(first).toHaveBeenCalledOnce();
+    patch(store, { rttMs: 12 });
+    expect(first).toHaveBeenCalledOnce();
+    // a start screen shown again after a restart listens from now on: the earlier join does not move it
+    const later = vi.fn();
+    c.onJoined(later);
+    expect(later).not.toHaveBeenCalled();
+    // a slow room: Join, then the welcome later
+    net.startOnline = start;
+    off();
+    await c.joinAsNewPlayer();
+    expect(later).not.toHaveBeenCalled();
+    patch(store, { status: 'open' });
+    expect(later).toHaveBeenCalledOnce();
+    expect(first).toHaveBeenCalledOnce();
+  });
 });
 
 describe('isHabitatSeat', () => {

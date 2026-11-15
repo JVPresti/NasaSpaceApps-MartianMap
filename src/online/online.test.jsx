@@ -8,6 +8,7 @@ import { BeginButton } from '../plan/MissionTable.jsx';
 import { CrewTab, OnlineIssue } from './CrewPanel.jsx';
 import OnlineStart from './JoinPanel.jsx';
 import RoomBadge from './RoomBadge.jsx';
+import { tabAfterRoom } from './hooks.js';
 
 // SSR reads a Zustand store's creation-time state; render the current one instead, as src/i18n/interface.test.jsx does.
 vi.mock('../state/store.js', async (importOriginal) => {
@@ -155,6 +156,15 @@ describe('the habitat seat and the pause menu online', () => {
     expect(html).toContain('Online the mission clock and the events keep running while this menu is open.');
     expect(html).not.toContain('EVA paused');
     expect(html).toContain('Language');
+  });
+});
+
+describe('the Crew tab after Leave', () => {
+  it('goes back to the first step when the room is gone, and stays put otherwise', () => {
+    const tabs = [{ id: 'site' }, { id: 'route' }];
+    expect(tabAfterRoom(false, 'crew', tabs)).toBe('site');
+    expect(tabAfterRoom(true, 'crew', tabs)).toBeNull();
+    expect(tabAfterRoom(false, 'route', tabs)).toBeNull();
   });
 });
 

@@ -535,7 +535,9 @@ export function startMissionClock({
   let published = null;
   let stopped = false;
 
-  const persist = () => writeClockSession(storage, session);
+  // A shared session is saved paused at its current reading: after a reload the clock waits for the room again
+  // instead of running on its own before the rejoin.
+  const persist = () => writeClockSession(storage, shared !== null ? pauseClockSession(session, now()) : session);
   // Online (9.5): while the store holds `mission.sharedStartMs`, the session follows that start and ignores pauses.
   // The app writes it from the room (src/online/clockSync.js); this module never sees the network.
   let shared = sharedStartOf(store.getState());

@@ -125,18 +125,15 @@ export default function OnlineStart({ busy = false, onStart, children }) {
   useLanguage();
   const view = useOnlineSession((s) => s.view);
   const joined = useOnlineSession((s) => s.joined);
-  const joinSeq = useOnlineSession((s) => s.joinSeq);
   const code = useOnlineSession((s) => s.code);
   const badCode = useOnlineSession((s) => s.badCode);
   const status = useMissionStore((s) => s.online.status);
   const controller = getOnlineController();
-  // Continue once per join that happens while this screen is up. joinSeq counts joins, so a welcome that lands in the
-  // same render as the Join press still counts, and a start screen shown again after a restart does not skip itself.
-  const seenSeq = useRef(joinSeq);
-
-  useEffect(() => {
-    if (joinSeq > seenSeq.current) { seenSeq.current = joinSeq; onStart?.(); }
-  }, [joinSeq, onStart]);
+  // Continue once per join that happens while this screen is up (controller.onJoined, tested in src/onlineLink.test.js).
+  // A start screen shown again after a restart does not skip itself: it only hears joins made after it mounted.
+  const onStartRef = useRef(onStart);
+  useEffect(() => { onStartRef.current = onStart; });
+  useEffect(() => controller?.onJoined(() => onStartRef.current?.()), [controller]);
 
   if (view === 'pick') return <RoomPicker />;
   if (view === 'join' && !joined) return <JoinPanel busy={busy} />;

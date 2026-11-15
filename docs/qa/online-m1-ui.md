@@ -6,7 +6,7 @@ The run recorded here passed 19 of 19 checks. It started at 05:13 PST and took 1
 
 Earlier runs, not recorded in that file:
 
-- Five runs on SwiftShader (headless, software WebGL), 10 to 12 minutes each. The first stopped at once: that build did not expose the store to the script. The next three failed checks, from the script problems listed at the end of this page and once from a 2825 ms join during a memory-pressure spike. The fifth passed every check.
+- Five runs on SwiftShader (headless, software WebGL), 10 to 12 minutes each. The first stopped at once: that build did not expose the store to the script. The next three failed checks, from the script problems listed at the end of this page and once from a join slower than 2 s during a memory-pressure spike. The fifth passed every check.
 - Three earlier GPU runs. Two passed 19 of 19. The third, during the memory-pressure spike, timed out at the room-full step.
 
 ## How to rerun
@@ -18,7 +18,7 @@ CHROME=/path/to/chrome ROOM=ABCD node scripts/room-e2e-ui.mjs docs/qa/img
 QA_GPU=1 CHROME=/path/to/chromium ROOM=ABCD node scripts/room-e2e-ui.mjs docs/qa/img   # GPU through WSLg
 ```
 
-Use a fresh `ROOM` for each run: the room keeps its mission start. Without `QA_GPU=1` the script uses headless Chrome with SwiftShader (`scripts/qaBrowser.mjs`). It writes `docs/qa/img/e2e-results.json` and the screenshots.
+Use a fresh `ROOM` for each run: the room keeps its mission start. Without `QA_GPU=1` the script uses headless Chrome with SwiftShader (`scripts/qaBrowser.mjs`). It writes `docs/qa/img/e2e-results.json` and five screenshots; three are committed.
 
 ## Results
 
@@ -37,8 +37,6 @@ From [img/e2e-results.json](img/e2e-results.json):
 | 5th surface player (A plus three socket players) | "Surface crew is full: all 4 seats are taken"; "Join as Habitat" seats it |
 | Duplicated tab (same player id from sessionStorage) | the old tab shows "This player joined from another tab"; "Join as a new player" seats it with a new id, both tabs in the room |
 
-The earlier runs gave join times from 51 to 2825 ms (the 2825 ms under the memory-pressure spike), leave times from 119 to 983 ms and clock differences from 0.0 to 64.5 ms (the 64.5 ms under load). Those numbers come from console logs that were not kept.
-
 The mission clock check reads `(Date.now() - mission.anchorMs) x timeScale` in each page. That is the clock's own formula: while the room's start is known, the anchor is `mission.sharedStartMs`. Both browsers ran on one machine, so their server clock offsets are close to 0. The two-client unit test in `src/online/clockSync.test.js` covers different offsets (0 and -3456.7 ms): mission times stay within 1 ms.
 
 The first SwiftShader runs failed on three problems in the script, not in the app. Filler sockets that never sent `ping` were closed by the room as stale after 30 s. A tab rendering Walk on SwiftShader starved its own pings. And the "both tabs seated" check ran before the welcome arrived. The script now pings, takes A back to the table after the clock check, and waits up to 10 s for the crew list.
@@ -49,6 +47,4 @@ The first SwiftShader runs failed on three problems in the script, not in the ap
 | --- | --- | --- |
 | ![Join panel](img/online-m1-join.png) | ![Crew tab](img/online-m1-crew.png) | ![Room full](img/online-m1-room-full.png) |
 
-| Habitat seat, crew tab | Replaced |
-| --- | --- |
-| ![Habitat](img/online-m1-crew-habitat.png) | ![Replaced](img/online-m1-replaced.png) |
+The script also writes `online-m1-crew-habitat.png` and `online-m1-replaced.png`. They are left out of the repository to keep it small.
