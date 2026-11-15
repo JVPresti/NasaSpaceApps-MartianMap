@@ -89,3 +89,28 @@
   .event-banner-walk .event-text { font-size: 14px; }
   .app:has(.event-banner-walk) .mission-beat { display: none; }
 }
+
+/* The steep-slope warning (SlopeAhead.jsx): full width under the waypoint row in portrait, over the waypoint row in
+   landscape, with a touch-sized detour button. */
+@media (pointer: coarse) {
+  .hud-slope-copy button { min-height: 44px; }
+}
+@media (pointer: coarse) and (max-width: 600px) {
+  .hud-slope-warning { left: var(--side-l); right: var(--side-r); top: calc(170px + var(--top)); width: auto; }
+}
+@media (pointer: coarse) and (max-height: 500px) {
+  .hud-slope-warning { left: 50%; right: auto; transform: translateX(-50%); top: calc(50px + var(--top)); width: min(44vw, 360px); }
+}
+
+/* The data layer chip (layerChip.css) leaves the stick's corner: under the partner chip in portrait, right of the suit
+   panel in landscape. Its "0 off" key cap is a keyboard hint; Layer off is in the bar's More menu. */
+@media (pointer: coarse) {
+  .hud-layer-key { display: none; }
+}
+@media (pointer: coarse) and (max-width: 600px) {
+  .hud .hud-layer { left: var(--side-l); bottom: auto; top: calc(170px + var(--top) + 15.5em + 48px); max-width: calc(100vw - 20px); }
+}
+@media (pointer: coarse) and (max-height: 500px) {
+  .hud .hud-layer { left: calc(var(--side-l) + 160px); bottom: auto; top: calc(110px + var(--top)); max-width: 30vw; }
+  .hud .hud-map-legend { display: none; }
+}
