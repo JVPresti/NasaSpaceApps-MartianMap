@@ -123,9 +123,11 @@ function markerName(waypoint, index) {
  *   eventRoute: the route is an event's route to a shelter (store `route.shelter` set): drawn in the caution colour, its
  *   end tagged SHELTER as on the HUD; pass the shelter entry ({ name }) instead of true to name a shelter that is not a
  *   stop. planPath: [[x, z], ...] the approved plan, drawn thin in the plan colour under an event route
+ *   flipTags: false keeps every stop tag to the right of its marker, even near the map's right edge (the debrief's
+ *   review map, where a flipped tag would land on the deviation chips and the walked track)
  * Clicking a stop opens a small window with its height, slope and the leg that reaches it.
  */
-export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, alternatives = NO_ALTERNATIVES, routeClass = '', traverse = false, track = null, stretches = NO_ALTERNATIVES, marks = NO_ALTERNATIVES, focus = null, mast = null, minSpanM = MAP_MIN_SPAN_M, position = null, eventRoute = false, planPath = null }) {
+export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, alternatives = NO_ALTERNATIVES, routeClass = '', traverse = false, track = null, stretches = NO_ALTERNATIVES, marks = NO_ALTERNATIVES, focus = null, mast = null, minSpanM = MAP_MIN_SPAN_M, position = null, eventRoute = false, planPath = null, flipTags = true }) {
   const canvasRef = useRef(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -261,7 +263,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
           const name = route ? markerName(w, k) : k === 0 ? t('table.habitat') : translateText(w.label ?? w.name);
           const target = science.has(w.name) || k === last;
           return (
-            <li key={k} className={'map-marker' + (target ? ' target' : '') + (tagFlips(u) ? ' flip' : '')} style={{ left: `${u}%`, top: `${v}%` }}>
+            <li key={k} className={'map-marker' + (target ? ' target' : '') + (flipTags && tagFlips(u) ? ' flip' : '')} style={{ left: `${u}%`, top: `${v}%` }}>
               <button
                 type="button"
                 className="map-marker-hit"
@@ -279,7 +281,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
         {destination && shelterAt < 0 && route && (() => {
           const [u, v] = toMap(destination.x, destination.z, crop);
           return (
-            <li className={'map-place map-place-shelter map-place-event' + (tagFlips(u) ? ' flip' : '')} style={{ left: `${u}%`, top: `${v}%` }}>
+            <li className={'map-place map-place-shelter map-place-event' + (flipTags && tagFlips(u) ? ' flip' : '')} style={{ left: `${u}%`, top: `${v}%` }}>
               <i aria-hidden="true" />
               <span className="map-marker-tag">{typeof eventRoute === 'object' && eventRoute?.name && <b>{eventRoute.name}</b>}<small className="map-tag-shelter">{t('ui.shelter.89')}</small></span>
             </li>

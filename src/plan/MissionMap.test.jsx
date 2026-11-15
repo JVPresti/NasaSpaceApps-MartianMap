@@ -64,6 +64,12 @@ describe('MissionMap', () => {
     expect(html).toMatch(/class="map-marker target"/);   // the stop, west of it, opens to the right as before
   });
 
+  it('keeps every tag to the right when the screen turns flipping off, as the debrief review map does (A3)', () => {
+    const html = render({ minSpanM: 60, flipTags: false });
+    expect(html).not.toContain('flip');
+    expect(html).toContain('<b>Habitat airlock</b>');
+  });
+
   it('says SHELTER in the interface language', () => {
     setLanguage('es');
     expect(render({ eventRoute: true, path: [[493, 539], [535.1, 574.1]] })).toContain('REFUGIO');
