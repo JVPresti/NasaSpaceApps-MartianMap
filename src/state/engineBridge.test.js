@@ -5,7 +5,7 @@ import { resetStore, useMissionStore } from './store.js';
 function fakeEngine() {
   return {
     setMode: vi.fn(), setSlopeGrid: vi.fn(), setLayer: vi.fn(), setSky: vi.fn(), setSkyBlend: vi.fn(),
-    setRoute: vi.fn(), setShelter: vi.fn(), setDust: vi.fn(), clearPrints: vi.fn(),
+    setRoute: vi.fn(), setShelter: vi.fn(), setDust: vi.fn(), clearPrints: vi.fn(), setLookSettings: vi.fn(),
     getPlayer: () => ({ x: 0, z: 0, headingDeg: 0 }),
   };
 }
@@ -43,6 +43,28 @@ describe('engine bridge boot prints', () => {
     expect(engine.clearPrints).toHaveBeenCalledTimes(1);
     useMissionStore.setState((s) => ({ mission: { ...s.mission, elapsedSec: 60 } }));
     expect(engine.clearPrints).toHaveBeenCalledTimes(1);
+    disconnect();
+  });
+});
+
+describe('engine bridge look settings', () => {
+  it('pushes the store look settings once when it connects', () => {
+    const engine = fakeEngine();
+    const disconnect = connectEngine(engine);
+    expect(engine.setLookSettings).toHaveBeenCalledTimes(1);
+    expect(engine.setLookSettings).toHaveBeenCalledWith(useMissionStore.getState().settings.look);
+    disconnect();
+  });
+
+  it('pushes a new look object again, and nothing for an unrelated update', () => {
+    const engine = fakeEngine();
+    const disconnect = connectEngine(engine);
+    const next = { sensitivity: 1.6, invertY: true };
+    useMissionStore.setState((s) => ({ settings: { ...s.settings, look: next } }));
+    expect(engine.setLookSettings).toHaveBeenCalledTimes(2);
+    expect(engine.setLookSettings).toHaveBeenLastCalledWith(next);
+    useMissionStore.setState((s) => ({ view: { ...s.view, layer: 3 } }));
+    expect(engine.setLookSettings).toHaveBeenCalledTimes(2);
     disconnect();
   });
 });

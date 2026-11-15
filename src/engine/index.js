@@ -50,6 +50,7 @@ import { createSampleDust } from './sampleDust.js';
 import { createSlopeGrid } from './slopeGrid.js';
 import { createHabitat } from './habitat.js';
 import { createView, createViewState, CHEYAVA_VIEW } from './view.js';
+import { LOOK_DEFAULTS, clampLookSettings } from './lookSettings.js';
 import { airlockExit, partnerPatrol } from './spawn.js';
 import { canOpenWrist, wristRestoreState } from './wrist.js';
 import { createLoadLifecycle } from './lifecycle.js';
@@ -77,7 +78,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   let inputEnabled = inputEnabledOption !== false;
   let pendingLock = null, pendingLockResolve = null;
   let pendingReset = false;
-  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false, wristScreen: null };   // set before boot ends, applied when ready
+  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false, wristScreen: null, lookSettings: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -246,6 +247,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       inputEnabled,
       onLockChange: (locked) => { if (alive) onLockChange(locked); },
     });
+    viewCtl.setLookSettings(pending.lookSettings ?? LOOK_DEFAULTS);   // a call made before ready must not be lost
     if (pendingLockResolve) {
       // A request made before ready has no live user gesture left by now; report the browser's real outcome.
       const resolvePending = pendingLockResolve;
@@ -483,7 +485,8 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     /**
      * Return the scene to the EVA spawn: clear input, release the lock, drop the route/shelter markers and
      * put the player back at the airlock in Plan (#166); the next Walk starts the EVA again. The store reset and simulation restart are the caller's job
-     * (src/state/evaSession.js) because the engine owns no simulation. Quality is deliberately untouched.
+     * (src/state/evaSession.js) because the engine owns no simulation. Quality and the look settings (#102) are deliberately untouched:
+     * they are player preferences, not session state.
      * @returns {boolean} false when called before ready (the reset is applied at the end of boot)
      */
     resetSession() {
@@ -567,6 +570,17 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     /** Slope grid in Walk mode (slopeGrid.js, #50): lines on the ground around the player coloured by slope. */
     setSlopeGrid(on) {
       if (started) sys.slopeGrid.set(!!on); else pending.slopeGrid = !!on;
+    },
+    /**
+     * Mouse look (#102): `sensitivity` multiplies the base rate of both pointer-locked and drag look (0.5-2,
+     * default 1, rounded to 0.1), and `invertY` flips only the vertical axis (default false). Values are
+     * clamped, never thrown, and a call before `ready` is applied at the end of boot. A restart keeps them.
+     * @param {{ sensitivity?: number, invertY?: boolean }} settings
+     */
+    setLookSettings(settings) {
+      const next = clampLookSettings(settings);
+      pending.lookSettings = next;
+      if (viewCtl) viewCtl.setLookSettings(next);
     },
     /**
      * Storm dust (dust.js, #27), 0 = clear (the scene as before) to 1 = global storm: thicker, drifting haze on everything

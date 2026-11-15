@@ -1,6 +1,8 @@
-import { t, translateText, setLanguage } from '../i18n/index.js';
+import { formatNumber, t, translateText, setLanguage } from '../i18n/index.js';
 import { useLanguage } from '../i18n/useLanguage.js';
 import { useEffect, useRef } from 'react';
+import { LOOK_SENSITIVITY_MAX, LOOK_SENSITIVITY_MIN, LOOK_SENSITIVITY_STEP } from '../engine/lookSettings.js';
+import { setLookSettings, useMissionStore } from '../state/store.js';
 import ControlsHelp from './ControlsHelp.jsx';
 import Modal from './Modal.jsx';
 import ModeSwitch from './ModeSwitch.jsx';
@@ -46,6 +48,7 @@ export default function PauseMenu({
   onCancel,
 }) {
   const language = useLanguage();
+  const look = useMissionStore((s) => s.settings.look);
   const resumeRef = useRef(null);
   const backRef = useRef(null);
   const cancelRef = useRef(null);
@@ -138,6 +141,39 @@ export default function PauseMenu({
             </p>
             {quality?.gpu && <p className="quality-device">{t('menu.gpu')}{quality.gpu}</p>}
             {qualityError && <p className="dialog-error" role="alert">{translateText(qualityError)}</p>}
+          </div>
+
+          <div className="look-block">
+            <h3>{t('menu.look')}</h3>
+            <div className="look-sensitivity-head">
+              <label htmlFor="look-sensitivity">{t('menu.look.sensitivity')}</label>
+              {/* The range input announces its own value; the output is visual only, so no aria-live here. */}
+              <output htmlFor="look-sensitivity" className="look-value">
+                {formatNumber(look.sensitivity, 1) + '×'}
+              </output>
+            </div>
+            <input
+              id="look-sensitivity"
+              type="range"
+              min={LOOK_SENSITIVITY_MIN}
+              max={LOOK_SENSITIVITY_MAX}
+              step={LOOK_SENSITIVITY_STEP}
+              value={look.sensitivity}
+              aria-describedby="look-help"
+              disabled={busy}
+              onChange={(event) => setLookSettings({ sensitivity: Number(event.target.value) })}
+            />
+            <label className="look-invert">
+              <input
+                type="checkbox"
+                checked={look.invertY}
+                aria-describedby="look-help"
+                disabled={busy}
+                onChange={(event) => setLookSettings({ invertY: event.target.checked })}
+              />
+              <span>{t('menu.look.invert')}</span>
+            </label>
+            <p id="look-help" className="menu-note">{t('menu.look.saved')}</p>
           </div>
 
           {mode === 'plan' && <p className="dialog-footnote">{t('menu.plan.resumes.without.capturing.the.mouse')}</p>}

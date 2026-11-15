@@ -279,7 +279,8 @@
   min-height: 44px;
 }
 
-.quality-block {
+.quality-block,
+.look-block {
   margin-top: 18px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
@@ -299,7 +300,8 @@
 }
 .language-block select:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
 
-.quality-block h3 {
+.quality-block h3,
+.look-block h3 {
   margin: 0 0 9px;
   font-size: 10px;
   font-weight: 700;
@@ -355,6 +357,49 @@
   font-variant-numeric: tabular-nums;
   color: var(--dim);
 }
+
+.look-sensitivity-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.look-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.look-block input[type="range"] {
+  width: 100%;
+  height: 44px;   /* same touch target as the buttons; the native track stays thin */
+  margin: 0;
+  accent-color: var(--cyan);
+  cursor: pointer;
+}
+
+.look-block input[type="range"]:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+.look-invert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.look-invert input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--cyan);
+}
+
+.look-invert input[type="checkbox"]:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+.look-block .menu-note { margin-top: 6px; }
 
 @media (max-width: 560px) {
   .dialog-body,
