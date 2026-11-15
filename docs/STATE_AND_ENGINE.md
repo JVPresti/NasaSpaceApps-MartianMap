@@ -54,6 +54,7 @@ setMode('plan');
 | `mode` | `'walk'` or `'plan'`; starts as `'plan'`, the habitat's planning table | interface (mode switch) | #5, #166 |
 | `mission.startedAtMs`, `elapsedSec`, `paused` | mission clock. `startedAtMs` is the first start timestamp; `elapsedSec` is the current published reading, excluding pauses and including the time scale | mission clock | #59 |
 | `mission.anchorMs` | wall-clock ms of the last start, pause, resume or scale change. The matching elapsed baseline is private to the clock session; the store's current `elapsedSec` is already advanced | mission clock | #59 |
+| `mission.sharedStartMs` | online only: the room's mission start on this machine's clock, `online.startedAtMs - online.offsetMs`, or `null` (offline, or before the first `start`). While it is set the mission clock reads `(now - sharedStartMs) x timeScale` and answers every pause write with the running reading: online there is no pause (docs/IMPLEMENTATION_PLAN.md 9.5) | `src/online/clockSync.js` | #52 |
 | `mission.sol`, `lmst` | sol number, local mean solar time `'HH:MM'` at 77.3053 E | mission clock | #59 |
 | `mission.timeScale` | mission seconds per real second, above 0 (demo 1). Scales both `elapsedSec` and LMST; pause is separate | mission clock, `setMissionTimeScale()` | #59 |
 | `mission.initialSol`, `initialLmst`, `longitudeDeg`, `sky` | demo start configuration and the starting sky preset, kept for a coherent restored session | mission clock | #59 |

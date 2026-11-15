@@ -13,8 +13,13 @@ export function useOnlineTabs(tabs) {
   return online ? [...tabs, { id: CREW_TAB, label: t('online.crew.tab') }] : tabs;
 }
 
-/** True while this tab holds or asks for a habitat seat. */
+/**
+ * True while this tab holds a habitat seat (`online.me.role === 'habitat'` in the store, M4 reads the same), or asks for
+ * one and the room has not answered yet.
+ */
 export function useHabitatSeat() {
-  return useOnlineSession((s) => s.handle !== null && s.role === ROLE.HABITAT);
+  const seated = useMissionStore((s) => s.online.me?.role === ROLE.HABITAT);
+  const asking = useOnlineSession((s) => s.handle !== null && s.role === ROLE.HABITAT);
+  return seated || asking;
 }
 

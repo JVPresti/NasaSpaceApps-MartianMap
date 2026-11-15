@@ -7,17 +7,6 @@ import { RoomLine } from './JoinPanel.jsx';
 import { issueText, onlineIssue, otherRole, roleLabel, swatch } from './onlineText.js';
 import './online.css';
 
-/** In place of Begin EVA for the habitat seat: it stays at the table (#55; M4 adds the map tools). */
-export function HabitatSeatNote() {
-  useLanguage();
-  return (
-    <div className="table-panel online-habitat">
-      <p className="table-label">{t('online.role.habitat')}</p>
-      <p className="table-text small">{t('online.habitat.note')}</p>
-    </div>
-  );
-}
-
 /** Replaced, room full or offline, with what the player can do about it. */
 export function OnlineIssue() {
   useLanguage();

@@ -24,7 +24,8 @@ import dustArt from '../assets/ui/hazard_dust.webp';
 import oxygenArt from '../assets/ui/hazard_oxygen.webp';
 import radiationArt from '../assets/ui/hazard_radiation.webp';
 import { fixed as num, routeMetrics } from './routePlan.js';
-import { CrewTab, HabitatSeatNote } from '../online/CrewPanel.jsx';
+import { CrewTab } from '../online/CrewPanel.jsx';
+import HabitatNote from '../online/HabitatNote.jsx';
 import { CREW_TAB, useHabitatSeat, useOnlineTabs } from '../online/hooks.js';
 import './table.css';
 
@@ -287,7 +288,7 @@ export function BeginButton({ planner, totals, evaBegun, onBeginEva }) {
   const route = useMissionStore((s) => s.route);
   const decision = decisionFor(planner, totals);
   const habitatSeat = useHabitatSeat();
-  if (habitatSeat) return <HabitatSeatNote />;   // online (#55): the habitat seat never goes out
+  if (habitatSeat) return <HabitatNote />;   // online (#55): the habitat seat never goes out
   return (
     <button
       type="button"

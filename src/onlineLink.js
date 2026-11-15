@@ -156,6 +156,7 @@ export function createOnlineController({
 
   const api = {
     session,
+    store,
     ensureNet,
     /** Opens the join panel for a room code, loads src/net/ and puts the code in the link. */
     openRoom(code) {
@@ -231,8 +232,10 @@ export function useOnlineSession(selector) {
 
 /** True while this tab holds or asks for a habitat seat: it stays at the mission table and never walks. */
 export function isHabitatSeat() {
-  const s = controller?.session.getState();
-  return !!s && s.handle !== null && s.role === ROLE.HABITAT;
+  if (!controller) return false;
+  if (controller.store.getState().online?.me?.role === ROLE.HABITAT) return true;
+  const s = controller.session.getState();
+  return s.handle !== null && s.role === ROLE.HABITAT;
 }
 
 /**
