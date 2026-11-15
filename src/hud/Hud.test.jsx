@@ -30,14 +30,24 @@ describe('the visor HUD and the habitat table (#244)', () => {
     const html = render(engine(false));
     expect(html).toContain('hud-waypoint');
     expect(html).toContain('hud-wp-marker');
+    expect(html).toContain('hud-reticle');
     expect(html).toContain('S1');
   });
 
-  it('leaves the centre to the table prompt in the cabin: no next-waypoint panel or marker, the rest of the HUD stays', () => {
+  it('leaves the centre to the table prompt in the cabin: no next-waypoint panel, marker or ring, the rest of the HUD stays', () => {
     walking();
     const html = render(engine(true));
     expect(html).not.toContain('hud-waypoint');
     expect(html).not.toContain('hud-wp-marker');
+    expect(html).not.toContain('hud-reticle');
     for (const panel of ['hud-suit', 'hud-sampling', 'hud-env', 'hud-heading']) expect(html).toContain(panel);
+  });
+
+  it('keeps the stow prompt in the cabin while a sample is in the scoop, since E stows it there', () => {
+    walking();
+    useMissionStore.setState((s) => ({ sampling: { ...s.sampling, status: { phase: 'holding', holding: 'ground', target: null, actions: { click: null, photo: null, stow: 'stow', case: null } } } }));
+    const html = render(engine(true));
+    expect(html).toContain('hud-sample-prompt');
+    expect(html).not.toContain('hud-reticle');
   });
 });

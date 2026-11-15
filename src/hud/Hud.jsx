@@ -267,7 +267,7 @@ function WaypointMarker({ engine }) {
  */
 export default function Hud({ engine, minimapRoute }) {
   // In the habitat's cabin the table prompt is the interface (#244): the next-waypoint panel and marker, centred and about
-  // the walk outside, give way to it so they neither cover it nor point the crew back out.
+  // the walk outside, give way to it so they neither cover it nor point the crew back out, and so does the sampling ring.
   const cabin = useInCabin(engine);
   return (
     <div className="hud" aria-label={t('ui.helmet.display')}>
@@ -287,7 +287,7 @@ export default function Hud({ engine, minimapRoute }) {
         <RadioLink engine={engine} />
       </div>
       {!cabin && <WaypointPanel heightAt={engine?.heightAt} slopeAt={engine?.slopeAt} />}
-      <SamplingCrosshair />
+      <SamplingCrosshair reticle={!cabin} />
     </div>
   );
 }

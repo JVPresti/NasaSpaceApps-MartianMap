@@ -44,14 +44,14 @@ export function SamplingChecklist() {
   );
 }
 
-function SamplingPrompt() {
+function SamplingPrompt({ reticle = true }) {
   const status = useMissionStore((st) => st.sampling.status);   // a new object only when the status changed (the bridge compares)
   const wristUp = useSyncExternalStore(subscribeWristKeyOwner, wristOwnsKeys, wristOwnsKeys);
   if (wristUp) return null;   // sampling ignores its inputs while the wrist is up (#67), so nothing marks a target
   const p = samplingPrompt(status);
   return (
     <>
-      <div className={'hud-reticle hud-reticle-' + p.reticle} aria-hidden="true" />
+      {reticle && <div className={'hud-reticle hud-reticle-' + p.reticle} aria-hidden="true" />}
       {(p.items.length > 0 || p.note) && (
         <div className="hud-sample-prompt" role="status">
           {p.items.map((it) => <div key={it.key} className="hud-prompt-item"><kbd>{it.key}</kbd><span>{it.text}</span></div>)}
@@ -68,12 +68,16 @@ function PhotoFlash() {
   return photos ? <div key={photos} className="hud-photo-flash" aria-hidden="true" /> : null;
 }
 
-/** The crosshair, its prompt and the shutter flash: centred on the view, outside the HUD's right column. */
-export function SamplingCrosshair() {
+/**
+ * The crosshair, its prompt and the shutter flash: centred on the view, outside the HUD's right column. `reticle` false
+ * leaves the ring out (the habitat's cabin: nothing there can be sampled, and the ring would sit on the table prompt);
+ * the prompt under it still shows, so a sample in the scoop still says E stows it.
+ */
+export function SamplingCrosshair({ reticle = true }) {
   return (
     <>
       <PhotoFlash />
-      <SamplingPrompt />
+      <SamplingPrompt reticle={reticle} />
     </>
   );
 }
