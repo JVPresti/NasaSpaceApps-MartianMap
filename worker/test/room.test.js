@@ -69,7 +69,7 @@ describe('hello, welcome and crew', () => {
     expect(w).toEqual({
       type: 'welcome', you: { id: 'a', color: 0, role: 'surface' },
       crew: [{ id: 'a', name: 'Crew a', color: 0, role: 'surface', joinedAt: T0 }],
-      startedAt: null, seed: null, now: T0, markers: [], samples: [], caseHolder: null, route: null,
+      startedAt: null, seed: null, now: T0, markers: [], samples: [], caseHolder: null, route: null, go: null,
     });
   });
 
