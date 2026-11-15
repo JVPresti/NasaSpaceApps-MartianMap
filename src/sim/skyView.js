@@ -6,6 +6,10 @@
  * sphere, so open flat ground sees the full upper hemisphere. Terrain that
  * rises above the local horizon hides part of that hemisphere, and with an
  * isotropic flux above the horizon the dose scales with the visible part.
+ * That last step is our assumption (SIM), an upper bound on the saving: the
+ * one measurement on Mars, Curiosity's RAD beside Butte M12, saw about 4 %
+ * less dose with 19 % of the sky blocked (Ehresmann et al. 2021, JGR Planets
+ * 126, doi 10.1029/2021JE006851). The sky view itself is DERIVED geometry.
  *
  * For each cell this module casts rays at a fixed set of azimuths, finds the
  * horizon elevation angle along each ray, and integrates the visible solid
@@ -251,9 +255,10 @@ export function sampleSkyView(sky, x, z) {
 /**
  * How open the sky is along a route: the exposure readout of the Exposure layer (DERIVED from the HiRISE DTM).
  *
- * During a solar particle event the dose scales with the visible sky (see the top of this file and
- * docs/route/shelters.md), so `mean` is the dose on this route as a share of the dose on open flat ground, an upper
- * bound on the saving because the real flux is not isotropic. Sampled every few metres and weighted by length, like
+ * If the dose scaled with the visible sky (the SIM assumption at the top of this file, docs/route/shelters.md), `mean`
+ * would be the dose on this route as a share of the dose on open flat ground. It is a floor on that share, an upper
+ * bound on the saving: the real flux is not isotropic, and RAD measured a dose cut about a fifth of the hidden share.
+ * Sampled every few metres and weighted by length, like
  * radio.js `radioShadowAlongPath`.
  * @param {{ n: number, width: number, depth: number, values: Float32Array }} sky decodeSkyViewGrid's result
  * @param {Array<[number, number]>} path [[x, z], ...] in walking order, as route.path

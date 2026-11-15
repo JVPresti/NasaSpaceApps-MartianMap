@@ -193,7 +193,8 @@ export const LAYERS = [
     decides: 'layers.decides.exposure',
     provenance: {
       tag: 'DERIVED', label: 'HiRISE DTM · sky view',
-      source: 'share of the sky seen from 1 m above the ground, on the 6 m grid of public/data/sky_view.json (npm run skyview); shelters from shelters.json. Narrow range on this tile',
+      source: 'share of the sky seen from 1 m above the ground, on the 6 m grid of public/data/sky_view.json (npm run skyview); shelters from shelters.json. Narrow range on this tile. '
+        + 'The dose cut of a shelter, the share of sky it hides, is a SIM upper bound: RAD measured about 4 % less dose with 19 % of the sky blocked (Ehresmann et al. 2021)',
     },
     get name() { return t('layers.exposure'); },
     get unit() { return t('layers.exposure.unit'); },
