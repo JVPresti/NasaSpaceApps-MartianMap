@@ -957,7 +957,7 @@
   "map.images.n.of.m": "Imagen {n} de {m}",
   "map.images.original": "Original en la NASA",
   "map.images.close": "Cerrar",
-  "ui.rover.track": "Rastro del rover",
+  "ui.rover.track": "Rover",
   "profiles.title": "Perfiles de ruta",
   "profiles.caption": "Distancia, pendiente, contacto por radio, tiempo previsto y oxígeno de los tres perfiles de ruta",
   "profiles.waiting": "Los perfiles aparecen con la primera ruta.",
