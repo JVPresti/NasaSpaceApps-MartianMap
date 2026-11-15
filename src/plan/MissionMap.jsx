@@ -24,6 +24,7 @@ import './mapLayers.css';
 
 const BASE = import.meta.env.BASE_URL + 'marswalk/assets/';
 const PIXELS = 768;
+const TILE_PIXELS = 1024;   // the whole-tile picture drawn while the view moves, about 1.5 m per pixel
 const NO_ALTERNATIVES = [];
 /** A stop this close to the end of an event's route is its shelter (the habitat's stop is its airlock). Metres. */
 const SHELTER_SNAP_M = 8;
@@ -169,17 +170,44 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const boxRef = useRef(null);
   const dragRef = useRef(null);
 
-  // Repaint at most once per frame while zooming or dragging.
+  // While the view moves, the crop comes from a picture of the whole tile for this layer: one drawImage per frame instead
+  // of painting 768 x 768 pixels in JavaScript (about 130 ms, a long task on every pointer move). The exact paint at the
+  // crop's own resolution follows 160 ms after the last move, so a still map looks as before. A new layer paints exactly
+  // at once, then builds its tile picture when the map is idle.
+  const tileRef = useRef(null);   // { data, layer, radio, sky, caution, canvas }
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !data) return undefined;
-    const frame = requestAnimationFrame(() => {
-      const context = canvas.getContext('2d');
+    const context = canvas.getContext('2d');
+    const exact = () => {
       const image = context.createImageData(PIXELS, PIXELS);
       paintMap(image.data, PIXELS, crop, layer, { ...data, radio, sky }, { cautionDeg: caution });
       context.putImageData(image, 0, 0);
-    });
-    return () => cancelAnimationFrame(frame);
+    };
+    const pic = tileRef.current;
+    const same = pic && pic.data === data && pic.layer === layer && pic.radio === radio && pic.sky === sky && pic.caution === caution;
+    let frame = 0, timer = 0, build = 0;
+    if (same) {
+      frame = requestAnimationFrame(() => {
+        const k = TILE_PIXELS / pic.full.size;
+        context.imageSmoothingEnabled = true;
+        context.drawImage(pic.canvas, (crop.x0 - pic.full.x0) * k, (crop.z0 - pic.full.z0) * k, crop.size * k, crop.size * k, 0, 0, PIXELS, PIXELS);
+      });
+      timer = setTimeout(exact, 160);
+    } else {
+      frame = requestAnimationFrame(exact);
+      build = setTimeout(() => {
+        const full = { x0: -data.terrain.width / 2, z0: -data.terrain.depth / 2, size: Math.max(data.terrain.width, data.terrain.depth) };
+        const tileCanvas = document.createElement('canvas');
+        tileCanvas.width = tileCanvas.height = TILE_PIXELS;
+        const tileContext = tileCanvas.getContext('2d');
+        const image = tileContext.createImageData(TILE_PIXELS, TILE_PIXELS);
+        paintMap(image.data, TILE_PIXELS, full, layer, { ...data, radio, sky }, { cautionDeg: caution });
+        tileContext.putImageData(image, 0, 0);
+        tileRef.current = { data, layer, radio, sky, caution, canvas: tileCanvas, full };
+      }, 400);
+    }
+    return () => { cancelAnimationFrame(frame); clearTimeout(timer); clearTimeout(build); };
   }, [data, crop, layer, radio, sky, caution]);
 
   // Wheel zoom needs a non-passive listener to keep the page from scrolling.
