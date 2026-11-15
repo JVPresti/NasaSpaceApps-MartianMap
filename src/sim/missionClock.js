@@ -303,6 +303,24 @@ export function setClockTimeScale(session, timeScale, nowMs) {
   return { ...session, elapsedSec: elapsedSecAt(session, nowMs), anchorMs: nowMs, timeScale };
 }
 
+/**
+ * Follow a shared start (online, docs/IMPLEMENTATION_PLAN.md 9.5). `startMs` is the mission start on this
+ * machine's clock: the room's start time minus the server clock offset. The session then reads
+ * (now - startMs) x time scale and never pauses, so every client with the same start reads the same time.
+ * @param {object} session
+ * @param {number} startMs
+ */
+export function followSharedStart(session, startMs) {
+  validateNow(startMs);
+  return { ...session, elapsedSec: 0, anchorMs: startMs, paused: false };
+}
+
+/** The shared start the store asks for (`mission.sharedStartMs`), or null when the clock runs on its own. */
+export function sharedStartOf(state) {
+  const v = state?.mission?.sharedStartMs;
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : null;
+}
+
 /** Serializable form of a session. Only these fields go to sessionStorage. */
 export function toStoredClockSession(session) {
   assertSession(session);
@@ -518,6 +536,10 @@ export function startMissionClock({
   let stopped = false;
 
   const persist = () => writeClockSession(storage, session);
+  // Online (9.5): while the store holds `mission.sharedStartMs`, the session follows that start and ignores pauses.
+  // The app writes it from the room (src/online/clockSync.js); this module never sees the network.
+  let shared = sharedStartOf(store.getState());
+  if (shared !== null) session = followSharedStart(session, shared);
 
   function publishAt(nowMs, { force = false } = {}) {
     const reading = clockReading(session, nowMs);
@@ -542,6 +564,23 @@ export function startMissionClock({
   const unsubscribe = store.subscribe((state) => {
     const mission = state.mission;
     if (!mission || stopped) return;
+    const nextShared = sharedStartOf(state);
+    if (nextShared !== shared) {
+      const at = now();
+      // Leaving the shared start keeps the current reading and runs on from it.
+      session = nextShared !== null ? followSharedStart(session, nextShared) : { ...session, elapsedSec: elapsedSecAt(session, at), anchorMs: at };
+      shared = nextShared;
+      persist();
+      publishAt(at, { force: true });
+      return;
+    }
+    if (shared !== null && (mission.paused !== published.paused || mission.timeScale !== published.timeScale)) {
+      // No pause online: a pause write is answered with the running reading. A valid scale change keeps the shared start.
+      try { validateTimeScale(mission.timeScale); session = followSharedStart({ ...session, timeScale: mission.timeScale }, shared); } catch { /* keep the scale */ }
+      persist();
+      publishAt(now(), { force: true });
+      return;
+    }
     if (mission.paused !== published.paused) {
       const at = now();
       session = mission.paused === true ? pauseClockSession(session, at) : resumeClockSession(session, at);
@@ -570,6 +609,7 @@ export function startMissionClock({
   function applyPaused(paused, at) {
     if (stopped) return session;
     if (typeof paused !== 'boolean') fail('paused', 'must be a boolean');
+    if (shared !== null) return session;
     session = paused ? pauseClockSession(session, at) : resumeClockSession(session, at);
     persist();
     publishAt(at, { force: true });
@@ -585,7 +625,7 @@ export function startMissionClock({
       if (stopped) return session;
       validateTimeScale(scale);
       const at = now();
-      session = setClockTimeScale(session, scale, at);
+      session = shared !== null ? followSharedStart({ ...session, timeScale: scale }, shared) : setClockTimeScale(session, scale, at);
       persist();
       publishAt(at, { force: true });
       return session;

@@ -24,6 +24,8 @@ import dustArt from '../assets/ui/hazard_dust.webp';
 import oxygenArt from '../assets/ui/hazard_oxygen.webp';
 import radiationArt from '../assets/ui/hazard_radiation.webp';
 import { fixed as num, routeMetrics } from './routePlan.js';
+import { CrewTab, HabitatSeatNote } from '../online/CrewPanel.jsx';
+import { CREW_TAB, useHabitatSeat, useOnlineTabs } from '../online/hooks.js';
 import './table.css';
 
 // The mission table (#11): the screen in the habitat where the EVA is planned, before the helmet view. Four steps
@@ -281,9 +283,11 @@ function Actions({ children }) {
   return <div className="table-actions">{children}</div>;
 }
 
-function BeginButton({ planner, totals, evaBegun, onBeginEva }) {
+export function BeginButton({ planner, totals, evaBegun, onBeginEva }) {
   const route = useMissionStore((s) => s.route);
   const decision = decisionFor(planner, totals);
+  const habitatSeat = useHabitatSeat();
+  if (habitatSeat) return <HabitatSeatNote />;   // online (#55): the habitat seat never goes out
   return (
     <button
       type="button"
@@ -303,12 +307,13 @@ function BeginButton({ planner, totals, evaBegun, onBeginEva }) {
  */
 export default function MissionTable({ planner, waypoints, evaBegun = false, onBeginEva, onControls }) {
   const [tab, setTab] = useState('site');   // the table opens on step 1
+  const tabs = useOnlineTabs(TABS);   // online (#52): adds the Crew tab
   const route = useMissionStore((s) => s.route);
   const layer = useMissionStore((s) => s.view.layer);
   const clock = useMissionStore(useShallow((s) => ({ lmst: s.mission.lmst, elapsedSec: s.mission.elapsedSec })));
   const stops = useStops();
   const science = useMemo(() => new Set(waypoints.filter((w) => stopHasContent(stopForWaypoint(stops, w.name))).map((w) => w.name)), [waypoints, stops]);
-  const index = TABS.findIndex((item) => item.id === tab);
+  const index = tabs.findIndex((item) => item.id === tab);
   const totals = route.totals;
   const metrics = Object.fromEntries(routeMetrics(route).map((m) => [m.key, m]));
   const steepTone = route.steepestSlopeDeg > SLOPE_LIMITS.noGo ? 'warning' : route.steepestSlopeDeg > SLOPE_LIMITS.caution ? 'caution' : null;
@@ -317,7 +322,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
     if (!step) return;
     event.preventDefault();
-    const next = TABS[(index + step + TABS.length) % TABS.length];
+    const next = tabs[(index + step + tabs.length) % tabs.length];
     setTab(next.id);
     document.getElementById(`table-tab-${next.id}`)?.focus();
   };
@@ -451,6 +456,8 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
         </section>
       </>
     );
+  } else if (tab === CREW_TAB) {
+    body = <CrewTab map={map({ layer, title: 'Route on the map' })} actions={<Actions><BeginButton planner={planner} totals={totals} evaBegun={evaBegun} onBeginEva={onBeginEva} /></Actions>} />;
   } else if (tab === 'hazards') {
     body = (
       <div className="table-hazards">
@@ -529,7 +536,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
       <header className="table-top">
         <p className="table-brand">Marswalk</p>
         <div className="table-tabs" role="tablist" aria-label="Planning steps" onKeyDown={onTabKey}>
-          {TABS.map((item) => (
+          {tabs.map((item) => (
             <button
               key={item.id}
               id={`table-tab-${item.id}`}

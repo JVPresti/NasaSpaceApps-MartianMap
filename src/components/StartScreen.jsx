@@ -5,6 +5,7 @@ import homeWebm from '../assets/ui/home.webm';
 import poster from '../assets/ui/surface.webp';
 import { ControlsPanel } from './ControlsHelp.jsx';
 import Modal from './Modal.jsx';
+import OnlineStart from '../online/JoinPanel.jsx';
 import { FOCUSABLE, focusTarget } from './focus.js';
 
 /**
@@ -50,6 +51,7 @@ export default function StartScreen({ busy, notice, freeLook = false, onStart, o
 
             {notice && <p className="dialog-notice" role="alert">{translateText(notice)}</p>}
 
+            <OnlineStart busy={busy} onStart={onStart}>
             <div className="start-actions">
               <button type="button" className="start-primary" ref={startRef} onClick={onStart} disabled={busy} data-autofocus="true">
                 {busy ? t('menu.opening') : t('menu.open.mission.table')}
@@ -57,6 +59,7 @@ export default function StartScreen({ busy, notice, freeLook = false, onStart, o
               <button type="button" className="ui-button ghost" onClick={() => setControls(true)}>{t('menu.controls')}</button>
               {onSources && <button type="button" className="ui-button ghost" onClick={onSources}>{t('ui.sources.188')}</button>}
             </div>
+            </OnlineStart>
             {freeLook && <p className="start-note">{t('menu.drag.to.look.table')}</p>}
           </div>
           <p className="start-credit">{t('menu.start.credit')}</p>
