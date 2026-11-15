@@ -285,6 +285,17 @@ function Stack({ parts, label }) {
 }
 
 /**
+ * The whole EVA in minutes, door to door: the walk out with the work at the stops, plus the walk back. Rounded as the
+ * Suit step's time bar rounds its parts, so the two steps show the same numbers (#341).
+ * @param {object} tot route.totals
+ */
+function evaMinutes(tot) {
+  const out = Math.ceil(tot.timeSec / 60);
+  const back = tot.roundTrip ? 0 : Math.round(tot.returnTimeSec / 60);
+  return { out, back, total: out + back };
+}
+
+/**
  * What the EVA spends, as budgets: time (out, back, and against the crew's time: spare and the risk reserve) and the
  * oxygen and battery tanks (out, back, left). Shares from route.totals (src/sim/legCosts.js) and route.budget
  * (src/sim/missionNeeds.js). The time bar is the crew's time only: the oxygen margin is the Return panel's figure (N12).
@@ -303,7 +314,9 @@ function BudgetPanel({ totals, metrics, limits, budget }) {
       <p className="table-label">{t('table.budget.title')}</p>
 
       <div className="budget-row">
-        <div className="budget-head"><span>{t('table.time')}</span><b>{tot ? outMin(tot.timeSec) : metrics.time.value}<small>{t('table.budget.min.out')}</small></b></div>
+        <div className="budget-head"><span>{t('table.time')}</span>{tot
+          ? <b>{evaMinutes(tot).total}<small>{t('table.budget.min.eva')}</small></b>   /* the Route step's EVA total (#341) */
+          : <b>{metrics.time.value}<small>{t('table.budget.min.out')}</small></b>}</div>
         {tot && (
           <Stack
             parts={parts}
@@ -644,7 +657,13 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
         <section className="table-right">
           <div className="table-panel">
             <div className="table-panel-head">
-              <p className="table-label">{t('table.tab.route')}</p>
+              <p className="table-label">
+                {t('table.tab.route')}
+                {/* The verdict on the step where the route is chosen, the same one the Suit step shows (#341) */}
+                {!event && !evaBegun && decision.reason !== 'planning' && (
+                  <b className={'table-route-decision' + (decision.tone ? ' tone-' + decision.tone : '')}>{decision.title}</b>
+                )}
+              </p>
               {/* no re-plan through the stops while an event's route leads to a shelter (B1) */}
               <button type="button" className="table-link" onClick={planner.replan} disabled={planner.status === 'planning' || Boolean(route.shelter)}>
                 {planner.status === 'planning' ? t('table.planning') : t('table.replan')}
@@ -655,10 +674,26 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
               {/* Walk out plus the work at the stops (#247): planned time, not played in real time */}
               {event
                 ? <Big value={cardMetrics.time} unit="min" label={t('table.event.to.shelter')} />
-                : <Big value={cardMetrics.time} unit="min" label={t('table.planned.out')} title={t('table.planned.out.title')} />}
+                : totals && !remaining
+                  ? <Big value={evaMinutes(totals).total} unit="min" label={t('table.eva.total')} />
+                  : <Big value={cardMetrics.time} unit="min" label={t('table.planned.out')} title={t('table.planned.out.title')} />}
               <Big value={cardMetrics.climb} unit="m" label={t('ui.climb')} />
               <Big value={cardMetrics.steepest} unit="°" label={t('table.steepest.slope')} tone={remaining ? null : steepTone} />
             </div>
+            {!event && totals && !remaining && (
+              <p className="table-note route-eva-parts">
+                {totals.workSec > 0
+                  ? t('table.budget.key.out.work', { min: evaMinutes(totals).out, work: shortDuration(totals.workSec) })
+                  : t('table.budget.key.out', { min: evaMinutes(totals).out })}
+                {' · '}
+                {totals.roundTrip ? t('table.budget.key.round.trip') : t('table.budget.key.back', { min: evaMinutes(totals).back })}
+                {/* the rest of the crew's time, as the Suit step's time bar splits it, so the numbers add up to the limit */}
+                {limits?.time && route.budget && (limits.time.ok
+                  ? <>{' · '}{t('table.budget.key.spare', { min: Math.round(limits.time.spareSec / 60) })}</>
+                  : <>{' · '}<span className="tone-warning">{t('table.budget.key.time.over', { min: Math.ceil(-limits.time.spareSec / 60) })}</span></>)}
+                {limits?.time && route.budget && <>{' · '}{t('table.budget.key.time.reserve', { min: Math.round((route.budget.reserveSec ?? 0) / 60) })}</>}
+              </p>
+            )}
             {remaining && remaining.count === 0 && !evaProgress.skipped.length && (
               <p className="table-note">{t(evaProgress.atHabitat ? 'table.progress.home' : 'table.progress.done')}</p>
             )}
