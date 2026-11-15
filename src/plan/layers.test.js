@@ -47,6 +47,11 @@ describe('plan layers', () => {
     expect(layerMeta(3).maxLabel).toBe('1.0');
   });
 
+  it('states the source resolution separately from the displayed resolution (#250)', () => {
+    expect(layerMeta(0).summary).toMatch(/source 25 cm per pixel/i);
+    expect(layerMeta(0).summary).toMatch(/about 0.5 m/i);
+  });
+
   it('falls back to the no-layer entry for an unknown index', () => {
     expect(layerMeta(99).id).toBe('none');
     expect(layerSource(99)).toMatch(/HiRISE/);

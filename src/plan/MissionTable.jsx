@@ -38,7 +38,7 @@ const TABS = [
 ];
 
 const LAYER_BUTTONS = [
-  { index: 0, label: 'Image', title: 'Route on the HiRISE image, 25 cm per pixel' },
+  { index: 0, label: 'Image', title: 'Route on the HiRISE image, source 25 cm per pixel, shown at about 0.5 m' },
   { index: 1, label: 'Slope', title: 'Route over the slope layer' },
   { index: 2, label: 'Elevation', title: 'Route over the elevation layer' },
   { index: 3, label: 'Rocks', title: 'Route over the rock abundance estimate' },
@@ -71,12 +71,12 @@ const HAZARDS = [
     artAlt: 'Illustration: an astronaut hurries to the habitat as the Sun sends out a burst of particles.',
     events: [radiation.id],
     name: radiation.label,
-    level: 'danger',
-    levelLabel: 'Danger',
+    level: 'warning',
+    levelLabel: 'Warning',
     when: `${minutes(radiation.trigger.atSec)} min into the EVA`,
     happens: `A solar particle event raises the dose rate to ${num(peak(radiation, 'environment.doseRateUgyH'), 1)} µGy/h, about three times the background.`,
     alert: radiation.alert.text,
-    act: 'Go to the habitat, the only full shelter on the map. The stops left on the route are skipped.',
+    act: 'Shelter in the habitat early (ALARA), the only full shelter on the map. The stops left on the route are skipped.',
     basis: 'Dose rates of the September 2017 event, measured by RAD on Curiosity in Gale crater, not Jezero. Its 12 min length is shortened for one EVA.',
   },
   {
@@ -363,7 +363,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
             </figure>
           )}
         </section>
-        {map({ layer: 0, route: false, title: 'HiRISE image, 25 cm per pixel' })}
+        {map({ layer: 0, route: false, title: 'HiRISE image, source 25 cm per pixel, shown at about 0.5 m' })}
         <section className="table-right">
           <div className="table-panel table-fill">
             <p className="table-label">Where</p>
