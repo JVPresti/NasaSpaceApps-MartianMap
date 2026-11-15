@@ -1,100 +1,107 @@
 # The 8-minute demo
 
-The demo runs on the **first mission** (#265): the default objective "First sortie", a 55 m walk from the airlock to a
+The demo runs on the **first mission** (#265): the default goal "First sortie", a 55 m walk from the airlock to a
 light-toned patch and back, with the dust storm and the radiation alert brought forward so both play before the crew is
-home. Target **7:30**, limit **8:00**, start screen to sources. Everything the first mission does not reach (Cheyava
-Falls, Bright Angel, low oxygen) is shown at the mission table, where the map is the product.
+home. Target **7:30**, limit **8:00**, start screen to sources, and every feature of the product appears in it. The
+layers and the crew's needs are shown on the full EVA's 934 m route to Cheyava Falls at the table, where they change
+something; the walk is the sortie.
 
 A player who skips the talking reaches the debrief in about 3 minutes (#265 asks for no more than 4): see
 [Measured](#measured).
 
 Walking speed stays 1.0 m/s (1.5 m/s jogging) and the mission clock runs at time scale 1. Only the event times are
 shortened, and they are tagged SIM (`src/sim/missions.js`, [STATE_AND_ENGINE.md](STATE_AND_ENGINE.md#missions-and-their-events-265)).
+The sortie plan for a pair reads 52 s out, 2 min of work at the stop, 75 s back, about 4.1 min in all and 9 g of O2
+with the walk home; the work time is a planning figure, not played in real time.
 
 ## The first mission's schedule
 
 | Mission time | What happens | Rule (data in `src/sim/missions.js`) |
 |---|---|---|
-| T+0 | Start walking at the airlock | the clock starts at the walk keys card's Start walking |
-| about T+55 to T+80 | At the sortie stop "S1 · light-toned patch" (55 m straight, more with a detour) | the waypoint runner moves `route.nextIndex` to 2 within 5 m |
-| about 20 s at the stop | Photo (P), sample (click the ground in reach), stow (E) | sampling works on any rock or ground within 1.5 m |
-| T+75 at the earliest | **Dust storm**: tau 0.45 to 8.0 in 30 s, re-plan to the habitat | 20 s after reaching the stop; by T+180 s at the latest; never within 25 m of the airlock |
-| 15 s after the storm | **Radiation alert**: RAD dose rates, re-plan to the habitat | T+95 s at the earliest; 15 s after the storm; by T+210 s at the latest; never within 25 m of the airlock |
-| back within 25 m of the airlock | Both events end, the route clears | the events' end area (unchanged) |
+| T+0 | Start walking at the airlock | the clock starts at the walk keys card's Start walking (the EVA clock reads h:mm:ss) |
+| about T+52, later with a detour | At the sortie stop, "Light-toned patch" | reached for good within 8 m (its stops.json arrival radius); a find added on the way or a re-plan at the table does not count as the stop |
+| at the stop | Why it is worth the walk (its stops.json reason, SIM, "no rover has looked here") and what to do: look down, **P** photo, click to sample, **E** to bag | the stop's banner and beat line, until a sample is secured |
+| 3 s after the sample | **Dust storm**: tau 0.45 to 8.0 in 30 s, re-plan to the habitat | or after 90 s at the stop without a sample, or as soon as the crew turns home (10 m from the 25 m end area); not before T+45 s; by T+240 s at the latest; held outside the end area until then |
+| 15 s after the storm | **Radiation alert**: RAD dose rates, re-plan to the habitat | sooner if the crew comes within 10 m of the end area first, so it always starts before they are home; by T+255 s at the latest |
+| back within 25 m of the airlock | Both alerts end, each after playing at least 20 s | the habitat stays the target until the crew is at the habitat; a stop left out stays skipped |
 | in the cabin | `[E] Open plan`, `[X] Finish EVA` | the habitat table (#244) |
 
-The full EVA (objectives "Sample Cheyava Falls" and "Survey Bright Angel") keeps the storm at T+480 s and the
-radiation alert at T+720 s, as before.
+The full EVA (goals "Sample Cheyava Falls" and "Survey Bright Angel") keeps the storm at T+480 s and the radiation alert
+at T+720 s, as before. A crew of one walks without the partner (no EV2 chip, no separation alert, no hand-over); the
+demo is walked as a pair. Restart and End the EVA keep the crew's needs; a page load opens the first sortie.
 
 ## Script
 
-Budget in minutes and seconds. "Say" is the presenter's line; the beat line on screen says the same in a few words.
+Budget in minutes and seconds. The beat line on screen says the same as the presenter, in a few words.
 
 | # | Segment | Budget | Do | Shows | Data behind it |
 |---|---|---|---|---|---|
-| 1 | Start screen | 0:15 | Read the title; press **Open the mission table** (the first sortie). Mention **Full EVA · Sample Cheyava Falls** as the longer mission | the start screen, its video, the mission choice | HiRISE terrain (credit line) |
-| 2 | Table: site and layers | 1:15 | Site step: where we are, the plan beat line. **Next: route**. Press each layer once and say what it decides: Terrain (slope, where the route bends), Rocks, Outcrop (where the crew stops), Radio shadow, Exposure, the rover's drives | the mission table, the HiRISE map, every layer and its "what this decides" line | MRO HiRISE DTM and orthomosaic, Perseverance traverse (MMGIS), radio and sky view derived from the DTM |
-| 3 | Needs → route | 1:15 | Change the goal to **Sample Cheyava Falls**: the route grows to Bright Angel and Cheyava Falls, open the Cheyava Falls card (Perseverance images). Set risk to **cautious**: the route and the budget change. Read the why lines. Compare the three profiles. Put the goal back to **First sortie** | crew's needs, route generation, stop cards and photos, why-this-route, route profiles, budget | Mastcam-Z and WATSON images (PIA26401, PIA26368), suit model, HiRISE slope |
-| 4 | Outlook, go / no-go, Begin EVA | 0:30 | Hazards step: the three hazards and when each comes in this mission. Suit step: the conditions outlook beside **Go**. **Begin EVA**, the walk keys card, **Start walking** | hazard cards, conditions outlook, suit check, go / no-go, walk keys | MEDA (sol 1187), RAD (Gale), DONKI, hazards.json |
-| 5 | Walk out | 1:00 | Walk toward the stop; step off the line toward a light patch and hold **Q** to mark a find (its detour price card), then on to the stop | visor HUD, minimap, waypoint panel, navigation line, partner, mark-a-find | HiRISE DTM (slope, elevation profile), MEDA weather, suit model |
-| 6 | Stop and sample | 0:45 | At S1: **P** photo, click the ground, **E** stow and seal; the sampling checklist fills | sampling clips and checklist | — (SIM stop) |
-| 7 | Dust storm | 0:30 | The banner and the beat line; the sky closes in; **M** opens the table on Route: the route home on the map; **M** back | event banner with source, storm visuals, re-plan to the habitat | tau: MEDA / Mastcam-Z (Jezero) to Curiosity's 2018 Gale storm |
-| 8 | Radiation and walk back | 0:50 | The radiation banner takes over (the storm is "+1 more alert"); dose rate on the HUD; **M** shows the second re-plan; walk home and into the cabin | radiation alert (early warning, ALARA), dose on the HUD, walk back | RAD, Curiosity, September 2017 event (Gale, not Jezero) |
-| 9 | Habitat table | 0:20 | **E** Open plan (the table on Route), **M** back, **X** Finish EVA | habitat table prompt, Open plan, Finish EVA | — |
-| 10 | Debrief | 0:40 | Metrics, the route review (the detour judged "worth it" because of the find), the recap of each beat | debrief, walked route against the plan, beat recap | every value tagged DATA / DERIVED / SIM |
+| 1 | Start screen | 0:15 | Read the title; press **Open the mission table** (the first sortie). Point at **Full EVA · Sample Cheyava Falls** as the longer mission | the start screen, its video, the mission choice | HiRISE terrain (credit line) |
+| 2 | Table: the layers on the Cheyava Falls route | 1:05 | Site step: where we are, the plan beat line. **Route** step: set the goal to **Sample Cheyava Falls** (934 m, Bright Angel then Cheyava Falls); scroll the map in and out. Then one decision per layer: **Terrain** with risk **cautious** (where the route bends); **Rocks** (the cost cautious puts on rock cover); **Outcrop** (the stops it keeps on light-toned rock); **Radio** with a crew of **1** (the radio route, and Bright Angel left out: a dropped stop and its reason); **Exposure** (which shelter a re-plan would pick); **Rover** (Perseverance's drives) | the mission table, the HiRISE map, every layer and its "what this decides" line, the crew's needs, a dropped stop | MRO HiRISE DTM and orthomosaic, Perseverance traverse (MMGIS), radio and sky view derived from the DTM |
+| 3 | Two plans, a stop card, back to the sortie | 0:55 | Plan A: solo, cautious, **100 min**: one stop, the why lines. Plan B: pair, **bold**, **2 h**: both stops. Compare the three profiles. Open the **Cheyava Falls** card from its marker (Perseverance's images), close it. Risk back to standard, goal back to **First sortie** | two contrasting generated plans, why-this-route, route profiles, the budget with work time, stop cards and photos | Mastcam-Z and WATSON images (PIA26401, PIA26368), suit model, HiRISE slope |
+| 4 | Hazards, outlook, go / no-go, Begin EVA | 0:35 | Hazards step: the three hazards and when each comes in this mission. Suit step: the conditions outlook beside **Go**. **Begin EVA**, the walk keys card, **Start walking**; **H** for the controls help, then resume | hazard cards, conditions outlook, suit check, go / no-go, walk keys, controls help and the pause behind it | MEDA (sol 1187), RAD (Gale), DONKI, hazards.json |
+| 5 | Walk out | 1:35 | Walk 12 m: the visor, the minimap. **R** raises the wrist: **J** and **Enter** choose a layer on the arm, **]** the map page, **R** lowers it, **0** clears the layer. **G** slope grid on and off; **V** visor frame off and on. Step off the line toward a light patch, hold **Q** on the ground to mark a find, read its card and press **Y** to add it; on to the stop | visor HUD, minimap, waypoint panel, navigation line, partner, wrist screen, slope grid, visor frame, mark-a-find and its detour price | HiRISE DTM (slope, elevation profile), MEDA weather, suit model |
+| 6 | Science stop and sample | 0:20 | Read the stop's banner (why it is worth the walk, SIM) and the beat line; look down, **P** photo, click the ground, **E** stow and seal | the stop's reason, sampling clips and checklist | HiRISE outcrop mask (SIM stop) |
+| 7 | Dust storm | 0:20 | The banner and the beat line; the sky closes in; **M** opens the table on the Route step: the route home on the map; **M** back | event banner with source, storm visuals, re-plan to the habitat | tau: Mastcam-Z (Jezero) up to Curiosity's 2018 Gale storm |
+| 8 | Radiation, walk back, hand-over | 1:10 | The radiation banner takes over (the storm is "+1 more alert"); the dose on the HUD; **M** shows the second re-plan, **M** back. Press **F** to call the partner with the case and walk home; where the partner sets the case down, take a second sample and press **F** to pour it in | radiation alert (early warning, ALARA), dose, walk back, partner hand-over | RAD, Curiosity, September 2017 event (Gale, not Jezero) |
+| 9 | Habitat | 0:20 | In the cabin: **Esc**, **Settings**, switch the language to Spanish and back, resume. **E** Open plan (the table on Route), **M** back, **X** Finish EVA | pause menu, settings and language, habitat table prompt, Open plan, Finish EVA | — |
+| 10 | Debrief | 0:45 | Metrics, the route review (the detour to the find judged fairly), the recap of each beat | debrief, walked route against the plan, beat recap | every value tagged DATA / DERIVED / SIM |
 | 11 | Sources | 0:10 | **Sources** on the debrief | the sources screen | every dataset and model used |
 | | **Total** | **7:30** | | | |
 
+The find card is answered **Y** (add to the route), as a presenter shows the decision; the detour's verdict stays fair
+because a find added on a GO card is not judged risky for an alert that starts on the way (D7). **N** would also do:
+the find stays recorded either way.
+
 ## Feature coverage
 
-Every feature on `main` and where the demo shows it. "Table" means it is shown at the mission table because the first
-mission's walk does not reach it.
+Every feature on `main`, where the timed demo shows it, and how the measurement script checks it.
 
 | Feature | Segment |
 |---|---|
-| Start screen, video, Controls and Sources buttons | 1 |
-| Mission choice (first sortie, full EVA) | 1 |
-| Mission table: Site step (location, relief, origin) | 2 |
-| HiRISE map with zoom and pan | 2, 3 |
+| Start screen, video, Controls and Sources buttons, mission choice (first sortie, full EVA) | 1 |
+| Mission table: Site step (location, relief, origin) and the plan beat line | 2 |
+| HiRISE map: zoom and pan (scroll) | 2 |
+| Crew's needs (goal, crew, time, O2, battery, risk) and the route generated from them | 2, 3 |
 | Layers: image, terrain (slope), rocks, outcrop, radio shadow, exposure, Perseverance drives; legend "what this decides" | 2 |
-| Crew's needs (goal, crew, time, O2, battery, risk) and the route generated from them | 3 |
-| Cheyava Falls and Bright Angel stops, their cards and Perseverance photos | 3 (table) |
-| Why this route (per leg and for the plan), dropped stops | 3 |
+| Dropped stops and their reason (Bright Angel for a solo crew) | 2, 3 |
+| Two contrasting plans; why this route (per leg and for the plan) | 3 |
 | Route profiles (fastest, gentlest, radio) | 3 |
 | Work time at stops and the budget (#247) | 3 |
+| Cheyava Falls stop card and Perseverance photos | 3 (table) |
 | Hazard cards (dust storm, radiation, low oxygen) and the hazard switches | 4 |
 | Low-oxygen caution and warning | 4 (table: the threshold events do not fire on a 55 m walk) |
-| Conditions outlook (#248) and go / no-go | 4 |
-| Suit check (suit figure, consumables, margin) | 4 |
+| Conditions outlook (#248), suit check and go / no-go | 4 |
 | Walk keys card, pointer capture, drag-to-look fallback | 4 |
+| Controls help (H) and the pause behind it | 4 |
 | Visor HUD: O2, battery, pressure, margin, EVA clock, LMST, compass | 5 |
-| Waypoint panel with the elevation profile | 5 |
-| Minimap with route, rover track, partner and habitat | 5, 7 |
+| Waypoint panel with the elevation profile; minimap with route, rover track, partner and habitat | 5, 7 |
 | Navigation without GPS: terrain fix, dead reckoning, error ring | 5 |
 | Environment strip: MEDA temperature and wind, tau, dose | 5, 7, 8 |
-| Partner astronaut, range and separation | 5 |
-| Mark a find (Q), its detour price and Y / N | 5 |
+| Partner astronaut, range and separation | 5, 8 |
+| Wrist screen (R): a layer chosen on the arm, the map page | 5 |
+| Slope grid (G), visor frame (V), clearing the layer (0) | 5 |
+| Mark a find (Q), its detour price, Y / N | 5 |
+| The science stop: its reason (SIM) and what to do | 6 |
 | Sampling: photo, collect, stow, checklist | 6 |
 | Dust storm: banner with source, sky and dust, re-plan to the habitat | 7 |
-| Mission table during the EVA (M), live position | 7, 8 |
+| Mission table during the EVA (M): the Route step, the crew's live position, the route home to the shelter | 7, 8 |
 | Radiation alert: banner, dose rate, dose, re-plan | 8 |
+| Hand-over to the partner's case (F) | 8 |
 | Habitat, airlock, cabin | 8, 9 |
+| Pause menu, settings, interface language | 9 |
 | Habitat table prompt: Open plan, Finish EVA | 9 |
-| Debrief: metrics, mission log | 10 |
-| Route review: approved route against the walked track, deviations and verdicts | 10 |
-| Beat recap | 10 |
+| Debrief: metrics, mission log, route review (deviations and verdicts), beat recap | 10 |
 | Sources screen | 11 |
-| Beat lines (plan, walk, storm, radiation, debrief) | 2, 5, 7, 8, 10 |
-| Wrist screen (R) | not in the timed script; 5 if time allows |
-| Pause menu, settings (language, quality, look), controls help (H) | not in the timed script |
-| Hand-over to the partner's case (F), slope grid (G), visor frame (V) | not in the timed script |
-| Gamepad and touch | not in the timed script |
+| Beat lines (plan, walk, stop, storm, radiation, debrief) | 2, 5, 6, 7, 8, 10 |
+| Gamepad and touch | not shown: a keyboard presenter cannot show them (docs/CONTROLS.md) |
 
 ## Measuring
 
 ```
 npm run measure:demo
 npm run measure:demo -- --lang es --viewport 1920x1080 --shots <folder>
+npm run measure:demo -- --dwell-scale 1.3        # a presenter 30 % slower
 npm run measure:demo -- --dwell-scale 0.1        # a quick player instead of a presenter
 ```
 
@@ -104,43 +111,52 @@ place toward the next point through the development hook (`__marswalk.place` at 
 teleports. Two kinds of time:
 
 - **dwell**: a presenter reading or talking, fixed at the top of the script (`DWELL`) and reported as such;
-- **measured**: walking, the events' mission-time triggers, the clips, the planner and the screen changes.
+- **measured**: walking, the events' triggers, the clips, the partner's walk to the case, the planner and the screen
+  changes.
 
-The steps, selectors and the walk (the detour to the find, the look-down pitches) are tables at the top of the script.
-A step whose control is not on screen is skipped and listed as "not driven".
+The steps, selectors and the walk (the detour to the find, the look-down pitches, the find card's answer) are tables at
+the top of the script. Each feature the run shows is checked and listed at the end ("Features driven"); a step whose
+control is not on screen is skipped and listed as "not driven". The report also gives the total for a presenter 30 %
+slower, the walking speed and frame rate, and the time the hand-over took.
 
 ### Measured
 
 15 November 2026, branch `feat/short-mission-dynamic-routes`, Edge 157 headless with the GPU (NVIDIA RTX 5070),
-1366 x 768, English, `npm run measure:demo`. Every step was driven; the walk ran at 135 to 165 fps, 131 m in 135 s
+1366 x 768, English, `npm run measure:demo`. All 32 features driven; the walk ran at 156 to 165 fps, 134 m in 139 s
 (0.97 m/s with the turns and stops), with no step-aside.
 
 | # | Segment | Budget | Actual | of which dwell | Measured |
 |---|---|---|---|---|---|
 | 1 | Start screen, choose mission | 0:15 | 0:13 | 0:12 | 0:01 |
-| 2 | Table: site and layers | 1:15 | 0:53 | 0:52 | 0:01 |
-| 3 | Needs → route, two inputs, why line | 1:15 | 1:00 | 0:50 | 0:10 |
-| 4 | Outlook, go / no-go, Begin EVA, controls | 0:30 | 0:23 | 0:22 | 0:01 |
-| 5 | Walk out (visor, minimap, a find) | 1:00 | 1:19 | 0:02 | 1:17 |
-| 6 | Stop and sample | 0:45 | 0:18 | 0:03 | 0:15 |
-| 7 | Dust storm and re-plan | 0:30 | 0:16 | 0:06 | 0:10 |
-| 8 | Radiation and walk back | 0:50 | 1:00 | 0:05 | 0:55 |
-| 9 | Habitat table: Open plan, Finish EVA | 0:20 | 0:06 | 0:05 | 0:01 |
-| 10 | Debrief | 0:40 | 0:31 | 0:30 | 0:01 |
+| 2 | Table: site, goal Cheyava Falls, the layers and what each decides | 1:05 | 0:52 | 0:45 | 0:07 |
+| 3 | Two contrasting plans, profiles, a stop card, back to the sortie | 0:55 | 0:44 | 0:36 | 0:08 |
+| 4 | Hazards, outlook, go / no-go, Begin EVA, keys, help (H) | 0:35 | 0:31 | 0:29 | 0:02 |
+| 5 | Walk out: HUD, wrist (R), slope grid (G), visor (V), a find | 1:35 | 1:34 | 0:14 | 1:20 |
+| 6 | Science stop and sample | 0:20 | 0:15 | 0:03 | 0:12 |
+| 7 | Dust storm and its re-plan on the table | 0:20 | 0:15 | 0:05 | 0:10 |
+| 8 | Radiation, walk back, hand-over (F) | 1:10 | 1:12 | 0:06 | 1:06 |
+| 9 | Habitat: settings and language, Open plan, Finish EVA | 0:20 | 0:13 | 0:10 | 0:03 |
+| 10 | Debrief | 0:45 | 0:41 | 0:40 | 0:01 |
 | 11 | Sources | 0:10 | 0:08 | 0:08 | 0:00 |
-| | **Total** | **7:30** | **6:09** | 3:15 | 2:54 |
+| | **Total** | **7:30** | **6:39** | 3:28 | 3:11 |
 
-Mission times: at the stop T+79 s, sample secured T+90 s, dust storm T+97 s (18 s after the stop), radiation alert
-T+113 s, back in the habitat T+173 s, debrief at T+180 s. The debrief judged the detour "1 deviation: 1 worth it".
-The walk out runs 19 s over its budget because of the detour to the find (70 m instead of 55 m, plus the 2 s hold);
-the stop and the storm come in under theirs. The 1:21 left under the target is room for the presenter.
+- **A presenter 30 % slower:** about 7:41 (the dwell 3:28 becomes 4:30), under the 8:00 limit.
+- **Mission times:** at the stop T+94 s (73 m with the detour to the find), sample secured T+106 s, dust storm T+110 s
+  (4 s after the sample), radiation alert T+125 s, 45 m from the airlock, back in the habitat T+196 s, debrief at
+  T+202 s.
+- **The find:** card answered Y; the debrief judged the detour "1 deviation: 1 worth it, +24 s and +1 g O2 over the plan".
+- **The two plans** (segment 3): solo, cautious, 100 min: 0.88 km to Cheyava Falls, Bright Angel left out for time;
+  pair, bold, 2 h: 0.91 km, Bright Angel then Cheyava Falls.
+- **Where the time goes:** the walk (2:19 for 134 m), the hand-over (34 s from F to the closed case, mostly the partner
+  walking out), the debrief (40 s of reading). The walk out runs to its budget because of the detour to the find (73 m
+  instead of 55 m) and the wrist, slope grid and visor steps on the way.
 
 When other builds or tests load the machine, the frame rate can fall under 10 fps, and the engine, which caps a frame's
-step at 0.1 s, then walks slower than 1.0 m/s. The script reports the frame rate and the walking speed, and warns when
-it fell below 12 fps; one such run (3 fps at moments, 0.88 m/s) still finished in 6:47.
+step at 0.1 s, then walks slower than 1.0 m/s. The script reports the frame rate and the walking speed, warns below
+12 fps, and gives the total at a steady 0.97 m/s. Two runs on a loaded machine (2 fps at moments, 0.55 to 0.68 m/s)
+took over 9 minutes; measure on a quiet machine.
 
-**A player** (`--dwell-scale 0.25`, Spanish, 1366 x 768, 0.97 m/s): start screen to the debrief in **3:33**, of which
-2:46 is the EVA (at the stop T+78 s, storm T+96 s, radiation T+111 s, back T+164 s). That includes the detour to mark
-a find; walking straight to the stop saves about 25 s. #265 asks for about 3 minutes and no more than 4.
-
-The same flow ran at 1920 x 1080 in English and Spanish (`--dwell-scale 0.1`): every step driven, EVA 2:44 and 3:06.
+**A player.** The first mission alone, without the demo's tour, reached the debrief in 3:33 in the round 1 measurement
+(Spanish, 1366 x 768, `--dwell-scale 0.25`, a detour to a find included). The storm now comes 3 s after the sample
+instead of 20 s after the stop, so a player who samples at once is a little faster. #265 asks for about 3 minutes and
+no more than 4.
