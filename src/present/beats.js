@@ -25,7 +25,7 @@
 //   cta         the handoff button's label
 
 export const PLACES = {
-  jezero: { lat: 18.38, lon: 77.58 },          // crater centre, IAU Gazetteer of Planetary Nomenclature
+  jezero: { lat: 18.38, lon: 77.58 },          // crater centre, near enough to frame the shot; no number on screen reads it
   cheyava: { x: 0, z: 0 },                     // Cheyava Falls, the scene origin (18.4975 N, 77.3053 E)
   hab: { x: 535.1, z: 574.1 },                  // the habitat airlock, public/data/shelters.json HAB
   bend: 'plan.bend',                            // where the route bends around steep ground, from plan.json
@@ -47,9 +47,9 @@ export const BEATS = [
     duration: 9,
     shot: { target: 'jezero', dist: 240_000, yaw: 0, pitch: -90, fov: 32 },
     move: { dur: 7.5, ease: 'zoom' },
-    caption: { en: 'Jezero: a lake about 3.5 billion years ago.', es: 'Jezero: un lago hace 3,500 millones de años.' },
+    caption: { en: 'Jezero: a lake about 3.5 billion years ago.', es: 'Jezero. Un lago hace 3,500 millones de años.' },
     chips: [
-      { at: 'jezero', show: [5.5], big: '45 km', text: { en: 'Jezero crater · 18.4° N, 77.6° E', es: 'Cráter Jezero · 18.4° N, 77.6° E' }, tag: 'DATA' },
+      { at: 'jezero', show: [5.5], text: { en: 'Jezero crater · Perseverance landed here, 2021', es: 'Cráter Jezero · aquí aterrizó Perseverance, 2021' }, tag: 'DATA' },
     ],
     source: { en: 'THEMIS day IR 100 m, Mars Odyssey. Colour: our tint', es: 'THEMIS IR diurno 100 m, Mars Odyssey. Color: nuestro tinte', tag: 'DATA' },
   },
@@ -76,7 +76,7 @@ export const BEATS = [
       { at: 'hab', show: [2.5], big: '{constants.evaMaxH} h', text: { en: 'longest EVA a suit allows', es: 'la EVA más larga que permite el traje' }, tag: 'DATA' },
       { at: 'hab', show: [4.2], big: '{constants.reserveMin} min', text: { en: 'oxygen reserve, kept untouched', es: 'reserva de oxígeno, intocable' }, tag: 'DATA', offset: 1 },
     ],
-    source: { en: 'Suit limits: NASA xEVA and Apollo rules, hazards.json', es: 'Límites del traje: NASA xEVA y reglas Apollo, hazards.json', tag: 'DATA' },
+    source: { en: 'Suit limits: NASA xEVA and Apollo rules, hazards.json', es: 'Límites del traje: xEVA de la NASA y reglas Apollo, hazards.json', tag: 'DATA' },
   },
   {
     id: 'plan',
@@ -91,7 +91,7 @@ export const BEATS = [
       { at: 'leg:2', show: [8], offset: 1, big: '{legs.2.distanceM} m', text: { en: '{legs.2.timeMin} min · {legs.2.o2G} g O2, uphill', es: '{legs.2.timeMin} min · {legs.2.o2G} g O2, cuesta arriba' }, tag: 'DERIVED' },
       { at: 'bend', show: [10.5], big: '{bend.slopeDeg}°', text: { en: 'slope here. Over {constants.slopeNoGoDeg}° is no-go', es: 'de pendiente. Más de {constants.slopeNoGoDeg}° no se pasa' }, tag: 'DERIVED', danger: true },
     ],
-    source: { en: 'Route: our planner on the HiRISE slope. O2: NASA suit tests', es: 'Ruta: nuestro planificador sobre la pendiente HiRISE. O2: pruebas de trajes NASA', tag: 'DERIVED' },
+    source: { en: 'Route: our planner on the HiRISE slope. O2: NASA suit tests', es: 'Ruta: nuestro planificador sobre la pendiente HiRISE. O2: pruebas de trajes de la NASA', tag: 'DERIVED' },
   },
   {
     id: 'zone',
@@ -122,7 +122,7 @@ export const BEATS = [
     tracks: { zone: [29, 31, 1.2, 2.4], zoneOpacity: [1, 1, 0, 1] },
     chips: [
       { at: 'hab', show: [0], text: { en: 'Habitat', es: 'Hábitat' }, tag: 'DATA', home: true },
-      { at: 'astronaut', show: [1.2], ring: true, big: '{rad.peak} µGy/h', text: { en: 'peak dose rate, September 2017, 2.5× normal', es: 'dosis máxima, septiembre 2017, 2.5× lo normal' }, tag: 'DATA', danger: true },
+      { at: 'astronaut', show: [1.2], ring: true, big: '{rad.peak} µGy/h', text: { en: 'peak dose rate, September 2017, 2.5× normal', es: 'tasa de dosis máxima, septiembre 2017, 2.5× lo normal' }, tag: 'DATA', danger: true },
     ],
     source: { en: 'RAD on Curiosity, Gale crater, not Jezero. Timing: NASA DONKI', es: 'RAD en Curiosity, cráter Gale, no Jezero. Tiempos: NASA DONKI', tag: 'DATA' },
   },
@@ -150,8 +150,8 @@ export const BEATS = [
     chips: [
       { at: 'cheyava', show: [2], text: { en: 'Terrain: HiRISE DTM, MRO', es: 'Terreno: DTM HiRISE, MRO' }, tag: 'DATA' },
       { at: 'leg:1', show: [3.2], text: { en: 'Slope, route, O2 per metre', es: 'Pendiente, ruta, O2 por metro' }, tag: 'DERIVED' },
-      { at: 'hab', show: [4.4], text: { en: 'Walking speed, storm timing', es: 'Velocidad al caminar, hora de la tormenta' }, tag: 'SIM' },
-      { at: 'leg:3', show: [6], big: '{trek.rmsM} m', text: { en: 'our terrain against NASA\'s DTM, via Mars Trek', es: 'nuestro terreno contra el DTM de NASA, en Mars Trek' }, tag: 'DERIVED' },
+      { at: 'hab', show: [4.4], text: { en: 'Walking speed, storm timing', es: 'Velocidad al caminar, momento de la tormenta' }, tag: 'SIM' },
+      { at: 'leg:3', show: [6], big: '{trek.rmsM} m', text: { en: 'our terrain against NASA\'s DTM, via Mars Trek', es: 'nuestro terreno contra el DTM de la NASA, en Mars Trek' }, tag: 'DERIVED' },
     ],
     source: { en: 'Every dataset is listed in Sources, in the app', es: 'Cada dato está en Fuentes, dentro de la app', tag: 'DATA' },
   },

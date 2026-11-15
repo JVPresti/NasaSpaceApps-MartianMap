@@ -243,7 +243,8 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       // auto tier: three slow seconds in a row on High -> Low. The controller serialises this with a
       // user choice made from the pause menu, so the two can never interleave.
       const q = quality.get();
-      if (q.auto && !q.pending && ctx.tier === 'high' && now - booted > 3000) {
+      if (sys.cine) slowWindows = 0;   // never rebuild the terrain under the presentation's meshes (#291)
+      else if (q.auto && !q.pending && ctx.tier === 'high' && now - booted > 3000) {
         slowWindows = (fps < 40 && worst < 250 && !document.hidden) ? slowWindows + 1 : 0;
         if (slowWindows >= 3) {
           slowWindows = 0;

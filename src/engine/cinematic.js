@@ -65,6 +65,8 @@ export function createCinematic(ctx, hooks) {
 
   // The app's own route glow and map labels stay out of the presentation's frames; release() brings them back.
   const hidden = [];
+  let labelFrames = 0;
+  const LABEL_EVERY = 30;   // look for new labels twice a second, not every frame
   const hide = (o) => { if (o && o.layers.isEnabled(0)) { hidden.push(o); o.layers.set(HIDDEN_LAYER); } };
   const hideAppLabels = () => {
     if (ctx.sys.routeGlow) { hide(ctx.sys.routeGlow.mesh); hide(ctx.sys.routeGlow.chevrons); }
@@ -169,7 +171,7 @@ export function createCinematic(ctx, hooks) {
   function apply(dt) {
     if (released) return;
     if (frameCb) frameCb(dt);
-    hideAppLabels();
+    if (++labelFrames >= LABEL_EVERY) { labelFrames = 0; hideAppLabels(); }
     if (!shot) return;
     camera.up.set(0, 1, 0);
     camera.position.set(shot.x, shot.y, shot.z);

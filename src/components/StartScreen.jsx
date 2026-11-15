@@ -92,7 +92,7 @@ export default function StartScreen({ busy, notice, freeLook = false, scene = nu
             {freeLook && <p className="start-note">{t('menu.drag.to.look.table')}</p>}
           </div>
           <p className="start-credit">{t('menu.start.credit')}</p>
-          <a className="start-present" href={presentHref}>{presentLabel()}</a>
+          <a className="start-present" href={presentHref()}>{presentLabel()}</a>
         </div>
         </>
       )}

@@ -8,6 +8,7 @@
 // Everything moves from one clock (clock.js), never from CSS transitions, so a recording is frame-perfect.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getLanguage } from '../i18n/index.js';
+import { useMissionStore } from '../state/store.js';
 import { detectTier } from '../engine/tiers.js';
 import { sequence, captionsOf } from './beats.js';
 import { createClock, createTimeline, RECORD_STEP, easeInOut, easeOut, ramp, showValue, trackValue } from './clock.js';
@@ -15,16 +16,16 @@ import { blendShot, boxToLocal, cameraHeight, engineCamera, geoToLocal, localToG
 import { createGlobe } from './globe.js';
 import { createProjector } from './project.js';
 import { decodeLast, fill, marginAt, clockAt, areaAt, resolvePlace, trackNumber, astronautAt } from './data.js';
+import { createHoldTimer, presentKey, queryWithoutPresent, restoreEngine as restoreFromStore } from './control.js';
 import './present.css';
 
 const BASE = (import.meta.env.BASE_URL || '/') + 'present/';
 const GLOBE_FULL_M = 70_000;    // above this camera height only the globe draws
 const ENGINE_FULL_M = 32_000;   // below this only the engine's terrain draws; between them they crossfade
-const NEXT = new Set(['ArrowRight', 'PageDown', ' ', 'Enter', 'Spacebar']);
-const BACK = new Set(['ArrowLeft', 'PageUp']);
 const TAG_CLASS = { DATA: 'data', DERIVED: 'derived', SIM: 'sim' };
 const UI = {
   loading: { en: 'Loading the HiRISE terrain', es: 'Cargando el terreno HiRISE' },
+  fallback: { en: '3D view unavailable. Captions only', es: 'Vista 3D no disponible. Solo textos' },
   placeholder: { en: 'zone: placeholder model', es: 'zona: modelo provisional' },
   exit: { en: 'Esc exits', es: 'Esc para salir' },
 };
@@ -42,11 +43,14 @@ function params() {
 }
 
 function weakGpu() {
+  let gl = null;
   try {
-    const gl = document.createElement('canvas').getContext('webgl2');
+    gl = document.createElement('canvas').getContext('webgl2');
     if (!gl) return true;
     return detectTier({ getContext: () => gl }).tier === 'low';
-  } catch { return true; }
+  } catch { return true; } finally {
+    gl?.getExtension('WEBGL_lose_context')?.loseContext();   // give the probe's context back; browsers cap live ones
+  }
 }
 
 function loadImage(src) {
@@ -123,7 +127,7 @@ export default function Present({ engine, onExit }) {
 
   // ---------------------------------------------------------------- the frame loop
   useEffect(() => {
-    if (!assets) return undefined;
+    if (!assets || failed) return undefined;
     const { plan } = assets;
     const canvas = globeRef.current;
     let globe;
@@ -140,6 +144,7 @@ export default function Present({ engine, onExit }) {
     let cine = null, engineState = { sky: null, layer: 0, dust: -1 };
     let fromShot = null, toShot = null, current = null, alive = true, raf = 0, lastNow = performance.now(), zoneFrame = 0;
     let waitingNow = false;
+    const holdTimer = createHoldTimer();
     const dims = { w: 1, h: 1 };
     const groundAt = () => (cine ? cine.groundAt : null);
 
@@ -289,6 +294,9 @@ export default function Present({ engine, onExit }) {
       const needsEngine = cameraHeight(toShot || beatShot(timeline.beat, plan, null, reduced)) < GLOBE_FULL_M;
       const hold = needsEngine && !cine;
       if (hold !== waitingNow) { waitingNow = hold; setWaiting(hold); }
+      // An engine that never boots must not hold the show: after ENGINE_TIMEOUT_MS the caption fallback takes over.
+      // A recording waits instead (its readyCheck below), since a fallback frame in a video is worse than a late one.
+      if (!opts.record && holdTimer.update(hold, performance.now())) { setFailed('engine'); return; }
       if (!hold) {
         const changed = timeline.advance(dt);
         if (changed) { startBeat(timeline.index); setIndex(timeline.index); }
@@ -351,17 +359,14 @@ export default function Present({ engine, onExit }) {
       exitRef.current = null;
       globe.dispose();
     };
-  }, [assets, beats, low, opts, reduced]);
+  }, [assets, beats, failed, low, opts, reduced]);
 
   // ---------------------------------------------------------------- leaving
   const restoreEngine = useCallback(() => {
     const eng = engineRef.current;
     if (exitRef.current) exitRef.current.release();
-    if (eng) { try { eng.setDust(0); eng.setSky('clear_day'); eng.setLayer(0); } catch { /* not ready */ } }
-    const q = new URLSearchParams(window.location.search);
-    for (const k of ['present', 'autoplay', 'record', 'seq', 'beat']) q.delete(k);
-    const qs = q.toString();
-    window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
+    restoreFromStore(eng, useMissionStore.getState());
+    window.history.replaceState(null, '', window.location.pathname + queryWithoutPresent(window.location.search) + window.location.hash);
   }, []);
 
   const exit = useCallback(() => {
@@ -381,37 +386,45 @@ export default function Present({ engine, onExit }) {
   }, [onExit, restoreEngine]);
 
   useEffect(() => {
+    // Captured on window and stopped there, so no key reaches the app under the presentation (view.js, App's shortcuts).
     const onKey = (e) => {
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
-      const k = e.key;
-      const handled = NEXT.has(k) || BACK.has(k) || k === 'Escape' || k === 'l' || k === 'L';
-      if (!handled) return;
-      e.preventDefault(); e.stopPropagation();
-      if (e.repeat) return;
-      if (k === 'Escape') { exit(); return; }
-      if (k === 'l' || k === 'L') { setLang((v) => (v === 'en' ? 'es' : 'en')); return; }
+      const action = presentKey(e);
+      if (!action) return;
+      e.stopImmediatePropagation();
+      if (action === 'swallow') return;
+      e.preventDefault();
+      if (e.type !== 'keydown' || e.repeat) return;
+      if (action === 'exit') { exit(); return; }
+      if (action === 'lang') { setLang((v) => (v === 'en' ? 'es' : 'en')); return; }
+      if (failed) {
+        // the caption fallback steps the beats itself: no clock, no camera
+        if (action === 'back') setIndex((i) => Math.max(0, i - 1));
+        else if (index < beats.length - 1) setIndex(index + 1);
+        else if (beats[beats.length - 1].cta) begin();
+        return;
+      }
       const nav = exitRef.current?.nav;
-      if (BACK.has(k)) { nav?.back(); return; }
-      if (failed) return;
+      if (action === 'back') { nav?.back(); return; }
       if (!nav?.next() && beats[beats.length - 1].cta) begin();
     };
     window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  }, [beats, begin, exit, failed]);
+    window.addEventListener('keyup', onKey, true);
+    return () => { window.removeEventListener('keydown', onKey, true); window.removeEventListener('keyup', onKey, true); };
+  }, [beats, begin, exit, failed, index]);
 
   const beat = beats[index];
   const plan = assets?.plan;
   const tx = (o) => (o ? (o[lang] ?? o.en ?? '') : '');
+  // The clock fades the copy in; in the caption fallback there is no clock, so it shows at once.
+  const hidden = failed ? undefined : { opacity: 0 };
   const dataFor = plan ? { ...plan, zone: { ...plan.zone, margin: plan.zone.frames[0].marginMin, area: plan.zone.frames[0].areaHa } } : {};
 
   return (
     <dialog ref={dialogRef} className={`present${opts.record ? ' recording' : ''}`} aria-label="Marswalk presentation" onCancel={(e) => { e.preventDefault(); exit(); }}>
       <canvas ref={globeRef} className="pr-globe" aria-hidden="true" />
       <div className="pr-scrim" aria-hidden="true" />
-      {failed && (
-        <video className="pr-fallback" src={BASE + 'backup.mp4'} autoPlay muted playsInline loop={false} controls={false} />
-      )}
-      <div className="pr-layer" ref={layerRef} aria-hidden="true">
+      {failed && <div className="pr-fallback" style={assets ? { backgroundImage: `url(${BASE}${index < 2 ? 'globe_2k.jpg' : 'jezero_ctx.jpg'})` } : undefined} aria-hidden="true" />}
+      <div className="pr-layer" ref={layerRef} aria-hidden="true" hidden={!!failed}>
         {plan && beat.tracks?.zone && <div className="pr-astronaut"><span /></div>}
         {plan && (beat.chips || []).map((chip, i) => (
           <div key={`${beat.id}-${i}`} className={`pr-pin${chip.danger ? ' danger' : ''}${chip.offset ? ' offset' : ''}${chip.home ? ' home' : ''}`} data-at="1" data-i={i} style={{ opacity: 0 }}>
@@ -425,22 +438,22 @@ export default function Present({ engine, onExit }) {
           </div>
         ))}
       </div>
-      <div className="pr-copy" key={`copy-${beat.id}-${lang}`}>
-        {beat.title && <h1 className="pr-title" data-fade="0.2" style={{ opacity: 0 }}>{beat.title}</h1>}
+      <div className={`pr-copy${failed ? ' still' : ''}`} key={`copy-${beat.id}-${lang}`}>
+        {beat.title && <h1 className="pr-title" data-fade="0.2" style={hidden}>{beat.title}</h1>}
         <div className="pr-captions">
           {captionsOf(beat).map((c, k) => (
-            <p key={k} className="pr-caption" data-cap={k} style={{ opacity: 0 }}>{tx(c)}</p>
+            <p key={k} className="pr-caption" data-cap={k} style={hidden}>{tx(c)}</p>
           ))}
         </div>
         {beat.source && (
-          <p className="pr-source" data-fade="1.2" style={{ opacity: 0 }}>
+          <p className="pr-source" data-fade="1.2" style={hidden}>
             <span className={`pr-tag ${TAG_CLASS[beat.source.tag]}`}>{beat.source.tag}</span>
             {tx(beat.source)}
             {beat.tracks?.zone && plan?.zone.source === 'placeholder' && <em className="pr-warn"> · {tx(UI.placeholder)}</em>}
           </p>
         )}
         {beat.cta && (
-          <button type="button" className="pr-cta" data-fade="1.5" style={{ opacity: 0 }} onClick={begin}>
+          <button type="button" className="pr-cta" data-fade="1.5" style={hidden} onClick={begin}>
             {tx(beat.cta)} <span aria-hidden="true">→</span>
           </button>
         )}
@@ -451,7 +464,8 @@ export default function Present({ engine, onExit }) {
           <span className="pr-lang">{lang.toUpperCase()}</span>
         </div>
       )}
-      {waiting && <p className="pr-wait">{tx(UI.loading)}</p>}
+      {waiting && !failed && <p className="pr-wait">{tx(UI.loading)}</p>}
+      {failed && <p className="pr-wait">{tx(UI.fallback)}</p>}
     </dialog>
   );
 }

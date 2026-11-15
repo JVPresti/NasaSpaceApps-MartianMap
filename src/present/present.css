@@ -34,7 +34,11 @@ body.mw-recording, body.mw-recording * { cursor: none !important; }
   display: block;
   background: #000;
 }
-.pr-fallback { object-fit: contain; z-index: 5; }
+/* the caption fallback (no WebGL, or the engine never booted): a still under the words, Next still steps the beats */
+.pr-fallback { background: #000 center / cover no-repeat; opacity: 0.55; }
+.pr-copy.still { z-index: 1; }
+.pr-copy.still .pr-caption { position: static; }
+.pr-copy.still .pr-caption + .pr-caption { margin-top: 0.25em; }
 
 .pr-layer { position: absolute; inset: 0; pointer-events: none; }
 
