@@ -60,15 +60,15 @@ import { createView, createViewState, CHEYAVA_VIEW } from './view.js';
 import { createGait } from './gait.js';
 import { planTouches } from './planTouch.js';
 import { LOOK_DEFAULTS, clampLookSettings } from './lookSettings.js';
-import { airlockExit, partnerPatrol } from './spawn.js';
+import { airlockExit, partnerPatrol, tableSpawn } from './spawn.js';
 import { canOpenWrist, wristRestoreState } from './wrist.js';
 import { createLoadLifecycle } from './lifecycle.js';
 import { createProgressTracker } from './progress.js';
 import { assertWebGL2, rendererFailure } from './webgl.js';
 
 // The layers of src/plan/layers.js, in `view.layer` order. The ground draws 1 to 3; radio shadow and exposure are drawn
-// on the mission table only, so the ground stays plain for them (TERRAIN_FRAG in shaders.js).
-export const LAYERS = ['none', 'terrain', 'rock abundance', 'outcrop', 'radio shadow', 'exposure'];
+// on the mission table only, so the ground stays plain for them (TERRAIN_FRAG in shaders.js), as for the return zone.
+export const LAYERS = ['none', 'terrain', 'rock abundance', 'outcrop', 'radio shadow', 'exposure', 'return zone'];
 export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
 
 /**
@@ -88,7 +88,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   if (!assetBase) throw new Error('createEngine: assetBase is required');
   assertWebGL2();
 
-  let alive = true, started = false, firstFrame = false, walked = false, requestedMode = mode, viewCtl = null, waypoints = null, wristPose = null;
+  let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null, waypoints = null, wristPose = null;
   let inputEnabled = inputEnabledOption !== false;
   let pendingLock = null, pendingLockResolve = null;
   let pendingReset = false;
@@ -332,7 +332,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     await sys.habitat.init(); if (!alive) return;
     if (pending.habitatScreens) sys.habitat.screens.setData(pending.habitatScreens);
     sys.habitat.prompt.set(pending.habitatPrompt);
-    placeAtAirlock();   // the player shows at the airlock on the Plan map too
+    placeInHabitat();   // the astronaut starts inside, at the mission table (habitat-first flow)
 
     if (!alive) return;
     sys.routeGlow = createRouteGlow(ctx);
@@ -353,10 +353,11 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     if (pending.skyTime !== null) sys.sky.setTime(pending.skyTime);
     waypoints.set(pending.waypoints);
     waypoints.group.visible = requestedMode === 'plan';
-    viewCtl.setMode(requestedMode); started = true; walked = requestedMode === 'walk';
+    ctx.onSurface = false;
+    viewCtl.setMode(requestedMode); started = true;
     if (pendingReset) {
       pendingReset = false;
-      resetToAirlock();
+      resetToHabitat();
     }
     booted = last = performance.now();
     renderer.setAnimationLoop(tick);
@@ -375,27 +376,41 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
 
   function setPose(x, z, yaw, pitch = 0) { ctx.view.eye.set(x, 0, z); ctx.view.yaw = yaw; ctx.view.pitch = pitch; }
   // The EVA start (#166): outside the airlock facing the first waypoint (spawn.js), the partner beside the player.
+  // The outer hatch works again and sampling is allowed: the astronaut is on the surface.
   function placeAtAirlock() {
     const exit = airlockExit(sys.habitat.pos, sys.habitat.dir, sys.route.data.waypoints[1]);
     setPose(exit.x, exit.z, exit.yaw);
+    sys.habitat.sealed = false; ctx.onSurface = true;
+    sys.partner.parked = false; sys.arms.setScreenOff(false);
     sys.partner.setSource(createScriptedPartner({ id: CREW[1].id, color: CREW[1].color, ...partnerPatrol(exit) }));
     return exit;
   }
-  // Restart (#64): back to the airlock in Plan, and the next Walk starts the EVA again.
-  function resetToAirlock() {
-    walked = false;
-    requestedMode = 'plan';
-    viewCtl.reset(placeAtAirlock(), 'plan');
-    if (waypoints) waypoints.group.visible = true;
+  // Inside, before the EVA or after it (habitat-first flow): at the mission table, outer hatch shut so nobody walks
+  // out before Begin EVA, the partner out of sight until the airlock cycle, and no sampling indoors.
+  function placeInHabitat() {
+    const spot = tableSpawn(sys.habitat.pos, sys.habitat.dir);
+    setPose(spot.x, spot.z, spot.yaw, spot.pitch);
+    sys.habitat.sealed = true; sys.habitat.open = 0; ctx.onSurface = false;
+    sys.partner.parked = true; sys.arms.setScreenOff(true);   // the suit is on standby: no wrist screen indoors
+    return spot;
+  }
+  // Restart (#64): back inside at the table, on foot; Begin EVA at the table starts the next EVA.
+  function resetToHabitat() {
+    requestedMode = 'walk';
+    const spot = placeInHabitat();
+    viewCtl.reset(spot, 'walk');
+    ctx.view.pitch = spot.pitch;
+    if (waypoints) waypoints.group.visible = false;
   }
 
   // Development hook for scripts/measure-fps.mjs: put the camera at a known spot and read stats().
   if (debug) {
-    const place = (x, z, yaw, pitch = 0) => { viewCtl.setMode('walk'); requestedMode = 'walk'; walked = true; setPose(x, z, yaw, pitch); };
+    const place = (x, z, yaw, pitch = 0) => { viewCtl.setMode('walk'); requestedMode = 'walk'; setPose(x, z, yaw, pitch); };
     window.__marswalk = {
       stats, place,
       // the EVA start (spawn.js) and the test bench's old start near Cheyava Falls
       airlock() { const e = placeAtAirlock(); place(e.x, e.z, e.yaw); },
+      table() { const e = placeInHabitat(); place(e.x, e.z, e.yaw, e.pitch); },
       cheyavaView() { place(CHEYAVA_VIEW.x, CHEYAVA_VIEW.z, CHEYAVA_VIEW.yaw); },
       setMode: (m) => { requestedMode = m; viewCtl.setMode(m); },
       // the bench's 'habin' and 'hab' views (testbench main.js lines 802-803)
@@ -470,9 +485,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       requestedMode = m;
       if (m === 'plan') setWrist(false);   // the wrist screen cannot stay up in Plan (#67)
       if (started) {
-        // The first Walk starts the EVA at the airlock (#166). The partner patrolled during Plan, so it is placed again
-        // beside the player. Later switches keep both where they are.
-        if (m === 'walk' && !walked) { walked = true; placeAtAirlock(); }
+        // Plan is the mission table; walking keeps the position and heading the player had when it opened.
         viewCtl.setMode(m);   // before boot ends, the mode is applied when ready
         if (waypoints) waypoints.group.visible = m === 'plan';
       }
@@ -568,18 +581,32 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     /** Current real quality state, without going through the development-only window hook. */
     getQuality() { return { ...quality.get(), gpu: detected.gpu }; },
     /**
-     * Return the scene to the EVA spawn: clear input, release the lock, drop the route/shelter markers and
-     * put the player back at the airlock in Plan (#166); the next Walk starts the EVA again. The store reset and simulation restart are the caller's job
-     * (src/state/evaSession.js) because the engine owns no simulation. Quality and the look settings (#102) are deliberately untouched:
-     * they are player preferences, not session state.
+     * Go out through the airlock (habitat-first flow): the player stands at the foot of the airlock steps facing WP1,
+     * the outer hatch works and the partner comes out beside them. The app calls this while the airlock cycle has the
+     * screen dark. The EVA itself (clock, suit, events) is the simulation's job.
+     * @returns {boolean} false before ready
+     */
+    exitAirlock() {
+      if (!started || !alive) return false;
+      setWrist(false);
+      viewCtl.reset(placeAtAirlock(), 'walk', { keepLock: true });
+      viewCtl.setInputEnabled(inputEnabled);
+      requestedMode = 'walk';
+      return true;
+    },
+    /**
+     * Return the scene to the start of a new EVA: clear input, release the lock, drop the route/shelter markers and
+     * put the player back inside the habitat at the mission table, on foot. The store reset and simulation restart are
+     * the caller's job (src/state/evaSession.js) because the engine owns no simulation. Quality and the look settings
+     * (#102) are deliberately untouched: they are player preferences, not session state.
      * @returns {boolean} false when called before ready (the reset is applied at the end of boot)
      */
     resetSession() {
       if (!alive) return false;
-      requestedMode = 'plan';   // a new EVA starts at the planning table, like the reset store (#166)
+      requestedMode = 'walk';   // a new EVA starts on foot in the habitat, like the reset store
       if (!started) { pendingReset = true; return false; }
       viewCtl.setInputEnabled(false);
-      resetToAirlock();
+      resetToHabitat();
       if (sys.routeGlow) sys.routeGlow.setPath(null);
       if (sys.shelter) sys.shelter.set(null);
       if (waypoints) waypoints.set(null);

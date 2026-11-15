@@ -2,8 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setLanguage, t } from '../i18n/index.js';
 import { setWristKeyOwner } from '../screens/wrist/ownership.js';
 import { startEvaRunner } from './eva.js';
+import { beginEgress } from './flow.js';
 import { canEndEva, canOpenPlan, connectTableActions, END_EVA_KEY, inCabin, OPEN_PLAN_KEY, tablePrompt } from './tableActions.js';
-import { resetStore, useMissionStore } from './store.js';
+import { holdMission, pauseMission, resetStore, setMode, useMissionStore } from './store.js';
 
 function keyTarget() {
   const handlers = new Set();
@@ -23,7 +24,7 @@ function fakeEngine(cabin = true) {
 
 const PATH = [[535, 574], [520, 560]];
 const atHabitat = (patch = {}) => useMissionStore.setState((s) => ({
-  mode: 'walk', mission: { ...s.mission, paused: false }, route: { ...s.route, path: PATH },
+  mode: 'walk', stage: 'eva', mission: { ...s.mission, paused: false }, route: { ...s.route, path: PATH },
   eva: { ...s.eva, phase: 'active', atHabitat: true, ...patch },
 }));
 const lastPrompt = (engine) => engine.setHabitatPrompt.mock.calls.at(-1)[0];
@@ -36,7 +37,8 @@ const connect = (engine, options = {}) => {
   return { target, onOpenPlan, actions };
 };
 
-beforeEach(() => resetStore());
+// These cases start at the table (Plan), as before the habitat-first flow (#260); its own case is below.
+beforeEach(() => { resetStore(); useMissionStore.setState({ mode: 'plan' }); });
 afterEach(() => {
   while (connected.length) connected.pop().disconnect();
   setWristKeyOwner(false);
@@ -136,7 +138,7 @@ describe('the habitat table actions (#244)', () => {
     try {
       const engine = fakeEngine();
       const { target } = connect(engine);
-      useMissionStore.setState((s) => ({ mode: 'walk', mission: { ...s.mission, paused: false, elapsedSec: 60 }, navigation: { ...s.navigation, x: 541, z: 582 } }));
+      useMissionStore.setState((s) => ({ mode: 'walk', stage: 'eva', mission: { ...s.mission, paused: false, elapsedSec: 60 }, navigation: { ...s.navigation, x: 541, z: 582 } }));
       runner.tick();
       expect(useMissionStore.getState().eva).toMatchObject({ phase: 'active', atHabitat: true });
       expect(rowTexts(engine)[1]).toEqual([END_EVA_KEY, t('tableprompt.finish.eva'), false]);
@@ -147,6 +149,34 @@ describe('the habitat table actions (#244)', () => {
     } finally {
       runner.stop();
     }
+  });
+
+  it('offers Open plan in the habitat before the EVA while the clock is held, and nothing behind a menu (#260)', () => {
+    const engine = fakeEngine();
+    const { target, onOpenPlan } = connect(engine);
+    setMode('walk');
+    holdMission();   // walking in the habitat: the clock waits for the airlock
+    expect(rowTexts(engine)).toEqual([[OPEN_PLAN_KEY, t('tableprompt.make.plan'), false], [END_EVA_KEY, t('tableprompt.no.eva'), true]]);
+    target.press('KeyE');
+    expect(onOpenPlan).toHaveBeenCalledTimes(1);
+    pauseMission();   // the pause menu over the habitat
+    expect(engine.setHabitatPrompt).toHaveBeenLastCalledWith(null);
+    target.press('KeyE');
+    expect(onOpenPlan).toHaveBeenCalledTimes(1);
+  });
+
+  it('draws no prompt and ignores E during the airlock cycle, though Start walking holds the clock (#260)', () => {
+    const engine = fakeEngine();
+    const { target, onOpenPlan } = connect(engine);
+    setMode('walk');
+    holdMission();
+    expect(rowTexts(engine)).not.toBeNull();
+    beginEgress();   // Begin EVA
+    holdMission();   // Start walking: resumeEva({ holdClock }) holds the clock through the cycle
+    expect(useMissionStore.getState().mission.held).toBe(true);
+    expect(engine.setHabitatPrompt).toHaveBeenLastCalledWith(null);
+    target.press('KeyE');
+    expect(onOpenPlan).not.toHaveBeenCalled();
   });
 
   it('ignores a paused mission, Plan, key repeat, modifier keys and typing in a field', () => {

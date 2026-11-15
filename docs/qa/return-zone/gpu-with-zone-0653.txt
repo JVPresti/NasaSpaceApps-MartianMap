@@ -1,0 +1,119 @@
+renderer: ANGLE (Microsoft Corporation, D3D12 (NVIDIA GeForce RTX 3070), OpenGL 4.6)
+  layer buttons: Image | Terrain | Rocks | Outcrop | Radio | Exposure | Return zone
+  plan zone: {"kind":"plan","events":[],"insideCells":8163,"edgeCells":13203,"insideM2":123860.45413948562,"edgeM2":200334.38392792217,"reachM":613.0644026950533,"limit":"eva","ms":72.70000000298023}
+  fps table with the zone layer: min 57.0, median 60.0, minimap draw max - ms, long tasks 0 (0 ms)
+  fps walking with the minimap zone: min 60.0, median 60.0, minimap draw max 0.8 ms, long tasks 0 (0 ms)
+  at the stop: {"kind":"live","events":[],"insideCells":7688,"edgeCells":12799,"insideM2":116653.08972490083,"edgeM2":194204.3308258332,"reachM":609.3903789485335,"limit":"eva","ms":69.19999998807907}
+  fps standing at the stop with the minimap zone: min 59.0, median 60.0, minimap draw max 0.8 ms, long tasks 0 (0 ms)
+  storm after 80 s; zone snapped 3 ms after the alert: {"kind":"live","events":["dust-storm"],"insideCells":749,"edgeCells":0,"insideM2":11364.875676892652,"edgeM2":0,"reachM":78.96136956904462,"limit":"event","ms":69.29999999701977}
+  fps walk in the storm: min 54.0, median 59.0, minimap draw max 1.5 ms, long tasks 0 (0 ms)
+  radiation: {"kind":"live","events":["dust-storm","radiation"],"insideCells":0,"edgeCells":0,"insideM2":0,"edgeM2":0,"reachM":0,"limit":"window","ms":7.9000000059604645}
+{
+  "gpu": true,
+  "renderer": "ANGLE (Microsoft Corporation, D3D12 (NVIDIA GeForce RTX 3070), OpenGL 4.6)",
+  "fps": {
+    "table with the zone layer": {
+      "min": 57,
+      "median": 60,
+      "minimapDrawMsMax": null,
+      "longTasks": 0,
+      "longTaskMs": 0
+    },
+    "walking with the minimap zone": {
+      "min": 60,
+      "median": 60,
+      "minimapDrawMsMax": 0.8,
+      "longTasks": 0,
+      "longTaskMs": 0
+    },
+    "standing at the stop with the minimap zone": {
+      "min": 59,
+      "median": 60,
+      "minimapDrawMsMax": 0.8,
+      "longTasks": 0,
+      "longTaskMs": 0
+    },
+    "walk in the storm": {
+      "min": 54,
+      "median": 59,
+      "minimapDrawMsMax": 1.5,
+      "longTasks": 0,
+      "longTaskMs": 0
+    }
+  },
+  "zone": {
+    "plan": {
+      "kind": "plan",
+      "events": [],
+      "insideCells": 8163,
+      "edgeCells": 13203,
+      "insideM2": 123860.45413948562,
+      "edgeM2": 200334.38392792217,
+      "reachM": 613.0644026950533,
+      "limit": "eva",
+      "ms": 72.70000000298023
+    },
+    "start": {
+      "kind": "live",
+      "events": [],
+      "insideCells": 8183,
+      "edgeCells": 13191,
+      "insideM2": 124163.92211483656,
+      "edgeM2": 200152.3031427116,
+      "reachM": 614.8158006691253,
+      "limit": "eva",
+      "ms": 70.8999999910593
+    },
+    "atStop": {
+      "kind": "live",
+      "events": [],
+      "insideCells": 7688,
+      "edgeCells": 12799,
+      "insideM2": 116653.08972490083,
+      "edgeM2": 194204.3308258332,
+      "reachM": 609.3903789485335,
+      "limit": "eva",
+      "ms": 69.19999998807907
+    },
+    "snapMs": 3,
+    "storm": {
+      "kind": "live",
+      "events": [
+        "dust-storm"
+      ],
+      "insideCells": 749,
+      "edgeCells": 0,
+      "insideM2": 11364.875676892652,
+      "edgeM2": 0,
+      "reachM": 78.96136956904462,
+      "limit": "event",
+      "ms": 69.29999999701977
+    },
+    "beforeStorm": {
+      "kind": "live",
+      "events": [],
+      "insideCells": 7688,
+      "edgeCells": 12799,
+      "insideM2": 116653.08972490083,
+      "edgeM2": 194204.3308258332,
+      "reachM": 609.3903789485335,
+      "limit": "eva",
+      "ms": 69.19999998807907
+    },
+    "radiation": {
+      "kind": "live",
+      "events": [
+        "dust-storm",
+        "radiation"
+      ],
+      "insideCells": 0,
+      "edgeCells": 0,
+      "insideM2": 0,
+      "edgeM2": 0,
+      "reachM": 0,
+      "limit": "window",
+      "ms": 7.9000000059604645
+    }
+  },
+  "walkedM": 51.67197299914882
+}

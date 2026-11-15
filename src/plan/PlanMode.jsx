@@ -16,7 +16,7 @@ import { SHELTERS_PATH } from '../sim/shelters.js';
  *   initialTab?: 'site' | 'route' | 'hazards' | 'suit' }} props
  *   initialTab: the table step to open on (the habitat table's "Open plan" passes 'route'); the Site step by default
  */
-export default function PlanMode({ engine, active, evaBegun = false, onBeginEva, onControls, initialTab = 'site' }) {
+export default function PlanMode({ engine, active, evaBegun = false, onBeginEva, onClose, onControls, initialTab = 'site' }) {
   const waypoints = useMissionStore((s) => s.route.waypoints);
   const planner = useRoutePlanner({ waypoints, enabled: active, engine });
 
@@ -56,5 +56,5 @@ export default function PlanMode({ engine, active, evaBegun = false, onBeginEva,
 
   if (!active) return null;
 
-  return <MissionTable planner={planner} waypoints={waypoints} evaBegun={evaBegun} onBeginEva={onBeginEva} onControls={onControls} initialTab={initialTab} />;
+  return <MissionTable planner={planner} waypoints={waypoints} evaBegun={evaBegun} onBeginEva={onBeginEva} onClose={onClose} onControls={onControls} initialTab={initialTab} />;
 }

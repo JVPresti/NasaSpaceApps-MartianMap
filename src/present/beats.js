@@ -205,7 +205,7 @@ const CUT_SOURCES = [
     caption: { en: 'Cheyava Falls. A possible sign of ancient life.', es: 'Cheyava Falls. Una posible señal de vida antigua.' },
     chips: [
       { at: 'cheyava', show: [8.5], text: { en: 'Cheyava Falls · Perseverance, 2024', es: 'Cheyava Falls · Perseverance, 2024' }, tag: 'DATA' },
-      { at: 'site', show: [10.5], big: '1 m', text: { en: 'HiRISE terrain model, Mars 2020 landing maps', es: 'Modelo de terreno HiRISE, mapas de aterrizaje Mars 2020' }, tag: 'DATA' },
+      { at: 'site', show: [10.5], big: '1 m', text: { en: 'HiRISE source DEM resolution. App grid: about 2 m', es: 'Resolución del DEM HiRISE de origen. Malla de la app: unos 2 m' }, tag: 'DATA' },
     ],
     scene: { images: true },
     source: { en: 'CTX 6 m, then HiRISE 1 m terrain and 25 cm image shown at 0.5 m, MRO. Colour: our tint', es: 'CTX 6 m, luego terreno HiRISE 1 m e imagen de 25 cm vista a 0.5 m, MRO. Color: nuestro tinte', tag: 'DATA' },

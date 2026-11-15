@@ -12,7 +12,7 @@
  *     EVA can reappear after a remount.
  */
 import { clearClockSession, defaultSessionStorage } from '../sim/missionClock.js';
-import { pauseMission, resetStore, resumeMission, useMissionStore } from './store.js';
+import { holdMission, pauseMission, resetStore, resumeMission, useMissionStore } from './store.js';
 
 export const EVA_PHASE = Object.freeze({ START: 'start', PLAYING: 'playing', PAUSED: 'paused' });
 // END: confirm ending the EVA and going back to the mission table (#11), a restart that lands on the table.
@@ -51,10 +51,12 @@ export async function requestEvaLock(engine) {
  * grant that arrives after the interface paused, changed mode or restarted is abandoned instead of
  * resuming the mission behind a menu. A stale answer is silent: the newer action owns the message.
  *
- * `holdClock` enables the scene input without resuming the mission clock. The app uses it at the mission table
- * before the EVA has begun (#11): planning costs no mission time, so the clock, suit and events wait for Begin EVA.
+ * `holdClock` enables the scene input without resuming the mission clock. The app passes it while the astronaut is
+ * still inside the habitat before the EVA (src/state/flow.js): walking around and planning cost no mission time, so
+ * the clock waits for the end of the airlock cycle.
  *
- * @param {{ engine?: object, mode?: 'walk' | 'plan', isCurrent?: (() => boolean) | null, capture?: boolean, holdClock?: boolean }} [options]
+ * @param {{ engine?: object, mode?: 'walk' | 'plan', isCurrent?: (() => boolean) | null, capture?: boolean,
+ *   holdClock?: boolean }} [options]
  * @returns {Promise<{ ok: boolean, message: string | null, stale?: boolean, lockFailed?: boolean }>}
  */
 export async function resumeEva({ engine, mode = 'walk', isCurrent = null, capture = true, holdClock = false } = {}) {
@@ -74,7 +76,7 @@ export async function resumeEva({ engine, mode = 'walk', isCurrent = null, captu
   } catch (cause) {
     return { ok: false, message: (cause && cause.message) || 'The scene input could not be enabled.' };
   }
-  if (!holdClock) resumeMission();
+  if (holdClock) holdMission(); else resumeMission();
   return { ok: true, message: null };
 }
 
@@ -89,7 +91,8 @@ export function pauseEva({ engine } = {}) {
 }
 
 /**
- * Reset the whole EVA and leave the new mission paused on the start screen.
+ * Reset the whole EVA and leave the new mission paused, with the astronaut back inside the habitat. The caller
+ * chooses what comes next: the start screen, the mission table or walking in the habitat.
  *
  * Order matters: stop the old runners, remove the persisted session, reset the store, return the engine to
  * the spawn, start one new simulation, then pause it. Clearing before the new clock starts is what stops an

@@ -63,6 +63,26 @@ describe('engine bridge boot prints', () => {
   });
 });
 
+describe('engine bridge habitat zone', () => {
+  it('writes the habitat walk zone before the EVA and clears it on the surface', () => {
+    vi.useFakeTimers();
+    const engine = { ...fakeEngine(), slopeAt: () => 0, getPlayer: () => ({ x: 0, z: 0, headingDeg: 0, habitatZone: 'main' }) };
+    const disconnect = connectEngine(engine);
+    vi.advanceTimersByTime(200);
+    expect(useMissionStore.getState().habitat).toEqual({ zone: 'main' });
+
+    const before = useMissionStore.getState().habitat;
+    vi.advanceTimersByTime(400);
+    expect(useMissionStore.getState().habitat).toBe(before);   // no change, no write
+
+    useMissionStore.setState({ stage: 'eva' });
+    vi.advanceTimersByTime(200);
+    expect(useMissionStore.getState().habitat).toEqual({ zone: null });
+    disconnect();
+    vi.useRealTimers();
+  });
+});
+
 describe('engine bridge look settings', () => {
   it('pushes the store look settings once when it connects', () => {
     const engine = fakeEngine();
@@ -81,6 +101,23 @@ describe('engine bridge look settings', () => {
     expect(engine.setLookSettings).toHaveBeenLastCalledWith(next);
     useMissionStore.setState((s) => ({ view: { ...s.view, layer: 3 } }));
     expect(engine.setLookSettings).toHaveBeenCalledTimes(2);
+    disconnect();
+  });
+});
+
+describe('engine bridge airlock move', () => {
+  it('writes the moved player position on a stage change, before a later subscriber reads it', () => {
+    const engine = { ...fakeEngine(), slopeAt: () => 0, player: { x: 0, z: 0, headingDeg: 0 } };
+    engine.getPlayer = () => engine.player;
+    const disconnect = connectEngine(engine);
+    const seen = [];
+    const unsubscribe = useMissionStore.subscribe((s, prev) => {
+      if (s.stage !== prev.stage) seen.push([useMissionStore.getState().navigation.trueX, useMissionStore.getState().navigation.trueZ]);
+    });
+    engine.player = { x: 534.65, z: 573.51, headingDeg: 323 };   // exitAirlock() moved the player; no poll ran since
+    useMissionStore.setState({ stage: 'egress' });
+    expect(seen).toEqual([[534.65, 573.51]]);
+    unsubscribe();
     disconnect();
   });
 });
