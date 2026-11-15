@@ -166,7 +166,7 @@ export const STORE_PATHS = Object.freeze({
   'route.tasks': sim('sampling tasks routed by the planner: each place inserted where it adds the least walking; the first task always kept, each later one kept while the plan still fits the time, O2 and battery'),
   'tasks.workSec': sim(`work per item for a pair of astronauts, our estimate, 1.5 times longer for a solo crew; planned time, not played in real time. ${Object.values(TASK_WORK_NOTES).join(' ')}`),
   'tasks.place': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'a clicked point snapped to ground under 20 degrees and reachable from the airlock on the HiRISE cost grid', from: HIRISE },
-  'eva.tasks': sim('samples secured and photos taken within the place\'s arrival radius plus 2 m (the scoop\'s reach) count for a task; one of the right type secured elsewhere counts as done elsewhere'),
+  'eva.tasks': sim('samples secured and photos taken within the place\'s arrival radius plus 2 m (the scoop\'s reach) count for a task; a sample of the right type secured elsewhere counts as done elsewhere, a photo taken elsewhere does not count'),
   ...prefixed('route.legs.', LEG_FIELDS),
   ...prefixed('route.totals.', TOTAL_FIELDS),
 
