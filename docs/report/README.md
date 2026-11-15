@@ -17,8 +17,7 @@ Search the PDF or the DOCX for `[email]` and `[confirm]`. Each one is a fact onl
 
 - `[email]`: each member's email, on the cover. Add them in Google Docs only. Keep emails out of the repository.
 - `[confirm]` after the roles of Andrea and Brayan: their roles are new or changed since last year's report.
-- `[confirm]` in Brayan's paragraph: the presentation time limit (the organisers' page says 3 minutes).
-- `[confirm]` after "Final length" in Impact, Presentation: the demo length the pitch uses.
+- `[confirm]` in Impact, Presentation and in Brayan's paragraph: the team presents a 5-minute pitch with a live demo (`docs/pitch/script-5min-en.md`, #329), but the organisers' page still says 3 minutes.
 - Appendix B: the watermark line, once #301 is done or not.
 - Appendix C: the prior-work statement, after the local lead answers.
 - Appendix D: the Figma link, and whether the repository is public.
