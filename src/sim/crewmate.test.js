@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { assertPartnerState, CASE_CLIP } from '../engine/partnerSource.js';
 import { CREWMATE, createCrewmate, createCrewmatePartner, HOME_CHAIN, makePath, sayMinutes } from './crewmate.js';
-import { canStand, densePath, habToWorld, makeHabitat, makeTrack, makeWorld, worldToHab } from './crewmateFixtures.js';
+import { canStand, densePath, habToWorld, makeHabitat, makeTrack, makeWorld, reversals, worldToHab } from './crewmateFixtures.js';
 
 const DT = 1 / 30;
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
@@ -83,6 +83,22 @@ describe('crewmate: buddy walk', () => {
     expect(Math.abs(Math.atan2(Math.sin(face - state.yaw), Math.cos(face - state.yaw)))).toBeLessThan(0.1);
     expect(dist(state, world.player)).toBeLessThanOrEqual(CREWMATE.FAR_M);
     expect(dist(state, world.player)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('goes round a rock dead ahead on the route without stalling or turning back', () => {
+    const rock = { x: 30, z: 0, r: 0.8 };
+    const brain = createCrewmate(), world = makeWorld({ rocks: [rock] });
+    const track = makeTrack(A, [{ to: B, speed: 1 }, { to: C, speed: 1 }]);
+    const frames = [];
+    let idleWhileFollowing = 0;
+    run(brain, world, track, 110, eva({ path: PATH }), (t, s) => {
+      frames.push({ t, x: s.x, z: s.z });
+      expect(dist(s, rock)).toBeGreaterThanOrEqual(rock.r + 0.3 - 1e-6);
+      if (t > 15 && s.x > 26 && s.x < 34 && s.gait === 'idle') idleWhileFollowing += DT;
+    });
+    expect(frames.some((f) => f.x > 32)).toBe(true);
+    expect(idleWhileFollowing).toBeLessThan(0.3);
+    expect(reversals(frames)).toEqual([]);
   });
 
   it('never walks through a rock on the route: it goes around', () => {

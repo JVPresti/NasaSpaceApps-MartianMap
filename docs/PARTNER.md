@@ -75,9 +75,11 @@ engine.partnerCommand('toggleCase');                              // forwarded t
 
 The playtest of the scripted partner found it "not following and just going back and forth". The crewmate rules that out by construction, and `src/sim/crewmate.oscillation.test.js` measures it.
 
-- **Pure pursuit.** It steers at a point 3 m (`LOOKAHEAD_M`) ahead of its own place on the route, never at the player's live position. A player who turns round does not turn it round. Off the route (more than 12 m from it, back within 6 m) it pursues the player's own trail the same way.
+- **Pure pursuit.** It steers at a point 3 m (`LOOKAHEAD_M`) ahead of its own place on the route, never at the player's live position. A player who turns round does not turn it round. Off the route (more than 8 m from it, back within 4 m) it pursues the player's own trail the same way.
 - **Heading first.** It walks along its heading, which turns at most 120° per second. A target more than 90° off the heading makes it stop and turn on the spot. It never steps backwards. Speed changes are limited to 1.0 m/s² up and 1.2 m/s² down.
 - **Hysteresis.** It starts following once the player is more than 10 m away (`START_M`) and stops once a stopped player is closer than 6 m (`STOP_M`). Between the two it keeps doing what it did. Every decision (wait or follow, the way along the route, route or trail, lead or wait) holds 2 s at least (`FLIP_SEC`). The gap is measured along the route, so a corner does not stop it.
+- **Round rocks, not into them.** It probes 0.8 m ahead along its heading. When a rock (or the player) blocks it, it turns to the clearer side at the same 120° per second and keeps that side for 1 s, so it walks round instead of pushing into the rock.
+- **Never past the player.** Its speed comes from the gap along the route and the player's progress along it, so a player who walks sideways off the route is not overtaken. Level with their place or ahead of it, it stands and lets them lead.
 - **Waiting.** A walking player is followed at 7 m. A stopped player is approached at a falling speed until 5 m, then it stands still and turns to face them.
 
 ### Behaviours, in priority order

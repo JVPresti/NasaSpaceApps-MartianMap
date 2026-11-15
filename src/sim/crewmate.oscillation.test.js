@@ -140,3 +140,94 @@ describe('EV2 does not go back and forth: a 3-minute first mission on a recorded
     console.log(`far > 15 m: ${(run.frames.filter((f) => dist(f, f.player) > 15).length / run.frames.length * 100).toFixed(2)} %; max turn ${(run.maxTurnRate * 180 / Math.PI).toFixed(0)} deg/s; flips ${run.flips.length}`);
   }
 });
+
+// Two cases the GPU browser run of the first mission turned up (docs/qa/ev2-crewmate), kept as regressions.
+describe('EV2 does not go back and forth: cases from the browser run', () => {
+  const STEP = 1 / 30;
+  function walk(legs, seconds, sense) {
+    const world = makeWorld(), brain = createCrewmate(), start = legs.start;
+    const track = makeTrack(start, legs.legs), ev2 = [], player = [];
+    let far = 0, n = 0;
+    for (let t = 0; t <= seconds; t += STEP) {
+      const p = track.at(t);
+      world.player = { x: p.x, z: p.z };
+      const { state } = brain.update(STEP, world, sense(t));
+      ev2.push({ t, x: state.x, z: state.z }); player.push({ t, x: p.x, z: p.z });
+      if (Math.hypot(state.x - p.x, state.z - p.z) > 15) far++;
+      n++;
+    }
+    return { ev2: reversals(ev2), player: reversals(player), farShare: far / n };
+  }
+  const R0 = { x: 0, z: 0 }, R1 = { x: 80, z: 0 };
+  const route = densePath([R0, R1]);
+  const unprompted = (r) => r.ev2.filter((t) => !r.player.some((p) => t >= p && t <= p + 15));
+
+  it('walks the player\'s trail round a turn off the route and back onto it without doubling back', () => {
+    // 18 m along, 15 m off the route (past OFF_ROUTE_M), then back to the route diagonally and on
+    const r = walk({ start: R0, legs: [{ to: { x: 18, z: 0 }, speed: 1 }, { to: { x: 18, z: -15 }, speed: 1 }, { to: { x: 55, z: -0.5 }, speed: 1 }, { to: R1, speed: 1 }] }, 100,
+      () => ({ present: true, phase: 'eva', path: route, stops: [], link: true }));
+    expect(unprompted(r)).toEqual([]);
+    expect(r.farShare).toBeLessThan(0.05);
+  });
+
+  it('does not turn round for a player who walks past it once an event that had it leading ends', () => {
+    // radiation: EV2 leads toward R1; the alert ends while the player is still walking; the player walks past EV2
+    const r = walk({ start: R0, legs: [{ to: R1, speed: 1 }] }, 75,
+      (t) => ({ present: true, phase: 'eva', path: route, stops: [], link: true, radiation: t < 40, shelter: { type: 'habitat', x: R1.x, z: R1.z } }));
+    expect(r.ev2).toEqual([]);
+  });
+
+  it('does not curl sideways when the radiation lead ends with it passing on the side, in the storm', () => {
+    const r = walk({ start: R0, legs: [{ to: R1, speed: 1 }] }, 75,
+      (t) => ({ present: true, phase: 'eva', path: route, stops: [], link: true, storm: t < 30, radiation: t >= 8 && t < 32, shelter: { type: 'habitat', x: R1.x, z: R1.z } }));
+    expect(r.ev2).toEqual([]);
+  });
+});
+
+// The player's own walk from the GPU browser run of #282's first mission (src/sim/crewmate.recorded-walk.json): out of
+// the airlock, a 90 degree turn 15 m off the route and back, S1, the storm and the radiation alert, home and in.
+describe('EV2 does not go back and forth: replaying the walk recorded in the browser run', async () => {
+  const rec = (await import('./crewmate.recorded-walk.json')).default;
+  const hab = { x: rec.habitat.x, z: rec.habitat.z, yaw: Math.atan2(-rec.habitat.dir.z, rec.habitat.dir.x) };
+  const at = (t) => {
+    const s = rec.samples, i = Math.min(s.length - 2, Math.max(0, Math.floor(t * 10))), a = s[i], b = s[i + 1], k = Math.min(1, Math.max(0, (t - a[0]) / ((b[0] - a[0]) || 1)));
+    return { x: a[1] + (b[1] - a[1]) * k, z: a[2] + (b[2] - a[2]) * k, mission: a[3] + (b[3] - a[3]) * k };
+  };
+  const STEP = 1 / 30, END = rec.samples.at(-1)[0];
+  const world = makeWorld({ habitat: hab }), brain = createCrewmate();
+  const stop = { id: rec.stop.id, name: 'S1', x: rec.stop.x, z: rec.stop.z, radiusM: 5 };
+  const ev2 = [], player = [];
+  let homePath = null, reached = false, prev = null, intoPlayer = 0, throughWall = 0;
+  world.player = { ...at(0) };
+  for (let t = -2; t < 0; t += STEP) brain.update(STEP, world, { present: true, phase: 'pre', path: rec.route, stops: [stop], link: true });
+  for (let t = 0; t <= END; t += STEP) {
+    const p = at(t), e = rec.events;
+    world.player = { x: p.x, z: p.z };
+    if (dist(p, stop) <= 5) reached = true;
+    const storm = p.mission >= e.stormSec && p.mission < e.stormEndSec, radiation = p.mission >= e.radiationSec && p.mission < e.radiationEndSec;
+    if (storm && !homePath) homePath = [[p.x, p.z], rec.route[0]];   // the re-plan to the habitat, as a straight line here
+    const { state } = brain.update(STEP, world, {
+      present: true, phase: 'eva', missionSec: p.mission, path: homePath ?? rec.route, stops: [stop], link: true,
+      nextStop: reached ? null : { name: 'S1', rangeM: dist(p, stop) }, storm, radiation,
+      shelter: storm || radiation ? { type: 'habitat', x: rec.route[0][0], z: rec.route[0][1] } : null, own: { marginSec: 20000 },
+    });
+    if (prev && dist(state, prev) > 1e-9 && dist(state, p) < 0.9 - 1e-6) intoPlayer++;
+    if (!canStand(hab, state.x, state.z)) throughWall++;
+    prev = { x: state.x, z: state.z };
+    ev2.push({ t, x: state.x, z: state.z, d: dist(state, p) }); player.push({ t, x: p.x, z: p.z });
+  }
+  const pr = reversals(player), er = reversals(ev2);
+
+  it('reverses at most once a minute when the player does not', () => {
+    const unprompted = er.filter((t) => !pr.some((p) => t >= p && t <= p + 15));
+    expect(unprompted.length).toBeLessThanOrEqual(Math.floor(END / 60));
+  });
+  it('spends under 5 % of the walk more than 15 m from the player', () => {
+    expect(ev2.filter((f) => f.d > 15).length / ev2.length).toBeLessThan(0.05);
+  });
+  it('never steps into the player or through the habitat', () => {
+    expect(intoPlayer).toBe(0);
+    expect(throughWall).toBe(0);
+  });
+  if (typeof process !== 'undefined' && process.env.CREWMATE_TRACE) console.log(`replay: player reversals ${pr.map((t) => t.toFixed(1))}, EV2 reversals ${er.map((t) => t.toFixed(1))}`);
+});
