@@ -27,3 +27,4 @@ dist-ssr
 # Blender backups
 *.blend1
 *.blend@
+scripts/perf/out/

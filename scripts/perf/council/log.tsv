@@ -1,0 +1,7 @@
+round	kind	build	judge	model	persona	verdict	summary	raw
+c1	critique	pr282 8ec6f72	j1	opus	first-time player	demo no	blockers: Site/Route destination mismatch, map hitches 257-290 ms. majors: no go or no-go or total time on Route, 21 vs 285 min margins, layer preview covers Stops	c1-critique.json#j1
+c1	critique	pr282 8ec6f72	j2	fable	EVA planner	demo no	blockers: destination mismatch, map hitches, no total EVA time. majors: Route Begin EVA skips hazards and Go ignores enabled hazards, preview covers Stops and white lines ambiguous, numbers without context	c1-critique.json#j2
+c1	critique	pr282 8ec6f72	j3	opus	designer	demo no	blockers: map hitches, destination mismatch, preview sticks over Stops. majors: two margins and no verdict on Route, orange used outside the main action	c1-critique.json#j3
+a1	ab	pr282 vs pr282+fix/layer-preview-closes-on-click	j1	opus	first-time player	prefer fix	preview no longer hides the Stops list and the layer controls	a1-layer-preview.json#j1
+a1	ab	pr282 vs pr282+fix/layer-preview-closes-on-click	j2	fable	EVA planner	prefer fix	destination row, work time and caveat visible again; nothing lost	a1-layer-preview.json#j2
+a1	ab	pr282 vs pr282+fix/layer-preview-closes-on-click	j3	fable	designer	prefer fix	click reads as finished; selected button and legend are the feedback	a1-layer-preview.json#j3
