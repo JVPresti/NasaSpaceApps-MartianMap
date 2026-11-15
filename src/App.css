@@ -9,6 +9,11 @@
   inset: 0;
 }
 
+/* Drag-to-look is the Walk fallback on touch screens (#197); stop the browser from scrolling or zooming. */
+.engine-view canvas {
+  touch-action: none;
+}
+
 /* Overlays sit above the canvas but let drags and clicks through, except on their controls. */
 .topbar {
   position: absolute;

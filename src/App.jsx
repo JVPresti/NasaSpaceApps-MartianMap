@@ -25,6 +25,7 @@ import './components/menu.css';
 
 const HINTS = {
   get walk() { return t('menu.esc.to.pause.wasd.to.walk.shift.to'); },
+  get drag() { return t('menu.esc.to.pause.drag.to.look'); },
   get plan() { return t('menu.right.drag.to.pan.scroll.to.zoom.esc'); },
 };
 
@@ -102,6 +103,12 @@ export default function App() {
   const setOverlay = useCallback((next) => { overlayRef.current = next; setOverlayState(next); }, []);
 
   const [notice, setNotice] = useState(null);
+  // #197: a refused capture offers drag-to-look. `lockFailed` shows that offer after one failed attempt;
+  // `freeLook` records the player's choice and stays on for the session, so later resumes, restarts and
+  // Plan-to-Walk switches never ask the browser again for a lock it already refused.
+  const [lockFailed, setLockFailed] = useState(false);
+  const [freeLook, setFreeLookState] = useState(false);
+  const freeLookRef = useRef(false);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [menuFocus, setMenuFocus] = useState(0);
@@ -153,6 +160,7 @@ export default function App() {
     setOverlay(view);
     pauseEva({ engine: engineRef.current });
     setNotice(message);
+    setLockFailed(false);
     if (engineRef.current) setQuality(engineRef.current.getQuality());
   }, [setOverlay, setPhase]);
 
@@ -170,7 +178,10 @@ export default function App() {
     pauseFor(PAUSE_VIEW.MENU, 'menu.the.mouse.was.released.so.the.eva.is');
   }, [pauseFor]);
 
-  /** Start or Resume. In Walk nothing runs until the browser grants the lock; Plan needs no lock. */
+  /**
+   * Start or Resume. In Walk nothing runs until the browser grants the lock, unless the player chose
+   * drag-to-look; Plan needs no lock.
+   */
   const handleResume = useCallback(async () => {
     const instance = engineRef.current;
     // The EVA is final once the summary exists: no key, mode change or stale request may resume it behind the debrief.
@@ -185,18 +196,28 @@ export default function App() {
     setBusyState(true);
     setNotice(null);
     setQualityError(null);
-    const result = await resumeEva({ engine: instance, mode: resumeMode, isCurrent });
+    const result = await resumeEva({ engine: instance, mode: resumeMode, isCurrent, capture: !freeLookRef.current });
     setBusyState(false);
     // A superseded attempt stays paused and silent: the action that ended it owns the menu and its message.
     if (result.stale) return;
     if (!result.ok) {
+      if (result.lockFailed) setLockFailed(true);
       setNotice(result.message);
       return;
     }
+    setLockFailed(false);
     setOverlay(null);
     setPhase(EVA_PHASE.PLAYING);
     setNotice(null);
   }, [setBusyState, setOverlay, setPhase]);
+
+  /** The fallback button: switch to drag-to-look for the rest of the session and resume now. */
+  const handleResumeWithoutCapture = useCallback(() => {
+    if (busyRef.current) return;
+    freeLookRef.current = true;
+    setFreeLookState(true);
+    handleResume();
+  }, [handleResume]);
 
   const handleModeChange = useCallback(async (next) => {
     if (busyRef.current) return;
@@ -205,7 +226,7 @@ export default function App() {
     resumeSeqRef.current += 1;
     const attempt = ++walkLockSeqRef.current;
     setMode(next);
-    if (phaseRef.current === EVA_PHASE.PLAYING && next === 'walk') {
+    if (phaseRef.current === EVA_PHASE.PLAYING && next === 'walk' && !freeLookRef.current) {
       // The click itself is the user gesture. If the lock is refused, stay paused and explain.
       const instance = engineRef.current;
       const lock = await requestEvaLock(instance);
@@ -222,7 +243,10 @@ export default function App() {
         try { instance?.releasePointerLock?.(); } catch { /* nothing to release */ }
         return;
       }
-      if (phaseRef.current === EVA_PHASE.PLAYING && !lock.ok) pauseFor(PAUSE_VIEW.MENU, lock.message);
+      if (phaseRef.current === EVA_PHASE.PLAYING && !lock.ok) {
+        pauseFor(PAUSE_VIEW.MENU, lock.message);
+        setLockFailed(true);
+      }
     }
   }, [pauseFor]);
 
@@ -271,6 +295,7 @@ export default function App() {
     // content change, so an empty path here is explicit rather than relying on the minimap remounting.
     minimapRoute.setPath(null);
     setNotice(result.ok ? null : result.message);
+    setLockFailed(false);
     if (instance) setQuality(instance.getQuality());
   }, [minimapRoute, setBusyState, setOverlay, setPhase]);
 
@@ -281,6 +306,7 @@ export default function App() {
     setPhase(EVA_PHASE.START);
     setOverlay(null);
     setNotice(null);
+    setLockFailed(false);
     setQuality(null);
     setQualityError(null);
     setBusyState(false);
@@ -294,7 +320,7 @@ export default function App() {
       setOverlay(PAUSE_VIEW.MENU);
       return;
     }
-    if (useMissionStore.getState().mode === 'walk') {
+    if (useMissionStore.getState().mode === 'walk' && !freeLookRef.current) {
       // Esc cannot grant pointer lock (a key press is not a user activation), so it must not start a
       // request that can only fail. Cancel any pending attempt, keep the real pause and point at Resume.
       resumeSeqRef.current += 1;
@@ -304,7 +330,7 @@ export default function App() {
       setMenuFocus((value) => value + 1);
       return;
     }
-    // Plan resumes without a lock, so Esc can resume there.
+    // Plan and drag-to-look resume without a lock, so Esc can resume there.
     handleResume();
   }, [handleResume, setBusyState, setOverlay]);
 
@@ -383,10 +409,18 @@ export default function App() {
 
       {load.status === 'ready' && <WalkStopCard active={mode === 'walk'} />}
 
-      {showTopbar && <p className="hint">{mode === 'walk' ? HINTS.walk : HINTS.plan}</p>}
+      {showTopbar && <p className="hint">{mode === 'walk' ? (freeLook ? HINTS.drag : HINTS.walk) : HINTS.plan}</p>}
 
       {load.status === 'ready' && !evaSummary && loadingDone && phase === EVA_PHASE.START && (
-        <StartScreen mode={mode} busy={busy} notice={notice} onStart={handleResume} />
+        <StartScreen
+          mode={mode}
+          busy={busy}
+          notice={notice}
+          freeLook={freeLook}
+          lockFailed={lockFailed}
+          onStart={handleResume}
+          onStartWithoutCapture={handleResumeWithoutCapture}
+        />
       )}
 
       {load.status === 'ready' && !evaSummary && phase === EVA_PHASE.PAUSED && overlay && (
@@ -395,11 +429,14 @@ export default function App() {
           mode={mode}
           busy={busy}
           notice={notice}
+          freeLook={freeLook}
+          lockFailed={lockFailed}
           focusToken={menuFocus}
           quality={quality}
           qualityBusy={qualityBusy}
           qualityError={qualityError || quality?.error || null}
           onResume={handleResume}
+          onResumeWithoutCapture={handleResumeWithoutCapture}
           onRestartRequest={() => showOverlay(PAUSE_VIEW.RESTART)}
           onRestartConfirm={handleRestartConfirm}
           onControls={() => showOverlay(PAUSE_VIEW.CONTROLS)}

@@ -61,6 +61,7 @@ export function createView(ctx, canvas, signal, { onLockChange = () => {}, input
     drag = true; dragMoved = 0; lx = e.clientX; ly = e.clientY; canvas.setPointerCapture(e.pointerId);
   }, { signal });
   canvas.addEventListener('pointerup', () => { drag = false; }, { signal });
+  canvas.addEventListener('pointercancel', () => { drag = false; }, { signal });
   canvas.addEventListener('pointermove', (e) => {
     if (!input || view.mode !== 'eye') return;
     if (locked()) { look(e.movementX, e.movementY, LOOK_LOCKED); return; }

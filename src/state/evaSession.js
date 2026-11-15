@@ -7,6 +7,7 @@
  *   - a paused mission is the only safe state behind the start screen and the pause menu;
  *   - Walk never resumes before the browser has actually granted pointer lock;
  *   - Plan resumes without a lock, because it uses orbit controls;
+ *   - Walk can also resume without a lock when the player chose drag-to-look after a refused capture (#197);
  *   - Restart clears the old persisted clock session before a new clock exists, so nothing from the old
  *     EVA can reappear after a remount.
  */
@@ -18,38 +19,43 @@ export const PAUSE_VIEW = Object.freeze({ MENU: 'menu', CONTROLS: 'controls', RE
 
 // Honest for every refusal: a denial is not always a permission problem. Right after Escape, browsers can
 // need a short moment before they accept a new capture, and the next attempt must come from Resume.
-const LOCK_FAILED = 'Mouse capture was not granted, so the EVA stays paused. Wait briefly after Escape, then press Enter or click the button to try again. Check your browser settings if this continues.';
-const LOCK_UNAVAILABLE = 'Mouse capture is not available in this browser, so the EVA cannot resume in Walk.';
+const LOCK_FAILED = 'Mouse capture was not granted, so the EVA stays paused. Wait briefly after Escape, then press Enter or click the button to try again, or continue without mouse capture and drag to look around. Check your browser settings if this continues.';
+const LOCK_UNAVAILABLE = 'Mouse capture is not available here. Continue without mouse capture and drag to look around.';
 
 /**
- * Request pointer lock and turn the real result into a message the menu can show.
- * @returns {Promise<{ ok: boolean, message: string | null }>}
+ * Request pointer lock and turn the real result into a message the menu can show. Every refusal carries
+ * `lockFailed: true`, which is what lets the menus offer to continue without mouse capture.
+ * @returns {Promise<{ ok: boolean, message: string | null, lockFailed?: boolean }>}
  */
 export async function requestEvaLock(engine) {
   if (!engine || typeof engine.requestPointerLock !== 'function') {
-    return { ok: false, message: LOCK_UNAVAILABLE };
+    return { ok: false, lockFailed: true, message: LOCK_UNAVAILABLE };
   }
   try {
     const locked = await engine.requestPointerLock();
-    return locked ? { ok: true, message: null } : { ok: false, message: LOCK_FAILED };
+    return locked ? { ok: true, message: null } : { ok: false, lockFailed: true, message: LOCK_FAILED };
   } catch (cause) {
-    return { ok: false, message: (cause && cause.message) || LOCK_FAILED };
+    return { ok: false, lockFailed: true, message: (cause && cause.message) || LOCK_FAILED };
   }
 }
 
 /**
  * Resume the EVA. In Walk the pointer lock is requested first and the clock and inputs only start after a
- * real grant. In Plan there is no lock to request: orbit controls use the free mouse.
+ * real grant. In Plan there is no lock to request: orbit controls use the free mouse. With `capture: false`
+ * Walk also skips the request and resumes with drag-to-look, for browsers and frames that refuse the lock.
  *
  * `isCurrent` is optional. It is checked after the browser answers, before any input or clock write, so a
  * grant that arrives after the interface paused, changed mode or restarted is abandoned instead of
  * resuming the mission behind a menu. A stale answer is silent: the newer action owns the message.
  *
- * @param {{ engine?: object, mode?: 'walk' | 'plan', isCurrent?: (() => boolean) | null }} [options]
- * @returns {Promise<{ ok: boolean, message: string | null, stale?: boolean }>}
+ * @param {{ engine?: object, mode?: 'walk' | 'plan', isCurrent?: (() => boolean) | null, capture?: boolean }} [options]
+ * @returns {Promise<{ ok: boolean, message: string | null, stale?: boolean, lockFailed?: boolean }>}
  */
-export async function resumeEva({ engine, mode = 'walk', isCurrent = null } = {}) {
-  if (mode === 'walk') {
+export async function resumeEva({ engine, mode = 'walk', isCurrent = null, capture = true } = {}) {
+  if (mode === 'walk' && capture === false) {
+    // Drag-to-look needs a free pointer. Cancel any request still in flight so a late grant cannot land.
+    try { engine?.releasePointerLock?.(); } catch { /* nothing was held */ }
+  } else if (mode === 'walk') {
     const lock = await requestEvaLock(engine);
     if (typeof isCurrent === 'function' && !isCurrent()) {
       try { engine?.releasePointerLock?.(); } catch { /* the lock was never wanted again */ }
