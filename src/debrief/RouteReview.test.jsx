@@ -96,6 +96,8 @@ describe('route review in the debrief', () => {
     expect(track.length).toBeGreaterThan(route.length);
     // Every point of the walked line sits on the plan line: the two overlap.
     for (const [x, z] of track) expect(distanceToPath({ x, z }, route)).toBeLessThan(0.01);
+    // The track is drawn first, under the thinner plan line, so both stay visible where they overlap.
+    expect(html.indexOf('class="map-track"')).toBeLessThan(html.indexOf('class="map-route"'));
     expect(html).not.toContain('debrief-review-row');
   });
 

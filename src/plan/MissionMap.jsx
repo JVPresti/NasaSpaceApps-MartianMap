@@ -70,7 +70,7 @@ function markerLabel(name, index) {
  *   alternatives: [{ id, path }] the route profiles not in use (#245), dashed in their colours under the route;
  *   routeClass: class on the route line, for the colour of the profile in use
  *   traverse: draw Perseverance's drives and the pin of its stop images under the route (#249, TraverseLayer.jsx)
- *   track: [[x, z], ...] a walked track drawn over the route (.map-track), included in the fit (the debrief, #274)
+ *   track: [[x, z], ...] a walked track drawn under the route (.map-track), included in the fit (the debrief, #274)
  *   stretches: [{ id, path, className }] parts of the track drawn over it with their own class (.map-stretch)
  *   marks: [{ id, x, z, className, text?, label? }] small markers above the stops (.map-mark), label as their tooltip
  *   focus: [{ x, z }, ...] frames these points; a new array frames again, null goes back to the fit
@@ -175,10 +175,11 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
         {route && alternatives.map((a) => (
           <polyline key={a.id} points={toLine(a.path.map(([x, z]) => ({ x, z })))} className={'map-route-alt profile-' + a.id} />
         ))}
-        {route && line && <polyline points={line} className="map-route-shadow" />}
-        {route && line && <polyline points={line} className={routeClass ? 'map-route ' + routeClass : 'map-route'} />}
+        {/* the track under the route, wider, so a walk on the plan still shows both lines */}
         {trackPoints.length > 1 && <polyline points={toLine(trackPoints)} className="map-track-shadow" />}
         {trackPoints.length > 1 && <polyline points={toLine(trackPoints)} className="map-track" />}
+        {route && line && <polyline points={line} className="map-route-shadow" />}
+        {route && line && <polyline points={line} className={routeClass ? 'map-route ' + routeClass : 'map-route'} />}
         {stretches.map((s) => (
           <polyline key={s.id} points={toLine(s.path.map(([x, z]) => ({ x, z })))} className={s.className ? 'map-stretch ' + s.className : 'map-stretch'} />
         ))}

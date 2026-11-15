@@ -227,11 +227,14 @@
   height: 100%;
 }
 
-.debrief-review-map .table-map-caption { top: 8px; left: 10px; font-size: 12.5px; }
+/* On this small map the caption keeps only its scale line, at the bottom left, clear of the route's far end at the top
+   and of Fit route; the title stays the map's accessible name, and the key under the map names the lines. */
+.debrief-review-map .table-map-caption { top: auto; bottom: 8px; left: 10px; font-size: 0; }
 .debrief-review-map .table-map-caption span { font-size: 11px; }
 .debrief-review-map .table-map-fit { top: 8px; right: 8px; min-height: 28px; padding: 0 10px; font-size: 12px; }
 
-/* The walked track: the app's orange, over the cyan plan; each deviation over it in its verdict colour. */
+/* The walked track: the app's orange, wider and under the cyan plan, so a walk on the plan shows an orange line with
+   a cyan core; each deviation over both in its verdict colour. */
 .map-track,
 .map-track-shadow,
 .map-stretch {
@@ -240,9 +243,11 @@
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
 }
-.map-track { stroke: var(--accent); stroke-width: 2px; }
-.map-track-shadow { stroke: #0a0d11; stroke-width: 4.5px; opacity: 0.5; }
-.map-stretch { stroke: var(--verdict, var(--accent)); stroke-width: 4px; }
+.map-track { stroke: var(--accent); stroke-width: 6px; }
+.map-track-shadow { stroke: #0a0d11; stroke-width: 8px; opacity: 0.5; }
+.map-stretch { stroke: var(--verdict, var(--accent)); stroke-width: 6px; }
+/* the track's own shadow does that job here; the route's would darken the orange around the cyan core */
+.debrief-review-map .map-route-shadow { display: none; }
 
 .map-marks { z-index: 1; }
 .map-mark {
@@ -266,18 +271,29 @@
 /* a sample: a small dot in the go colour */
 .map-mark-sample { width: 8px; height: 8px; background: var(--ok); border: 1.5px solid #0a0d11; border-radius: 50%; }
 
-.debrief-review-legend { left: 10px; bottom: 10px; padding: 6px 9px; font-size: 11.5px; }
-.debrief-review-legend ul { gap: 3px; }
-.debrief-review-legend i { width: 14px; height: 0; margin-right: 6px; vertical-align: 3px; border: 0; }
-.debrief-review-legend .review-key-plan { border-top: 2px solid #8fd3ee; }
-.debrief-review-legend .review-key-track { border-top: 2px solid var(--accent); }
-.debrief-review-legend .review-key-replan { width: 9px; height: 9px; margin: 0 8px 0 2px; vertical-align: -1px; border: 2px solid #8fd3ee; border-radius: 50%; }
-.debrief-review-legend .review-key-find { width: 8px; height: 8px; margin: 0 9px 0 3px; vertical-align: 0; background: #9fd8ee; transform: rotate(45deg); }
-.debrief-review-legend .review-key-sample { width: 8px; height: 8px; margin: 0 9px 0 3px; vertical-align: 0; background: var(--ok); border-radius: 50%; }
+/* The map key, under the map in the debrief's note style; the shapes are the marks above. */
+.debrief-review-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 12px;
+  margin: 7px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--dim);
+}
+.debrief-review-legend li { display: flex; align-items: center; gap: 5px; }
+.debrief-review-legend i { display: inline-block; flex: none; }
+.debrief-review-legend .review-key-plan { width: 14px; border-top: 2px solid #8fd3ee; }
+.debrief-review-legend .review-key-track { width: 14px; border-top: 4px solid var(--accent); }
+.debrief-review-legend .review-key-replan { width: 9px; height: 9px; border: 2px solid #8fd3ee; border-radius: 50%; }
+.debrief-review-legend .review-key-find { width: 7px; height: 7px; margin: 0 1px; background: #9fd8ee; transform: rotate(45deg); }
+.debrief-review-legend .review-key-sample { width: 8px; height: 8px; background: var(--ok); border-radius: 50%; }
 
 /* Deviation rows: the mission log's rows as buttons; a click frames the stretch on the map. */
 .debrief-review-list {
-  max-height: 320px;
+  max-height: 360px;   /* the map and its key */
   overflow-y: auto;
 }
 
@@ -337,9 +353,10 @@
   font: 700 10px var(--font-ui);
   color: var(--verdict);
 }
+/* at the left end, where the margin is still high, so the falling margin line does not run through it */
 .debrief-review-reserve-label {
   position: absolute;
-  right: 4px;
+  left: 4px;
   transform: translateY(-115%);
   font-size: 10px;
   font-weight: 600;

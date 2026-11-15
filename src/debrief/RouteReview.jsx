@@ -172,16 +172,15 @@ export function RouteReviewView({ summary, review, selected, onSelect }) {
   const hasFinds = marks.some((m) => m.className.startsWith('map-mark-find'));
   const hasSamples = marks.some((m) => m.className === 'map-mark-sample');
 
+  // The key sits under the map, not over it: on a 300 px map a box in the corner would hide the stretch being framed.
   const legend = (
-    <div className="table-map-legend debrief-review-legend">
-      <ul>
-        <li><i className="review-key-plan" />{t('review.legend.plan')}</li>
-        <li><i className="review-key-track" />{t('review.legend.track')}</li>
-        {review.replans.length > 0 && <li><i className="review-key-replan" />{t('review.legend.replan')}</li>}
-        {hasFinds && <li><i className="review-key-find" />{t('review.legend.find')}</li>}
-        {hasSamples && <li><i className="review-key-sample" />{t('review.legend.sample')}</li>}
-      </ul>
-    </div>
+    <ul className="debrief-review-legend">
+      <li><i className="review-key-plan" />{t('review.legend.plan')}</li>
+      <li><i className="review-key-track" />{t('review.legend.track')}</li>
+      {review.replans.length > 0 && <li><i className="review-key-replan" />{t('review.legend.replan')}</li>}
+      {hasFinds && <li><i className="review-key-find" />{t('review.legend.find')}</li>}
+      {hasSamples && <li><i className="review-key-sample" />{t('review.legend.sample')}</li>}
+    </ul>
   );
 
   return (
@@ -191,18 +190,20 @@ export function RouteReviewView({ summary, review, selected, onSelect }) {
       {review.ok && (
         <>
           <div className="debrief-review-body">
-            <div className="debrief-review-map">
-              <MissionMap
-                layer={0}
-                path={plan.path}
-                waypoints={waypoints}
-                title={t('review.map.title')}
-                legend={legend}
-                track={track}
-                stretches={stretches}
-                marks={marks}
-                focus={focus}
-              />
+            <div className="debrief-review-mapcol">
+              <div className="debrief-review-map">
+                <MissionMap
+                  layer={0}
+                  path={plan.path}
+                  waypoints={waypoints}
+                  title={t('review.map.title')}
+                  track={track}
+                  stretches={stretches}
+                  marks={marks}
+                  focus={focus}
+                />
+              </div>
+              {legend}
             </div>
             {review.deviations.length > 0 ? (
               <ol className="debrief-log debrief-review-list">
