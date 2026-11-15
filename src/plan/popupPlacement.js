@@ -32,9 +32,11 @@ export function placePopup({ anchor, size, box, avoid = [], gap = POPUP_GAP, edg
   const clampX = (x) => Math.min(maxLeft, Math.max(edge, x));
   const clampY = (y) => Math.min(maxTop, Math.max(edge, y));
   const blockers = [anchor, ...avoid];
-  // along a side, try the anchor-centred spot first, then the spots just past each blocker
-  const tops = [clampY((anchor.top + anchor.bottom) / 2 - h / 2), ...avoid.flatMap((r) => [clampY(r.bottom + gap), clampY(r.top - gap - h)])];
-  const lefts = [clampX((anchor.left + anchor.right) / 2 - w / 2), ...avoid.flatMap((r) => [clampX(r.right + gap), clampX(r.left - gap - w)])];
+  // along a side, try the anchor-centred spot first, then the spots just past each blocker, nearest first, so the
+  // popup stays as close to its anchor as the chrome allows
+  const near = (centre, list) => [centre, ...list].sort((a, b) => Math.abs(a - centre) - Math.abs(b - centre));
+  const tops = near(clampY((anchor.top + anchor.bottom) / 2 - h / 2), avoid.flatMap((r) => [clampY(r.bottom + gap), clampY(r.top - gap - h)]));
+  const lefts = near(clampX((anchor.left + anchor.right) / 2 - w / 2), avoid.flatMap((r) => [clampX(r.right + gap), clampX(r.left - gap - w)]));
   const sides = [
     ['right', anchor.right + gap, null],
     ['left', anchor.left - gap - w, null],

@@ -39,6 +39,12 @@ describe('map popup placement (#380)', () => {
     expect(inside(r)).toBe(true);
   });
 
+  it('takes the clear spot nearest its anchor, whatever order the chrome comes in', () => {
+    const anchor = at(76, 73, 108);   // Cheyava Falls at the top left, as measured at 1366x768
+    const p = placePopup({ anchor, size: { width: 270, height: 260 }, box: { width: 635, height: 660 }, avoid: [{ left: 320, top: 600, right: 620, bottom: 645 }, { left: 15, top: 13, right: 377, bottom: 47 }] });
+    expect(p).toMatchObject({ side: 'right', top: 47 + POPUP_GAP, covered: 0 });
+  });
+
   it('slides up off the legend and the rover key for a stop near the bottom', () => {
     const anchor = at(400, 520);
     const p = placePopup({ anchor, size, box, avoid: chrome });
