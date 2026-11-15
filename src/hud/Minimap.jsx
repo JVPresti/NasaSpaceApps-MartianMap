@@ -11,6 +11,7 @@ import { createRedrawScheduler, MINIMAP_MAX_REDRAWS_PER_SECOND } from './minimap
 import { truePosition } from '../sim/navigation.js';
 import { loadDataFile } from '../data/dataFiles.js';
 import { SHELTERS_PATH } from '../sim/shelters.js';
+import { createSharedMarkersSelector } from './sharedMarkers.js';
 import './minimap.css';
 
 const ORTHO_URL = import.meta.env.BASE_URL + 'marswalk/assets/ortho_lo.jpg';
@@ -28,6 +29,8 @@ function relevantState(s) {
     partnerZ: s.crew?.[0]?.z,
     partnerLink: s.crew?.[0]?.link,
     finds: s.finds?.list,
+    shared: s.shared?.markers,
+    onlineCrew: s.online?.crew,
   };
 }
 
@@ -42,7 +45,9 @@ function changed(prev, next) {
     || prev.partnerX !== next.partnerX
     || prev.partnerZ !== next.partnerZ
     || prev.partnerLink !== next.partnerLink
-    || prev.finds !== next.finds;
+    || prev.finds !== next.finds
+    || prev.shared !== next.shared
+    || prev.onlineCrew !== next.onlineCrew;
 }
 
 export default function Minimap({ tracker }) {
@@ -63,6 +68,7 @@ export default function Minimap({ tracker }) {
     let lastProgress = null;
     tracker.setPath(lastPath ?? null);   // same route content on remount: keeps the progress
     let prev = relevantState(state);
+    const sharedOf = createSharedMarkersSelector();   // other players' markers (#54); [] offline
 
     function paint() {
       // The canvas sits inside a 1 px frame: measure its own CSS box, not the wrapper.
@@ -93,7 +99,7 @@ export default function Minimap({ tracker }) {
         shelters,
         zones: state.hazards?.zones,
         partner: state.crew?.[0] ?? null,
-        finds: state.finds?.list,
+        finds: [...(state.finds?.list ?? []), ...sharedOf(state)],
       });
     }
 

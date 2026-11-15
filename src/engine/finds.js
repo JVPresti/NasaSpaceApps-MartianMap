@@ -3,7 +3,8 @@
  *
  *   engine.aimGround(maxM)   where the centre of the view meets the terrain, or null (sky, too far, Plan mode)
  *   engine.setPointing(on)   raise the right arm into the arms' 'point' pose, or lower it again
- *   engine.setFinds(list)    markers for [{ id, label, x, z, status, verdict }]; null clears them
+ *   engine.setFinds(list)    markers for [{ id, label, x, z, status, verdict, color? }]; null clears them. color (CSS) overrides the
+ *                            status colour: other players' markers in their suit colour (#54)
  *
  * A marker is a thin pole with a diamond head and a ring on the ground, plus a label that keeps the same size on
  * screen, so it reads both at walking distance and from the Plan camera. Colours follow the HUD: amber while the
@@ -55,7 +56,7 @@ function createMarkers(ctx) {
   }
 
   function build(find, colorKey) {
-    const color = COLORS[colorKey];
+    const color = COLORS[colorKey] ?? colorKey;
     const root = new THREE.Group();
     const solid = new THREE.MeshBasicMaterial({ color, toneMapped: false });
     root.add(new THREE.Mesh(pole, solid), new THREE.Mesh(head, solid));
@@ -77,7 +78,7 @@ function createMarkers(ctx) {
     const next = new Map();
     for (const find of Array.isArray(list) ? list : []) {
       if (!find || !Number.isFinite(find.x) || !Number.isFinite(find.z)) continue;
-      const colorKey = findColorKey(find), key = `${find.label}|${colorKey}|${find.x}|${find.z}`;
+      const colorKey = typeof find.color === 'string' && find.color ? find.color : findColorKey(find), key = `${find.label}|${colorKey}|${find.x}|${find.z}`;
       const old = byKey.get(find.id);
       if (old && old.key === key) { next.set(find.id, old); byKey.delete(find.id); continue; }
       next.set(find.id, { root: build(find, colorKey), key });

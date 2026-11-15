@@ -7,15 +7,20 @@ const ROCK = (target) => target.site || t('ui.the.rock');
 /**
  * @param {{ phase: string, holding: string | null, target: { kind: string, site: string | null, distanceM: number, inReach: boolean } | null,
  *   caseState: string, caseInReach: boolean, actions: { click, photo, stow, case } } | null} status
+ * @param {{ takenBy?: string | null, caseWith?: string | null }} [online] names from the room (#54), null offline
  * @returns {{ reticle: 'reach' | 'look' | 'aim', items: { key: string, text: string }[], note: string | null }}
  *   reticle: 'reach' when a click samples the target (its `inReach` with free hands), 'look' when a rock is in view but
  *   too far, 'aim' otherwise, so a small crosshair always marks the screen centre a click samples (#199); items: the inputs that do
  *   something now; note: what is going on (a clip, the partner bringing the case, walk closer)
  */
-export function samplingPrompt(status) {
+export function samplingPrompt(status, { takenBy = null, caseWith = null } = {}) {
   const out = { reticle: 'aim', items: [], note: null };
   if (!status || !status.actions) return out;
-  const { phase, target, actions: a, caseState: cs, caseInReach } = status;
+  const { phase, target, caseState: cs, caseInReach } = status;
+  // online (#54): takenBy names the player who took the sample in the crosshair, caseWith the one who holds the tool case
+  const a = { ...status.actions };
+  if (takenBy && a.click) a.click = null;
+  if (caseWith && a.case === 'call-case') a.case = null;
   // the prompt shows up when the player looks at a rock, or at the ground within reach, or holds a sample: not while
   // walking with the ground ahead in view (the P key still works on any target in the camera's range)
   const shown = target && (target.kind === 'rock' || target.inReach);
@@ -26,13 +31,16 @@ export function samplingPrompt(status) {
   else if (a.case === 'call-case' && phase === 'holding') out.items.push({ key: 'F', get text() { return t('ui.ask.ev2.to.set.the.case.down'); } });
   else if (a.case === 'pick-up-case' && phase === 'idle') out.items.push({ key: 'F', get text() { return t('ui.ev2.takes.the.case.back'); } });
 
-  if (phase === 'collecting') out.note = t('sampling');
+  if (phase === 'claiming') out.note = t('online.sample.claiming');
+  else if (phase === 'collecting') out.note = t('sampling');
   else if (phase === 'stowing') out.note = t('ui.stowing.the.sample');
   else if (phase === 'pouring') out.note = t('ui.pouring.into.the.case');
   else if (cs === 'coming') out.note = t('ui.ev2.is.bringing.the.case');
   else if (cs === 'setting-down') out.note = t('ui.ev2.is.setting.the.case.down');
   else if (cs === 'picking-up') out.note = t('ui.ev2.is.closing.the.case');
   else if (phase === 'holding' && cs === 'down' && !caseInReach) out.note = t('ui.walk.to.the.case.to.pour');
+  else if (takenBy && phase === 'idle' && shown) out.note = t('online.sample.taken.by', { name: takenBy });
+  else if (caseWith && (phase === 'idle' || phase === 'holding') && cs === 'carried') out.note = t('online.case.with', { name: caseWith });
   else if (phase === 'idle' && target && target.kind === 'rock' && !target.inReach) out.note = t('closer', { site: target.site || t('rock'), distance: formatNumber(target.distanceM, 1) });
 
   if (shown && (phase === 'idle' || phase === 'holding')) out.reticle = a.click ? 'reach' : 'look';

@@ -46,6 +46,10 @@ export function createInitialState() {
     // #52, written only by src/net/index.js when the link has ?room=. These defaults mean offline. status: 'off' |
     // 'connecting' | 'open' | 'offline' | 'closed'; me and crew entries: { id, name, color, role, joinedAt }.
     online: { code: null, status: 'off', me: null, crew: [], offsetMs: 0, rttMs: null, startedAtMs: null, seed: null, closeCode: null },
+    // #54, written only by src/net/sharedState.js. These defaults mean offline. markers: the room's markers in id order, then
+    // this player's unsent ones (pending: true, id null); samples: { [sampleId]: { by, at, pending? } }; caseHolder: player id
+    // or null; notice: { key: 'sample-taken' | 'case-held', by, seq, atMs } for a few seconds; findCids: { [find id]: cid }.
+    shared: { markers: [], samples: {}, caseHolder: null, notice: null, findCids: {} },
   };
 }
 

@@ -1,5 +1,5 @@
 // A fake Durable Object state for testing the Room in plain Node. SQL runs on Node's built-in SQLite, so
-// constraints, ON CONFLICT and rowsWritten behave as they do in the real storage.
+// constraints, ON CONFLICT and rowsWritten (index writes included) behave as they do in the real storage.
 import { DatabaseSync } from 'node:sqlite';
 
 // Workers runtime globals the Room uses.
@@ -28,7 +28,12 @@ export function createFakeStorage() {
       exec(query, ...bindings) {
         const statement = db.prepare(query);
         if (statement.columns().length) return cursor(statement.all(...bindings).map((r) => ({ ...r })), 0);
-        return cursor([], Number(statement.run(...bindings).changes));
+        const changes = Number(statement.run(...bindings).changes);
+        // The real storage counts index writes in rowsWritten: an insert into a table with a UNIQUE column or a TEXT
+        // primary key reads 2 per row (measured with wrangler dev, docs/qa/online-m3.md). Mirror that for inserts.
+        const table = /^\s*INSERT\s+INTO\s+(\w+)/i.exec(query)?.[1];
+        const indexes = table ? db.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'index' AND tbl_name = ?").get(table).n : 0;
+        return cursor([], changes * (1 + indexes));
       },
     },
   };

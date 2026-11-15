@@ -3,12 +3,15 @@
  * only when the link has a valid ?room= code, so the offline build never contains it.
  *
  * startOnline({ code, store }) creates the player identity, connects to the room, runs the clock and writes
- * the `online` slice of the mission store (docs/STATE_AND_ENGINE.md). It returns { send, on, stop, ... }.
+ * the `online` slice of the mission store (docs/STATE_AND_ENGINE.md). sharedState.js writes the `shared` slice. It returns
+ * { send, on, addMarker, stop, ... }.
  */
 import { createClock } from './clock.js';
 import { getPlayerId, getPlayerName, getPreferredColor, setPreferredColor } from './identity.js';
 import { MSG, PROTOCOL_VERSION, ROLE, ROLES, normalizeRoomCode } from './protocol.js';
 import { connectRoom } from './room.js';
+import { createSharedState } from './sharedState.js';
+import { installSharedHooks } from '../state/sharedHooks.js';
 
 export { getPlayerName, setPlayerName } from './identity.js';
 
@@ -56,6 +59,9 @@ export function startOnline({ code, store, role = ROLE.SURFACE, color, connect =
     room.on(MSG.TIME, (m) => clock.handle(m)),
     clock.onChange(({ offsetMs, rttMs }) => patch({ offsetMs, rttMs })),
   ];
+  // Markers, samples and the tool case (#54). The engine reaches claimSample and mayCallCase through src/state/sharedHooks.js.
+  const shared = createSharedState({ store, room, playerId: id, ...(connectOptions.timers ? { timers: connectOptions.timers } : {}), ...(connectOptions.now ? { now: connectOptions.now } : {}) });
+  const uninstall = installSharedHooks({ claimSample: shared.claimSample, mayCallCase: shared.mayCallCase });
 
   return {
     code: roomCode,
@@ -67,8 +73,13 @@ export function startOnline({ code, store, role = ROLE.SURFACE, color, connect =
     serverNow: () => clock.serverNow(),
     /** Asks the room to start the mission; every player gets the same start time and seed back. */
     start: () => room.send({ type: MSG.START }),
+    shared,
+    /** Places a shared marker: { kind: 'find' | 'note' | 'go', x, z, label }. Returns its client id. */
+    addMarker: (marker) => shared.addMarker(marker),
     stop() {
       for (const off of offs) off();
+      uninstall();
+      shared.stop();
       clock.stop();
       room.close();
       store.setState({ online: { ...OFFLINE_STATE } });

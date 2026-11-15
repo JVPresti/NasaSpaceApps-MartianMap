@@ -15,7 +15,8 @@ export function findColor(find) {
 
 /**
  * Where each find goes on the map: inside the circle, or clamped to the rim.
- * @param {Array<{ x: number, z: number, label: string }>} finds store finds.list
+ * @param {Array<{ x: number, z: number, label: string, color?: string }>} finds store finds.list, then other players'
+ *   markers (src/hud/sharedMarkers.js), which carry their own CSS colour
  * @param {(x: number, z: number) => { x: number, y: number }} project world to canvas
  * @returns {Array<{ x: number, y: number, edge: boolean, label: string, color: string }>}
  */
@@ -25,7 +26,7 @@ export function findMarkers(finds, project, cx, cy, radius, marginPx = 8) {
     if (!Number.isFinite(f?.x) || !Number.isFinite(f?.z) || f.status === 'accepted') continue;
     const p = project(f.x, f.z), dx = p.x - cx, dy = p.y - cy, d = Math.hypot(dx, dy), max = radius - marginPx;
     const edge = d > max;
-    out.push({ x: edge ? cx + dx / d * max : p.x, y: edge ? cy + dy / d * max : p.y, edge, label: f.label, color: findColor(f) });
+    out.push({ x: edge ? cx + dx / d * max : p.x, y: edge ? cy + dy / d * max : p.y, edge, label: f.label, color: f.color || findColor(f) });
   }
   return out;
 }

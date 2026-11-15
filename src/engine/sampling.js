@@ -5,6 +5,8 @@
 //   E       stow the sample in the sample bag (stow_sample)
 //   F       the hand-over (props.json "hand_over"): ask the partner to set the case down, pour into it (pour_sample),
 //           and the partner closes the lid and takes the case back by itself
+// Online (#54) a click first claims the sample from the room (setGate): the clip starts only once the room says it is
+// free, about one round trip later, and a sample another player took is refused with a 'refused' event.
 // The clips, the scoop contents and the spill already exist (arms.js, props.js, partner.js); this file only decides when
 // they play and where the player stands, and reports what happened. Pure rules and tests: samplingRules.js.
 import * as THREE from 'three';
@@ -13,7 +15,7 @@ import { JOG_SPEED } from './view.js';
 import { wristIsOpen } from './wrist.js';
 import {
   BRIGHT_ANGEL, CASE_REACH_M, CASE_STAND_M, CHEYAVA_FALLS, GROUND_STAND_M, MIN_ROCK_D_M, PHOTO_RANGE_M, ROCK_STAND_M,
-  angleDelta, caseState, classifyTarget, horizontalDistance, inputActions, marchGround, pickRock, pourStand, rayCylinder, raySphere, standPoint,
+  angleDelta, caseState, classifyTarget, horizontalDistance, inputActions, marchGround, pickRock, pourStand, rayCylinder, raySphere, sampleIdFor, standPoint,
 } from './samplingRules.js';
 
 const KEYS = { KeyP: 'photo', KeyE: 'stow', KeyF: 'case' };
@@ -36,6 +38,9 @@ export function createSampling(ctx, canvas, signal) {
   let stand = null, pin = null;                         // where the player stands during the clip, and where they were last frame
   let shown = false, secured = false;                   // this clip: the scoop showed its content / the sample left the scoop
   let landing = null, sealing = null, caseRequested = false;   // hand-over: sample falling into the case, case to close, case asked for
+  // online (#54): gate.claim asks the room whether this sample is still free, gate.mayCallCase whether the case is.
+  // Offline there is no gate. While a claim is out the phase is 'claiming': every input waits, no clip plays yet.
+  let gate = null, claimSeq = 0;
 
   const emit = (type, extra) => { const e = { type, ...extra }; for (const fn of listeners) { try { fn(e); } catch (err) { console.error(err); } } };
   const walk = () => view.mode === 'eye';
@@ -124,9 +129,29 @@ export function createSampling(ctx, canvas, signal) {
     const s = situation(), action = inputActions(s)[input], t = s.target, p = sys.partner;
     switch (action) {
       case 'collect': {
-        if (!play(CLIP_OF[t.kind], t.kind === 'rock' ? rockStand(t) : standPoint(view.eye, t.point, GROUND_STAND_M))) return null;
-        phase = 'collecting'; sample = { id: ++seq, kind: t.kind, site: t.site, x: round2(t.point.x), z: round2(t.point.z) };
-        emit('collect', sample); return action;
+        const where = t.kind === 'rock' ? rockStand(t) : standPoint(view.eye, t.point, GROUND_STAND_M);
+        const claim = { sid: sampleIdFor(t), kind: t.kind, site: t.site, x: round2(t.point.x), z: round2(t.point.z) };
+        const scoop = () => {
+          if (!play(CLIP_OF[t.kind], where)) return null;
+          phase = 'collecting'; sample = { id: ++seq, ...claim };
+          emit('collect', sample); return action;
+        };
+        const answer = gate && gate.claim ? gate.claim(claim) : null;
+        if (answer && typeof answer.then === 'function') {
+          const mine = ++claimSeq;
+          phase = 'claiming';
+          Promise.resolve(answer).catch(() => ({ ok: true })).then((r) => {
+            if (mine !== claimSeq || phase !== 'claiming') return;
+            phase = 'idle';
+            if (r && r.ok === false) { emit('refused', { sid: claim.sid, by: r.by ?? null }); return; }
+            if (walk() && !wristUp()) scoop();
+            else emit('input', { action: null });
+          });
+          emit('input', { action: 'claim' });
+          return action;
+        }
+        if (answer && answer.ok === false) { emit('refused', { sid: claim.sid, by: answer.by ?? null }); return null; }
+        return scoop();
       }
       case 'photo':
         emit('photo', { kind: t.kind, site: t.site, x: round2(t.point.x), z: round2(t.point.z) }); return action;
@@ -137,6 +162,7 @@ export function createSampling(ctx, canvas, signal) {
         if (!play('pour_sample', pourStand(sys.props.tcase.position, p.root.position, CASE_STAND_M, view.eye))) return null;
         phase = 'pouring'; break;
       case 'call-case':
+        if (gate && gate.mayCallCase && gate.mayCallCase() === false) { emit('refused', { case: true }); return null; }
         if (!p.command('toggleCase')) return null;
         caseRequested = true; break;
       case 'pick-up-case':
@@ -184,7 +210,7 @@ export function createSampling(ctx, canvas, signal) {
     return {
       phase: s.phase,
       holding: phase === 'holding' && sample ? sample.kind : null,
-      target: t ? { kind: t.kind, site: t.site, distanceM: Math.round(t.distanceM * 10) / 10, inReach: t.inReach } : null,
+      target: t ? { kind: t.kind, site: t.site, sid: sampleIdFor(t), distanceM: Math.round(t.distanceM * 10) / 10, inReach: t.inReach } : null,
       caseState: s.caseState, caseInReach: s.caseInReach,
       actions: inputActions(s),
     };
@@ -209,7 +235,12 @@ export function createSampling(ctx, canvas, signal) {
      * so moveSpeed stays 0 and the legs never walk on the spot during the clip (#227).
      */
     pinned: () => !!stand,
-    /** The sampling phase ('idle' | 'collecting' | 'holding' | 'stowing' | 'pouring'); read by the wrist gate (#67). */
+    /**
+     * Online gates (#54), or null to remove them: { claim(claim) -> { ok, by } | Promise | null, mayCallCase() -> boolean }.
+     * src/state/sampling.js sets them from src/state/sharedHooks.js.
+     */
+    setGate(next) { gate = next || null; if (!gate && phase === 'claiming') { claimSeq++; phase = 'idle'; } },
+    /** The sampling phase ('idle' | 'claiming' | 'collecting' | 'holding' | 'stowing' | 'pouring'); read by the wrist gate (#67). */
     phase: () => phase,
     /** @param {(event: { type: string }) => void} fn @returns {() => void} unsubscribe */
     subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
