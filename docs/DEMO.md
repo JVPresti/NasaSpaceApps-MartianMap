@@ -135,35 +135,44 @@ slower, the walking speed and frame rate, and the time the hand-over took.
 
 ### Measured
 
-15 November 2026, branch `feat/short-mission-dynamic-routes`, Edge 157 headless with the GPU (NVIDIA RTX 5070),
-1366 x 768, English, `npm run measure:demo`, on the round 3 tree. All 32 features driven; the walk ran at 135 to 165
-fps, 135 m in 138 s (0.98 m/s with the turns and stops), with no step-aside.
+15 November 2026, branch `feat/sampling-tasks` (#352), Edge headless, 1366 x 768, English, `npm run measure:demo`.
+**7:41, over the 7:30 target and 19 s under the 8:00 limit, with 31 of 33 features driven. This is not a healthy run.**
+
+- **Two steps are not driven: the hand-over to the partner (F) and Open plan at the habitat table.** Both fail the same
+  way on `main` at `b029f07` (30 of 32 features, 7:41) since #282 and #346 were merged together; this branch neither
+  causes nor fixes them. The hand-over waits 30 s for the case to come down and 30 s more for the sample in the case,
+  then gives up (116 s from F to the end of the step): that is what makes segment 8 run 2:19 against its 1:10. Open plan
+  at the habitat table times out after 5 s.
+- Segment 3, with the sampling tasks (plan B: Collect samples, Add task, the soil sample placed by a click on the map),
+  took 0:42 of its 0:55.
+- The browser fell below 12 fps at moments: 143 m in 149 s, 0.96 m/s with the turns and stops (0 to 166 fps), one
+  step-aside.
 
 | # | Segment | Budget | Actual | of which dwell | Measured |
 |---|---|---|---|---|---|
 | 1 | Start screen, choose mission | 0:15 | 0:13 | 0:12 | 0:01 |
-| 2 | Table: site, goal Cheyava Falls, the layers and what each decides | 1:05 | 0:52 | 0:45 | 0:07 |
-| 3 | Two contrasting plans, profiles, a stop card, back to the sortie | 0:55 | 0:44 | 0:36 | 0:08 |
-| 4 | Hazards, outlook, go / no-go, Begin EVA, keys, help (H) | 0:35 | 0:31 | 0:29 | 0:02 |
-| 5 | Walk out: HUD, wrist (R), slope grid (G), visor (V), a find | 1:35 | 1:35 | 0:14 | 1:21 |
+| 2 | Table: site, goal Cheyava Falls, the layers and what each decides | 1:05 | 0:50 | 0:45 | 0:05 |
+| 3 | Plan A, a stop card, plan B with sampling tasks, profiles, back to the sortie | 0:55 | 0:42 | 0:36 | 0:06 |
+| 4 | Hazards, outlook, go / no-go, Begin EVA, keys, help (H) | 0:35 | 0:30 | 0:29 | 0:01 |
+| 5 | Walk out: HUD, wrist (R), slope grid (G), visor (V), a find | 1:35 | 1:34 | 0:14 | 1:20 |
 | 6 | Science stop and sample | 0:20 | 0:16 | 0:03 | 0:13 |
 | 7 | Dust storm and its re-plan on the table | 0:20 | 0:15 | 0:05 | 0:10 |
-| 8 | Radiation, walk back, hand-over (F) | 1:10 | 1:12 | 0:06 | 1:06 |
-| 9 | Habitat: settings and language, Open plan, Finish EVA | 0:20 | 0:12 | 0:10 | 0:02 |
-| 10 | Debrief | 0:45 | 0:41 | 0:40 | 0:01 |
+| 8 | Radiation, walk back, hand-over (F) | 1:10 | 2:19 | 0:06 | 2:13 |
+| 9 | Habitat: settings and language, Open plan, Finish EVA | 0:20 | 0:13 | 0:06 | 0:07 |
+| 10 | Debrief | 0:45 | 0:40 | 0:40 | 0:00 |
 | 11 | Sources | 0:10 | 0:08 | 0:08 | 0:00 |
-| | **Total** | **7:30** | **6:40** | 3:28 | 3:12 |
+| | **Total** | **7:30** | **7:41** | 3:24 | 4:17 |
 
-- **A presenter 30 % slower:** about 7:43 (the dwell 3:28 becomes 4:30), under the 8:00 limit.
-- **Mission times:** at the stop T+94 s (73 m with the detour to the find), sample secured T+106 s, dust storm T+111 s
-  (5 s after the sample), radiation alert T+126 s, 46 m from the airlock, back in the habitat T+198 s, debrief at
-  T+203 s.
+- **A presenter 30 % slower:** about 8:42, over the 8:00 limit, with the failing hand-over still in it.
+- **Mission times:** at the stop T+93 s (73 m with the detour to the find), sample secured T+104 s, dust storm T+109 s
+  (5 s after the sample), radiation alert T+124 s, 45 m from the airlock, back in the habitat T+263 s; start screen to
+  the debrief 6:52.
 - **The find:** card answered Y; the debrief judged the detour "1 deviation: 1 worth it, +23 s and +1 g O2 over the plan".
 - **The two plans** (segment 3): solo, cautious, 100 min: 0.88 km to Cheyava Falls, Bright Angel left out for time;
-  pair, bold, 2 h: 0.91 km, Bright Angel then Cheyava Falls.
-- **Where the time goes:** the walk (2:18 for 135 m), the hand-over (34 s from F to the closed case, mostly the partner
-  walking out), the debrief (40 s of reading). The walk out runs to its budget because of the detour to the find (73 m
-  instead of 55 m) and the wrist, slope grid and visor steps on the way.
+  pair, bold, Collect samples: 0.86 km, the soil sample at the clicked point P1 (515, 528), then the rock sample at
+  Bright Angel.
+- **For comparison, before the two steps broke** (branch `feat/short-mission-dynamic-routes`, the same machine): all
+  32 features driven in 6:40, segment 8 in 1:12, the hand-over 34 s from F to the closed case.
 
 When other builds or tests load the machine, the frame rate can fall under 10 fps, and the engine, which caps a frame's
 step at 0.1 s, then walks slower than 1.0 m/s. The script reports the frame rate and the walking speed, warns below
@@ -171,7 +180,8 @@ step at 0.1 s, then walks slower than 1.0 m/s. The script reports the frame rate
 took over 9 minutes; measure on a quiet machine.
 
 **A player** (`npm run measure:demo -- --player`: the first mission as the on-screen guidance leads it, with no tour,
-no detour to a find and a quick reader's dwell, x0.25): 15 November 2026, the same machine, 1366 x 768, English, 104 to
+no detour to a find and a quick reader's dwell, x0.25): 15 November 2026, the same machine, on
+`feat/short-mission-dynamic-routes` (not measured again on this branch), 1366 x 768, English, 104 to
 163 fps, 113 m in 115 s (0.99 m/s). **Start screen to the debrief: 2:31**, of which 2:17 is the EVA (at the stop
 T+53 s, sample secured T+63 s, storm T+68 s, radiation T+83 s, 42 m from the airlock, back in the habitat T+136 s).
 Issue #265 asks for about 3 minutes and no more than 4.
