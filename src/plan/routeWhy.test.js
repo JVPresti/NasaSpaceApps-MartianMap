@@ -84,6 +84,8 @@ describe('table durations', () => {
     expect(shortDuration(600)).toBe('10 min');
     expect(shortDuration(6000)).toBe('1 h 40 min');
     expect(shortDuration(null)).toBe('–');
+    expect(shortDuration(95)).toBe('2 min');
+    expect(shortDuration(95, { secondsBelow: 120 })).toBe('95 s');
   });
 
   it('prints an event time in seconds under two minutes (#265 first sortie)', () => {

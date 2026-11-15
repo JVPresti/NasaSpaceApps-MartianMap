@@ -25,6 +25,7 @@ import MissionMap from './MissionMap.jsx';
 import { layerButtonText, layerMapTitle } from './tableLayers.js';
 import { decisionFor } from './decision.js';
 import NeedsPanel from './NeedsPanel.jsx';
+import OutlookStrip from './OutlookStrip.jsx';
 import { droppedWhy, planReasonLines, stopLine } from './routeWhy.js';
 import { eventWhen, shortDuration } from './tableFormat.js';
 import { useDataFile, useDustAgainstLimit } from './useConditions.js';
@@ -541,8 +542,12 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           </div>
           <BudgetPanel totals={totals} metrics={metrics} />
         </section>
-        <div className="table-centre">
-          <SuitFigure />
+        {/* The conditions outlook (#248) heads the middle column, level with go / no-go; the suit model fills the rest. */}
+        <div className="table-centre-wrap">
+          <OutlookStrip dust={dust} planCurrent={planCurrent} />
+          <div className="table-centre">
+            <SuitFigure />
+          </div>
         </div>
         <section className="table-right">
           <div className="table-panel">

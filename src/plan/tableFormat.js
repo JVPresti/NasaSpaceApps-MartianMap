@@ -7,12 +7,14 @@ const finite = (value) => typeof value === 'number' && Number.isFinite(value);
 /**
  * A duration in words, sign dropped: whole seconds under 90 s, then whole minutes, then hours and minutes.
  * @param {number | null | undefined} sec
+ * @param {{ secondsBelow?: number }} [options] secondsBelow: whole seconds under this many (an event time under two
+ *   minutes reads in seconds, as the Hazards step prints it)
  * @returns {string} an en dash when unknown
  */
-export function shortDuration(sec) {
+export function shortDuration(sec, { secondsBelow = 90 } = {}) {
   if (!finite(sec)) return '–';
   const s = Math.abs(sec);
-  if (s < 90) return t('table.duration.sec', { sec: Math.round(s) });
+  if (s < secondsBelow) return t('table.duration.sec', { sec: Math.round(s) });
   const minutes = Math.round(s / 60);
   if (minutes < 60) return t('ui.p0.min', { p0: minutes });
   const hours = Math.floor(minutes / 60);
