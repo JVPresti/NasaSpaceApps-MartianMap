@@ -27,6 +27,11 @@ export function formatEva(sec) {
 export function formatValue(v, digits = 0) {
   return num(v) ? formatNumber(v, digits) : dash;
 }
+
+/** The EVA's dose in µGy: one decimal under 10 µGy, so a short EVA does not read 0 while the dose grows; whole above. */
+export function formatDose(ugy) {
+  return formatValue(ugy, num(ugy) && Math.abs(ugy) < 10 ? 1 : 0);
+}
 /** Whole minutes from seconds, rounded, with a sign when asked: '+41', '-3'. */
 export function formatMinutes(sec, { signed = false } = {}) {
   if (!num(sec)) return dash;

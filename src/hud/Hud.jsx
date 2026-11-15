@@ -8,7 +8,7 @@ import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
 import { bearingDeg } from '../sim/bearing.js';
 import { nextTarget } from '../sim/waypointRunner.js';
-import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, wrapDeg } from './format.js';
+import { batteryLevel, cardinal, formatDose, formatEva, formatMinutes, formatValue, nextWaypointInfo, wrapDeg } from './format.js';
 import ElevationProfile from './ElevationProfile.jsx';
 import RadioLink from './RadioLink.jsx';
 import LayerChip from './LayerChip.jsx';
@@ -126,7 +126,7 @@ function EnvStrip() {
       <EnvValue icon={<I.Thermometer />} path="environment.tempC" value={formatValue(e.t)} unit={t('ui.c')} title={t('ui.air.temperature')} />
       <EnvValue icon={<I.Wind />} path="environment.windMs" value={formatValue(e.w)} unit={t('ui.m.s')} title={t('ui.wind.speed')} />
       <EnvValue icon={<span className="hud-tau">τ</span>} path="environment.dustOpacity" value={formatValue(e.tau, 2)} title={t('ui.dust.opacity.tau')} />
-      <EnvValue icon={<I.Radiation />} path="environment.doseUgy" value={formatValue(e.dose)} unit={t('ui.gy')} title={t('ui.radiation.dose.this.eva') + (typeof e.rate === 'number' ? t('ui.rate.rate.gy.h', { rate: formatNumber(e.rate, 1) }) : '')} />
+      <EnvValue icon={<I.Radiation />} path="environment.doseUgy" value={formatDose(e.dose)} unit={t('ui.gy')} title={t('ui.radiation.dose.this.eva') + (typeof e.rate === 'number' ? t('ui.rate.rate.gy.h', { rate: formatNumber(e.rate, 1) }) : '')} />
     </section>
   );
 }

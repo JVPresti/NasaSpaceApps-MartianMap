@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { batteryLevel, bearingDeg, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, pickAlert, shortName, wrapDeg } from './format.js';
+import { batteryLevel, bearingDeg, cardinal, formatDose, formatEva, formatMinutes, formatValue, nextWaypointInfo, pickAlert, shortName, wrapDeg } from './format.js';
 import { NAV_FIX_LIMIT_M, formatFixAge, formatNavError, formatNavLine, navFixPrompt, needsFix } from './format.js';
 
 describe('formatting', () => {
@@ -11,6 +11,13 @@ describe('formatting', () => {
     expect(formatEva(3 * 3600 + 5)).toBe('3:00:05');
     expect(formatEva(null)).toBe('–:––:––');
     expect(formatEva(-1)).toBe('–:––:––');
+  });
+  it('shows the dose with one decimal under 10 µGy and whole above', () => {
+    expect(formatDose(0.51)).toBe('0.5');
+    expect(formatDose(0)).toBe('0.0');
+    expect(formatDose(9.94)).toBe('9.9');
+    expect(formatDose(12.4)).toBe('12');
+    expect(formatDose(null)).toBe('–');
   });
   it('shows a dash for unknown values, never 0', () => {
     expect(formatValue(null)).toBe('–');
