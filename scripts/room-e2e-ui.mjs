@@ -46,6 +46,13 @@ async function shot(page, file, selector) {
   await (el || page).screenshot({ path: out + '/' + file, type: 'png' });
 }
 
+const started = Date.now();
+/** The results file: when, where, how long, with which renderer, and every check with its numbers. */
+const save = (error = null) => writeFileSync(out + '/e2e-results.json', JSON.stringify({
+  date: new Date(started).toISOString(), room: ROOM, base: BASE, gpu: process.env.QA_GPU === '1',
+  seconds: Math.round((Date.now() - started) / 1000), passed: results.filter((r) => r.ok).length, total: results.length,
+  error: error ? String(error).slice(0, 300) : null, results,
+}, null, 2) + '\n');
 const main = async () => {
   const A = await launch(), B = await launch();
   try {
@@ -204,7 +211,7 @@ const main = async () => {
   } finally {
     await A.close().catch(() => {});
     await B.close().catch(() => {});
-    writeFileSync(out + '/e2e-results.json', JSON.stringify(results, null, 2));
+    save();
   }
 };
-main().catch((e) => { console.error('E2E ERROR', e); writeFileSync(out + '/e2e-results.json', JSON.stringify(results, null, 2)); process.exit(1); });
+main().catch((e) => { console.error('E2E ERROR', e); save(e); process.exit(1); });

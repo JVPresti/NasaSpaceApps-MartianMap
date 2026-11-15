@@ -127,7 +127,9 @@ describe('crew tab and badge', () => {
     online({ status: 'offline', closeCode: null });
     html = renderToStaticMarkup(<OnlineIssue />);
     expect(html).toContain('Offline: playing solo, retrying');
-    expect(html).not.toContain('<button');
+    // offline keeps Leave, so a habitat seat is never locked at the table until a reload
+    expect(html).toContain('Leave and play solo');
+    expect(html).not.toContain('Join as');
   });
 });
 

@@ -19,18 +19,17 @@ export function OnlineIssue() {
     <div className={'table-panel online-issue issue-' + issue.kind} role={issue.kind === 'offline' ? 'status' : 'alert'}>
       <p className="table-text small">{issueText(issue)}</p>
       {issue.kind === 'replaced' && <p className="table-note">{t('online.replaced.help')}</p>}
-      {issue.kind !== 'offline' && (
-        <div className="table-actions online-issue-actions">
-          {issue.kind === 'replaced' ? (
-            <button type="button" className="table-secondary" onClick={() => controller?.joinAsNewPlayer()}>{t('online.newPlayer')}</button>
-          ) : (
-            <button type="button" className="table-secondary" onClick={() => controller?.switchRole(otherRole(issue.role))}>
-              {t('online.joinAs', { role: roleLabel(otherRole(issue.role)) })}
-            </button>
-          )}
-          <button type="button" className="table-secondary" onClick={() => controller?.leave()}>{t('online.leave')}</button>
-        </div>
-      )}
+      {/* Leave stays available offline too: it drops the seat, so a habitat seat can walk solo without a reload. */}
+      <div className="table-actions online-issue-actions">
+        {issue.kind === 'offline' ? null : issue.kind === 'replaced' ? (
+          <button type="button" className="table-secondary" onClick={() => controller?.joinAsNewPlayer()}>{t('online.newPlayer')}</button>
+        ) : (
+          <button type="button" className="table-secondary" onClick={() => controller?.switchRole(otherRole(issue.role))}>
+            {t('online.joinAs', { role: roleLabel(otherRole(issue.role)) })}
+          </button>
+        )}
+        <button type="button" className="table-secondary" onClick={() => controller?.leave()}>{t('online.leave')}</button>
+      </div>
     </div>
   );
 }

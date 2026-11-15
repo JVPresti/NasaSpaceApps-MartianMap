@@ -227,7 +227,36 @@ describe('the join flow', () => {
   });
 });
 
+describe('the join counter that moves the start screen on', () => {
+  it('counts one join when the welcome arrives in the same tick as Join', async () => {
+    const store = create(() => createInitialState());
+    const net = fakeNet(store);
+    // a room that answers at once: the welcome lands inside startOnline
+    const start = net.startOnline;
+    net.startOnline = (opts) => { const h = start(opts); patch(store, { status: 'open' }); return h; };
+    const c = createOnlineController({ store, load: () => Promise.resolve(net), storage: memoryStorage(), ...fakeLocation(), warn: () => {} });
+    c.openRoom('ABCD');
+    expect(c.session.getState().joinSeq).toBe(0);
+    await c.join();
+    expect(c.session.getState()).toMatchObject({ joined: true, joinSeq: 1 });
+  });
+});
+
 describe('isHabitatSeat', () => {
+  it('a habitat seat whose room goes offline can leave and walk solo', async () => {
+    const store = create(() => createInitialState());
+    const net = fakeNet(store);
+    const c = bootOnline({ search: '?room=ABCD', store, load: () => Promise.resolve(net), storage: memoryStorage(), ...fakeLocation(), warn: () => {} });
+    c.setRole('habitat');
+    await c.join();
+    patch(store, { status: 'open', me: { id: 'h', name: 'H', color: null, role: 'habitat', joinedAt: 1 } });
+    patch(store, { status: 'offline' });
+    expect(isHabitatSeat()).toBe(true);
+    c.leave();
+    expect(isHabitatSeat()).toBe(false);
+    expect(store.getState().online.status).toBe('off');
+  });
+
   it('is true only while the app controller holds a habitat seat', async () => {
     const store = create(() => createInitialState());
     const net = fakeNet(store);

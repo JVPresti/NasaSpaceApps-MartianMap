@@ -77,7 +77,7 @@ const loadNet = () => import('./net/index.js');
 export function initialSession(storage) {
   return {
     view: 'none', code: null, badCode: null, net: null, loadError: false, role: readRolePreference(storage), name: '',
-    joining: false, joined: false, full: null, seats: { surface: null, habitat: null }, handle: null,
+    joining: false, joined: false, joinSeq: 0, full: null, seats: { surface: null, habitat: null }, handle: null,
   };
 }
 
@@ -137,7 +137,7 @@ export function createOnlineController({
     }
     if (s.joining) {
       if (online.status === 'open' || online.status === 'offline') {
-        session.setState({ joining: false, joined: true, full: null });
+        session.setState((cur) => ({ joining: false, joined: true, joinSeq: cur.joinSeq + 1, full: null }));
       } else if (online.status === 'closed' && online.closeCode === CLOSE_ROOM_FULL) {
         session.setState((cur) => ({ joining: false, full: cur.role, seats: { ...cur.seats, [cur.role]: 0 } }));
         stopHandle();
@@ -192,7 +192,7 @@ export function createOnlineController({
       onHandle(handle);
       // A welcome that arrived synchronously (tests) has no store change left to report.
       const status = store.getState().online?.status;
-      if (status === 'open') session.setState({ joining: false, joined: true });
+      if (status === 'open') session.setState((cur) => ({ joining: false, joined: true, joinSeq: cur.joinSeq + 1 }));
       return handle;
     },
     /** After 4002: a fresh player id for this tab, then the same seat again. */
