@@ -1,0 +1,47 @@
+{
+ "round": "r09",
+ "before": "scripts/quality/out/c07",
+ "after": "scripts/quality/out/c09",
+ "states": [
+  "wrist"
+ ],
+ "judges": {
+  "j1": {
+   "wrist": {
+    "new": "A"
+   }
+  },
+  "j2": {
+   "wrist": {
+    "new": "B"
+   }
+  },
+  "j3": {
+   "wrist": {
+    "new": "A"
+   }
+  }
+ },
+ "change": "c09 waypoint panel folds to its header row while the wrist is up",
+ "issue": 286,
+ "judges_used": 2,
+ "personas": {
+  "j1": "opus b",
+  "j2": "fable c"
+ },
+ "verdicts": {
+  "j1": {
+   "wrist": "new",
+   "why": "the wrist screen gets clear space and no navigation number is lost"
+  },
+  "j2": {
+   "wrist": "new",
+   "why": "keeps every number to get home and leaves the wrist screen as the only large thing in the middle"
+  }
+ },
+ "decision": "keep",
+ "reason": "both prefer it; the only loss is the elevation profile while the wrist is up, which both accept",
+ "next_asks": [
+  "wrist screen text readable at 1366x768 (engine: scale or face the camera)"
+ ]
+}
