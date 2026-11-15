@@ -306,7 +306,7 @@
   "tasktable.what.rock": "Roca",
   "tasktable.count": "×{n}",
   "tasktable.where.point": "Punto en el mapa…",
-  "tasktable.where.at.point": "{id} · punto en el mapa",
+  "tasktable.where.at.point": "{id} · punto del mapa",
   "tasktable.pick.hint": "Haz clic en el mapa para situar la tarea {n}. Esc cancela.",
   "tasktable.pick.cancel": "Cancelar",
   "tasktable.refuse.off-map": "No situada: eso queda fuera del sitio. Haz clic dentro del mapa.",

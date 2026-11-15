@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { formatNumber, t, translateText } from '../i18n/index.js';
 import { SAMPLE_REACH_M } from '../sim/missions.js';
@@ -56,6 +57,9 @@ export default function TaskList({ waypoints, legs = NONE, explain = NONE, planT
   const full = tasks.length >= 3;
   const points = [...new Map(tasks.filter((task) => task.place?.type === 'point').map((task) => [task.place.id, task.place])).values()];
   const set = (list) => { if (!off) setTasks(list); };
+  // the list scrolls inside its panel on a short screen: bring the pick hint or the word on a click into view
+  const noteRef = useRef(null);
+  useEffect(() => { noteRef.current?.scrollIntoView?.({ block: 'nearest' }); }, [pick.taskId, pick.note]);
 
   const onWhere = (task, value) => {
     if (value === 'pick') { startPick(task.id); return; }
@@ -70,7 +74,7 @@ export default function TaskList({ waypoints, legs = NONE, explain = NONE, planT
   };
 
   return (
-    <div className="table-panel table-fill">
+    <div className="table-panel table-fill task-panel">
       <div className="table-panel-head">
         <p className="table-label" title={t('tasktable.title.help')}>
           {t('tasktable.title')}
@@ -114,13 +118,13 @@ export default function TaskList({ waypoints, legs = NONE, explain = NONE, planT
                 </button>
                 {line && <small className="table-stop-why">{line}</small>}
                 {pick.taskId === task.id && (
-                  <p className="table-note">
+                  <p className="table-note" ref={note ? undefined : noteRef}>
                     {t('tasktable.pick.hint', { n })}{' '}
                     <button type="button" className="table-link" onClick={cancelPick}>{t('tasktable.pick.cancel')}</button>
                   </p>
                 )}
                 {note && (
-                  <p className={note.tone ? 'table-note tone-' + note.tone : 'table-note'}>
+                  <p className={note.tone ? 'table-note tone-' + note.tone : 'table-note'} ref={noteRef}>
                     {note.text}{note.tag && <SourceTag path={note.tag} requireSource={false} />}
                   </p>
                 )}

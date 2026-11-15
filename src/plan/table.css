@@ -1164,7 +1164,11 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
 /* "Collect samples" (#352, TaskList.jsx): a task is a stop row of the same grid. What and how many on the first line,
    where and Remove under them, then the stop line, the pick hint, a refusal or the rock warning under the code. */
 .table-stops .task-where { grid-column: 2; }
-.table-stops > li > .table-note { grid-column: 2 / -1; margin: 0; }
+/* The list takes the height the needs and the layer panels leave and scrolls inside, so the layer buttons stay in view
+   on a 1366 x 768 screen; rows from the top, as a list being edited grows. */
+.task-panel { min-height: 150px; }
+.task-panel > .table-stops { min-height: 0; overflow-y: auto; align-content: start; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.table-stops > li > .table-note { grid-column: 2 / -1; margin: 0; font-size: 12px; line-height: 1.35; }   /* the size of the stop line */
 
 /* ------------------------------------------------------------------ conditions outlook (#248) */
 

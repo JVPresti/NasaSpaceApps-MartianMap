@@ -64,7 +64,7 @@ describe('sampling task list', () => {
     expect(second).toMatch(/<option value="photo" selected="">Photo<\/option>/);
     expect(second).toMatch(/<option value="2" selected="">×2<\/option>/);
     expect(second).toMatch(/data-task-where="t2"/);
-    expect(second).toMatch(/<option value="point:P1" selected="">P1 · point on the map<\/option>/);
+    expect(second).toMatch(/<option value="point:P1" selected="">P1 · map point<\/option>/);
     expect(second).toContain('<option value="pick">Point on the map…</option>');
     expect(rowOf(html, 0)).toMatch(/<option value="stop:bright-angel" selected="">Bright Angel<\/option>/);
     for (const name of ['Cheyava Falls', 'Light-toned patch']) expect(rowOf(html, 0)).toContain(`>${name}</option>`);

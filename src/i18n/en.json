@@ -306,7 +306,7 @@
   "tasktable.what.rock": "Rock",
   "tasktable.count": "×{n}",
   "tasktable.where.point": "Point on the map…",
-  "tasktable.where.at.point": "{id} · point on the map",
+  "tasktable.where.at.point": "{id} · map point",
   "tasktable.pick.hint": "Click the map to place task {n}. Esc cancels.",
   "tasktable.pick.cancel": "Cancel",
   "tasktable.refuse.off-map": "Not placed: that is off the site. Click inside the map.",
