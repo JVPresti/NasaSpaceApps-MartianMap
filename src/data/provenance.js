@@ -138,15 +138,15 @@ export const STORE_PATHS = Object.freeze({
   'route.profiles.steepestSlopeDeg': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'slope of the HiRISE height map, sampled every metre along the route', from: HIRISE },
   'route.profiles.overCautionM': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'route length on HiRISE slopes over the 15 degree caution limit', from: HIRISE },
   'route.profiles.shadowShare': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'line of sight on the HiRISE height map from the suit to the habitat mast', from: HIRISE },
-  'route.profiles.weights': sim('profile weights are our choice: slope cubed for the gentlest, three times the cost out of sight of the mast for radio contact'),
+  'route.profiles.weights': sim('profile weights are our choice: slope cubed for the gentlest, three times the cost out of sight of the mast for radio contact; under them, the slope divisor and rock weight of the risk setting, also our choice, on a brightness proxy for rock cover'),
   'route.profiles.timeSec': LEG_TIME,
   'route.profiles.o2G': LEG_O2,
   // the route from the crew's needs (src/sim/missionNeeds.js): stops, budget and reasons rest on our work times, rules
   // and risk settings (SIM); the per-leg explanation is the planner on the HiRISE height map (#246)
   'route.stops': sim('stops chosen from stops.json by the objective, then kept while the plan fits the time, O2 and battery'),
   'route.dropped': sim('optional stops left out: with them the plan goes over the time less the reserve, under the O2 margin floor or under the battery reserve'),
-  'route.planReasons': sim('why the plan is what it is: the crew rules, the risk setting and each stop added or dropped'),
-  'route.weights': sim('risk setting: slope penalty, rock weight, rover-ground discount and reserve are our choice; the 20 degree limit is NASA\'s suited walking limit and never moves'),
+  'route.planReasons': sim('why the plan is what it is: the crew rules, the risk setting (its slope and rock weights are our choice, no source sets them) and each stop added or dropped'),
+  'route.weights': sim('risk setting: slope penalty, rock weight, rover-ground discount and reserve are our choice, no source sets them; the rock weight prices a brightness proxy for rock cover; the 20 degree limit is NASA\'s suited walking limit and never moves'),
   'route.budget': sim('time available set by the crew, less the risk reserve; the walk out, the work at the stops and the walk home from the suit model'),
   'route.budget.usedSec': LEG_TIME,
   'route.budget.marginSec': LEG_MARGIN,
@@ -168,7 +168,7 @@ export const STORE_PATHS = Object.freeze({
   'needs.timeMin': sim('time available for the EVA, set by the crew'),
   'needs.o2Pct': sim('suit O2 at the start, set by the crew as a share of the xEMU primary tank'),
   'needs.batteryPct': sim('suit battery at the start, set by the crew as a share of the xEMU battery'),
-  'needs.risk': sim('risk tolerance chosen by the crew: slope penalty, rock weight, reserve and rover-ground preference'),
+  'needs.risk': sim('risk tolerance chosen by the crew: slope penalty, rock weight, reserve and rover-ground preference, each value our choice'),
   ...prefixed('route.legs.', LEG_FIELDS),
   ...prefixed('route.totals.', TOTAL_FIELDS),
 

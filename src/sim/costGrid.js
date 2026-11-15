@@ -16,11 +16,14 @@
  * The expression `1 + (slope / 9)^2 + 0.6 * rock` comes from the reference
  * planner in
  * `docs/marswalk-assets/testbench-reference/main.js` (`route.astar`). The test
- * bench calls it a placeholder, so these values are DERIVED, not measured:
+ * bench calls it a placeholder. The slope divisor (9 deg) and the rock weight
+ * (0.6) are SIM, our choice: no source sets them, and they decide which route
+ * the planner picks (#311). The crew's risk setting swaps them for its own,
+ * also SIM (RISK_SETTINGS in `missionNeeds.js`). The shape is our reasoning:
  * slope grows quadratically because a suit gets much slower on steep ground,
  * and rock abundance adds a fixed penalty for the chance of tripping or
- * slipping. They are intentionally easy to retune once the mobility numbers
- * from issue #18 land.
+ * slipping. The `rock` term is itself SIM, a brightness proxy for rock cover
+ * (rockAbundanceAt).
  *
  * The slope limits match `slope.no_go` and `slope.caution` in
  * `public/data/hazards.json` (20 deg is NASA's suited walking limit, xEVA con
@@ -33,9 +36,9 @@ export const COST_CONSTANTS = Object.freeze({
   SLOPE_LIMIT_DEG: 20,
   /** Ground steeper than this shows as caution in the slope layer. Degrees. hazards.json `slope.caution`. */
   SLOPE_CAUTION_DEG: 15,
-  /** Slope divisor of the quadratic penalty. Degrees. */
+  /** Slope divisor of the quadratic penalty. Degrees. SIM: our choice, no source. */
   SLOPE_PENALTY_DEG: 9,
-  /** Weight of the rock-abundance term, 0 to 1. Dimensionless. */
+  /** Weight of the rock-abundance term, 0 to 1. Dimensionless. SIM: our choice, no source. */
   ROCK_PENALTY_WEIGHT: 0.6,
   /** Window used by the engine's slope layer for the central difference. Metres. */
   SLOPE_SAMPLE_M: 2,
@@ -233,7 +236,8 @@ export function slopeAt(grid, x, z) {
  *
  * The brightness map in `terrain.json` is used as a proxy for rock cover, with
  * the same remap as the test bench (`density()` in `main.js`). It is a model,
- * not a count of individual rocks.
+ * not a count of individual rocks, and SIM (#311): the remap is our step, and
+ * HiRISE brightness also follows lithology, dust and slopes facing the Sun.
  * @param {{width: number, depth: number, density: Uint8Array, densityN: number}} grid
  * @param {number} x
  * @param {number} z

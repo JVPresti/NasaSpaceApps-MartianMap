@@ -122,13 +122,15 @@ export const LAYERS = [
   {
     // Rock cover from the density grid of terrain.json, the same grid the route planner prices (costGrid.rockAbundanceAt).
     // Bare ground stays almost clear and rocky ground turns yellow, so the photo still reads under the layer.
+    // SIM, not DERIVED (#311): the grid is HiRISE brightness, and reading brightness as rock cover is our step, not a
+    // method a source states. Golombek et al. 2003 gives rock sizes for a known cover; it does not turn brightness into one.
     id: 'rock',
     index: 2,
     walk: true,
     decides: 'layers.decides.rock',
     provenance: {
-      tag: 'DERIVED', label: 'HiRISE · Golombek model',
-      source: 'rock abundance from the density grid of terrain.json (HiRISE brightness remapped with the Golombek et al. 2003 model), the grid the route planner prices',
+      tag: 'SIM', label: 'HiRISE brightness proxy · Golombek size model',
+      source: 'brightness proxy for rock cover: the density grid of terrain.json is HiRISE brightness, remapped to rock abundance by our own step, and brightness also follows lithology, dust and sunlit slopes. Golombek et al. 2003 gives the rock sizes for that cover. The grid the route planner prices',
     },
     get name() { return t('ui.rock.abundance'); },
     get unit() { return t('ui.fraction.0.1'); },
@@ -140,19 +142,20 @@ export const LAYERS = [
     swatches: [],
   },
   {
-    // Light-toned bedrock, the science target; on the table, with the candidate stops of stops.json.
+    // Light-toned ground, read as bedrock, the science target; on the table, with the candidate stops of stops.json.
+    // SIM (#311): a brightness mask of the HiRISE image, and reading bright ground as outcrop is our step.
     id: 'outcrop',
     index: 3,
     walk: true,
     decides: 'layers.decides.outcrop',
     provenance: {
-      tag: 'DERIVED', label: 'HiRISE · outcrop mask',
-      source: 'light-toned bedrock from the HiRISE brightness mask (outcrop_mask.jpg); candidate stops from stops.json, kept or dropped by the plan',
+      tag: 'SIM', label: 'HiRISE brightness mask',
+      source: 'brightness mask: light-toned ground on the HiRISE orthomosaic (outcrop_mask.jpg), read as bedrock; bright dust, sand and sunlit slopes pass it too. Candidate stops from stops.json, kept or dropped by the plan',
     },
     get name() { return t('ui.outcrop'); },
     get unit() { return t('ui.fraction.0.1'); },
     get summary() { return t('layers.outcrop.summary'); },
-    get source() { return t('ui.derived.hirise.orthomosaic.outcrop.mask'); },
+    get source() { return t('layers.outcrop.source'); },
     gradient: ['rgba(77, 230, 242, 0)', '#4de6f2'],
     get minLabel() { return t('ui.none'); },
     get maxLabel() { return t('layers.outcropMaximum'); },
