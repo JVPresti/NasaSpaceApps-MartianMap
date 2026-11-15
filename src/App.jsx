@@ -26,11 +26,8 @@ import { continueEva } from './state/eva.js';
 import './App.css';
 import './components/menu.css';
 
-const HINTS = {
-  get walk() { return t('menu.esc.to.pause.wasd.to.walk.shift.to'); },
-  get drag() { return t('menu.esc.to.pause.drag.to.look'); },
-  get wrist() { return t('menu.hint.wrist'); },
-};
+// The wrist screen keeps a key strip while it is up (#231); the walk keys show once, on the card at the start of the EVA.
+const WRIST_HINT = 'menu.hint.wrist';
 
 const SITE = 'ui.neretva.vallis.jezero.crater.mars';
 
@@ -215,6 +212,8 @@ export default function App() {
       if (result.stale) return;
       if (!result.ok) {
         if (result.lockFailed) setLockFailed(true);
+        // The start view has no room for the explanation or the drag-to-look fallback: the menu has both.
+        if (overlayRef.current === PAUSE_VIEW.KEYS) setOverlay(PAUSE_VIEW.MENU);
         setNotice(result.message);
         return;
       }
@@ -285,8 +284,22 @@ export default function App() {
     }
   }, [pauseFor, setEvaBegun]);
 
-  /** Begin EVA on the mission table's Suit tab. The click is the user gesture that captures the mouse. */
-  const handleBeginEva = useCallback(() => handleModeChange('walk'), [handleModeChange]);
+  /**
+   * Begin EVA on the mission table's Suit tab. The first time, the astronaut lands in Walk paused on the key reminder
+   * (PAUSE_VIEW.KEYS) with the clock still held; its Start walking button is the click that captures the mouse and
+   * starts the EVA (handleResume). Once the EVA is under way, Continue the EVA goes straight back to the walk.
+   */
+  const handleBeginEva = useCallback(() => {
+    if (busyRef.current) return;
+    if (evaBegunRef.current || phaseRef.current !== EVA_PHASE.PLAYING) {
+      handleModeChange('walk');
+      return;
+    }
+    resumeSeqRef.current += 1;
+    walkLockSeqRef.current += 1;
+    setMode('walk');
+    pauseFor(PAUSE_VIEW.KEYS);
+  }, [handleModeChange, pauseFor]);
 
   // Gamepad buttons reach the same actions as the keyboard (#101, #103). The engine reports them only while
   // gameplay input is enabled, so a press behind the pause menu cannot act; the phase check is a second guard.
@@ -451,17 +464,17 @@ export default function App() {
     pauseEva({ engine: engineRef.current });
   }), [setBusyState, setOverlay, setPhase]);
 
-  // The Walk hint follows the wrist screen (#231): while it is up the hint lists its keys instead of the walk keys.
+  // The wrist key strip follows the wrist screen (#231): it shows only while the wrist screen is up.
   useEffect(() => {
     if (!engine || typeof engine.subscribeWrist !== 'function') return undefined;
     return engine.subscribeWrist((state) => setWristOpen(state?.open === true));
   }, [engine]);
 
-  const showTopbar = load.status === 'ready' && !evaSummary && phase === EVA_PHASE.PLAYING;
-  // Like the topbar: off while loading, on the start screen and in the pause menu. There is no mode button any
+  const playing = load.status === 'ready' && !evaSummary && phase === EVA_PHASE.PLAYING;
+  // Only while the EVA is playing: off while loading, on the start screen and in the pause menu. There is no mode button any
   // more (#11: the EVA begins on the mission table and returns to it from the pause menu), but M still goes
   // through the same handler, so it also captures the mouse in Walk (#174).
-  useShortcuts(showTopbar, handleModeChange);
+  useShortcuts(playing, handleModeChange);
 
   return (
     <div className={load.status === 'ready' && phase === EVA_PHASE.START ? 'app at-start' : 'app'}>
@@ -493,14 +506,6 @@ export default function App() {
       {load.status === 'ready' && mode === 'walk' && <EventBanner className="event-banner-walk" />}
       {load.status === 'ready' && DEBUG_EVENTS && <EventDebug />}
 
-      {/* The mission table has its own top bar; this one is for the surface. */}
-      {mode === 'walk' && (
-        <header className="topbar" inert={showTopbar ? undefined : true}>
-          <h1>{t('app.brandSpaced')}<span>{t('ui.cheyava.falls.neretva.vallis.jezero.crater')}</span>
-          </h1>
-        </header>
-      )}
-
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={translateText(SITE)} onRetry={handleRetry} onGone={handleGone} />
 
       {load.status === 'ready' && mode === 'walk' && <Hud engine={engine} minimapRoute={minimapRoute} />}
@@ -511,7 +516,7 @@ export default function App() {
 
       {load.status === 'ready' && <WalkStopCard active={mode === 'walk'} />}
 
-      {showTopbar && mode === 'walk' && <p className="hint">{wristOpen ? HINTS.wrist : freeLook ? HINTS.drag : HINTS.walk}</p>}
+      {playing && mode === 'walk' && wristOpen && <p className="hint">{t(WRIST_HINT)}</p>}
 
       {load.status === 'ready' && !evaSummary && loadingDone && phase === EVA_PHASE.START && (
         <StartScreen
