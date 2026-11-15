@@ -3,6 +3,7 @@
 // No React and no three.js here: the hook comes from Zustand, and the simulation can use the store without React.
 import { create } from 'zustand';
 import { createInitialEvaState } from './eva.js';
+import { LOOK_DEFAULTS, clampLookSettings, readLookSettings, writeLookSettings } from '../engine/lookSettings.js';
 
 /** Plain data only. Units are in the field names. Coordinates: x east, z south, metres from Cheyava Falls. */
 export function createInitialState() {
@@ -38,12 +39,18 @@ export function createInitialState() {
     // the decision card shows; routeKey: waypointKey of the waypoints a Walk re-plan already routed, so Plan does not start over.
     finds: { list: [], seq: 0, activeId: null, routeKey: null },
     view: { layer: 0, sky: 'late_afternoon', skyBlend: 0, slopeGrid: false },   // what the engine draws; #59 demo starts in late-afternoon light
+    // Player preferences, not mission state: the look settings (#102) are remembered per browser and survive
+    // a reset; sensitivity multiplies the base look rate (0.5-2, step 0.1) and invertY flips only the pitch.
+    settings: { look: { ...LOOK_DEFAULTS } },
     sources: {},                                    // { 'environment.tempC': { tag: 'DATA' | 'DERIVED' | 'SIM', source } }
   };
 }
 
+// Read once at load, like the saved language in src/i18n/index.js: a missing, blocked or corrupt entry leaves the defaults.
+const savedLook = readLookSettings();
+
 /** React hook and store. Select slices: useMissionStore((s) => s.suit.oxygenPct). */
-export const useMissionStore = create(() => createInitialState());
+export const useMissionStore = create(() => ({ ...createInitialState(), settings: { look: savedLook } }));
 
 const FORBIDDEN = new Set(['__proto__', 'constructor', 'prototype']);
 function splitPath(path) {
@@ -99,7 +106,23 @@ export const setHazardEnabled = (eventId, enabled) => {
     return { hazards: { ...state.hazards, off: enabled ? off : [...off, eventId] } };
   });
 };
-export const resetStore = () => useMissionStore.setState(createInitialState(), true);
+// A restart must not lose the player's look settings (#102): the preference survives resetStore, and a new
+// page load re-reads it from 'marswalk.look'.
+export const resetStore = () => useMissionStore.setState((s) => ({ ...createInitialState(), settings: s.settings }), true);
+
+/**
+ * Partial update of the look preference (#102): clamps, writes the store and saves it in this browser.
+ * Storage failures are silent; the value still applies for the session.
+ * @param {{ sensitivity?: number, invertY?: boolean }} patch
+ * @returns {{ sensitivity: number, invertY: boolean }} the stored value
+ */
+export const setLookSettings = (patch) => {
+  const current = useMissionStore.getState().settings.look;
+  const next = clampLookSettings({ ...current, ...(patch && typeof patch === 'object' ? patch : {}) });
+  useMissionStore.setState((s) => ({ settings: { ...s.settings, look: next } }));
+  writeLookSettings(next);
+  return next;
+};
 
 // Mission clock controls. The clock runner subscribes to `mission.paused` and `mission.timeScale`, so these
 // actions (and a direct storeAdapter.set / setState with the same paths) are anchored at the exact moment they

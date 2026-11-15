@@ -125,11 +125,56 @@
   font: 600 26px/1 var(--font-display);
 }
 
-.quality-block {
+.quality-block,
+.look-block {
   margin-top: 22px;
   padding-top: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.14);
 }
+
+/* Mouse look settings in the pause menu (#102) */
+.look-sensitivity-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.look-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.look-block input[type="range"] {
+  width: 100%;
+  height: 44px;   /* same touch target as the buttons; the native track stays thin */
+  margin: 0;
+  accent-color: var(--cyan);
+  cursor: pointer;
+}
+
+.look-block input[type="range"]:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+.look-invert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.look-invert input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--cyan);
+}
+
+.look-invert input[type="checkbox"]:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+.look-block .menu-note { margin-top: 6px; }
 
 /* Interface language (#177): the select follows the quality buttons' look. */
 .language-block {
@@ -162,6 +207,7 @@
 .menu-note { margin: 8px 0 0; font-size: 12px; line-height: 1.45; color: var(--dim); }
 
 .quality-block h3,
+.look-block h3,
 .controls-group h3 {
   margin: 0 0 10px;
   font-size: 15px;

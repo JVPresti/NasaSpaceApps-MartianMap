@@ -7,10 +7,12 @@
 //
 // The input gate and the pointer-lock controller are plain modules (input.js, pointerLock.js), so the
 // pause/menu rules are unit-tested without three.js.
+// The look speed multiplier and the inverted vertical axis (#102) are applied to both locked and drag look.
 import * as THREE from 'three';
 import { addCircle, pushOut, PARTNER_GAP, WALKER_RADIUS } from './collide.js';
 import { createInputGate } from './input.js';
 import { createPointerLock } from './pointerLock.js';
+import { LOOK_DEFAULTS, clampLookSettings } from './lookSettings.js';
 import { walkStep } from './walkInput.js';
 
 // The test bench's start, 70 m south of Cheyava Falls in Neretva Vallis. Only a debug teleport now (__marswalk.cheyavaView,
@@ -23,9 +25,26 @@ const NEAR = { eye: 0.15, orbit: 5 };
 export const WALK_SPEED = 1.0, JOG_SPEED = 1.5;
 const LOOK_LOCKED = 0.0025;       // rad per pixel of mouse movement while the pointer is locked
 const LOOK_DRAG = 0.004;          // rad per pixel while dragging (the bench's value)
+export const LOOK_PITCH_LIMIT = 1.2;   // rad: how far up and down the camera can look
 
 export function createViewState() {
   return { mode: 'eye', yaw: 0, pitch: 0, eye: new THREE.Vector3(), keys: {}, moveSpeed: 0, forwardSpeed: 0 };   // eye and yaw: set at the airlock during boot
+}
+
+/**
+ * Applies one mouse-look delta. Locked and drag look share this, so the sensitivity and the inverted
+ * vertical axis behave the same in both (#102). The signature of look() does not change.
+ * @param {{ yaw: number, pitch: number }} view
+ * @param {number} dx horizontal pixels (right positive)
+ * @param {number} dy vertical pixels (down positive)
+ * @param {number} k radians per pixel for this path (LOOK_LOCKED or LOOK_DRAG)
+ * @param {{ sensitivity?: number, invertY?: boolean }} settings
+ */
+export function applyLook(view, dx, dy, k, settings = LOOK_DEFAULTS) {
+  const sensitivity = Number.isFinite(settings?.sensitivity) ? settings.sensitivity : LOOK_DEFAULTS.sensitivity;
+  const invert = settings?.invertY === true ? -1 : 1;
+  view.yaw += dx * k * sensitivity;
+  view.pitch = Math.max(-LOOK_PITCH_LIMIT, Math.min(LOOK_PITCH_LIMIT, view.pitch + dy * k * sensitivity * invert));
 }
 
 /**
@@ -50,7 +69,8 @@ export function createView(ctx, canvas, signal, { onLockChange = () => {}, input
     onChange: (isLocked) => { if (!isLocked) drag = false; onLockChange(isLocked); },
   });
   const locked = () => pointerLock.isLocked();
-  const look = (dx, dy, k) => { view.yaw += dx * k; view.pitch = Math.max(-1.2, Math.min(1.2, view.pitch + dy * k)); };
+  const lookSettings = { ...LOOK_DEFAULTS };
+  const look = (dx, dy, k) => applyLook(view, dx, dy, k, lookSettings);
   const applyControls = () => { controls.enabled = input && view.mode === 'orbit'; };
 
   addEventListener('keydown', (e) => { gate.keyDown(e.code); }, { signal });
@@ -114,6 +134,17 @@ export function createView(ctx, canvas, signal, { onLockChange = () => {}, input
     gate.setEnabled(input);
     if (!input) drag = false;
     applyControls();
+  }
+
+  /**
+   * Look preference (#102). Copies the clamped values into the state look() reads, so it applies from the
+   * next mouse movement without touching the current pose.
+   * @param {{ sensitivity?: number, invertY?: boolean }} next
+   */
+  function setLookSettings(next) {
+    const s = clampLookSettings(next);
+    lookSettings.sensitivity = s.sensitivity;
+    lookSettings.invertY = s.invertY;
   }
 
   const fwd = new THREE.Vector3(), right = new THREE.Vector3();
@@ -185,6 +216,7 @@ export function createView(ctx, canvas, signal, { onLockChange = () => {}, input
     setMode,
     update,
     setInputEnabled,
+    setLookSettings,
     reset,
     requestPointerLock: () => pointerLock.request(),
     releasePointerLock: () => pointerLock.release(),

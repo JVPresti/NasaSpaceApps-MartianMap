@@ -96,7 +96,7 @@ describe('mission keyboard shortcuts', () => {
   it('delivers mode and layer changes through the existing engine bridge', () => {
     const engine = {
       setMode: vi.fn(), setLayer: vi.fn(), setSky: vi.fn(), setSkyTime: vi.fn(), setRoute: vi.fn(),
-      setShelter: vi.fn(), setDust: vi.fn(), setSlopeGrid: vi.fn(),
+      setShelter: vi.fn(), setDust: vi.fn(), setSlopeGrid: vi.fn(), setLookSettings: vi.fn(),
     };
     setMode('walk');
     const disconnect = connectEngine(engine);
