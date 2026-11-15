@@ -24,8 +24,8 @@
 .hud-panel, .hud-pill, .hud-heading-box {
   background: var(--glass);
   border: 1px solid var(--edge);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: blur(6px);   /* the HUD's own blur, kept from before #232: --blur (14 px) over the 3D view is not measured on the GPU */
+  -webkit-backdrop-filter: blur(6px);
 }
 
 /* source tags: DATA, DERIVED, SIM */
@@ -144,7 +144,7 @@
   margin-top: 0.05em;
   background: var(--accent);
   border-radius: 50%;
-  box-shadow: 0 0 0 0.2em rgba(255, 106, 43, 0.22);
+  box-shadow: 0 0 0 0.2em color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .hud-wp-marker-name {
@@ -373,6 +373,6 @@
 }
 @media (max-width: 900px) { .hud-keys { left: 3vw; } }
 
-/* Wrist screen up (#286): the waypoint panel keeps its header row (name, range, bearing, ETA) and drops the elevation
+/* Wrist screen up (#286): the waypoint panel keeps its header row (name, range, bearing, ETA, slope) and drops the elevation
    profile, so it no longer reaches up to the raised wrist screen. */
 .hud.hud-wrist .hud-waypoint .elevation-profile { display: none; }
