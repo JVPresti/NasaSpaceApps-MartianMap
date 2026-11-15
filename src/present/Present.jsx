@@ -305,7 +305,9 @@ export default function Present({ engine, onExit }) {
         el.style.opacity = showValue([from + 0.3, to], t, beat.duration).toFixed(3);
       });
       layer.parentElement.querySelectorAll('[data-fade]').forEach((el) => {
-        el.style.opacity = showValue([Number(el.dataset.fade) || 0], t, beat.duration).toFixed(3);
+        // data-fade="from" or "from,to", in beat seconds
+        const [from, to] = el.dataset.fade.split(',').map(Number);
+        el.style.opacity = showValue(Number.isFinite(to) ? [from || 0, to] : [from || 0], t, beat.duration).toFixed(3);
       });
     }
 
@@ -507,14 +509,21 @@ export default function Present({ engine, onExit }) {
       </div>
       <div className={`pr-copy${still ? ' still' : ''}`} key={`copy-${beat.id}-${lang}`}>
         {beat.list && (
-          <div className="pr-list" data-fade="0.5" style={hidden}>
+          <div className="pr-list" data-fade={(beat.list.show || [0.5]).join(',')} style={hidden}>
             <h2 className="pr-list-title">{tx(beat.list.title)}</h2>
             <ul>
               {beat.list.lines.map((line, k) => (
                 <li key={k}><span className={`pr-tag ${TAG_CLASS[line.tag]}`}>{line.tag}</span>{tx(line)}</li>
               ))}
             </ul>
-            {beat.list.note && <p className="pr-list-note">{beat.list.note}</p>}
+            {!beat.list.team && beat.list.note && <p className="pr-list-note">{beat.list.note}</p>}
+          </div>
+        )}
+        {beat.list?.team && (
+          // the team, after the sources: the panel takes the sources' place
+          <div className="pr-team" data-fade={String(beat.list.teamAt ?? 0)} style={hidden}>
+            <h2 className="pr-team-name">{beat.list.team}</h2>
+            <p className="pr-team-people">{beat.list.note}</p>
           </div>
         )}
         {beat.title && <h1 className="pr-title" data-fade="0.2" style={hidden}>{beat.title}</h1>}

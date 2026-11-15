@@ -96,8 +96,8 @@ describe('presentation beats', () => {
     expect(BEATS.at(-1).cta?.en).toBeTruthy();
   });
 
-  it('answers the judge\'s questions in order: the danger, what we do, the app, how we know', () => {
-    const order = ['open', 'plan', 'zone', 'radiation', 'demo', 'sources', 'credits'].map((id) => BEATS.findIndex((b) => b.id === id));
+  it('tells the story in order: where, the stakes, the idea, the app, how we know', () => {
+    const order = ['open', 'stakes', 'zone', 'radiation', 'demo', 'close'].map((id) => BEATS.findIndex((b) => b.id === id));
     expect(order.every((i) => i >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
@@ -118,32 +118,33 @@ describe('the presentation story', () => {
     for (const b of BEATS) for (const t of all(b)) expect(t, b.id).not.toMatch(/[\u2013\u2014]/);
   });
 
-  it('ends on the sources; the hand-over to the live app only comes with ?live=1', () => {
-    expect(sequence('full').map((b) => b.id).slice(-2)).toEqual(['sources', 'credits']);
+  it('ends on the close; the hand-over to the live app only comes with ?live=1', () => {
+    expect(sequence('full').map((b) => b.id).at(-1)).toBe('close');
     const live = sequence('full', { live: true });
-    expect(live.map((b) => b.id).slice(-3)).toEqual(['sources', 'credits', 'live']);
+    expect(live.map((b) => b.id).slice(-2)).toEqual(['close', 'live']);
     expect(live.at(-1).cta).toBeTruthy();
   });
 
-  it('plays the recorded demo between the radiation beat and the sources', () => {
+  it('plays the recorded demo between the radiation beat and the close', () => {
     const ids = sequence('full').map((b) => b.id);
     expect(ids.indexOf('demo')).toBe(ids.indexOf('radiation') + 1);
-    expect(ids.indexOf('sources')).toBe(ids.indexOf('demo') + 1);
+    expect(ids.indexOf('close')).toBe(ids.indexOf('demo') + 1);
     const demo = BEATS.find((b) => b.id === 'demo');
     expect(demo.video.src).toMatch(/\.mp4$/);
     expect(captionsOf(demo).length).toBeGreaterThan(0);   // the fallback if the file fails
   });
 
-  it('fits the 3:40 talk: 3:10 to 3:40 on autoplay, the rest for clicks and pauses', () => {
+  it('fits the 3:00 limit: under 2:50 on autoplay (pitch spec v2: 2:42)', () => {
     const total = sequence('full').reduce((a, b) => a + b.duration, 0);
-    expect(total).toBeGreaterThanOrEqual(190);
-    expect(total).toBeLessThanOrEqual(220);
+    expect(total).toBeLessThan(170);
   });
 
-  it('states the danger in the first beat', () => {
-    const open = sequence('full')[0];
-    expect(captionsOf(open)[0].en).toMatch(/nobody can come and get you/);
-    expect(open.start).toBeTruthy();   // one fall from orbit
+  it('opens with one fall from orbit, then states the stakes', () => {
+    const [open, stakes] = sequence('full');
+    expect(open.start).toBeTruthy();
+    expect(stakes.id).toBe('stakes');
+    expect(captionsOf(stakes).map((c) => c.en).join(' ')).toMatch(/nobody can come and get you/);
+    expect(stakes.chips.map((c) => c.tag)).toEqual(['DATA', 'DATA']);
   });
 
   it('uses the app\'s radiation figures: 29.9 µGy/h peak, 10 µGy/h background', () => {
@@ -153,14 +154,14 @@ describe('the presentation story', () => {
   });
 
   it('lists every source the presentation shows, each line tagged', () => {
-    const list = BEATS.find((b) => b.id === 'credits').list;
+    const list = BEATS.find((b) => b.id === 'close').list;
     const text = list.lines.map((l) => l.en).join('\n');
     for (const name of ['Viking MDIM 2.1', 'THEMIS day IR', 'CTX', 'JEZ_hirise_soc_006', 'Mars Trek', 'RAD', 'DONKI', 'τ 8', '3 km', 'MEDA', 'suited walking tests', 'xEVA', 'Apollo 17']) expect(text).toContain(name);
     for (const l of list.lines) { expect(TAGS.has(l.tag), l.en).toBe(true); expect(l.es, l.en).toBeTruthy(); }
   });
 
   it('names the six team members and no email', () => {
-    const note = BEATS.find((b) => b.id === 'credits').list.note;
+    const note = BEATS.find((b) => b.id === 'close').list.note;
     expect(note.split(' · ')).toEqual(['Teresa Rivas Gómez', 'Andrea Rivas Gómez', 'Fernando Haro Calvo', 'Jorge Antonio Vazquez Guzmán', 'Antonio Ramos Gonzalez', 'Brayan Iván Pérez Ventura']);
     expect(note).not.toMatch(/@/);
   });
