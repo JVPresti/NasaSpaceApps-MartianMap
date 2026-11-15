@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { t } from '../i18n/index.js';
+import { taskText } from '../plan/routeWhy.js';
 import { taskProgress, tasksAt } from '../sim/taskProgress.js';
 import { useMissionStore } from '../state/store.js';
 
@@ -26,8 +26,5 @@ export function useTaskProgress() {
   return { rows, near };
 }
 
-/** "1 rock sample", "2 photo records": what a task asks for, with its count (the table's words, tasks.what.*). */
-export function taskWhat(task) {
-  const count = task?.count ?? 1;
-  return t(`tasks.what.${task?.what}.${count === 1 ? 'one' : 'many'}`, { count });
-}
+/** "1 rock sample", "2 photos": what a task asks for, with its count, in the mission table's words (routeWhy.taskText). */
+export const taskWhat = taskText;
