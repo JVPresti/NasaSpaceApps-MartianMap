@@ -2,31 +2,29 @@
 
 > **Formato.** Fernando fijó el límite el 15 de noviembre. La charla dura como máximo 4 minutos, con el video incluido, y la meta es 3:40. La página de los organizadores citada en `docs/SUBMISSION.md` (PR #316) dice "tiempo máximo de 3 minutos". El equipo toma 4 y lo confirma con ellos.
 
-Esta es la charla en español para los jueces locales. `script-4min-en.md` es la misma charla en inglés, con los mismos beats, tiempos y números. Digan la charla en el idioma que confirmen los organizadores. Corre en el modo de presentación (https://martian-map.fernando-haro-c.workers.dev/?present=1), una flecha **Derecha** por beat. Un video grabado de la app real, el beat `demo`, reemplaza la demo en vivo. Si WebGL falla, cambien a `out/deck-global.pdf` (`demo-run-sheet.md`).
+Esta es la charla en español. `script-4min-en.md` es la misma charla en inglés, con los mismos beats, tiempos y números. Digan la charla en el idioma que confirmen los organizadores. Corre en el modo de presentación en `main` (https://martian-map.fernando-haro-c.workers.dev/?present=1), siete beats, una flecha **Derecha** por beat, como dice `demo-run-sheet.md`. El beat `demo` reproduce una grabación de 73.8 s de la app real en lugar de una demo en vivo. Si WebGL falla, la presentación solo muestra textos, así que cambien a `out/deck-global.pdf`.
 
-**Nombres de los beats.** Las filas usan los ids de `main` (de `mars` a `sources`) más `demo` y `credits` del PR #356, que sigue en borrador. Los 85 s del video son el número de ese borrador, no una medición.
+**Beats.** Las filas siguen los siete beats de #356 en `src/present/beats.js` en `main`, con sus duraciones de autoplay: `open` 20 s, `plan` 24 s, `zone` 24 s, `radiation` 16 s, `demo` 73.8 s, `sources` 18 s y `credits` 22 s. La charla termina en 3:18, 22 s antes de la meta de 3:40.
 
-**El momento para recordar** es la zona cerrándose con la alerta de radiación. Digan "Miren la zona", presionen Derecha en la palabra "zona" y guarden dos segundos de silencio mientras se encoge.
+**No hablen sobre la apertura.** El beat `open` escribe "En Marte, nadie puede ir por ti." y, a los 8 s, "Marswalk muestra desde dónde aún vuelves a casa." Dejen que la sala lea las dos. Hablen solo cuando la segunda lleve unos 4 s en pantalla.
 
-**Solo tres números en voz alta.** Son la pendiente de 20°, la reserva de 30 min y la revisión del terreno de 0.14 m. Ninguna cifra de margen ni de dosis.
+**Tesis.** En Marte, la pregunta no es a dónde puedes ir. Es a dónde puedes ir y todavía volver. Se dice en el beat `zone`, donde la muestran los textos, y otra vez al cerrar.
 
-**Ritmo.** Las filas caben a 130 palabras por minuto y ninguna pasa de 140. Con un video de 85 s la tabla termina en 3:35, con unos 14 s de holgura adentro. Un video de 75 s la termina en 3:25 y uno de 90 s en 3:40.
+**El momento para recordar** es la zona cerrándose sobre la astronauta en el beat `radiation`. Digan "Una alerta de radiación. Miren la zona." y guarden silencio mientras se cierra y se queda en 0.5 ha durante 2.5 s.
+
+**Solo tres números en voz alta.** Son la pendiente de 20°, la salida de treinta minutos y la revisión del terreno de 0.14 m. Ninguna cifra de margen ni de dosis.
+
+**Ritmo.** Cada fila cabe a 130 palabras por minuto y ninguna pasa de 140.
 
 | Tiempo | Beat | Quién | Texto |
 |---|---|---|---|
-| 0:00 | mars | P1 | En Marte, nadie puede ir por ti. Marswalk le muestra a una astronauta a dónde puede ir y todavía volver. |
-| 0:10 | jezero | P1 | Este es el cráter Jezero, antes un lago. Cada imagen viene de orbitadores de la NASA. |
-| 0:18 | cheyava | P1 | Su meta es Cheyava Falls, donde Perseverance encontró una posible biofirma, sin confirmar. Camina hasta ahí desde el hábitat. |
-| 0:30 | danger | P1 | Si algo sale mal aquí afuera, el único rescate es su propia caminata a casa. |
-| 0:38 | plan | P1 | Marswalk planea esa caminata sobre el terreno HiRISE. Más de veinte grados no se pasa, y cada metro cuesta tiempo y oxígeno, según pruebas de la NASA con traje. |
-| 0:52 | zone | P1 | En Marte, la pregunta no es a dónde puedes ir. Es a dónde puedes ir y todavía volver. En una salida de treinta minutos, lo naranja es todo lo que alcanza y todavía regresa a tiempo. Llega una alerta de radiación. Miren la zona. (Derecha en la palabra "zona".) |
-| 1:15 | radiation | P1 | (Dos segundos de silencio mientras la zona se cierra.) Solo queda el camino a casa. Ella regresa ya. |
-| 1:23 | storm | P1 | Luego una tormenta de polvo tapa el horizonte, y con él su posición. Ahora la app real, grabada. |
-| 1:32 | demo | P2 | (Corre el video de la app. Digan cada frase cuando empiece su escena y dejen hablar a la app.) La tripulación le dice a la mesa qué necesita, y Marswalk arma las rutas. La misma zona naranja, ya en la app. Sale por la esclusa. Llega un evento, y su compañero, EV2, reacciona. Adentro, la revisión compara la ruta caminada con el plan. |
-| 2:57 | sources | P3 | Cada número en pantalla dice si es medido, derivado o simulado. Las lecturas de radiación y tormenta son reales, de Gale, no de Jezero. Sus tiempos son simulados. El terreno coincide con el de la NASA a catorce centímetros. |
-| 3:15 | credits | P3 | El reto pidió una guía de supervivencia para Marte. La nuestra empieza con una pregunta. En Marte, no es a dónde puedes ir. Es desde dónde todavía vuelves a casa. Somos Los Frijolitos Espaciales Refritos Nueva Generación. Gracias. (No presionen Derecha otra vez.) |
-| 3:35 | | | (Fin. 5 s antes de la meta de 3:40.) |
-
-En `main` todavía no hay beat `credits`. Quédense en `sources` y digan ahí la fila `credits`.
+| 0:00 | open | P1 | (Silencio mientras aparecen las dos líneas. Hacia 0:12:) Este es el cráter Jezero. Su meta es Cheyava Falls, donde Perseverance encontró una posible biofirma, sin confirmar. |
+| 0:20 | plan | P1 | Camina hasta ahí desde el hábitat, y si algo sale mal, el único rescate es su propia caminata a casa. Marswalk planea esa caminata sobre el terreno HiRISE de la NASA. Más de veinte grados no se pasa, y cada metro cuesta tiempo y oxígeno, según pruebas de la NASA con traje. |
+| 0:44 | zone | P1 | En Marte, la pregunta no es a dónde puedes ir. Es a dónde puedes ir y todavía volver. En una salida de treinta minutos, lo naranja es todo lo que alcanza y todavía regresa a tiempo. Cada minuto afuera lo encoge. |
+| 1:08 | radiation | P1 | Una alerta de radiación. Miren la zona. (Silencio mientras se cierra y se queda, unos 4 s.) Solo queda el camino a casa. Ella regresa ya. Ahora la app real, grabada. |
+| 1:24 | demo | P2 | (Corre la grabación con sus propios textos. Digan cada frase cuando empiece su escena y dejen hablar a la app. En 0:00:) La misma zona naranja, en la app. (0:12:) Las necesidades del equipo arman la ruta. (0:24:) Sale por la esclusa, con su compañero, EV2. (0:30:) Una tormenta de polvo, y EV2 avisa del frente. (0:38:) La alerta de radiación. EV2 vuelve a casa antes que ella. (0:58:) De vuelta por la esclusa. (1:04:) La revisión compara su caminata con el plan. |
+| 2:38 | sources | P3 | Cada número en pantalla dice si es medido, derivado o simulado. Las lecturas de radiación y tormenta son reales, de Gale, no de Jezero, y sus tiempos son nuestros. El terreno coincide con el de la NASA a catorce centímetros. |
+| 2:56 | credits | P3 | El reto pidió una guía de supervivencia para Marte. La nuestra empieza con una pregunta. En Marte, no es a dónde puedes ir. Es desde dónde todavía vuelves a casa. Somos Los Frijolitos Espaciales Refritos Nueva Generación. Gracias. (No presionen Derecha otra vez: el siguiente beat abre la app.) |
+| 3:18 | | | (Fin. 22 s antes de la meta de 3:40, 42 s antes del tope.) |
 
 La tabla al final de `script-4min-en.md` da la fuente de cada número.
