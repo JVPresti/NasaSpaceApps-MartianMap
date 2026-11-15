@@ -215,3 +215,21 @@ body.mw-recording, body.mw-recording * { cursor: none !important; }
 /* #318 hides the engine canvas while the mission table is mounted, and the table stays mounted (hidden) under the
    presentation, so the terrain went black. The presentation draws through that canvas: keep it visible. */
 body.mw-presenting .app:has(.table-screen) .engine-view canvas { visibility: visible; }
+
+/* the QR to the live site (a beat's `qr`): top right, under the progress bar, white so phones read it in any light */
+.pr-qr {
+  position: absolute;
+  top: clamp(36px, 5vh, 64px);
+  right: 8vw;   /* flush with the sources panel's right edge: 6vw margin + 86vw panel */
+  width: clamp(150px, 12vw, 240px);
+  padding: clamp(10px, 0.8vw, 16px);
+  background: #fff;
+  border-radius: var(--radius-m);
+  color: #0a0d11;
+  text-align: center;
+  pointer-events: none;
+}
+.pr-qr img { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+.pr-qr-label { margin: 0.3em 0 0; font: 600 clamp(18px, 1.5vw, 30px)/1 var(--font-display); letter-spacing: 0.04em; text-transform: uppercase; }
+.pr-qr-url { margin: 0.35em 0 0; font: 500 clamp(8px, 0.6vw, 12px)/1.2 var(--font-mono); }
+.pr-qr-url span { white-space: nowrap; }

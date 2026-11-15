@@ -25,6 +25,7 @@
 //                 route: metres of route drawn; zone: frame of the walkback zone clip; dust: storm level
 //   list        lines shown as a panel (the closing sources beat): { title: { en, es }, lines: [{ en, es, tag }], note }
 //   cta         the handoff button's label
+//   qr          a QR code in the top right corner: { src (in public/present/), url (printed under it), label: { en, es } }
 
 export const PLACES = {
   jezero: { lat: 18.38, lon: 77.58 },          // crater centre, near enough to frame the shot; no number on screen reads it
@@ -164,6 +165,8 @@ export const BEATS = [
       ],
       note: 'Teresa Rivas Gómez · Andrea Rivas Gómez · Fernando Haro Calvo · Jorge Antonio Vazquez Guzmán · Antonio Ramos Gonzalez · Brayan Iván Pérez Ventura',
     },
+    // The production site, so the audience can open the app while the sources are up (public/present/qr.svg)
+    qr: { src: 'qr.svg', url: 'martian-map.fernando-haro-c.workers.dev', label: { en: 'Try Marswalk', es: 'Prueba Marswalk' } },
   },
   {
     id: 'live',

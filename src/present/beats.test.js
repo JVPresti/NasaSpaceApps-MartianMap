@@ -15,6 +15,7 @@ function texts(beat) {
   for (const chip of beat.chips || []) if (chip.text) out.push(chip.text.en, chip.text.es);
   if (beat.source) out.push(beat.source.en, beat.source.es);
   if (beat.cta) out.push(beat.cta.en, beat.cta.es);
+  if (beat.qr) out.push(beat.qr.label.en, beat.qr.label.es);
   if (beat.list) { out.push(beat.list.title.en, beat.list.title.es, beat.list.note); for (const l of beat.list.lines) out.push(l.en, l.es); }
   return out.filter((t) => t != null);
 }

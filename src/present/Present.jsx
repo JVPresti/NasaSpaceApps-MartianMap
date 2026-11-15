@@ -536,6 +536,14 @@ export default function Present({ engine, onExit }) {
           </button>
         )}
       </div>
+      {beat.qr && (
+        <div className="pr-qr" key={`qr-${beat.id}-${lang}`} data-fade="1" style={hidden}>
+          <img src={BASE + beat.qr.src} alt={beat.qr.url} width="37" height="37" />
+          <p className="pr-qr-label">{tx(beat.qr.label)}</p>
+          {/* two lines, broken after the first dot, never at a hyphen inside the name */}
+          <p className="pr-qr-url"><span>{beat.qr.url.split('.')[0]}.</span><wbr /><span>{beat.qr.url.split('.').slice(1).join('.')}</span></p>
+        </div>
+      )}
       {!opts.record && (
         <div className="pr-progress" aria-hidden="true">
           {beats.map((b, i) => <span key={b.id} className={i === index ? 'on' : i < index ? 'past' : ''} />)}
