@@ -27,3 +27,15 @@ describe('layer legend on the mission table map', () => {
     expect(text(html)).toContain(t('table.layer.slope.title'));
   });
 });
+
+describe('layer legend source tags (realism rule)', () => {
+  it('tags every layer that has a provenance in layers.js', () => {
+    for (const layer of LAYERS.filter((entry) => entry.provenance)) {
+      const html = render(layer);
+      if (!html) continue;   // a layer with no legend rows and nothing it decides draws no legend
+      expect(html, layer.id).toMatch(new RegExp(`src-tag-${layer.provenance.tag.toLowerCase()}`));
+    }
+    expect(render(LAYERS.find((layer) => layer.id === 'rock'))).toMatch(/src-tag-/);
+    expect(render(LAYERS.find((layer) => layer.id === 'outcrop'))).toMatch(/src-tag-/);
+  });
+});

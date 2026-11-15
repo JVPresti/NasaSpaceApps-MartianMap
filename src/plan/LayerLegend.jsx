@@ -1,6 +1,13 @@
+import { provenance } from '../data/provenance.js';
 import { useMissionStore } from '../state/store.js';
+import { LAYERS } from './layers.js';
 import { useSkyView } from './routeExposure.js';
+import SourceTag from './SourceTag.jsx';
 import { layerDecides, layerLegendTitle, legendRows } from './tableLayers.js';
+
+// Every layer's DATA / DERIVED / SIM tag beside its legend title (the realism rule): the provenance layers.js keeps
+// for each layer, registered under map.layer.<id>.
+provenance.define(Object.fromEntries(LAYERS.filter((layer) => layer.provenance).map((layer) => [`map.layer.${layer.id}`, layer.provenance])));
 
 /**
  * The key of the layer shown on the mission table map, in the map's bottom-left corner (.table-map-legend): its
@@ -18,7 +25,7 @@ export default function LayerLegend({ layer }) {
   if (rows.length === 0 && !decides) return null;
   return (
     <div className="table-map-legend">
-      <p>{layerLegendTitle(layer)}</p>
+      <p>{layerLegendTitle(layer)}{layer.provenance && <SourceTag path={`map.layer.${layer.id}`} requireSource={false} />}</p>
       {rows.length > 0 && (
         <ul>
           {rows.map((row) => (
