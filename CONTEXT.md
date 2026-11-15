@@ -48,6 +48,7 @@ These apply to every feature. Reviewers check them.
    - Real: terrain shape and photo.
    - Artistic: the Mars colour, which is a tint because HiRISE is grayscale.
    - Modelled: rocks follow a statistical model, and the Cheyava Falls rock is hand-made.
+   - Read from image brightness: the Rocks and Outcrop layers, and the rock cover the route planner prices. Brightness also follows lithology, dust and sunlit slopes, so both are SIM proxies, not DERIVED. The planner's slope and rock weights are our choice too (SIM).
 
 ## Coordinates and units
 
