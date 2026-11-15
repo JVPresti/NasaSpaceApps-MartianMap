@@ -7,12 +7,37 @@
  *
  * Plain JavaScript with no React and no three.js. Coordinates: x east, z south, metres from Cheyava Falls.
  */
-import { combinedTag, metabolicPowerW, o2RateGs, SUIT_INPUTS, walkCost } from './suitModel.js';
+import { batteryDrawW, combinedTag, metabolicPowerW, o2RateGs, SUIT_INPUTS, walkCost } from './suitModel.js';
 
 export { combinedTag };
 
 /** Paths that end this close to their start are round trips: no extra walk home is added. Metres. */
 export const ROUND_TRIP_M = 20;
+
+/**
+ * Time, O2 and battery of the work at a stop (#247): the crew stands and works for `workSec` at the xEMU design average
+ * metabolic rate (hazards.json suit.metabolic.design_average, 1200 BTU/h, 352 W). That rate is the suit's planning
+ * average for a whole EVA, above the Apollo surface average (980 kJ/h, 272 W), so it does not flatter the budget.
+ * @param {number} workSec seconds at the stop; anything not finite or below zero counts as no work
+ * @param {object} c constants from suitConstantsFromHazards
+ * @returns {{ timeSec: number, o2G: number, batteryWh: number }}
+ */
+export function workCost(workSec, c) {
+  const timeSec = Number.isFinite(workSec) && workSec > 0 ? workSec : 0;
+  return { timeSec, o2G: o2RateGs(c.designAvgW, c) * timeSec, batteryWh: batteryDrawW(c.designAvgW, c) * timeSec / 3600 };
+}
+
+/**
+ * O2 and battery at the start of the EVA from the crew's needs (`needs.o2Pct`, `needs.batteryPct`, 0 to 100); a full
+ * xEMU primary tank and battery without them.
+ * @param {{ o2Pct?: number, batteryPct?: number } | null | undefined} needs
+ * @param {object} c constants from suitConstantsFromHazards
+ * @returns {{ o2StartG: number, batteryStartWh: number }}
+ */
+export function startConsumables(needs, c) {
+  const share = (pct) => (Number.isFinite(pct) ? Math.max(0, Math.min(100, pct)) / 100 : 1);
+  return { o2StartG: share(needs?.o2Pct) * c.o2UsableG, batteryStartWh: share(needs?.batteryPct) * c.batteryWh };
+}
 /** A path vertex this much farther from a waypoint than the closest vertex still counts as reaching it. Metres. */
 const MATCH_SLACK_M = 0.5;
 
@@ -58,21 +83,31 @@ const sum = (legs, key) => legs.reduce((a, l) => a + l[key], 0);
  * walkback pad, as the HUD walkback does. The margin is the HUD margin at the turnaround point:
  * O2 left after the walk out, minus the padded walk home, as time at the flat walking rate, minus the 30 min reserve.
  *
+ * Work at the stops (#247): a waypoint with `workSec` adds that work ({@link workCost}) to the leg that reaches it.
+ * A leg's timeSec, o2G and batteryWh are walking plus work; walkSec and the work* fields keep the two apart. The walk
+ * home has no stops.
+ *
  * @param {Array<[number, number]>} path route path, walking order
- * @param {Array<{x: number, z: number, name?: string}>} waypoints the start first
+ * @param {Array<{x: number, z: number, name?: string, workSec?: number}>} waypoints the start first
  * @param {(x: number, z: number) => number} heightAt terrain height in metres
  * @param {object} c constants from suitConstantsFromHazards
- * @param {{ stepM?: number }} [options]
+ * @param {{ stepM?: number, o2StartG?: number, batteryStartWh?: number }} [options] o2StartG and batteryStartWh: O2 and
+ *   battery at the start (startConsumables), a full tank and battery by default
  */
-export function routeLegCosts(path, waypoints, heightAt, c, { stepM = 10 } = {}) {
+export function routeLegCosts(path, waypoints, heightAt, c, { stepM = 10, o2StartG = c.o2UsableG, batteryStartWh = c.batteryWh } = {}) {
   const legs = splitAtWaypoints(path, waypoints).map(({ from, to, path: legPath }) => {
-    const cost = walkCost(legPath, heightAt, c, { stepM, pad: 0 });
+    const walk = walkCost(legPath, heightAt, c, { stepM, pad: 0 });
+    const work = workCost(to.workSec, c);
+    const timeSec = walk.timeSec + work.timeSec, o2G = walk.o2G + work.o2G, batteryWh = walk.batteryWh + work.batteryWh;
     return {
       from: from.name ?? null,
       to: to.name ?? null,
-      ...cost,
-      o2Pct: 100 * cost.o2G / c.o2UsableG,
-      batteryPct: 100 * cost.batteryWh / c.batteryWh,
+      ...walk,
+      walkSec: walk.timeSec,
+      workSec: work.timeSec, workO2G: work.o2G, workBatteryWh: work.batteryWh,
+      timeSec, o2G, batteryWh,
+      o2Pct: 100 * o2G / c.o2UsableG,
+      batteryPct: 100 * batteryWh / c.batteryWh,
     };
   });
   if (!legs.length) return null;
@@ -81,6 +116,7 @@ export function routeLegCosts(path, waypoints, heightAt, c, { stepM = 10 } = {})
     distanceM: sum(legs, 'distanceM'), climbM: sum(legs, 'climbM'), descentM: sum(legs, 'descentM'),
     maxSlopeDeg: Math.max(...legs.map((l) => l.maxSlopeDeg)),
     timeSec: sum(legs, 'timeSec'), o2G: sum(legs, 'o2G'), batteryWh: sum(legs, 'batteryWh'),
+    walkSec: sum(legs, 'walkSec'), workSec: sum(legs, 'workSec'), workO2G: sum(legs, 'workO2G'), workBatteryWh: sum(legs, 'workBatteryWh'),
   };
   out.o2Pct = 100 * out.o2G / c.o2UsableG;
   out.batteryPct = 100 * out.batteryWh / c.batteryWh;
@@ -92,8 +128,8 @@ export function routeLegCosts(path, waypoints, heightAt, c, { stepM = 10 } = {})
     : walkCost([...path].reverse(), heightAt, c, { stepM });   // default pad: the walkback pad
 
   const walkRate = o2RateGs(metabolicPowerW(c.speedFlat, 0, c), c);
-  const arrivalO2G = c.o2UsableG - out.o2G - back.o2G;
-  const arrivalBatteryWh = c.batteryWh - out.batteryWh - back.batteryWh;
+  const arrivalO2G = o2StartG - out.o2G - back.o2G;
+  const arrivalBatteryWh = batteryStartWh - out.batteryWh - back.batteryWh;
   // Margin at the end of the plan: the O2 left on arrival as walking time, minus the reserve, capped at the
   // suit.eva_duration_max time left after the walk out and back, as the HUD's margin now (suitReadout).
   const evaMarginSec = c.evaMaxSec - out.timeSec - back.timeSec;
@@ -122,13 +158,18 @@ const { speed: SPEED, o2: O2, battery: BATTERY, margin: MARGIN } = SUIT_INPUTS;
 export function legCostSources(hazards) {
   const terrain = { tag: 'DERIVED', source: 'planner path on the HiRISE height map (terrain.json), sampled every 10 m' };
   const entry = (ids, source) => ({ tag: combinedTag(hazards, ids), source });
-  const time = entry(SPEED, 'suit model: walking_metabolic at constant effort (mobility.speed_rule), no stops');
-  const o2 = entry(O2, 'suit model: walking_metabolic O2, share of the xEMU primary tank');
+  const time = entry(SPEED, 'suit model: walking_metabolic at constant effort (mobility.speed_rule), plus the work time at each stop (stops.json, SIM)');
+  const o2 = entry(O2, 'suit model: walking_metabolic O2 plus the work at the stops, share of the xEMU primary tank');
   const battery = entry(BATTERY, 'suit model: xEMU battery, the effort share of the draw is SIM');
-  const margin = { ...entry(MARGIN, 'suit model: margin at the end of the plan, the O2 after the walk out and the padded walk home minus the 30 min reserve, capped at the 8 h EVA limit'), label: 'Suit model' };
+  const margin = { ...entry(MARGIN, 'suit model: margin at the end of the plan, the O2 after the walk out, the work at the stops and the padded walk home minus the 30 min reserve, capped at the 8 h EVA limit'), label: 'Suit model' };
+  const walk = entry(SPEED, 'suit model: walking_metabolic at constant effort (mobility.speed_rule), no stops');
+  // The work time is our estimate (stops.json work_time_s), so everything computed from it is SIM.
+  const work = { tag: 'SIM', source: 'work time at the stops: stops.json work_time_s (SIM), longer for a solo crew' };
+  const workUse = { tag: 'SIM', source: 'work at the stops: stops.json work_time_s (SIM) at the xEMU design average metabolic rate (hazards.json suit.metabolic.design_average)' };
   const fields = {
     distanceM: terrain, climbM: terrain, descentM: terrain, maxSlopeDeg: terrain,
     timeSec: time, o2G: o2, o2Pct: o2, batteryWh: battery, batteryPct: battery,
+    walkSec: walk, workSec: work, workO2G: workUse, workBatteryWh: workUse,
   };
   const sources = {};
   for (const [k, v] of Object.entries(fields)) { sources['route.legs.' + k] = v; sources['route.totals.' + k] = v; }
@@ -140,20 +181,22 @@ export function legCostSources(hazards) {
 }
 
 /**
- * Keep route.legs and route.totals in step with route.path and route.waypoints in the store.
+ * Keep route.legs and route.totals in step with route.path, route.waypoints and the crew's needs in the store. The
+ * waypoints carry the work time at each stop (#247); needs.o2Pct and needs.batteryPct set the O2 and battery at the
+ * start (startConsumables).
  * @param {{ store: { getState: Function, setState: Function, subscribe: Function }, heightAt: Function,
  *   constants: object, sources?: object }} options
  * @returns {{ update: () => void, stop: () => void }}
  */
 export function startLegCostRunner({ store, heightAt, constants: c, sources = {} }) {
-  let lastPath, lastWaypoints;
+  let lastPath, lastWaypoints, lastNeeds;
   store.setState((s) => ({ sources: { ...s.sources, ...sources } }));
 
   function update() {
-    const { path, waypoints } = store.getState().route;
-    if (path === lastPath && waypoints === lastWaypoints) return;
-    lastPath = path; lastWaypoints = waypoints;
-    const r = path && path.length >= 2 ? routeLegCosts(path, waypoints, heightAt, c) : null;
+    const { route: { path, waypoints }, needs } = store.getState();
+    if (path === lastPath && waypoints === lastWaypoints && needs === lastNeeds) return;
+    lastPath = path; lastWaypoints = waypoints; lastNeeds = needs;
+    const r = path && path.length >= 2 ? routeLegCosts(path, waypoints, heightAt, c, startConsumables(needs, c)) : null;
     store.setState((s) => ({ route: { ...s.route, legs: r ? r.legs : [], totals: r ? r.totals : null } }));
   }
 

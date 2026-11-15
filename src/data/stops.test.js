@@ -11,6 +11,7 @@ import {
   parseStops,
   stopById,
   stopForWaypoint,
+  workTimeSec,
 } from './stops.js';
 
 const repoPath = (path) => fileURLToPath(new URL(`../../${path}`, import.meta.url));
@@ -116,6 +117,18 @@ describe('stops.json', () => {
   it('uses a 2 m arrival radius, as in scenario 1', () => {
     for (const stop of stops) expect(stop.arrival_radius).toMatchObject({ value: 2, unit: 'm' });
   });
+
+  it('gives each science stop a work time, tagged SIM with its reasoning (#247)', () => {
+    for (const stop of stops) {
+      expect(stop.work_time_s).toMatchObject({ unit: 's', tag: 'SIM' });
+      expect(workTimeSec(stop)).toBeGreaterThan(0);
+      expect(stop.work_time_s.provenance.note).toMatch(/estimate/);
+      expect(Object.keys(stop.work_time_s.provenance).sort()).toEqual([...PROVENANCE_KEYS].sort());
+    }
+    expect(workTimeSec(stopById(stops, 'cheyava-falls'))).toBe(1200);
+    expect(workTimeSec(stopById(stops, 'bright-angel'))).toBe(900);
+    expect(workTimeSec({})).toBe(0);
+  });
 });
 
 describe('parseStops', () => {
@@ -135,6 +148,12 @@ describe('parseStops', () => {
     const d = copy();
     d.stops[1].text[0].provenance[0].url = null;
     expect(() => parseStops(d)).toThrow(/url/);
+  });
+
+  it('rejects a negative work time', () => {
+    const d = copy();
+    d.stops[0].work_time_s.value = -1;
+    expect(() => parseStops(d)).toThrow(/work_time_s/);
   });
 
   it('rejects duplicate ids', () => {

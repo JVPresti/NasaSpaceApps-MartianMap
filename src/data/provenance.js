@@ -41,13 +41,19 @@ const sim = (source) => ({ tag: 'SIM', source });
 // "O2 out" and "Battery out" then show the same tag as their tooltip (#196). provenance.test.js checks the match.
 const routeModel = (source, ids) => ({ ...suitModel(source, ids), tag: 'SIM' });
 const LEG_TERRAIN = { tag: 'DERIVED', label: 'HiRISE DTM', source: 'planner path on the HiRISE height map, sampled every 10 m', from: HIRISE };
-const LEG_TIME = routeModel('suit model: walking speed at constant effort, no stops', SUIT_O2);
-const LEG_O2 = routeModel('suit model: walking O2 use, share of the xEMU primary tank', SUIT_O2);
+const LEG_TIME = routeModel('suit model: walking speed at constant effort, plus the work time at each stop', SUIT_O2);
+const LEG_O2 = routeModel('suit model: walking O2 use plus the work at the stops, share of the xEMU primary tank', [...SUIT_O2, 'suit.metabolic.design_average']);
 const LEG_BATTERY = routeModel('suit model: xEMU battery, the effort share of the draw is SIM', [...SUIT_BATTERY, 'mobility.speed_rule']);
-const LEG_MARGIN = routeModel('suit model: O2 after the walk out and the padded walk home, minus the 30 min reserve', SUIT_MARGIN);
+const LEG_MARGIN = routeModel('suit model: O2 after the walk out, the work at the stops and the padded walk home, minus the 30 min reserve', SUIT_MARGIN);
+// Work at the stops (#247): the work time is our estimate per stop (public/data/stops.json work_time_s), at the xEMU
+// design average metabolic rate. The walking time alone keeps the old meaning of the leg time.
+const LEG_WALK = routeModel('suit model: walking speed at constant effort, no stops', SUIT_O2);
+const LEG_WORK = sim('work time at the stops: our estimate per stop in stops.json (work_time_s), 1.5 times longer for a solo crew');
+const LEG_WORK_USE = { ...suitModel('work at the stops: the stops.json work time at the xEMU design average metabolic rate', ['suit.metabolic.design_average', 'suit.o2.primary_usable', ...SUIT_BATTERY]), tag: 'SIM' };
 const LEG_FIELDS = {
   distanceM: LEG_TERRAIN, climbM: LEG_TERRAIN, descentM: LEG_TERRAIN, maxSlopeDeg: LEG_TERRAIN,
   timeSec: LEG_TIME, o2G: LEG_O2, o2Pct: LEG_O2, batteryWh: LEG_BATTERY, batteryPct: LEG_BATTERY,
+  walkSec: LEG_WALK, workSec: LEG_WORK, workO2G: LEG_WORK_USE, workBatteryWh: LEG_WORK_USE,
 };
 const TOTAL_FIELDS = {
   ...LEG_FIELDS,

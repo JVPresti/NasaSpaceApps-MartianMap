@@ -49,6 +49,23 @@ function checkTagged(entry, where) {
   }
 }
 
+/** Work time at a stop (#247): optional; when present a value of zero or more seconds with its tag and provenance. */
+function checkWorkTime(work, where) {
+  if (work === undefined) return;
+  if (!Number.isFinite(work?.value) || work.value < 0 || work.unit !== 's') throw new Error(`${where}: work_time_s must be zero or more seconds`);
+  checkTagged(work, `${where} work_time_s`);
+  checkProvenance(work.provenance, `${where} work_time_s`);
+}
+
+/**
+ * Seconds of work at a stop for a pair of astronauts (#247), 0 when the stop has none.
+ * @param {{ work_time_s?: { value: number } } | null | undefined} stop
+ */
+export function workTimeSec(stop) {
+  const value = stop?.work_time_s?.value;
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
 /**
  * Check the parsed file and return its stops.
  * @param {object} data parsed `stops.json`
@@ -70,6 +87,7 @@ export function parseStops(data) {
     const radius = stop.arrival_radius;
     if (!(radius?.value > 0) || radius.unit !== 'm') throw new Error(`${where}: arrival_radius must be a positive value in m`);
     checkProvenance(radius.provenance, `${where} arrival_radius`);
+    checkWorkTime(stop.work_time_s, where);
 
     if (!Array.isArray(stop.text) || stop.text.length < 2 || stop.text.length > 4) throw new Error(`${where}: text needs 2 to 4 sentences`);
     stop.text.forEach((s, i) => {

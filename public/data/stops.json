@@ -52,6 +52,25 @@
      "note": "Arrival trigger distance for the game, from the plan and issue #61 (2 m at a science target, 5 m elsewhere)."
     }
    },
+   "work_time_s": {
+    "value": 900,
+    "unit": "s",
+    "tag": "SIM",
+    "label": "SIM · work time for a pair",
+    "provenance": {
+     "mission": null,
+     "instrument": null,
+     "product_id": null,
+     "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+     "sol_or_date": null,
+     "reference": "Marswalk implementation plan, docs/IMPLEMENTATION_PLAN.md",
+     "url": null,
+     "locator": "section 3.4, scenario 1: \"Reference image match, then the checklist: photo, texture, sample, seal\"; issue #247",
+     "data_url": null,
+     "license": "Project text, same license as the repository",
+     "note": "Our estimate for a pair of astronauts: 15 min for the four checklist steps at the outcrop (photo, texture, sample, seal), about 4 min each, with the photos taken along the layers before one scoop of fresh rock. A solo astronaut takes 1.5 times as long (src/sim/missionNeeds.js). Not a NASA figure."
+    }
+   },
    "title_tag": "DATA",
    "summary": "Light-toned river-channel rocks made of clay and silt, the kind of mud that keeps traces of life.",
    "text": [
@@ -310,6 +329,25 @@
      "data_url": null,
      "license": "Project text, same license as the repository",
      "note": "Arrival trigger distance for the game, from the plan and issue #61 (2 m at a science target, 5 m elsewhere)."
+    }
+   },
+   "work_time_s": {
+    "value": 1200,
+    "unit": "s",
+    "tag": "SIM",
+    "label": "SIM · work time for a pair",
+    "provenance": {
+     "mission": null,
+     "instrument": null,
+     "product_id": null,
+     "site": "Bright Angel formation, Neretva Vallis, Jezero crater",
+     "sol_or_date": null,
+     "reference": "Marswalk implementation plan, docs/IMPLEMENTATION_PLAN.md",
+     "url": null,
+     "locator": "section 3.4, scenario 1: \"Reference image match, then the checklist: photo, texture, sample, seal\"; issue #247",
+     "data_url": null,
+     "license": "Project text, same license as the repository",
+     "note": "Our estimate for a pair of astronauts: 20 min for the four checklist steps (photo, texture, sample, seal), longer than at Bright Angel because the rock is 1 m across and the close-up photos of the leopard spots and veins come before a careful sample away from the 2024 core hole. A solo astronaut takes 1.5 times as long (src/sim/missionNeeds.js). Not a NASA figure."
     }
    },
    "title_tag": "DATA",
