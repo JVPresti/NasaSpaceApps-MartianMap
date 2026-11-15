@@ -8,11 +8,13 @@
 // base defaults to http://localhost:8787. Use http://localhost:5173 to go through the Vite proxy (npm run dev).
 // origin defaults to http://localhost:5173, the Origin a browser on the Vite dev server sends.
 // Results: docs/qa/online-m1.md, docs/qa/online-m2.md for the pose groups (poses, poseflood, standing, rtt) and
-// docs/qa/online-m3.md for the shared state checks (ONLY=shared, ONLY=separate).
+// docs/qa/online-m3.md for the shared state checks (ONLY=shared, ONLY=separate), docs/qa/online-m4.md for the habitat
+// seat (ONLY=habitat: rt, go, the 4 KB cap and the welcome after a reload).
 // ONLY=separate ROOM=ABCD TAG=x places one marker labelled with TAG in room ABCD and prints the room's marker labels,
 // so the same code on two hosts can be compared.
 import http from 'node:http';
 import { createPoseSender } from '../src/net/poseSync.js';
+import { routeToDecimetres } from '../src/net/routePoints.js';
 
 const BASE = new URL(process.argv[2] || 'http://localhost:8787');
 const ORIGIN = process.argv[3] || 'http://localhost:5173';
@@ -397,6 +399,65 @@ async function separation() {
   a.ws.close(); c.ws.close();
 }
 
+/** M4 (#55): the habitat seat's route and go or no-go call. The route is a real planner-sized path through routeToDecimetres. */
+async function habitatSeat() {
+  const room = code();
+  const a = client(room), h = client(room, { role: 'habitat' });
+  await Promise.all([a.ready, h.ready]);
+  check('welcome has route and go, both null in a new room', h.welcome.route === null && h.welcome.go === null);
+
+  // 3000-point path across the tile, decimated by the client code
+  const path = Array.from({ length: 3000 }, (_, i) => [-700 + i * 0.45 + Math.sin(i / 40) * 12, 690 - i * 0.46 + Math.cos(i / 25) * 9]);
+  const pts = routeToDecimetres(path);
+  const text = JSON.stringify({ type: 'rt', pts });
+  const got = a.wait('rt'), echo = h.wait('rt');
+  const t0 = performance.now();
+  h.send(text);
+  const [r, e] = await Promise.all([got, echo]);
+  const tRoute = r.at - t0;
+  check('a route from the habitat reaches the surface player within 1 s, with by and at; the sender gets the echo',
+    tRoute < 1000 && r.by === h.id && r.pts.length === pts.length && e.by === h.id,
+    `${tRoute.toFixed(1)} ms, ${pts.length} points from 3000, ${text.length} B sent`);
+
+  // the widest route: 200 points at the far corner, still under 4 KB
+  const wide = JSON.stringify({ type: 'rt', pts: Array.from({ length: 200 }, (_, i) => [-7112 + (i % 2), -7500 + (i % 3)]) });
+  const gotWide = a.wait('rt', (m) => m.pts.length === 200);
+  h.send(wide);
+  await gotWide;
+  check('a 200-point route at the far corner of the tile goes through', !h.closed, `${wide.length} B of ${4096}`);
+
+  // 201 points: refused, socket stays open, the stored route is unchanged
+  h.send({ type: 'rt', pts: Array.from({ length: 201 }, () => [0, 0]) });
+  a.send({ type: 'rt', pts: [[0, 0], [10, 10]] });
+  await sleep(400);
+  const rts = a.msgs.filter((m) => m.type === 'rt').length;
+  check('201 points and a route from a surface player are both refused, nobody is closed', rts === 2 && !h.closed && !a.closed, `${rts} routes seen by A`);
+
+  // go or no-go
+  const call = a.wait('go');
+  h.send({ type: 'go', go: false, why: 'Dust rising in the west' });
+  const g = await call;
+  check('a no-go call with a reason reaches the surface player', g.go === false && g.why === 'Dust rising in the west' && g.by === h.id, `${(g.at - t0).toFixed(0)} ms into the group`);
+  a.send({ type: 'go', go: true, why: 'mutiny' });
+  await sleep(300);
+  check('a go call from a surface player is refused', h.msgs.filter((m) => m.type === 'go').length === 1);
+
+  // habitat poses never reach the surface
+  for (let i = 0; i < 5; i++) h.send({ type: 'p', x: i, z: 0, h: 0, pt: 0, a: 'idle', hp: 0, ct: Date.now() + i });
+  await sleep(300);
+  check('poses from the habitat seat reach nobody', !a.msgs.some((m) => m.type === 'p'));
+
+  // reload: the same surface player joins again and gets the last route and call
+  a.ws.close();
+  const a2 = client(room, { id: a.id });
+  const w = await a2.ready;
+  check('a surface player who reloads gets the last route and the last call in welcome',
+    w.route?.pts.length === 200 && w.route.by === h.id && w.go?.go === false && w.go.why === 'Dust rising in the west',
+    `welcome ${JSON.stringify(w).length} B`);
+  for (const c of [h, a2]) c.ws.close();
+  return { tRoute };
+}
+
 const only = process.env.ONLY;
 const idle = Number(process.env.IDLE_MS || 15_000);
 console.log(`room smoke test against ${WS_BASE} with Origin ${ORIGIN}`);
@@ -405,6 +466,7 @@ if (!only || only === 'seats') await seats();
 if (!only || only === 'refuse') await refusals();
 if (!only || only === 'flood') await flood();
 if (!only || only === 'shared') await sharedState();
+if (!only || only === 'habitat') await habitatSeat();
 if (only === 'separate') await separation();
 if (!only || only === 'hibernate') await hibernation(idle);
 if (!only || only === 'poses') await poses();

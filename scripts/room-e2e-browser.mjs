@@ -3,11 +3,12 @@
 // their arrival in tab B, claims samples from both tabs, moves the case, and reloads tab B.
 //
 //   CHROME=/path/to/chrome node scripts/room-e2e-browser.mjs
+//   QA_GPU=1 node scripts/room-e2e-browser.mjs     headed Chromium on the GPU through WSLg (scripts/qaBrowser.mjs)
 //
 // ROOM (default TEST), TAB_RACES (20), RACE_GAP ms between races (keep it above 200: the client sends at most 5
 // actions per second and queues the rest), SLOW_RAF ms per frame for machines with software WebGL. Results:
 // docs/qa/online-m3.md.
-import puppeteer from 'puppeteer-core';
+import { checkRenderer, launchBrowser } from './qaBrowser.mjs';
 const ROOM = process.env.ROOM || 'TEST';
 const URL = `http://localhost:5173/?room=${ROOM}`;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -21,19 +22,14 @@ async function until(page, fn, arg, ms = 15000) {
     await sleep(20);
   }
 }
-const browser = await puppeteer.launch({
-  executablePath: process.env.CHROME,
-  headless: true,
-  protocolTimeout: 600000,
-  args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', '--window-size=1280,800'],
-  defaultViewport: { width: 1280, height: 800 },
-});
+const browser = await launchBrowser();
 const open = async () => {
   const p = await browser.newPage();
   p.on('pageerror', (e) => console.log('pageerror', e.message));
   // Software WebGL in this VM takes the main thread for seconds per frame; at 1 frame per second the page keeps up.
   if (process.env.SLOW_RAF) await p.evaluateOnNewDocument((ms) => { window.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), ms); }, Number(process.env.SLOW_RAF));
   await p.goto(URL, { waitUntil: 'domcontentloaded' });
+  console.log('WebGL renderer', await checkRenderer(p));
   await until(p, () => window.__missionStore?.getState().online.status === 'open' && !!window.__online, null, 120000);
   return p;
 };
