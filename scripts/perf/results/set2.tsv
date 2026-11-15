@@ -1,0 +1,13 @@
+dist	run	error	idle_site_gl_frames_per_s	idle_site_draws_per_s	idle_site_long_tasks	idle_site_long_ms	idle_route_gl_frames_per_s	suit_open_inp_ms	suit_open_long_tasks	suit_open_long_ms	suit_reopen_inp_ms	suit_reopen_long_tasks	suit_reopen_long_ms	drag_put_image_data	drag_long_tasks	drag_frame_p95_ms	zoom_put_image_data	layer_long_tasks_all
+pr282	0	Attempted to use detached Frame '9A07BA886786229F3E725D64C92F6796'.																0
+fixes282	0		0	0	0	0	0	256	2	244	112	0	0	1	1	16.8	1	24
+main	0		60	5040	0	0	58.5	784	6	981	536	3	665	20	20	150.1	10	4
+fixes	0		0	0	0	0	0	256	2	307	80	0	0	22	22	116.8	10	4
+pr282	1		60	4860	0	0	58.5	296	2	324	144	2	229	18	18	233.5	10	16
+fixes282	1		0	0	0	0	0	416	2	395	144	0	0	1	1	50.1	1	24
+main	1		59.5	4996.1	0	0	58.5	456	2	473	240	2	324	19	19	150	10	4
+fixes	1		0	0	0	0	0	360	3	448	160	0	0	23	23	183.4	10	4
+pr282	2		60	4860	0	0	59.8	216	2	236	128	2	183	19	19	200.1	10	16
+fixes282	2		0	0	0	0	0	176	1	142	80	0	0	1	1	16.8	1	24
+main	2		59.7	5012	0	0	60	224	2	268	112	2	193	20	20	116.6	10	4
+fixes	2		0	0	0	0	0	216	2	226	64	0	0	21	21	100	10	4

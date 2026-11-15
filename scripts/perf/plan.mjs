@@ -1,7 +1,7 @@
-// Plan phase performance harness. Not part of the build.
+// Plan phase performance rig. Not part of the build.
 //
 //   scripts/perf/build.sh origin/main main && scripts/perf/build.sh pr282 pr282
-//   node scripts/perf/plan.mjs --dist main,pr282 --runs 3 [--out scripts/perf/out/run] [--trace] [--frames]
+//   node scripts/perf/plan.mjs --dist main,pr282 --runs 3 [--out scripts/perf/out/run] [--trace] [--frames] [--film]
 //
 // Drives the mission table headless at 1366x768 through one fixed script (open the table, idle, every tab, every
 // layer, a hazard switch, add and remove a waypoint, drag and zoom the map, the suit step) and records, per step:
@@ -12,7 +12,9 @@
 //   during the map drag.
 // With several dists the runs interleave (A, B, A, B...), so a load spike on this machine hits both sides. Trust the
 // counts over the times. Writes <out>/runs.json and <out>/summary.md; --trace saves a CDP trace of the first run of
-// each dist, --frames saves screenshots of the drag, the tab switch and the layer toggle for the council.
+// each dist. --frames saves a still of each tab and of the second map layer, plus facts.json, to <out>/frames-<dist>.
+// --film records a screencast of the map drag and zoom, two tab switches and two layer toggles to
+// <out>/film-<dist>-r<run>, which scripts/perf/filmstrip.py cuts into 6-frame strips.
 //
 // The static server, findChrome and the browser flags are those of scripts/quality/capture.mjs (#277).
 import { createReadStream, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
@@ -138,7 +140,7 @@ async function step(page, rec, label, fn, { wait = 600 } = {}) {
   return d;
 }
 
-// --film: a CDP screencast of the drag, one tab switch and one layer toggle, every frame the compositor produced
+// --film: a CDP screencast of the steps in FILM_STEPS, every frame the compositor produced
 // with its timestamp, for the council's filmstrips (scripts/perf/filmstrip.py picks 6 and prints the times).
 const FILM = flag('film');
 const FILM_STEPS = new Set(['map:drag', 'map:zoom', 'tab:route', 'tab:suit', 'layer:1', 'layer:2']);

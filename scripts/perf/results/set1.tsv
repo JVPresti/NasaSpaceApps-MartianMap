@@ -1,0 +1,16 @@
+dist	run	error	idle_site_gl_frames_per_s	idle_site_draws_per_s	idle_site_long_tasks	idle_site_long_ms	idle_route_gl_frames_per_s	suit_open_inp_ms	suit_open_long_tasks	suit_open_long_ms	suit_reopen_inp_ms	suit_reopen_long_tasks	suit_reopen_long_ms	drag_put_image_data	drag_long_tasks	drag_frame_p95_ms	zoom_put_image_data	layer_long_tasks_all
+main	0	Waiting failed: 300000ms exceeded																0
+idle	0		0	0	0	0	0	376	2	421	312	2	454	25	25	133.4	10	4
+suit	0		34.5	2894.8	31	1870	59.8	616	2	711	520	1	50	24	24	116.7	10	4
+pr282	0		43.8	3549.8	6	319	41.4	360	3	494	496	2	584	22	22	200.1	10	17
+map282	0		59.8	4843.8	0	0	60.1	128	2	167	112	1	97	5	5	16.8	1	25
+main	1		59.9	5029.9	0	0	60	128	2	189	112	2	164	20	20	83.4	10	4
+idle	1		0	0	0	0	0	96	1	158	576	7	1236	21	21	83.3	10	4
+suit	1		40.9	3437.1	17	1039	40.1	744	6	1189	600	0	0	18	18	150.1	10	13
+pr282	1		33.5	2710.8	19	1226	40.9	672	2	729	536	2	601	18	18	283.5	10	17
+map282	1		59.9	4850.3	0	0	59.9	704	5	941	520	2	598	1	1	16.8	1	26
+main	2		35.2	2955.9	28	1669	35.5	608	2	785	512	3	707	29	29	200.2	10	21
+idle	2		0	0	0	0	0	192	3	411	144	2	250	21	21	150.1	10	4
+suit	2		34.8	2922.5	30	1805	32.1	352	2	452	544	0	0	19	19	166.8	10	14
+pr282	2		47.1	3816.5	2	109	59.6	416	2	479	720	2	806	20	20	216.8	10	17
+map282	2		45.5	3687.7	5	265	36.7	1320	2	1050	920	4	1158	2	1	150.2	2	29
