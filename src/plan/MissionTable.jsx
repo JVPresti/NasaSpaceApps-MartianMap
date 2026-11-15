@@ -35,6 +35,7 @@ import { droppedWhy, planReasonLines, stopLine } from './routeWhy.js';
 import { eventTimingText, shortDuration } from './tableFormat.js';
 import { useDataFile, useDustAgainstLimit } from './useConditions.js';
 import RouteProfiles from './RouteProfiles.jsx';
+import SavedRoutes from './SavedRoutes.jsx';
 import SourceTag from './SourceTag.jsx';
 import SuitFigure from './SuitFigure.jsx';
 import dustArt from '../assets/ui/hazard_dust.webp';
@@ -674,6 +675,13 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
                 list. A no-go reason comes first, so a locked Begin EVA always says why. */}
             {!evaBegun && !decision.go && decision.tone && <p className={'table-note tone-' + decision.tone}>{decision.text}</p>}
             {whyLines.length > 0 && <p className="table-note route-why">{whyLines.join(' ')}<SourceTag path="route.planReasons" requireSource={false} /></p>}
+          </div>
+          {/* Saved routes (#357): the crew's route library, with the success record of each one. */}
+          <div className="table-panel">
+            <div className="table-panel-head">
+              <p className="table-label">{t('savedRoutes.title')}</p>
+            </div>
+            <SavedRoutes />
           </div>
           {/* The comparison takes the place of the suit readout, which the Suit step shows in full (#245). */}
           <div className="table-panel table-fill profiles-panel">

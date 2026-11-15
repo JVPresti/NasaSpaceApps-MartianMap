@@ -111,6 +111,8 @@ function buildSite(routeJson, sheltersJson, stopsJson, traverseJson, constants) 
  *
  * Once the EVA has begun (needs.locked) the needs no longer change, and the hook re-plans the waypoints as they stand,
  * as before: a find accepted in Walk (#71) or Re-plan, with the risk pricing of the needs the EVA started with.
+ * A saved route loaded at the table (#357, route.manual) is planned the same way before the EVA: its waypoints stay
+ * until the crew changes a need, which sets route.manual back to false and plans from the needs again.
  *
  * The decisions are in plannerState.js (tested there). One request is in flight at a time and only the newest waits
  * (N16); the status is 'planning' from the moment the needs differ from the plan on the table (N15).
@@ -131,6 +133,8 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
   const mast = useHabitatMast(engine);
   const needs = useMissionStore((s) => s.needs);
   const chosenProfile = useMissionStore((s) => s.route.profile);
+  // A saved route the crew loaded (#357): its waypoints stay, so the needs plan does not replace them.
+  const manualRoute = useMissionStore((s) => s.route.manual === true);
   const clientRef = useRef(null);
   const heightAtRef = useRef(null);
   const constantsRef = useRef(null);
@@ -173,7 +177,7 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
     };
   }, []);
 
-  const fromNeeds = plansFromNeeds(needs, site);
+  const fromNeeds = plansFromNeeds(needs, site) && !manualRoute;
   const mastId = mastKey(mast);
   const needsKeyNow = needsPlanKey({ needs, profile: chosenProfile, nonce, mastId });
 
@@ -318,8 +322,8 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
         },
       };
     }
-    // mastId and fromNeeds are derived from mast, needs and site, which are in the list.
-  }, [enabled, site, waypoints, nonce, mast, needs, chosenProfile]);   // eslint-disable-line react-hooks/exhaustive-deps
+    // mastId and fromNeeds are derived from mast, needs, site and route.manual, which are in the list.
+  }, [enabled, site, waypoints, nonce, mast, needs, chosenProfile, manualRoute]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // The route on the table is older than the needs from the moment they change, not only once the request is sent
   // 120 ms later, so Begin EVA can never lock the old route (N15).
