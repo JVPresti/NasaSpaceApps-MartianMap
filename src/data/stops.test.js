@@ -8,7 +8,9 @@ import {
   imageUrl,
   loadStops,
   nearestStop,
+  parseRouteStops,
   parseStops,
+  routeStopCandidates,
   stopById,
   stopForWaypoint,
   workTimeSec,
@@ -128,6 +130,50 @@ describe('stops.json', () => {
     expect(workTimeSec(stopById(stops, 'cheyava-falls'))).toBe(1200);
     expect(workTimeSec(stopById(stops, 'bright-angel'))).toBe(900);
     expect(workTimeSec({})).toBe(0);
+  });
+});
+
+describe('route stops without a card (#265)', () => {
+  const shelters = readJson('public/data/shelters.json');
+  const airlock = shelters.shelters.find((s) => s.id === 'HAB');
+  const routeStops = parseRouteStops(data);
+
+  it('has the first sortie stop, tagged SIM with its reasoning and a work time', () => {
+    expect(routeStops.map((s) => s.id)).toEqual(['sortie']);
+    const [sortie] = routeStops;
+    expect(sortie.position.tag).toBe('SIM');
+    expect(sortie.position.provenance.note).toMatch(/55 m of walking/);
+    expect(Object.keys(sortie.position.provenance).sort()).toEqual([...PROVENANCE_KEYS].sort());
+    expect(sortie.work_time_s).toMatchObject({ value: 300, unit: 's', tag: 'SIM' });
+  });
+
+  it('sits about 55 m from the airlock, outside route.json and with no science card', () => {
+    const [sortie] = routeStops;
+    const distance = Math.hypot(sortie.x - airlock.x, sortie.z - airlock.z);
+    expect(distance).toBeGreaterThan(50);
+    expect(distance).toBeLessThan(60);
+    expect(route.waypoints.some((w) => w.name === sortie.waypoint)).toBe(false);
+    expect(stopForWaypoint(stops, sortie.waypoint)).toBeNull();
+  });
+
+  it('lists every stop the route generator can choose, with its work time for a pair', () => {
+    const candidates = routeStopCandidates(data);
+    expect(candidates.map((s) => [s.id, s.workSec, s.card])).toEqual([
+      ['bright-angel', 900, true],
+      ['cheyava-falls', 1200, true],
+      ['sortie', 300, false],
+    ]);
+    expect(candidates.find((s) => s.id === 'cheyava-falls')).toMatchObject({ waypoint: 'Cheyava Falls', x: 0, z: 0 });
+  });
+
+  it('rejects a route stop with an id already used, or without a work time', () => {
+    const d = copy();
+    d.route_stops[0].id = 'cheyava-falls';
+    expect(() => parseRouteStops(d)).toThrow(/unique/);
+    const e = copy();
+    delete e.route_stops[0].work_time_s;
+    expect(() => parseRouteStops(e)).toThrow(/work_time_s/);
+    expect(parseRouteStops({ stops: [] })).toEqual([]);
   });
 });
 

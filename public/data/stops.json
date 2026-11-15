@@ -627,5 +627,51 @@
     }
    ]
   }
+ ],
+ "route_stops_description": "Stops the route generator (src/sim/missionNeeds.js) can choose that have no science card yet: no text and no rover image. Same frame and provenance blocks as the stops above; route.json does not list them.",
+ "route_stops": [
+  {
+   "id": "sortie",
+   "name": "Light-toned patch by the habitat",
+   "waypoint": "S1 · light-toned patch",
+   "x": 493,
+   "z": 539,
+   "position": {
+    "tag": "SIM",
+    "label": "SIM · first sortie stop",
+    "provenance": {
+     "mission": null,
+     "instrument": null,
+     "product_id": null,
+     "site": "Neretva Vallis, Jezero crater, next to the Marswalk habitat",
+     "sol_or_date": null,
+     "reference": "Issue #265 (short first mission); Marswalk terrain tile public/marswalk/assets/terrain.json and outcrop mask public/marswalk/assets/outcrop_mask.jpg, both from HiRISE",
+     "url": null,
+     "locator": "Chosen with src/sim/routePlanner.js on the cost grid from the airlock entry of public/data/shelters.json (535.1, 574.1)",
+     "data_url": null,
+     "license": "Project text, same license as the repository",
+     "note": "Our choice of point for the first sortie. It is 55 m of walking from the airlock, about 2 min out and back at 1 m/s: the planner route is the straight line (54.8 m), on ground no steeper than 12.7 deg, 2.9 m lower than the airlock. The spot itself slopes 3.3 deg. The HiRISE outcrop mask is light-toned over the whole 8 m around it (the brightness the Outcrop layer shows), the kind of rock Bright Angel is made of, but no rover has looked at this spot: the science is an assumption. It lies 13 deg off the heading the airlock faces, so the stop is ahead of the crew as they step out, and the habitat mast is in sight."
+    }
+   },
+   "work_time_s": {
+    "value": 300,
+    "unit": "s",
+    "tag": "SIM",
+    "label": "SIM · work time for a pair",
+    "provenance": {
+     "mission": null,
+     "instrument": null,
+     "product_id": null,
+     "site": "Neretva Vallis, Jezero crater, next to the Marswalk habitat",
+     "sol_or_date": null,
+     "reference": "Marswalk implementation plan, docs/IMPLEMENTATION_PLAN.md",
+     "url": null,
+     "locator": "section 3.4, scenario 1: \"Reference image match, then the checklist: photo, texture, sample, seal\"; issues #247 and #265",
+     "data_url": null,
+     "license": "Project text, same license as the repository",
+     "note": "Our estimate for a pair of astronauts: 5 min for one photo and one scoop at the first light-toned patch, a short training stop that keeps the first mission near three minutes of walking. A solo astronaut takes 1.5 times as long (src/sim/missionNeeds.js). Not a NASA figure."
+    }
+   }
+  }
  ]
 }

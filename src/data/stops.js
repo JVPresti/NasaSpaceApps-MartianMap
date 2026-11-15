@@ -114,6 +114,43 @@ export function parseStops(data) {
   return data.stops;
 }
 
+/**
+ * Check `route_stops`: stops the route generator can choose that have no science card yet (the first sortie stop,
+ * #265). Each needs an id unique across both lists, a name, a waypoint name, a position with its provenance and a work
+ * time.
+ * @param {object} data parsed `stops.json`
+ * @returns {Array<object>} the entries, or an empty list when the file has none
+ */
+export function parseRouteStops(data) {
+  const list = data?.route_stops ?? [];
+  if (!Array.isArray(list)) throw new Error('stops.json route_stops must be an array');
+  const ids = new Set((data?.stops ?? []).map((s) => s?.id));
+  for (const stop of list) {
+    const where = `route stop ${String(stop?.id)}`;
+    if (typeof stop?.id !== 'string' || !stop.id || ids.has(stop.id)) throw new Error(`${where}: id must be a unique string`);
+    ids.add(stop.id);
+    if (typeof stop.name !== 'string' || typeof stop.waypoint !== 'string') throw new Error(`${where}: needs name and waypoint`);
+    if (!Number.isFinite(stop.x) || !Number.isFinite(stop.z)) throw new Error(`${where}: needs finite x and z`);
+    checkTagged(stop.position, `${where} position`);
+    checkProvenance(stop.position.provenance, `${where} position`);
+    if (stop.work_time_s === undefined) throw new Error(`${where}: needs work_time_s`);
+    checkWorkTime(stop.work_time_s, where);
+  }
+  return list;
+}
+
+/**
+ * Every stop the route generator can choose (src/sim/missionNeeds.js), as plain data for the planner worker: the
+ * science stops with a card, then the route stops without one.
+ * @param {object} data parsed `stops.json`
+ * @returns {Array<{ id: string, name: string, waypoint: string, x: number, z: number, workSec: number, card: boolean }>}
+ *   workSec: the work time for a pair of astronauts (#247)
+ */
+export function routeStopCandidates(data) {
+  const plain = (stop, card) => ({ id: stop.id, name: stop.name, waypoint: stop.waypoint, x: stop.x, z: stop.z, workSec: workTimeSec(stop), card });
+  return [...parseStops(data).map((s) => plain(s, true)), ...parseRouteStops(data).map((s) => plain(s, false))];
+}
+
 /** @returns {object|null} */
 export function stopById(stops, id) {
   return stops.find((s) => s.id === id) ?? null;
