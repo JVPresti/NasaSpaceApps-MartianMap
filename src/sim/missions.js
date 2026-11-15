@@ -255,6 +255,22 @@ export function currentBeat(mission, { mode, evaBegun, alerts = {}, events = [],
   return beat('walk');
 }
 
+/** How close to the science stop's planned waypoint its beat line shows: a little more than its arrival radius. Metres. */
+export const STOP_BEAT_RADIUS_M = 12;
+
+/**
+ * Whether the crew is at the mission's science stop, for its beat line: within STOP_BEAT_RADIUS_M of the planned
+ * waypoint with that stops.json id, measured from the position the suit reports (the estimate, as the HUD).
+ * @param {{ stop?: string } | undefined} stopBeat the mission's stop beat
+ * @param {Array<{ stopId?: string, x: number, z: number }>} waypoints
+ * @param {{ x?: number | null, z?: number | null }} position
+ */
+export function atStopOf(stopBeat, waypoints, position) {
+  const waypoint = stopBeat?.stop ? (waypoints ?? []).find((w) => w?.stopId === stopBeat.stop) : null;
+  if (!waypoint || !Number.isFinite(position?.x) || !Number.isFinite(position?.z)) return false;
+  return Math.hypot(waypoint.x - position.x, waypoint.z - position.z) <= STOP_BEAT_RADIUS_M;
+}
+
 /** Registry path of the SIM note on an event's timing in a mission (src/data/provenance.js define). */
 export const missionSourcePath = (missionId, eventId) => `missions.${missionId}.${eventId}`;
 

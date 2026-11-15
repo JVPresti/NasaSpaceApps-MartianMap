@@ -11,7 +11,7 @@ describe('chooseMission (the start screen choice, #265)', () => {
     const { needs, mode } = useMissionStore.getState();
     expect(mode).toBe('plan');
     expect(missionForObjective(needs.objective).id).toBe('first');
-    expect(eventStartSec(needs.objective, 'dust-storm')).toBe(75);
+    expect(eventStartSec(needs.objective, 'dust-storm')).toBe(45);
     expect(needs.timeMin).toBe(30);
   });
 

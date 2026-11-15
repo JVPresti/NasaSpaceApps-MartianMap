@@ -40,7 +40,7 @@ describe('beat lines (#265)', () => {
   it('never says GPS, and keeps each Walk beat on one line beside the HUD at 1366 px (about 76 characters, clear of the NAV box in Spanish)', () => {
     for (const language of ['en', 'es']) {
       for (const beat of MISSIONS.first.beats) expect(catalogs[language][beat.text]).not.toMatch(/GPS/);
-      for (const id of ['walk', 'dust-storm', 'radiation']) {
+      for (const id of ['walk', 'stop', 'dust-storm', 'radiation']) {
         const beat = MISSIONS.first.beats.find((entry) => entry.id === id);
         expect(catalogs[language][beat.text].length).toBeLessThanOrEqual(76);
       }
@@ -66,6 +66,20 @@ describe('beat lines (#265)', () => {
     expect(walk()).toContain('data-beat="radiation"');
     setLanguage('es');
     expect(walk()).toContain('Radiación · ');
+  });
+
+  it('tells the crew what to do at the science stop until a sample is secured (P3)', () => {
+    useMissionStore.setState((state) => ({
+      mode: 'walk',
+      route: { ...state.route, waypoints: [{ name: 'HAB', x: 535, z: 574 }, { name: 'S1', x: 493, z: 539, stopId: 'sortie' }] },
+      navigation: { ...state.navigation, x: 497, z: 541 },
+    }));
+    expect(walk()).toContain('data-beat="stop"');
+    expect(walk()).toMatch(/P photo/);
+    useMissionStore.setState((state) => ({ sampling: { ...state.sampling, count: 1 } }));
+    expect(walk()).toBe('');
+    useMissionStore.setState((state) => ({ sampling: { ...state.sampling, count: 0 }, navigation: { ...state.navigation, x: 520, z: 560 } }));
+    expect(walk()).toContain('data-beat="walk"');   // 34 m from the stop
   });
 
   it('shows no beat line and no recap for the full EVA', () => {

@@ -1,5 +1,5 @@
 import { t } from '../i18n/index.js';
-import { currentBeat, missionForObjective } from '../sim/missions.js';
+import { atStopOf, currentBeat, missionForObjective } from '../sim/missions.js';
 import { useMissionStore } from '../state/store.js';
 
 /**
@@ -14,11 +14,15 @@ function useBeat(evaBegun) {
   const mode = useMissionStore((s) => s.mode);
   const alerts = useMissionStore((s) => s.alerts);
   const events = useMissionStore((s) => s.eva?.events);
-  return currentBeat(missionForObjective(objective), { mode, evaBegun, alerts, events: events ?? [] });
+  const samples = useMissionStore((s) => s.sampling?.count ?? 0);
+  const mission = missionForObjective(objective);
+  const stopBeat = mission.beats.find((beat) => beat.id === 'stop');
+  const atStop = useMissionStore((s) => atStopOf(stopBeat, s.route?.waypoints, s.navigation));
+  return currentBeat(mission, { mode, evaBegun, alerts, events: events ?? [], atStop, samples });
 }
 
 /**
- * The Walk beat (walk, dust storm, radiation) in the key strip's place at the bottom of the view. App renders it only
+ * The Walk beat (walk, the science stop, dust storm, radiation) in the key strip's place at the bottom of the view. App renders it only
  * while the wrist screen's key strip is not up, so the two never share the spot.
  * @param {{ evaBegun: boolean }} props
  */
