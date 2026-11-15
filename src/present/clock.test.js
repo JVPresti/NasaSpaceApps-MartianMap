@@ -83,6 +83,13 @@ describe('tracks and fades', () => {
     expect(showValue([1, 5], 5, 6)).toBe(0);
     expect(showValue([1], 6, 6)).toBe(1);
   });
+
+  it('keeps a label with no end on screen while the beat is held past its length', () => {
+    // the last beat under autoplay, or any beat after a manual takeover: the team and the QR code must not fade away
+    expect(showValue([1], 7.5)).toBe(1);
+    expect(showValue([18.8], 600)).toBe(1);
+    expect(showValue([1, 5], 600)).toBe(0);   // an explicit end still ends
+  });
 });
 
 describe('camera geometry', () => {
@@ -138,6 +145,6 @@ describe('the talk on autoplay, and a pause', () => {
     expect(tl.index).toBe(demo);                             // no auto advance after the takeover
     expect(tl.beatTime).toBeGreaterThan(beats[demo].duration);   // the beat clock, and the video on it, ran on
     tl.next();
-    expect(tl.beat.id).toBe('close');
+    expect(tl.beat.id).toBe('sources');
   });
 });

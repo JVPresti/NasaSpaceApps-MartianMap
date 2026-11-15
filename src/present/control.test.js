@@ -168,6 +168,14 @@ describe('videoFrame: the demo plays, holds its last frame, then fades', () => {
     expect(videoFrame(90, 90, 89.5).opacity).toBe(0);
   });
 
+  it('holds the last frame, with no fade, once the presenter has taken over and the beat stays up', () => {
+    expect(videoFrame(89.7, 90, 89.5, { hold: true })).toMatchObject({ playing: false, opacity: 1 });
+    const f = videoFrame(200, 90, 89.5, { hold: true });
+    expect(f.opacity).toBe(1);
+    expect(f.time).toBeCloseTo(89.5 - 1 / 30);
+    expect(videoFrame(10, 90, 89.5, { hold: true })).toMatchObject({ time: 10, playing: true, opacity: 1 });
+  });
+
   it('falls back to the beat length while the file\'s length is unknown', () => {
     expect(videoFrame(5, 90, NaN)).toMatchObject({ time: 5, playing: true });
   });

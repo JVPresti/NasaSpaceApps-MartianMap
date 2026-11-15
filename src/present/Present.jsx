@@ -336,7 +336,8 @@ export default function Present({ engine, onExit }) {
       if (!v) return 0;
       const on = !!beat.video && !videoFailedRef.current;
       if (!on) { v.style.opacity = '0'; if (!v.paused) v.pause(); return 0; }
-      const f = videoFrame(t, beat.duration, v.duration);   // control.js: plays, then holds the last frame, then fades
+      // control.js: plays, then holds the last frame, then fades into the next beat; while paused it stays up
+      const f = videoFrame(t, beat.duration, v.duration, { hold: !opts.record && pausedRef.current });
       v.style.opacity = f.opacity.toFixed(3);
       if (opts.record || !f.playing || pausedRef.current) {
         if (!v.paused) v.pause();
@@ -610,9 +611,9 @@ export default function Present({ engine, onExit }) {
         )}
       </div>
       {!opts.record && (
-        <div className="pr-progress" aria-hidden="true">
-          {beats.map((b, i) => <span key={b.id} className={i === index ? 'on' : i < index ? 'past' : ''} />)}
-          <span className="pr-lang">{lang.toUpperCase()}</span>
+        <div className="pr-progress">
+          {beats.map((b, i) => <span key={b.id} aria-hidden="true" className={i === index ? 'on' : i < index ? 'past' : ''} />)}
+          <span className="pr-lang" aria-hidden="true">{lang.toUpperCase()}</span>
         </div>
       )}
       {!opts.record && !started && (
@@ -628,7 +629,7 @@ export default function Present({ engine, onExit }) {
               <span aria-hidden="true">{playing ? '❚❚' : '▶'}</span> {playLabel(playing, lang)}
             </button>
           )}
-          <span className="pr-slideno-n" aria-label={`${tx(UI.slide)} ${index + 1} / ${beats.length}`}>{index + 1} / {beats.length}</span>
+          <span className="pr-slideno-n" role="status" aria-label={`${tx(UI.slide)} ${index + 1} / ${beats.length}`}>{index + 1} / {beats.length}</span>
         </div>
       )}
       {waiting && !still && <p className="pr-wait">{tx(UI.loading)}</p>}

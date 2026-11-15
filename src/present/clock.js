@@ -92,9 +92,11 @@ export function trackValue(track, t) {
 }
 
 /**
- * Fade for something shown from `from` to `to` seconds (to may be undefined: until the beat ends), 0.6 s in and out.
+ * Fade for something shown from `from` to `to` seconds, 0.6 s in and out. With no `to` it stays for as long as the beat
+ * is up: a beat held past its length (the last beat, or any beat after a manual takeover) keeps its words on screen.
  */
-export function showValue(show, t, duration) {
-  const [from, to = duration + 1] = show;
-  return easeOut(ramp(t, from, from + 0.6)) * (1 - ramp(t, to - 0.6, to));
+export function showValue(show, t) {
+  const [from, to] = show;
+  const fadeIn = easeOut(ramp(t, from, from + 0.6));
+  return to === undefined ? fadeIn : fadeIn * (1 - ramp(t, to - 0.6, to));
 }

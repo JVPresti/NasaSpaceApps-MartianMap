@@ -96,8 +96,8 @@ describe('presentation beats', () => {
     expect(BEATS.at(-1).cta?.en).toBeTruthy();
   });
 
-  it('tells the story in order: where, the stakes, the idea, the app, how we know', () => {
-    const order = ['open', 'stakes', 'zone', 'radiation', 'demo', 'close'].map((id) => BEATS.findIndex((b) => b.id === id));
+  it('follows the talk\'s slides in order: where, the route, the zone, the alert, the app, how we know, who we are', () => {
+    const order = ['open', 'plan', 'zone', 'radiation', 'demo', 'sources', 'close'].map((id) => BEATS.findIndex((b) => b.id === id));
     expect(order.every((i) => i >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
@@ -125,31 +125,39 @@ describe('the presentation story', () => {
     expect(live.at(-1).cta).toBeTruthy();
   });
 
-  it('plays the recorded demo between the radiation beat and the close', () => {
+  it('plays the recorded demo between the radiation beat and the sources', () => {
     const ids = sequence('full').map((b) => b.id);
     expect(ids.indexOf('demo')).toBe(ids.indexOf('radiation') + 1);
-    expect(ids.indexOf('close')).toBe(ids.indexOf('demo') + 1);
+    expect(ids.indexOf('sources')).toBe(ids.indexOf('demo') + 1);
+    expect(ids.indexOf('close')).toBe(ids.indexOf('sources') + 1);
     const demo = BEATS.find((b) => b.id === 'demo');
     expect(demo.video.src).toMatch(/\.mp4$/);
     expect(captionsOf(demo).length).toBeGreaterThan(0);   // the fallback if the file fails
   });
 
-  it('fits the 4:00 limit: 100 s of beats around the demo video, so a 135 s cut ends the talk at 3:55', () => {
-    const beats = sequence('full');
-    const total = beats.reduce((a, b) => a + b.duration, 0);
-    const demo = beats.find((b) => b.id === 'demo');
-    expect(total - demo.duration).toBe(100);
-    expect(total).toBeGreaterThanOrEqual(165);
-    expect(total).toBeLessThanOrEqual(237);   // 4:00 less 3 s, the room for the Play press and a slow handover
-    expect(sequence('full')).toHaveLength(6);   // one beat per slide
+  it('fits the 4:00 limit: about 3:25 on autoplay, at most 3:40, so a manual takeover still ends under 4:00', () => {
+    const total = sequence('full').reduce((a, b) => a + b.duration, 0);
+    expect(total).toBeGreaterThanOrEqual(195);
+    expect(total).toBeLessThanOrEqual(220);
+    expect(sequence('full')).toHaveLength(7);   // one beat per slide of the talk
   });
 
-  it('opens with one fall from orbit, then states the stakes', () => {
-    const [open, stakes] = sequence('full');
+  it('opens with one fall from orbit, then prices the route and names the slope limit', () => {
+    const [open, route] = sequence('full');
     expect(open.start).toBeTruthy();
-    expect(stakes.id).toBe('stakes');
-    expect(captionsOf(stakes).map((c) => c.en).join(' ')).toMatch(/nobody can come and get you/);
-    expect(stakes.chips.map((c) => c.tag)).toEqual(['SIM', 'SIM']);   // NASA planning limits our suit model applies, not measurements (CONTEXT.md realism rules)
+    expect(route.id).toBe('plan');
+    expect(route.scene.route).toBe(true);
+    expect(route.chips.every((c) => c.tag === 'DERIVED')).toBe(true);
+    expect(route.chips.some((c) => /O2/.test(c.text.en))).toBe(true);
+    expect(route.chips.some((c) => /slopeNoGoDeg/.test(c.text.en))).toBe(true);
+  });
+
+  it('shows a measured, a derived and a simulated number, and the terrain check, before the references', () => {
+    const sources = BEATS.find((b) => b.id === 'sources');
+    expect(new Set(sources.chips.map((c) => c.tag))).toEqual(TAGS);
+    expect(sources.chips.some((c) => c.big === '{trek.rmsM} m')).toBe(true);
+    // none on the close: its references panel would cover them
+    expect(BEATS.find((b) => b.id === 'close').chips ?? []).toHaveLength(0);
   });
 
   it('uses the app\'s radiation figures: 29.9 µGy/h peak, 10 µGy/h background', () => {
@@ -162,9 +170,9 @@ describe('the presentation story', () => {
     const { entries, pages, perPage } = BEATS.find((b) => b.id === 'close').references;
     const text = entries.join('\n');
     for (const name of ['HiRISE DTM', 'context camera', 'MEDA', 'RAD', 'DONKI', 'Smith', 'Norcross', 'Hurowitz', 'Mars Trek', 'THEMIS', 'Viking', 'Apollo 17', 'EVA-EXP-0042']) expect(text).toContain(name);
-    // docs/pitch/sources-apa.md carries the same entries, in the same order
+    // docs/pitch/sources-apa.md carries the same entries, in the same order (a Windows checkout has CRLF line ends)
     const doc = readFileSync(new URL('../../docs/pitch/sources-apa.md', import.meta.url), 'utf8');
-    const docEntries = doc.split('\n').filter((l) => /\((\d{4}[a-z]?|n\.d\.(-[a-z])?)(, [A-Z][a-z]+ \d+)?\)\. /.test(l));
+    const docEntries = doc.split(/\r?\n/).filter((l) => /\((\d{4}[a-z]?|n\.d\.(-[a-z])?)(, [A-Z][a-z]+ \d+)?\)\. /.test(l));
     expect(docEntries).toEqual(entries);
     for (const e of entries) expect(e, e).toMatch(/\((\d{4}[a-z]?|n\.d\.)(, [A-Z][a-z]+ \d+)?\)\. .+ https:\/\/\S+$/);
     // APA order: by the author names alone ('NASA' before 'NASA Community', 'Norcross, J.' before 'Norcross, J. R.')
@@ -175,7 +183,10 @@ describe('the presentation story', () => {
   });
 
   it('closes on the team, the app\'s address and a QR code to it, with no email', () => {
-    const { team } = BEATS.find((b) => b.id === 'close');
+    const { team, references, duration } = BEATS.find((b) => b.id === 'close');
+    // the team comes after the last page of references, with time left in the beat, and has no end (clock.js showValue)
+    expect(references.pages.at(-1)[1]).toBeLessThanOrEqual(team.at);
+    expect(duration - team.at).toBeGreaterThanOrEqual(8);
     expect(team.people.split(' · ')).toEqual(['Teresa Rivas Gómez', 'Andrea Rivas Gómez', 'Fernando Haro Calvo', 'Jorge Antonio Vazquez Guzmán', 'Antonio Ramos Gonzalez', 'Brayan Iván Pérez Ventura']);
     expect(team.people).not.toMatch(/@/);
     expect(team.url).toBe('https://martian-map.fernando-haro-c.workers.dev');
