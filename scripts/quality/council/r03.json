@@ -1,0 +1,52 @@
+{
+ "round": "r03",
+ "before": "scripts/quality/out/c02",
+ "after": "scripts/quality/out/c03",
+ "states": [
+  "walk-storm"
+ ],
+ "judges": {
+  "j1": {
+   "walk-storm": {
+    "new": "B"
+   }
+  },
+  "j2": {
+   "walk-storm": {
+    "new": "A"
+   }
+  },
+  "j3": {
+   "walk-storm": {
+    "new": "B"
+   }
+  }
+ },
+ "change": "c03 Walk alert under the heading tape, instruction in Barlow Condensed 20 px, surface fill with alert-colour border; source note and skipped list behind I",
+ "issue": 284,
+ "personas": {
+  "j1": "opus a Space Apps judge",
+  "j2": "opus b HUD designer",
+  "j3": "fable c first-time player"
+ },
+ "verdicts": {
+  "j1": {
+   "walk-storm": "new",
+   "why": "the instruction reads first, panel clears the compass; wants a small severity readout"
+  },
+  "j2": {
+   "walk-storm": "new",
+   "why": "return instruction is the largest text, compact and clear of the tape; wants the skipped line back as one short line"
+  },
+  "j3": {
+   "walk-storm": "new",
+   "why": "danger and instruction in one glance; lost that the storm cancelled the remaining stops"
+  }
+ },
+ "decision": "keep",
+ "reason": "3 of 3 prefer it for hierarchy and placement; all three name the skipped-stops consequence as lost, so the next banner attempt restores it as one line",
+ "next_asks": [
+  "one short line: stops skipped and shelter distance",
+  "severity readout tau"
+ ]
+}

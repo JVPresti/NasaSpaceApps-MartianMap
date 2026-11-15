@@ -434,8 +434,10 @@ try {
       };
     });
     result.states[s.name] = { screenshot: file, facts, ...m };
+    const stopAfter = ONLY && ONLY.every((n) => result.states[n]);
     const miss = Object.entries(m.required).filter(([, v]) => !v).map(([k]) => k);
     log(`${s.name.padEnd(14)} overlap ${String(m.overlap).padStart(6)}  off ${m.offscreen}  tiny ${String(m.tinyText).padStart(3)}  lowC ${String(m.lowContrast).padStart(3)}  hud ${String(m.hudCount).padStart(2)}  drift ${m.styleDrift.count}${miss.length ? '  MISSING ' + miss.join(',') : ''}`);
+    if (stopAfter) break;   // the states after the last one asked for are not needed
   }
   if (DRAW) {
     result.draw = await drawStats(page, base);
