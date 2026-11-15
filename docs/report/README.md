@@ -8,7 +8,7 @@ The report the team hands the local judges, in the same section order as our 202
 | `report.html` | Print layout in the app's fonts and colours (#232), A4. Generated |
 | `Marswalk-Report.pdf` | The PDF to hand in, rendered from `report.html`. Generated |
 | `Marswalk-Report.docx` | The same content for Google Docs. Generated |
-| `img/` | Screenshots from the running app (#282 at `8ec6f72`, merged into `main` as `cfcf299`, and open #290 for the habitat and airlock), the architecture diagram and the Mars Trek check |
+| `img/` | Screenshots from the running app (#282 at `8ec6f72`, merged into `main` as `cfcf299`), the architecture diagram and the Mars Trek check |
 | `tools/` | The build: `build.py` (Markdown to HTML and DOCX, index page numbers, footers), `render.mjs` (HTML to PDF, diagram to PNG), `template.html`, `architecture.html` |
 
 ## Before handing it in

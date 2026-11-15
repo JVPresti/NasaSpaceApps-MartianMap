@@ -15,7 +15,7 @@ App: https://martian-map.fernando-haro-c.workers.dev
 | Teresa Rivas Gómez | UI/UX and 3D art | [email] |
 | Andrea Rivas Gómez | Graphics, effects and audio [confirm] | [email] |
 | Fernando Haro Calvo | Full stack and data | [email] |
-| Jorge Antonio Vazquez Guzmán | Backend and analyst: route planner and events | [email] |
+| Jorge Antonio Vazquez Guzmán | Backend and analyst, route planner and events | [email] |
 | Antonio Ramos Gonzalez | Full stack | [email] |
 | Brayan Iván Pérez Ventura | App, 3D engine and suit model [confirm] | [email] |
 
@@ -52,281 +52,247 @@ Statement and background copied from the challenge page on spaceappschallenge.or
 
 ### Why did we choose this challenge?
 
-In 1971 Apollo 15's planners capped every rover drive at the distance the crew could walk back, with a 20 % oxygen pad, and Apollo 17 kept 30 minutes of every consumable in reserve. On Mars there is no GPS, and a radio call to Earth takes 4 to 24 minutes one way. Nobody on Earth can answer "can I still make it back?" in time, so the crew must answer it from the terrain, the suit and the weather.
+On Mars, nobody can come and get you. A radio call to Earth takes 4 to 24 minutes each way and there is no GPS, so the crew has to know at every step whether it can still walk home. Marswalk is a map that shows where the astronaut can go and still get home.
 
-The statement asks for a map at the scale of one spacewalk, and we wanted it to answer the walkback question. Mars Trek shows a slope. It does not say the slope ahead costs 129 g of oxygen per kilometre against 40 g on the flat, and each of those numbers has a NASA source we could check. NASA's SEXTANT already plans slope-aware routes. We wanted the walk home to be what the crew sees, recomputed when an event hits.
+NASA has planned this way before. Apollo 15's planners sized every excursion by the walk back to the lander, with a 20 % pad on the walking effort, and Apollo 17 held 30 minutes of every suit consumable in reserve. The challenge asks for a map at the scale of one spacewalk, and we wanted it to carry Apollo's rule. Mars Trek shows a slope. It does not say what the slope costs in oxygen, or whether the walk home still fits after a storm arrives. Marswalk says both.
 
-We also wanted a reason to walk. Cheyava Falls, in Jezero crater, is the rock where Perseverance found what NASA called a potential biosignature in 2025, a strong candidate for the first human sample. So our astronaut walks there.
+We also wanted a reason to walk. Cheyava Falls, in Jezero crater, is the rock where Perseverance found what NASA called in 2025 a potential biosignature. The finding is potential and unconfirmed, which makes the rock a strong candidate for a first human sample. Our astronaut walks there.
 
 ## Project overview
 
-Marswalk is a planning map and a walking test for one marswalk on real terrain. The astronaut leaves a habitat in Neretva Vallis, walks to Cheyava Falls and the Bright Angel outcrop, takes a sample and walks home, on a 1.4 by 1.5 km tile of the HiRISE terrain model NASA and USGS made to land Perseverance.
+Marswalk is a planning map and a first-person walking test for one marswalk on real terrain. The astronaut leaves a habitat in Neretva Vallis, walks to the Bright Angel outcrop and Cheyava Falls, takes a sample and walks home. The ground is a 1.4 by 1.5 km tile of the HiRISE terrain model that USGS built for Perseverance's landing.
 
-At a mission table the crew sees the site with six data layers and Perseverance's 47 real drives, and sets its needs: goal, crew of one or two, time, oxygen, battery and risk. The planner builds a route, costs every leg in minutes and grams of oxygen and gives a go or no-go. Then the astronaut walks it in first person. A dust storm and a replay of a 2017 solar particle event break the plan and send the crew to shelter. A debrief judges the walked route against the plan.
+At a mission table, the crew sets its goal, size, time, oxygen, battery and risk. The planner builds a route, prices every leg in minutes and grams of oxygen and gives a go or no-go. Then the astronaut walks the route in first person, in a browser, in English or Spanish. A dust storm and a replay of a 2017 solar particle event break the plan and send the crew to shelter.
 
-Every number on screen carries a tag. DATA means a NASA mission measured it or a NASA document states it, DERIVED means we calculated it from DATA, and SIM means we assumed it.
+Every number on screen carries one of three tags, used here too. DATA means a NASA mission measured it or a NASA document states it. DERIVED means we calculated it from DATA. SIM means we assumed it.
 
 ## Problem statement
 
 A Mars EVA plan has to answer one question at every step. How far can the astronaut go and still get home with the reserve intact? Four facts make that hard.
 
-1. Slope costs oxygen. In our suit model, 1 km of flat walking burns 40 g of oxygen and 1 km along a 20° slope burns 129 g, from a 771 g tank.
-2. NASA rates its exploration suit for slopes up to 20°. Mars Trek shows slope but does not route around steeper ground.
-3. Conditions change mid-walk. A 2022 dust storm over Jezero raised the optical depth from about 0.3 to about 2, and a 2017 solar particle event tripled the dose rate Curiosity measured.
-4. Mars has no navigation satellites and no usable compass.
+1. Slope costs oxygen. In our suit model, 1 km of flat ground costs 40 g of oxygen. One kilometre up a 20° slope costs about 140 g, because the walker slows from 1.0 to 0.3 m/s to hold the same effort (DERIVED). The tank holds 771 g (DATA).
+2. NASA's exploration EVA concept rates suited walking for slopes up to 20°. Mars Trek shows slope but plans no route around steeper ground.
+3. Conditions change during a walk. Perseverance watched a 2022 dust storm over Jezero raise the optical depth from about 0.3 to about 2. Curiosity measured dose rates two to three times the background during a 2017 solar particle event.
+4. Mars has no navigation satellites and no global magnetic field to steer a compass.
 
-The data exists across HiRISE, MEDA, RAD, DONKI and NASA's suit reports. We found no tool that recomputes the walk home from it as the astronaut moves.
+The data sits in separate archives: HiRISE, MEDA, RAD, DONKI and NASA's suit reports. We found no tool that combines them to recompute the walk home as the astronaut moves.
 
 ## Proposed solution
 
-Marswalk turns the walkback question into one number. On the table it is the go or no-go and the margin at the end of the plan. In the helmet it is MARGIN NOW, the minutes left after the walk home and the 30-minute reserve.
+Marswalk answers the question at the three moments a crew needs it.
 
-1. **A walkability map from HiRISE.** Every 2 m cell gets a cost from slope and rock cover, and ground over 20° is closed. A planner finds the cheapest route, and a suit model turns each leg into minutes, grams of oxygen and watt-hours.
-2. **A mission table that plans from the crew's needs.** Goal, crew, time, oxygen, battery and risk decide which stops fit. A solo astronaut must keep radio contact, so the planner picks the radio route.
-3. **A walk that tests the plan.** The helmet shows oxygen, the margin, the next waypoint, slope ahead, radio and position error. Events replay NASA records and re-plan to shelter.
+**Before the walk, a go or no-go.** The planner finds the cheapest route to the stops that fit the crew's needs. A suit model prices each leg and the walk home, then says go or no-go and names the tightest limit.
+
+**During the walk, a margin.** The helmet shows MARGIN NOW, the minutes left after the walk home and the 30-minute reserve.
+
+**When conditions change, a way to shelter.** A storm or a radiation alert starts a new search for the cheapest route to shelter, priced like the first one.
+
+### The return zone
+
+The same calculation, run for every cell of the map, draws the ground the astronaut can reach and still get home. On our tile, oxygen does not set the edge of that zone. The fastest route to Cheyava Falls is 913 m and costs 45 g of oxygen out and 62 g home with the pad, 14 % of the tank (DERIVED). The reserve on time sets the edge. The first sortie plans 30 minutes and holds 15 % of them back, which leaves 25.5 usable minutes, and every minute of work at the stop shrinks the zone.
+
+In our presentation scenario the zone covers 32.4 ha at the airlock and 14.3 ha after 13 minutes outside. When the radiation alert leaves 210 seconds to reach shelter, the zone falls to 1.1 ha, all of it toward home. We computed those areas with the app's cost grid and suit model, on a SIM clock. The presentation shows the zone today, and the live mission table is next.
 
 ### What is new
 
-- The map prices each metre in oxygen, from NASA suited tests at Mars gravity, and reprices it when an event hits.
-- A crew of one gets a different plan from a crew of two, because a solo astronaut works 1.5 times as long at each stop (Image 2.5).
-- Every number links to its mission, instrument and reference, and we publish the ones our audit found wrong (Appendix A).
-- Position drifts without GPS and resets on a terrain fix, which a dust storm takes away.
-- The debrief prices every detour from the plan in seconds and grams and gives it a verdict.
+- The map prices ground in oxygen, from NASA suited tests in simulated Mars gravity, and reprices the way home when an event hits.
+- A solo astronaut must keep radio contact and works 1.5 times as long at each stop, so a crew of one gets a different route and fewer stops than a crew of two.
+- Every number links to its mission, instrument and reference, and we publish the ones our own audit found wrong (Appendix A).
 
 ## Technical implementation
 
 ### Architecture
 
-Marswalk is a static web app that runs entirely in the browser. Offline tools turn NASA archives into small data files once. In the browser the code has four layers, each depending only on those below it: the interface, the mission state, the simulation and the 3D engine.
+Marswalk is a static web app, and the browser does all the computing. Offline tools turn NASA archives into small data files once. The code has four layers: interface, mission state, simulation and 3D engine.
 
 ![Image 1.1. System architecture.](img/architecture.png)
 
 *Image 1.1. System architecture.*
 
-### Frontend
-
-The app is JavaScript on Vite 8 and React 19, with three.js drawing the terrain, astronaut, habitat, sky and dust. One Blender scene produces both the terrain mesh and the planner's height grid, so the astronaut walks on the same ground the planner costs. The engine picks a graphics tier from the measured frame rate, so the app runs on integrated GPUs. It works with keyboard, mouse, touch and gamepad, in English and Spanish, and synthesizes every suit sound in code.
-
 ### Simulation
 
-The simulation has no graphics code, so it runs in background threads and in automated tests.
+**Routes.** Every 2 m cell gets a cost that rises with slope and rock cover, and cells over 20° are closed. A shortest-path search finds the cheapest route and prices three profiles: fastest, gentlest and most radio contact. A re-plan to shelter took 34 ms or less from five test positions on our development machine (measured).
 
-**Routes.** Cost rises with slope and rock cover, and cells over 20° are closed. An A* search finds the cheapest route off the main thread, and an emergency re-plan takes under 50 ms. The same search prices three profiles: fastest, gentlest and in radio contact. When an event hits, it prices a route to every reachable shelter and keeps the cheapest.
+**Suit model.** The suit follows NASA's xEMU design, with 771 g of usable oxygen, a 756 Wh battery and an 8-hour limit (DATA). Walking effort comes from published slope walking tests, scaled to Mars gravity and calibrated to NASA suited tests (DERIVED). The walk home gets Apollo 15's 20 % pad, and the margin keeps Apollo 17's 30-minute reserve. We model oxygen and battery only, though on Mars the suit's CO2 removal or cooling could end a walk first.
 
-**Suit model.** The suit follows NASA's xEMU design: 771 g of usable oxygen, a 756 Wh battery and an 8-hour limit. Walking power comes from slope walking tests, scaled to Mars gravity and calibrated to NASA suited tests. The walk home gets Apollo 15's 20 % pad, and the margin keeps Apollo 17's 30-minute reserve. MARGIN NOW is the smaller of the oxygen margin and the time left before the 8-hour limit. It raises a caution under 15 minutes and a warning at zero. We model only oxygen and battery, though on Mars the suit's CO2 removal or cooling could end a walk first.
+**Two margins.** The app shows two margins that measure different things. The Suit step gives the oxygen left at the end of the plan, in minutes over the 30-minute reserve. The helmet's MARGIN NOW is the smaller of the oxygen margin at the current work rate and the time left on the 8-hour suit limit, each after the walk home. Outside the airlock the 8-hour limit is the smaller, so the two screens read different numbers for the same plan. We quote neither here, and one definition for both is first in our future work.
 
-**Events.** Each event is a data definition with a trigger, a timeline, an alert and an optional re-plan, and the same inputs start it at the same moment on every computer. The dust storm raises optical depth from Jezero's clear 0.45 to 8.0, the 2018 global storm value, and re-plans to the habitat. The radiation alert replays 10 September 2017, when Curiosity saw the dose rate rise 224 minutes after the flare, to about three times background. The game compresses that 57-hour event into minutes and says so. Low oxygen warns under a 15-minute margin.
+**Dust storm.** Optical depth rises from 0.45, the clear-season value Perseverance's Mastcam-Z measured at Jezero, to 8.0, which Curiosity recorded at Gale crater in the 2018 global storm. The peak is DATA from Gale, not Jezero. The rise is SIM, 90 seconds in the full EVA and 30 in the first sortie, where a real storm builds over hours.
 
-**Navigation, radio and shelters.** Position error grows with distance walked and resets after 5 s standing still. Radio is line of sight to the habitat mast. Natural shelters are cells that see less sky, and the habitat is the only full one.
+**Radiation alert.** The alert replays the solar particle event of 10 September 2017 as Curiosity's RAD measured it at Gale crater. No instrument has measured surface radiation at Jezero, and the app says so beside each value. Three dose rates appear on screen, each measuring something different. Outside the event the helmet reads 8.75 µGy/h, the 0.210 mGy/day background from Hassler et al. 2014. The alert banner opens at 10.0 µGy/h, the rate before the 2017 event, and the hazard card quotes its peak, 29.9 µGy/h. Those two come from Zeitlin et al. 2018 and a different RAD detector. The app plays the 57-hour event in 12 minutes, or 1 minute in the first sortie (SIM).
 
-**EV2 and route review.** The second astronaut walks the approved route with the player, waits when they stop, sets the sample case down at a stop, closes in during the storm and leads to shelter in the radiation alert. It radios these moves only with line of sight to the astronaut. After the walk, any stretch more than 15 m off the plan counts as a detour and gets a verdict: risky, forced, worth it or costly.
+**Navigation, radio and shelters.** Position error grows by 2 % of the distance walked and resets after 5 seconds standing still, while the dust is thin enough to see the terrain (SIM). Perseverance has fixed its position by matching camera views to orbital maps since February 2026. Radio is line of sight to the habitat mast. Natural shelters are cells that see less sky, and the habitat is the only full shelter.
+
+**EV2 and route review.** The second astronaut walks the route with the player, carries the sample case, closes in during the storm and leads to shelter in the radiation alert. EV2 radios only with line of sight to the player. After the walk, any stretch more than 15 m off the plan gets a verdict: risky, forced, worth it or costly.
 
 ### Data processing
 
-Offline scripts crop and convert several gigabytes of NASA downloads into small files. Every value keeps its mission, instrument, product and sol.
+Every value keeps its mission, instrument, product and sol.
 
 | Data | NASA source | What we built |
 |---|---|---|
-| Terrain | HiRISE DTM for Mars 2020, 1 m | 1.4 × 1.5 km crop on a 2 m grid |
+| Terrain | HiRISE terrain model for Mars 2020, 1 m | 1.4 × 1.5 km crop on a 2 m grid |
 | Ground photo | HiRISE orthomosaic, 25 cm | Texture, outcrop mask, Image layer |
-| Horizon | CTX DEM and mosaic | A 12 km ring of distant terrain |
 | Rover drives | Mars 2020 traverse | 47 drives, sols 1140 to 1266 |
 | Weather | Mars 2020 MEDA | Sol 1187 pressure and temperature |
 | Radiation | MSL RAD and DONKI | Background dose and the 2017 curve |
 | Suit | xEMU and xEVA documents, Apollo reports, NASA suited tests | 75 values: 57 DATA, 7 DERIVED, 11 SIM |
 | Science | Mastcam-Z, NASA Photojournal, Hurowitz et al. 2025 | Stop cards and the rock model |
 
-The six layers are Image, Terrain (slope and contours), Rocks (a brightness proxy for rock cover), Outcrop, Radio (mast shadow) and Exposure (sky view). Each legend names the decision it drives. We dropped a THEMIS thermal layer, which covers the tile with 15 × 15 pixels, and a geologic map that sat 100 to 200 m off our terrain.
+The six layers are Image, Terrain, Rocks, Outcrop, Radio and Exposure, and each legend names the decision it drives. Rocks is image brightness, a proxy for rock cover. We dropped two layers that would have misled: a THEMIS thermal layer that covers the whole tile with 15 × 15 pixels, and a geologic map offset 100 to 200 m from our terrain.
 
-**Checking the terrain.** Across all 564,001 grid points, our terrain differs from the HiRISE model NASA Mars Trek serves by 0.14 m RMS, and 97.3 % share a slope class. That proves our processing reproduces the USGS model, not that the model is true.
+**Checking the terrain.** Across all 564,001 grid points, our terrain differs from the HiRISE model that NASA Mars Trek serves by 0.14 m RMS, and 97.3 % of points share a slope class (measured). That proves our processing reproduces the USGS model. It does not prove the model is true.
 
 ![Image 1.2. Our slope classes (left), Mars Trek's (middle) and the 2.7 % that differ (right).](img/mars-trek-check.jpg)
 
 *Image 1.2. Our slope classes (left), Mars Trek's (middle) and the 2.7 % that differ (right).*
 
-### Deployment
+### App and hosting
 
-Cloudflare Workers serves the app as static files on the free plan. Every accepted change deploys in about a minute, and every proposed change gets a preview link. Online play, with one Cloudflare Durable Object per room, is in development and not in the live app.
-
-### Presentation mode
-
-The talk runs inside the app. One camera move falls from a Viking globe of Mars onto the HiRISE terrain at Cheyava Falls. Ten beats cover where, why, the danger, the route, the walkback zone, the radiation alert, the storm and how we know. In the alert the walkback zone shrinks from 14.3 ha to 1.1 ha, computed by the app's own planner.
-
-### Technologies used
-
-JavaScript, React 19, Vite 8, three.js, Zustand, Web Workers, Web Audio API, Vitest, oxlint, Blender, Node.js, Python, Cloudflare Workers and Durable Objects, GitHub Actions.
+The app is JavaScript on React and three.js. One Blender scene produces both the terrain mesh and the planner's height grid, so the astronaut walks on the same ground the planner prices. The engine picks a graphics tier from the measured frame rate, so the app runs on integrated graphics, with keyboard, mouse, touch or gamepad. Cloudflare Workers serves it as static files on the free plan.
 
 ## Results
 
-Every screenshot comes from the running app at 1366 × 768, and some screens have changed since. The first mission is a 55 m sortie with the storm and the radiation alert brought forward, so a player reaches the debrief in about 3.5 minutes. Walking speed and the clock stay real, and the shortened event times are tagged SIM.
+Every screenshot comes from the running app on 15 November 2026. The full EVA walks to Cheyava Falls. The first sortie is a 55 m walk with the storm and the radiation alert brought forward, so a player reaches the debrief in about 3 minutes at real walking speed.
 
-![Image 2.1. Start screen.](img/01-start.jpg)
+![Image 2.1. Mission table, Site step.](img/02-site.jpg)
 
-*Image 2.1. Start screen.*
+*Image 2.1. Mission table, Site step.*
 
-The start screen offers the first sortie and the full EVA to Cheyava Falls, 913 m from the habitat by the route. Its video is SI-generated artwork, labelled as such.
+The table has four steps: Site, Route, Hazards and Suit. Site places Cheyava Falls 785 m from the habitat and shows Perseverance's image of the rock.
 
-![Image 2.2. Mission table, Site step.](img/02-site.jpg)
+![Image 2.2. Route step with the Terrain layer, goal "Sample Cheyava Falls", cautious risk.](img/03-route-terrain.jpg)
 
-*Image 2.2. Mission table, Site step.*
+*Image 2.2. Route step with the Terrain layer, goal "Sample Cheyava Falls", cautious risk.*
 
-The table has four steps: Site, Route, Hazards and Suit. Site places Cheyava Falls 785 m from the habitat, with Perseverance's image of the rock.
+For a cautious pair with 2 hours, the route is 0.94 km and 55 minutes out, 35 of them working at the two stops. It bends around the red ground over 20°, and time is the tightest limit, with 14 minutes to spare.
 
-![Image 2.3. Route step with the Terrain layer, goal "Sample Cheyava Falls", cautious risk.](img/03-route-terrain.jpg)
+![Image 2.3. Radio layer with a crew of one.](img/06-layer-radio.jpg)
 
-*Image 2.3. Route step with the Terrain layer, goal "Sample Cheyava Falls", cautious risk.*
+*Image 2.3. Radio layer with a crew of one.*
 
-For a cautious pair with 2 hours, the route is 0.94 km and 55 minutes out. It bends around the red ground over 20°, and time is the tightest limit, with 14 minutes to spare.
-
-| | |
-|---|---|
-| ![Image 2.4a. Rocks layer.](img/04-layer-rocks.jpg) | ![Image 2.4b. Outcrop layer.](img/05-layer-outcrop.jpg) |
-
-*Image 2.4. Rocks layer (left) and Outcrop layer (right).*
-
-![Image 2.5. Radio layer with a crew of one.](img/06-layer-radio.jpg)
-
-*Image 2.5. Radio layer with a crew of one.*
-
-With one astronaut the planner takes the radio route, out of contact for 21 % of its length against 76 % on the fastest line, and drops Bright Angel as "5 min over your time".
+With one astronaut the planner takes the radio route, out of contact for 21 % of its length against 76 % on the fastest line. It drops Bright Angel and says why: "5 min over your time".
 
 | | |
 |---|---|
-| ![Image 2.6a. Exposure layer.](img/07-layer-exposure.jpg) | ![Image 2.6b. Perseverance's drives.](img/08-layer-rover.jpg) |
+| ![Image 2.4a. Exposure layer.](img/07-layer-exposure.jpg) | ![Image 2.4b. Perseverance's drives.](img/08-layer-rover.jpg) |
 
-*Image 2.6. Exposure layer (left) and Perseverance's drives (right).*
+*Image 2.4. Exposure layer (left) and Perseverance's drives (right).*
 
-Exposure picks the shelter in a re-plan, because dose scales with visible sky. The white lines are Perseverance's drives, which a cautious plan prefers.
+Exposure picks the shelter in a re-plan. A cautious plan prefers the white lines, Perseverance's 47 drives.
 
 | | |
 |---|---|
-| ![Image 2.7a. Plan A: solo, cautious, 100 minutes.](img/09-plan-a.jpg) | ![Image 2.7b. Plan B: pair, bold, 2 hours.](img/10-plan-b.jpg) |
+| ![Image 2.5a. Plan A, solo, cautious, 100 minutes.](img/09-plan-a.jpg) | ![Image 2.5b. Plan B, pair, bold, 2 hours.](img/10-plan-b.jpg) |
 
-*Image 2.7. Two plans from different needs.*
+*Image 2.5. Two plans from different needs.*
 
 A cautious solo crew with 100 minutes walks 0.88 km to one stop. A bold pair with 2 hours walks 0.91 km to both.
 
-![Image 2.8. Route profiles, gentlest selected.](img/11-profiles.jpg)
+| | |
+|---|---|
+| ![Image 2.6a. Cheyava Falls stop card.](img/12-card.jpg) | ![Image 2.6b. Sample taken.](img/22-sample.jpg) |
 
-*Image 2.8. Route profiles, gentlest selected.*
+*Image 2.6. Cheyava Falls stop card (left) and sampling at a stop (right).*
 
-Here the three profiles stay within 0.1 km and 4 g of oxygen, so radio contact separates them.
+Each stop card shows Perseverance's images, so the astronaut knows what to expect on arrival.
 
-![Image 2.9. Cheyava Falls stop card.](img/12-card.jpg)
+![Image 2.7. Hazards step.](img/13-hazards.jpg)
 
-*Image 2.9. Cheyava Falls stop card.*
+*Image 2.7. Hazards step.*
 
-![Image 2.10. Hazards step.](img/13-hazards.jpg)
+Each hazard card names the real event behind it and says its numbers come from Gale crater, not Jezero.
 
-*Image 2.10. Hazards step.*
+![Image 2.8. Suit step with the conditions outlook and the go decision.](img/14-suit-go.jpg)
 
-Each hazard card names the real event behind it, and says when its numbers come from Gale crater, not Jezero.
+*Image 2.8. Suit step with the conditions outlook and the go decision.*
 
-![Image 2.11. Suit step with the conditions outlook and the go decision.](img/14-suit-go.jpg)
+The first sortie is a Go. It spends 5 g of oxygen out, and time is the tightest limit with 21 minutes to spare.
 
-*Image 2.11. Suit step with the conditions outlook and the go decision.*
+![Image 2.9. Walk HUD.](img/17-walk.jpg)
 
-The first sortie is a Go, with 21 minutes to spare and +285 minutes of oxygen margin over the reserve.
+*Image 2.9. Walk HUD.*
+
+The helmet shows oxygen, MARGIN NOW, EV2, the next waypoint, the slope ahead, weather, dose and position error, each with its tag.
 
 | | |
 |---|---|
-| ![Image 2.12. Habitat cabin with the table prompt.](img/15-habitat.jpg) | ![Image 2.13. Airlock before Begin EVA.](img/16-airlock.jpg) |
+| ![Image 2.10a. Wrist screen.](img/18-wrist.jpg) | ![Image 2.10b. Slope grid.](img/19-slope-grid.jpg) |
 
-*Image 2.12. Habitat cabin (left). Image 2.13. Airlock before Begin EVA (right).*
+*Image 2.10. Wrist screen (left) and slope grid on the ground (right).*
 
-A version in development starts inside a habitat built on NASA's Habitat Demonstration Unit, with an airlock cycle. It is not live yet.
+The slope grid paints the planner's 15° and 20° limits on the ground ahead.
 
-![Image 2.14. Walk HUD.](img/17-walk.jpg)
+![Image 2.11. Marking a find off the route.](img/20-find.jpg)
 
-*Image 2.14. Walk HUD.*
-
-MARGIN NOW reads +479 min outside the airlock, where the 8-hour limit sets it. The helmet also shows EV2, the next waypoint, a minimap, weather, dose and position error.
-
-| | |
-|---|---|
-| ![Image 2.15. Wrist screen.](img/18-wrist.jpg) | ![Image 2.16. Slope grid.](img/19-slope-grid.jpg) |
-
-*Image 2.15. Wrist screen (left). Image 2.16. Slope grid on the ground (right).*
-
-The wrist holds the map, layers and sampling checklist. The slope grid shows the planner's 15° and 20° limits on the ground.
-
-![Image 2.17. Marking a find off the route.](img/20-find.jpg)
-
-*Image 2.17. Marking a find off the route.*
+*Image 2.11. Marking a find off the route.*
 
 The planner prices a detour to a marked rock in seconds, grams and margin, and the crew decides.
 
 | | |
 |---|---|
-| ![Image 2.18a. Science stop.](img/21-stop.jpg) | ![Image 2.18b. Sample taken.](img/22-sample.jpg) |
+| ![Image 2.12a. Dust storm on the walk.](img/23-storm-walk.jpg) | ![Image 2.12b. Dust storm re-plan on the table.](img/24-storm-plan.jpg) |
 
-*Image 2.18. Science stop (left) and sampling (right).*
+*Image 2.12. Dust storm in the helmet (left) and its re-plan on the mission table (right).*
+
+The storm re-plans the route to the habitat, 54 m away in this run.
 
 | | |
 |---|---|
-| ![Image 2.19a. Dust storm on the walk.](img/23-storm-walk.jpg) | ![Image 2.19b. Dust storm re-plan on the table.](img/24-storm-plan.jpg) |
+| ![Image 2.13a. Radiation alert.](img/25-radiation.jpg) | ![Image 2.13b. EV2 brings the sample case.](img/26-ev2.jpg) |
 
-*Image 2.19. Dust storm in the helmet (left) and its re-plan on the mission table (right).*
-
-The storm re-plans the route to the habitat, 54 m away. Fifteen seconds in, optical depth reads 2.34.
-
-![Image 2.20. Radiation alert.](img/25-radiation.jpg)
-
-*Image 2.20. Radiation alert.*
+*Image 2.13. Radiation alert (left) and EV2 bringing the sample case (right).*
 
 The radiation alert follows the 2017 dose curve and marks the habitat, 45 m away, as shelter.
 
-![Image 2.21. EV2 brings the sample case.](img/26-ev2.jpg)
-
-*Image 2.21. EV2 brings the sample case.*
-
 | | |
 |---|---|
-| ![Image 2.22a. Debrief.](img/27-debrief.jpg) | ![Image 2.22b. Route review.](img/28-review.jpg) |
+| ![Image 2.14a. Debrief.](img/27-debrief.jpg) | ![Image 2.14b. Route review.](img/28-review.jpg) |
 
-*Image 2.22. Debrief with the route review (left) and the verdict rules (right).*
+*Image 2.14. Debrief with the route review (left) and the verdict rules (right).*
 
-The debrief gives 3 min 37 s outside, 171 m walked, 2 samples and a lowest margin of +224 min. The review judged the detour to the find "worth it", at +20 s and +1 g of oxygen.
+This run took 3 min 37 s outside, 171 m and 2 samples. The review judged the detour to the find "worth it", at +20 s and +1 g of oxygen over the plan.
 
-![Image 2.23. Sources screen.](img/29-sources.jpg)
+![Image 2.15. Sources screen.](img/29-sources.jpg)
 
-*Image 2.23. Sources screen.*
+*Image 2.15. Sources screen.*
 
-The Sources screen lists 62 sources with credits and licences, built from the same records as the tags.
+The Sources screen lists every dataset, paper, model and library with its credit and licence.
 
 ## Impact and relevance
 
-**Impact.** An EVA planner picks a route and calls go or no-go (Images 2.8 and 2.11). The astronaut decides when to turn back from one number that updates every step (Image 2.14). A teacher in Ensenada can run a Mars EVA in a browser, in Spanish, with no install, though no class has used it yet. The pipeline takes any HiRISE terrain model, and we have run it on one site.
+**Impact.** An EVA planner calls go or no-go from the crew's own limits (Image 2.8). The astronaut decides when to turn back from one number that updates at every step (Image 2.9). A teacher in Ensenada can run a Mars EVA in a browser, in Spanish, though no class has used it yet. The data tools accept any HiRISE terrain model, and so far we have run them on one site.
 
-**Creativity.** Mars Trek answers "what is here?". Marswalk answers "can I get there and back on what is in my tank?", and asks again at every step.
+**Creativity.** Mars Trek answers "what is here?". Marswalk answers "can I get there and back?", and asks again at every step.
 
-**Validity.** We checked 109 numbers on screen against their primary sources and publish the result (Appendix A). Our terrain reproduces the model NASA Mars Trek serves to 0.14 m RMS. The app has no live data, no Earth-Mars delay and no radiation measured at Jezero, and we say so.
+**Validity.** We checked 109 numbers on screen against their primary sources and publish the result, errors included (Appendix A). Our terrain reproduces the model NASA Mars Trek serves to 0.14 m RMS. The app has no live data and no radiation measured at Jezero, and it says so on screen.
 
-**Relevance.** The statement asks for a layered view of one route from several NASA missions. Marswalk has a science goal, optical and terrain layers, weather and radiation on the HUD, space weather and dust events, NASA suit limits, habitat and helmet displays, rover images and a crew of two. Two parts are partial. Weather and radiation are not map layers, and rock cover is a proxy, so the route avoids steep ground but not single boulders.
+**Relevance.** Marswalk is a layered view of one route built from several NASA missions. It has a science goal, optical and terrain layers, weather and radiation in the helmet, dust and space weather events, NASA suit limits, displays for habitat, helmet and wrist, rover images at each stop and a crew of two. Two parts are partial. Weather and radiation are not map layers, and rock cover is a brightness proxy, so the route avoids steep ground but not single boulders.
 
-**Presentation.** The team gives a talk of at most 4 minutes [confirm: the organisers' page still says 3 minutes], in the app's presentation mode, with an edited video of the app in place of a live demo. The script for the 4-minute cut is [confirm]. The talk opens on one thesis: "On Mars, the question isn't where you can go. It's where you can go and still get home."
+**Presentation.** The team gives a talk of at most 4 minutes [confirm: the organisers' page still says 3 minutes], with a recorded video of the app in the presentation in place of a live demo. The script for the 4-minute cut is [confirm]. The app's presentation mode supplies the opening, one camera move from a Viking globe of Mars down to the HiRISE terrain at Cheyava Falls. The thesis comes first: "On Mars, the question isn't where you can go. It's where you can go and still get home."
 
 ## Future work
 
-1. Fix what our audit found, starting with the profile's no-go slope, the Sun's angle and the radiation tags.
-2. Draw the walkback zone on the live map.
-3. Finish online play, with a surface crew and a habitat seat per room.
-4. Feed a heart rate sensor into the suit model.
-5. Run the pipeline on Curiosity's boxwork terrain at Mount Sharp, the challenge's own example.
+1. Give the Suit step and the helmet one margin definition.
+2. Draw the return zone on the live mission table.
+3. Fix what our audit found, starting with the elevation profile's slope limit, the Sun's angle and the radiation tags.
+4. Replace the rock proxy with mapped rocks, so the route avoids boulders.
+5. Start the walk inside the habitat with an airlock cycle, and finish online play with a surface crew and a habitat seat. Both are in development and not in the live app.
+6. Run the data tools on a second site, starting with Curiosity's route at Mount Sharp.
 
 ## Team contributions
 
-**Teresa Rivas Gómez (UI/UX and 3D art).** Teresa built the 3D world in Blender: the HiRISE terrain tile, the rigged Z-2 astronaut, the habitat and the layered Bright Angel outcrop. She kept the terrain mesh and the planner's grid in step, designed the HUD and mission table in Figma, built the table and the start, pause and sources screens, and generated the start video and hazard art.
+**Teresa Rivas Gómez, UI/UX and 3D art.** Teresa built the 3D world in Blender, with the HiRISE terrain tile, the Z-2 astronaut, the habitat and the Bright Angel outcrop. She designed the HUD and the mission table and built the table, start, pause and sources screens.
 
-**Andrea Rivas Gómez (graphics, effects and audio) [confirm role].** Andrea made the graphics and sound follow the simulation. She drew the route on the ground, built the dust storm and the Sun and sky that follow mission time, and added boot prints, the slope grid and the habitat wall screens. She wrote all the suit audio in code.
+**Andrea Rivas Gómez, graphics, effects and audio [confirm role].** Andrea drew the route on the ground and built the dust storm, the Sun and sky that follow mission time, the boot prints, the slope grid and the habitat wall screens. She wrote all the suit audio in code.
 
-**Fernando Haro Calvo (full stack and data).** Fernando set up hosting and researched the sourced suit, dust and radiation numbers. He wrote the weather and radiation pipelines, the shelters, the per-leg budget and the science stops, checked the terrain against Mars Trek, and built the source tags, the audit, EV2's behaviour and the presentation mode. He leads online play and the habitat start.
+**Fernando Haro Calvo, full stack and data.** Fernando set up hosting and researched the suit, dust and radiation numbers. He wrote the weather and radiation pipelines, the shelters and the science stops, checked the terrain against Mars Trek, and built the source tags, the audit, EV2's behaviour and the presentation mode.
 
-**Jorge Antonio Vazquez Guzmán (backend and analyst: route planner and events).** Jorge wrote the walkability grid, the route planner, the shelter re-plan and the event engine, then the storm, radiation and low-oxygen events. He added off-route re-planning, the elevation profile, the radio layer and navigation drift, and dropped the geologic map after measuring it against our terrain.
+**Jorge Antonio Vazquez Guzmán, backend and analyst for the route planner and events.** Jorge wrote the walkability grid, the route planner, the shelter re-plan and the event engine, then the storm, radiation and low-oxygen events, the radio layer and navigation drift.
 
-**Antonio Ramos Gonzalez (full stack).** Antonio built the tests and automatic checks, loading, the mission clock in Mars time, the minimap, the start screen and menus, the English and Spanish interface, the debrief, the wrist screen, and touch and gamepad controls.
+**Antonio Ramos Gonzalez, full stack.** Antonio built the automatic checks, the mission clock in Mars time, the minimap, the menus, the English and Spanish interface, the debrief, the wrist screen, and touch and gamepad controls.
 
-**Brayan Iván Pérez Ventura (app, 3D engine and suit model) [confirm role].** Brayan wrote the implementation plan and set up the app, its mission state and graphics tiers. He wrote the suit model and walkback margin, the first-person walk, the helmet HUD, sampling and collisions, the route profiles, the rover drives, the first mission, planning from the crew's needs and the walked-route review.
+**Brayan Iván Pérez Ventura, app, 3D engine and suit model [confirm role].** Brayan set up the app, its mission state and graphics tiers. He wrote the suit model and walkback margin, the first-person walk, the helmet HUD, sampling, the route profiles, the first sortie, planning from the crew's needs and the walked-route review.
 
 ## References
 
@@ -400,7 +366,7 @@ three.js, React and Zustand (MIT). Barlow, Barlow Condensed and IBM Plex Mono (S
 
 ### Appendix A. Measured versus simulated
 
-Every number in Marswalk carries one of three tags. We checked 109 of them against their primary sources.
+On 15 November 2026 we checked 109 numbers shown in Marswalk against their primary sources.
 
 | Verdict | Count |
 |---|---|
@@ -411,43 +377,44 @@ Every number in Marswalk carries one of three tags. We checked 109 of them again
 | Wrong on screen | 2 |
 | Not verified, because the publisher blocked the paper | 3 |
 
-The main values behind the walkback number:
+The two wrong numbers are the elevation profile, which turns red above 25° where the planner says 20°, and the Sun's height, drawn for the wrong season.
+
+The main values behind the walk home:
 
 | Value | We use | Tag |
 |---|---|---|
 | No-go slope | 20° | DATA |
 | Usable oxygen | 771 g | DATA |
-| EVA length | 8 h | DATA |
 | 1 km flat at 1.0 m/s | 40 g of oxygen | DERIVED |
-| 1 km along 20° at 0.5 m/s | 129 g of oxygen | DERIVED |
+| 1 km up 20° at 0.3 m/s | About 140 g of oxygen | DERIVED |
 | Walking speed on the flat | 1.0 m/s, where NASA plans at 0.56 m/s | SIM |
-| Route cost weights | Our choice | SIM |
 | Walk home pad | 20 % | DATA |
 | Reserve | 30 min | DATA |
-| Margin caution and warning | 15 min and 0 min | SIM |
-| Clear and storm optical depth | 0.45 and 8.0 | DATA |
-| Storm onset | 90 s, where a real one takes up to a sol | SIM |
-| Background dose rate | 0.210 mGy/day, Gale crater | DATA |
-| 2017 event, flare to dose rise | 224 min | DERIVED |
-| 2017 event peak | 3 times background | DATA |
+| Clear-season optical depth | 0.45, Jezero | DATA |
+| Storm optical depth | 8.0, Gale crater, 2018 | DATA |
+| Storm rise | 90 s, or 30 s in the first sortie | SIM |
+| Background dose rate | 0.210 mGy/day (8.75 µGy/h), Gale crater | DATA |
+| 2017 event, before and peak | 10.0 and 29.9 µGy/h, Gale crater, checked against the abstract only | DATA |
+| 2017 event, length in the app | 12 min, or 1 min in the first sortie, for 57 h | SIM |
 | Position drift and terrain fix | 2 % of distance, 5 s standing still | SIM |
+| Return zone areas | 32.4, 14.3 and 1.1 ha | SIM |
 
-Marswalk does not model CRISM, a geology map, the Earth-Mars delay, live data or radiation measured at Jezero.
+Marswalk has no live data, no Earth-Mars delay and no radiation measured at Jezero.
 
 ### Appendix B. Use of SI (AI) tools
 
 We built Marswalk with SI tools and checked their output ourselves.
 
-- **Code.** AI coding agents wrote most of the code from tasks we wrote. Changes went in as pull requests with automatic checks, and teammates reviewed some of them.
-- **Research.** AI agents found the NASA reports and papers behind our numbers and ran the audit of 109 numbers, which we reviewed.
+- **Code.** AI coding agents wrote most of the code from tasks we wrote. Every change passed automatic checks, and teammates reviewed part of them.
+- **Research.** AI agents found the NASA reports and papers behind our numbers and ran the audit, which we reviewed.
 - **Writing.** Language models helped write the documentation, the Spanish translation and this report.
-- **Images and video.** The start screen video and the hazard illustrations were generated with Higgsfield. They are artwork, not mission images, carry no NASA marks and are credited as AI-generated. [confirm: say whether each now carries a visible "SI-generated" watermark]
-- **Ideation.** One of us worked through the challenge choice and the concept with a conversational assistant on 13 November.
-- **Inside the app.** No SI model runs in Marswalk. The data are NASA measurements, the route planner is a shortest-path search and the suit model is a formula.
+- **Images and video.** We generated the start screen video and the hazard illustrations with an SI tool. They are artwork, not mission images, carry no NASA marks and are credited as AI-generated. [confirm: say whether each now carries a visible "SI-generated" watermark]
+- **Ideation.** One of us worked through the challenge choice and the concept with a conversational assistant.
+- **Inside the app.** No SI model runs in Marswalk. The route planner is a shortest-path search and the suit model is a formula.
 
 ### Appendix C. Prior work [confirm after the local lead answers]
 
-On 12 and 13 November, before the event, Teresa prepared 3D assets: the terrain tile, the rigged Z-2 suit, the habitat, two props and a three.js test scene. We chose the challenge and concept on 13 November. We wrote everything else during the event.
+On 12 and 13 November, before the event, Teresa prepared 3D assets: the terrain tile, the rigged Z-2 suit, the habitat, two props and a test scene. We chose the challenge and concept on 13 November. We wrote everything else during the event.
 
 ### Appendix D. Links
 
