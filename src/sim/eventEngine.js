@@ -128,8 +128,9 @@ function validateThreshold(threshold, field, errors) {
 
 // A trigger's `requires` entry (#265): a store threshold that has held for `forSec` seconds; a place the position has
 // reached, at least `forSec` seconds ago (latched: leaving it again changes nothing); the position within `nearEndM`
-// metres of the event's own end area (held while it is there); another event that started at least `afterSec` seconds
-// ago; or `anyOf`, a list of which one is enough.
+// metres of the event's own end area (held while it is there); at least `atLeast` entries of a store list with x and z
+// inside an area (`inArea`, for example samples taken at a stop), held for `forSec`; another event that started at
+// least `afterSec` seconds ago; or `anyOf`, a list of which one is enough.
 function validateForSec(requirement, field, errors) {
   if (requirement.forSec !== undefined && (!isFiniteNumber(requirement.forSec) || requirement.forSec < 0)) {
     errors.push(`${field}.forSec must be a finite number of seconds >= 0`)
@@ -152,6 +153,16 @@ function validateRequirement(requirement, field, errors) {
   if (requirement.nearEndM !== undefined) {
     if (!isFiniteNumber(requirement.nearEndM) || requirement.nearEndM < 0) {
       errors.push(`${field}.nearEndM must be a finite number of metres >= 0`)
+    }
+    validateForSec(requirement, field, errors)
+    return
+  }
+  if (requirement.inArea !== undefined) {
+    if (!validatePath(requirement.path)) errors.push(`${field}.path must be a non-empty dot path`)
+    if (!isPlainObject(requirement.inArea)) errors.push(`${field}.inArea must be an object`)
+    else validateArea(requirement.inArea, `${field}.inArea`, errors)
+    if (requirement.atLeast !== undefined && (!Number.isInteger(requirement.atLeast) || requirement.atLeast < 1)) {
+      errors.push(`${field}.atLeast must be a whole number >= 1`)
     }
     validateForSec(requirement, field, errors)
     return
@@ -380,6 +391,11 @@ function compare(value, op, threshold) {
   return false
 }
 
+/** How many entries of a store list have a finite x and z inside the area. */
+function countInArea(list, area) {
+  return Array.isArray(list) ? list.filter((entry) => isInsideArea(area, entry)).length : 0
+}
+
 function thresholdPasses(threshold, store) {
   return compare(store.get(threshold.path), threshold.op, threshold.value)
 }
@@ -488,7 +504,8 @@ export function createEventEngine(options) {
     }
     const holds = requirement.nearEndM !== undefined
       ? isInsideArea({ x: definition.end.x, z: definition.end.z, radius: definition.end.radius + requirement.nearEndM }, position)
-      : thresholdPasses(requirement, store)
+      : requirement.inArea !== undefined ? countInArea(store.get(requirement.path), requirement.inArea) >= (requirement.atLeast ?? 1)
+        : thresholdPasses(requirement, store)
     if (!holds) state.since.delete(requirement)
     else if (!state.since.has(requirement)) state.since.set(requirement, missionTimeSec)
   }

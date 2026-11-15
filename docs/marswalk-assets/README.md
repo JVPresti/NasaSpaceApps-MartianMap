@@ -88,7 +88,8 @@ so the GPU check now starts AMD integrated graphics on Low. On High, walking stu
   the hazard illustrations (AI-generated with Higgsfield, not mission images).
 - Modelled / estimated: rock positions (statistical model, not individual real rocks), rock shapes and close-up
   textures (Earth scans), the Cheyava Falls rock (hand-made after NASA PIA26401), the layered outcrop at Bright Angel
-  (hand-made in the style of the Mastcam-Z images of sol 1217, not a copy of a specific rock), rock-abundance layer.
+  (hand-made in the style of the Mastcam-Z images of sol 1217, not a copy of a specific rock), the rock-abundance layer
+  (tagged DERIVED: HiRISE brightness through the Golombek et al. 2003 model, an estimate of rock cover, not a rock count).
 - Real spot for the "dangerous slope" scene: about 200 m west of Cheyava Falls (x -201, z -52), 34 deg average.
 - There is no mesa overhang in this area; elevation data cannot contain overhangs.
 

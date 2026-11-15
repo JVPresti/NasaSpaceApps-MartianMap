@@ -100,3 +100,14 @@ describe('table durations', () => {
     expect(eventWhen(null)).toBeNull();
   });
 });
+
+describe('round 3 wording', () => {
+  it('names a stop\'s role in the plan before its work (D13)', () => {
+    expect(stopLine({ workSec: 900, role: 'goal' })).toBe('Goal · 15 min work');
+    expect(stopLine({ workSec: 1200, role: 'on the way, fits your time' })).toBe('On the way, fits your time · 20 min work');
+  });
+
+  it('says when a profile has no walkable route (N5)', () => {
+    expect(planReasonLines([{ code: 'profile-unreachable', profile: 'gentlest' }])).toEqual(['No walkable route on the Gentlest profile.']);
+  });
+});

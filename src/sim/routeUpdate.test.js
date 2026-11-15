@@ -34,6 +34,22 @@ describe('planned route writer', () => {
     expect(store.getState().sources['route.etaSec'].tag).toBe('SIM');
   });
 
+  it('keeps the stops a hazard skipped: only Re-plan at the table brings them back (D12)', () => {
+    const store = memoryStore();
+    applyPlannedRoute(store, result, { reason: 'Off route: new route from your position' });
+    expect(store.getState().route.skipped).toEqual(['WP1']);
+  });
+
+  it('stores the kind of the change with the path it belongs to, whatever the language of the reason (B2)', () => {
+    const store = memoryStore();
+    applyPlannedRoute(store, result, { reason: 'Desvío: pendiente superior a 20° más adelante', kind: 'slope' });
+    expect(store.getState().route.changeKind).toEqual({ kind: 'slope', path: result.path });
+    expect(store.getState().route.changeKind.path).toBe(store.getState().route.path);
+    // A writer that names no kind clears it, so an older kind cannot stay on a new route.
+    applyPlannedRoute(store, { ...result, path: [[0, 0], [5, 5]] }, { reason: 'Off route: new route from your position' });
+    expect(store.getState().route.changeKind).toBeNull();
+  });
+
   it('keeps the old path on failure and records the reason', () => {
     const store = memoryStore();
     expect(applyPlannedRoute(store, { ok: false, detail: 'no path' }, { reason: 'Detour' })).toBe(false);

@@ -100,7 +100,7 @@ describe('missionEventDefinitions', () => {
     const [placed] = missionEventDefinitions('sortie', [dustStorm], { stops: STOPS });
     expect(placed.trigger.requires[0]).toEqual({ area: STOPS[FIRST_STOP] });
     expect(placed.trigger.requires[1].anyOf).toEqual([
-      { path: 'sampling.count', op: 'gte', value: 1, forSec: 3 },
+      { path: 'sampling.samples', inArea: { ...STOPS[FIRST_STOP], radius: STOPS[FIRST_STOP].radius + 2 }, atLeast: 1, forSec: 3 },
       { area: STOPS[FIRST_STOP], forSec: 90 },
       { nearEndM: 10 },
     ]);

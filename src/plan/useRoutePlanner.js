@@ -4,7 +4,7 @@ import { HAZARDS_PATH } from '../data/provenance.js';
 import { routeStopCandidates, STOPS_PATH } from '../data/stops.js';
 import { parseTraverse, TRAVERSE_PATH } from '../data/traverse.js';
 import { heightAt } from '../sim/costGrid.js';
-import { startConsumables } from '../sim/legCosts.js';
+import { startConsumables, waypointsForCosts } from '../sim/legCosts.js';
 import { riskPricing, siteStart } from '../sim/missionNeeds.js';
 import { mastKey, profileSources, summariseProfiles } from '../sim/routeProfiles.js';
 import { createRoutePlannerClient } from '../sim/routePlannerClient.js';
@@ -12,7 +12,8 @@ import { SHELTERS_PATH } from '../sim/shelters.js';
 import { suitConstantsFromHazards } from '../sim/suitModel.js';
 import { useMissionStore, withRouteProfile } from '../state/store.js';
 import {
-  afterNeedsPlan, afterWaypointPlan, createLatestOnly, decidePlan, emptyPlannerMemory, needsPlanKey, needsPlanPending, plansFromNeeds,
+  afterNeedsPlan, afterWaypointPlan, alertRouteActive, createLatestOnly, decidePlan, emptyPlannerMemory, needsPlanKey, needsPlanPending,
+  plansFromNeeds, resumeStops,
 } from './plannerState.js';
 import { ROUTE_SOURCES, waypointKey } from './routePlan.js';
 import { startAtAirlock } from './routeStart.js';
@@ -182,6 +183,7 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
       enabled, ready: Boolean(site && client), fromNeeds, needs, profile: chosenProfile, nonce, mastId,
       waypointsKey: waypointKey(waypoints), waypointCount: waypoints.length,
       findsRouteKey: useMissionStore.getState().finds?.routeKey ?? null,
+      sheltered: alertRouteActive(useMissionStore.getState().route, useMissionStore.getState().alerts),
     }, memoryRef.current);
     memoryRef.current = decision.memory;
 
@@ -218,9 +220,9 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
         return schedule(needsJob(decision.key));
       case 'plan-waypoints':
         planning();
-        return schedule(waypointsJob(decision.planId, false));
+        return schedule(waypointsJob(decision.planId, false, decision.resume === true));
       case 'refresh-mast':
-        return schedule(waypointsJob(decision.planId, true));
+        return schedule(waypointsJob(decision.planId, true, false));
       default:
         return undefined;
     }
@@ -268,7 +270,8 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
 
     // The waypoints as they stand, once the EVA has begun (or when stops.json gave nothing to choose from). mastOnly:
     // the mast arrived for the route already on the table; refresh the comparison and keep the route being walked.
-    function waypointsJob(planId, mastOnly) {
+    // resume: the plan answers Re-plan, so the stops an event left out come back (D12).
+    function waypointsJob(planId, mastOnly, resume) {
       const planned = waypoints;
       // The EVA keeps the risk pricing and the consumables of the needs it started with.
       const options = { mast, pricing: riskPricing(needs.risk), traverse: site?.traverse ?? null, constants: constantsRef.current };
@@ -279,7 +282,10 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
         failed: (error) => { if (!mastOnly) failed(error); },   // a failed refresh leaves the route on the table as it is
         done: (result) => {
           if (!aliveRef.current) return;
-          const profiles = summariseProfiles(result, planned, heightAtRef.current, constantsRef.current, start);
+          // no work counted again at the stops already reached during the EVA (N6, as route.totals)
+          const now = useMissionStore.getState().route;
+          const costed = waypointsForCosts({ ...now, waypoints: planned, skipped: resume ? [] : now.skipped });
+          const profiles = summariseProfiles(result, costed, heightAtRef.current, constantsRef.current, start);
           if (mastOnly) {
             useMissionStore.setState((store) => {
               const current = store.route;
@@ -299,10 +305,13 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
             return;
           }
           useMissionStore.setState((store) => {
+            if (alertRouteActive(store.route, store.alerts)) return store;   // an event's route came in meanwhile: keep it (B1)
             const base = { ...store.route, profiles };
             const chosen = store.route.profile;
             const use = soloRadio && profiles.radio?.ok ? 'radio' : chosen;
-            const route = keepWalkProgress(routeOnProfile(base, use, chosen) ?? routeOnProfile(base, 'fastest', chosen), store.route, store.needs?.locked === true);
+            const evaBegun = store.needs?.locked === true;
+            const kept = keepWalkProgress(routeOnProfile(base, use, chosen) ?? routeOnProfile(base, 'fastest', chosen), store.route, evaBegun);
+            const route = resumeStops(kept, resume && evaBegun);
             return { route, sources: { ...store.sources, ...ROUTE_SOURCES, ...sourcesRef.current } };
           });
           setState({ status: 'ready', error: null });

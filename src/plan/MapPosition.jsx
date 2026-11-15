@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { drawPositionMarker, markerState } from '../hud/positionMarker.js';
-import { toMap } from './mapLayers.js';
+import { drawMapPosition } from './mapLayers.js';
 
 // The crew's position on the mission table map during the EVA (#265): the HUD's own marker with its uncertainty ring
-// (src/hud/positionMarker.js, as the Plan map and the minimap draw it), on a canvas over the map. It repaints only when
-// the position, the view or the map's size changes; the position comes in as a prop, never read per frame.
+// (src/hud/positionMarker.js, as the Plan map and the minimap draw it), on a canvas over the map, without the HUD's
+// text label (mapLayers.drawMapPosition). It repaints only when the position, the view or the map's size changes; the
+// position comes in as a prop, never read per frame.
 
 /**
  * @param {{ position: { x: number, z: number, errorM?: number | null, headingDeg?: number | null, fixMode?: string | null } | null,
@@ -31,9 +31,7 @@ export default function MapPosition({ position, crop }) {
     canvas.height = Math.round(size.h * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, size.w, size.h);
-    const toScreen = (x, z) => { const [u, v] = toMap(x, z, crop); return { x: (u / 100) * size.w, y: (v / 100) * size.h }; };
-    const marker = markerState(position, toScreen);
-    if (marker) drawPositionMarker(ctx, marker);
+    drawMapPosition(ctx, position, crop, size);
   }, [position, crop, size]);
 
   return <canvas ref={canvasRef} className="table-map-position" aria-hidden="true" />;

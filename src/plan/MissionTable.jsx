@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getLanguage, t, translateText } from '../i18n/index.js';
+import { formatNumber, getLanguage, t, translateText } from '../i18n/index.js';
 import { useShallow } from 'zustand/react/shallow';
 import { HAZARDS_PATH } from '../data/provenance.js';
 import { imageUrl, stopForWaypoint, stopReason } from '../data/stops.js';
@@ -28,6 +28,7 @@ import { decisionFor, liveSuitStatus, startSuitStatus, tightestText } from './de
 import { planLimits } from './limits.js';
 import { suitConstantsFromHazards } from '../sim/suitModel.js';
 import { eventRouteOf, shelterLabel } from './eventRoute.js';
+import { distanceLeft, planLegTo, remainingPlan } from './planProgress.js';
 import NeedsPanel from './NeedsPanel.jsx';
 import OutlookStrip from './OutlookStrip.jsx';
 import { droppedWhy, planReasonLines, stopLine } from './routeWhy.js';
@@ -160,7 +161,7 @@ function Big({ value, unit, label, tone, title }) {
  * @param {{ waypoints: Array<object>, legs: Array<object>, explain?: Array<object>, dropped?: Array<object> }} props
  *   explain and dropped: route.explain and route.dropped, empty when an event re-plan replaced the planned route
  */
-function Stops({ waypoints, legs, explain = [], dropped = [], planStops = [] }) {
+function Stops({ waypoints, legs, explain = [], dropped = [], planStops = [], planLegs = null, done = null }) {
   const stops = useStops();
   const language = getLanguage();
   return (
@@ -169,13 +170,21 @@ function Stops({ waypoints, legs, explain = [], dropped = [], planStops = [] }) 
         const [code, label] = stopLabel(waypoint, k);
         const stop = stopForWaypoint(stops, waypoint.name);
         const science = stopHasContent(stop);
-        const leg = k > 0 ? legs[k - 1] : null;
-        const distance = k === 0 ? t('table.stop.start') : Number.isFinite(leg?.distanceM) ? `${Math.round(leg.distanceM)} m` : '';
-        const line = k > 0 ? stopLine({ workSec: leg?.workSec ?? waypoint.workSec, explain: explain[k - 1] }) : null;
+        // During the EVA the legs are the approved plan's (eva.plan.legs), and a stop reached or skipped says so in place of
+        // a distance (A1): the current route's legs are whatever path is left, split at the plan's waypoints.
+        const leg = k > 0 ? (planLegs ? planLegTo(planLegs, waypoint.name) : legs[k - 1]) : null;
+        const state = k > 0 && done ? (done.reached.includes(waypoint.name) ? 'reached' : done.skipped.includes(waypoint.name) ? 'skipped' : null) : null;
+        const distance = k === 0 ? t('table.stop.start')
+          : state === 'reached' ? t('table.stop.reached') : state === 'skipped' ? t('table.event.skipped')
+            : Number.isFinite(leg?.distanceM) ? `${Math.round(leg.distanceM)} m` : '';
+        // the goal of the walk, or a stop kept because it fits the crew's time (D13: route.stops[].required)
+        const planned = k > 0 ? planStops.find((entry) => entry.id === waypoint.stopId) : null;
+        const role = planned ? t(planned.required ? 'table.stop.goal' : 'table.stop.fits') : null;
+        const line = k > 0 && !state ? stopLine({ workSec: leg?.workSec ?? waypoint.workSec, explain: explain[k - 1], role }) : null;
         // why the stop is worth the walk, when stops.json says (D10: the sortie's light-toned patch), tagged SIM
-        const reason = k > 0 ? stopReason(planStops.find((entry) => entry.id === waypoint.stopId), language) : null;
+        const reason = k > 0 && !state ? stopReason(planned, language) : null;
         return (
-          <li key={k} className={science ? 'science' : undefined}>
+          <li key={k} className={[science ? 'science' : '', state === 'skipped' ? 'dropped' : state === 'reached' ? 'reached' : ''].join(' ').trim() || undefined}>
             <code>{code}</code>
             {science ? (
               <button type="button" className="table-stop-name" title={t('table.open.science.card')} onClick={() => toggleWaypoint(waypoint.name)}>{label}</button>
@@ -210,7 +219,7 @@ function Stops({ waypoints, legs, explain = [], dropped = [], planStops = [] }) 
  * when the event ends.
  * @param {{ event: ReturnType<typeof eventRouteOf> }} props
  */
-function EventStops({ event, waypoints }) {
+function EventStops({ event, waypoints, leftM = null }) {
   const [code, name] = shelterLabel(event.shelter);
   return (
     <ol className="table-stops">
@@ -222,7 +231,8 @@ function EventStops({ event, waypoints }) {
       <li className="event">
         <code>{code}</code>
         <span className="table-stop-name">{t('table.event.shelter', { name: sentence(translateText(name)) })}</span>
-        <span className="table-stop-dist">{Number.isFinite(event.distanceM) ? `${Math.round(event.distanceM)} m` : ''}</span>
+        {/* what is left from where the crew is (Q3), else the route's length when it was planned */}
+        <span className="table-stop-dist">{Number.isFinite(leftM ?? event.distanceM) ? `${Math.round(leftM ?? event.distanceM)} m` : ''}</span>
         {event.alertText && <small className="table-stop-why">{translateText(event.alertText)}</small>}
       </li>
       {event.skipped.map((stop) => {
@@ -282,6 +292,7 @@ function Stack({ parts, label }) {
 function BudgetPanel({ totals, metrics, limits, budget }) {
   const tot = totals;
   const minutes = (sec) => Math.round(sec / 60);
+  const outMin = (sec) => Math.ceil(sec / 60);   // the time out rounded up, as on the Route step (Q14)
   const time = limits?.time ?? null;
   const parts = tot ? [[tot.timeSec, 'out'], [tot.roundTrip ? 0 : tot.returnTimeSec, 'back']] : [];
   if (time && budget) parts.push([Math.max(0, time.spareSec), 'spare'], [budget.reserveSec ?? 0, 'reserve']);
@@ -291,7 +302,7 @@ function BudgetPanel({ totals, metrics, limits, budget }) {
       <p className="table-label">{t('table.budget.title')}</p>
 
       <div className="budget-row">
-        <div className="budget-head"><span>{t('table.time')}</span><b>{tot ? minutes(tot.timeSec) : metrics.time.value}<small>{t('table.budget.min.out')}</small></b></div>
+        <div className="budget-head"><span>{t('table.time')}</span><b>{tot ? outMin(tot.timeSec) : metrics.time.value}<small>{t('table.budget.min.out')}</small></b></div>
         {tot && (
           <Stack
             parts={parts}
@@ -300,7 +311,7 @@ function BudgetPanel({ totals, metrics, limits, budget }) {
         )}
         {tot && (
           <p className="budget-key">
-            <i className="seg-out" />{tot.workSec > 0 ? t('table.budget.key.out.work', { min: minutes(tot.timeSec), work: shortDuration(tot.workSec) }) : t('table.budget.key.out', { min: minutes(tot.timeSec) })}{' '}
+            <i className="seg-out" />{tot.workSec > 0 ? t('table.budget.key.out.work', { min: outMin(tot.timeSec), work: shortDuration(tot.workSec) }) : t('table.budget.key.out', { min: outMin(tot.timeSec) })}{' '}
             <i className="seg-back" />{tot.roundTrip ? t('table.budget.key.round.trip') : t('table.budget.key.back', { min: minutes(tot.returnTimeSec) })}{' '}
             {time && budget && (time.ok
               ? <><i className="seg-spare" />{t('table.budget.key.spare', { min: minutes(time.spareSec) })}{' '}</>
@@ -468,6 +479,25 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
   const position = evaBegun && Number.isFinite(crewAt.x) && Number.isFinite(crewAt.z) ? crewAt : null;
   // The approved plan, drawn thin under an event's route so the route home reads apart from it (eva.plan, #274).
   const planPath = useMissionStore((s) => s.eva?.plan?.path ?? null);
+  // During the EVA (A1): the approved plan's legs, the stops reached or skipped, and whether the crew is back home.
+  const evaProgress = useMissionStore(useShallow((s) => ({
+    planLegs: s.eva?.plan?.legs ?? null, visited: s.route.visited ?? [], skipped: s.route.skipped ?? [], atHabitat: s.eva?.atHabitat === true,
+  })));
+  const done = evaBegun ? { reached: evaProgress.visited, skipped: evaProgress.skipped } : null;
+  const remaining = evaBegun && !event && evaProgress.planLegs ? remainingPlan(evaProgress.planLegs, waypoints, [...evaProgress.visited, ...evaProgress.skipped]) : null;
+  // During an event, what is left of the route to the shelter from where the crew is (Q3).
+  const leftM = event ? distanceLeft(route.path, position) : null;
+  // The Route card: what remains of the plan during the EVA, what is left to the shelter during an event, else the
+  // planned route. Minutes are rounded up everywhere, as on the Suit step (Q14).
+  const upMin = (sec) => (Number.isFinite(sec) && sec > 0 ? String(Math.ceil(sec / 60)) : '–');
+  const cardMetrics = remaining
+    ? {
+      distance: remaining.count ? formatNumber(remaining.distanceM / 1000, 2) : '–', time: remaining.count ? upMin(remaining.timeSec) : '–',
+      climb: remaining.count ? `+${Math.round(remaining.climbM)}` : '–', steepest: Number.isFinite(remaining.steepestDeg) ? String(Math.round(remaining.steepestDeg)) : '–',
+    }
+    : event && Number.isFinite(leftM) && Number.isFinite(route.distanceM) && route.distanceM > 0
+      ? { distance: formatNumber(leftM / 1000, 2), time: upMin((route.etaSec ?? 0) * (leftM / route.distanceM)), climb: metrics.climb.value, steepest: metrics.steepest.value }
+      : { distance: metrics.distance.value, time: metrics.time.value, climb: metrics.climb.value, steepest: metrics.steepest.value };
   const objective = useMissionStore((s) => s.needs.objective);
   const needs = useMissionStore(useShallow((s) => ({ crew: s.needs.crew, o2Pct: s.needs.o2Pct, batteryPct: s.needs.batteryPct })));
   const dust = useDustAgainstLimit();
@@ -488,7 +518,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
   const noGo = !decision.go && decision.reason !== 'planning';
   const said = (r) => (soloRadio && r.code === 'solo-radio') || r.code === 'fits' || r.code === 'required-over';
   // a no-go keeps one reason: the stops fit on another profile (the way out the profile buttons offer)
-  const reasonLines = planCurrent ? planReasonLines((route.planReasons ?? []).filter((r) => !said(r) && (!noGo || r.code === 'profile-over'))) : [];
+  const reasonLines = planCurrent ? planReasonLines((route.planReasons ?? []).filter((r) => !said(r) && (!noGo || r.code === 'profile-over' || r.code === 'profile-unreachable'))) : [];
   const whyLines = planCurrent && !noGo && limits?.tightest ? [tightestText(limits.tightest), ...reasonLines] : reasonLines;
   // The plan being approved, in one line (P9): goal · crew · profile.
   const planLine = t('table.plan.line', {
@@ -576,8 +606,9 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
               {/* the work at each stop (SIM) and why each leg bends (DERIVED) */}
               {!event && <span><SourceTag path="route.legs.workSec" requireSource={false} /><SourceTag path="route.explain" requireSource={false} /></span>}
             </div>
-            {event ? <EventStops event={event} waypoints={waypoints} /> : (
-              <Stops waypoints={waypoints} legs={route.legs ?? []} explain={planCurrent ? route.explain ?? [] : []} dropped={planCurrent ? route.dropped ?? [] : []} planStops={planCurrent ? route.stops ?? [] : []} />
+            {event ? <EventStops event={event} waypoints={waypoints} leftM={leftM} /> : (
+              <Stops waypoints={waypoints} legs={route.legs ?? []} explain={planCurrent ? route.explain ?? [] : []} dropped={planCurrent ? route.dropped ?? [] : []}
+                planStops={planCurrent ? route.stops ?? [] : []} planLegs={evaBegun ? evaProgress.planLegs : null} done={done} />
             )}
           </div>
           <div className="table-panel">
@@ -612,25 +643,33 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           <div className="table-panel">
             <div className="table-panel-head">
               <p className="table-label">{t('table.tab.route')}</p>
-              <button type="button" className="table-link" onClick={planner.replan} disabled={planner.status === 'planning'}>
+              {/* no re-plan through the stops while an event's route leads to a shelter (B1) */}
+              <button type="button" className="table-link" onClick={planner.replan} disabled={planner.status === 'planning' || Boolean(route.shelter)}>
                 {planner.status === 'planning' ? t('table.planning') : t('table.replan')}
               </button>
             </div>
             <div className="table-grid2">
-              <Big value={metrics.distance.value} unit="km" label={t('ui.distance')} />
+              <Big value={cardMetrics.distance} unit="km" label={t('ui.distance')} />
               {/* Walk out plus the work at the stops (#247): planned time, not played in real time */}
               {event
-                ? <Big value={metrics.time.value} unit="min" label={t('table.event.to.shelter')} />
-                : <Big value={metrics.time.value} unit="min" label={t('table.planned.out')} title={t('table.planned.out.title')} />}
-              <Big value={metrics.climb.value} unit="m" label={t('ui.climb')} />
-              <Big value={metrics.steepest.value} unit="°" label={t('table.steepest.slope')} tone={steepTone} />
+                ? <Big value={cardMetrics.time} unit="min" label={t('table.event.to.shelter')} />
+                : <Big value={cardMetrics.time} unit="min" label={t('table.planned.out')} title={t('table.planned.out.title')} />}
+              <Big value={cardMetrics.climb} unit="m" label={t('ui.climb')} />
+              <Big value={cardMetrics.steepest} unit="°" label={t('table.steepest.slope')} tone={remaining ? null : steepTone} />
             </div>
+            {remaining && remaining.count === 0 && !evaProgress.skipped.length && (
+              <p className="table-note">{t(evaProgress.atHabitat ? 'table.progress.home' : 'table.progress.done')}</p>
+            )}
             {event && (
               <p className="table-note tone-caution">
                 {t('table.event.replanned', { event: event.label ? translateText(event.label) : t('table.event.an.event'), shelter: sentence(translateText(shelterLabel(event.shelter)[1])) })}
               </p>
             )}
-            {!event && route.skipped?.length > 0 && <p className="table-note tone-caution">{t('table.replanned.skipped', { stops: route.skipped.join(' · ') })}</p>}
+            {!event && route.skipped?.length > 0 && (
+              <p className="table-note tone-caution">
+                {t('table.replanned.skipped', { stops: route.skipped.map((name) => { const k = waypoints.findIndex((w) => w.name === name); return k > 0 ? stopLabel(waypoints[k], k)[1] : name; }).join(' · ') })}
+              </p>
+            )}
             {/* Why this route (#246), plan level: the crew rules, the risk and the budget; each leg's reason is in the stop
                 list. A no-go reason comes first, so a locked Begin EVA always says why. */}
             {!evaBegun && !decision.go && decision.tone && <p className={'table-note tone-' + decision.tone}>{decision.text}</p>}
@@ -697,7 +736,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           <h2 className="table-h">{t('table.suit.check')}</h2>
           <div className="table-panel">
             <div className="table-panel-head">
-              <p className="table-label">{t(evaBegun ? 'table.suit.now.eva' : 'table.suit.now')}</p>
+              <p className="table-label">{t(evaBegun && !evaProgress.atHabitat ? 'table.suit.now.eva' : 'table.suit.now')}</p>
               <p className={'table-label tone-' + suitStatus.tone}>{suitStatus.label}</p>
             </div>
             <SuitNow />

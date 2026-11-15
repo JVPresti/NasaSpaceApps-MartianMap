@@ -4,6 +4,10 @@ import { eventEnvironmentSources, listEvents, plannedStops, startEventRunner, wr
 import { resetStore, setMode, setNeeds, useMissionStore } from './store.js';
 import { provenance } from '../data/provenance.js';
 import { MISSION_SOURCES } from '../sim/missions.js';
+import { nextTarget, startWaypointRunner } from '../sim/waypointRunner.js';
+import { allStops } from '../data/stops.js';
+import { createArrivalTracker } from '../stops/content.js';
+import stopsJson from '../../public/data/stops.json';
 import { resetDataFiles } from '../data/dataFiles.js';
 
 beforeEach(() => resetStore());
@@ -86,11 +90,18 @@ function quietRunner(options = {}) {
   return startEventRunner({ store: useMissionStore, setInterval: () => 0, clearInterval: () => {}, ...options });
 }
 
-function at(elapsedSec, position, { samples, route } = {}) {
+/** Move the clock and the crew; `sample: true` secures a sample where the crew stands (sampling.samples keeps x, z). */
+function at(elapsedSec, position, { sample = false, route } = {}) {
   useMissionStore.setState((state) => ({
     mission: { ...state.mission, elapsedSec },
     navigation: { ...state.navigation, x: position.x, z: position.z },
-    ...(samples === undefined ? {} : { sampling: { ...state.sampling, count: samples } }),
+    ...(sample ? {
+      sampling: {
+        ...state.sampling,
+        count: state.sampling.count + 1,
+        samples: [...state.sampling.samples, { id: `s${state.sampling.count + 1}`, kind: 'soil', x: position.x + 1, z: position.z, atSec: elapsedSec }],
+      },
+    } : {}),
     ...(route ? { route: { ...state.route, ...route } } : {}),
   }));
 }
@@ -112,7 +123,7 @@ describe('event runner missions (#265)', () => {
     at(55, STOP); runner.tick();                     // at the stop at T+55 s
     at(70, STOP); runner.tick();
     expect(activeAlerts()).toEqual([]);              // sampling: the storm waits
-    at(74, STOP, { samples: 1 }); runner.tick();    // sample secured at T+74 s
+    at(74, STOP, { sample: true }); runner.tick();    // sample secured at T+74 s
     at(76, STOP); runner.tick();
     expect(activeAlerts()).toEqual([]);
     at(77, STOP); runner.tick();                     // 3 s later
@@ -134,7 +145,7 @@ describe('event runner missions (#265)', () => {
   it('never interrupts a presenter mid-sample: the storm waits for the sample, or 90 s at the stop (N2)', () => {
     planSortie();
     const talking = quietRunner();
-    at(55, STOP, { samples: 0 }); talking.tick();
+    at(55, STOP); talking.tick();
     at(140, STOP); talking.tick();
     expect(activeAlerts()).toEqual([]);              // 85 s at the stop, still no sample
     at(144, STOP); talking.tick();
@@ -149,10 +160,15 @@ describe('event runner missions (#265)', () => {
     planSortie([HAB_WAYPOINT, find, S1]);            // a find accepted on the way out sits at index 1
     const runner = quietRunner();
     at(40, find, { route: { nextIndex: 2, visited: ['HAB', 'M01'] } }); runner.tick();   // the find reached
-    at(60, find, { samples: 1 }); runner.tick();     // a sample at the find
+    at(60, find, { sample: true }); runner.tick();     // a sample at the find
     at(100, find); runner.tick();
     expect(activeAlerts()).toEqual([]);
-    at(110, STOP); runner.tick();                    // the stop reached at T+110 s, the sample already secured
+    at(110, STOP); runner.tick();                    // the stop reached at T+110 s
+    // the sample at the find does not count for the stop (N1): the stop beat keeps its time
+    at(125, STOP); runner.tick();
+    expect(activeAlerts()).toEqual([]);
+    at(126, STOP, { sample: true }); runner.tick();  // a sample at the stop
+    at(129, STOP); runner.tick();
     expect(activeAlerts()).toEqual(['dust-storm']);
     runner.stop();
   });
@@ -162,7 +178,7 @@ describe('event runner missions (#265)', () => {
     const runner = quietRunner();
     at(55, STOP); runner.tick();
     at(60, STOP, { route: { nextIndex: 0, visited: [] } }); runner.tick();   // Re-plan at the table during the EVA
-    at(70, STOP, { samples: 1 }); runner.tick();
+    at(70, STOP, { sample: true }); runner.tick();
     at(73, STOP); runner.tick();
     expect(activeAlerts()).toEqual(['dust-storm']);
     runner.stop();
@@ -172,7 +188,7 @@ describe('event runner missions (#265)', () => {
     planSortie();
     const runner = loggedRunner();
     at(37, STOP); runner.tick();                     // the stop at a jog
-    at(45, STOP, { samples: 1 }); runner.tick();
+    at(45, STOP, { sample: true }); runner.tick();
     // home at 1.5 m/s along the 55 m line, one tick per second
     let radiationFrom = null;
     for (let t = 48; t <= 90; t += 1) {
@@ -188,7 +204,7 @@ describe('event runner missions (#265)', () => {
   it('meets both events before the end area when the crew turns home without sampling (N14)', () => {
     planSortie();
     const runner = loggedRunner();
-    at(50, STOP, { samples: 0 }); runner.tick();
+    at(50, STOP); runner.tick();
     let stormFrom = null, radiationFrom = null;
     for (let t = 51; t <= 100; t += 1) {
       const p = toward(Math.min(1, (t - 51) / 55));  // walking home at 1.0 m/s
@@ -267,7 +283,7 @@ describe('event runner missions (#265)', () => {
     const runner = quietRunner({ objective: useMissionStore.getState().needs.objective });
     // Even a direct write to the needs after the start leaves the running mission alone.
     useMissionStore.setState((state) => ({ needs: { ...state.needs, objective: 'cheyava' } }));
-    at(55, STOP, { samples: 1 }); runner.tick();
+    at(55, STOP, { sample: true }); runner.tick();
     at(58, STOP); runner.tick();
     expect(runner.mission).toBe('first');
     expect(activeAlerts()).toEqual(['dust-storm']);
@@ -305,5 +321,80 @@ describe('event route', () => {
     }));
     writeRoute(useMissionStore, { ok: true, path: [[2, 2], [0, 0]], distance: 3, climb: 0, steepestSlopeDeg: 1, target: { id: 'HAB', name: 'Habitat' } }, 'storm');
     expect(useMissionStore.getState().route.skipped).toEqual(['S2']);
+  });
+});
+
+describe('resuming after a shelter return (D12)', () => {
+  const BA = { name: 'WP3 · Bright Angel outcrop', x: -11, z: -50, stopId: 'bright-angel', required: false };
+  const CF = { name: 'Cheyava Falls', x: 0, z: 0, stopId: 'cheyava-falls', required: true };
+  const stops = allStops(stopsJson);
+  const quietWaypoints = () => startWaypointRunner({ store: useMissionStore, stops, setInterval: () => 0, clearInterval: () => {} });
+  const stormRouteHome = (from) => writeRoute(useMissionStore, {
+    ok: true, path: [[from.x, from.z], [AIRLOCK.x, AIRLOCK.z]], distance: 60, climb: 0, steepestSlopeDeg: 3, target: { id: 'HAB', name: 'Habitat' },
+  }, 'storm', HAB_SHELTER);
+  /** What the table's Re-plan does once no alert route is active (src/plan/useRoutePlanner.js): the skipped stops back, progress kept. */
+  const replanAtTable = () => useMissionStore.setState((state) => ({ route: { ...state.route, skipped: [], path: [[AIRLOCK.x, AIRLOCK.z], [BA.x, BA.z], [CF.x, CF.z]] } }));
+  const atHabitat = (value) => useMissionStore.setState((state) => ({ eva: { ...state.eva, atHabitat: value } }));
+
+  it('full EVA: storm, shelter return, Re-plan at the table, walk out: Bright Angel is the next target and its arrival counts', () => {
+    setNeeds({ objective: 'cheyava' });
+    useMissionStore.setState((state) => ({ mode: 'walk', route: { ...state.route, waypoints: [HAB_WAYPOINT, BA, CF], nextIndex: 1, visited: ['HAB'] } }));
+    const runner = quietRunner();
+    const waypoints = quietWaypoints();
+    const out = { x: 300, z: 300 };
+    at(480, out); runner.tick();
+    expect(activeAlerts()).toEqual(['dust-storm']);
+    stormRouteHome(out);
+    expect(useMissionStore.getState().route.skipped).toEqual([BA.name, CF.name]);
+    waypoints.tick();
+    expect(nextTarget(useMissionStore.getState().route).kind).toBe('shelter');
+
+    at(560, AIRLOCK); runner.tick();                 // home: the storm ends, the habitat stays the target
+    expect(activeAlerts()).toEqual([]);
+    expect(nextTarget(useMissionStore.getState().route).kind).toBe('shelter');
+    atHabitat(true);
+    at(565, AIRLOCK); runner.tick();
+    expect(nextTarget(useMissionStore.getState().route).kind).toBe('complete');   // nothing resumes by itself
+
+    replanAtTable();
+    atHabitat(false);
+    at(570, AIRLOCK); waypoints.tick(); runner.tick();
+    const target = nextTarget(useMissionStore.getState().route);
+    expect(target).toMatchObject({ kind: 'waypoint', name: BA.name });
+    expect(useMissionStore.getState().navigation.waypointRangeM).toBeCloseTo(Math.hypot(BA.x - AIRLOCK.x, BA.z - AIRLOCK.z), 0);
+
+    at(650, { x: BA.x + 1, z: BA.z }); waypoints.tick(); runner.tick();   // at Bright Angel
+    const route = useMissionStore.getState().route;
+    expect(route.visited).toContain(BA.name);
+    expect(nextTarget(route)).toMatchObject({ kind: 'waypoint', name: CF.name });
+    expect(createArrivalTracker().update(stops, route.visited)?.id).toBe('bright-angel');   // its card opens, as on main
+    expect(activeAlerts()).toEqual([]);              // the storm ran once: it does not send the crew home again
+    waypoints.stop();
+    runner.stop();
+  });
+
+  it('first mission: with its stop visited it still reads complete after a shelter return, and Re-plan restores nothing', () => {
+    planSortie();
+    useMissionStore.setState({ mode: 'walk' });
+    const runner = quietRunner();
+    const waypoints = quietWaypoints();
+    at(55, STOP); waypoints.tick(); runner.tick();
+    expect(useMissionStore.getState().route.visited).toContain(S1.name);
+    at(60, STOP, { sample: true }); runner.tick();
+    at(63, STOP); runner.tick();
+    expect(activeAlerts()).toEqual(['dust-storm']);
+    stormRouteHome(STOP);
+    expect(useMissionStore.getState().route.skipped).toEqual([]);   // the stop was reached: nothing skipped
+    at(120, AIRLOCK); runner.tick();                 // home: the storm ends, the radiation alert starts and plays 20 s
+    at(145, AIRLOCK); runner.tick();
+    expect(activeAlerts()).toEqual([]);
+    atHabitat(true);
+    at(150, AIRLOCK); runner.tick();
+    expect(nextTarget(useMissionStore.getState().route).kind).toBe('complete');
+    useMissionStore.setState((state) => ({ route: { ...state.route, skipped: [] } }));   // Re-plan at the table
+    waypoints.tick();
+    expect(nextTarget(useMissionStore.getState().route).kind).toBe('complete');
+    waypoints.stop();
+    runner.stop();
   });
 });

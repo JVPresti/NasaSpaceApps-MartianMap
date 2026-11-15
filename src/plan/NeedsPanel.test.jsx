@@ -59,7 +59,7 @@ describe('mission needs panel', () => {
   it('locks every control once the EVA has begun, and says so', () => {
     const locked = render({}, { locked: true });
     expect(locked.match(/disabled=""/g)).toHaveLength(1 + 2 + 3 + 3);
-    expect(text(locked)).toContain('Set before the EVA began');
+    expect(text(locked)).toContain('Locked since the EVA began');
     expect(render({ locked: true }).match(/disabled=""/g)).toHaveLength(9);
     expect(render()).not.toContain('disabled=""');
   });

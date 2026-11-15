@@ -449,6 +449,18 @@ describe('trigger conditions for the first mission (#265)', () => {
     expect(engine.update(18, { x: 34, z: 0 }).started).toEqual(['radiation'])   // within 25 + 10 m: before the end area
   })
 
+  it('counts list entries inside an area: a sample taken elsewhere does not count (N1)', () => {
+    const STOP = { x: 60, z: 0, radius: 10 }
+    const event = makeEvent({ trigger: { type: 'missionTime', atSec: 0, requires: [{ path: 'sampling.samples', inArea: STOP, atLeast: 1, forSec: 3 }] } })
+    const { engine, store } = setup([event], { initial: { sampling: { samples: [{ x: 20, z: 0 }] } } })   // a sample at a find
+    expect(engine.update(50).started).toEqual([])
+    store.set('sampling.samples', [{ x: 20, z: 0 }, { x: 61, z: 1 }])   // a sample at the stop at T+60
+    expect(engine.update(60).started).toEqual([])
+    expect(engine.update(63).started).toEqual(['test-event'])
+    expect(validateEvent(makeEvent({ trigger: { type: 'manual', requires: [{ path: 'a.b', inArea: { x: 0, z: 0, radius: 1 }, atLeast: 0 }] } })).errors)
+      .toContain('trigger.requires[0].atLeast must be a whole number >= 1')
+  })
+
   it('does not end an event before end.minSec', () => {
     const event = makeEvent({ trigger: { type: 'missionTime', atSec: 10 }, end: { ...homeEnd, minSec: 20 } })
     const { engine } = setup([event])

@@ -377,6 +377,22 @@ describe('on the real terrain', () => {
     expect(plan.reasons.map((r) => r.code)).toEqual(['solo-radio', 'solo-work', 'risk', 'stop-dropped', 'fits']);
   });
 
+  // The mirror case (Q10): the objective keeps its own stop and leaves the other one out.
+  it('Survey Bright Angel, solo, cautious, 100 min: Bright Angel alone, Cheyava Falls dropped for time', () => {
+    const plan = planFromNeeds({ objective: 'bright-angel', crew: 1, timeMin: 100, risk: 'cautious', profile: 'fastest' }, real);
+    expect(plan.fits).toBe(true);
+    expect(plan.totals.status).toBe('nominal');
+    expect(plan.profile).toBe('radio');
+    expect(ids(plan)).toEqual(['bright-angel']);
+    expect(plan.stops[0]).toMatchObject({ name: 'Bright Angel', workSec: 1350, required: true });
+    expect(plan.dropped).toMatchObject([{ id: 'cheyava-falls', name: 'Cheyava Falls', limit: 'time', workSec: 1800 }]);
+    expect(plan.route.distance).toBeGreaterThan(880);
+    expect(plan.route.distance).toBeLessThan(950);
+    expect(plan.budget.usedSec / 60).toBeGreaterThan(56);
+    expect(plan.budget.usedSec / 60).toBeLessThan(66);
+    expect(plan.reasons.map((r) => r.code)).toEqual(['solo-radio', 'solo-work', 'risk', 'stop-dropped', 'fits']);
+  });
+
   it('pair, bold, 2 h: the chosen profile, both stops, and room to spare', () => {
     const plan = planFromNeeds({ objective: 'cheyava', crew: 2, timeMin: 120, risk: 'bold', profile: 'fastest' }, real);
     expect(plan.profile).toBe('fastest');

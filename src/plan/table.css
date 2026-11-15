@@ -1151,6 +1151,9 @@ button.table-stop-name {
 }
 .table-stops li.dropped .table-stop-name { color: var(--dim); }
 .table-stops li.dropped .table-stop-dist { color: var(--caution); }
+/* a stop reached during the EVA (A1): dimmed like a stop left out, without the caution colour */
+.table-stops li.reached .table-stop-name,
+.table-stops li.reached .table-stop-dist { color: var(--dim); }
 /* The plan's reasons under the route numbers, at the size of the profile note below them */
 .table-note.route-why { font-size: 12px; line-height: 1.4; }
 
@@ -1177,6 +1180,10 @@ button.table-stop-name {
   .profiles-table td { padding-top: 1px; padding-bottom: 1px; }
   .table-big > span { margin-top: 2px; }
   .table-hazard-cards dd { font-size: 14px; }
+  .table-stops .table-stop-why { line-height: 1.25; }
+  .profiles-panel .table-label { margin-bottom: 6px; }
+  .profiles-panel .profiles-what { margin-top: 4px; }
+  .profiles-table .profiles-group th { padding-top: 3px; }
   /* the Suit step's right column: the decision names the plan, its tightest limit and the expected alert */
   .ring svg { max-width: 104px; }
   .ring figcaption b { font-size: 28px; }
