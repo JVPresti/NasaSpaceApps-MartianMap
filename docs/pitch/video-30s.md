@@ -1,6 +1,6 @@
 # 30-second video: script and shot list
 
-Hard limit 30 s. English narration, English on-screen text. If the team narrates in Spanish, burn in English subtitles (the lines below). The presentation mode (`?present=1`, branch `feat/present-mode`) can record this from the app with frame-perfect capture; if it is not ready, a person records it on the demo laptop (it has the GPU) with the URL states below.
+Hard limit 30 s. English narration, English on-screen text. If the team narrates in Spanish, burn in English subtitles (the lines below). The presentation mode on `main` (https://martian-map.fernando-haro-c.workers.dev/?present=1&seq=global30 plays the 30 s cut; add `&record=1` and run `scripts/present/record.mjs` for a frame-perfect capture) can record this from the app; otherwise a person records it on the demo laptop (it has the GPU) with the URL states below.
 
 Rules from the submission guide that apply here:
 

@@ -8,12 +8,16 @@ Martian Map", Ensenada local event). Built on the first mission of PR #282 and i
 > tiempo máximo de 3 minutos". The team plans 5 minutes, live demo included, and will confirm with the organisers.
 > `script-5min-en.md` is the primary. `script-3min-en.md` is the fallback if they hold to 3 minutes: the speaker
 > switches at 0:46, after the thesis, where the 5-minute script marks the cut point.
+>
+> **The file for the organisers is `docs/pitch/out/deck-global.pdf`**, the 7-slide deck. It is also the backup on the
+> day: the talk runs from the presentation mode on `main` (https://martian-map.fernando-haro-c.workers.dev/?present=1&debug=1), and if WebGL fails
+> on the laptop, the presenter switches to the same PDF (slide mapping in `script-5min-en.md`).
 
 **Thesis.** On Mars, the question isn't where you can go. It's where you can go and still get home.
 
 | File | What it is |
 |---|---|
-| `beats.md` | The beats of the presentation mode (`?present=1`, branch `feat/present-mode`): camera idea, on-screen words in English and Spanish, presenter line, time. The presentation thread reads it from this branch |
+| `beats.md` | The beats of the presentation mode on `main` (https://martian-map.fernando-haro-c.workers.dev/?present=1), copied from `src/present/beats.js` by `tools/sync-present.mjs`, then the speaker's plan over them: camera idea, on-screen words in English and Spanish, presenter line, time. The presentation thread reads it from this branch |
 | `script-5min-en.md`, `script-5min-es.md` | **The primary local pitch**: 5 minutes in English, ending at 4:45 with demo cut A; Spanish twin for rehearsal and questions |
 | `script-8min-es.md`, `script-8min-en.md` | The 8-minute version: DEMO.md's full demo with the story around it |
 | `script-3min-en.md`, `script-3min-es.md` | The fallback, if the organisers hold to 3 minutes: English, with a Spanish twin |
@@ -22,7 +26,7 @@ Martian Map", Ensenada local event). Built on the first mission of PR #282 and i
 | `video-30s.md` | The 30-second video script and frame-accurate shot list |
 | `deck-global.html`, `out/deck-global.pdf`, `out/deck-global/*.png` | The 7-slide global deck: one self-contained HTML file (fonts and images inlined), its PDF and one PNG per slide |
 | `fallback/stills/` | Real screenshots of the #282 demo, one per beat, for when the live demo fails |
-| `council/` | The AI reviewer council (Opus 5.5 and Fable 5.2 agents playing judges, not people): rubric, every round's raw JSON, `log.tsv`, timing checks |
+| `council/` | The council of AI reviewers playing judges, not people: rubric, every round's raw JSON, `log.tsv`, timing checks |
 | `src/`, `img/`, `fonts/`, `tools/` | Deck sources and the scripts that build it |
 
 ## Which number is which
@@ -51,6 +55,7 @@ node docs/pitch/tools/render.mjs           # src/*.html -> self-contained HTML, 
 node docs/pitch/tools/timing.mjs           # every script row against its slot at 140 wpm, the ceiling; the scripts are written for 125
 node docs/pitch/tools/timing.mjs --wpm 125 --out council/timing-5min-125.md script-5min-en.md script-5min-es.md
 node docs/pitch/tools/sync-beats.mjs       # copy script-5min-en.md's lines and times into beats.md
+node docs/pitch/tools/sync-present.mjs     # copy main's src/present/beats.js captions and numbers into beats.md
 node docs/pitch/tools/walkback-zone.mjs    # walkback zone and leg numbers from src/sim (for beats 1 and 3)
 ```
 
