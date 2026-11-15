@@ -14,6 +14,7 @@ const COLUMNS = [
         [['menu.mouse'], 'menu.help.look'],
         [['ui.esc'], 'menu.help.release.pause'],
         [['H'], 'menu.help.this.help'],
+        [['X'], 'menu.help.end.eva'],
       ],
     },
     {

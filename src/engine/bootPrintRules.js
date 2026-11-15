@@ -29,8 +29,14 @@ const MIN_MOVE_M = 0.002;
 export function createStepTracker() {
   let started = false, lx = 0, lz = 0, travelled = 0, side = 1;
   return {
-    track(x, z, facingYaw, jog, emit) {
-      if (!started) { started = true; lx = x; lz = z; return 0; }
+    /**
+     * @param {number} x @param {number} z @param {number|undefined} facingYaw @param {boolean} jog
+     * @param {Function} emit
+     * @param {number} [travelledSeed] start the distance counter here (0 to step): the shared gait phase (#228),
+     *   so the first print lands on the same footfall as the first bounce
+     */
+    track(x, z, facingYaw, jog, emit, travelledSeed = 0) {
+      if (!started) { started = true; lx = x; lz = z; travelled = Number.isFinite(travelledSeed) ? travelledSeed : 0; return 0; }
       const dx = x - lx, dz = z - lz, d = Math.hypot(dx, dz);
       if (d > TELEPORT_M) { lx = x; lz = z; travelled = 0; return 0; }
       if (d < MIN_MOVE_M) return 0;

@@ -17,7 +17,7 @@ describe('ControlsHelp', () => {
 
   it('lists the wrist keys on one row so the start dialog keeps its height (#231)', () => {
     const html = renderToStaticMarkup(<ControlsHelp />);
-    expect(html.match(/class="controls-row"/g)).toHaveLength(23);
+    expect(html.match(/class="controls-row"/g)).toHaveLength(24);   // 23 + the X end-EVA row (#244); the wrist keys add none
     expect(html).toContain('Wrist screen');
   });
 

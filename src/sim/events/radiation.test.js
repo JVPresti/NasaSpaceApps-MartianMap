@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import hazards from '../../../public/data/hazards.json';
+import { setLanguage, translateText } from '../../i18n/index.js';
 import { validateEvent } from '../eventEngine.js';
 import radiation from './radiation.json';
+
+afterEach(() => setLanguage('en'));
 
 describe('radiation alert event data', () => {
   it('is a valid event definition', () => {
@@ -32,5 +35,18 @@ describe('radiation alert event data', () => {
   it('ends at the habitat', () => {
     expect(radiation.planner).toEqual({ action: 'replan', target: 'habitat' });
     expect(radiation.end).toEqual({ type: 'area', x: 535.1, z: 574.1, radius: 25 });
+  });
+
+  it('labels the event as an early warning, not danger (#250)', () => {
+    expect(radiation.alert.level).toBe('warning');
+    expect(radiation.alert.text).toMatch(/elevated dose rate/i);
+    expect(radiation.alert.text).toMatch(/ALARA/);
+    expect(radiation.alert.text).not.toMatch(/danger|Enter the habitat now/i);
+  });
+
+  it('keeps the alert translated in Spanish', () => {
+    setLanguage('es');
+    expect(translateText(radiation.alert.text)).toMatch(/tasa de dosis elevada/);
+    expect(translateText(radiation.alert.text)).toMatch(/ALARA/);
   });
 });

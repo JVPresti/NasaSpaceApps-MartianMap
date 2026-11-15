@@ -46,4 +46,13 @@ describe('dust storm event data', () => {
     expect(dustStorm.end.x).toBe(535.1);
     expect(dustStorm.end.z).toBe(574.1);
   });
+
+  it('no longer calls the 2022 Jezero peak the current ramp target (#250)', () => {
+    const peak = hazards.values['dust.tau.storm_2022_peak'].provenance.note;
+    const before = hazards.values['dust.tau.storm_2022_before'].provenance.note;
+    expect(peak).toMatch(/before #126/);
+    expect(peak).toMatch(/gale_global_storm_2018/);
+    expect(peak).not.toMatch(/^Target value of the storm ramp/);
+    expect(before).toMatch(/before #126/);
+  });
 });

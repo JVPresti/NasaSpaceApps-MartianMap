@@ -8,6 +8,7 @@ import { subscribeLanguage } from '../i18n/index.js';
 //   engine.setMode('plan' | 'walk');
 //   engine.setLayer(0..4); engine.setSky('clear_day'); engine.setRoute([[x, z], ...]);
 //   engine.setSkyTime(17.75 | null); engine.getSun();   // sky and Sun from the mission clock (#73), missionSky.js
+//   engine.habitatZoneAt(x, z); engine.setHabitatPrompt({ key, text } | null);   // the habitat and its end-of-EVA prompt (#244)
 //   engine.requestPointerLock(); engine.releasePointerLock(); engine.setInputEnabled(false);
 //   engine.setQuality('auto' | 'high' | 'low'); engine.getQuality(); engine.resetSession();
 //   engine.subscribeTouch(listener); engine.subscribeGamepad(listener);   // UI hints for touch and gamepad (#103)
@@ -54,6 +55,7 @@ import { createSampleDust } from './sampleDust.js';
 import { createSlopeGrid } from './slopeGrid.js';
 import { createHabitat } from './habitat.js';
 import { createView, createViewState, CHEYAVA_VIEW } from './view.js';
+import { createGait } from './gait.js';
 import { planTouches } from './planTouch.js';
 import { LOOK_DEFAULTS, clampLookSettings } from './lookSettings.js';
 import { airlockExit, partnerPatrol } from './spawn.js';
@@ -94,7 +96,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   const emitGamepad = (state) => { for (const listener of gamepadListeners) { try { listener(state); } catch { /* keep the frame */ } } };
   const wristState = () => ({ open: !!(sys.arms && sys.arms.L && sys.arms.state === 'screen') });
   const emitWrist = (state) => { for (const listener of wristListeners) { try { listener(state); } catch { /* keep the frame */ } } };
-  const pending = { sky: null, skyBlend: null, skyTime: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false, wristScreen: null, habitatScreens: null, lookSettings: null };   // set before boot ends, applied when ready
+  const pending = { sky: null, skyBlend: null, skyTime: null, habitatPrompt: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false, wristScreen: null, habitatScreens: null, lookSettings: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -152,6 +154,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     view: createViewState(), sys: {},
     T: null, RING: null, PRESETS: null, terrain: null,
     tier: initialTier, orthoCache: {}, presetName: 'clear_day', gpu: detected.gpu,
+    gait: createGait(),   // one gait phase for legs, head bob, arm swing and boot prints (#228)
   };
   const { U, assets, sys } = ctx;
   const unsubscribeLanguage = subscribeLanguage(() => {
@@ -211,7 +214,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     camera.getWorldDirection(U.uCamDir.value);
     const eyeMode = ctx.view.mode === 'eye';
     if (sys.arms.L) sys.arms.L.g.visible = sys.arms.R.g.visible = eyeMode;   // first-person arms only in Walk
-    U.uTime.value += dt; sys.partner.update(dt); sys.arms.update(dt); sys.legs.update(dt, eyeMode ? ctx.view.moveSpeed : 0); sys.props.update(dt); sys.habitat.update(dt);
+    U.uTime.value += dt; sys.partner.update(dt); sys.arms.update(dt); sys.legs.update(dt); sys.props.update(dt); sys.habitat.update(dt);
     sys.sampling.update(dt);   // after props: follows the clip and the scoop content (#36)
     sys.sampleDust.update(dt);   // after sampling: the puff and the scrape when the scoop reaches the ground (#50)
     sys.slopeGrid.update(dt);
@@ -317,6 +320,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     U.uRelief.value = tj.range_m; sys.route.data = await assets.json('route.json'); if (!alive) return;
     await sys.habitat.init(); if (!alive) return;
     if (pending.habitatScreens) sys.habitat.screens.setData(pending.habitatScreens);
+    sys.habitat.prompt.set(pending.habitatPrompt);
     placeAtAirlock();   // the player shows at the airlock on the Plan map too
 
     if (!alive) return;
@@ -575,6 +579,19 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
      */
     setHabitatScreens(data) {
       if (sys.habitat && sys.habitat.screens && sys.habitat.root) sys.habitat.screens.setData(data); else pending.habitatScreens = data;
+    },
+    /**
+     * Prompt floating over the habitat's planning table (habitatPrompt.js, #244), shown only while the player is in the
+     * cabin: `{ key: 'X', text: 'End the EVA' }`, or null to hide it.
+     */
+    setHabitatPrompt(prompt) {
+      pending.habitatPrompt = prompt || null;
+      if (sys.habitat && sys.habitat.prompt) sys.habitat.prompt.set(pending.habitatPrompt);
+    },
+    /** The habitat walk zone at (x, z): 'stairs', 'porch', 'hatch', 'airlock', 'inner' or 'main' (collide.js), or null. */
+    habitatZoneAt(x, z) {
+      const zone = sys.habitat && sys.habitat.zone(x, z);
+      return zone ? zone.n : null;
     },
     setLayer(n) {
       if (!Number.isInteger(n) || n < 0 || n >= LAYERS.length) throw new Error('setLayer: expected 0-' + (LAYERS.length - 1) + ', got ' + n);
