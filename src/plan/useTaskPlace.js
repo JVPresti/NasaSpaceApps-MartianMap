@@ -29,6 +29,13 @@ export function cancelPick() {
   usePick.setState({ taskId: null, note: null });
 }
 
+// A pick lasts only while the table is the "Collect samples" table: a change of goal or the needs locking at Begin EVA
+// ends it, so its Escape listener never swallows a key and it never comes back with the goal. (The test files that
+// replace the store module give a store without subscribe.)
+useMissionStore.subscribe?.((s) => {
+  if (usePick.getState().taskId && (s.needs?.objective !== 'samples' || s.needs?.locked === true)) cancelPick();
+});
+
 /** The order "Add task" tries the kinds in (PO, #352 section 12). */
 const ADD_ORDER = ['soil', 'photo', 'rock'];
 
@@ -44,7 +51,10 @@ export function addedTask(tasks) {
   return { what, count: 1, place: tasks.at(-1)?.place ?? DEFAULT_TASKS[0].place };
 }
 
-/** The tasks' points, once each, as checkTaskPoint takes them. */
+/**
+ * The points a click can take, once each, as checkTaskPoint takes them: those of the other tasks. A point only the task
+ * being placed uses is left out, so the crew can move it a few metres; a point it shares still takes the click.
+ */
 function listPoints(tasks) {
   const points = new Map();
   for (const task of tasks) if (task?.place?.type === 'point') points.set(task.place.id, task.place);
@@ -52,7 +62,7 @@ function listPoints(tasks) {
 }
 
 /** The display name of a resolved place: the stop's name in the interface language, or the point's id. */
-export function placeName(place) {
+function placeName(place) {
   if (!place) return '';
   return place.type === 'stop' ? translateText(place.label) : place.label;
 }
@@ -69,7 +79,7 @@ export function placeName(place) {
  */
 export function placeTask(grid, point, { taskId, tasks, start, candidates }) {
   const n = tasks.findIndex((task) => task.id === taskId) + 1;
-  const result = checkTaskPoint(grid, point, { start, stops: candidates, points: listPoints(tasks) });
+  const result = checkTaskPoint(grid, point, { start, stops: candidates, points: listPoints(withoutTask(tasks, taskId)) });
   if (!result.ok) {
     const values = { slope: Number.isFinite(result.slopeDeg) ? formatNumber(result.slopeDeg, 0) : '–', limit: COST_CONSTANTS.SLOPE_LIMIT_DEG, snap: SNAP_M };
     return { tasks: null, note: { tone: 'caution', text: t(`tasktable.refuse.${result.reason}`, values), tag: 'tasks.place' }, done: false };

@@ -164,6 +164,17 @@ describe('adding and placing a task', () => {
     expect(out.note).toBeNull();
   });
 
+  it('moves a task\'s own point a few metres, while a point another task shares still takes the click', () => {
+    const own = [{ ...rock, place: { type: 'point', id: 'P1', x: 0, z: 0 } }];
+    const nudged = placeTask(grid, { x: 3, z: 1 }, { taskId: 't1', tasks: own, start, candidates: [] });
+    expect(nudged.tasks[0].place).toEqual({ type: 'point', id: 'P1', x: 3, z: 1 });
+    expect(nudged.note).toBeNull();
+    const shared = [...own, { ...photo, place: { type: 'point', id: 'P1', x: 0, z: 0 } }];
+    const taken = placeTask(grid, { x: 3, z: 1 }, { taskId: 't1', tasks: shared, start, candidates: [] });
+    expect(taken.tasks[0].place).toEqual({ type: 'point', id: 'P1', x: 0, z: 0 });
+    expect(taken.note.text).toBe('Task 1 takes P1, 3 m from the click.');
+  });
+
   it('says when a click takes a known stop or an existing point', () => {
     const out = placeTask(grid, { x: -8, z: -10 }, { taskId: 't1', tasks: [rock], start, candidates: near });
     expect(out.tasks[0].place).toEqual({ type: 'stop', stopId: 'bright-angel' });
