@@ -854,6 +854,7 @@
   "table.pressure": "Presión",
   "table.time": "Tiempo",
   "table.budget.title": "Lo que gasta la EVA",
+  "table.budget.min.eva": "min de EVA en total",
   "table.budget.min.out": "min de ida",
   "table.budget.time.label": "{out} min de ida, {back} min de vuelta",
   "table.budget.key.out": "{min} ida",
