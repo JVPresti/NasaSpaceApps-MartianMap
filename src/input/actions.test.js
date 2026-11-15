@@ -21,14 +21,12 @@ const NOT_ACTIONS = {
 /**
  * Actions whose touch control has not landed yet, by id, each with the reason. Empty this as each control lands; the
  * test fails if an entry here has its control already, so the list cannot go stale. The presentation's swipe and tap
- * (present-next, present-back) land with #373 as pointerStep() in src/present/control.js; its on-screen Exit and
- * Language buttons are in no PR yet. When either lands and the test fails, remove the id from here.
+ * (present-next, present-back) landed with #373 as pointerStep() in src/present/control.js; its on-screen Exit and
+ * Language buttons are in no PR yet, so those two stay pending until they land.
  */
 const PENDING = {
-  'present-next': '#373 lands the swipe and the tap as pointerStep() in src/present/control.js; remove once it merges',
-  'present-back': '#373 lands the swipe and the tap as pointerStep() in src/present/control.js; remove once it merges',
-  'present-exit': 'no PR adds the on-screen Exit button yet (#373 adds only the swipe and the tap)',
-  'present-language': 'no PR adds the on-screen Language button yet (#373 adds only the swipe and the tap)',
+  'present-exit': 'no PR adds the on-screen Exit button yet (#373 landed only the swipe and the tap)',
+  'present-language': 'no PR adds the on-screen Language button yet (#373 landed only the swipe and the tap)',
 };
 
 const KEY_CODE = /^(Key[A-Z]|Digit\d|Numpad\w+|Arrow(Up|Down|Left|Right)|Bracket(Left|Right)|Shift(Left|Right)|Escape|Enter|Tab|Space|Spacebar|Page(Up|Down)|F\d{1,2})$/;

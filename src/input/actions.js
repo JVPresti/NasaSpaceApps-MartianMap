@@ -116,10 +116,10 @@ export const ACTIONS = Object.freeze([
   { id: 'table-step', codes: ['ArrowLeft', 'ArrowRight'], keys: ['ArrowLeft', 'ArrowRight'], files: ['src/plan/MissionTable.jsx'],
     touch: 'dialog', control: { file: 'src/plan/MissionTable.jsx', has: 'table-tab-' }, label: 'touch.table.step' },
 
-  // The presentation (?present=1, src/present/control.js). #373 (feat/present-story-cut) lands the swipe and the tap that
-  // step next and back, as pointerStep() in src/present/control.js; the on-screen Exit and Language buttons have no PR
-  // yet. Until each control lands, actions.test.js lists the action as pending, by name, and fails the moment the
-  // control it names appears, so the list cannot go stale.
+  // The presentation (?present=1, src/present/control.js). The swipe and the tap that step next and back landed with
+  // #373 as pointerStep() in src/present/control.js (a swipe of 50 px or more, or a tap on the screen half); the
+  // on-screen Exit and Language buttons have no PR yet. Until those land, actions.test.js lists them as pending, by
+  // name, and fails the moment the control it names appears, so the list cannot go stale.
   { id: 'present-next', codes: ['ArrowRight', 'PageDown', 'Space', 'Enter'], keys: ['ArrowRight', 'PageDown', ' ', 'Enter', 'Spacebar'], files: ['src/present/control.js'],
     touch: 'gesture', control: { file: 'src/present/control.js', has: 'pointerStep(' }, label: 'touch.present.next' },
   { id: 'present-back', codes: ['ArrowLeft', 'PageUp'], keys: ['ArrowLeft', 'PageUp'], files: ['src/present/control.js'],
