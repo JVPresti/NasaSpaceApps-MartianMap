@@ -145,6 +145,8 @@ export function layerPlaces(layer, { candidates = [], stops = [], dropped = [], 
       .filter((s) => s.type === 'natural' && Number.isFinite(s.x) && Number.isFinite(s.z) && Number.isFinite(s.values?.sky_view_factor?.value))
       .map((s) => {
         const sky = s.values.sky_view_factor.value;
+        // The share of sky the terrain hides (dose_reduction is 1 - sky view). The tag names it as sky; the title gives
+        // it as the most it could cut the dose (SIM upper bound) beside what RAD measured (#296).
         const pct = Math.round((s.values.dose_reduction?.value ?? 1 - sky) * 100);
         const label = t('layers.shelter.tag', { id: s.id, pct });
         return { id: s.id, kind: 'shelter', x: s.x, z: s.z, label, detail: '', title: t('layers.shelter.title', { name: translateText(s.name), sky: formatNumber(sky, 2), pct }), opens: 'left' };
