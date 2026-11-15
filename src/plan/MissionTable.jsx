@@ -284,12 +284,15 @@ function Actions({ children }) {
 function BeginButton({ planner, totals, evaBegun, onBeginEva }) {
   const route = useMissionStore((s) => s.route);
   const decision = decisionFor(planner, totals);
+  // Go / No-go gates the start only. Once the EVA is under way the astronaut is already outside and the clock runs,
+  // so a route that now reads No-go (oxygen spent, a failed re-plan) must not keep them at the table.
+  const blocked = evaBegun ? false : !route.path || !decision.go;
   return (
     <button
       type="button"
       className="table-primary"
-      disabled={!route.path || !decision.go || !onBeginEva}
-      onClick={() => { setRouteDecision('go'); onBeginEva?.(); }}
+      disabled={blocked || !onBeginEva}
+      onClick={() => { if (!evaBegun) setRouteDecision('go'); onBeginEva?.(); }}
     >
       {evaBegun ? 'Continue the EVA' : 'Begin EVA'}
     </button>
