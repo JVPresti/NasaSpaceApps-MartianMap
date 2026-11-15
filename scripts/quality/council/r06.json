@@ -1,0 +1,51 @@
+{
+ "round": "r06",
+ "before": "scripts/quality/out/c05",
+ "after": "scripts/quality/out/c06",
+ "states": [
+  "walk-storm"
+ ],
+ "judges": {
+  "j1": {
+   "walk-storm": {
+    "new": "A"
+   }
+  },
+  "j2": {
+   "walk-storm": {
+    "new": "B"
+   }
+  },
+  "j3": {
+   "walk-storm": {
+    "new": "A"
+   }
+  }
+ },
+ "change": "c06 Walk alert keeps the skipped-stops line, hides the source note behind I",
+ "issue": 284,
+ "personas": {
+  "j1": "opus b",
+  "j2": "opus c",
+  "j3": "fable a"
+ },
+ "verdicts": {
+  "j1": {
+   "walk-storm": "new",
+   "why": "the cost of obeying the warning is visible at the moment of decision; line is fine print"
+  },
+  "j2": {
+   "walk-storm": "new",
+   "why": "tells a first-time player what returning costs; WP ids and names run together"
+  },
+  "j3": {
+   "walk-storm": "old",
+   "why": "one instruction reads faster; the long small list dilutes the order in a 30 s video"
+  }
+ },
+ "decision": "keep",
+ "reason": "2 of 3 prefer it for showing the consequence, which all three asked for in r03; j3's point about the long list is shared by j1 and j2, so the follow-up is a short 'Skipping 4 stops' line, which needs EventBanner.jsx (in #282), noted on #284",
+ "next_asks": [
+  "'Skipping 4 stops, including Cheyava Falls' at body size"
+ ]
+}
