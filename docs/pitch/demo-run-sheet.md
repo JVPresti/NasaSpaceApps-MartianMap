@@ -2,7 +2,7 @@
 
 > **Format.** The organisers' official guidelines: at most 4 minutes, 5 to 6 slides. The talk is `script-en.md`, in English (`script-es.md` if they ask for Spanish), six beats, one per slide, and ends at 3:00. Then the judges ask questions (`qa.md`). There is no live demo. The `demo` beat plays an 85 s video of the real app, with no sound.
 
-**Autoplay is on.** The presentation plays its six beats, one per slide, by itself, and nobody needs to press anything. The speakers follow the screen. If the timing slips, take over with **Right** or **Left**. The first press only stops autoplay and moves nothing, so a video mid-beat keeps playing. Each press after it moves one beat (`src/present/control.js`, `createPilot`). Autoplay, the six beats and the QR code come from the presentation thread's PR #373 (`feat/present-story-cut`); step 7 below checks that the live site has them.
+**It opens paused.** The presentation waits on slide 1 behind a **Play** button. Press it, or Space, when the speaker is ready, and the six slides then play by themselves to 3:55. **P** pauses and resumes at any point, video included. **Right** and **Left** move one slide at once, and the digits **1** to **6** jump to that slide. The slide number is in the bottom right corner, so a speaker can say "slide 4" and the operator presses 4.
 
 Two versions of the talk are in `script-en.md`. **A**: P1 tells the story and says the last lines, P2 gives the video cues and the data part of the close. **B**: one presenter says everything. A third person, or P2 in version A, stands by the laptop only to take over if needed.
 
@@ -10,8 +10,10 @@ Two versions of the talk are in `script-en.md`. **A**: P1 tells the story and sa
 
 | Key | Does |
 |---|---|
-| **Right**, **Space**, **PageDown** or **Enter** | The first press takes over and moves nothing. After that, next beat |
-| **Left** or **PageUp** | The first press takes over and moves nothing. After that, previous beat |
+| **Play** button, **Space**, **P** | Play, and pressed again, pause. A pause freezes the slide and the video |
+| **Right**, **PageDown**, **Enter** | Next slide at once. The play state carries over |
+| **Left**, **PageUp** | Previous slide, from its start |
+| **1** to **6** | Jump to that slide |
 | **L** | Switch the captions between English and Spanish |
 | **Esc** | Leave the presentation for the app. Do not press it during the talk |
 
@@ -20,12 +22,12 @@ Two versions of the talk are in `script-en.md`. **A**: P1 tells the story and sa
 | Step | Do | Check |
 |---|---|---|
 | 1 | Plug the laptop into power and the projector. Display duplicated, 1920 x 1080. | The projector shows the desktop |
-| 2 | Chrome, tab 1: `https://martian-map.fernando-haro-c.workers.dev/?present=1`. Let it load, then reload just before the talk so it starts at 0:00 when the speaker is ready. | About 20 s on the GPU laptop. "3D view unavailable. Captions only" means WebGL failed, so run the talk from the PDF (below) |
+| 2 | Chrome, tab 1: `https://martian-map.fernando-haro-c.workers.dev/?present=1`. Let it load. It waits paused on slide 1 behind the Play button until the speaker is ready. | About 20 s on the GPU laptop. "3D view unavailable. Captions only" means WebGL failed, so run the talk from the PDF (below) |
 | 3 | Captions in English. If they show Spanish, press **L** once. | The first caption is in English |
 | 4 | Tab 2: `docs/pitch/out/deck-global.pdf`, full screen, on slide 1. Tab 3: the backup video file the presentation thread records (the same cut as an mp4), paused at 0:00. | One click plays it |
 | 5 | **F11** for full screen. The presentation's video is muted (`Present.jsx`), so no sound is needed for it. | |
 | 6 | Close every other app, notification and chat. | |
-| 7 | Let the whole presentation autoplay once against a stopwatch. | It runs open, stakes, zone, radiation, demo, close and stops at 3:00 without a key, with the QR code on the close. If it waits on the first beat, autoplay is not deployed: step it with **Right** on the times below. If it shows `plan`, `sources` and `credits`, the story cut is not deployed: tell Fernando and run from the PDF |
+| 7 | Let the whole presentation autoplay once against a stopwatch. | After Play it runs open, stakes, zone, radiation, demo, close and stops at 3:55 without another key, with the QR code on the close. If there is no Play button and no slide number, this change is not deployed: it still plays, but the first Right press only takes over. If it shows `plan`, `sources` and `credits`, the story cut is not deployed: tell Fernando and run from the PDF |
 
 **No network.** The site makes no live calls to NASA. As a backup the night before: check out `main`, `npm ci`, `npm run build`, `npm run preview`, and keep `http://localhost:4173/?present=1`.
 
