@@ -55,13 +55,17 @@ export function needsPlanPending({ fromNeeds, key }, memory) {
  * - 'consume-find': a find accepted in Walk already re-planned these waypoints from the player (#71); planning again
  *   from the habitat would lose the walk so far, so take the route as it is and clear finds.routeKey
  *
+ * While an event's shelter route is the route (`sheltered`, route.shelter set), a waypoint plan is dropped, not
+ * deferred: it would replace the route home with the route out to the stops (round 2 review, B1). The mast refresh
+ * and a find's route still go through; neither writes route.path.
+ *
  * @param {{ enabled: boolean, ready: boolean, fromNeeds: boolean, needs: object, profile: string, nonce: number,
- *   mastId: string, waypointsKey: string, waypointCount: number, findsRouteKey?: string | null }} input
+ *   mastId: string, waypointsKey: string, waypointCount: number, findsRouteKey?: string | null, sheltered?: boolean }} input
  * @param {ReturnType<typeof emptyPlannerMemory>} memory
  * @returns {{ action: string, key?: string, planId?: string, memory: object }}
  */
 export function decidePlan(input, memory) {
-  const { enabled, ready, fromNeeds, needs, profile, nonce, mastId, waypointsKey, waypointCount, findsRouteKey = null } = input;
+  const { enabled, ready, fromNeeds, needs, profile, nonce, mastId, waypointsKey, waypointCount, findsRouteKey = null, sheltered = false } = input;
   if (!enabled || !ready) return { action: 'none', memory };
 
   if (fromNeeds) {
@@ -74,9 +78,12 @@ export function decidePlan(input, memory) {
   if (waypointCount < 2) return { action: 'none', memory };
   const planId = `${nonce}|${waypointsKey}`;
   const sameRoute = waypointsKey === memory.lastKey && nonce === memory.lastNonce;
+  // A waypoint plan asked for while a shelter route is the route: taken as done, so it never replaces it later either.
+  const dropped = (base) => ({ action: 'none', memory: { ...base, lastKey: waypointsKey, lastNonce: nonce, appliedPlanId: planId } });
   if (sameRoute && mastId === memory.lastMast) {
     // Planned already. A plan cancelled before it landed (the table closed for Walk meanwhile) is planned again.
-    return memory.appliedPlanId === planId ? { action: 'none', memory } : { action: 'plan-waypoints', planId, memory };
+    if (memory.appliedPlanId === planId) return { action: 'none', memory };
+    return sheltered ? dropped(memory) : { action: 'plan-waypoints', planId, memory };
   }
   const next = { ...memory, lastMast: mastId };
   // The mast arrived (the habitat loads after the terrain) for the route already on the table. If the first plan was
@@ -85,6 +92,7 @@ export function decidePlan(input, memory) {
   if (nonce === memory.lastNonce && waypointsKey === findsRouteKey) {
     return { action: 'consume-find', planId, memory: { ...next, lastKey: waypointsKey, appliedPlanId: planId } };
   }
+  if (sheltered) return dropped(next);
   return { action: 'plan-waypoints', planId, memory: { ...next, lastKey: waypointsKey, lastNonce: nonce } };
 }
 

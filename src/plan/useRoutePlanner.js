@@ -4,7 +4,7 @@ import { HAZARDS_PATH } from '../data/provenance.js';
 import { routeStopCandidates, STOPS_PATH } from '../data/stops.js';
 import { parseTraverse, TRAVERSE_PATH } from '../data/traverse.js';
 import { heightAt } from '../sim/costGrid.js';
-import { startConsumables } from '../sim/legCosts.js';
+import { startConsumables, waypointsForCosts } from '../sim/legCosts.js';
 import { riskPricing, siteStart } from '../sim/missionNeeds.js';
 import { mastKey, profileSources, summariseProfiles } from '../sim/routeProfiles.js';
 import { createRoutePlannerClient } from '../sim/routePlannerClient.js';
@@ -182,6 +182,7 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
       enabled, ready: Boolean(site && client), fromNeeds, needs, profile: chosenProfile, nonce, mastId,
       waypointsKey: waypointKey(waypoints), waypointCount: waypoints.length,
       findsRouteKey: useMissionStore.getState().finds?.routeKey ?? null,
+      sheltered: Boolean(useMissionStore.getState().route.shelter),
     }, memoryRef.current);
     memoryRef.current = decision.memory;
 
@@ -279,7 +280,9 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
         failed: (error) => { if (!mastOnly) failed(error); },   // a failed refresh leaves the route on the table as it is
         done: (result) => {
           if (!aliveRef.current) return;
-          const profiles = summariseProfiles(result, planned, heightAtRef.current, constantsRef.current, start);
+          // no work counted again at the stops already reached during the EVA (N6, as route.totals)
+          const costed = waypointsForCosts({ ...useMissionStore.getState().route, waypoints: planned });
+          const profiles = summariseProfiles(result, costed, heightAtRef.current, constantsRef.current, start);
           if (mastOnly) {
             useMissionStore.setState((store) => {
               const current = store.route;
@@ -299,6 +302,7 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
             return;
           }
           useMissionStore.setState((store) => {
+            if (store.route.shelter) return store;   // an event's route home came in meanwhile: keep it (B1)
             const base = { ...store.route, profiles };
             const chosen = store.route.profile;
             const use = soloRadio && profiles.radio?.ok ? 'radio' : chosen;

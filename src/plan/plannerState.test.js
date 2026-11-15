@@ -89,6 +89,19 @@ describe('planning the waypoints once the EVA has begun', () => {
     expect(decidePlan(locked({ waypointsKey: changed }), landed).action).toBe('none');
   });
 
+  it('drops a Re-plan while a shelter route is the route, and does not replay it after the event (B1)', () => {
+    const replan = decidePlan(locked({ nonce: 1, sheltered: true }), atLock);
+    expect(replan.action).toBe('none');
+    expect(decidePlan(locked({ nonce: 1 }), replan.memory).action).toBe('none');   // the event is over: nothing replays
+    expect(decidePlan(locked({ nonce: 2 }), replan.memory).action).toBe('plan-waypoints');   // a Re-plan after it plans
+    // a find's waypoints during the event are not planned either, and a cancelled plan is not re-planned
+    expect(decidePlan(locked({ waypointsKey: 'HAB:535:574|X:1:1', sheltered: true }), atLock).action).toBe('none');
+    const cancelled = decidePlan(locked({ waypointsKey: 'HAB:535:574|X:1:1' }), atLock);
+    expect(decidePlan(locked({ waypointsKey: 'HAB:535:574|X:1:1', sheltered: true }), cancelled.memory).action).toBe('none');
+    // the comparison refresh writes no path, so it still goes through
+    expect(decidePlan(locked({ mastId: '544.9,-,581.5', sheltered: true }), atLock).action).toBe('refresh-mast');
+  });
+
   it('plans nothing for fewer than two waypoints', () => {
     expect(decidePlan(locked({ waypointCount: 1, waypointsKey: 'HAB:0:0' }), atLock).action).toBe('none');
   });
