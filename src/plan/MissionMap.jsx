@@ -147,7 +147,8 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
     () => mapCrop([...waypoints, ...pathPoints, ...altPoints, ...trackPoints, ...planPoints, ...(here ? [here] : [])], tile, { min: minSpanM }),
     [waypoints, pathPoints, altPoints, trackPoints, planPoints, here?.x, here?.z, minSpanM, tile.width, tile.depth],   // eslint-disable-line react-hooks/exhaustive-deps
   );
-  const cropOn = (points) => (points?.length ? mapCrop(points, tile, { pad: 0.35, min: 200 }) : null);
+  // A framed stretch is never framed wider than the map's own smallest fit (a short walk in the debrief, #274).
+  const cropOn = (points) => (points?.length ? mapCrop(points, tile, { pad: 0.35, min: Math.min(200, minSpanM) }) : null);
   const [view, setView] = useState(() => cropOn(focus));   // null: framed on the route
   // A new focus frames its points (a deviation in the debrief, #274); set while rendering, as React suggests for
   // state that follows a prop, so the map never paints one frame at the old view.

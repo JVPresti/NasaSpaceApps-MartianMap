@@ -6,7 +6,7 @@ import { COST_CONSTANTS } from '../sim/costGrid.js';
 import { distanceToPath } from '../sim/offRoute.js';
 import { REVIEW_RULES, reviewRoute } from '../sim/routeReview.js';
 import DebriefScreen from './DebriefScreen.jsx';
-import { RouteReviewView } from './RouteReview.jsx';
+import { MAP_SPAN_M, RouteReviewView } from './RouteReview.jsx';
 import { costText, ruleNotes, summaryLine } from './reviewText.js';
 
 afterEach(() => setLanguage('en'));
@@ -205,6 +205,16 @@ describe('route review in the debrief', () => {
     expect(provenance.lookup('review.verdict').source).toContain(`until back within ${REVIEW_RULES.exitM} m`);
     const row = renderView(DETOURS).match(/<button[^>]*debrief-review-row[\s\S]*?<\/button>/)[0];
     expect(row).not.toContain('data-tag="DERIVED"');
+  });
+
+  it('frames a short sortie so the plan and the walk fill the map, not a 500 m square', () => {
+    // The first mission: 55 m out to one stop and back.
+    const plan = { ...PLAN, path: [[0, 0], [55, 0]], waypoints: [{ name: 'HAB', x: 0, z: 0 }, { name: 'S1 · light-toned patch', x: 55, z: 0 }], legs: [] };
+    const html = renderView(summaryWith(walk([[0, 0], [55, 0], [0, 0]]), { plan }));
+    const route = polyline(html, 'map-route');
+    const across = Math.max(...route.map(([x]) => x)) - Math.min(...route.map(([x]) => x));
+    expect(across).toBeGreaterThan(55);                 // over half the map's width
+    expect(55 / MAP_SPAN_M).toBeGreaterThan(0.6);
   });
 
   it('gives the margin chart the same lowest margin as the headline metric', () => {

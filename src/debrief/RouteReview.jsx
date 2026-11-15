@@ -30,6 +30,11 @@ provenance.define({
 
 /** The verdict number chip: the map's stop number, in the verdict colour. */
 const NUM_CLASS = (verdict) => 'map-marker-num debrief-review-num review-' + verdict;
+/**
+ * The smallest side of the review map, metres: the plan and the walk fill the map down to a short sortie (55 m in the
+ * first mission), where the table's span would leave both lines a few pixels long.
+ */
+export const MAP_SPAN_M = 80;
 const TAG_CLASS = () => 'source-tag-chip debrief-tag';
 const isNumber = (value) => typeof value === 'number' && Number.isFinite(value);
 
@@ -204,6 +209,7 @@ export function RouteReviewView({ summary, review, selected, onSelect }) {
                   stretches={stretches}
                   marks={marks}
                   focus={focus}
+                  minSpanM={MAP_SPAN_M}
                 />
               </div>
               {legend}
