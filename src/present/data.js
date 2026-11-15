@@ -7,18 +7,24 @@ export function lookup(data, path) {
   return String(path).split('.').reduce((o, k) => (o == null ? undefined : o[k]), data);
 }
 
-/** Replace every {path} in text. A missing value shows as a dash, never as "undefined". */
+/** What a template shows for a value plan.json does not have, never "undefined". */
+export const MISSING = '?';
+
+/**
+ * Replace every {path} in text. {path:N} shows the number with N decimals ('{bend.slopeDeg:1}' gives 24.6); without
+ * one, formatNumber picks.
+ */
 export function fill(text, data, lang = 'en') {
   if (text == null) return '';
-  return String(text).replace(/\{([\w.]+)\}/g, (_, path) => {
+  return String(text).replace(/\{([\w.]+)(?::(\d))?\}/g, (_, path, digits) => {
     const v = lookup(data, path);
-    if (v == null) return '–';
-    return typeof v === 'number' ? formatNumber(v, lang) : String(v);
+    if (v == null) return MISSING;
+    return typeof v === 'number' ? formatNumber(v, lang, digits === undefined ? undefined : Number(digits)) : String(v);
   });
 }
 
-export function formatNumber(v, lang = 'en') {
-  const digits = Number.isInteger(v) ? 0 : Math.abs(v) < 1 ? 2 : Math.abs(v) < 100 ? 1 : 0;
+export function formatNumber(v, lang = 'en', fixed) {
+  const digits = fixed ?? (Number.isInteger(v) ? 0 : Math.abs(v) < 1 ? 2 : Math.abs(v) < 10 ? 1 : 0);
   return v.toLocaleString(lang === 'es' ? 'es-MX' : 'en-US', { maximumFractionDigits: digits, minimumFractionDigits: digits });
 }
 

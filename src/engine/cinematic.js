@@ -66,13 +66,20 @@ export function createCinematic(ctx, hooks) {
   // The app's own route glow and map labels stay out of the presentation's frames; release() brings them back.
   const hidden = [];
   let labelFrames = 0;
-  const LABEL_EVERY = 30;   // look for new labels twice a second, not every frame
+  const LABEL_EVERY = 30;   // a full scene walk every 30 frames; between them only the top two levels
   const hide = (o) => { if (o && o.layers.isEnabled(0)) { hidden.push(o); o.layers.set(HIDDEN_LAYER); } };
-  const hideAppLabels = () => {
+  const hideAppLabels = (full) => {
     if (ctx.sys.routeGlow) { hide(ctx.sys.routeGlow.mesh); hide(ctx.sys.routeGlow.chevrons); }
-    scene.traverse((o) => { if (o.isSprite) hide(o); });   // waypoint and shelter labels, also ones added later
+    // Waypoint and shelter labels, also ones added later: the waypoint markers rebuild their sprites in a group on
+    // the scene whenever the route changes, so the top two levels are checked every frame. On a slow GPU 30 frames
+    // can take seconds, too long to leave a label on screen.
+    if (full) { scene.traverse((o) => { if (o.isSprite) hide(o); }); return; }
+    for (const a of scene.children) {
+      if (a.isSprite) hide(a);
+      for (const b of a.children) if (b.isSprite) hide(b);
+    }
   };
-  hideAppLabels();
+  hideAppLabels(true);
 
   // ---------------------------------------------------------------- orbital images under the terrain
   function addImage({ image, box, y = -220, opacity = 1 }) {
@@ -171,7 +178,9 @@ export function createCinematic(ctx, hooks) {
   function apply(dt) {
     if (released) return;
     if (frameCb) frameCb(dt);
-    if (++labelFrames >= LABEL_EVERY) { labelFrames = 0; hideAppLabels(); }
+    const full = ++labelFrames >= LABEL_EVERY;
+    if (full) labelFrames = 0;
+    hideAppLabels(full);
     if (!shot) return;
     camera.up.set(0, 1, 0);
     camera.position.set(shot.x, shot.y, shot.z);

@@ -94,10 +94,20 @@ describe('createCinematic', () => {
     expect(hooks.render).not.toHaveBeenCalled();
   });
 
-  it('re-hides labels added later, twice a second rather than every frame', () => {
+  it('hides a label added to a group on the scene on the next frame', () => {
     const { ctx, cine } = make();
-    const late = new THREE.Sprite();
-    ctx.scene.add(late);
+    const g = new THREE.Group(), late = new THREE.Sprite();
+    ctx.scene.add(g);
+    cine.apply(1 / 60);
+    g.add(late);   // the waypoint markers add their sprites to an existing group
+    cine.apply(1 / 60);
+    expect(late.layers.isEnabled(0)).toBe(false);
+  });
+
+  it('finds deeper labels on the full walk, every 30 frames', () => {
+    const { ctx, cine } = make();
+    const g = new THREE.Group(), h = new THREE.Group(), late = new THREE.Sprite();
+    h.add(late); g.add(h); ctx.scene.add(g);
     for (let i = 0; i < 29; i++) cine.apply(1 / 60);
     expect(late.layers.isEnabled(0)).toBe(true);
     cine.apply(1 / 60);

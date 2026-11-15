@@ -47,7 +47,7 @@ export const BEATS = [
     duration: 9,
     shot: { target: 'jezero', dist: 240_000, yaw: 0, pitch: -90, fov: 32 },
     move: { dur: 7.5, ease: 'zoom' },
-    caption: { en: 'Jezero: a lake about 3.5 billion years ago.', es: 'Jezero. Un lago hace 3,500 millones de años.' },
+    caption: { en: 'Jezero, a lake about 3.5 billion years ago.', es: 'Jezero. Un lago hace 3,500 millones de años.' },
     chips: [
       { at: 'jezero', show: [5.5], text: { en: 'Jezero crater · Perseverance landed here, 2021', es: 'Cráter Jezero · aquí aterrizó Perseverance, 2021' }, tag: 'DATA' },
     ],
@@ -89,7 +89,7 @@ export const BEATS = [
     chips: [
       { at: 'leg:0', show: [5], big: '{legs.0.distanceM} m', text: { en: '{legs.0.timeMin} min · {legs.0.o2G} g O2', es: '{legs.0.timeMin} min · {legs.0.o2G} g O2' }, tag: 'DERIVED' },
       { at: 'leg:2', show: [8], offset: 1, big: '{legs.2.distanceM} m', text: { en: '{legs.2.timeMin} min · {legs.2.o2G} g O2, uphill', es: '{legs.2.timeMin} min · {legs.2.o2G} g O2, cuesta arriba' }, tag: 'DERIVED' },
-      { at: 'bend', show: [10.5], big: '{bend.slopeDeg}°', text: { en: 'slope here. Over {constants.slopeNoGoDeg}° is no-go', es: 'de pendiente. Más de {constants.slopeNoGoDeg}° no se pasa' }, tag: 'DERIVED', danger: true },
+      { at: 'bend', show: [10.5], big: '{bend.slopeDeg:1}°', text: { en: 'slope here. Over {constants.slopeNoGoDeg}° is no-go', es: 'de pendiente. Más de {constants.slopeNoGoDeg}° no se pasa' }, tag: 'DERIVED', danger: true },
     ],
     source: { en: 'Route: our planner on the HiRISE slope. O2: NASA suit tests', es: 'Ruta: nuestro planificador sobre la pendiente HiRISE. O2: pruebas de trajes de la NASA', tag: 'DERIVED' },
   },
@@ -106,7 +106,7 @@ export const BEATS = [
     scene: { zone: true },
     tracks: { zone: [0, 29, 7, 16.5], zoneOpacity: [0, 1, 4.5, 6] },
     chips: [
-      { at: 'astronaut', show: [7], big: '{zone.area} ha', text: { en: 'you can reach and still get home', es: 'puedes alcanzar y aún volver' },
+      { at: 'astronaut', show: [7], big: '{zone.area:1} ha', text: { en: 'you can reach and still get home', es: 'puedes alcanzar y aún volver' },
         liveText: { en: 'reach and still get home, T+{clock}', es: 'alcanzas y aún vuelves, T+{clock}' }, tag: 'SIM', live: 'area' },
       { at: 'hab', show: [5.5], text: { en: 'Habitat', es: 'Hábitat' }, tag: 'DATA', home: true },
     ],
@@ -169,7 +169,7 @@ export const BEATS = [
 // Beats are borrowed from BEATS by id with their own length and an English caption.
 export const GLOBAL_30 = [
   { id: 'mars', duration: 2.5, title: 'Marswalk', caption: { en: 'Plan a walk on Mars. Get home.' } },
-  { id: 'jezero', duration: 6, caption: { en: 'Jezero crater: THEMIS 100 m, CTX 6 m.' }, move: { dur: 6, ease: 'zoomIn' }, chips: [] },
+  { id: 'jezero', duration: 6, caption: { en: 'Jezero crater. THEMIS 100 m, CTX 6 m.' }, move: { dur: 6, ease: 'zoomIn' }, chips: [] },
   {
     id: 'cheyava', duration: 5.2, move: { dur: 4.4, ease: 'zoomOut' }, chips: [],
     caption: [{ at: 0, en: 'Down to 1 m HiRISE ground.' }, { at: 2.8, en: 'On Mars, nobody can come and get you.' }],
@@ -181,7 +181,7 @@ export const GLOBAL_30 = [
     tracks: { zone: [[0, 29, 1, 6], [29, 31, 6.3, 7]], zoneOpacity: [0, 1, 0.2, 1] },
     chips: [
       { at: 'hab', show: [1.2], text: { en: 'Habitat' }, tag: 'DATA', home: true },
-      { at: 'astronaut', show: [2], big: '{zone.area} ha', text: { en: 'you can reach and still get home' }, liveText: { en: 'reach and still get home, T+{clock}' }, tag: 'SIM', live: 'area' },
+      { at: 'astronaut', show: [2], big: '{zone.area:1} ha', text: { en: 'you can reach and still get home' }, liveText: { en: 'reach and still get home, T+{clock}' }, tag: 'SIM', live: 'area' },
     ],
     source: { en: 'Zone: HiRISE cost grid, NASA suit model, 30 min sortie. Alert: RAD, Gale 2017', tag: 'SIM' },
   },

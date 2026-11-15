@@ -57,7 +57,7 @@ describe('presentation beats', () => {
         for (const b of beats) for (const chip of b.chips || []) {
           for (const t of [chip.big, chip.text?.en, chip.text?.es]) {
             if (!t) continue;
-            expect(fill(t, data), `${b.id}: ${t}`).not.toMatch(/–|undefined|NaN/);
+            expect(fill(t, data), `${b.id}: ${t}`).not.toMatch(/\?|undefined|NaN/);
           }
         }
       });
