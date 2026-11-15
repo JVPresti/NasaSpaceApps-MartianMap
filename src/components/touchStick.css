@@ -1,0 +1,54 @@
+/* Touch stick for Walk mode (#103). The engine owns the pointer events (src/engine/touchInput.js); this overlay is
+   visual only, so it never takes pointers and sits below the menus. The size and position come from the component,
+   which shares its constants with the engine hit circle. */
+.touch-stick {
+  position: absolute;
+  z-index: 5;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 240, 225, 0.45);
+  border-radius: 50%;
+  background: rgba(70, 40, 28, 0.28);
+  backdrop-filter: blur(4px);
+  opacity: 0.65;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+
+.touch-stick.on {
+  opacity: 1;
+}
+
+.touch-stick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  box-sizing: border-box;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(255, 240, 225, 0.8);
+  border-radius: 50%;
+  background: rgba(251, 245, 238, 0.5);
+  backdrop-filter: blur(2px);
+  will-change: transform;
+  transform: translate(-50%, -50%);
+  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.touch-stick.on .touch-stick-knob {
+  border-color: rgba(255, 240, 225, 0.95);
+  background: rgba(251, 245, 238, 0.72);
+  box-shadow: 0 0 12px rgba(255, 214, 170, 0.35);
+}
+
+.touch-stick.jog .touch-stick-knob {
+  border-color: #f5a742;
+  background: rgba(245, 167, 66, 0.38);
+  box-shadow: 0 0 14px rgba(245, 167, 66, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .touch-stick,
+  .touch-stick-knob {
+    transition: none;
+  }
+}

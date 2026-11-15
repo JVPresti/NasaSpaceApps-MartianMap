@@ -26,13 +26,13 @@ function tierFromUrl() {
  * stop: no mission clock, suit consumption or walking happens behind it. `onEngine` also receives the
  * simulation controls used by the restart flow in src/state/evaSession.js.
  */
-export default function EngineView({ onStatus, onProgress, onReady, onError, onLockChange, onEngine }) {
+export default function EngineView({ onStatus, onProgress, onReady, onError, onLockChange, onEngine, onGamepadAction }) {
   const containerRef = useRef(null);
   const engineRef = useRef(null);
-  const callbacks = useRef({ onStatus, onProgress, onReady, onError, onLockChange, onEngine });
+  const callbacks = useRef({ onStatus, onProgress, onReady, onError, onLockChange, onEngine, onGamepadAction });
 
   useEffect(() => {
-    callbacks.current = { onStatus, onProgress, onReady, onError, onLockChange, onEngine };
+    callbacks.current = { onStatus, onProgress, onReady, onError, onLockChange, onEngine, onGamepadAction };
   });
 
   useEffect(() => {
@@ -70,6 +70,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
         onProgress: (progress) => { if (current()) callbacks.current.onProgress?.(progress); },
         onError: (err) => { if (current()) callbacks.current.onError?.(err); },
         onLockChange: (locked) => { if (current()) callbacks.current.onLockChange?.(locked); },
+        onGamepadAction: (action) => { if (current()) callbacks.current.onGamepadAction?.(action); },
       });
     } catch (err) {
       // Missing WebGL 2, or a synchronous WebGLRenderer failure.

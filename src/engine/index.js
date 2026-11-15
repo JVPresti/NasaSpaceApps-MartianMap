@@ -10,6 +10,7 @@ import { subscribeLanguage } from '../i18n/index.js';
 //   engine.setSkyTime(17.75 | null); engine.getSun();   // sky and Sun from the mission clock (#73), missionSky.js
 //   engine.requestPointerLock(); engine.releasePointerLock(); engine.setInputEnabled(false);
 //   engine.setQuality('auto' | 'high' | 'low'); engine.getQuality(); engine.resetSession();
+//   engine.subscribeTouch(listener); engine.subscribeGamepad(listener);   // UI hints for touch and gamepad (#103)
 //   engine.heightAt(x, z); engine.slopeAt(x, z); engine.lineOfSight(a, b); engine.getPlayer();
 //   // wrist screen app (#67), wrist.js: the interface draws the canvas, the engine shows it on the arm
 //   engine.setWristScreen(canvas | null); engine.invalidateWristScreen(); engine.setWristOpen(true | false);
@@ -52,6 +53,7 @@ import { createSampleDust } from './sampleDust.js';
 import { createSlopeGrid } from './slopeGrid.js';
 import { createHabitat } from './habitat.js';
 import { createView, createViewState, CHEYAVA_VIEW } from './view.js';
+import { planTouches } from './planTouch.js';
 import { LOOK_DEFAULTS, clampLookSettings } from './lookSettings.js';
 import { airlockExit, partnerPatrol } from './spawn.js';
 import { canOpenWrist, wristRestoreState } from './wrist.js';
@@ -67,12 +69,15 @@ export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
  * @param {{ assetBase: string, mode?: 'plan' | 'walk', tier?: 'high' | 'low' | null, inputEnabled?: boolean,
  *   debug?: boolean,
  *   onStatus?: (text: string) => void, onProgress?: (progress: { loaded: number, failed: number, total: number, ratio: number }) => void,
- *   onError?: (err: Error) => void, onLockChange?: (locked: boolean) => void }} options
+ *   onError?: (err: Error) => void, onLockChange?: (locked: boolean) => void,
+ *   onGamepadAction?: (action: 'mode' | 'layer-prev' | 'layer-next') => void }} options
  *   tier: force a quality tier and turn off the automatic choice (the app passes ?tier=high|low).
  *   inputEnabled: false starts with gameplay input gated off, for a start screen or a menu.
+ *   onGamepadAction: a gamepad button press, once per press. The app routes it through the same mode and layer
+ *   actions as the keyboard (#103, #174).
  *   debug: expose window.__marswalk for measuring (development builds only).
  */
-export function createEngine(container, { assetBase, mode = 'plan', tier = null, inputEnabled: inputEnabledOption = true, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {}, onLockChange = () => {} } = {}) {
+export function createEngine(container, { assetBase, mode = 'plan', tier = null, inputEnabled: inputEnabledOption = true, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {}, onLockChange = () => {}, onGamepadAction = () => {} } = {}) {
   if (!assetBase) throw new Error('createEngine: assetBase is required');
   assertWebGL2();
 
@@ -80,6 +85,12 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   let inputEnabled = inputEnabledOption !== false;
   let pendingLock = null, pendingLockResolve = null;
   let pendingReset = false;
+  // UI subscriptions for the inputs that appear only after use (#103). Touch and gamepad states are also pushed
+  // to a listener added later, so a component mounted after the first use still shows its hint.
+  const touchListeners = new Set(), gamepadListeners = new Set();
+  // A UI listener is a hint overlay: if it throws, the scene must keep rendering.
+  const emitTouch = (state) => { for (const listener of touchListeners) { try { listener(state); } catch { /* keep the frame */ } } };
+  const emitGamepad = (state) => { for (const listener of gamepadListeners) { try { listener(state); } catch { /* keep the frame */ } } };
   const pending = { sky: null, skyBlend: null, skyTime: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false, wristScreen: null, habitatScreens: null, lookSettings: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
@@ -116,6 +127,9 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   const camera = new THREE.PerspectiveCamera(62, 1, 0.15, 30000);
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.495; controls.minDistance = 5; controls.maxDistance = 9000; controls.enabled = false;
+  // Plan is a north-up map (#135, #213): one finger pans and two pan and pinch-zoom, never orbit. Walk uses its
+  // own touch controller (view.js), and OrbitControls stays disabled there.
+  controls.touches = planTouches(THREE.TOUCH);
 
   // The quality tier decides which ortho texture belongs in the initial manifest, so detect it before
   // registering the total. Everything else is the same for both tiers.
@@ -250,6 +264,9 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     viewCtl = createView(ctx, canvas, signal, {
       inputEnabled,
       onLockChange: (locked) => { if (alive) onLockChange(locked); },
+      onTouch: (state) => { if (alive) emitTouch(state); },
+      onGamepad: (state) => { if (alive) emitGamepad(state); },
+      onGamepadAction: (action) => { if (alive) onGamepadAction(action); },
     });
     viewCtl.setLookSettings(pending.lookSettings ?? LOOK_DEFAULTS);   // a call made before ready must not be lost
     if (pendingLockResolve) {
@@ -444,6 +461,30 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     setInputEnabled(enabled) {
       inputEnabled = enabled === true;
       if (viewCtl) viewCtl.setInputEnabled(inputEnabled);
+    },
+    /**
+     * Follow the Walk touch stick for the on-screen overlay (#103). The listener receives the current state as
+     * soon as it subscribes and then on every touch event, never per frame.
+     * @param {(state: { visible: boolean, active: boolean, knobX: number, knobY: number, jog: boolean }) => void} listener
+     * @returns {() => void} unsubscribe
+     */
+    subscribeTouch(listener) {
+      if (typeof listener !== 'function') return () => {};
+      touchListeners.add(listener);
+      if (viewCtl) listener(viewCtl.touchState());
+      return () => touchListeners.delete(listener);
+    },
+    /**
+     * Follow whether a gamepad has been used (#103). The listener is told immediately, so a hint mounted after
+     * the first press still appears, and again when the pad is used for the first time.
+     * @param {(state: { used: boolean, connected: boolean }) => void} listener
+     * @returns {() => void} unsubscribe
+     */
+    subscribeGamepad(listener) {
+      if (typeof listener !== 'function') return () => {};
+      gamepadListeners.add(listener);
+      if (viewCtl) listener(viewCtl.gamepadState());
+      return () => gamepadListeners.delete(listener);
     },
     /**
      * Ask the browser for pointer lock on the engine canvas. Supports the legacy void form and the promise
@@ -757,6 +798,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       }
       resolveDisposed();
       if (viewCtl) viewCtl.dispose();
+      touchListeners.clear(); gamepadListeners.clear();
       quality.dispose();
       ac.abort(); ro.disconnect(); controls.dispose();
       if (sys.prints) sys.prints.dispose();

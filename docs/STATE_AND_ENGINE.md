@@ -132,7 +132,9 @@ await engine.ready;
 | Call | Behaviour |
 |---|---|
 | `setMode('plan' \| 'walk')` | Switches the camera. Can be called before `ready`; it is applied when ready. Plan cancels any pending pointer-lock request and releases the lock, so a late Walk grant cannot capture the mouse in the map. |
-| `setInputEnabled(enabled)` | Gates walk/orbit input. Disabling clears every held key and stops orbit controls, so WASD, arrows and mouse look cannot act behind a menu. Can be called before `ready`. |
+| `setInputEnabled(enabled)` | Gates walk/orbit input. Disabling clears every held key and stops orbit controls, so WASD, arrows and mouse look cannot act behind a menu. It also drops a touch stick in progress and forgets gamepad button state, so releasing a menu cannot resume a deflected stick or repeat a held button. Can be called before `ready`. |
+| `subscribeTouch(listener)` | Follows the Walk touch stick (#103) for the on-screen overlay: `{ visible, active, knobX, knobY, jog }`. The listener is called immediately with the current state and then on touch events only, never per frame. Returns an unsubscribe function. |
+| `subscribeGamepad(listener)` | Reports whether a gamepad has been used (#103): `{ used, connected }`. Called immediately on subscribe, so a hint mounted after the first press still appears, and again on first use. Returns an unsubscribe function. |
 | `requestPointerLock()` | Asks the browser to lock the pointer on the engine canvas. Supports the legacy void form and the promise form; resolves `true` only after a real grant and `false` on refusal, an unsupported browser, the 3 s watchdog, release or dispose. A browser promise that resolves while `document.pointerLockElement` is still not the canvas is not success: the change event settles the request. Concurrent calls share one request. A call before `ready` is queued until the canvas exists. |
 | `releasePointerLock()` | Releases the lock now. A queued pre-ready request resolves `false`. |
 | `isPointerLocked()` | `true` when `document.pointerLockElement` is the engine canvas. |
@@ -169,7 +171,9 @@ await engine.ready;
 
 Options: `inputEnabled: false` starts with gameplay input gated off (the app shell passes this for the start
 screen). `onLockChange(locked)` fires only when the pointer lock actually changes, never per frame. The app
-uses it to pause as soon as the lock is lost in Walk.
+uses it to pause as soon as the lock is lost in Walk. `onGamepadAction(action)` reports a standard-gamepad press
+(`mode`, `layer-prev`, `layer-next`) once per press; App routes it through the same handlers as the keyboard and
+the mode buttons (#103). Touch and gamepad state is read through `subscribeTouch` and `subscribeGamepad`.
 
 - **When they work:** the terrain queries throw before `ready`; `setSky`, `setRoute`, `setDust`, `setInputEnabled`, the
   pointer-lock request/quality calls and `resetSession` before `ready` are stored and applied when ready.
