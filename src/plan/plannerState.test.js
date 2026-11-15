@@ -3,7 +3,7 @@ import { waypointsForCosts } from '../sim/legCosts.js';
 import { DEFAULT_NEEDS } from '../sim/missionNeeds.js';
 import { nextTarget } from '../sim/waypointRunner.js';
 import {
-  afterNeedsPlan, afterWaypointPlan, alertRouteActive, createLatestOnly, decidePlan, emptyPlannerMemory, needsPlanKey,
+  afterNeedsPlan, afterWaypointPlan, alertRouteActive, createLatestOnly, decidePlan, emptyPlannerMemory, failedNeedsRoute, needsPlanKey,
   needsPlanPending, plansFromNeeds, resumeStops,
 } from './plannerState.js';
 import { keepWalkProgress } from './useRoutePlanner.js';
@@ -68,6 +68,23 @@ describe('planning from the needs', () => {
     expect(needsPlanPending({ fromNeeds: true, key: changed }, { needsKey: key })).toBe(true);
     expect(needsPlanPending({ fromNeeds: true, key }, { needsKey: key })).toBe(false);
     expect(needsPlanPending({ fromNeeds: false, key: changed }, { needsKey: key })).toBe(false);   // EVA under way
+  });
+});
+
+describe('a needs plan with no route', () => {
+  const before = { path: [[0, 0], [10, 10]], distanceM: 870, climbM: 24, steepestSlopeDeg: 20, etaSec: 1260, explain: [{ clear: true }], profile: 'fastest', visited: [] };
+  const fields = { waypoints: [{ name: 'HAB', x: 0, z: 0 }], stops: [], dropped: [], planReasons: [{ code: 'no-tasks' }], budget: null, weights: {}, profiles: null, tasks: [] };
+
+  it('blanks the figures of the last route for an empty or unreachable sampling task list (#352)', () => {
+    const route = failedNeedsRoute(before, fields, { reason: 'No route found', objective: 'samples' });
+    expect(route).toMatchObject({ ...fields, path: null, explain: [], reason: 'No route found', distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, profile: 'fastest' });
+  });
+
+  it('keeps them for the three other goals, as before', () => {
+    for (const objective of ['sortie', 'cheyava', 'bright-angel']) {
+      const route = failedNeedsRoute(before, fields, { reason: 'No route found', objective });
+      expect(route).toMatchObject({ path: null, explain: [], distanceM: 870, climbM: 24, steepestSlopeDeg: 20, etaSec: 1260 });
+    }
   });
 });
 

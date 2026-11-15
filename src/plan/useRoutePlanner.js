@@ -12,7 +12,7 @@ import { SHELTERS_PATH } from '../sim/shelters.js';
 import { suitConstantsFromHazards } from '../sim/suitModel.js';
 import { useMissionStore, withRouteProfile } from '../state/store.js';
 import {
-  afterNeedsPlan, afterWaypointPlan, alertRouteActive, createLatestOnly, decidePlan, emptyPlannerMemory, needsPlanKey, needsPlanPending,
+  afterNeedsPlan, afterWaypointPlan, alertRouteActive, createLatestOnly, decidePlan, emptyPlannerMemory, failedNeedsRoute, needsPlanKey, needsPlanPending,
   plansFromNeeds, resumeStops,
 } from './plannerState.js';
 import { ROUTE_SOURCES, waypointKey } from './routePlan.js';
@@ -255,7 +255,7 @@ export function useRoutePlanner({ waypoints, enabled, engine = null }) {
           if (!inUse?.ok) {
             const reason = plan.ok ? planned?.[plan.profile]?.reason ?? 'No route found' : 'No route found';
             useMissionStore.setState((store) => ({
-              route: { ...store.route, ...fields, path: null, explain: [], reason },
+              route: failedNeedsRoute(store.route, fields, { reason, objective: plan.needs?.objective ?? needs.objective }),
               sources: { ...store.sources, ...sourcesRef.current },
             }));
             setState({ status: 'error', error: reason });

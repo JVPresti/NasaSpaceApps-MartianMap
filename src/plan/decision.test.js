@@ -71,6 +71,13 @@ describe('go / no-go (P1)', () => {
     expect(decisionFor({ planner: ready, totals: nominal, limits: limitsOf({ time }), objective: 'samples' }).text).toMatch(/, o acerca la tarea 1\.$/);
   });
 
+  it('tells the crew to add a task when the Collect samples list is empty, not that no route was found (#352)', () => {
+    const d = decisionFor({ planner: { status: 'error', error: 'No route found' }, totals: null, objective: 'samples', noTasks: true });
+    expect(d).toMatchObject({ go: false, tone: 'warning', reason: 'no-tasks', title: 'No-go' });
+    expect(d.text).toBe('No sampling task yet: add one to plan a route.');
+    expect(decisionFor({ planner: { status: 'error', error: 'No route found' }, totals: null, objective: 'samples' }).reason).toBe('error');
+  });
+
   it('is a no-go when the dust opacity is above the terrain-fix limit (#248)', () => {
     const d = decisionFor({ planner: ready, totals: nominal, limits: limitsOf(), dust: { tau: 1.4, limit: 1 } });
     expect(d).toMatchObject({ go: false, reason: 'dust', tone: 'warning' });

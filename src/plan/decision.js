@@ -51,15 +51,17 @@ export function tightestText(limit) {
 /**
  * @param {{ planner: { status: string, error?: string | null }, totals: object | null,
  *   limits?: ReturnType<typeof import('./limits.js').planLimits> | null, dust?: { tau: number, limit: number } | null,
- *   objective?: string | null, radiationExpected?: boolean }} input
+ *   objective?: string | null, radiationExpected?: boolean, noTasks?: boolean }} input
  *   limits: planLimits() of the route on the table; dust: the opacity the crew would walk in and the terrain-fix
  *   limit (hazards.json dust.event.nav_fix_tau_max); objective: the crew's goal, for the way out; radiationExpected: the
- *   run's radiation alert is switched on and has not fired (the outlook beside the decision gives its time)
+ *   run's radiation alert is switched on and has not fired (the outlook beside the decision gives its time); noTasks: the
+ *   goal is "Collect samples" and the list is empty (#352), so the no-go says to add a task instead of "No route found"
  * @returns {{ tone: 'ok' | 'caution' | 'warning' | null, title: string, text: string, note?: string, go: boolean,
- *   reason: 'error' | 'planning' | 'time' | 'o2' | 'battery' | 'reserve' | 'dust' | 'caution' | 'go', limit: string | null }}
+ *   reason: 'no-tasks' | 'error' | 'planning' | 'time' | 'o2' | 'battery' | 'reserve' | 'dust' | 'caution' | 'go', limit: string | null }}
  */
-export function decisionFor({ planner, totals, limits = null, dust = null, objective = null, radiationExpected = false }) {
+export function decisionFor({ planner, totals, limits = null, dust = null, objective = null, radiationExpected = false, noTasks = false }) {
   const noGo = (reason, text, limit = null) => ({ tone: 'warning', title: t('table.decision.no.go'), text, go: false, reason, limit });
+  if (noTasks) return noGo('no-tasks', t('tasks.plan.none'));
   if (planner?.status === 'error') return noGo('error', planner.error ? translateText(planner.error) : t('table.decision.no.route'));
   if (!totals) return { tone: null, title: t('table.decision.planning'), text: t('table.decision.waiting'), go: false, reason: 'planning', limit: null };
   if (limits?.failing) {
