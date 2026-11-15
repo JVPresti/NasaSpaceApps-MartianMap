@@ -81,7 +81,8 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
 
   const shelters = loadDataFile(SHELTERS_PATH).catch(() => null);
   // The habitat entry is the first shelter in the real file (the foot of the airlock steps), not the HAB route waypoint.
-  // null when the file is missing or invalid: the suit runner then uses its DEFAULT_HABITAT and the EVA statistics do not start.
+  // null when the file is missing or invalid: the suit runner then uses its DEFAULT_HABITAT and the EVA statistics count
+  // only the habitat's walk zones as being back.
   const habitatEntry = shelters.then((data) => {
     try {
       return data ? parseShelters(data)[0] ?? null : null;
@@ -138,11 +139,13 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     // The debrief statistics (#43): distance, minima and history from this EVA's clock, ended at the real HAB entry.
     habitatEntry.then((entry) => {
       if (stopped) return;
-      if (!entry) { console.error('shelters.json not loaded, EVA statistics not started'); return; }
+      // Without the HAB entry the runner still starts on the habitat's walk zones alone, so the EVA can still be
+      // finished at the cabin table (src/state/tableActions.js).
+      if (!entry) console.error('shelters.json not loaded: only the habitat walk zones count as back at the habitat');
       try {
         // the whole habitat counts as being back, not only the circle at the foot of the steps (#244)
         const habitatZoneAt = typeof engine.habitatZoneAt === 'function' ? (x, z) => engine.habitatZoneAt(x, z) : undefined;
-        eva.stats = startEvaRunner({ store, habitat: { x: entry.x, z: entry.z }, habitatZoneAt });
+        eva.stats = startEvaRunner({ store, habitat: entry ? { x: entry.x, z: entry.z } : null, habitatZoneAt });
       } catch (e) {
         console.error('EVA statistics not started:', e);
       }
