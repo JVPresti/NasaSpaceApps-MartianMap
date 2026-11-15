@@ -146,15 +146,15 @@
   scrollbar-color: var(--line-strong, rgba(255, 214, 170, 0.28)) transparent;
 }
 
-/* Walk mode: left of the HUD's right column (src/hud/hud.css .hud-right: right 7.8vw, as wide as the minimap,
-   clamp(120px, 27.5vh, 480px)), so the reference image sits next to the minimap and the checklist, as in
+/* Walk mode: left of the HUD's right column (src/hud/hud.css .hud-right, placed with --hud-beside-right from
+   src/index.css, #392), so the reference image sits next to the minimap and the checklist, as in
    docs/img/sc_arrival.jpg, and never covers them (#191). Top 18.6 --u starts it under the event banner (top 10.6 --u,
    src/events/events.css), so an alert during a stop covers neither. --u matches the HUD's base unit (src/hud/hud.css). */
 .stop-card-walk {
   --u: clamp(11px, 1.4vh, 20px);
   /* under the Walk alert (top 13.4 --u plus its height, src/events/events.css), so a storm during a stop covers neither */
   top: calc(var(--u) * 20.4);
-  right: calc(7.8vw + clamp(120px, 27.5vh, 480px) + var(--u) * 1.2);
+  right: var(--hud-beside-right);
   /* readable at 1366 x 768 (#287): 13 px body at the smallest unit, on the HUD's surface panel (#232) */
   width: calc(var(--u) * 30);
   max-height: 40vh;
@@ -168,9 +168,7 @@
 }
 .stop-card-walk .stop-figure img { max-height: 14vh; object-fit: cover; }
 .stop-card-walk .stop-summary { margin-top: 0.5em; }
-@media (max-width: 900px) {
-  .stop-card-walk { right: calc(3vw + clamp(120px, 27.5vh, 480px) + var(--u) * 1.2); }   /* follows .hud-right */
-}
+/* small windows: --hud-beside-right already follows .hud-right in to 3vw (src/index.css) */
 
 
 /* The route panel's waypoint names are buttons that select the waypoint (src/plan/RoutePanel.jsx). Reset them to
