@@ -128,8 +128,8 @@ slower, the walking speed and frame rate, and the time the hand-over took.
 ### Measured
 
 15 November 2026, branch `feat/short-mission-dynamic-routes`, Edge 157 headless with the GPU (NVIDIA RTX 5070),
-1366 x 768, English, `npm run measure:demo`. All 32 features driven; the walk ran at 156 to 165 fps, 134 m in 139 s
-(0.97 m/s with the turns and stops), with no step-aside.
+1366 x 768, English, `npm run measure:demo`, on the round 3 tree. All 32 features driven; the walk ran at 135 to 165
+fps, 135 m in 138 s (0.98 m/s with the turns and stops), with no step-aside.
 
 | # | Segment | Budget | Actual | of which dwell | Measured |
 |---|---|---|---|---|---|
@@ -137,23 +137,23 @@ slower, the walking speed and frame rate, and the time the hand-over took.
 | 2 | Table: site, goal Cheyava Falls, the layers and what each decides | 1:05 | 0:52 | 0:45 | 0:07 |
 | 3 | Two contrasting plans, profiles, a stop card, back to the sortie | 0:55 | 0:44 | 0:36 | 0:08 |
 | 4 | Hazards, outlook, go / no-go, Begin EVA, keys, help (H) | 0:35 | 0:31 | 0:29 | 0:02 |
-| 5 | Walk out: HUD, wrist (R), slope grid (G), visor (V), a find | 1:35 | 1:34 | 0:14 | 1:20 |
-| 6 | Science stop and sample | 0:20 | 0:15 | 0:03 | 0:12 |
+| 5 | Walk out: HUD, wrist (R), slope grid (G), visor (V), a find | 1:35 | 1:35 | 0:14 | 1:21 |
+| 6 | Science stop and sample | 0:20 | 0:16 | 0:03 | 0:13 |
 | 7 | Dust storm and its re-plan on the table | 0:20 | 0:15 | 0:05 | 0:10 |
 | 8 | Radiation, walk back, hand-over (F) | 1:10 | 1:12 | 0:06 | 1:06 |
-| 9 | Habitat: settings and language, Open plan, Finish EVA | 0:20 | 0:13 | 0:10 | 0:03 |
+| 9 | Habitat: settings and language, Open plan, Finish EVA | 0:20 | 0:12 | 0:10 | 0:02 |
 | 10 | Debrief | 0:45 | 0:41 | 0:40 | 0:01 |
 | 11 | Sources | 0:10 | 0:08 | 0:08 | 0:00 |
-| | **Total** | **7:30** | **6:39** | 3:28 | 3:11 |
+| | **Total** | **7:30** | **6:40** | 3:28 | 3:12 |
 
-- **A presenter 30 % slower:** about 7:41 (the dwell 3:28 becomes 4:30), under the 8:00 limit.
-- **Mission times:** at the stop T+94 s (73 m with the detour to the find), sample secured T+106 s, dust storm T+110 s
-  (4 s after the sample), radiation alert T+125 s, 45 m from the airlock, back in the habitat T+196 s, debrief at
-  T+202 s.
-- **The find:** card answered Y; the debrief judged the detour "1 deviation: 1 worth it, +24 s and +1 g O2 over the plan".
+- **A presenter 30 % slower:** about 7:43 (the dwell 3:28 becomes 4:30), under the 8:00 limit.
+- **Mission times:** at the stop T+94 s (73 m with the detour to the find), sample secured T+106 s, dust storm T+111 s
+  (5 s after the sample), radiation alert T+126 s, 46 m from the airlock, back in the habitat T+198 s, debrief at
+  T+203 s.
+- **The find:** card answered Y; the debrief judged the detour "1 deviation: 1 worth it, +23 s and +1 g O2 over the plan".
 - **The two plans** (segment 3): solo, cautious, 100 min: 0.88 km to Cheyava Falls, Bright Angel left out for time;
   pair, bold, 2 h: 0.91 km, Bright Angel then Cheyava Falls.
-- **Where the time goes:** the walk (2:19 for 134 m), the hand-over (34 s from F to the closed case, mostly the partner
+- **Where the time goes:** the walk (2:18 for 135 m), the hand-over (34 s from F to the closed case, mostly the partner
   walking out), the debrief (40 s of reading). The walk out runs to its budget because of the detour to the find (73 m
   instead of 55 m) and the wrist, slope grid and visor steps on the way.
 
