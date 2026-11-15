@@ -6,7 +6,7 @@ afterEach(() => setLanguage('en'));
 
 const zone = (over = {}) => ({
   kind: 'plan', events: [], cols: 3, rows: 1, x0: 0, z0: 0, dx: 4, dz: 4, from: { x: 0, z: 0 }, homeSec: new Float32Array([60, 0, 0]),
-  inputs: { o2G: 771, o2UsableG: 771, reserveSec: 1800, evaLimitSec: 1530, elapsedSec: 0, shelterWithinSec: null },
+  inputs: { o2G: 771, o2UsableG: 771, reserveSec: 1800, cautionSec: 900, evaLimitSec: 1530, elapsedSec: 0, shelterWithinSec: null },
   stats: { limit: 'eva', reachM: 613 },
   budget: { availableSec: 1800, reserveSec: 270 },
   ...over,
@@ -15,7 +15,7 @@ const zone = (over = {}) => ({
 describe('zoneStatus', () => {
   it('names the plan that bounds the zone before the EVA', () => {
     expect(zoneStatus(zone())).toEqual({
-      head: 'Your plan: 30 min, 15 % time reserve · 30 min O2 reserve · 100 % O2',
+      head: 'Your plan: 30 min, 15 % time reserve · 30 min O2 reserve · 100 % O2 · tight under 15 min',
       limit: 'Your planned time sets the edge',
       reach: 'reach 610 m',
     });

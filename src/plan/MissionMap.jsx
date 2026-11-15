@@ -14,7 +14,7 @@ import { useLayerPlaces } from './useLayerPlaces.js';
 import { useSkyView } from './routeExposure.js';
 import TraverseLayer from './TraverseLayer.jsx';
 import ReturnZoneLayer from '../zone/ReturnZoneLayer.jsx';
-import { useReturnZone, zoneFramePoints } from '../zone/useReturnZone.js';
+import { useReturnZone, zoneFrameKey, zoneFramePoints } from '../zone/useReturnZone.js';
 import './mapLayers.css';
 
 // Flat map of the mission table (#11). The picture is painted once per layer from the HiRISE image, the outcrop mask
@@ -153,7 +153,8 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   // candidate stops (Outcrop) and shelters (Exposure) are drawn where the view is; they never move the framing
   const places = useLayerPlaces(route ? layer : LAYER.IMAGE);
   const here = position && Number.isFinite(position.x) && Number.isFinite(position.z) ? position : null;
-  const zonePoints = useMemo(() => zoneFramePoints(zone), [zone?.stats?.bounds]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const zoneFrame = zoneFrameKey(zone);   // the plan's zone only, in 50 m steps: a live zone never moves the view
+  const zonePoints = useMemo(() => zoneFramePoints(zoneFrame), [zoneFrame]);
   const fit = useMemo(
     () => mapCrop([...waypoints, ...pathPoints, ...altPoints, ...trackPoints, ...planPoints, ...(here ? [here] : []), ...zonePoints], tile, { min: minSpanM }),
     [waypoints, pathPoints, altPoints, trackPoints, planPoints, here?.x, here?.z, minSpanM, tile.width, tile.depth, zonePoints],   // eslint-disable-line react-hooks/exhaustive-deps

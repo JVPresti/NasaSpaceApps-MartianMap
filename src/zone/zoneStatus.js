@@ -21,17 +21,17 @@ const eventName = (id) => (id && EVENT_NAMES[id] ? t(EVENT_NAMES[id]) : id ?? ''
 export function zoneStatus(zone) {
   if (!zone) return null;
   const { inputs, stats, budget } = zone;
-  const o2Reserve = Math.round(inputs.reserveSec / 60);
+  const o2Reserve = Math.round(inputs.reserveSec / 60), caution = Math.round(inputs.cautionSec / 60);
   const o2 = Math.round((100 * inputs.o2G) / inputs.o2UsableG);
   let head;
   if (zone.kind === 'live') {
-    head = t('layers.zone.status.live', { time: shortDuration(Math.max(0, inputs.evaLimitSec - inputs.elapsedSec)), o2, reserve: o2Reserve });
+    head = t('layers.zone.status.live', { time: shortDuration(Math.max(0, inputs.evaLimitSec - inputs.elapsedSec)), o2, reserve: o2Reserve, caution });
   } else if (budget && Number.isFinite(budget.availableSec)) {
     head = t('layers.zone.status.plan', {
-      time: shortDuration(budget.availableSec), share: Math.round((100 * (budget.reserveSec ?? 0)) / budget.availableSec), reserve: o2Reserve, o2,
+      time: shortDuration(budget.availableSec), share: Math.round((100 * (budget.reserveSec ?? 0)) / budget.availableSec), reserve: o2Reserve, o2, caution,
     });
   } else {
-    head = t('layers.zone.status.suit', { time: shortDuration(inputs.evaLimitSec), reserve: o2Reserve });
+    head = t('layers.zone.status.suit', { time: shortDuration(inputs.evaLimitSec), reserve: o2Reserve, caution });
   }
   const event = zone.events?.find((id) => id === 'radiation' && stats.limit === 'window') ?? zone.events?.[0];
   let limit;

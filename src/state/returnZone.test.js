@@ -3,7 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { suitConstantsFromHazards } from '../sim/suitModel.js';
 import { ZONE_LAYER } from '../zone/zoneLayer.js';
-import { ZONE_REFRESH, zoneChange, zoneInput } from './returnZone.js';
+import { ZONE_REFRESH, returnZoneService, zoneChange, zoneInput } from './returnZone.js';
+import { zoneStatus } from '../zone/zoneStatus.js';
 
 const hazards = JSON.parse(readFileSync(fileURLToPath(new URL('../../public/data/hazards.json', import.meta.url)), 'utf8'));
 const c = suitConstantsFromHazards(hazards);
@@ -67,9 +68,67 @@ describe('zoneChange', () => {
   });
 });
 
-describe('the zone layer legend', () => {
-  it('names the caution margin of hazards.json', () => {
-    expect(c.cautionSec).toBe(15 * 60);
-    expect(ZONE_LAYER.swatches[1].detail).toBe('inside, but under 15 min to spare');
+describe('the zone legend numbers', () => {
+  it('come from the zone inputs, so hazards.json sets the O2 reserve and the caution margin', () => {
+    const status = zoneStatus({
+      kind: 'plan', events: [], stats: { limit: 'eva', reachM: 600 }, budget: { availableSec: 1800, reserveSec: 270 },
+      inputs: { o2G: c.o2UsableG, o2UsableG: c.o2UsableG, reserveSec: c.reserveSec, cautionSec: c.cautionSec, evaLimitSec: 1530, elapsedSec: 0 },
+    });
+    expect(status.head).toContain(`${c.reserveSec / 60} min O2 reserve`);
+    expect(status.head).toContain(`tight under ${c.cautionSec / 60} min`);
+    expect(ZONE_LAYER.swatches.map((sw) => sw.detail).join(' ')).not.toMatch(/\d+ min/);
+  });
+});
+
+describe('zoneChange on the table', () => {
+  const plan = zoneInput(base, habitat, c);
+
+  it('recomputes when only the battery the crew sets changes', () => {
+    const lower = zoneInput({ ...base, route: { ...base.route, budget: { ...base.route.budget, batteryStartWh: 600 } } }, habitat, c);
+    expect(lower.suit.batteryWh).toBe(600);
+    expect(zoneChange(plan, lower)).toEqual({ needed: true, urgent: false });
+    expect(zoneChange(plan, zoneInput(base, habitat, c)).needed).toBe(false);
+  });
+
+  it('recomputes at once when a hazard area moves, grows or switches off, not only when one is added', () => {
+    const at = (zone) => zoneInput({ ...base, hazards: { zones: [zone] } }, habitat, c);
+    const a = at({ id: 'h', x: 10, z: 10, radiusM: 20, active: true });
+    expect(zoneChange(a, at({ id: 'h', x: 30, z: 10, radiusM: 20, active: true }))).toEqual({ needed: true, urgent: true });
+    expect(zoneChange(a, at({ id: 'h', x: 10, z: 10, radiusM: 40, active: true })).urgent).toBe(true);
+    expect(zoneChange(a, at({ id: 'h', x: 10, z: 10, radiusM: 20, active: false })).urgent).toBe(true);
+    expect(zoneChange(a, at({ id: 'h', x: 10, z: 10, radiusM: 20, active: true })).needed).toBe(false);
+  });
+
+  it('builds the plan key once while the route objects stay the same', () => {
+    const first = zoneInput(base, habitat, c).plan;
+    expect(zoneInput({ ...base, mission: { elapsedSec: 5 } }, habitat, c).plan).toBe(first);
+    expect(zoneInput({ ...base, route: { ...base.route, budget: { ...base.route.budget } } }, habitat, c).plan).not.toBe(first);
+  });
+});
+
+describe('returnZoneService', () => {
+  function fakeStore(state) {
+    const subs = new Set();
+    return { getState: () => state, setState: (next) => { state = { ...state, ...next }; subs.forEach((f) => f(state)); }, subscribe: (f) => { subs.add(f); return () => subs.delete(f); } };
+  }
+  const deps = (computed) => ({
+    load: () => Promise.resolve([{ n: 2 }, hazards, { shelters: [{ id: 'HAB', x: 535.1, z: 574.1 }] }]),
+    clientFactory: () => ({ setGrid: () => {}, compute: (input) => { computed.push(input); return Promise.resolve({ stats: {}, inputs: {} }); } }),
+  });
+
+  it('keeps one service per store and computes from the store it was given', async () => {
+    const a = fakeStore(base), b = fakeStore({ ...base, route: { ...base.route, budget: { ...base.route.budget, usableSec: 600 } } });
+    const ca = [], cb = [];
+    const sa = returnZoneService(a, deps(ca)), sb = returnZoneService(b, deps(cb));
+    expect(sa).not.toBe(sb);
+    expect(returnZoneService(a)).toBe(sa);
+    const seen = [];
+    sa.subscribe((z) => seen.push(z.kind));
+    sb.subscribe(() => {});
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(ca[0].evaLimitSec).toBe(1530);
+    expect(cb[0].evaLimitSec).toBe(600);
+    expect(seen).toEqual(['plan']);
   });
 });

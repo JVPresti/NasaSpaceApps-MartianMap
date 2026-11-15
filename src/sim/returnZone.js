@@ -34,8 +34,9 @@ import { constantEffortSpeed, evaMargin, metabolicPowerW, o2Margin, o2RateGs, wa
 import { workCost } from './legCosts.js';
 
 /**
- * Zone nodes per cost grid node. 2 gives 3.8 m x 4 m cells: the full-tank zone (the whole tile) takes about 130 ms on a
- * Ryzen 7 5700X, against about 700 ms on the grid's own 1.9 m x 2 m spacing. The 20 degree no-go ground keeps its full
+ * Zone nodes per cost grid node. 2 gives 3.8 m x 4 m cells. Measured on a Ryzen 7 5700X (PR #335): 5 to 111 ms in Node
+ * (warm, three runs per case; 111 ms is the whole tile at full tank and 8 h) and 8 to 73 ms in the browser's worker on
+ * the first sortie, against 657 to 735 ms for the whole tile on the grid's own 1.9 m x 2 m spacing. The 20 degree no-go ground keeps its full
  * resolution (zoneGrid closes a coarse cell when any of its fine nodes is closed).
  */
 export const DEFAULT_ZONE_STEP = 2;

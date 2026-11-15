@@ -1,10 +1,9 @@
 // The return zone's entry in the map layer list (src/plan/layers.js), kept here so the zone's text and colours live
 // with the zone. Plain data: layers.js registers its provenance and gives it to the table's buttons and legend.
+// The swatches carry no minutes: the reserve and the caution margin come from hazards.json at run time, so the legend's
+// budget line (ZoneLegendLine.jsx) writes them from the zone's own inputs.
 import { t } from '../i18n/index.js';
 import { ZONE_ORANGE } from './zonePaint.js';
-
-/** Caution margin of hazards.json suit.alert.caution_margin, minutes; the zone service reads the live value. */
-const CAUTION_MIN = 15;
 
 export const ZONE_LAYER = {
   id: 'zone',
@@ -22,7 +21,7 @@ export const ZONE_LAYER = {
   get swatches() {
     return [
       { color: '#000000', clear: true, label: t('layers.zone.inside'), detail: t('layers.zone.inside.detail') },
-      { color: ZONE_ORANGE, label: t('layers.zone.edge'), detail: t('layers.zone.edge.detail', { min: CAUTION_MIN }) },
+      { color: ZONE_ORANGE, label: t('layers.zone.edge'), detail: t('layers.zone.edge.detail') },
       { color: '#5a4434', label: t('layers.zone.outside'), detail: t('layers.zone.outside.detail') },
     ];
   },

@@ -251,7 +251,7 @@ The 8-minute demo built on the first mission, and how to measure it (`npm run me
 
 Events come from the event engine. The radiation alert keeps only ground from which the shelter is reachable within its warning window (`shelterWindowSec`: from the start to the peak dose rate of the mission's timeline, 210 s in the full EVA, 17.5 s in the first sortie, SIM). Both events carry a planner request. Neither changes walking speed or cost, so the zone also applies the re-plan's own rule: only ground no farther from home than the crew is now.
 
-`src/state/returnZone.js` runs it in `returnZone.worker.js` from the store (see its header for the inputs). It recomputes after 5 m of movement, 2 g of O2 or 10 s of EVA time, at most every 2 s, and at once when an event starts or ends. The mission table's Return zone layer (`src/zone/ReturnZoneLayer.jsx`, layer index 6, table only), the minimap and the wrist map page subscribe to it. Nothing is written to the store. A recompute takes 5 to 110 ms on the real grid.
+`src/state/returnZone.js` runs it in `returnZone.worker.js` from the store (see its header for the inputs). It recomputes after 5 m of movement, 2 g of O2, 1 Wh of battery or 10 s of EVA time, at most every 2 s, and at once when an event starts or ends, the plan changes or a hazard area moves. The mission table's Return zone layer (`src/zone/ReturnZoneLayer.jsx`, layer index 6, table only), the minimap and the wrist map page subscribe to it. Nothing is written to the store. On the real grid a recompute takes 5 to 111 ms in Node and 8 to 73 ms in the browser's worker on the first sortie (Ryzen 7 5700X, PR #335).
 
 ### EVA statistics and debrief (#43)
 
