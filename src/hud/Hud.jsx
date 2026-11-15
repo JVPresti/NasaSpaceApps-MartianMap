@@ -306,8 +306,15 @@ function useHudDetail() {
  * element: hud-detail while I is on, hud-sampling-on while a rock or the soil is in view or a sample is under way (the
  * checklist also shows while a science card is open, see hud.css).
  */
-function KeyHint() {
+function KeyHint({ engine }) {
   const ref = useRef(null);
+  // hud-wrist while the wrist screen is up (#286): the waypoint panel folds to its header row (hud.css)
+  useEffect(() => {
+    const hud = ref.current && ref.current.closest('.hud');
+    if (!hud || !engine || typeof engine.subscribeWrist !== 'function') return undefined;
+    const off = engine.subscribeWrist((state) => hud.classList.toggle('hud-wrist', state?.open === true));
+    return () => { if (typeof off === 'function') off(); hud.classList.remove('hud-wrist'); };
+  }, [engine]);
   const detail = useHudDetail();
   const sampling = useMissionStore((s) => {
     const c = s.sampling.checklist;
@@ -340,7 +347,7 @@ export default function Hud({ engine, minimapRoute }) {
       <WaypointMarker engine={engine} />
       <SlopeAhead engine={engine} />
       <Clocks />
-      <KeyHint />
+      <KeyHint engine={engine} />
       <SuitPanel />
       <PartnerPanel />
       <LayerChip />

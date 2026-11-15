@@ -372,3 +372,7 @@
   background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius-s);
 }
 @media (max-width: 900px) { .hud-keys { left: 3vw; } }
+
+/* Wrist screen up (#286): the waypoint panel keeps its header row (name, range, bearing, ETA) and drops the elevation
+   profile, so it no longer reaches up to the raised wrist screen. */
+.hud.hud-wrist .hud-waypoint .elevation-profile { display: none; }
