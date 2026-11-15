@@ -42,6 +42,9 @@ body.mw-recording, body.mw-recording * { cursor: none !important; }
 
 .pr-layer { position: absolute; inset: 0; pointer-events: none; }
 
+/* the recorded app demo: full frame, letterboxed on black, faded by the beat clock */
+.pr-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; pointer-events: none; }
+
 /* a scrim under the captions, so white text holds its contrast over bright ground */
 .pr-scrim {
   position: absolute;

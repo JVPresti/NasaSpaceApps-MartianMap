@@ -38,6 +38,7 @@ function params() {
     autoplay: q.get('autoplay') === '1' || q.get('record') === '1',
     record: q.get('record') === '1',
     seq: q.get('seq') === 'global30' ? 'global30' : 'full',
+    live: q.get('live') === '1',   // add the hand-over to the live app after the sources
     beat: q.get('beat'),
     tier: q.get('tier'),
     lang: q.get('lang'),
@@ -94,7 +95,7 @@ function beatShot(beat, plan, groundAt, reduced) {
 
 export default function Present({ engine, onExit }) {
   const opts = useMemo(() => params(), []);
-  const beats = useMemo(() => sequence(opts.seq), [opts.seq]);
+  const beats = useMemo(() => sequence(opts.seq, { live: opts.live }), [opts.seq, opts.live]);
   const [lang, setLang] = useState(() => (opts.lang === 'es' || opts.lang === 'en' ? opts.lang : opts.record ? 'en' : getLanguage()));
   const [index, setIndex] = useState(() => Math.max(0, beats.findIndex((b) => b.id === opts.beat)));
   const [assets, setAssets] = useState(null);
@@ -104,6 +105,11 @@ export default function Present({ engine, onExit }) {
   const [stalled, setStalled] = useState(false);
   const still = !!failed || stalled;   // the caption fallback is up
   const indexRef = useRef(index);
+  // The recorded app demo (a beat with `video`): its element, and whether the file failed to load
+  const videoRef = useRef(null);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const videoFailedRef = useRef(false);
+  const videoBeat = useMemo(() => beats.find((b) => b.video) || null, [beats]);
   useEffect(() => { indexRef.current = index; }, [index]);
   const dialogRef = useRef(null), globeRef = useRef(null), layerRef = useRef(null);
   const engineRef = useRef(engine);
@@ -193,7 +199,7 @@ export default function Present({ engine, onExit }) {
       const prev = beats[Math.max(0, timeline.previous)];
       // Starting cold (?beat=, a recording segment): come from where the previous beat ended, spin and drift included,
       // so two segments recorded apart join without a jump.
-      if (!keepFrom || !current) fromShot = current ? { ...current } : (i > 0 ? endShot(prev) : beatShot(beat, plan, groundAt(), reduced));
+      if (!keepFrom || !current) fromShot = current ? { ...current } : (i > 0 ? endShot(prev) : beatShot(beat.start ? { ...beat, shot: beat.start } : beat, plan, groundAt(), reduced));
       toShot = beatShot(beat, plan, groundAt(), reduced);
       const eng = engineRef.current;
       if (cine && eng) {
@@ -303,6 +309,22 @@ export default function Present({ engine, onExit }) {
       });
     }
 
+    // The demo video follows the beat clock: it plays from the beat's start, pauses when the beat ends or is skipped,
+    // and in a recording seeks to the clock's time each step, so the recorded frames are exact.
+    function playVideo(beat, t) {
+      const v = videoRef.current;
+      if (!v) return 0;
+      const on = !!beat.video && !videoFailedRef.current;
+      const a = on ? showValue([0], t, beat.duration) : 0;
+      v.style.opacity = a.toFixed(3);
+      if (!on) { if (!v.paused) v.pause(); return 0; }
+      if (opts.record) { if (!v.paused) v.pause(); if (Math.abs(v.currentTime - t) > 1e-3) v.currentTime = Math.min(t, v.duration || t); return a; }
+      if (t >= beat.duration - 0.05) { if (!v.paused) v.pause(); return a; }
+      if (Math.abs(v.currentTime - t) > 0.5) v.currentTime = t;   // entering the beat, or after a stall
+      if (v.paused) v.play().catch(() => {});
+      return a;
+    }
+
     function frame(dt) {
       attachEngine();
       if (stalledNow) {
@@ -335,6 +357,13 @@ export default function Present({ engine, onExit }) {
       applyTracks(beat, t);
       const pose = engineCamera(current);
       projector.set(pose, dims.w / dims.h);
+      const videoAlpha = playVideo(beat, t);
+      if (videoAlpha >= 1) {
+        // the demo video covers the frame: nothing behind it needs drawing
+        placeLabels(beat, t, globeAlpha);
+        if (window.__present) { window.__present.frame = clock.frames; window.__present.done = timeline.done; window.__present.beat = beat.id; }
+        return;
+      }
       if (globeAlpha > 0) {
         // the Jezero images fade in as the camera comes down, so no tinted square pops up over the globe from orbit
         globe.render(current, { region: 1 - ramp(h, 450_000, 1_400_000), ctx: 1 - ramp(h, 90_000, 220_000), stars: 1 });
@@ -361,6 +390,8 @@ export default function Present({ engine, onExit }) {
         ready: false, done: false, frame: 0, beat: beats[0].id, total: Math.ceil(timeline.total / RECORD_STEP),
         async step() {
           frame(clock.tick(0));
+          const v = videoRef.current;
+          if (v && v.seeking) await new Promise((r) => v.addEventListener('seeked', r, { once: true }));
           await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
           return { frame: clock.frames, done: timeline.done, beat: timeline.beat.id };
         },
@@ -450,6 +481,15 @@ export default function Present({ engine, onExit }) {
     <dialog ref={dialogRef} className={`present${opts.record ? ' recording' : ''}`} aria-label="Marswalk presentation" onCancel={(e) => { e.preventDefault(); exit(); }}>
       <canvas ref={globeRef} className="pr-globe" aria-hidden="true" />
       <div className="pr-scrim" aria-hidden="true" />
+      {videoBeat && (
+        // Lazy: the file starts loading after the first beat, so the opening never waits on it
+        <video
+          ref={videoRef} className="pr-video" aria-hidden="true" muted playsInline disablePictureInPicture
+          src={index >= 1 || opts.record ? BASE + (lang === 'es' && videoBeat.video.srcEs ? videoBeat.video.srcEs : videoBeat.video.src) : undefined}
+          poster={BASE + videoBeat.video.poster} preload={index >= 1 || opts.record ? 'auto' : 'none'} style={{ opacity: 0 }}
+          onError={() => { videoFailedRef.current = true; setVideoFailed(true); }}
+        />
+      )}
       {still && <div className="pr-fallback" style={assets ? { backgroundImage: `url(${BASE}${index < 2 ? 'globe_2k.jpg' : 'jezero_ctx.jpg'})` } : undefined} aria-hidden="true" />}
       <div className="pr-layer" ref={layerRef} aria-hidden="true" hidden={still}>
         {plan && beat.tracks?.zone && <div className="pr-astronaut"><span /></div>}
@@ -479,7 +519,7 @@ export default function Present({ engine, onExit }) {
         )}
         {beat.title && <h1 className="pr-title" data-fade="0.2" style={hidden}>{beat.title}</h1>}
         <div className="pr-captions">
-          {captionsOf(beat).map((c, k) => (
+          {(beat.video && !videoFailed && !still ? [] : captionsOf(beat)).map((c, k) => (
             <p key={k} className="pr-caption" data-cap={k} style={hidden}>{tx(c)}</p>
           ))}
         </div>

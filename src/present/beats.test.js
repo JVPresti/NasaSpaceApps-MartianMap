@@ -89,15 +89,15 @@ describe('presentation beats', () => {
   it('fits the global video in 30 s', () => {
     const total = sequence('global30').reduce((a, b) => a + b.duration, 0);
     expect(total).toBeLessThanOrEqual(29.5);   // the submission's hard limit is 30 s; keep half a second of room
-    expect(GLOBAL_30.every((c) => BEATS.some((b) => b.id === (c.from || c.id)))).toBe(true);
+    expect(sequence('global30')).toHaveLength(GLOBAL_30.length);   // every cut finds the beat it borrows
   });
 
   it('ends the full presentation on the live hand-off', () => {
     expect(BEATS.at(-1).cta?.en).toBeTruthy();
   });
 
-  it('answers the judge\'s questions in order: where, why there, danger, what we do, how we know, live', () => {
-    const order = ['jezero', 'cheyava', 'danger', 'zone', 'sources', 'live'].map((id) => BEATS.findIndex((b) => b.id === id));
+  it('answers the judge\'s questions in order: the danger, what we do, the app, how we know', () => {
+    const order = ['open', 'plan', 'zone', 'radiation', 'demo', 'sources', 'credits'].map((id) => BEATS.findIndex((b) => b.id === id));
     expect(order.every((i) => i >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
@@ -118,10 +118,38 @@ describe('the presentation story', () => {
     for (const b of BEATS) for (const t of all(b)) expect(t, b.id).not.toMatch(/[\u2013\u2014]/);
   });
 
-  it('ends on the sources, then hands over to the live app', () => {
-    const ids = BEATS.map((b) => b.id);
-    expect(ids.slice(-3)).toEqual(['sources', 'credits', 'live']);
-    expect(BEATS.at(-1).cta).toBeTruthy();
+  it('ends on the sources; the hand-over to the live app only comes with ?live=1', () => {
+    expect(sequence('full').map((b) => b.id).slice(-2)).toEqual(['sources', 'credits']);
+    const live = sequence('full', { live: true });
+    expect(live.map((b) => b.id).slice(-3)).toEqual(['sources', 'credits', 'live']);
+    expect(live.at(-1).cta).toBeTruthy();
+  });
+
+  it('plays the recorded demo between the radiation beat and the sources', () => {
+    const ids = sequence('full').map((b) => b.id);
+    expect(ids.indexOf('demo')).toBe(ids.indexOf('radiation') + 1);
+    expect(ids.indexOf('sources')).toBe(ids.indexOf('demo') + 1);
+    const demo = BEATS.find((b) => b.id === 'demo');
+    expect(demo.video.src).toMatch(/\.mp4$/);
+    expect(captionsOf(demo).length).toBeGreaterThan(0);   // the fallback if the file fails
+  });
+
+  it('fits the 3:40 talk: 3:10 to 3:40 on autoplay, the rest for clicks and pauses', () => {
+    const total = sequence('full').reduce((a, b) => a + b.duration, 0);
+    expect(total).toBeGreaterThanOrEqual(190);
+    expect(total).toBeLessThanOrEqual(220);
+  });
+
+  it('states the danger in the first beat', () => {
+    const open = sequence('full')[0];
+    expect(captionsOf(open)[0].en).toMatch(/nobody can come and get you/);
+    expect(open.start).toBeTruthy();   // one fall from orbit
+  });
+
+  it('uses the app\'s radiation figures: 29.9 µGy/h peak, 10 µGy/h background', () => {
+    const texts = BEATS.flatMap((b) => (b.chips || []).flatMap((c) => [c.big, c.text?.en]));
+    expect(texts.join(' ')).toContain('29.9 µGy/h');
+    expect(texts.join(' ')).not.toMatch(/\{rad\.peak\}|\b26 µGy/);
   });
 
   it('lists every source the presentation shows, each line tagged', () => {
@@ -137,9 +165,20 @@ describe('the presentation story', () => {
     expect(note).not.toMatch(/@/);
   });
 
-  it('says the zone comes from the planner and is not in the walk HUD yet', () => {
+  it('says the zone comes from the planner', () => {
     const zone = BEATS.find((b) => b.id === 'zone');
     expect(zone.source.en).toMatch(/planner/);
-    expect(zone.source.en).toMatch(/Not in the walk HUD/);
+    expect(zone.source.en).not.toMatch(/Not in the walk HUD/);   // the demo video shows the zone in the app (#335)
+  });
+});
+
+describe('the demo video files', () => {
+  const demo = BEATS.find((b) => b.id === 'demo');
+  const file = (name) => new URL(`../../public/present/${name}`, import.meta.url);
+  it('exist, under the 20 MB budget (Cloudflare caps a static file at 25 MiB)', async () => {
+    const { statSync } = await import('node:fs');
+    for (const name of [demo.video.src, demo.video.srcEs, demo.video.poster]) {
+      expect(statSync(file(name)).size, name).toBeLessThan(20 * 1024 * 1024);
+    }
   });
 });
