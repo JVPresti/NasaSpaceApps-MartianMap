@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import ControlsHelp from './ControlsHelp.jsx';
 import Modal from './Modal.jsx';
 import ModeSwitch from './ModeSwitch.jsx';
+import { FOCUSABLE, focusTarget } from './focus.js';
 
 const QUALITY = [
   ['auto', 'menu.auto'],
@@ -27,11 +28,14 @@ export default function PauseMenu({
   mode,
   busy,
   notice,
+  freeLook = false,
+  lockFailed = false,
   focusToken,
   quality,
   qualityBusy,
   qualityError,
   onResume,
+  onResumeWithoutCapture,
   onRestartRequest,
   onRestartConfirm,
   onControls,
@@ -47,13 +51,20 @@ export default function PauseMenu({
   const cancelRef = useRef(null);
 
   useEffect(() => {
-    const target = view === 'controls' ? backRef.current : view === 'restart' ? cancelRef.current : resumeRef.current;
+    // While the browser answers a resume the primary action is disabled and cannot take focus, so the
+    // dialog itself keeps it and Enter would do nothing. Focus the primary as soon as it can take focus
+    // again, including when the dialog was (re)opened during an attempt that has just ended.
+    if (busy) return;
+    const primary = view === 'controls' ? backRef.current : view === 'restart' ? cancelRef.current : resumeRef.current;
+    const dialog = primary?.closest?.('dialog') || null;
+    const target = focusTarget(primary, dialog ? [...dialog.querySelectorAll(FOCUSABLE)] : []);
     target?.focus();
-    // focusToken lets the menu move focus back to Resume when Escape keeps the pause instead of resuming.
-  }, [view, focusToken]);
+    // focusToken lets the menu move focus back to its primary action when Escape keeps the pause instead of resuming.
+  }, [busy, view, focusToken]);
 
   const selected = quality && !quality.pending ? (quality.auto ? 'auto' : quality.tier) : null;
   const qualityDisabled = !quality || qualityBusy || quality.pending;
+  const capture = mode === 'walk' && !freeLook;
 
   return (
     <Modal
@@ -82,8 +93,13 @@ export default function PauseMenu({
               onClick={onResume}
               disabled={busy}
             >
-              {busy ? (mode === 'plan' ? t('menu.resuming') : t('menu.capturing.the.mouse')) : t('resume')}
+              {busy ? (capture ? t('menu.capturing.the.mouse') : t('menu.resuming')) : t('resume')}
             </button>
+            {capture && lockFailed && (
+              <button type="button" className="ui-button ghost" onClick={onResumeWithoutCapture} disabled={busy}>
+                {t('menu.continue.without.mouse.capture')}
+              </button>
+            )}
             <button type="button" className="ui-button ghost" onClick={onRestartRequest} disabled={busy}>{t('menu.restart.eva')}</button>
             <button type="button" className="ui-button ghost" onClick={onControls} disabled={busy}>{t('menu.controls')}</button>
             <button type="button" className="ui-button ghost" onClick={onSources} disabled={busy}>{t('ui.sources.188')}</button>
@@ -125,6 +141,7 @@ export default function PauseMenu({
           </div>
 
           {mode === 'plan' && <p className="dialog-footnote">{t('menu.plan.resumes.without.capturing.the.mouse')}</p>}
+          {mode === 'walk' && freeLook && <p className="dialog-footnote">{t('menu.drag.to.look.pause')}</p>}
         </div>
       )}
 

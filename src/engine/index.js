@@ -10,6 +10,9 @@ import { subscribeLanguage } from '../i18n/index.js';
 //   engine.requestPointerLock(); engine.releasePointerLock(); engine.setInputEnabled(false);
 //   engine.setQuality('auto' | 'high' | 'low'); engine.getQuality(); engine.resetSession();
 //   engine.heightAt(x, z); engine.slopeAt(x, z); engine.lineOfSight(a, b); engine.getPlayer();
+//   // wrist screen app (#67), wrist.js: the interface draws the canvas, the engine shows it on the arm
+//   engine.setWristScreen(canvas | null); engine.invalidateWristScreen(); engine.setWristOpen(true | false);
+//   engine.setWristPointer({ x, y, pressed }); engine.getWristState(); engine.getOrthoImage();
 //   engine.dispose();
 // The full contract is in docs/STATE_AND_ENGINE.md.
 import * as THREE from 'three';
@@ -26,6 +29,7 @@ import { validShelter } from './shelterRules.js';
 import { createSlopeZone } from './slopeZone.js';
 import { createRadioShadow } from './radioShadow.js';
 import { createWaypointMarkers } from './waypoints.js';
+import { createFindsApi } from './finds.js';
 import { metresPerPixel } from './planView.js';
 import { createUniforms } from './uniforms.js';
 import { TIERS, detectTier } from './tiers.js';
@@ -47,6 +51,7 @@ import { createSlopeGrid } from './slopeGrid.js';
 import { createHabitat } from './habitat.js';
 import { createView, createViewState, CHEYAVA_VIEW } from './view.js';
 import { airlockExit, partnerPatrol } from './spawn.js';
+import { canOpenWrist, wristRestoreState } from './wrist.js';
 import { createLoadLifecycle } from './lifecycle.js';
 import { createProgressTracker } from './progress.js';
 import { assertWebGL2, rendererFailure } from './webgl.js';
@@ -68,11 +73,11 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   if (!assetBase) throw new Error('createEngine: assetBase is required');
   assertWebGL2();
 
-  let alive = true, started = false, firstFrame = false, walked = false, requestedMode = mode, viewCtl = null, waypoints = null;
+  let alive = true, started = false, firstFrame = false, walked = false, requestedMode = mode, viewCtl = null, waypoints = null, wristPose = null;
   let inputEnabled = inputEnabledOption !== false;
   let pendingLock = null, pendingLockResolve = null;
   let pendingReset = false;
-  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false, habitatScreens: null };   // set before boot ends, applied when ready
+  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false, wristScreen: null, habitatScreens: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
@@ -195,6 +200,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     sys.dust.update(dt);
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
+    if (waypoints?.group.visible) waypoints.update(camera, container.clientHeight);   // fixed-size labels (#198)
     renderer.render(scene, camera);
     if (!firstFrame) {
       firstFrame = true;
@@ -235,6 +241,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     ctx.terrain = createTerrain(ctx);
     sys.rocks = createRocks(ctx); sys.route = createRoute(ctx); sys.cast = createCast(ctx);
     sys.partner = createPartner(ctx); sys.arms = createArms(ctx); sys.legs = createLegs(ctx); sys.props = createProps(ctx); sys.habitat = createHabitat(ctx);
+    sys.arms.setScreenCanvas(pending.wristScreen);   // the app's canvas may have arrived before boot reached the arms
     viewCtl = createView(ctx, canvas, signal, {
       inputEnabled,
       onLockChange: (locked) => { if (alive) onLockChange(locked); },
@@ -366,18 +373,52 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     };
   }
 
+  // unexpected finds (#71): setFinds, aimGround and setPointing in the API below
+  const finds = createFindsApi(ctx, { isStarted: () => started && alive });
+
   function terrainQueries() {
     if (!ctx.terrain) throw new Error('engine is not ready: wait for engine.ready before querying the terrain');
     return ctx.terrain.queries;
   }
 
+  // ---------------------------------------------------------------- wrist screen app (#67, wrist.js)
+  const wristPhase = () => (sys.sampling ? sys.sampling.phase() : 'idle');
+
+  /**
+   * Raise or lower the wrist screen. Lowering always succeeds and hands the arm back: the tool hold while a sample
+   * is in the scoop, else the pose the player had before raising it (or 'down').
+   * @param {boolean} open
+   * @returns {boolean} true when the wrist is now in the asked state. Opening fails (false) when the engine is not
+   *   ready, in Plan mode, while an arm clip plays, or in a sampling phase other than idle or holding.
+   */
+  function setWrist(open) {
+    const arms = sys.arms;
+    if (!open) {
+      if (!arms || !arms.L || arms.state !== 'screen') return true;
+      arms.set(wristRestoreState({ phase: wristPhase(), clip: !!arms.clip, previous: wristPose }));
+      wristPose = null;
+      return true;
+    }
+    if (!arms || !arms.L) return false;
+    if (arms.state === 'screen') return true;
+    const mode = ctx.view.mode === 'eye' ? 'walk' : 'plan';
+    if (!canOpenWrist({ ready: started, mode, clip: !!arms.clip, phase: wristPhase() })) return false;
+    wristPose = arms.state;
+    arms.set('screen');
+    return true;
+  }
+
   return {
     ready,
     stats,
+    setFinds: finds.setFinds,
+    aimGround: finds.aimGround,
+    setPointing: finds.setPointing,
     /** @param {'plan' | 'walk'} m */
     setMode(m) {
       if (m !== 'plan' && m !== 'walk') throw new Error('setMode: expected "plan" or "walk", got ' + m);
       requestedMode = m;
+      if (m === 'plan') setWrist(false);   // the wrist screen cannot stay up in Plan (#67)
       if (started) {
         // The first Walk starts the EVA at the airlock (#166). The partner patrolled during Plan, so it is placed again
         // beside the player. Later switches keep both where they are.
@@ -469,6 +510,47 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       if (!Number.isInteger(n) || n < 0 || n >= LAYERS.length) throw new Error('setLayer: expected 0-' + (LAYERS.length - 1) + ', got ' + n);
       U.uLayer.value = n;
       if (sys.arms && sys.arms.L) { sys.arms.draw(); sys.arms.tap = 0.35; }   // the wrist screen shows the active layer
+    },
+    /**
+     * Hands the wrist screen to the app (#67, wrist.js). `canvas` is the 512 x 352 canvas the interface draws its
+     * pages into; it becomes the Screen texture of the left arm. The engine never paints or uploads it: the app calls
+     * invalidateWristScreen() after each repaint. `null` puts the built-in layer list back, and keeps working for
+     * consumers that have no wrist app.
+     * @param {HTMLCanvasElement | null} canvas
+     */
+    setWristScreen(canvas) {
+      if (canvas !== null && !(canvas && typeof canvas.width === 'number' && typeof canvas.height === 'number')) throw new TypeError('setWristScreen: expected a canvas or null');
+      pending.wristScreen = canvas;
+      if (sys.arms) sys.arms.setScreenCanvas(canvas);   // before the arms exist, boot applies it
+    },
+    /** Uploads the app's canvas after it repainted. Only the app calls this; nothing else uploads an external screen. */
+    invalidateWristScreen() { if (sys.arms) sys.arms.invalidateScreen(); },
+    /** Raise (true) or lower (false) the wrist screen. @returns {boolean} false when opening is not possible now. */
+    setWristOpen(open) { return setWrist(open === true); },
+    /**
+     * Where the finger points on the wrist screen, in canvas pixels (x 0..512 right, y 0..352 down). Every call points;
+     * every call with pressed: true is one confirm, which pinches for about 0.25 s and returns to point. Only moves the
+     * arm while the wrist is up.
+     * @param {{ x: number, y: number, pressed?: boolean }} pointer
+     * @returns {{ x: number, y: number, pressed: boolean } | null} the clamped pointer, or null before the scene is ready
+     */
+    setWristPointer(pointer) {
+      if (!sys.arms || !sys.arms.L) return null;
+      return sys.arms.setWristPointer(pointer);
+    },
+    /** @returns {{ open: boolean, clip: string | null }} the wrist app state and the arm clip that owns the arm, if any. */
+    getWristState() {
+      const arms = sys.arms;
+      return { open: !!(arms && arms.L && arms.state === 'screen'), clip: arms && arms.clip ? arms.clipName : null };
+    },
+    /**
+     * An ortho image already downloaded (ctx.orthoCache) for the app's map page: the smaller Low-tier texture when it
+     * is loaded, else the current tier's. No new download; null until one exists.
+     * @returns {CanvasImageSource | null}
+     */
+    getOrthoImage() {
+      const tex = ctx.orthoCache.low || ctx.orthoCache[ctx.tier];
+      return tex ? tex.image : null;
     },
     /** Atmosphere preset: 'clear_day' | 'dust_storm' | 'late_afternoon' | 'night'. */
     setSky(name) {
@@ -638,6 +720,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       quality.dispose();
       ac.abort(); ro.disconnect(); controls.dispose();
       if (sys.prints) sys.prints.dispose();
+      if (sys.arms) sys.arms.dispose();   // wrist screen textures once: the material sweep below no longer sees them (#67)
       const textures = new Set(), materials = new Set();
       scene.traverse((o) => {
         if (o.geometry) o.geometry.dispose();
@@ -652,6 +735,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       for (const t of textures) t.dispose();
       if (sys.cast) sys.cast.rt.dispose();
       if (waypoints) waypoints.dispose();
+      finds.dispose();
       if (sys.slopeZone) sys.slopeZone.dispose();
       if (sys.radioShadow) sys.radioShadow.dispose();
       if (ctx.terrain && ctx.terrain.shadowTex) ctx.terrain.shadowTex.dispose();

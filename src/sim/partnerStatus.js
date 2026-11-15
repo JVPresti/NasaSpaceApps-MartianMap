@@ -40,7 +40,7 @@ export function separationLevel(rangeM, prev = 'nominal', rule = SEPARATION_RULE
 
 /**
  * The alert for a separation level, in the shape of the store's alerts map (docs/STATE_AND_ENGINE.md), or null for
- * 'nominal'. The HUD's AlertBanner shows it like an event alert.
+ * 'nominal'. The event banner (src/events/EventBanner.jsx) shows it like an event alert.
  */
 export function separationAlert(level, { partnerId = 'EV2', startedAtSec = 0, rule = SEPARATION_RULE } = {}) {
   if (level !== 'caution' && level !== 'warning') return null;

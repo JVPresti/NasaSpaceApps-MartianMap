@@ -17,6 +17,7 @@
  *   setGrid: (grid: object) => Promise<void>,
  *   plan: (waypoints: Array<object>, options?: object) => Promise<object>,
  *   replan: (request: {from: object, shelters?: Array<object>, options?: object}) => Promise<object>,
+ *   detour: (request: object) => Promise<object>,
  *   terminate: () => void
  * }}
  */
@@ -95,6 +96,19 @@ export function createRoutePlannerClient(options = {}) {
           shelters: request.shelters,
           options: request.options,
         });
+      });
+    },
+
+    /** Price a detour to a find: the request of priceDetour in findDetour.js (#71). */
+    detour(request) {
+      if (!gridReady) {
+        return Promise.reject(new Error('route planner has no grid yet'));
+      }
+      const id = nextId;
+      nextId += 1;
+      return new Promise((resolve, reject) => {
+        pending.set(id, { resolve, reject });
+        worker.postMessage({ type: 'detour', id, request });
       });
     },
 

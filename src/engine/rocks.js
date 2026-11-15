@@ -143,9 +143,10 @@ export const OUTCROP = {
 };
 
 /**
- * Where the outcrop sits. The ground at WP3 is a steady 30 degree slope, so the model is laid on that slope uphill of
- * the waypoint, tilted to the ground plane under its 6.7 x 3.4 m footprint, with its buried end uphill and its broken
- * face towards the walker. Its beds dip 24 degrees inside the model, so on this slope they end up nearly level.
+ * Where the outcrop sits. WP3 is a stance point on 14 degree ground at the foot of a 22 to 30 degree slope, so the model
+ * is laid on that slope uphill of the waypoint, tilted to the ground plane under its 6.7 x 3.4 m footprint, with its
+ * buried end uphill and its broken face towards the walker. Its beds dip 24 degrees inside the model, so on this slope
+ * they end up nearly level.
  * Plain math, no three.js: `height(x, z)` is any ground height function (x east, z south, metres).
  * @returns {{ x: number, y: number, z: number, ux: number, uz: number, normal: number[], yaw: number, slopeDeg: number }}
  */

@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { CELL } from './rocks.js';
 import { JOG_SPEED } from './view.js';
+import { wristIsOpen } from './wrist.js';
 import {
   BRIGHT_ANGEL, CASE_REACH_M, CASE_STAND_M, CHEYAVA_FALLS, GROUND_STAND_M, MIN_ROCK_D_M, PHOTO_RANGE_M, ROCK_STAND_M,
   angleDelta, caseState, classifyTarget, horizontalDistance, inputActions, marchGround, pickRock, pourStand, rayCylinder, raySphere, standPoint,
@@ -38,6 +39,9 @@ export function createSampling(ctx, canvas, signal) {
 
   const emit = (type, extra) => { const e = { type, ...extra }; for (const fn of listeners) { try { fn(e); } catch (err) { console.error(err); } } };
   const walk = () => view.mode === 'eye';
+  // #67: while the wrist app is up it owns the input (the interface reads its own keys and clicks). Sampling ignores
+  // act() and reports every action as unavailable, but its phase is left exactly as it was, clips included.
+  const wristUp = () => wristIsOpen(sys.arms && sys.arms.state);
   const onHabitat = (x, z) => { const hb = sys.habitat; return !!hb.root && (!!hb.zone(x, z) || !hb.canStand(x, z)); };
   const partnerHere = () => { const p = sys.partner; return !!(p && p.root && p.root.visible && sys.props.hand); };
 
@@ -59,7 +63,7 @@ export function createSampling(ctx, canvas, signal) {
 
   // what the crosshair is on: the nearest of Cheyava Falls, a loose rock or the ground, up to the photo range
   function aim() {
-    if (!walk() || onHabitat(view.eye.x, view.eye.z)) return null;
+    if (!walk() || wristUp() || onHabitat(view.eye.x, view.eye.z)) return null;
     camera.updateMatrixWorld(); camera.getWorldPosition(o); camera.getWorldDirection(d);
     const hits = [];
     ray.set(o, d); ray.far = PHOTO_RANGE_M;
@@ -86,7 +90,7 @@ export function createSampling(ctx, canvas, signal) {
     const cs = caseState({ present, carrying: !!p.carrying, bending: !!p.bending, wantCarry: !!p.wantCarry, requested: caseRequested });
     const caseInReach = cs === 'down' && horizontalDistance(view.eye, sys.props.tcase.position) <= CASE_REACH_M;
     const target = phase === 'idle' || phase === 'holding' ? aim() : null;
-    return { walk: walk(), phase, target, caseState: cs, caseInReach };
+    return { walk: walk() && !wristUp(), phase, target, caseState: cs, caseInReach };
   }
 
   // feet 0.70 m from the rock face, facing it. Cheyava Falls: find the face as the bench does, with level rays 0.30, 0.20
@@ -116,6 +120,7 @@ export function createSampling(ctx, canvas, signal) {
 
   /** Runs one input ('click' | 'photo' | 'stow' | 'case'). Returns the action taken, or null when the input does nothing now. */
   function act(input) {
+    if (wristUp()) return null;   // the wrist app has the input; no clip, no pose and no phase change from sampling
     const s = situation(), action = inputActions(s)[input], t = s.target, p = sys.partner;
     switch (action) {
       case 'collect': {
@@ -199,6 +204,8 @@ export function createSampling(ctx, canvas, signal) {
 
   return {
     act, update, status,
+    /** The sampling phase ('idle' | 'collecting' | 'holding' | 'stowing' | 'pouring'); read by the wrist gate (#67). */
+    phase: () => phase,
     /** @param {(event: { type: string }) => void} fn @returns {() => void} unsubscribe */
     subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
   };

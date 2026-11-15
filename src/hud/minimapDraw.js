@@ -9,7 +9,9 @@ import {
   cardinalPoints, niceScaleBar, projectToMap, splitShelters,
 } from './minimapGeometry.js';
 import { resampleRoute } from './minimapRoute.js';
+import { waypointNumber } from '../sim/waypointNumber.js';
 import { drawPartner } from './minimapPartner.js';
+import { drawFinds } from './minimapFinds.js';
 
 const TAU = Math.PI * 2;
 const COLORS = {
@@ -247,7 +249,7 @@ function drawWaypoints(g, view, project, radius) {
     g.font = `700 ${Math.max(8, r * 1.15)}px system-ui, 'Segoe UI', sans-serif`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText(String(index + 1), p.x, p.y + 0.5);
+    g.fillText(waypointNumber(index), p.x, p.y + 0.5);
   });
 }
 
@@ -309,6 +311,7 @@ function drawScaleBar(g, cx, cy, radius, rangeM) {
  *   progress?: object,
  *   shelters?: Array<object>, zones?: Array<object>,
  *   partner?: object|null,   crew[0]: the partner marker (#70)
+ *   finds?: Array<object>,   finds.list: marked finds (#71)
  * }} view
  */
 export function drawMinimap(g, view) {
@@ -348,6 +351,7 @@ export function drawMinimap(g, view) {
   drawRoute(g, view, project, radius);
   drawShelters(g, view, project, radius);
   drawWaypoints(g, view, project, radius);
+  drawFinds(g, view.finds, project, cx, cy, radius);
   drawPartner(g, view.partner, project, cx, cy, radius);
   drawCardinalRing(g, cx, cy, radius, headingDeg);
   drawScaleBar(g, cx, cy, radius, rangeM);

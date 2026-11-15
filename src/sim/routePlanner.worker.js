@@ -8,11 +8,13 @@
  * Request:  { type: 'setGrid', grid }
  *           { type: 'plan', id, waypoints, options }
  *           { type: 'replan', id, from, shelters, options }
+ *           { type: 'detour', id, request }   price a detour to a find (findDetour.js, #71)
  * Response: { type: 'gridReady' }
  *           { type: 'result', id, result }
  *           { type: 'error', id, message }
  */
 
+import { priceDetour } from './findDetour.js';
 import { replanToNearestShelter } from './replan.js';
 import { planRoute } from './routePlanner.js';
 
@@ -32,7 +34,7 @@ self.addEventListener('message', (event) => {
     return;
   }
 
-  if (message.type !== 'plan' && message.type !== 'replan') {
+  if (message.type !== 'plan' && message.type !== 'replan' && message.type !== 'detour') {
     reply({ type: 'error', id: message.id, message: `unknown message type: ${message.type}` });
     return;
   }
@@ -46,7 +48,9 @@ self.addEventListener('message', (event) => {
     const result =
       message.type === 'replan'
         ? replanToNearestShelter(grid, message.from, message.shelters, message.options)
-        : planRoute(grid, message.waypoints, message.options);
+        : message.type === 'detour'
+          ? priceDetour(grid, message.request)
+          : planRoute(grid, message.waypoints, message.options);
     reply({ type: 'result', id: message.id, result });
   } catch (error) {
     reply({ type: 'error', id: message.id, message: error instanceof Error ? error.message : String(error) });

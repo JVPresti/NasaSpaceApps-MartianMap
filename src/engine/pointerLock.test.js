@@ -119,6 +119,37 @@ describe('pointer lock controller', () => {
     throwing.dispose();
   });
 
+  it('settles false at once when requestPointerLock is missing, so the menu can offer drag-to-look (#197)', async () => {
+    const doc = fakeDocument();
+    const schedule = vi.fn(() => 1);
+    const changes = [];
+    const lock = createPointerLock({ document: doc, element: {}, setTimeout: schedule, onChange: (on) => changes.push(on) });
+
+    await expect(lock.request()).resolves.toBe(false);
+    await expect(lock.request()).resolves.toBe(false);
+    expect(schedule).not.toHaveBeenCalled();   // no 3 s watchdog wait before the fallback appears
+    expect(lock.isWanted()).toBe(false);
+    expect(changes).toEqual([]);
+    lock.dispose();
+  });
+
+  it('leaves no pending request after a denial, so a retry asks the browser again (#197)', async () => {
+    const doc = fakeDocument();
+    const element = fakeElement(doc);
+    const lock = createPointerLock({ document: doc, element, timeoutMs: 0 });
+
+    const first = lock.request();
+    deny(doc);
+    await expect(first).resolves.toBe(false);
+    expect(lock.isWanted()).toBe(false);
+
+    const second = lock.request();
+    expect(element.requests).toBe(2);
+    grant(doc, element);
+    await expect(second).resolves.toBe(true);
+    lock.dispose();
+  });
+
   it('reports a browser pointer-lock error without pretending the lock succeeded', async () => {
     const doc = fakeDocument();
     const element = fakeElement(doc);

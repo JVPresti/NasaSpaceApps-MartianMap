@@ -2,20 +2,19 @@
 // time and turns a planner request into a new route in the store.
 //
 // Plain JavaScript (no React, no three.js). The browser pieces it needs are
-// `fetch`, `Worker` (through createRoutePlannerClient) and the mission store.
+// `fetch` (through src/data/dataFiles.js), `Worker` (through createRoutePlannerClient) and the mission store.
 import dustStorm from '../sim/events/dust-storm.json';
 import lowOxygenCaution from '../sim/events/low-oxygen-caution.json';
 import lowOxygenWarning from '../sim/events/low-oxygen-warning.json';
 import radiation from '../sim/events/radiation.json';
 import { createEventEngine } from '../sim/eventEngine.js';
-import { buildCostGrid, heightAt } from '../sim/costGrid.js';
+import { HAZARDS_PATH } from '../data/provenance.js';
+import { loadCostGrid, loadDataFile } from '../data/dataFiles.js';
+import { SHELTERS_PATH } from '../sim/shelters.js';
+import { heightAt } from '../sim/costGrid.js';
 import { createRoutePlannerClient } from '../sim/routePlannerClient.js';
 import { suitConstantsFromHazards, walkCost } from '../sim/suitModel.js';
 import { createStoreAdapter, useMissionStore } from './store.js';
-
-const TERRAIN_URL = import.meta.env.BASE_URL + 'marswalk/assets/terrain.json';
-const HAZARDS_URL = import.meta.env.BASE_URL + 'data/hazards.json';
-const SHELTERS_URL = import.meta.env.BASE_URL + 'data/shelters.json';
 
 const EVENT_DEFINITIONS = [dustStorm, radiation, lowOxygenCaution, lowOxygenWarning];
 
@@ -27,20 +26,48 @@ const ROUTE_SOURCES = {
   'route.etaSec': { tag: 'DERIVED', source: 'suit model · hazards.json' },
 };
 
-let current = null;
+// Sources for the environment values the event timelines write (#189). The HUD shows an environment value only once
+// its path has a source, so every event write registers one.
+export const EVENT_ENVIRONMENT_SOURCES = Object.freeze({
+  'environment.dustOpacity': Object.freeze({
+    tag: 'DERIVED',
+    label: 'Dust storm model',
+    source: 'dust storm event: tau from clear season 0.45 (Jezero) to the 2018 global storm 8.0 (Gale, not Jezero), hazards.json; ramp timing SIM',
+  }),
+  'environment.doseRateUgyH': Object.freeze({
+    tag: 'DATA',
+    label: 'RAD · Curiosity (Gale)',
+    source: 'radiation event: RAD B dose rate of the September 2017 solar particle event, hazards.json models.sep_2017_profile',
+  }),
+});
 
-function json(response, name) {
-  if (!response.ok) throw new Error(`${name} ${response.status}`);
-  return response.json();
+/**
+ * The event engine's store adapter, with a source written next to every environment value an event sets.
+ * @param {typeof useMissionStore} store
+ * @param {Record<string, object>} [sourcesByPath]
+ */
+export function createEventStoreAdapter(store, sourcesByPath = EVENT_ENVIRONMENT_SOURCES) {
+  const adapter = createStoreAdapter(store);
+  return {
+    ...adapter,
+    set(path, value) {
+      adapter.set(path, value);
+      const source = sourcesByPath[path];
+      if (source && store.getState().sources[path] !== source) {
+        store.setState((state) => ({ sources: { ...state.sources, [path]: source } }));
+      }
+    },
+  };
 }
+
+let current = null;
 
 function loadPlanner() {
   return Promise.all([
-    fetch(TERRAIN_URL).then((response) => json(response, 'terrain.json')),
-    fetch(HAZARDS_URL).then((response) => json(response, 'hazards.json')),
-    fetch(SHELTERS_URL).then((response) => json(response, 'shelters.json')),
-  ]).then(async ([terrainJson, hazards, sheltersJson]) => {
-    const grid = buildCostGrid(terrainJson);
+    loadCostGrid(),
+    loadDataFile(HAZARDS_PATH),
+    loadDataFile(SHELTERS_PATH),
+  ]).then(async ([grid, hazards, sheltersJson]) => {
     const client = createRoutePlannerClient();
     await client.setGrid(grid);
     return {
@@ -169,7 +196,7 @@ export function startEventRunner({ store = useMissionStore, setInterval: si = se
 
   const engine = createEventEngine({
     events: EVENT_DEFINITIONS,
-    store: createStoreAdapter(store),
+    store: createEventStoreAdapter(store),
     getMissionTime: missionTime,
     requestReplan,
     log,

@@ -1,0 +1,81 @@
+/* Unexpected find (#71): the hold ring at the centre of the view and the decision card above the waypoint panel.
+   The layer reuses the HUD tokens (.hud in hud.css) and its glass panel, so it reads as part of the visor. */
+.finds-layer { z-index: 1; }
+
+/* hold ring around the centre of the view */
+.find-ring {
+  position: absolute; left: 50%; top: 50%;
+  width: calc(var(--u) * 4.4); height: calc(var(--u) * 4.4);
+  transform: translate(-50%, -50%);
+  visibility: hidden;
+}
+.find-ring[data-state='aim'], .find-ring[data-state='none'] { visibility: visible; }
+.find-ring svg { display: block; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+.find-ring-track { fill: none; stroke: rgba(251, 245, 238, 0.28); stroke-width: 3; }
+.find-ring-arc { fill: none; stroke: var(--caution); stroke-width: 4; stroke-linecap: round; }
+.find-ring[data-state='none'] .find-ring-arc { stroke: transparent; }
+.find-ring-label {
+  position: absolute; left: 50%; top: calc(100% + 0.5em); transform: translateX(-50%);
+  white-space: nowrap; font: 600 0.72em/1.3 system-ui, 'Segoe UI', sans-serif; letter-spacing: 0.04em; color: var(--ink);
+  display: none;
+}
+.find-ring[data-state='aim'] .find-ring-label-aim { display: block; }
+.find-ring[data-state='none'] .find-ring-label-none { display: block; color: var(--dim); }
+
+.find-hint {
+  position: absolute; left: 50%; top: calc(50% + var(--u) * 4);
+  transform: translateX(-50%);
+  margin: 0; padding: 0.35em 0.8em; border-radius: 0.6em;
+  background: var(--glass); border: 1px solid var(--edge);
+  font: 600 0.78em/1.3 system-ui, 'Segoe UI', sans-serif; white-space: nowrap;
+}
+
+/* decision card: centred above the waypoint panel, closed after a decision */
+.find-card {
+  position: absolute; left: 50%; bottom: calc(var(--u) * 18.5);   /* clears the waypoint panel and its elevation profile */
+  transform: translateX(-50%);
+  width: calc(var(--u) * 25);
+  padding: 0.75em 1em 0.85em; border-radius: 0.9em;
+  border-left: 4px solid var(--caution);
+  pointer-events: auto;                 /* the buttons work whenever the mouse is free */
+}
+.find-card-go { border-left-color: var(--ok); }
+.find-card-no-go { border-left-color: var(--warning); }
+
+.find-card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35em; }
+.find-card-title { font: 600 0.78em/1.3 system-ui, 'Segoe UI', sans-serif; letter-spacing: 0.12em; color: var(--dim); }
+.find-card-title b { color: var(--ink); letter-spacing: 0.06em; font-size: 1.15em; }
+.find-verdict { font: 800 0.95em/1 system-ui, 'Segoe UI', sans-serif; letter-spacing: 0.08em; }
+.find-verdict-go { color: var(--ok); }
+.find-verdict-no-go { color: var(--warning); }
+.find-verdict-unknown { color: var(--dim); }
+
+.find-line { margin: 0.2em 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 0.1em; font-size: 1.05em; }
+.find-line b { font-size: 1.15em; }
+.find-key {
+  min-width: 4.6em; font: 600 0.62em/1 system-ui, 'Segoe UI', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim);
+}
+.find-sep, .find-arrow { margin: 0 0.35em; color: var(--dim); }
+.find-dim { color: var(--dim); font-size: 0.85em; }
+.find-margin-nominal { color: var(--ok); }
+.find-margin-caution { color: var(--caution); }
+.find-margin-warning { color: var(--warning); }
+.find-why, .find-error { margin: 0.35em 0 0; font: 0.7em/1.35 system-ui, 'Segoe UI', sans-serif; }
+.find-why { color: var(--ink); }
+.find-error { color: #ffd2c8; }
+
+.find-actions { display: flex; gap: 0.5em; margin-top: 0.6em; }
+.find-actions button {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.5em;
+  min-height: 2.4em; padding: 0.3em 0.7em; border-radius: 0.55em; cursor: pointer;
+  font: 700 0.72em/1 system-ui, 'Segoe UI', sans-serif; color: var(--ink);
+  background: rgba(20, 12, 9, 0.45); border: 1px solid var(--edge);
+}
+.find-actions button:first-child { background: rgba(143, 233, 184, 0.18); }
+.find-card-no-go .find-actions button:first-child { background: rgba(255, 106, 77, 0.16); }
+.find-actions button:disabled { opacity: 0.5; cursor: default; }
+.find-actions button:focus-visible { outline: 2px solid var(--unit); outline-offset: 2px; }
+.find-actions kbd {
+  padding: 0.15em 0.4em; border-radius: 0.3em; border: 1px solid var(--edge);
+  font: 700 0.95em/1 ui-monospace, Consolas, monospace; color: var(--unit);
+}

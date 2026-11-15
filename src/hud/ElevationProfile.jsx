@@ -1,6 +1,7 @@
 import { t } from '../i18n/index.js';
 import { useMemo } from 'react';
 import { buildProfile, slopeClass } from './profile.js';
+import { waypointNumber } from '../sim/waypointNumber.js';
 import './elevation.css';
 
 const W = 360;
@@ -62,7 +63,7 @@ export default function ElevationProfile({ path, waypoints, heightAt, slopeAt, p
           <g key={`w${mark.index}`} className="elevation-waypoint">
             <line x1={x(mark.distanceM)} y1={PAD} x2={x(mark.distanceM)} y2={H - PAD} />
             <circle cx={x(mark.distanceM)} cy={y(heightAtDistance(mark.distanceM))} r="2.6" />
-            <text x={x(mark.distanceM)} y={PAD - 1} textAnchor="middle">{mark.index + 1}</text>
+            <text x={x(mark.distanceM)} y={PAD - 1} textAnchor="middle">{waypointNumber(mark.index)}</text>
           </g>
         ))}
         {Number.isFinite(positionM) && (

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LAYERS, SLOPE_LIMITS, layerMeta, layerSource } from './layers.js';
+import { COST_CONSTANTS } from '../sim/costGrid.js';
 
 describe('plan layers', () => {
   it('matches the engine layer order', () => {
@@ -24,14 +25,20 @@ describe('plan layers', () => {
     }
   });
 
-  it('uses the 15 and 25 degree slope limits', () => {
-    expect(SLOPE_LIMITS).toEqual({ caution: 15, noGo: 25 });
+  it('builds the slope legend from the cost grid limits', () => {
+    expect(SLOPE_LIMITS).toEqual({
+      caution: COST_CONSTANTS.SLOPE_CAUTION_DEG,
+      noGo: COST_CONSTANTS.SLOPE_LIMIT_DEG,
+    });
+    expect(SLOPE_LIMITS).toEqual({ caution: 15, noGo: 20 });
     const slope = layerMeta(1);
     expect(slope.swatches.map((swatch) => swatch.label)).toEqual([
       '0–15°',
-      '15–25°',
-      '>25°',
+      '15–20°',
+      '>20°',
     ]);
+    expect(slope.summary).toContain('15° caution, 20° no-go');
+    expect(slope.summary).not.toMatch(/25°|\{/);
   });
 
   it('describes the elevation contours and rock range', () => {

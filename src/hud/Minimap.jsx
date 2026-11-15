@@ -8,10 +8,11 @@ import { useMissionStore } from '../state/store.js';
 import { MINIMAP_RANGE_M } from './minimapGeometry.js';
 import { drawMinimap } from './minimapDraw.js';
 import { createRedrawScheduler, MINIMAP_MAX_REDRAWS_PER_SECOND } from './minimapRedraw.js';
+import { loadDataFile } from '../data/dataFiles.js';
+import { SHELTERS_PATH } from '../sim/shelters.js';
 import './minimap.css';
 
 const ORTHO_URL = import.meta.env.BASE_URL + 'marswalk/assets/ortho_lo.jpg';
-const SHELTERS_URL = import.meta.env.BASE_URL + 'data/shelters.json';
 
 function relevantState(s) {
   return {
@@ -25,6 +26,7 @@ function relevantState(s) {
     partnerX: s.crew?.[0]?.x,
     partnerZ: s.crew?.[0]?.z,
     partnerLink: s.crew?.[0]?.link,
+    finds: s.finds?.list,
   };
 }
 
@@ -38,7 +40,8 @@ function changed(prev, next) {
     || prev.zones !== next.zones
     || prev.partnerX !== next.partnerX
     || prev.partnerZ !== next.partnerZ
-    || prev.partnerLink !== next.partnerLink;
+    || prev.partnerLink !== next.partnerLink
+    || prev.finds !== next.finds;
 }
 
 export default function Minimap({ tracker }) {
@@ -88,6 +91,7 @@ export default function Minimap({ tracker }) {
         shelters,
         zones: state.hazards?.zones,
         partner: state.crew?.[0] ?? null,
+        finds: state.finds?.list,
       });
     }
 
@@ -122,12 +126,7 @@ export default function Minimap({ tracker }) {
       }
     });
 
-    const controller = new AbortController();
-    fetch(SHELTERS_URL, { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) throw new Error('shelters.json HTTP ' + response.status);
-        return response.json();
-      })
+    loadDataFile(SHELTERS_PATH)
       .then((data) => {
         if (disposed) return;
         shelters = Array.isArray(data?.shelters)
@@ -143,6 +142,9 @@ export default function Minimap({ tracker }) {
 
     const img = new Image();
     img.decoding = 'async';
+    // Same CORS mode as three.js's TextureLoader (crossOrigin 'anonymous'), which loads this file for the Low tier.
+    // Without it the browser keys the two requests apart and downloads ortho_lo.jpg twice (#205).
+    img.crossOrigin = 'anonymous';
     img.onload = () => {
       if (disposed) return;
       image = img;
@@ -168,7 +170,6 @@ export default function Minimap({ tracker }) {
       disposed = true;
       unsubscribe();
       unsubscribeLanguage();
-      controller.abort();
       ro?.disconnect();
       window.removeEventListener('resize', requestResize);
       img.onload = null;

@@ -6,6 +6,7 @@ import {
   addCircle, addFootprint, footprint, habCanStand, habSlide, habSlideWorld, habZone, pushOut, rockBlocks,
 } from './collide.js';
 import { OUTCROP, outcropFootprint, outcropPlacement } from './rocks.js';
+import { decodeTerrain, heightAt } from '../sim/costGrid.js';
 
 const load = (path) => JSON.parse(readFileSync(fileURLToPath(new URL('../../public/marswalk/' + path, import.meta.url)), 'utf8'));
 const habitatJson = load('assets_habitat/habitat.json');
@@ -322,12 +323,14 @@ describe('the layered outcrop at WP3', () => {
     return p;
   }
   const p = glbPositions('assets/outcrop.glb', 'Outcrop_LOD0');
-  const k = Math.tan(30 * Math.PI / 180), slope = (x, z) => 100 + k * (x - z) / Math.SQRT2;   // the steady 30 degree slope at WP3, uphill (+x, -z)
-  const wp = { x: -40, z: -60 }, at = outcropPlacement(wp, slope), f = outcropFootprint(p, at, slope), obs = [];
+  // the real ground at WP3 (route.json): the stance point is on 14 degree ground, the outcrop on the 22 degree slope above it
+  const grid = decodeTerrain(load('assets/terrain.json')), slope = (x, z) => heightAt(grid, x, z);
+  const wp = load('assets/route.json').waypoints.find((w) => w.name.startsWith(OUTCROP.waypoint));
+  const at = outcropPlacement(wp, slope), f = outcropFootprint(p, at, slope), obs = [];
   addFootprint(obs, f, at.x, at.z, 1, at.ux, at.uz);
 
   it('blocks the walker along the part of it that stands above the ground', () => {
-    // the 6.7 x 3.4 m model lies 5.8 m long on the slope, but its uphill half is buried: about 3.2 x 3 m stands up, downhill
+    // the 6.7 x 3.4 m model lies on the 22 degree slope with its uphill half buried: about 3.3 x 3 m stands up, downhill
     expect(f).not.toBeNull();
     expect(2 * (f.half + f.r)).toBeGreaterThan(2.8);
     expect(2 * (f.half + f.r)).toBeLessThan(4.5);

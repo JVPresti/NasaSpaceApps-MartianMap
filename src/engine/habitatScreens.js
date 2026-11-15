@@ -187,6 +187,8 @@ export function createHabitatScreens(ctx) {
     mat, table,
     /** @param {ReturnType<typeof import('../state/habitatScreens.js').habitatScreenData>} d */
     setData(d) { data = d; since = DRAW_EVERY_S; if (d && d.route) table.update(d.route); },
+    /** Redraws now, for example after the interface language changed (index.js), so the labels switch at once. */
+    draw() { since = 0; draw(); },
     /** @param {number} dt @param {boolean} near the camera is close enough to read the screens */
     update(dt, near) {
       clock += dt; since += dt;

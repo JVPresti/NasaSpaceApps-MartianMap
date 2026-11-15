@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { buildCostGrid, heightAt } from '../sim/costGrid.js';
+import { loadCostGrid, loadDataFile } from '../data/dataFiles.js';
+import { HAZARDS_PATH } from '../data/provenance.js';
+import { heightAt } from '../sim/costGrid.js';
 import { createRoutePlannerClient } from '../sim/routePlannerClient.js';
 import { suitConstantsFromHazards, walkCost } from '../sim/suitModel.js';
 import { useMissionStore } from '../state/store.js';
 import { ROUTE_SOURCES, waypointKey } from './routePlan.js';
-
-const TERRAIN_URL = import.meta.env.BASE_URL + 'marswalk/assets/terrain.json';
-const HAZARDS_URL = import.meta.env.BASE_URL + 'data/hazards.json';
 
 /**
  * Loads the terrain and hazard data, keeps one planner worker alive, and
@@ -30,18 +29,8 @@ export function useRoutePlanner({ waypoints, enabled }) {
     let cancelled = false;
     let client = null;
 
-    Promise.all([
-      fetch(TERRAIN_URL).then((response) => {
-        if (!response.ok) throw new Error(`terrain.json ${response.status}`);
-        return response.json();
-      }),
-      fetch(HAZARDS_URL).then((response) => {
-        if (!response.ok) throw new Error(`hazards.json ${response.status}`);
-        return response.json();
-      }),
-    ])
-      .then(async ([terrainJson, hazards]) => {
-        const grid = buildCostGrid(terrainJson);
+    Promise.all([loadCostGrid(), loadDataFile(HAZARDS_PATH)])
+      .then(async ([grid, hazards]) => {
         client = createRoutePlannerClient();
         await client.setGrid(grid);
         if (cancelled) {
@@ -72,6 +61,13 @@ export function useRoutePlanner({ waypoints, enabled }) {
 
     const key = waypointKey(waypoints);
     if (key === lastKeyRef.current && nonce === lastNonceRef.current) return undefined;
+    // A find accepted in Walk (#71) already re-planned these waypoints from the player. Planning again from the
+    // habitat would reset nextIndex and lose the walk so far. Re-plan still forces a new route.
+    if (nonce === lastNonceRef.current && key === useMissionStore.getState().finds?.routeKey) {
+      lastKeyRef.current = key;
+      useMissionStore.setState((s) => ({ finds: { ...s.finds, routeKey: null } }));   // used once: a later edit plans as usual
+      return undefined;
+    }
     lastKeyRef.current = key;
     lastNonceRef.current = nonce;
 

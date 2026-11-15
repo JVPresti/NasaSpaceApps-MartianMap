@@ -7,12 +7,13 @@ const ROCK = (target) => target.site || t('ui.the.rock');
 /**
  * @param {{ phase: string, holding: string | null, target: { kind: string, site: string | null, distanceM: number, inReach: boolean } | null,
  *   caseState: string, caseInReach: boolean, actions: { click, photo, stow, case } } | null} status
- * @returns {{ reticle: 'reach' | 'look' | null, items: { key: string, text: string }[], note: string | null }}
- *   reticle: 'reach' when a click samples the target, 'look' when a rock is in view but too far; items: the inputs that do
+ * @returns {{ reticle: 'reach' | 'look' | 'aim', items: { key: string, text: string }[], note: string | null }}
+ *   reticle: 'reach' when a click samples the target (its `inReach` with free hands), 'look' when a rock is in view but
+ *   too far, 'aim' otherwise, so a small crosshair always marks the screen centre a click samples (#199); items: the inputs that do
  *   something now; note: what is going on (a clip, the partner bringing the case, walk closer)
  */
 export function samplingPrompt(status) {
-  const out = { reticle: null, items: [], note: null };
+  const out = { reticle: 'aim', items: [], note: null };
   if (!status || !status.actions) return out;
   const { phase, target, actions: a, caseState: cs, caseInReach } = status;
   // the prompt shows up when the player looks at a rock, or at the ground within reach, or holds a sample: not while

@@ -1,8 +1,8 @@
 /* Sampling on the helmet HUD (#36). Uses the variables of .hud (hud.css): --u, --ink, --dim, --unit, --glass, --edge, --ok. */
 
-/* checklist: right side, mirroring the suit panel */
+/* checklist: in the HUD's right column (hud.css .hud-right), under the minimap, as wide as the suit panel */
 .hud-sampling {
-  position: absolute; right: 7.8vw; top: 27vh; width: calc(var(--u) * 14.5);
+  width: calc(var(--u) * 14.5);
   padding: 0.9em 1.2em 0.8em; border-radius: 0.9em;
 }
 .hud-sampling-head { display: flex; align-items: baseline; gap: 0.45em; margin-bottom: 0.55em; }
@@ -16,13 +16,14 @@
 .hud-checklist li.hud-done .hud-check { color: var(--ok); }
 .hud-sampling-last { margin-top: 0.6em; padding-top: 0.55em; border-top: 1px solid rgba(255, 245, 235, 0.45); letter-spacing: 0.08em; }
 
-/* crosshair: only while something can be sampled or photographed */
+/* crosshair: always at the screen centre a click samples (#199); larger over a rock, green when a click collects */
 .hud-reticle {
   position: absolute; left: 50%; top: 50%; width: calc(var(--u) * 1.6); height: calc(var(--u) * 1.6);
   transform: translate(-50%, -50%); border-radius: 50%; border: 1.5px solid rgba(255, 245, 235, 0.55);
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
 }
 .hud-reticle::after { content: ''; position: absolute; left: 50%; top: 50%; width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px; border-radius: 50%; background: currentColor; }
+.hud-reticle-aim { width: calc(var(--u) * 0.8); height: calc(var(--u) * 0.8); border-color: rgba(255, 245, 235, 0.4); }
 .hud-reticle-reach { border: 2px solid var(--ok); color: var(--ok); }
 
 /* prompt under the crosshair */
@@ -42,7 +43,3 @@
 .hud-photo-flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: hud-shutter 0.35s ease-out; }
 @keyframes hud-shutter { 0% { opacity: 0.45; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .hud-photo-flash { animation-duration: 0.12s; } }
-
-@media (max-width: 900px) {
-  .hud-sampling { right: 3vw; }
-}

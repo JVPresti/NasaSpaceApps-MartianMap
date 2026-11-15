@@ -25,6 +25,20 @@ Rules:
 
 ## The mission store
 
+### Wrist screen (#67)
+
+The wrist controller (`src/screens/wrist/controller.js`) reads this same store and paints a fixed 512 × 352 canvas. The engine owns the `CanvasTexture` on the arm's `Screen` material, while the interface owns the canvas content. No React or store imports enter the engine.
+
+In Walk, `R` raises or lowers the wrist, `[`/`]` changes pages, `J`/`K` selects the next/previous row, and `Enter` confirms a layer through `setLayer`. Checklist and suit rows are read-only. Typing, held keys, modifier shortcuts, paused missions and reading cards/menus do not operate the wrist. Science cards retain Enter. Point indicates the selected row; confirmation briefly uses the existing pinch pose.
+
+Opening is rejected during sampling clips. A held sample survives opening and its tool pose is restored on closing; sampling inputs are disabled while reading the wrist. Entering Plan or pausing closes the wrist. Page/selection live in the controller session, survive a Plan round trip, and reset when the engine is replaced or retried.
+
+The map shows the entire real HiRISE tile north-up with an isotropic metre scale, route, waypoints, refuges and the store's navigation estimate and uncertainty. Missing image/position data are reported or omitted, never replaced with simulated fixes. Navigation remains subject to the existing estimate contract above.
+
+The controller signs only the current page's displayed content and repaints/uploads the texture when that signature changes. Hidden pages and unchanged store updates do not repaint it; coalescing caps work at 10 Hz. Opening refreshes a page that changed while closed. The engine's fallback layer painter never overwrites an external canvas.
+
+Engine methods (after `ready`): `setWristScreen(canvas|null)`, `invalidateWristScreen()`, `setWristOpen(boolean)` (returns success), `setWristPointer({x,y,pressed})` (canvas pixels), `getWristState()` and `getOrthoImage()`. Disconnect the controller before disposing the engine. Development-only `window.__marswalkWrist` exposes the canvas and a read-only snapshot for verification.
+
 ```js
 import { useMissionStore, storeAdapter, setMode } from './state/store.js';
 
@@ -48,8 +62,8 @@ setMode('plan');
 | `suit.batteryPct` | 0 to 100 (xEMU 756 Wh) | suit model | #19 |
 | `suit.pressurePsi` | suit pressure, 4.3 psid nominal | suit model | #19 |
 | `suit.metabolicW`, `effort` | metabolic power in W; effort 0 at rest, 1 at the design peak (879 W) | suit model | #19 |
-| `suit.walkbackSec`, `walkbackO2G` | time and O2 (with the 20 % pad) to walk back to the habitat entry in `public/data/shelters.json` along the route | suit model | #19, #129 |
-| `suit.marginSec` | O2 time left minus walkback minus the 30 min reserve | suit model | #19 |
+| `suit.walkbackSec`, `walkbackO2G`, `walkbackTo` | time and O2 (with the 20 % pad) to walk back to the habitat entry in `public/data/shelters.json` along the route. While `route.shelter` is set the walk follows the shelter route forward to the shelter instead. `walkbackTo` is `'habitat'` or `'shelter'` | suit model | #19, #129, #195 |
+| `suit.marginSec`, `o2MarginSec`, `evaMarginSec`, `marginLimit` | margin now: the smaller of the O2 margin (O2 time left minus walkback minus the 30 min reserve) and the EVA margin (`suit.eva_duration_max` minus `mission.elapsedSec` minus the walkback time). `marginLimit` names the smaller one, `'o2'` or `'eva'` | suit model | #19, #195 |
 | `suit.status` | `'nominal'`, `'caution'` (margin under 15 min) or `'warning'` (margin at or under 0) | suit model | #19, used by #26 |
 | `navigation.x`, `z`, `headingDeg` | position estimate; heading clockwise from north | engine bridge now; navigation model later | #6, #21, #42 |
 | `navigation.waypointRangeM`, `waypointBearingDeg` | distance and bearing to the next unvisited waypoint, written in Walk mode | waypoint runner | #61 |
@@ -63,12 +77,12 @@ setMode('plan');
 | `route.reason` | why the route changed, for example after an event | re-planner | #23 |
 | `route.shelter` | `{ id, name, x, z, type, protection }` from `public/data/shelters.json`: the shelter the re-planner chose, highlighted in green; `null` when no event is active | re-planner, events | #23, #24 to #26, #30 |
 | `route.legs` | `[{ from, to, distanceM, climbM, descentM, maxSlopeDeg, timeSec, o2G, o2Pct, batteryWh, batteryPct }]`, one per leg between consecutive `route.waypoints`, walked out at nominal effort. `maxSlopeDeg` is the steepest grade along the walking direction. `[]` without a route | per-leg costs (`src/sim/legCosts.js`) | #41 |
-| `route.totals` | the same fields summed over the legs (the maximum for `maxSlopeDeg`), plus the walk home along the same path with the 20 % pad (`returnTimeSec`, `returnO2G`, `returnBatteryWh`), what is left at the habitat (`arrivalO2G`, `arrivalO2Pct`, `arrivalBatteryWh`, `arrivalBatteryPct`), `marginSec` (O2 left at the habitat as time at the flat walking rate, minus the 30 min reserve) and `status` as for `suit.status`. `null` without a route | per-leg costs | #41 |
+| `route.totals` | the same fields summed over the legs (the maximum for `maxSlopeDeg`), plus the walk home along the same path with the 20 % pad (`returnTimeSec`, `returnO2G`, `returnBatteryWh`), what is left at the habitat (`arrivalO2G`, `arrivalO2Pct`, `arrivalBatteryWh`, `arrivalBatteryPct`), `marginSec` (margin at the end of the plan: O2 left at the habitat as time at the flat walking rate, minus the 30 min reserve, capped at `suit.eva_duration_max` minus the walk out and back) and `status` as for `suit.status`. `null` without a route | per-leg costs | #41 |
 | `route.decision` | `'pending'`, `'go'` or `'no-go'`, set by the crew in Plan mode | interface | #17 |
 | `route.skipped` | waypoint names the event route leaves out, for example after a dust storm | events | #24 |
 | `environment.dustOpacity` | tau. **The event engine writes this path.** The bridge turns it into the engine's storm-dust level (`src/state/dustLevel.js`): tau 0.45 (clear Jezero) is 0, tau 8 (global storm, Gale 2018) is 1. | events, MEDA replay | #22, #24, #27, #31 |
-| `environment.tempC`, `windMs`, `pressurePa` | weather | MEDA replay | #31 |
-| `environment.doseRateUgyH`, `doseUgy` | radiation dose rate (µGy/h) and dose received (µGy) | RAD curve, events | #25, #31 |
+| `environment.tempC`, `windMs`, `pressurePa` | weather. The environment runner (`src/sim/environmentRunner.js`) replays the stored MEDA sol at the mission LMST once per second from the first Walk. | MEDA replay | #31, #189 |
+| `environment.doseRateUgyH`, `doseUgy` | radiation dose rate (µGy/h) and dose received this EVA (µGy). The environment runner writes the RAD background rate (8.75 µGy/h) outside the radiation event and sums the rate in the store over mission time into `doseUgy`; the radiation event sets only the rate. | RAD background, radiation event, environment runner | #25, #31, #189 |
 | `hazards.zones` | `[{ id, x, z, radiusM, active }]`, x east / z south in metres and `radiusM` in metres: active hazard areas for the minimap. `[]` means "no zone known", **not** "the ground is safe". The minimap draws only `active === true` entries with finite `x`, `z` and `radiusM > 0`. | no writer yet; the event work (#24-#26) may fill it | #60 |
 | `alerts.<eventId>` | `{ id, eventId, level, text, startedAtSec, active }`, or `null` when cleared. **The event engine writes these.** The partner runner writes `alerts.partner-separation` in the same shape, only when the separation level changes | event engine, partner runner | #22, #70 |
 | `crew` | `[{ id, name, color, x, z, rangeM, bearingDeg, oxygenPct, oxygenSec, batteryPct, marginSec, status, link, lastContactSec, separation, separationLimitM, separationCautionM }]`. `crew[0]` is the partner: range and bearing from the player, its suit from the same model as `suit.*`, and `separation` (`'nominal'`, `'caution'` or `'warning'`) against the limit. `link` is the radio line of sight between the two suits; while it is `false` every field holds the last values received at `lastContactSec` (mission seconds). Empty without a partner, or until the radio first reaches it | partner runner (`src/sim/partnerRunner.js`), online play | #39, #52, #70 |
@@ -208,7 +222,7 @@ Deliberate limits: no persistence between sessions, no extra debrief warnings, a
 
 `src/debrief/DebriefScreen.jsx` shows the frozen snapshot. App subscribes to `eva.summary`; when it appears, the app closes the real input path with `pauseEva` (engine input off, pointer lock released), cancels any pending resume or Walk lock through the existing sequence refs, and keeps the screen in the ended state behind one native modal. The start screen and pause menu are not rendered while the summary exists, and `handleResume` refuses a final EVA, so Esc, H, the mode switch and the interface shortcuts cannot reopen the mission behind the debrief. Esc on the debrief is inert: the only ways out are **Restart EVA** and **Sources**.
 
-The screen reads that snapshot only: time outside, horizontal distance, sample count with the real sample kinds and sites, dose in µGy (a dash when the store had no reading), the lowest oxygen margin in signed minutes (negatives included) and the lowest battery per cent. Below them is one chronological mission log with every event start and end (`label` and `eventId`) and every route change (mission time, reason, kind and the before/after route distance when known). Two notes explain that dose is the radiation event's running total copied at the end, not integrated by this screen, and that the battery is the suit model's remaining charge, not a measurement of the physical pack. Provenance entries were added for `eva.distanceM`, `eva.elapsedOutsideSec` and `eva.sampleCount`; the other metrics reuse `suit.marginSec`, `suit.batteryPct` and `environment.doseUgy`.
+The screen reads that snapshot only: time outside, horizontal distance, sample count with the real sample kinds and sites, dose in µGy (a dash when the store had no reading), the lowest oxygen margin in signed minutes (negatives included) and the lowest battery per cent. Below them is one chronological mission log with every event start and end (`label` and `eventId`) and every route change (mission time, reason, kind and the before/after route distance when known). Two notes explain that dose is the environment runner's total for the EVA copied at the end, not integrated by this screen, and that the battery is the suit model's remaining charge, not a measurement of the physical pack. Provenance entries were added for `eva.distanceM`, `eva.elapsedOutsideSec` and `eva.sampleCount`; the other metrics reuse `suit.marginSec`, `suit.batteryPct` and `environment.doseUgy`.
 
 Restart uses the same `handleRestartConfirm` as the pause menu and therefore the same `restartEva` (#64): it stops the simulation, clears the persisted clock session, resets the store, resets the engine, starts one new paused simulation and returns to the start screen with no old statistics. The minimap progress tracker is cleared explicitly with `setPath(null)`, because it normally only resets when the route content changes. Sources uses the real `openSources`; `SourcesRoot` is mounted after the debrief, so its dialog is created above it in the top layer, and closing it returns focus to the debrief.
 
@@ -311,3 +325,12 @@ Tests: `src/hud/minimapGeometry.test.js` (tile UV with the five real waypoints, 
 
 - **Store to engine:** `mode`, `view.layer`, `view.sky`, `view.skyBlend`, `view.slopeGrid`, `route.path`, `route.shelter` and `environment.dustOpacity` (as the dust level), each when it changes.
 - **Engine to store:** `navigation.x`, `z` and `headingDeg` every 200 ms, skipped while the player stands still. This is the true position until the navigation model (#42) writes the estimate instead; after that, move this write into the navigation module.
+
+## Unexpected finds (#71)
+
+Plan section 3.4, scenario 3. In Walk, holding Q for 2 s while the centre of the view is on ground within 50 m drops a find marker there. The right arm takes the `point` pose of the first-person arms while Q is down. A card prices the detour, Y adds the find to the route and N or Esc dismisses it.
+
+- **Store:** `finds` holds `list` (at most 3: one undecided plus accepted finds not reached yet), `seq` for the M01, M02 labels, `activeId` (the find the card shows) and `routeKey`. Actions live in `src/state/finds.js`.
+- **Price:** `priceDetour(grid, request)` in `src/sim/findDetour.js`, run in the planner worker (`{ type: 'detour' }`, `client.detour(request)`). It plans the find into each of the two cheapest insertion points of the remaining route, keeps the cheaper one and returns the extra time, O2 and distance, the walkback margin before and after, and `verdict` `go`, `no-go` or `unknown`. No-go means the find is on ground over 20°, no path reaches it, or the margin after reaches the 0 min warning line.
+- **Accept:** the find becomes an ordinary waypoint (`{ name: 'M01 · find', x, z, find: 'M01' }`) inserted at the priced index, and the planner re-plans the whole route from the habitat through `applyPlannedRoute`. `nextIndex` and `visited` stay as they were. `finds.routeKey` tells the Plan planner that these waypoints already have a route, so opening Plan does not start the walk over.
+- **Engine:** `engine.setFinds(list)` draws the markers in Walk and Plan, `engine.aimGround(maxM)` returns where the view meets the terrain, and `engine.setPointing(on)` raises or lowers the arm. All three live in `src/engine/finds.js`.
