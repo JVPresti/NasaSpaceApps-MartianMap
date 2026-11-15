@@ -28,7 +28,7 @@ Touch and gamepad work too. [docs/CONTROLS.md](docs/CONTROLS.md) lists every inp
 
 ### What is measured and what is simulated
 
-Every number on screen carries one of three tags, except the radio range, which is still missing one ([#297](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/297)). Hover a tag to see the mission, instrument, sol and reference.
+Every number on screen carries one of three tags. Hover a tag to see the mission, instrument, sol and reference.
 
 | Tag | Meaning | Examples |
 |---|---|---|
