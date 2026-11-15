@@ -11,7 +11,7 @@
  *      totals, `nextIndex`, `visited` and a new array with the same points never add an entry.
  *   3. The end of the EVA (#244). Being back at the habitat never ends it by itself: while the astronaut is at the
  *      habitat during the EVA, `eva.atHabitat` is true and the interface offers to end it (a prompt over the planning
- *      table, src/state/evaEnd.js). requestEvaEnd() then ends it on the next tick: the mission clock is paused at
+ *      table, src/state/tableActions.js). requestEvaEnd() then ends it on the next tick: the mission clock is paused at
  *      that instant and the summary is stored, deeply frozen, so the debrief cannot change while the rest of the app
  *      keeps running. continueEva() goes back to the EVA from the debrief; the statistics keep counting.
  *   4. The route review inputs (#274). `track` keeps a point every TRACK_STEP_M of horizontal walking (position,
@@ -30,7 +30,8 @@
  * "At the habitat" is the 5 m arrival circle around the real HAB entry in `public/data/shelters.json` (the foot of the
  * airlock steps at 535.1, 574.1, never the `HAB` route waypoint at 520, 600), or any of the habitat's walk zones (the
  * steps, porch, airlock and cabin, from the engine). The cabin is about 10 m from the foot of the steps, so the circle
- * alone counted the cabin as outside.
+ * alone counted the cabin as outside. Without the HAB entry (shelters.json did not load, `habitat: null`) only the walk
+ * zones count, so the EVA can still be ended from the cabin.
  *
  * Plain JavaScript: no React, no three.js and no store import. The runner takes any store with
  * getState / setState / subscribe, as `src/state/store.js` provides.
@@ -365,7 +366,7 @@ export function continueEva(store) {
  *
  * @param {{
  *   store: { getState: Function, setState: Function, subscribe: Function },
- *   habitat: { x: number, z: number },
+ *   habitat: { x: number, z: number } | null,   the real HAB entry; null when shelters.json did not load (walk zones only)
  *   habitatZoneAt?: (x: number, z: number) => string | null,   the habitat walk zone at a point (engine.habitatZoneAt)
  *   slopeAt?: ((x: number, z: number) => number) | null,   terrain slope in degrees for the track; default navigation.slopeDeg
  *   setInterval?: Function,
@@ -386,8 +387,8 @@ export function startEvaRunner({
   if (!store || typeof store.getState !== 'function' || typeof store.setState !== 'function' || typeof store.subscribe !== 'function') {
     throw new TypeError('startEvaRunner: store must provide getState, setState and subscribe');
   }
-  if (!habitat || !isFiniteNumber(habitat.x) || !isFiniteNumber(habitat.z)) {
-    throw new TypeError('startEvaRunner: habitat needs finite x and z');
+  if (habitat !== null && (!habitat || !isFiniteNumber(habitat.x) || !isFiniteNumber(habitat.z))) {
+    throw new TypeError('startEvaRunner: habitat needs finite x and z, or null');
   }
 
   let stopped = false;
@@ -499,7 +500,7 @@ export function startEvaRunner({
       return;
     }
 
-    const inside = distanceToHab(truth, habitat) <= HAB_ARRIVAL_RADIUS_M || habitatZoneAt(truth.x, truth.z) !== null;
+    const inside = (habitat !== null && distanceToHab(truth, habitat) <= HAB_ARRIVAL_RADIUS_M) || habitatZoneAt(truth.x, truth.z) !== null;
 
     if (eva.phase === 'ready') {
       // The EVA starts on the first Walk tick with the mission running, wherever the astronaut stands (#244): they

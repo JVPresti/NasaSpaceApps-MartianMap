@@ -193,6 +193,21 @@ describe('EVA statistics runner', () => {
     expect(requestEvaEnd(useMissionStore)).toBe(false);                     // only at the habitat
   });
 
+  it('without the HAB entry (shelters.json not loaded) counts only the walk zones, so the cabin can still end the EVA', () => {
+    const CABIN = { x: 541, z: 582 };
+    const zoneAt = (x, z) => (Math.hypot(x - CABIN.x, z - CABIN.z) < 3 ? 'main' : null);
+    expect(() => runnerAt({ habitat: undefined })).toThrow(TypeError);
+    const runner = runnerAt({ habitat: null, habitatZoneAt: zoneAt });
+    mission(0);
+    place(INSIDE.x, INSIDE.z); runner.tick();
+    expect(eva()).toMatchObject({ phase: 'active', atHabitat: false });   // no circle at the foot of the steps
+    place(CABIN.x, CABIN.z); runner.tick();
+    expect(eva()).toMatchObject({ phase: 'active', atHabitat: true });
+    expect(requestEvaEnd(useMissionStore)).toBe(true);
+    runner.tick();
+    expect(eva().phase).toBe('ended');
+  });
+
   it('continues the EVA from the debrief with the statistics still counting (#244)', () => {
     const runner = runnerAt();
     mission(0);
