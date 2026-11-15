@@ -226,6 +226,42 @@ describe('EVA start at the first switch to Walk (#166)', () => {
     stop();
   });
 
+  it('walks a crew of one without the partner, and a pair with it (D8)', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', vi.fn(respond));
+    const partnerState = { x: entry.x + 2, z: entry.z, headingDeg: 0, speedMs: 0, visible: true };
+    const engineFor = () => ({
+      heightAt: () => 0,
+      setPartnerSource: vi.fn(),
+      getPartner: vi.fn(() => ({ id: 'ev2', color: [1, 0.5, 0], state: partnerState })),
+    });
+
+    planned();
+    setNeeds({ crew: 1 });
+    const solo = engineFor();
+    let stop = startSimulation(solo);
+    await flush();
+    setMode('walk');
+    await flush();
+    vi.advanceTimersByTime(2000);
+    expect(solo.setPartnerSource).toHaveBeenCalledWith(null);
+    expect(solo.getPartner).not.toHaveBeenCalled();     // no partner runner: no EV2 chip, no separation alert
+    expect(useMissionStore.getState().crew).toEqual([]);
+    stop();
+
+    resetStore();
+    planned();
+    const pair = engineFor();
+    stop = startSimulation(pair);
+    await flush();
+    setMode('walk');
+    await flush();
+    vi.advanceTimersByTime(2000);
+    expect(pair.setPartnerSource).not.toHaveBeenCalled();
+    expect(pair.getPartner).toHaveBeenCalled();
+    stop();
+  });
+
   it('keeps a paused mission paused at EVA 0:00 when Walk starts behind a menu (#64)', async () => {
     vi.useFakeTimers();
     vi.stubGlobal('fetch', vi.fn(respond));

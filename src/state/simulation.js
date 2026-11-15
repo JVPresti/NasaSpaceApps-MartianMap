@@ -61,6 +61,9 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
   if (mock) return () => {};
   const slopeDetour = startSlopeDetourService();
   const stopsReady = loadStops().catch((e) => { console.error('stops.json not loaded, arrival radius 5 m:', e); return null; });
+  // Usually loaded long before Begin EVA (the table takes a while): the event runner reads each stop's arrival radius.
+  let loadedStops = null;
+  stopsReady.then((stops) => { loadedStops = stops; });
   let stopped = false, suit = null, legs = null, clock = null, eva = null, partner = null, environment = null, navigation = null;
   const environmentData = Promise.all([
     loadEnvironmentFile(MEDA_SOL_PATH, 'meda_sol.json', parseMedaSol),
@@ -122,11 +125,17 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     store.setState((s) => ({ route: departRoute(s.route) }));
     // The crew's needs as they were locked at Begin EVA: the mission and the consumables the walk starts with.
     const needs = store.getState().needs ?? {};
+    // A crew of one walks alone (D8): no partner on the surface, so no EV2 chip, no separation alert and no hand-over.
+    // A restart puts the scripted partner back at the airlock (engine.resetSession), for a crew of two.
+    const solo = needs.crew === 1;
+    if (solo && typeof engine.setPartnerSource === 'function') {
+      try { engine.setPartnerSource(null); } catch (e) { console.warn('partner not hidden:', e); }
+    }
     const waypoints = startWaypointRunner({ store });
     stopsReady.then((stops) => { if (stops) waypoints.setStops(stops); });
     eva = {
       // The mission (#265) is the one the crew's objective defines, locked by this same switch to Walk (setMode).
-      events: startEventRunner({ store, objective: needs.objective, onEventLog: (entry) => recordEvaEvent(store, entry) }),
+      events: startEventRunner({ store, objective: needs.objective, stops: loadedStops, onEventLog: (entry) => recordEvaEvent(store, entry) }),
       offRoute: startOffRoute({ store }),
       waypoints,
       stats: null,
@@ -157,7 +166,7 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
       const start = { o2G: o2StartG, batteryWh: batteryStartWh };
       suit = startSuitRunner({ store, heightAt: engine.heightAt, constants, habitat, start });
       // the partner's suit and the separation limit (#70), read only through the partner source
-      if (engine.getPartner) partner = startPartnerRunner({ store, readPartner: engine.getPartner, heightAt: engine.heightAt, lineOfSight: engine.lineOfSight, constants, habitat, start });
+      if (engine.getPartner && !solo) partner = startPartnerRunner({ store, readPartner: engine.getPartner, heightAt: engine.heightAt, lineOfSight: engine.lineOfSight, constants, habitat, start });
     }, () => {});
   }
 

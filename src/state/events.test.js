@@ -280,8 +280,10 @@ describe('event runner missions (#265)', () => {
     expect(listEvents().find((event) => event.id === 'dust-storm').trigger.atSec).toBe(480);
   });
 
-  it('places the stop from the route locked at Begin EVA', () => {
+  it('places the stop from the route locked at Begin EVA, with the arrival radius of the waypoint runner', () => {
     expect(plannedStops({ waypoints: [HAB_WAYPOINT, S1] })).toEqual({ sortie: { x: STOP.x, z: STOP.z, radius: 5 } });
+    const stops = [{ id: 'sortie', waypoint: S1.name, arrival_radius: { value: 8, unit: 'm' } }];
+    expect(plannedStops({ waypoints: [HAB_WAYPOINT, S1] }, stops)).toEqual({ sortie: { x: STOP.x, z: STOP.z, radius: 8 } });
     expect(plannedStops({ waypoints: [HAB_WAYPOINT] })).toEqual({});
   });
 

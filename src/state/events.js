@@ -17,7 +17,7 @@ import { createRoutePlannerClient } from '../sim/routePlannerClient.js';
 import { suitConstantsFromHazards, walkCost } from '../sim/suitModel.js';
 import { createStoreAdapter, useMissionStore } from './store.js';
 import { truePosition } from '../sim/navigation.js';
-import { ARRIVAL_RADIUS_M } from '../sim/waypointRunner.js';
+import { arrivalRadiusM } from '../sim/waypointRunner.js';
 
 // What each event is. When the storm and the radiation alert start, and how fast their timelines run, comes from the
 // mission the crew's objective defines (src/sim/missions.js, #265).
@@ -86,19 +86,21 @@ let current = null;
 
 /**
  * Where each planned stop is, by stops.json id (`stopId` on the planner's waypoints), and how close counts as reaching
- * it: the waypoint runner's arrival radius. The event runner reads it from the route locked at Begin EVA, so the first
- * mission's storm waits for the sortie stop itself, not for whatever waypoint comes next (R5).
- * @param {{ waypoints?: Array<{ stopId?: string, x: number, z: number }> }} route
+ * it: the waypoint runner's arrival radius for that waypoint (stops.json `arrival_radius`, 5 m without the file). The
+ * event runner reads it from the route locked at Begin EVA, so the first mission's storm waits for the sortie stop
+ * itself, not for whatever waypoint comes next (R5).
+ * @param {{ waypoints?: Array<{ name?: string, stopId?: string, x: number, z: number }> }} route
+ * @param {Array<object> | null} [stops] the parsed stops.json list (src/data/stops.js loadStops)
  * @returns {Record<string, { x: number, z: number, radius: number }>}
  */
-export function plannedStops(route) {
-  const stops = {};
+export function plannedStops(route, stops = null) {
+  const places = {};
   for (const waypoint of route?.waypoints ?? []) {
-    if (waypoint?.stopId && Number.isFinite(waypoint.x) && Number.isFinite(waypoint.z) && !stops[waypoint.stopId]) {
-      stops[waypoint.stopId] = { x: waypoint.x, z: waypoint.z, radius: ARRIVAL_RADIUS_M };
+    if (waypoint?.stopId && Number.isFinite(waypoint.x) && Number.isFinite(waypoint.z) && !places[waypoint.stopId]) {
+      places[waypoint.stopId] = { x: waypoint.x, z: waypoint.z, radius: arrivalRadiusM(stops, waypoint) };
     }
   }
-  return stops;
+  return places;
 }
 
 /** The habitat entry of shelters.json, the shelter of every event that re-plans to the habitat. */
@@ -170,15 +172,17 @@ export function writeRoute(store, result, reason, shelter = null) {
  * The mission comes from `objective` (the crew's objective, locked at Begin EVA: src/state/simulation.js passes it),
  * else from the store's `needs.objective`. It is read once, here: a later change of the needs changes nothing.
  *
- * @param {{ store?: object, objective?: string, setInterval?: Function, clearInterval?: Function,
+ * `stops` is the parsed stops.json list when it has loaded: each planned stop's arrival radius (plannedStops).
+ *
+ * @param {{ store?: object, objective?: string, stops?: Array<object> | null, setInterval?: Function, clearInterval?: Function,
  *   onEventLog?: (entry: { type: 'start' | 'end', eventId: string, label: string, missionTimeSec: number }) => void }} [options]
  * @returns {{ mission: 'first' | 'full', tick: () => void, stop: () => void, fire: (id: string) => boolean,
  *   listEvents: () => Array<object> }}
  */
-export function startEventRunner({ store = useMissionStore, objective, setInterval: si = setInterval, clearInterval: ci = clearInterval, onEventLog } = {}) {
+export function startEventRunner({ store = useMissionStore, objective, stops = null, setInterval: si = setInterval, clearInterval: ci = clearInterval, onEventLog } = {}) {
   const lockedObjective = objective ?? store.getState().needs?.objective;
   const mission = missionForObjective(lockedObjective);
-  const definitions = missionEventDefinitions(lockedObjective, EVENT_DEFINITIONS, { stops: plannedStops(store.getState().route) });
+  const definitions = missionEventDefinitions(lockedObjective, EVENT_DEFINITIONS, { stops: plannedStops(store.getState().route, stops) });
   let stopped = false;
   let planner = null;
   let plannerPromise = null;
