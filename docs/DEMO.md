@@ -135,6 +135,12 @@ slower, the walking speed and frame rate, and the time the hand-over took.
 
 ### Measured
 
+**Since #290 the script stops at the start screen on `main`:** the start button now enters the habitat and the script
+still waits for the mission table, so nothing below was measured on the merged tree. The last full run of this branch
+(below: 7:39 to 7:41, 31 of 33 features) predates the merge of `main` at `4306bbb`; after it, a targeted run that reaches
+the table through the habitat (**M**) checked segment 3's steps again: 0:42 of its 0:55, every feature of segments 1 to 3
+driven, in English and Spanish.
+
 15 November 2026, branch `feat/sampling-tasks` (#352), Edge headless, 1366 x 768, English, `npm run measure:demo`.
 **7:41, over the 7:30 target and 19 s under the 8:00 limit, with 31 of 33 features driven. This is not a healthy run.**
 
