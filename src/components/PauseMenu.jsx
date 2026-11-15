@@ -1,6 +1,7 @@
 import { t, translateText, setLanguage } from '../i18n/index.js';
 import { useLanguage } from '../i18n/useLanguage.js';
 import { useEffect, useRef } from 'react';
+import AudioSettings from '../audio/AudioSettings.jsx';
 import ControlsHelp from './ControlsHelp.jsx';
 import Modal from './Modal.jsx';
 import ModeSwitch from './ModeSwitch.jsx';
@@ -116,6 +117,8 @@ export default function PauseMenu({
             </select>
             <p className="menu-note">{t('languageHelp')}</p>
           </div>
+
+          <AudioSettings />
 
           <div className="quality-block">
             <h3 id="quality-label">{t('menu.scene.quality')}</h3>

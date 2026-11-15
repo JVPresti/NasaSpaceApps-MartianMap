@@ -34,6 +34,7 @@ export const KINDS = [
   { id: 'surface_images', label: 'Surface images and science stops' },
   { id: 'suit_walking', label: 'Suit, oxygen and walking' },
   { id: 'models', label: '3D models and textures' },
+  { id: 'sound', label: 'Sound' },
   { id: 'software', label: 'Software libraries' },
 ];
 
@@ -587,6 +588,22 @@ export const CURATED = [
     'User interface (src/main.jsx)',
   ]),
   npm('zustand', 'Zustand', 'Copyright 2019 Paul Henschel', 'https://github.com/pmndrs/zustand', ['App state (src/state/)']),
+
+  // Sound (#72): no sound files. Every sound is synthesised in the browser with the Web Audio API.
+  {
+    id: 'marswalk-suit-audio',
+    name: 'Suit sounds: fans, breathing, footsteps, wind, habitat cabin, dosimeter, alert tones and radio',
+    kind: 'sound',
+    provider: 'Marswalk team',
+    mission: null,
+    instrument: null,
+    credit_line: 'Made in code at run time with the Web Audio API (src/audio/). No recordings and no sound files',
+    license: 'Original work of the Marswalk team. No third-party sound is used',
+    license_url: null,
+    url: 'https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API',
+    used_in: ['Suit audio (src/audio/)'],
+    citation: 'How quiet and dull the outside is follows the first sound recordings on Mars: Maurice et al. 2022, Nature 605, 653-658 (Perseverance SuperCam microphone)',
+  },
 ];
 
 /** Mission names for the submission form. Missions not listed here appear as written. */
