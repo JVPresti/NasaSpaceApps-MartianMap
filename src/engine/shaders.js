@@ -102,8 +102,8 @@ void main(){ vec4 wp = modelMatrix * vec4(position, 1.0); vW = wp.xyz; gl_Positi
 
 export const TERRAIN_FRAG = /* glsl */`
 ${COMMON}
-uniform sampler2D tOrtho, tNrmAo, tMask, tGravel, tSlab, tRing, tShadow;
-uniform vec2 uSize; uniform float uFadeStart, uFadeEnd, uLayer, uRelief, uRingSize;
+uniform sampler2D tOrtho, tNrmAo, tMask, tGravel, tSlab, tRing, tShadow, tZone;
+uniform vec2 uSize; uniform float uFadeStart, uFadeEnd, uLayer, uRelief, uRingSize, uZoneOn; uniform vec3 uZoneBox;
 varying vec3 vW;
 vec3 ramp(float g){
   vec3 c0=vec3(0.068,0.042,0.021), c1=vec3(0.228,0.143,0.072), c2=vec3(0.468,0.298,0.152), c3=vec3(0.705,0.479,0.262), c4=vec3(0.845,0.633,0.372);   // hues measured on Perseverance Mastcam-Z frames, sol 1217 (see README, Colour)
@@ -188,6 +188,14 @@ void main(){
       lay = vec3(0.3,0.9,0.95); a = smoothstep(0.05,0.45,texture2D(tMask,uv).r)*0.5;
     }
     col = mix(col, lay*(0.35 + dot(col, vec3(0.6))), a);
+  }
+  if(uZoneOn > 0.5){
+    // slope-ahead zone (#69, #200): one texel per 3 m cell, linear filtering rounds the outline at the cell edges. The red keeps
+    // the lit luminance, so sunlit and shaded ground stay as different as they were; a brighter rim marks the edge.
+    float zm = smoothstep(0.3, 0.7, texture2D(tZone, (vW.xz - uZoneBox.xy) / uZoneBox.z).r);
+    float rim = zm * (1.0 - zm) * 4.0;
+    vec3 red = dot(col, vec3(0.2126, 0.7152, 0.0722)) * vec3(2.4, 0.42, 0.28);
+    col = mix(col, red * (1.0 + 0.5*rim), 0.55*zm + 0.2*rim);
   }
   gl_FragColor = vec4(applyFog(col, toFrag), 1.0);
   #include <tonemapping_fragment>
