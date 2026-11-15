@@ -258,6 +258,12 @@ export const applySavedRoute = (id) => {
       visited: [],
       skipped: [],
       shelter: null,
+      // The needs plan's own output: the waypoint plan that runs next never writes these, so the table would keep
+      // showing the old plan's dropped stops and reasons on the loaded route.
+      stops: [],
+      dropped: [],
+      planReasons: [],
+      explain: [],
     },
   }));
   return true;
