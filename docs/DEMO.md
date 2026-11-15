@@ -166,4 +166,4 @@ took over 9 minutes; measure on a quiet machine.
 no detour to a find and a quick reader's dwell, x0.25): 15 November 2026, the same machine, 1366 x 768, English, 104 to
 163 fps, 113 m in 115 s (0.99 m/s). **Start screen to the debrief: 2:31**, of which 2:17 is the EVA (at the stop
 T+53 s, sample secured T+63 s, storm T+68 s, radiation T+83 s, 42 m from the airlock, back in the habitat T+136 s).
-#265 asks for about 3 minutes and no more than 4.
+Issue #265 asks for about 3 minutes and no more than 4.
