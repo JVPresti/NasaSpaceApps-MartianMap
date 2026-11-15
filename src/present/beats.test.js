@@ -135,7 +135,7 @@ describe('the presentation story', () => {
     expect(captionsOf(demo).length).toBeGreaterThan(0);   // the fallback if the file fails
   });
 
-  it('fits the 4:00 limit: about 3:25 on autoplay, at most 3:40, so a manual takeover still ends under 4:00', () => {
+  it('fits the 4:00 limit: 3:30 on autoplay, at most 3:40, so a manual takeover still ends under 4:00', () => {
     const total = sequence('full').reduce((a, b) => a + b.duration, 0);
     expect(total).toBeGreaterThanOrEqual(195);
     expect(total).toBeLessThanOrEqual(220);
@@ -196,7 +196,14 @@ describe('the presentation story', () => {
   it('says the zone comes from the planner', () => {
     const zone = BEATS.find((b) => b.id === 'zone');
     expect(zone.source.en).toMatch(/planner/);
-    expect(zone.source.en).not.toMatch(/Not in the walk HUD/);   // the demo video shows the zone in the app (#335)
+    expect(zone.source.en).not.toMatch(/Not in the walk HUD/);   // the app shows the zone, on the table's Return zone layer (#335)
+  });
+
+  it('shows in the app video what the talk names: the wrist, the science stop, the alert and the review (#406)', () => {
+    const lines = captionsOf(BEATS.find((b) => b.id === 'demo')).map((c) => c.en).join(' ');
+    for (const word of ['wrist', 'slope grid', 'science stop', 'Radiation alert', 'EV2', 'habitat', 'plan']) expect(lines).toContain(word);
+    // the table part is shorter than the old cut's 24 s: the walk starts within the first 15 s
+    expect(captionsOf(BEATS.find((b) => b.id === 'demo')).find((c) => /airlock/.test(c.en)).at).toBeLessThanOrEqual(15);
   });
 });
 

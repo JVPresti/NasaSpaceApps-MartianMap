@@ -339,7 +339,9 @@ export default function Present({ engine, onExit }) {
       // control.js: plays, then holds the last frame, then fades into the next beat; while paused it stays up
       const f = videoFrame(t, beat.duration, v.duration, { hold: !opts.record && pausedRef.current });
       v.style.opacity = f.opacity.toFixed(3);
-      if (opts.record || !f.playing || pausedRef.current) {
+      // While the beat clock waits for the terrain (waitingNow) the video waits with it: left playing, it ran ahead of
+      // the held clock and was pulled back with a seek once the clock started (#406)
+      if (opts.record || !f.playing || pausedRef.current || waitingNow) {
         if (!v.paused) v.pause();
         if (v.playbackRate !== 1) v.playbackRate = 1;
         if (Math.abs(v.currentTime - f.time) > (opts.record ? 1e-3 : 0.1) && !v.seeking) v.currentTime = f.time;
