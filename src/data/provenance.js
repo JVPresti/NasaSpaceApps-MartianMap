@@ -106,6 +106,14 @@ export const STORE_PATHS = Object.freeze({
   'crew.0.link': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'radio line of sight between the two suits on the HiRISE height map', from: HIRISE },
   'crew.0.separationLimitM': sim('our rule: 100 m from the pair-walk mockup, caution from 80 m; hazards.json has no separation value'),
 
+  // the HUD's radio link to the habitat (src/hud/RadioLink.jsx, #74, #297). Not a store value: the chip computes it and
+  // shows this tag, one for its range and its state. The weak range is RADIO_WEAK_RANGE_M in src/sim/radio.js (SIM).
+  'radio.link': {
+    tag: 'DERIVED', label: 'HiRISE DTM',
+    source: 'radio link to the habitat mast: line of sight on the HiRISE height map from 1.7 m above the ground to the mast, as the Radio shadow layer, lost where the terrain blocks it; range is the horizontal distance to the mast; weak past 800 m is our threshold (SIM), we found no NASA figure for suit-to-habitat radio range',
+    from: HIRISE,
+  },
+
   // navigation (#42): trueX/trueZ is the simulated truth from the engine, x/z the estimate the drift model shows
   'navigation.x': sim('simulated position estimate: true position plus the drift offset (src/sim/navigationDrift.js)'),
   'navigation.z': sim('simulated position estimate: true position plus the drift offset (src/sim/navigationDrift.js)'),
