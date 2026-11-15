@@ -1,0 +1,71 @@
+/* The helmet HUD on a phone (#365). Only coarse pointers on small screens: a desktop window of any size keeps hud.css.
+   The touch action bar (src/components/touchActions.css) holds Map and Pause in the top-right corner and the action
+   buttons in the bottom-right one; the stick takes the bottom-left corner (src/engine/touchInput.js: 24 px margin,
+   112 px across). The HUD keeps clear of all three and of the safe areas.
+
+   Portrait, top to bottom: EVA clock | Map, Pause; heading tape; next waypoint row; suit panel and minimap side by
+   side; partner chip under the suit panel; the beat line above the stick. The elevation profile, the minimap legend
+   and the key hints (keyboard only) drop out; All gauges in the bar's More menu still opens the detailed visor. */
+
+@media (pointer: coarse) {
+  /* H and I are keyboard hints; on a touch screen the pause menu has Controls and the bar has All gauges */
+  .hud-keys { display: none; }
+}
+
+@media (pointer: coarse) and (max-width: 600px) {
+  .hud {
+    --u: 12px;
+    --top: env(safe-area-inset-top, 0px);
+    --side-l: calc(10px + env(safe-area-inset-left, 0px));
+    --side-r: calc(10px + env(safe-area-inset-right, 0px));
+  }
+  .hud-eva { top: calc(12px + var(--top)); left: var(--side-l); font-size: 0.95em; }
+  .hud-lmst { display: none; }
+  .hud-heading { top: calc(60px + var(--top)); width: 78vw; }
+
+  .hud-waypoint {
+    top: calc(108px + var(--top)); bottom: auto; left: var(--side-l); right: var(--side-r); transform: none;
+    padding: 0.5em 0.8em; white-space: normal;
+  }
+  .hud-waypoint-row { gap: 0.9em; justify-content: space-between; }
+  .hud-wp-name { font-size: 1.25em; }
+  .hud-wp-cell b { font-size: 1.3em; }
+  .hud-waypoint .elevation-profile { display: none; }
+
+  .hud-suit { left: var(--side-l); top: calc(170px + var(--top)); width: min(44vw, 170px); padding: 0.7em 0.8em 0.6em; }
+  .hud-row { margin-bottom: 0.6em; }
+  .hud-row-head b { font-size: 1.55em; }
+  .hud-walkback { padding-top: 0.5em; }
+
+  .hud-right { --hud-right-w: min(40vw, 160px); right: var(--side-r); top: calc(170px + var(--top)); }
+  .hud-map-wrap { --map-size: min(40vw, 160px); }
+  .hud-map-legend { display: none; }
+  .hud-nav { max-width: 100%; }
+
+  .hud-partner { left: var(--side-l); top: calc(170px + var(--top) + 15.5em); width: min(44vw, 170px); }
+
+}
+
+/* A phone held sideways: about 390 px tall. Smaller unit, the waypoint row up top in the middle, the beat line between the
+   stick and the action bar. */
+@media (pointer: coarse) and (max-height: 500px) {
+  .hud {
+    --u: 10.5px;
+    --top: env(safe-area-inset-top, 0px);
+    --side-l: calc(10px + env(safe-area-inset-left, 0px));
+    --side-r: calc(10px + env(safe-area-inset-right, 0px));
+  }
+  .hud-eva { top: calc(10px + var(--top)); left: var(--side-l); }
+  .hud-lmst { display: none; }
+  .hud-heading { top: calc(6px + var(--top)); width: 36vw; }
+  .hud-waypoint { top: calc(54px + var(--top)); bottom: auto; padding: 0.45em 0.8em; }
+  .hud-waypoint .elevation-profile { display: none; }
+  .hud-suit { left: var(--side-l); top: calc(52px + var(--top)); width: 150px; padding: 0.6em 0.75em 0.5em; }
+  .hud-row { margin-bottom: 0.5em; }
+  .hud-row-head b { font-size: 1.45em; }
+  .hud-right { --hud-right-w: 120px; right: var(--side-r); top: calc(64px + var(--top)); }
+  .hud-map-wrap { --map-size: 120px; }
+  .hud-map-legend { display: none; }
+  .hud .hud-partner { display: none; }   /* the minimap shows the partner; T in the bar's More menu opens the detail */
+  .hud .hud-partner:has(.hud-partner-detail) { display: flex; left: calc(var(--side-l) + 160px); top: calc(52px + var(--top)); }
+}

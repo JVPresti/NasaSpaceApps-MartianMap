@@ -610,7 +610,7 @@ export default function App() {
 
       {load.status === 'ready' && stage === STAGE.EGRESS && <AirlockCycle running={phase === EVA_PHASE.PLAYING} />}
 
-      {playing && mode === 'walk' && wristOpen && <p className="hint">{t(WRIST_HINT)}</p>}
+      {playing && mode === 'walk' && wristOpen && <p className="hint hint-keys">{t(WRIST_HINT)}</p>}
       {/* The first mission's beat line (#265) takes the key strip's place while the wrist screen is down. */}
       {playing && mode === 'walk' && !wristOpen && <WalkBeat evaBegun={evaBegun} />}
 

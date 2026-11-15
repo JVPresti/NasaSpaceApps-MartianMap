@@ -18,7 +18,7 @@ function subscribeCoarse(onChange) {
 }
 
 /** True on a coarse primary pointer, or once the engine saw a touch on the scene (a touchscreen laptop). */
-export function useTouchBar(engine) {
+function useTouchBar(engine) {
   const coarse = useSyncExternalStore(subscribeCoarse, () => coarsePointer(), () => false);
   const [touched, setTouched] = useState(false);
   useEffect(() => {
@@ -74,6 +74,9 @@ export default function TouchActions({ engine, wristOpen }) {
   };
 
   return (
+    <>
+    {/* In portrait the narrow view leaves the raised wrist half off screen: suggest turning the phone (CSS shows it). */}
+    {wristOpen && <p className="touch-rotate" role="status">{t('touch.rotate')}</p>}
     <nav className={`touch-actions${more ? ' open' : ''}`} aria-label={t('touch.bar')}>
       <div className="touch-actions-main">
         {main.map(button)}
@@ -94,5 +97,6 @@ export default function TouchActions({ engine, wristOpen }) {
         </div>
       )}
     </nav>
+    </>
   );
 }
