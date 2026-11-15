@@ -531,5 +531,7 @@
   "menu.help.finds.panels": "Finds and panels",
   "menu.help.mark.find": "Mark a find",
   "menu.help.add.or.dismiss": "Add or dismiss it",
-  "menu.help.pan": "Pan the map"
+  "menu.help.pan": "Pan the map",
+  "menu.gamepad": "Gamepad",
+  "menu.gamepad.hint.left.stick.walk.l3.jog.right.stick.look.start.plan.walk.lb.rb.layer": "Left stick walks, L3 jogs, right stick looks, Start switches Walk or Plan, LB and RB change the layer."
 }

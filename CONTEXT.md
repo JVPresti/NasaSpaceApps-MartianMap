@@ -120,6 +120,7 @@ Figma, the rules check, the demo video and the submission form are left for the 
 - [docs/EVENT_ENGINE.md](docs/EVENT_ENGINE.md): how to define an event.
 - [docs/STATE_AND_ENGINE.md](docs/STATE_AND_ENGINE.md): the mission store snapshot and the engine API.
 - [docs/PARTNER.md](docs/PARTNER.md): the partner astronaut, scripted for now, and the interface a network player will use.
+- [docs/CONTROLS.md](docs/CONTROLS.md): every control, with keyboard, mouse, touch and gamepad.
 - [Issues](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues) and [milestones](https://github.com/JVPresti/NasaSpaceApps-MartianMap/milestones): what is being worked on now.
 
 ## Glossary

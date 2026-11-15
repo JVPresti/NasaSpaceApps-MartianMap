@@ -17,3 +17,5 @@ Shortcuts use physical key codes, matching WASD. They run only when the engine i
 ready and ignore held-key repeats, text inputs, selects, editable content, modal
 dialogs, composition, and Ctrl/Alt/Meta combinations. Shift is allowed for reverse
 layer cycling. Plan/Walk and layer button tooltips list the keys.
+
+Every input, including touch and gamepad, is listed in [docs/CONTROLS.md](CONTROLS.md).

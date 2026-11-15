@@ -531,5 +531,7 @@
   "menu.help.finds.panels": "Hallazgos y paneles",
   "menu.help.mark.find": "Marcar hallazgo",
   "menu.help.add.or.dismiss": "Añadir o descartar",
-  "menu.help.pan": "Mover el mapa"
+  "menu.help.pan": "Mover el mapa",
+  "menu.gamepad": "Mando",
+  "menu.gamepad.hint.left.stick.walk.l3.jog.right.stick.look.start.plan.walk.lb.rb.layer": "El stick izquierdo anda, L3 trota, el stick derecho mira, Start cambia entre Caminar y Plan, y LB y RB cambian la capa."
 }

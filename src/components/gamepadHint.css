@@ -1,0 +1,51 @@
+/* Gamepad hint (#103). One compact pill, bottom left, above the touch stick area and the hint line, clear of the
+   top bar, the HUD suit panel and the bottom waypoint panel at 1366 x 768 and 1920 x 1080 (#212: panels never overlap).
+   Bottom 172px leaves room for the virtual stick; left 24px stays left of the centred waypoint panel. */
+.gamepad-hint {
+  position: absolute;
+  bottom: 172px;
+  left: 24px;
+  z-index: 5;                              /* above the canvas and the HUD, below the menus */
+  max-width: 320px;
+  padding: 8px 12px;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: var(--text-s, 12px);
+  line-height: 1.4;
+  color: var(--ink, #f3e6d8);
+  background: var(--panel, rgba(20, 12, 9, 0.78));
+  border: 1px solid var(--line, rgba(255, 214, 170, 0.16));
+  border-radius: 10px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  pointer-events: none;                    /* a hint never blocks look, walk or a tap */
+  animation: gamepad-hint-in 220ms ease-out;
+}
+
+.gamepad-hint strong {
+  margin-right: 6px;
+  font-size: var(--text-xs, 11px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent, #e0683a);
+}
+
+.gamepad-hint span {
+  color: var(--dim, #b9a08a);
+}
+
+@keyframes gamepad-hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gamepad-hint {
+    animation: none;
+  }
+}
