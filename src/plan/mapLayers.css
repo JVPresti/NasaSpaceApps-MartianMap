@@ -44,3 +44,11 @@
 
 /* The crew's position (MapPosition.jsx): the HUD's marker on a canvas over the map, above the stops */
 .table-map-position { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+
+/* Pan and zoom (MissionMap.jsx, mapGesture.js): the picture, the backdrop and the overlays move as transforms from
+   their top-left corner while a gesture lasts; the backdrop shows only then, under the picture's moved edge */
+.table-map-picture,
+.table-map-backdrop,
+.table-map-stage { transform-origin: 0 0; will-change: transform; }
+.table-map-backdrop { visibility: hidden; }
+.table-map-stage { position: absolute; inset: 0; }
