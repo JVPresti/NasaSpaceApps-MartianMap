@@ -6,8 +6,9 @@ Martian Map", Ensenada local event). Built on the presentation mode on `main` (#
 > **Format.** The talk is at 2:30 pm on 15 November, in English. Hard limit 3:00, from the organisers' page quoted in
 > `docs/SUBMISSION.md` (PR #316): "prepárate para exponer en idioma inglés durante un tiempo máximo de 3 minutos". The
 > talk is `script-en.md` and ends at 2:42, then the judges ask questions (`qa.md`). It runs over the presentation mode
-> (https://martian-map.fernando-haro-c.workers.dev/?present=1), one Right per beat, with an 85 s video of the real app
-> in place of a live demo. `script-es.md` is the Spanish version, for reference only.
+> (https://martian-map.fernando-haro-c.workers.dev/?present=1), which autoplays; Right or Left takes over if the
+> timing slips. An 85 s video of the real app replaces a live demo. The script has two versions, two presenters (A) or
+> one (B). `script-es.md` is the Spanish version, for reference only.
 >
 > **The file for the organisers is `docs/pitch/out/deck-global.pdf`**, the 7-slide deck, due by 2:00 pm. It is also
 > the backup on the day: if WebGL fails on the laptop, the presenter switches to the same PDF (slide per beat in
@@ -18,8 +19,8 @@ Martian Map", Ensenada local event). Built on the presentation mode on `main` (#
 | File | What it is |
 |---|---|
 | `beats.md` | The presentation's beats on `main` (captions, chips, source lines, numbers) with the line the presenter says over each, generated from `src/present/beats.js` and `script-en.md` by `tools/sync-present.mjs`. `src/present/beats.js` on `main` is the source; this file follows it |
-| `script-en.md`, `script-es.md` | **The talk**, 2:42 in English (the Spanish one is for reference): one row per beat, the video's chapter cues, the criteria it answers, the claims checked against `main`, and where each spoken number comes from |
-| `demo-run-sheet.md` | How to run the talk: who presses Right on which word, setup on the live site, what to do if the video or the whole presentation fails, the PDF slide per beat, and a rehearsal checklist |
+| `script-en.md`, `script-es.md` | **The talk**, 2:42 in English (the Spanish one is for reference), in two versions (two presenters, one presenter): one row per beat, the video's chapter cues, the criteria it answers, the claims checked against `main`, and where each spoken number comes from |
+| `demo-run-sheet.md` | How to run the talk: autoplay, who speaks when and the handovers, how to take over with the keys, setup on the live site, what to do if the video or the whole presentation fails, the PDF slide per beat, and a rehearsal checklist |
 | `qa.md` | The judge Q&A sheet: about 20 questions, each with a two-sentence answer and what backs it, plus the hard questions on our limits |
 | `video-30s.md` | The 30-second video script and frame-accurate shot list |
 | `deck-global.html`, `out/deck-global.pdf`, `out/deck-global/*.png` | The 7-slide global deck: one self-contained HTML file (fonts and images inlined), its PDF and one PNG per slide |
