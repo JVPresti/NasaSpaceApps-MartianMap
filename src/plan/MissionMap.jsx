@@ -168,7 +168,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const pathPoints = useMemo(() => (path ?? []).map(([x, z]) => ({ x, z })), [path]);
   const altPoints = useMemo(() => alternatives.flatMap((a) => a.path.map(([x, z]) => ({ x, z }))), [alternatives]);
   const trackPoints = useMemo(() => (track ?? []).map(([x, z]) => ({ x, z })), [track]);
-  // Pan and zoom (#N): the layers that move together, the crops they show and the gesture that moves them
+  // Pan and zoom (#390): the layers that move together, the crops they show and the gesture that moves them
   const stageRef = useRef(null);
   const backdropRef = useRef(null);
   const paintedRef = useRef(null);   // the crop the canvas shows
@@ -239,9 +239,11 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   }, [data, crop, layer, radio, sky, caution]);
 
   // After each render: the overlays show `crop`, so their transform starts again from it, and a finished gesture ends.
+  // Runs after every render on purpose (no dependency list): applyView reads refs that any render may have changed.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
     applyRef.current = applyView;
-    setViewRef.current = setView;
+    setViewRef.current = setView;   // stores the setter for the gesture's commit; nothing is set here
     limitsRef.current = { tile, min: Math.min(120, minSpanM) };
     if (shownRef.current !== crop) {
       shownRef.current = crop;

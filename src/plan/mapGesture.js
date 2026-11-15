@@ -1,6 +1,6 @@
 import { clampCrop, zoomCrop } from './mapLayers.js';
 
-// Pan and zoom on the mission table's flat map without a React render per input (#389). While a drag or a run of wheel
+// Pan and zoom on the mission table's flat map without a React render per input (#390). While a drag or a run of wheel
 // steps lasts, the map's layers move as one CSS transform from the crop they last drew to the live crop; the view
 // state (MissionMap's setView) changes once, when the drag ends or the wheel goes quiet, and only then does the
 // map paint again and the overlays render.
