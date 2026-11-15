@@ -3,6 +3,8 @@ import { t, translateText, formatNumber } from '../i18n/index.js';
 import { provenance } from '../data/provenance.js';
 import SourceTag from '../plan/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
+import { missionForObjective } from '../sim/missions.js';
+import { stormTauPath } from '../mission/sources.js';
 import './events.css';
 
 const ORDER = { danger: 4, warning: 3, caution: 2, info: 1 };
@@ -44,6 +46,8 @@ export default function EventBanner({ className = '' }) {
   const environment = useMissionStore((s) => s.environment);
   const suit = useMissionStore((s) => s.suit);
   const route = useMissionStore((s) => s.route);
+  // The first mission plays the storm on a shortened ramp: its opacity carries that mission's SIM entry (#265, P19).
+  const missionId = useMissionStore((s) => missionForObjective(s.needs?.objective).id);
 
   // The most severe alert first; between alerts of one level the newest, so a radiation alert that starts during the
   // dust storm is the one read (#265), with the storm counted in "+1 more alert".
@@ -63,7 +67,7 @@ export default function EventBanner({ className = '' }) {
       </div>
       <div className="event-banner-meta">
         {alert.eventId === 'dust-storm' && (
-          <EventValue path={EVENT_VALUE_PATHS['dust-storm']}>τ {formatNumber(environment.dustOpacity, 2)}</EventValue>
+          <EventValue path={stormTauPath(missionId, EVENT_VALUE_PATHS['dust-storm'])}>τ {formatNumber(environment.dustOpacity, 2)}</EventValue>
         )}
         {alert.eventId === 'radiation' && (
           <EventValue path={EVENT_VALUE_PATHS.radiation}>{formatNumber(environment.doseRateUgyH, 1)}{t('ui.gy.h')}{formatNumber(environment.doseUgy, 1)} {t('ui.gy')}</EventValue>

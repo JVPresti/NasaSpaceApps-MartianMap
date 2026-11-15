@@ -8,8 +8,9 @@ import lowOxygenCaution from '../sim/events/low-oxygen-caution.json';
 import lowOxygenWarning from '../sim/events/low-oxygen-warning.json';
 import radiation from '../sim/events/radiation.json';
 import { createEventEngine } from '../sim/eventEngine.js';
-import { MISSION_SOURCES, missionEventDefinitions, missionForObjective } from '../sim/missions.js';
-import { HAZARDS_PATH, provenance } from '../data/provenance.js';
+import { missionEventDefinitions, missionForObjective } from '../sim/missions.js';
+import { HAZARDS_PATH } from '../data/provenance.js';
+import '../mission/sources.js';   // the SIM notes of the missions' event times (#265)
 import { loadCostGrid, loadDataFile } from '../data/dataFiles.js';
 import { SHELTERS_PATH } from '../sim/shelters.js';
 import { heightAt } from '../sim/costGrid.js';
@@ -22,9 +23,6 @@ import { arrivalRadiusM } from '../sim/waypointRunner.js';
 // What each event is. When the storm and the radiation alert start, and how fast their timelines run, comes from the
 // mission the crew's objective defines (src/sim/missions.js, #265).
 const EVENT_DEFINITIONS = [dustStorm, radiation, lowOxygenCaution, lowOxygenWarning];
-
-// The event times of each mission are SIM (#265): their notes are in the registry, next to the event values.
-provenance.define(MISSION_SOURCES);
 
 const ROUTE_SOURCES = {
   'route.path': { tag: 'DERIVED', source: 'A* planner · HiRISE DTM' },
@@ -63,7 +61,8 @@ export function eventEnvironmentSources(missionId) {
   const dust = EVENT_ENVIRONMENT_SOURCES['environment.dustOpacity'];
   const dose = EVENT_ENVIRONMENT_SOURCES['environment.doseRateUgyH'];
   return Object.freeze({
-    'environment.dustOpacity': Object.freeze({ ...dust, source: dust.source + '; first mission: ramp compressed from 90 s to 30 s (SIM)' }),
+    // The shortened ramp makes the storm's opacity SIM in the first mission (P19); the values stay hazards.json's.
+    'environment.dustOpacity': Object.freeze({ ...dust, tag: 'SIM', label: 'Dust storm model · first mission', source: dust.source + '; first mission: ramp compressed from 90 s to 30 s (SIM)' }),
     'environment.doseRateUgyH': Object.freeze({ ...dose, source: dose.source + '; first mission: the profile compressed to 1 minute (SIM)' }),
   });
 }
