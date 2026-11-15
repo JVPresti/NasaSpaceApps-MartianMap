@@ -223,6 +223,40 @@ describe('crewmate: science stop', () => {
     expect(brain.inspect().carrying).toBe(true);
   });
 
+  // a ring of rocks round a place to stand: 8 rocks of 0.45 m radius 1 m from it, too close together to walk between
+  const ring = (c) => Array.from({ length: 8 }, (_, k) => ({ x: c.x + Math.cos(k * Math.PI / 4), z: c.z + Math.sin(k * Math.PI / 4), r: 0.45 }));
+  // the browser run of #282's first mission: the spot beside the player was behind rocks, and EV2 pushed into them,
+  // stepped aside 0.2 m and was pushed back every 4 s for 80 s
+  it('stands on the other side of the player when rocks close off the near spot, and then stays still', () => {
+    const brain = createCrewmate(), world = makeWorld({ rocks: ring({ x: 39, z: 1.6 }) });
+    const track = makeTrack(A, [{ to: { x: 39, z: 0 }, speed: 1 }, { waitSec: 60 }]);
+    const frames = [];
+    let down = null, walkAfterDown = 0;
+    run(brain, world, track, 39 + 60, sense(), (t, s) => {
+      frames.push({ t, x: s.x, z: s.z });
+      if (!s.carrying && down === null) down = { t, d: dist(s, world.player) };
+      if (down && t > down.t + 2 && s.gait === 'walk') walkAfterDown += DT;
+    });
+    expect(down).not.toBeNull();
+    expect(down.t).toBeLessThan(39 + 25);
+    expect(down.d).toBeLessThanOrEqual(2.2);
+    expect(walkAfterDown).toBe(0);
+    expect(reversals(frames.filter((f) => f.t > 39))).toEqual([]);
+  });
+
+  it('stands still near the player when rocks close off both spots, instead of pushing into them', () => {
+    const brain = createCrewmate(), world = makeWorld({ rocks: [...ring({ x: 39, z: 1.6 }), ...ring({ x: 39, z: -1.6 })] });
+    const track = makeTrack(A, [{ to: { x: 39, z: 0 }, speed: 1 }, { waitSec: 60 }]);
+    let walkLate = 0, last = null;
+    run(brain, world, track, 39 + 60, sense(), (t, s) => {
+      if (t > 39 + 30 && s.gait === 'walk') walkLate += DT;
+      last = s;
+    });
+    expect(walkLate).toBe(0);
+    expect(dist(last, world.player)).toBeLessThanOrEqual(CREWMATE.FAR_M);
+    for (const r of ring({ x: 39, z: 1.6 })) expect(dist(last, r)).toBeGreaterThanOrEqual(r.r + 0.3 - 1e-6);
+  });
+
   it('picks the case up at once when the sampling hand-over asks (after the pour), and does not set it down again', () => {
     const brain = createCrewmate(), world = makeWorld();
     const track = makeTrack(A, [{ to: { x: 39, z: 0 }, speed: 1 }, { waitSec: 60 }]);

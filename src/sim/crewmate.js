@@ -31,6 +31,7 @@
  * airlock end, v sideways.
  */
 import { BEND_HOLD_SEC, CASE_CLIP, HANDOVER_M, HANDOVER_REACH_M } from '../engine/partnerSource.js';
+import { CASE_REACH_M } from '../engine/samplingRules.js';
 
 /** Every distance, speed and time the crewmate uses. Our choices (SIM), set for the 1.0 m/s walk of the player. */
 export const CREWMATE = Object.freeze({
@@ -77,8 +78,9 @@ export const CREWMATE = Object.freeze({
   STOP_RESET_M: 25,     // a stop the crew finished is open again once the player is this far from it
   HANDOVER_TIMEOUT_SEC: 45,
   STUCK_SEC: 2,         // walking but not moving this long: step sideways (a last resort behind the avoidance below)
-  AVOID_PROBE_M: 0.8,   // a rock or the player this close ahead along the heading: turn to the clearer side ...
-  AVOID_HOLD_SEC: 1,    // ... and keep that side this long after the last block
+  AVOID_PROBE_M: 0.8,   // a rock or the player this close ahead toward the goal: walk round it on the clearer side ...
+  AVOID_HOLD_SEC: 1,    // ... and keep that side until the way to the goal is clear, and this long at least
+  NO_WAY_SEC: 4,        // walking toward a place to stand without getting 0.3 m closer this long: it cannot get there
 });
 
 /** The walk in and out of the habitat, in habitat space [x, v]: steps, porch, outer hatch, airlock, inner hatch, cabin. */
@@ -143,7 +145,7 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
     handover: null,
     chain: -1, chainArrived: false, joinX: null, homeLead: false, lowOwn: false, leftHome: false,
     slope: null, slopeCheck: 0,
-    waitSaid: false, stuck: 0, sidestep: 0, avoid: null,
+    waitSaid: false, stuck: 0, sidestep: 0, avoid: null, prog: null, noWay: false, spotTries: 0,
     lastSayAt: -Infinity, pending: [], said: new Set(), seq: 0,
     mode: 'standby', standbyFace: null,
   };
@@ -465,11 +467,18 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
         if (l < 0.6) { ax = P.x - m.x; az = P.z - m.z; l = hypot(ax, az) || 1; }
         const px = -az / l, pz = ax / l;
         const a = { x: P.x + px * HANDOVER_M, z: P.z + pz * HANDOVER_M }, b = { x: P.x - px * HANDOVER_M, z: P.z - pz * HANDOVER_M };
-        m.stopSpot = dist(a, me()) <= dist(b, me()) ? a : b; m.spotFor = { x: P.x, z: P.z };
+        // the nearer spot first, unless rocks stand on the straight line to it and not on the line to the other
+        const pair = dist(a, me()) <= dist(b, me()) ? [a, b] : [b, a];
+        m.spotPair = !clearLine(world, me(), pair[0]) && clearLine(world, me(), pair[1]) ? [pair[1], pair[0]] : pair;
+        m.stopSpot = m.spotPair[0]; m.spotFor = { x: P.x, z: P.z }; m.spotTries = 0; m.noWay = false;
       }
-      const s = m.stopSpot, ds = hypot(s.x - m.x, s.z - m.z);
-      if (ds > R.ARRIVE_M * 2 && dist(me(), P) > HANDOVER_REACH_M - 0.1) return go(s.x, s.z, ds > R.FAR_M ? R.BRISK_MS : R.WALK_MS, P);
-      if (m.speed < 0.05 && (m.stillFor >= 0.5 || dist(me(), P) <= HANDOVER_REACH_M)) {
+      // rocks between it and the spot: the spot on the player's other side, then stand where it is. Never push on.
+      if (m.noWay) { m.noWay = false; m.prog = null; m.spotTries++; if (m.spotTries === 1) m.stopSpot = m.spotPair[1]; }
+      const s = m.stopSpot, ds = hypot(s.x - m.x, s.z - m.z), settled = m.spotTries >= 2;
+      if (!settled && ds > R.ARRIVE_M * 2 && dist(me(), P) > HANDOVER_REACH_M - 0.1) return go(s.x, s.z, ds > R.FAR_M ? R.BRISK_MS : R.WALK_MS, P);
+      const reach = settled ? CASE_REACH_M - 0.2 : HANDOVER_REACH_M;   // a settled crewmate sets the case down where the pour still reaches
+      if (settled && dist(me(), P) > reach) return hold(P);              // too far to hand the case over: wait with it
+      if (m.speed < 0.05 && (m.stillFor >= 0.5 || dist(me(), P) <= reach)) {
         m.hold = BEND_HOLD_SEC; m.holdCarry = false; m.holdFace = { x: P.x, z: P.z };
         say('case', () => ({ key: 'crewmate.say.case', params: {}, sources: {} }), { once: 'case:' + stop.id });
       }
@@ -552,6 +561,18 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
     return ((p.x - m.x) * fx + (p.z - m.z) * fz) / lenM;
   }
 
+  // nothing on the straight walk from a to b: every 0.25 m, a walker standing there is not pushed out by the collisions
+  function clearLine(world, a, b) {
+    if (!world.collide) return true;
+    const l = hypot(b.x - a.x, b.z - a.z), n = Math.max(1, Math.ceil(l / 0.25));
+    for (let i = 1; i <= n; i++) {
+      const x = a.x + (b.x - a.x) * i / n, z = a.z + (b.z - a.z) * i / n, p = { x, z };
+      world.collide(x, z, p);
+      if (hypot(p.x - x, p.z - z) > 0.05) return false;
+    }
+    return true;
+  }
+
   function move(dt, world, intent) {
     const maxTurn = R.TURN_DEG_S * Math.PI / 180 * dt;
     let aimYaw = null, vWant = 0;
@@ -563,13 +584,17 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
         // turn to the clearer side. The side holds AVOID_HOLD_SEC after the last block, so it does not dither. Not on
         // the walk into the habitat, whose walls the slide handles.
         if (world.collide && m.mode !== 'home' && intent.speed > 0.2 && gd > R.AVOID_PROBE_M) {
-          if (progress(world, m.yaw, R.AVOID_PROBE_M) < 0.7) {
-            const keep = m.avoid && m.clock - m.avoid.at < R.AVOID_HOLD_SEC;
-            const left = progress(world, m.yaw + 0.7, R.AVOID_PROBE_M), right = progress(world, m.yaw - 0.7, R.AVOID_PROBE_M);
-            const sign = keep ? m.avoid.sign : left === right ? (wrap(aimYaw - m.yaw) >= 0 ? 1 : -1) : left > right ? 1 : -1;
-            m.avoid = { sign, at: m.clock };
+          const goalYaw = aimYaw, blocked = progress(world, goalYaw, R.AVOID_PROBE_M) < 0.7;
+          if (blocked && !m.avoid) {
+            const left = progress(world, goalYaw + 0.7, R.AVOID_PROBE_M), right = progress(world, goalYaw - 0.7, R.AVOID_PROBE_M);
+            m.avoid = { sign: left === right ? (wrap(goalYaw - m.yaw) >= 0 ? 1 : -1) : left > right ? 1 : -1, at: m.clock };
+          } else if (blocked) m.avoid.at = m.clock;
+          if (m.avoid && !blocked && m.clock - m.avoid.at >= R.AVOID_HOLD_SEC) m.avoid = null;
+          // walk round: the heading closest to the goal on the chosen side that is clear for the probe length
+          if (m.avoid) {
+            aimYaw = goalYaw + m.avoid.sign * Math.PI / 2;
+            for (let k = 1; k <= 9; k++) { const y = goalYaw + m.avoid.sign * k * 0.35; if (progress(world, y, R.AVOID_PROBE_M) >= 0.9) { aimYaw = y; break; } }
           }
-          if (m.avoid && m.clock - m.avoid.at < R.AVOID_HOLD_SEC / 2) aimYaw = m.yaw + m.avoid.sign * 1.2;
         }
         if (m.sidestep > 0) { m.sidestep -= dt; aimYaw += 1.2; }
         const off = wrap(aimYaw - m.yaw);
@@ -594,6 +619,13 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
       m.groundSpeed = moved / dt;
     } else m.speed = Math.max(0, m.speed);
     m.walking = m.groundSpeed > 0.05;
+    // no progress toward a place to stand: tell decide() (the science stop takes another spot or stays put)
+    if (intent.go && m.mode === 'stop') {
+      const g = intent.go, d = hypot(g.x - m.x, g.z - m.z), pr = m.prog;
+      if (!pr || hypot(pr.x - g.x, pr.z - g.z) > 0.5) m.prog = { x: g.x, z: g.z, best: d, at: m.clock };
+      else if (d < pr.best - 0.3) { pr.best = d; pr.at = m.clock; }
+      else if (m.clock - pr.at > R.NO_WAY_SEC) { m.noWay = true; m.prog = null; }
+    } else m.prog = null;
   }
 
   function pose(live) {
