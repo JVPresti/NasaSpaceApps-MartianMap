@@ -18,6 +18,9 @@ import { useStops } from '../stops/useStops.js';
 import { PROFILE_IDS } from '../sim/routeProfiles.js';
 import { waypointNumber } from '../sim/waypointNumber.js';
 import { eventTiming, missionEventDefinitions, missionForObjective, missionSourcePath } from '../sim/missions.js';
+import { SOLAR_DECLINATION_DEG } from '../sim/sunPosition.js';
+import { formatLmst } from '../sim/missionClock.js';
+import { missionSolarHours } from '../state/skyTime.js';
 import { PlanBeat } from '../mission/MissionBeat.jsx';
 import { LAYERS, SLOPE_LIMITS } from './layers.js';
 import LayerLegend from './LayerLegend.jsx';
@@ -296,12 +299,13 @@ function evaMinutes(tot) {
 }
 
 /**
- * What the EVA spends, as budgets: time (out, back, and against the crew's time: spare and the risk reserve) and the
- * oxygen and battery tanks (out, back, left). Shares from route.totals (src/sim/legCosts.js) and route.budget
- * (src/sim/missionNeeds.js). The time bar is the crew's time only: the oxygen margin is the Return panel's figure (N12).
- * @param {{ totals: object | null, metrics: object, limits: object | null, budget: object | null }} props
+ * What the EVA spends, as budgets: time (out, back, and against the crew's time: spare and the risk reserve), the
+ * oxygen and battery tanks (out, back, left), and the daylight the plan has to finish in (#324). Shares from
+ * route.totals (src/sim/legCosts.js), route.budget (src/sim/missionNeeds.js) and the plan's daylight limit
+ * (src/sim/daylight.js). The time bar is the crew's time only: the oxygen margin is the Return panel's figure (N12).
+ * @param {{ totals: object | null, metrics: object, limits: object | null, budget: object | null, daylight: object | null }} props
  */
-function BudgetPanel({ totals, metrics, limits, budget }) {
+function BudgetPanel({ totals, metrics, limits, budget, daylight = null }) {
   const tot = totals;
   const minutes = (sec) => Math.round(sec / 60);
   const outMin = (sec) => Math.ceil(sec / 60);   // the time out rounded up, as on the Route step (Q14)
@@ -351,6 +355,33 @@ function BudgetPanel({ totals, metrics, limits, budget }) {
           </p>
         )}
       </div>
+
+      {/* Daylight (#324): the minutes left from the egress to sunset, against the plan, with the sunset it counts to.
+          The bar is the plan (out) and the daylight left over (left); a plan that outlasts the Sun fills it. */}
+      {daylight && (
+        <div className="budget-row">
+          <div className="budget-head">
+            <span>{t('table.daylight')}</span>
+            <b className={daylight.ok ? undefined : 'tone-warning'}>
+              {Math.round(Math.abs(daylight.spareSec) / 60)}
+              <small>{t(daylight.ok ? 'table.daylight.min.left' : 'table.daylight.min.over')}</small>
+            </b>
+          </div>
+          <Stack
+            parts={[[Math.min(daylight.planSec, Math.max(0, daylight.toSunsetSec)), 'out'], [Math.max(0, daylight.spareSec), 'left']]}
+            label={t('table.daylight.bar.label', {
+              light: shortDuration(Math.max(0, daylight.toSunsetSec)), egress: formatLmst(daylight.egressHours * 3600), plan: shortDuration(daylight.planSec),
+            })}
+          />
+          <p className="budget-key">
+            <i className="seg-out" />{t('table.daylight.line', {
+              sunset: formatLmst(daylight.sunsetHours * 3600), egress: formatLmst(daylight.egressHours * 3600),
+              light: shortDuration(Math.max(0, daylight.toSunsetSec)), plan: shortDuration(daylight.planSec),
+            })}{' '}
+            <SourceTag path="route.daylight" requireSource={false} />
+          </p>
+        </div>
+      )}
 
       <p className="table-note">{t('table.budget.note')}</p>
     </div>
@@ -461,7 +492,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
   }, [selectedStop, waypoints]);
   const route = useMissionStore((s) => s.route);
   const layer = useMissionStore((s) => s.view.layer);
-  const clock = useMissionStore(useShallow((s) => ({ lmst: s.mission.lmst, elapsedSec: s.mission.elapsedSec })));
+  const clock = useMissionStore(useShallow((s) => ({ lmst: s.mission.lmst, elapsedSec: s.mission.elapsedSec, initialLmst: s.mission.initialLmst })));
   const stops = useStops();
   const science = useMemo(() => new Set(waypoints.filter((w) => stopHasContent(stopForWaypoint(stops, w.name))).map((w) => w.name)), [waypoints, stops]);
   const index = TABS.findIndex((item) => item.id === tab);
@@ -521,7 +552,11 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
   const constants = useMemo(() => {
     try { return hazardsFile ? suitConstantsFromHazards(hazardsFile) : null; } catch { return null; }
   }, [hazardsFile]);
-  const limits = planLimits({ totals, budget: planCurrent ? route.budget : null, constants, needs });
+  // Daylight (#324): the go / no-go counts the time from the egress to sunset too, from the mission clock's LMST and
+  // the Sun's declination (src/sim/daylight.js). The egress is now: before Begin EVA the clock still reads the start.
+  const solarHours = missionSolarHours({ initialLmst: clock.initialLmst, elapsedSec: clock.elapsedSec, lmst: clock.lmst });
+  const daylight = Number.isFinite(solarHours) ? { hours: solarHours, declinationDeg: SOLAR_DECLINATION_DEG } : null;
+  const limits = planLimits({ totals, budget: planCurrent ? route.budget : null, constants, needs, daylight });
   // The forecast radiation alert (D6): switched on for this run and not yet fired.
   const radiationExpected = useMissionStore((s) => !(s.hazards.off ?? []).includes('radiation')) && !alerts?.radiation;
   const decision = decisionFor({ planner, totals, limits, dust, objective, radiationExpected });
@@ -785,7 +820,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
             </div>
             <SuitNow />
           </div>
-          <BudgetPanel totals={totals} metrics={metrics} limits={limits} budget={planCurrent ? route.budget : null} />
+          <BudgetPanel totals={totals} metrics={metrics} limits={limits} budget={planCurrent ? route.budget : null} daylight={limits?.daylight ?? null} />
         </section>
         {/* The conditions outlook (#248) heads the middle column, level with go / no-go; the suit model fills the rest. */}
         <div className="table-centre-wrap">

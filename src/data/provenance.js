@@ -148,6 +148,13 @@ export const STORE_PATHS = Object.freeze({
   'route.planReasons': sim('why the plan is what it is: the crew rules, the risk setting and each stop added or dropped'),
   'route.weights': sim('risk setting: slope penalty, rock weight, rover-ground discount and reserve are our choice; the 20 degree limit is NASA\'s suited walking limit and never moves'),
   'route.budget': sim('time available set by the crew, less the risk reserve; the walk out, the work at the stops and the walk home from the suit model'),
+  // Daylight (#324): the sunset the go / no-go checks, from the Sun's position at the site on the mission clock. The
+  // latitude is the site's (DERIVED); the declination sunPosition.js uses is a SIM choice for the demo start, so the
+  // sunset inherits it until the real declination for sol 1210 lands (#294).
+  'route.daylight': {
+    tag: 'DERIVED',
+    source: 'sunset where the Sun reaches the horizon, from its position at the site latitude 18.5 N on the mission clock LMST; the solar declination is a SIM value, so this hour moves with it',
+  },
   'route.budget.usedSec': LEG_TIME,
   'route.budget.marginSec': LEG_MARGIN,
   'route.explain': { ...PLANNER, source: 'straight line between the ends of each leg, tested on the HiRISE height map against the 20 degree limit like the planner' },

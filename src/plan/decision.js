@@ -1,20 +1,24 @@
 import { formatNumber, t, translateText } from '../i18n/index.js';
+import { formatLmst } from '../sim/missionClock.js';
 import { shortDuration } from './tableFormat.js';
 
-// Go / no-go at the mission table, one decision for the whole plan (P1): it names the tightest of the three limits,
-// time, oxygen and battery (src/plan/limits.js), with its figure. A no-go says which limit breaks, by how much, and the
-// way out when there is one (P10). The dust opacity above the terrain-fix limit is also a no-go (#248). Plain function
-// over t(), so it is tested without a browser.
+// Go / no-go at the mission table, one decision for the whole plan (P1): it names the tightest of the limits, time,
+// oxygen, battery and daylight (#324), with its figure. A no-go says which limit breaks, by how much, and the way out
+// when there is one (P10). The dust opacity above the terrain-fix limit is also a no-go (#248). Plain function over
+// t(), so it is tested without a browser.
 
 const finite = (value) => typeof value === 'number' && Number.isFinite(value);
-const LIMITS = ['time', 'o2', 'battery'];
+const LIMITS = ['time', 'o2', 'battery', 'daylight'];
+const sunsetOf = (hours) => formatLmst(hours * 3600);
 
-/** The way out of a no-go: the least time, O2 or battery that lets the plan through, else a shorter goal. */
+/** The way out of a no-go: the least time, O2 or battery that lets the plan through, else an earlier egress or a shorter goal. */
 function wayOut(limit, objective) {
   let way;
   if (limit.id === 'time' && finite(limit.needMin)) way = t('table.way.time', { time: shortDuration(limit.needMin * 60) });
   else if (limit.id === 'o2' && finite(limit.needPct)) way = t('table.way.o2', { pct: limit.needPct });
   else if (limit.id === 'battery' && finite(limit.needPct)) way = t('table.way.battery', { pct: limit.needPct });
+  // daylight: leave early enough for this plan, or cut the plan to the daylight there is at this egress
+  else if (limit.id === 'daylight') way = t('table.way.daylight', { latest: sunsetOf(limit.sunsetHours - limit.planSec / 3600), light: shortDuration(Math.max(0, limit.toSunsetSec)) });
   else if (objective !== 'sortie') return t('table.way.first');
   else return t('table.way.none');
   return objective && objective !== 'sortie' ? t('table.way.or.sortie', { way }) : t('table.way.end', { way });
@@ -30,6 +34,14 @@ function breaks(limit) {
   if (limit.id === 'o2') {
     if (limit.marginSec <= 0 || limit.floorSec <= 0) return t('table.decision.no.o2.reserve', { short: shortDuration(Math.max(0, -limit.marginSec)) });
     return t('table.decision.no.o2.floor', { margin: shortDuration(limit.marginSec), floor: shortDuration(limit.floorSec) });
+  }
+  if (limit.id === 'daylight') {
+    const sunset = sunsetOf(limit.sunsetHours), egress = sunsetOf(limit.egressHours);
+    // the egress itself is after sunset: there is no daylight to spend (#294 would make the demo read this way)
+    if (!(limit.toSunsetSec > 0)) return t('table.decision.no.daylight.dark', { sunset, egress });
+    return t('table.decision.no.daylight', {
+      sunset, egress, light: shortDuration(limit.toSunsetSec), plan: shortDuration(limit.planSec), over: shortDuration(-limit.spareSec),
+    });
   }
   if (finite(limit.arrivalPct) && limit.arrivalPct < 0) {
     return t('table.decision.no.battery.out', { short: formatNumber(-limit.arrivalPct, 0), reserve: limit.reservePct });
@@ -50,7 +62,7 @@ export function tightestText(limit) {
  *   limit (hazards.json dust.event.nav_fix_tau_max); objective: the crew's goal, for the way out; radiationExpected: the
  *   run's radiation alert is switched on and has not fired (the outlook beside the decision gives its time)
  * @returns {{ tone: 'ok' | 'caution' | 'warning' | null, title: string, text: string, note?: string, go: boolean,
- *   reason: 'error' | 'planning' | 'time' | 'o2' | 'battery' | 'reserve' | 'dust' | 'caution' | 'go', limit: string | null }}
+ *   reason: 'error' | 'planning' | 'time' | 'o2' | 'battery' | 'daylight' | 'reserve' | 'dust' | 'caution' | 'go', limit: string | null }}
  */
 export function decisionFor({ planner, totals, limits = null, dust = null, objective = null, radiationExpected = false }) {
   const noGo = (reason, text, limit = null) => ({ tone: 'warning', title: t('table.decision.no.go'), text, go: false, reason, limit });

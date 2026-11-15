@@ -1,16 +1,23 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { setLanguage } from '../i18n/index.js';
-import { decisionFor, liveSuitStatus, startSuitStatus } from './decision.js';
+import { daylightLeft } from '../sim/daylight.js';
+import { decisionFor, liveSuitStatus, startSuitStatus, tightestText } from './decision.js';
 
 afterEach(() => setLanguage('en'));
 
 const ready = { status: 'ready', error: null };
 const nominal = { status: 'nominal' };
 const ok = (id, spareSec, extra = {}) => ({ id, ok: true, spareSec, ...extra });
-const limitsOf = ({ time = ok('time', 1080), o2 = ok('o2', 17040, { marginSec: 17040, floorSec: 0 }), battery = ok('battery', 20000) } = {}) => {
-  const all = [time, o2, battery].filter(Boolean).sort((a, b) => a.spareSec - b.spareSec);
+// The demo: the site at 18.4975 N with the 11 deg declination of sunPosition.js (SIM, #294 will change it).
+const DEMO_DAY = { hours: 17.75, declinationDeg: 11, latitudeDeg: 18.4975 };
+const daylightOf = (planSec) => {
+  const d = daylightLeft({ ...DEMO_DAY, planSec });
+  return { id: 'daylight', ok: d.ok, spareSec: d.leftSec, toSunsetSec: d.toSunsetSec, planSec: d.planSec, sunsetHours: d.sunsetHours, egressHours: d.hours };
+};
+const limitsOf = ({ time = ok('time', 1080), o2 = ok('o2', 17040, { marginSec: 17040, floorSec: 0 }), battery = ok('battery', 20000), daylight = null } = {}) => {
+  const all = [time, o2, battery, daylight].filter(Boolean).sort((a, b) => a.spareSec - b.spareSec);
   const failing = all.find((limit) => !limit.ok) ?? null;
-  return { time, o2, battery, failing, tightest: all[0], status: failing ? 'warning' : all[0].spareSec < 900 ? 'caution' : 'ok' };
+  return { time, o2, battery, daylight, failing, tightest: all[0], status: failing ? 'warning' : all[0].spareSec < 900 ? 'caution' : 'ok' };
 };
 
 describe('go / no-go (P1)', () => {
@@ -64,6 +71,38 @@ describe('go / no-go (P1)', () => {
     expect(d).toMatchObject({ go: false, reason: 'dust', tone: 'warning' });
     expect(d.text).toContain('τ 1.4');
     expect(decisionFor({ planner: ready, totals: nominal, limits: limitsOf(), dust: { tau: 1, limit: 1 } }).go).toBe(true);
+  });
+
+  it('is a no-go when the plan would end after sunset, naming the sunset, the daylight and the plan (#324)', () => {
+    const d = decisionFor({
+      planner: ready, totals: nominal, limits: limitsOf({ daylight: daylightOf(76 * 60) }), objective: 'cheyava',
+    });
+    expect(d).toMatchObject({ go: false, tone: 'warning', reason: 'daylight', limit: 'daylight' });
+    expect(d.text).toContain('the Sun sets at 18:14 LMST');
+    expect(d.text).toContain('30 min after the 17:45 egress');
+    expect(d.text).toContain('the plan takes 1 h 16 min');
+    expect(d.text).toContain('The walk back would end 46 min after sunset.');
+    expect(d.text).toContain('Leave by 16:58 LMST, or cut the plan to 30 min, or choose the First sortie.');
+  });
+
+  it('goes while the plan fits the daylight, and names daylight when it is the tightest limit', () => {
+    const d = decisionFor({ planner: ready, totals: nominal, limits: limitsOf({ time: ok('time', 4000), daylight: daylightOf(10 * 60) }) });
+    expect(d).toMatchObject({ go: true, tone: 'ok', limit: 'daylight' });
+    expect(d.text).toContain('Tightest limit: daylight, the plan ends 20 min before sunset.');
+    expect(tightestText(limitsOf({ daylight: daylightOf(10 * 60) }).daylight)).toContain('20 min before sunset');
+  });
+
+  it('says the Sun is already down when the egress is after sunset (#294)', () => {
+    // a real sol 1210 declination (-23 deg) puts sunset before the 17:45 egress; today's SIM 11 deg still reads a go
+    expect(decisionFor({ planner: ready, totals: nominal, limits: limitsOf({ daylight: daylightOf(60) }) }).go).toBe(true);
+    const real = daylightLeft({ ...DEMO_DAY, declinationDeg: -23, planSec: 60 });
+    const dark = decisionFor({
+      planner: ready, totals: nominal,
+      limits: limitsOf({ daylight: { id: 'daylight', ok: real.ok, spareSec: real.leftSec, toSunsetSec: real.toSunsetSec, planSec: real.planSec, sunsetHours: real.sunsetHours, egressHours: real.hours } }),
+      objective: 'sortie',
+    });
+    expect(dark).toMatchObject({ go: false, reason: 'daylight' });
+    expect(dark.text).toContain('the Sun set at 17:27 LMST, before the 17:45 egress');
   });
 
   it('adds one sentence for a forecast radiation alert and stays a go (D6)', () => {

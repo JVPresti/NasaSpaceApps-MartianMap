@@ -65,4 +65,32 @@ describe('plan limits (P1)', () => {
     expect(planLimits({ totals: null, constants: c })).toBeNull();
     expect(planLimits({ totals: totals(), constants: null })).toBeNull();
   });
+
+  it('checks the egress to sunset against the whole plan, and is a no-go when the plan outlasts the Sun (#324)', () => {
+    // the demo: the site latitude and the 11 deg declination of sunPosition.js, out at 17:45 with ~30 min of daylight
+    const daylight = { hours: 17.75, declinationDeg: 11, latitudeDeg: 18.4975 };
+    const light = planLimits({ totals: totals(), budget: budget(), constants: c, daylight });
+    expect(light.daylight).toMatchObject({ id: 'daylight', ok: true });
+    expect(light.daylight.planSec).toBe(480);                    // 420 s out + 60 s back
+    expect(light.daylight.toSunsetSec / 60).toBeCloseTo(29.9, 1);
+    expect(light.daylight.spareSec / 60).toBeCloseTo(21.9, 1);   // ~30 min of daylight less the 8 min plan
+    expect(light.failing).toBeNull();
+
+    // the full EVA to Cheyava Falls: 19 min out, 35 min of work, 22 min home
+    const full = planLimits({
+      totals: totals({ timeSec: (19 + 35) * 60, returnTimeSec: 22 * 60 }), budget: budget(), constants: c, daylight,
+    });
+    expect(full.daylight.ok).toBe(false);
+    expect(full.failing.id).toBe('daylight');
+    expect(full.status).toBe('warning');
+    expect(full.daylight.spareSec / 60).toBeCloseTo(-46, 0);
+  });
+
+  it('leaves daylight out when there is no mission time, and reports the egress already past sunset', () => {
+    expect(planLimits({ totals: totals(), budget: budget(), constants: c }).daylight).toBeNull();
+    expect(planLimits({ totals: totals(), budget: budget(), constants: c, daylight: { hours: null } }).daylight).toBeNull();
+    const dark = planLimits({ totals: totals(), budget: budget(), constants: c, daylight: { hours: 17.75, declinationDeg: -23 } });
+    expect(dark.daylight.ok).toBe(false);
+    expect(dark.daylight.toSunsetSec).toBeLessThan(0);
+  });
 });
