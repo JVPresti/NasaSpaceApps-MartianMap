@@ -19,6 +19,7 @@ const OUT = resolve(arg('out', 'scripts/quality/out/current'));
 const [W, H] = arg('size', '1366x768').split('x').map(Number);
 const ONLY = arg('states', '') ? arg('states').split(',') : null;
 const DRAW = flag('draw');
+const LIVE = flag('live');
 const t0 = Date.now();
 const log = (...a) => console.log(`[${((Date.now() - t0) / 1000).toFixed(0)}s]`, ...a);
 
@@ -360,6 +361,44 @@ state('debrief', { stats: R.stats }, async (page) => {
   await sleep(1500);
 });
 
+// --live: turn the camera at a steady 1.5 degrees per frame for `seconds` and count, per watched element, the frames in
+// which its DOM changed (attributes, text or children). A 5 Hz store-driven element changes on about 5 frames a
+// second; a per-frame one on every frame.
+async function liveRate(seconds) {
+  const watch = { tape: '.hud-heading', box: '.hud-heading-box', minimap: '.hud-map', partner: '.hud-partner-chip', marker: '.hud-wp-marker' };
+  const changed = {}, seen = {};
+  const observers = Object.entries(watch).map(([k, sel]) => {
+    changed[k] = 0; seen[k] = false;
+    const el = document.querySelector(sel);
+    if (!el) return null;
+    const o = new MutationObserver(() => { seen[k] = true; });
+    o.observe(el, { attributes: true, characterData: true, childList: true, subtree: true });
+    return o;
+  });
+  // canvases (the minimap) change pixels, not the DOM: hash a few pixels per frame
+  const canvas = document.querySelector('.hud-map canvas');
+  const g = canvas && canvas.getContext('2d', { willReadFrequently: true });
+  let lastHash = null;
+  const p0 = window.__marswalk.pose();
+  let frames = 0, yaw = p0.yaw;
+  const end = performance.now() + seconds * 1000;
+  await new Promise((resolve) => {
+    const step = () => {
+      for (const k of Object.keys(seen)) { if (seen[k]) changed[k]++; seen[k] = false; }
+      if (g) { const d = g.getImageData(0, 0, canvas.width, canvas.height).data; let h = 0; for (let i = 0; i < d.length; i += 4097) h = (h * 31 + d[i]) | 0; if (lastHash !== null && h !== lastHash) changed.minimapPixels = (changed.minimapPixels || 0) + 1; lastHash = h; }
+      if (performance.now() > end) { resolve(); return; }
+      frames++;
+      yaw += 1.5 * Math.PI / 180;
+      window.__marswalk.place(p0.x, p0.z, yaw, -0.08);
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+  for (const o of observers) if (o) o.disconnect();
+  const perSec = Object.fromEntries(Object.entries(changed).map(([k, v]) => [k, Math.round(v / seconds)]));
+  return { seconds, fps: Math.round(frames / seconds), changedFramesPerSecond: perSec };
+}
+
 // draw calls and triangles at three fixed poses, per tier
 async function drawStats(page, base) {
   const out = {};
@@ -472,6 +511,10 @@ try {
     const stopAfter = ONLY && ONLY.every((n) => result.states[n]);
     const miss = Object.entries(m.required).filter(([, v]) => !v).map(([k]) => k);
     log(`${s.name.padEnd(14)} overlap ${String(m.overlap).padStart(6)}  off ${m.offscreen}  tiny ${String(m.tinyText).padStart(3)}  lowC ${String(m.lowContrast).padStart(3)}  hud ${String(m.hudCount).padStart(2)}  drift ${m.styleDrift.count}${miss.length ? '  MISSING ' + miss.join(',') : ''}`);
+    if (LIVE && s.name === 'walk') {
+      result.live = await page.evaluate(liveRate, 3);
+      log('live ' + JSON.stringify(result.live));
+    }
     if (stopAfter) break;   // the states after the last one asked for are not needed
   }
   if (DRAW) {
