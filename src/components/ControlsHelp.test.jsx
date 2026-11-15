@@ -12,7 +12,13 @@ const keyCaps = () => [...renderToStaticMarkup(<ControlsHelp />).matchAll(/<kbd>
 describe('ControlsHelp', () => {
   it('lists the sampling, layer, sources, find, partner, slope grid and wrist keys', () => {
     const caps = keyCaps();
-    for (const key of ['Click', 'P', 'E', 'F', 'M', 'L', 'Shift', '0', 'C', 'Q', 'Y', 'N', 'T', 'G', 'R']) expect(caps).toContain(key);
+    for (const key of ['Click', 'P', 'E', 'F', 'M', 'L', 'Shift', '0', 'C', 'Q', 'Y', 'N', 'T', 'G', 'R', '[ ]', 'J / K', 'Enter']) expect(caps).toContain(key);
+  });
+
+  it('lists the wrist keys on one row so the start dialog keeps its height (#231)', () => {
+    const html = renderToStaticMarkup(<ControlsHelp />);
+    expect(html.match(/class="controls-row"/g)).toHaveLength(23);
+    expect(html).toContain('Wrist screen');
   });
 
   it('lists the walking and mission table keys', () => {

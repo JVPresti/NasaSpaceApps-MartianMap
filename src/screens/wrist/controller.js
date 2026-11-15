@@ -1,10 +1,12 @@
 import { useMissionStore, setLayer } from '../../state/store.js';
 import { createRedrawScheduler } from '../../hud/minimapRedraw.js';
+import { subscribeLanguage } from '../../i18n/index.js';
 import { PAGES, rowCount, rowTarget, WRIST_HEIGHT, WRIST_WIDTH } from './layout.js';
 import { wristView } from './view.js';
 import { drawWrist } from './draw.js';
 import { drawWristMap, wristMapView } from './map.js';
 import { wristKey } from './keys.js';
+import { setWristKeyOwner } from './ownership.js';
 import { loadDataFile } from '../../data/dataFiles.js';
 import { SHELTERS_PATH } from '../../sim/shelters.js';
 
@@ -14,7 +16,7 @@ export function connectWrist(engine, store = useMissionStore) {
   canvas.width = WRIST_WIDTH; canvas.height = WRIST_HEIGHT;
   const g = canvas.getContext('2d');
   let pageIndex = 0, row = store.getState().view.layer, open = false, painted = '', disposed = false;
-  let shelters = [], resourceVersion = 0;
+  let shelters = [], resourceVersion = 0, qHeld = false;
   const diagnostics = { canvas, snapshot: () => ({ open, page: PAGES[pageIndex], row, draws: Number(canvas.dataset.drawCount ?? 0), engine: engine.getWristState() }) };
   if (import.meta.env.DEV) window.__marswalkWrist = diagnostics;
   engine.setWristScreen(canvas);
@@ -37,19 +39,27 @@ export function connectWrist(engine, store = useMissionStore) {
     if (state.mode !== 'walk' || state.mission.paused) {
       if (open) engine.setWristOpen(false);
       open = false;
+      setWristKeyOwner(false);
     }
     if (open) scheduler.request('store');
   };
   const off = store.subscribe(sync);
   const onKey = (event) => {
     const state = store.getState();
-    // Reading cards and menus own Enter and the keyboard until dismissed.
-    if (state.mode !== 'walk' || state.mission.paused || document.querySelector('.stop-card-walk, .sources, [role="dialog"], [aria-modal="true"]')) return;
-    const action = wristKey(event, open);
+    // A sources screen or a modal always owns the keyboard. A reading card yields to the wrist while it is
+    // up, and keeps the keyboard while the wrist is down (#231).
+    if (state.mode !== 'walk' || state.mission.paused
+      || document.querySelector('.sources, [role="dialog"], [aria-modal="true"]')) return;
+    if (!open && document.querySelector('.stop-card-walk')) return;
+    if (event.code === 'KeyQ') qHeld = true;
+    const action = wristKey(event, open, { qHeld });
     if (!action) return;
     event.preventDefault();
     if (action === 'toggle') {
-      if (engine.setWristOpen(!open)) open = !open;
+      if (engine.setWristOpen(!open)) {
+        open = !open;
+        setWristKeyOwner(open);
+      }
     } else if (action.endsWith('page')) {
       pageIndex = (pageIndex + (action === 'next-page' ? 1 : PAGES.length - 1)) % PAGES.length;
       row = PAGES[pageIndex] === 'layers' ? state.view.layer : 0;
@@ -65,7 +75,12 @@ export function connectWrist(engine, store = useMissionStore) {
       scheduler.request('key');
     }
   };
+  const onKeyUp = (event) => { if (event.code === 'KeyQ') qHeld = false; };
+  const onBlur = () => { qHeld = false; };
   window.addEventListener('keydown', onKey);
+  window.addEventListener('keyup', onKeyUp);
+  window.addEventListener('blur', onBlur);
+  const offLanguage = subscribeLanguage(() => scheduler.request('language'));
   loadDataFile(SHELTERS_PATH)   // shared with the HUD minimap and the planner (#205)
     .then(data => {
       if (disposed) return;
@@ -75,8 +90,11 @@ export function connectWrist(engine, store = useMissionStore) {
     }).catch(() => {});
   scheduler.request('init');
   return () => {
-    disposed = true; off(); scheduler.dispose();
+    disposed = true; off(); offLanguage(); scheduler.dispose();
+    setWristKeyOwner(false);
     window.removeEventListener('keydown', onKey);
+    window.removeEventListener('keyup', onKeyUp);
+    window.removeEventListener('blur', onBlur);
     if (import.meta.env.DEV && window.__marswalkWrist === diagnostics) delete window.__marswalkWrist;
     engine.setWristOpen(false); engine.setWristScreen(null);
   };

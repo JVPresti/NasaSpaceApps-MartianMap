@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { connectEngine } from '../state/engineBridge.js';
 import { resetStore, setLayer, setMode, useMissionStore } from '../state/store.js';
+import { setWristKeyOwner } from '../screens/wrist/ownership.js';
 import { handleShortcut } from './shortcuts.js';
 
 function press(code, extra = {}, options) {
@@ -10,7 +11,7 @@ function press(code, extra = {}, options) {
 }
 
 beforeEach(resetStore);
-afterEach(resetStore);
+afterEach(() => { resetStore(); setWristKeyOwner(false); });
 
 describe('mission keyboard shortcuts', () => {
   it('toggles modes in both directions using physical codes, regardless of key label', () => {
@@ -68,6 +69,20 @@ describe('mission keyboard shortcuts', () => {
     press('KeyM', { repeat: true });
     expect(useMissionStore.getState().mode).toBe('plan');
     expect(press('KeyW').preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('leaves M, L, Shift+L and 0 to the wrist screen while it is up (#231)', () => {
+    setMode('walk');
+    setLayer(2);
+    setWristKeyOwner(true);
+    for (const [code, extra] of [['KeyM'], ['KeyL'], ['KeyL', { shiftKey: true }], ['Digit0']]) {
+      expect(press(code, extra).preventDefault).not.toHaveBeenCalled();
+    }
+    expect(useMissionStore.getState().mode).toBe('walk');
+    expect(useMissionStore.getState().view.layer).toBe(2);
+    setWristKeyOwner(false);
+    press('KeyL');
+    expect(useMissionStore.getState().view.layer).toBe(3);
   });
 
   it('sends M through the mode button handler when one is given, so Walk gets the pointer lock (#174)', () => {

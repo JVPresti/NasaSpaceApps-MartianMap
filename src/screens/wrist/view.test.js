@@ -1,9 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { CHECKLIST } from '../../hud/samplingPrompt.js';
+import { setLanguage } from '../../i18n/index.js';
 import { LAYERS } from '../../plan/layers.js';
 import { createInitialState } from '../../state/store.js';
 import { PAGES } from './layout.js';
 import { wristView } from './view.js';
+
+afterEach(() => setLanguage('en'));
 
 const signature = (state, page, row = 0) => JSON.stringify(wristView(state, page, row));
 
@@ -117,6 +120,18 @@ describe('wristView', () => {
     state.view = { ...state.view, layer: 2 };
     state.sampling = { ...state.sampling, checklist: { ...state.sampling.checklist, texture: true } };
     expect(signature(state, 'suit', 0)).toBe(suit);
+  });
+
+  it('reads the wrist text from the active language catalog (#231)', () => {
+    setLanguage('es');
+    const suit = wristView(suitState(), 'suit');
+    expect(suit.title).toBe('TRAJE');
+    expect(suit.rows.map((row) => row.label)).toEqual(['O2', 'BATERÍA', 'PRESIÓN', 'TIEMPO O2', 'MARGEN']);
+    expect(suit.status).toBe('PRECAUCIÓN');
+
+    const layers = wristView(createInitialState(), 'layers');
+    expect(layers.title).toBe('CAPAS');
+    expect(layers.rows[0].label).toBe('Ninguna');
   });
 
   it('leaves the map page empty for the map owner', () => {

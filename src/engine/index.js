@@ -11,6 +11,7 @@ import { subscribeLanguage } from '../i18n/index.js';
 //   engine.requestPointerLock(); engine.releasePointerLock(); engine.setInputEnabled(false);
 //   engine.setQuality('auto' | 'high' | 'low'); engine.getQuality(); engine.resetSession();
 //   engine.subscribeTouch(listener); engine.subscribeGamepad(listener);   // UI hints for touch and gamepad (#103)
+//   engine.subscribeWrist(listener);   // the wrist screen went up or down (#231)
 //   engine.heightAt(x, z); engine.slopeAt(x, z); engine.lineOfSight(a, b); engine.getPlayer();
 //   // wrist screen app (#67), wrist.js: the interface draws the canvas, the engine shows it on the arm
 //   engine.setWristScreen(canvas | null); engine.invalidateWristScreen(); engine.setWristOpen(true | false);
@@ -87,10 +88,12 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
   let pendingReset = false;
   // UI subscriptions for the inputs that appear only after use (#103). Touch and gamepad states are also pushed
   // to a listener added later, so a component mounted after the first use still shows its hint.
-  const touchListeners = new Set(), gamepadListeners = new Set();
+  const touchListeners = new Set(), gamepadListeners = new Set(), wristListeners = new Set();
   // A UI listener is a hint overlay: if it throws, the scene must keep rendering.
   const emitTouch = (state) => { for (const listener of touchListeners) { try { listener(state); } catch { /* keep the frame */ } } };
   const emitGamepad = (state) => { for (const listener of gamepadListeners) { try { listener(state); } catch { /* keep the frame */ } } };
+  const wristState = () => ({ open: !!(sys.arms && sys.arms.L && sys.arms.state === 'screen') });
+  const emitWrist = (state) => { for (const listener of wristListeners) { try { listener(state); } catch { /* keep the frame */ } } };
   const pending = { sky: null, skyBlend: null, skyTime: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false, wristScreen: null, habitatScreens: null, lookSettings: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
@@ -420,18 +423,21 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
    */
   function setWrist(open) {
     const arms = sys.arms;
+    const wasOpen = !!(arms && arms.L && arms.state === 'screen');
     if (!open) {
-      if (!arms || !arms.L || arms.state !== 'screen') return true;
+      if (!wasOpen) return true;
       arms.set(wristRestoreState({ phase: wristPhase(), clip: !!arms.clip, previous: wristPose }));
       wristPose = null;
+      emitWrist({ open: false });
       return true;
     }
     if (!arms || !arms.L) return false;
-    if (arms.state === 'screen') return true;
+    if (wasOpen) return true;
     const mode = ctx.view.mode === 'eye' ? 'walk' : 'plan';
     if (!canOpenWrist({ ready: started, mode, clip: !!arms.clip, phase: wristPhase() })) return false;
     wristPose = arms.state;
     arms.set('screen');
+    emitWrist({ open: true });
     return true;
   }
 
@@ -485,6 +491,18 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       gamepadListeners.add(listener);
       if (viewCtl) listener(viewCtl.gamepadState());
       return () => gamepadListeners.delete(listener);
+    },
+    /**
+     * Follow the wrist screen (#67, #231). The listener is told immediately and again whenever the arm goes up
+     * to or back from the screen, so the Walk hint can show the wrist keys while it is up.
+     * @param {(state: { open: boolean }) => void} listener
+     * @returns {() => void} unsubscribe
+     */
+    subscribeWrist(listener) {
+      if (typeof listener !== 'function') return () => {};
+      wristListeners.add(listener);
+      listener(wristState());
+      return () => wristListeners.delete(listener);
     },
     /**
      * Ask the browser for pointer lock on the engine canvas. Supports the legacy void form and the promise
@@ -799,7 +817,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       }
       resolveDisposed();
       if (viewCtl) viewCtl.dispose();
-      touchListeners.clear(); gamepadListeners.clear();
+      touchListeners.clear(); gamepadListeners.clear(); wristListeners.clear();
       quality.dispose();
       ac.abort(); ro.disconnect(); controls.dispose();
       if (sys.prints) sys.prints.dispose();

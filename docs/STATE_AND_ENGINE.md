@@ -29,7 +29,11 @@ Rules:
 
 The wrist controller (`src/screens/wrist/controller.js`) reads this same store and paints a fixed 512 × 352 canvas. The engine owns the `CanvasTexture` on the arm's `Screen` material, while the interface owns the canvas content. No React or store imports enter the engine.
 
-In Walk, `R` raises or lowers the wrist, `[`/`]` changes pages, `J`/`K` selects the next/previous row, and `Enter` confirms a layer through `setLayer`. Checklist and suit rows are read-only. Typing, held keys, modifier shortcuts, paused missions and reading cards/menus do not operate the wrist. Science cards retain Enter. Point indicates the selected row; confirmation briefly uses the existing pinch pose.
+In Walk, `R` raises or lowers the wrist, `[`/`]` changes pages, `J`/`K` selects the next/previous row, and `Enter` confirms a layer through `setLayer`. Checklist and suit rows are read-only. Typing, held keys, modifier shortcuts, paused missions and dialogs do not operate the wrist. Point indicates the selected row; confirmation briefly uses the existing pinch pose. The Walk hint names R and, while the wrist is up, lists the wrist keys instead of the walk keys; `engine.subscribeWrist` reports the change to the interface (#231).
+
+Every visible wrist string comes from `src/i18n/en.json` and `es.json` through `t()`: page titles and footer, suit row labels and status, and the map's missing-image and uncertainty lines. Page metadata resolves its text through getters, so a language switch repaints an open wrist through `subscribeLanguage` without reopening it. DATA/DERIVED/SIM tags and HiRISE stay invariant.
+
+One key has one consumer (#231). While the wrist is up, `src/screens/wrist/ownership.js` marks it as the keyboard owner and the science stop card, the finds gesture (Q, Y, N), the partner panel (T), the slope grid (G), the sources shortcut (C) and the mode/layer shortcuts (M, L, Shift+L, 0) leave their keys alone. The wrist takes precedence over an open science card; a sources screen or a modal still owns the keyboard. `R` does not raise the wrist while Q is held, so the arm cannot stay in the point pose after the wrist comes down. Escape keeps its pause path and lowers the wrist with the rest of the session.
 
 Opening is rejected during sampling clips. A held sample survives opening and its tool pose is restored on closing; sampling inputs are disabled while reading the wrist. Entering Plan or pausing closes the wrist. Page/selection live in the controller session, survive a Plan round trip, and reset when the engine is replaced or retried.
 
@@ -37,7 +41,7 @@ The map shows the entire real HiRISE tile north-up with an isotropic metre scale
 
 The controller signs only the current page's displayed content and repaints/uploads the texture when that signature changes. Hidden pages and unchanged store updates do not repaint it; coalescing caps work at 10 Hz. Opening refreshes a page that changed while closed. The engine's fallback layer painter never overwrites an external canvas.
 
-Engine methods (after `ready`): `setWristScreen(canvas|null)`, `invalidateWristScreen()`, `setWristOpen(boolean)` (returns success), `setWristPointer({x,y,pressed})` (canvas pixels), `getWristState()` and `getOrthoImage()`. Disconnect the controller before disposing the engine. Development-only `window.__marswalkWrist` exposes the canvas and a read-only snapshot for verification.
+Engine methods (after `ready`): `setWristScreen(canvas|null)`, `invalidateWristScreen()`, `setWristOpen(boolean)` (returns success), `setWristPointer({x,y,pressed})` (canvas pixels), `getWristState()`, `subscribeWrist(listener)` and `getOrthoImage()`. Disconnect the controller before disposing the engine. Development-only `window.__marswalkWrist` exposes the canvas and a read-only snapshot for verification.
 
 ```js
 import { useMissionStore, storeAdapter, setMode } from './state/store.js';
@@ -135,6 +139,7 @@ await engine.ready;
 | `setInputEnabled(enabled)` | Gates walk/orbit input. Disabling clears every held key and stops orbit controls, so WASD, arrows and mouse look cannot act behind a menu. It also drops a touch stick in progress and forgets gamepad button state, so releasing a menu cannot resume a deflected stick or repeat a held button. Can be called before `ready`. |
 | `subscribeTouch(listener)` | Follows the Walk touch stick (#103) for the on-screen overlay: `{ visible, active, knobX, knobY, jog }`. The listener is called immediately with the current state and then on touch events only, never per frame. Returns an unsubscribe function. |
 | `subscribeGamepad(listener)` | Reports whether a gamepad has been used (#103): `{ used, connected }`. Called immediately on subscribe, so a hint mounted after the first press still appears, and again on first use. Returns an unsubscribe function. |
+| `subscribeWrist(listener)` | Reports whether the wrist screen is up (#231): `{ open }`. Called immediately and whenever the arm goes up to or back from the screen, so the Walk hint can list the wrist keys. Returns an unsubscribe function. |
 | `requestPointerLock()` | Asks the browser to lock the pointer on the engine canvas. Supports the legacy void form and the promise form; resolves `true` only after a real grant and `false` on refusal, an unsupported browser, the 3 s watchdog, release or dispose. A browser promise that resolves while `document.pointerLockElement` is still not the canvas is not success: the change event settles the request. Concurrent calls share one request. A call before `ready` is queued until the canvas exists. |
 | `releasePointerLock()` | Releases the lock now. A queued pre-ready request resolves `false`. |
 | `isPointerLocked()` | `true` when `document.pointerLockElement` is the engine canvas. |
