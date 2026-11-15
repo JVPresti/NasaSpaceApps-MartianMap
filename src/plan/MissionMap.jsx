@@ -70,9 +70,14 @@ function markerLabel(name, index) {
  *   alternatives: [{ id, path }] the route profiles not in use (#245), dashed in their colours under the route;
  *   routeClass: class on the route line, for the colour of the profile in use
  *   traverse: draw Perseverance's drives and the pin of its stop images under the route (#249, TraverseLayer.jsx)
+ *   track: [[x, z], ...] a walked track drawn over the route (.map-track), included in the fit (the debrief, #274)
+ *   stretches: [{ id, path, className }] parts of the track drawn over it with their own class (.map-stretch)
+ *   marks: [{ id, x, z, className, text?, label? }] small markers above the stops (.map-mark), label as their tooltip
+ *   focus: [{ x, z }, ...] frames these points; a new array frames again, null goes back to the fit
+ *   The classes of track, stretches and marks are styled by the screen that passes them (src/debrief/debrief.css).
  * Clicking a stop opens a small window with its height, slope and the leg that reaches it.
  */
-export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, alternatives = NO_ALTERNATIVES, routeClass = '', traverse = false }) {
+export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, alternatives = NO_ALTERNATIVES, routeClass = '', traverse = false, track = null, stretches = NO_ALTERNATIVES, marks = NO_ALTERNATIVES, focus = null }) {
   const canvasRef = useRef(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -86,8 +91,17 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const tile = data ? { width: data.terrain.width, depth: data.terrain.depth } : { width: 1422.5, depth: 1500 };
   const pathPoints = useMemo(() => (path ?? []).map(([x, z]) => ({ x, z })), [path]);
   const altPoints = useMemo(() => alternatives.flatMap((a) => a.path.map(([x, z]) => ({ x, z }))), [alternatives]);
-  const fit = useMemo(() => mapCrop([...waypoints, ...pathPoints, ...altPoints], tile), [waypoints, pathPoints, altPoints, tile.width, tile.depth]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const [view, setView] = useState(null);   // null: framed on the route
+  const trackPoints = useMemo(() => (track ?? []).map(([x, z]) => ({ x, z })), [track]);
+  const fit = useMemo(() => mapCrop([...waypoints, ...pathPoints, ...altPoints, ...trackPoints], tile), [waypoints, pathPoints, altPoints, trackPoints, tile.width, tile.depth]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const cropOn = (points) => (points?.length ? mapCrop(points, tile, { pad: 0.35, min: 200 }) : null);
+  const [view, setView] = useState(() => cropOn(focus));   // null: framed on the route
+  // A new focus frames its points (a deviation in the debrief, #274); set while rendering, as React suggests for
+  // state that follows a prop, so the map never paints one frame at the old view.
+  const [framed, setFramed] = useState(focus);
+  if (focus !== framed) {
+    setFramed(focus);
+    setView(cropOn(focus));
+  }
   const [open, setOpen] = useState(null);   // index of the stop whose details are open
   const crop = view ?? fit;
   const boxRef = useRef(null);
@@ -163,6 +177,11 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
         ))}
         {route && line && <polyline points={line} className="map-route-shadow" />}
         {route && line && <polyline points={line} className={routeClass ? 'map-route ' + routeClass : 'map-route'} />}
+        {trackPoints.length > 1 && <polyline points={toLine(trackPoints)} className="map-track-shadow" />}
+        {trackPoints.length > 1 && <polyline points={toLine(trackPoints)} className="map-track" />}
+        {stretches.map((s) => (
+          <polyline key={s.id} points={toLine(s.path.map(([x, z]) => ({ x, z })))} className={s.className ? 'map-stretch ' + s.className : 'map-stretch'} />
+        ))}
       </svg>
       {/* Stops as numbered markers with a label, as on the 3D plan map: HTML, so the text stays sharp at any zoom. The
           numbers are the app's one numbering (#220, src/sim/waypointNumber.js): HAB is 0 and WP1 is 1. */}
@@ -190,6 +209,15 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
           );
         })}
       </ol>
+      {marks.length > 0 && (
+        <ul className="map-markers map-marks" aria-hidden="true">
+          {marks.map((m) => {
+            const [u, v] = toMap(m.x, m.z, crop);
+            if (u < -5 || u > 105 || v < -5 || v > 105) return null;
+            return <li key={m.id} className={m.className ? 'map-mark ' + m.className : 'map-mark'} style={{ left: `${u}%`, top: `${v}%` }} title={m.label}>{m.text ?? null}</li>;
+          })}
+        </ul>
+      )}
       {open !== null && waypoints[open] && (() => {
         const w = waypoints[open];
         const [u, v] = toMap(w.x, w.z, crop);
