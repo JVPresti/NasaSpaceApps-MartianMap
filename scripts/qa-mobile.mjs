@@ -15,6 +15,7 @@ import puppeteer from 'puppeteer-core';
 export const VIEWPORTS = {
   se: { width: 375, height: 667 },
   iphone: { width: 390, height: 844 },
+  android: { width: 360, height: 800 },
   pixel: { width: 412, height: 915 },
   landscape: { width: 844, height: 390 },
   tablet: { width: 768, height: 1024 },
