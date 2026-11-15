@@ -32,7 +32,7 @@ export const sameCrop = (a, b) => Boolean(a && b && a.x0 === b.x0 && a.z0 === b.
  *   commit: (crop: object) => void, frame?: (fn: () => void) => number, cancelFrame?: (id: number) => void,
  *   wheelDelayMs?: number }} options
  */
-export function createMapGesture({ tile, minSize, preview, commit, frame = requestAnimationFrame, cancelFrame = cancelAnimationFrame, wheelDelayMs = 250 }) {
+export function createMapGesture({ tile, minSize, preview, commit, frame = (fn) => requestAnimationFrame(fn), cancelFrame = (id) => cancelAnimationFrame(id), wheelDelayMs = 250 }) {
   let live = null;   // the crop the gesture shows now, null at rest
   let pending = 0;
   let wheelTimer = null;

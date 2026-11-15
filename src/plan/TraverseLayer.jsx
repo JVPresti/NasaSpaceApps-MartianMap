@@ -28,10 +28,28 @@ function useTraverse() {
 
 const points = (list, crop) => list.map(([x, z]) => toMap(x, z, crop).map((v) => v.toFixed(2)).join(',')).join(' ');
 
+/** The key of the drives: the sols they cover and what they decide. Fixed on the map's corner, it never pans. */
+export function TraverseKey() {
+  const data = useTraverse();
+  if (!data) return null;
+  return (
+    // The key says what the drives decide: a cautious crew's route prefers ground the rover crossed (missionNeeds.js)
+    <p className="table-map-traverse-key">
+      <i aria-hidden="true" />
+      <span>
+        {t('map.traverse.key', { from: data.sols[0], to: data.sols[1] })}
+        <small>{t('layers.traverse.prefer')}</small>
+      </span>
+      <SourceTag path="map.traverse" requireSource={false} source={null} />
+    </p>
+  );
+}
+
 /**
- * @param {{ crop: { x0: number, z0: number, size: number } }} props the map's current view, as in MissionMap
+ * @param {{ crop: { x0: number, z0: number, size: number }, withKey?: boolean }} props the map's current view, as in
+ *   MissionMap; withKey: false leaves the key to a TraverseKey outside the layers a pan moves (#390)
  */
-export default function TraverseLayer({ crop }) {
+export default function TraverseLayer({ crop, withKey = true }) {
   const data = useTraverse();
   const stops = useStops();
   const [open, setOpen] = useState(null);   // index of the pin whose images are open
@@ -117,15 +135,7 @@ export default function TraverseLayer({ crop }) {
           );
         })()}
       </div>
-      {/* The key says what the drives decide: a cautious crew's route prefers ground the rover crossed (missionNeeds.js) */}
-      <p className="table-map-traverse-key">
-        <i aria-hidden="true" />
-        <span>
-          {t('map.traverse.key', { from: data.sols[0], to: data.sols[1] })}
-          <small>{t('layers.traverse.prefer')}</small>
-        </span>
-        <SourceTag path="map.traverse" requireSource={false} source={null} />
-      </p>
+      {withKey && <TraverseKey />}
     </>
   );
 }

@@ -13,7 +13,7 @@ import LayerPlaces from './LayerPlaces.jsx';
 import MapPosition from './MapPosition.jsx';
 import { useLayerPlaces } from './useLayerPlaces.js';
 import { useSkyView } from './routeExposure.js';
-import TraverseLayer from './TraverseLayer.jsx';
+import TraverseLayer, { TraverseKey } from './TraverseLayer.jsx';
 import ReturnZoneLayer from '../zone/ReturnZoneLayer.jsx';
 import { useReturnZone, zoneFrameKey, zoneFramePoints } from '../zone/useReturnZone.js';
 import './mapLayers.css';
@@ -347,7 +347,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
       <canvas ref={canvasRef} className="table-map-picture" width={PIXELS} height={PIXELS} role="img" aria-label={title} />
       <div ref={stageRef} className="table-map-stage">
       {layer === LAYER.ZONE && <ZoneOverlay zone={zone} crop={crop} />}
-      {traverse && <TraverseOverlay crop={crop} />}
+      {traverse && <TraverseOverlay crop={crop} withKey={false} />}
       <svg className="table-map-marks" viewBox="0 0 100 100" aria-hidden="true">
         {route && alternatives.map((a) => (
           <polyline key={a.id} points={toLine(a.path.map(([x, z]) => ({ x, z })))} className={'map-route-alt profile-' + a.id} />
@@ -446,6 +446,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
         <span>{t('map.north.up')} · {acrossLabel(crop.size)}{layer === LAYER.RADIO && !radio ? ` · ${t('layers.radio.waiting')}` : ''}</span>
       </p>
       {legend}
+      {traverse && <TraverseKey />}
       {view && (
         <button type="button" className="table-map-fit" onPointerDown={(event) => event.stopPropagation()} onClick={resetView}>
           {t('map.fit.route')}
