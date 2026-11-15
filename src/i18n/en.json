@@ -668,6 +668,8 @@
   "taskwalk.todo": "Collect {what} here · {here} of {count}",
   "taskwalk.todo.photo": "Take {what} here · {here} of {count}",
   "taskwalk.done": "✓ Done · {what} here · {here} of {count}",
+  "taskwalk.done.all": "✓ Done · {list} here",
+  "taskwalk.more": "+{count} more",
   "taskwalk.hud": "Task · {list}",
   "taskwalk.hud.item": "{what} · {here} of {count}",
   "mission.recap.title": "What this mission showed",
