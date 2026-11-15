@@ -51,7 +51,7 @@ The sky view factor is the share of the upper hemisphere a crouching astronaut s
 - **It informs a risk readout and the shelter choice, not the path.** A 5 % difference in sky view along a route is too small to justify a longer walk, so no route profile prices it. What the layer shows is where the natural shelters are (SP1 to SP4, 15 to 16 % less dose) and how exposed the planned route is.
 - **The saving is an upper bound.** Particles from low in the sky cross more atmosphere, so hiding the low sky saves less than the isotropic estimate.
 
-The readout is `skyViewAlongPath(sky, path)` in `src/sim/skyView.js`: the mean, minimum and maximum sky view along `route.path`, sampled every 5 m and weighted by length like `radioShadowAlongPath`, and where the sky is most hidden. `src/plan/routeExposure.js` gives `useRouteExposure(route.path)`, the words (`exposureText`) and the provenance entry `route.exposure` (DERIVED). On the real routes:
+The readout is `skyViewAlongPath(sky, path)` in `src/sim/skyView.js`: the mean, minimum and maximum sky view along `route.path`, sampled every 5 m and weighted by length like `radioShadowAlongPath`, and where the sky is most hidden. `src/plan/routeExposure.js` gives `useRouteExposure(route.path)`, the words (`exposureText`) and the provenance entry `map.exposure` (DERIVED). On the real routes:
 
 | Route | Length | Mean sky view | Most hidden |
 |---|---:|---:|---|
@@ -95,6 +95,6 @@ Every change reuses the existing layer buttons, legend (`.table-map-legend`), ma
 ## Follow-ups
 
 - **The habitat mast for the Radio shadow layer.** `MissionMap` takes a `mast` prop; the engine gives it (`engine.getHabitatMast()`) and `useRoutePlanner` already polls it for the radio-contact profile. The table has to pass it down (the planner hook returning `mast`, and the table's map passing `mast={planner.mast}`). Until then the layer draws nothing and says so.
-- The Exposure readout is ready to place on the table (`useRouteExposure`, `exposureText`, `SourceTag path="route.exposure"`).
+- The Exposure readout is ready to place on the table (`useRouteExposure`, `exposureText`, `SourceTag path="map.exposure"`).
 - The ground in Walk keeps the suit's 15° caution band. Making it follow the risk the EVA started with needs the store-to-engine bridge to pass a caution angle to the shader.
 - Place markers near the map edge can sit under the legend or the rover key, like the route's own markers.

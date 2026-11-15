@@ -10,10 +10,10 @@ import { decodeSkyViewGrid, skyViewAlongPath, SKY_VIEW_PATH } from '../sim/skyVi
 // route in well under a millisecond (skyView.skyViewAlongPath).
 //
 // Placed on the table by the table's own components: `useRouteExposure(route.path)` gives the numbers,
-// `exposureText(readout)` the words, and <SourceTag path="route.exposure" requireSource={false} /> the tag.
+// `exposureText(readout)` the words, and <SourceTag path="map.exposure" requireSource={false} /> the tag.
 
 provenance.define({
-  'route.exposure': {
+  'map.exposure': {
     tag: 'DERIVED',
     label: 'HiRISE DTM · sky view',
     source: 'mean sky view along the planned route, sampled every 5 m on the 6 m sky view grid of public/data/sky_view.json '
