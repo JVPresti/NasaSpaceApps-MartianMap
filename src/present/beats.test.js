@@ -118,10 +118,25 @@ describe('the presentation story', () => {
     for (const b of BEATS) for (const t of all(b)) expect(t, b.id).not.toMatch(/[\u2013\u2014]/);
   });
 
-  it('ends on the sources, then hands over to the live app', () => {
-    const ids = BEATS.map((b) => b.id);
-    expect(ids.slice(-3)).toEqual(['sources', 'credits', 'live']);
-    expect(BEATS.at(-1).cta).toBeTruthy();
+  it('ends on the sources; the hand-over to the live app only comes with ?live=1', () => {
+    expect(sequence('full').map((b) => b.id).slice(-2)).toEqual(['sources', 'credits']);
+    const live = sequence('full', { live: true });
+    expect(live.map((b) => b.id).slice(-3)).toEqual(['sources', 'credits', 'live']);
+    expect(live.at(-1).cta).toBeTruthy();
+  });
+
+  it('plays the recorded demo between the zone and the sources', () => {
+    const ids = sequence('full').map((b) => b.id);
+    expect(ids.indexOf('demo')).toBe(ids.indexOf('zone') + 1);
+    expect(ids.indexOf('sources')).toBe(ids.indexOf('demo') + 1);
+    const demo = BEATS.find((b) => b.id === 'demo');
+    expect(demo.video.src).toMatch(/\.mp4$/);
+    expect(captionsOf(demo).length).toBeGreaterThan(0);   // the fallback if the file fails
+  });
+
+  it('fits the 3:40 talk: the full presentation runs at most 3:20 on autoplay, leaving room to speak', () => {
+    const total = sequence('full').reduce((a, b) => a + b.duration, 0);
+    expect(total).toBeLessThanOrEqual(200);
   });
 
   it('lists every source the presentation shows, each line tagged', () => {

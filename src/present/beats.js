@@ -97,50 +97,39 @@ export const BEATS = [
   },
   {
     id: 'zone',
-    duration: 18,
+    duration: 22,
     shot: { target: { x: 440, z: 480 }, dist: 1150, yaw: -30, pitch: -54, fov: 44 },
     move: { dur: 5, ease: 'inOut' },
     drift: { yaw: -1.0 },
     caption: [
       { at: 0, en: 'The question is not where you can go.', es: 'La pregunta no es a dónde puedes ir.' },
       { at: 5, en: 'It is where you can still get home.', es: 'Es desde dónde todavía vuelves a casa.' },
+      { at: 15, en: 'Radiation alert. Only ground toward home stays.', es: 'Alerta de radiación. Solo queda volver a casa.' },
     ],
     scene: { zone: true },
-    tracks: { zone: [0, 29, 7, 16.5], zoneOpacity: [0, 1, 4.5, 6] },
+    tracks: { zone: [[0, 29, 7, 14], [29, 31, 15.5, 16.8]], zoneOpacity: [0, 1, 4.5, 6] },
     chips: [
       { at: 'astronaut', show: [7], big: '{zone.area:1} ha', text: { en: 'you can reach and still get home', es: 'puedes alcanzar y aún volver' },
         liveText: { en: 'reach and still get home, T+{clock}', es: 'alcanzas y aún vuelves, T+{clock}' }, tag: 'SIM', live: 'area' },
       { at: 'hab', show: [5.5], text: { en: 'Habitat', es: 'Hábitat' }, tag: 'DATA', home: true },
+      { at: 'astronaut', show: [15.5], ring: true, big: '{rad.peak} µGy/h', text: { en: 'peak dose rate at Gale, Sept. 2017, 2.5× normal', es: 'tasa de dosis máxima en Gale, sept. 2017, 2.5× lo normal' }, tag: 'DATA', danger: true, offset: 1 },
     ],
     source: { en: 'Zone: computed by our planner from the HiRISE cost grid and suit model. Not in the walk HUD yet. Clock sped up', es: 'Zona: la calcula nuestro planificador con el costo HiRISE y el modelo de traje. Aún no está en el HUD. Reloj acelerado', tag: 'SIM' },
   },
   {
-    id: 'radiation',
-    duration: 11,
-    shot: { target: 'astronaut', dist: 420, yaw: -20, pitch: -50, fov: 44 },
-    move: { dur: 3, ease: 'inOut' },
-    caption: { en: 'Radiation alert. Only ground toward home stays.', es: 'Alerta de radiación: solo el camino a casa.' },
-    scene: { zone: true },
-    tracks: { zone: [29, 31, 1.2, 2.4], zoneOpacity: [1, 1, 0, 1] },
-    chips: [
-      { at: 'hab', show: [0], text: { en: 'Habitat', es: 'Hábitat' }, tag: 'DATA', home: true },
-      { at: 'astronaut', show: [1.2], ring: true, big: '{rad.peak} µGy/h', text: { en: 'peak dose rate, September 2017, 2.5× normal', es: 'tasa de dosis máxima, septiembre 2017, 2.5× lo normal' }, tag: 'DATA', danger: true },
+    id: 'demo',
+    duration: 85,   // the video's length (public/present/demo.mp4)
+    shot: { target: 'hab', dist: 95, yaw: -40, pitch: -14, fov: 48 },
+    move: { dur: 0 },
+    // The real app, recorded (scripts/present/demo-cut.md). Its captions are in the video; these show only if it fails.
+    video: { src: 'demo.mp4', poster: 'demo-poster.jpg' },
+    caption: [
+      { at: 0, en: 'The crew sets its needs at the table.', es: 'El equipo fija sus necesidades en la mesa.' },
+      { at: 17, en: 'The planner builds the route from them.', es: 'El planificador arma la ruta con ellas.' },
+      { at: 34, en: 'In orange, where you can still get home.', es: 'En naranja, desde dónde aún vuelves.' },
+      { at: 50, en: 'Out through the airlock, with EV2.', es: 'Afuera por la esclusa, con EV2.' },
+      { at: 70, en: 'Afterwards, the walked route against the plan.', es: 'Después, la ruta caminada contra el plan.' },
     ],
-    source: { en: 'RAD on Curiosity, Gale crater, not Jezero. Timing: NASA DONKI', es: 'RAD en Curiosity, cráter Gale, no Jezero. Tiempos: NASA DONKI', tag: 'DATA' },
-  },
-  {
-    id: 'storm',
-    duration: 10,
-    shot: { target: 'astronaut', dist: 420, yaw: 130, pitch: -30, fov: 48 },
-    move: { dur: 4, ease: 'inOut' },
-    caption: { en: 'Dust storm. The sky closes in.', es: 'Tormenta de polvo. El cielo se cierra.' },
-    scene: { sky: 'dust_storm', route: true },
-    tracks: { route: ['totals.distanceM', 'totals.distanceM', 0, 1], dust: [0, 0.75, 0.5, 6] },
-    chips: [
-      { at: 'hab', show: [4], big: 'τ 8', text: { en: 'dust opacity, 2018 global storm', es: 'opacidad del polvo, tormenta global 2018' }, tag: 'DATA' },
-      { at: 'hab', show: [6], big: '3 km', text: { en: 'farthest view at Gale, 2018 storm', es: 'vista más lejana en Gale, tormenta 2018' }, tag: 'DATA', offset: 1 },
-    ],
-    source: { en: 'Dust and visibility: Curiosity, Gale 2018. Weather: MEDA, Jezero, sol 1187', es: 'Polvo y visibilidad: Curiosity, Gale 2018. Clima: MEDA, Jezero, sol 1187', tag: 'DATA' },
   },
   {
     id: 'sources',
@@ -229,9 +218,12 @@ export const GLOBAL_30 = [
   { id: 'end', from: 'mars', duration: 2.5, move: { dur: 0 }, title: 'Marswalk', caption: { en: 'Next: other sites with HiRISE terrain models.' } },
 ];
 
-/** The beat list for a sequence name ('full' or 'global30'), with borrowed fields filled in. */
-export function sequence(name = 'full') {
-  if (name !== 'global30') return BEATS;
+/**
+ * The beat list for a sequence name ('full' or 'global30'), with borrowed fields filled in. The full presentation ends
+ * on the sources; { live: true } (?live=1) adds the hand-over to the live app after them.
+ */
+export function sequence(name = 'full', { live = false } = {}) {
+  if (name !== 'global30') return live ? BEATS : BEATS.filter((b) => b.id !== 'live');
   return GLOBAL_30.map((cut) => {
     const base = BEATS.find((b) => b.id === (cut.from || cut.id));
     if (!base) throw new Error('GLOBAL_30 names an unknown beat: ' + cut.id);
