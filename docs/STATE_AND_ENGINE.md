@@ -29,7 +29,7 @@ Rules:
 
 The wrist controller (`src/screens/wrist/controller.js`) reads this same store and paints a fixed 512 × 352 canvas. The engine owns the `CanvasTexture` on the arm's `Screen` material, while the interface owns the canvas content. No React or store imports enter the engine.
 
-In Walk, `R` raises or lowers the wrist, `[`/`]` changes pages, `J`/`K` selects the next/previous row, and `Enter` confirms a layer through `setLayer`. Checklist and suit rows are read-only. Typing, held keys, modifier shortcuts, paused missions and dialogs do not operate the wrist. Point indicates the selected row; confirmation briefly uses the existing pinch pose. The Walk hint names R and, while the wrist is up, lists the wrist keys instead of the walk keys; `engine.subscribeWrist` reports the change to the interface (#231).
+In Walk, `R` raises or lowers the wrist, `[`/`]` changes pages, `J`/`K` selects the next/previous row, and `Enter` confirms a layer through `setLayer`. Checklist and suit rows are read-only. Typing, held keys, modifier shortcuts, paused missions and dialogs do not operate the wrist. Point indicates the selected row; confirmation briefly uses the existing pinch pose. The key card at the start of the EVA names R; while the wrist is up a key strip lists the wrist keys, and `engine.subscribeWrist` reports the change to the interface (#231).
 
 Every visible wrist string comes from `src/i18n/en.json` and `es.json` through `t()`: page titles and footer, suit row labels and status, and the map's missing-image and uncertainty lines. Page metadata resolves its text through getters, so a language switch repaints an open wrist through `subscribeLanguage` without reopening it. DATA/DERIVED/SIM tags and HiRISE stay invariant.
 

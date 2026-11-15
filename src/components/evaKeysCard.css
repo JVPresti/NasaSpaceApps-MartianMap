@@ -1,0 +1,60 @@
+/* Key reminder at the start of the EVA (replaces the always-on hint bar). Over the scene, under the menus, and it
+   never takes the pointer. It fades in, holds, and fades out within the 12 s App keeps it mounted. */
+.eva-keys-card {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  z-index: 5;
+  min-width: 300px;
+  padding: 16px 20px 14px;
+  transform: translateX(-50%);
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  animation: eva-keys-card 12s ease forwards;
+}
+
+.eva-keys-card h2 {
+  margin: 0 0 10px;
+  font: 600 13px/1.3 var(--font-display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.eva-keys-card dl { display: grid; gap: 7px; margin: 0; }
+
+.eva-keys-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.eva-keys-row dt { display: flex; gap: 5px; }
+
+.eva-keys-row kbd {
+  min-width: 28px;
+  padding: 4px 7px;
+  font: 500 14px/1.2 var(--font-mono);
+  text-align: center;
+  color: var(--ink);
+  background: rgba(10, 13, 17, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: var(--radius-s);
+}
+
+.eva-keys-row dd { margin: 0; font-size: 15px; text-align: right; }
+
+@keyframes eva-keys-card {
+  0% { opacity: 0; }
+  3%, 88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eva-keys-card { animation: none; }
+}
