@@ -16,6 +16,7 @@ import DebriefScreen from './debrief/DebriefScreen.jsx';
 import EventBanner from './events/EventBanner.jsx';
 import EventDebug from './events/EventDebug.jsx';
 import { StopBanner, WalkBeat } from './mission/MissionBeat.jsx';
+import TaskBanner from './mission/TaskBanner.jsx';
 import { chooseMission } from './mission/chooseMission.js';
 import Finds from './finds/Finds.jsx';
 import Hud from './hud/Hud.jsx';
@@ -556,6 +557,8 @@ export default function App() {
       {load.status === 'ready' && mode === 'walk' && <EventBanner className="event-banner-walk" />}
       {/* The first mission's science stop (D10): why it is worth the walk, in the banner's place before any alert. */}
       {playing && mode === 'walk' && <StopBanner evaBegun={evaBegun} />}
+      {/* A sampling task at its place (#352): what to collect there and the tick, in the same place; never over an alert. */}
+      {playing && mode === 'walk' && <TaskBanner />}
       {load.status === 'ready' && DEBUG_EVENTS && <EventDebug />}
 
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={translateText(SITE)} onRetry={handleRetry} />

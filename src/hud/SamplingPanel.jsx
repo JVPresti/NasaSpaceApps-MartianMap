@@ -6,6 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useMissionStore } from '../state/store.js';
 import { CHECKLIST, samplingPrompt } from './samplingPrompt.js';
 import { subscribeWristKeyOwner, wristOwnsKeys } from '../screens/wrist/ownership.js';
+import { taskWhat, useTaskProgress } from '../mission/useTaskProgress.js';
 import './sampling.css';
 
 const S = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
@@ -24,6 +25,14 @@ function describe(x) {
   return what + ' · ' + (INTO[x.into] || '') + (x.sealed ? t('ui.sealed') : '');
 }
 
+/** Near a sampling task's place (#352): what the task asks for and how many are in there, as the banner counts it. */
+function TaskLine() {
+  const { near } = useTaskProgress();
+  if (near.length === 0) return null;
+  const list = near.map((row) => t('taskwalk.hud.item', { what: taskWhat(row), here: row.here, count: row.count })).join('; ');
+  return <div className="hud-caption" data-tasks={near.map((row) => row.id).join(' ')}>{t('taskwalk.hud', { list })}</div>;
+}
+
 export function SamplingChecklist() {
   const s = useMissionStore(useShallow((st) => {
     const sp = st.sampling, c = sp.checklist;
@@ -39,6 +48,7 @@ export function SamplingChecklist() {
           </li>
         ))}
       </ul>
+      <TaskLine />
       {s.last && <div className="hud-caption hud-sampling-last">{t('ui.last')}{s.last}</div>}
     </section>
   );
