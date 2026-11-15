@@ -1,0 +1,66 @@
+{
+ "round": "r07",
+ "before": "scripts/quality/out/c06",
+ "after": "scripts/quality/out/c07",
+ "states": [
+  "walk-stop",
+  "walk-storm"
+ ],
+ "judges": {
+  "j1": {
+   "walk-stop": {
+    "new": "B"
+   },
+   "walk-storm": {
+    "new": "B"
+   }
+  },
+  "j2": {
+   "walk-stop": {
+    "new": "A"
+   },
+   "walk-storm": {
+    "new": "B"
+   }
+  },
+  "j3": {
+   "walk-stop": {
+    "new": "A"
+   },
+   "walk-storm": {
+    "new": "A"
+   }
+  }
+ },
+ "change": "c07 waypoint world label pushed out from under HUD panels, the science card and the alert; hidden when there is no clear spot",
+ "issue": 283,
+ "personas": {
+  "j1": "opus a",
+  "j2": "opus b",
+  "j3": "fable c"
+ },
+ "verdicts": {
+  "j1": {
+   "walk-stop": "new",
+   "walk-storm": "neither",
+   "why": "profile reads cleanly without the duplicate tag; storm has no design difference"
+  },
+  "j2": {
+   "walk-stop": "new",
+   "walk-storm": "neither",
+   "why": "the ghost tooltip over the profile looked like a leftover hover state"
+  },
+  "j3": {
+   "walk-stop": "new",
+   "walk-storm": "neither",
+   "why": "the label bleeding through looked like a rendering bug"
+  }
+ },
+ "decision": "keep",
+ "reason": "3 of 3 prefer the stop frame; the storm frame is unchanged by design and all three said neither",
+ "next_asks": [
+  "banner: replace the Skipped list with 'Shelter 830 m, 14 min' (3 of 3)",
+  "margin panel should reflect the storm; 19 min vs 14 min disagree",
+  "science card crowds the right half"
+ ]
+}
