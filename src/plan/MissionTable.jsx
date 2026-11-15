@@ -184,7 +184,7 @@ function Stops({ waypoints, legs, explain = [], dropped = [], planStops = [], pl
         // why the stop is worth the walk, when stops.json says (D10: the sortie's light-toned patch), tagged SIM
         const reason = k > 0 && !state ? stopReason(planned, language) : null;
         return (
-          <li key={k} className={[science ? 'science' : '', state ? 'dropped' : ''].join(' ').trim() || undefined}>
+          <li key={k} className={[science ? 'science' : '', state === 'skipped' ? 'dropped' : state === 'reached' ? 'reached' : ''].join(' ').trim() || undefined}>
             <code>{code}</code>
             {science ? (
               <button type="button" className="table-stop-name" title={t('table.open.science.card')} onClick={() => toggleWaypoint(waypoint.name)}>{label}</button>

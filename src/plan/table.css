@@ -1151,6 +1151,9 @@ button.table-stop-name {
 }
 .table-stops li.dropped .table-stop-name { color: var(--dim); }
 .table-stops li.dropped .table-stop-dist { color: var(--caution); }
+/* a stop reached during the EVA (A1): dimmed like a stop left out, without the caution colour */
+.table-stops li.reached .table-stop-name,
+.table-stops li.reached .table-stop-dist { color: var(--dim); }
 /* The plan's reasons under the route numbers, at the size of the profile note below them */
 .table-note.route-why { font-size: 12px; line-height: 1.4; }
 

@@ -1044,7 +1044,7 @@
   "needs.risk.cautious.title": "La pendiente y las rocas cuestan más, se prefiere el terreno que recorrió Perseverance, se reserva el {reserve} % del tiempo y el margen de oxígeno se queda por encima del nivel de precaución.",
   "needs.risk.standard.title": "El planificador de siempre: se reserva el {reserve} % del tiempo y nunca se planifica dentro de la reserva de oxígeno de 30 min.",
   "needs.risk.bold.title": "La pendiente y las rocas cuestan menos y se reserva el {reserve} % del tiempo. El límite de 20° y la reserva de oxígeno de 30 min no cambian nunca.",
-  "needs.locked": "Se fijaron antes de empezar la EVA. No cambian hasta la próxima.",
+  "needs.locked": "Fijadas desde que empezó la EVA, hasta la próxima.",
   "outlook.title": "Previsión de condiciones",
   "outlook.window": "Durante la salida prevista, de {from} a {to} LMST",
   "outlook.window.waiting": "La previsión cubre la salida prevista en cuanto se planifica la ruta.",

@@ -1044,7 +1044,7 @@
   "needs.risk.cautious.title": "Slope and rock cost more, ground Perseverance drove is preferred, {reserve} % of the time is held back and the oxygen margin stays above the caution level.",
   "needs.risk.standard.title": "The planner as before: {reserve} % of the time is held back and the 30 min oxygen reserve is never planned into.",
   "needs.risk.bold.title": "Slope and rock cost less and {reserve} % of the time is held back. The 20° limit and the 30 min oxygen reserve never move.",
-  "needs.locked": "Set before the EVA began. They stay as they are until the next EVA.",
+  "needs.locked": "Locked since the EVA began, until the next EVA.",
   "outlook.title": "Conditions outlook",
   "outlook.window": "Over the planned walk, {from} to {to} LMST",
   "outlook.window.waiting": "The outlook covers the planned walk once the route is planned.",
