@@ -1,0 +1,48 @@
+{
+ "round": "r08",
+ "before": "scripts/quality/out/c07",
+ "after": "scripts/quality/out/c08",
+ "states": [
+  "wrist"
+ ],
+ "judges": {
+  "j1": {
+   "wrist": {
+    "new": "A"
+   }
+  },
+  "j2": {
+   "wrist": {
+    "new": "A"
+   }
+  },
+  "j3": {
+   "wrist": {
+    "new": "B"
+   }
+  }
+ },
+ "change": "c08 waypoint panel, world labels and right column hidden while the wrist is up",
+ "issue": 286,
+ "judges_used": 2,
+ "personas": {
+  "j1": "opus c",
+  "j2": "fable a"
+ },
+ "verdicts": {
+  "j1": {
+   "wrist": "old",
+   "why": "during a return order the habitat bearing, ETA and minimap disappear; the wrist text is unreadable anyway"
+  },
+  "j2": {
+   "wrist": "old",
+   "why": "the warning says go back without telling where; collapse the panel to its header row instead"
+  }
+ },
+ "decision": "revert",
+ "reason": "both prefer the old version and both name lost required information (habitat range, bearing, ETA)",
+ "next_asks": [
+  "collapse the waypoint panel to its header row while the wrist is up",
+  "scale the wrist screen 1.5x (engine)"
+ ]
+}
