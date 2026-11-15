@@ -498,7 +498,7 @@ button.table-stop-name {
 .map-traverse-shadow { stroke: #0a0d11; stroke-width: 3.4px; opacity: 0.5; }
 
 /* The pin of the stop images: a dot where the rover stood and a tag to its left, clear of the stop markers, whose
-   tags open to the right. Above the route and markers, under the stop details (.map-pop, z-index 2). */
+   tags open to the right. Above the route and markers, under the stop details (.map-pop, z-index 3). */
 .map-pins { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .map-pin { position: absolute; width: 0; height: 0; }
 .map-pin-dot {
@@ -1005,10 +1005,21 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
 /* Route step: the four numbers centred in their quarter of the panel */
 .table-fill > .table-grid2 { justify-items: center; text-align: center; }
 
-/* the window a stop opens on the map */
+/* Stacking on the mission table map, bottom to top (#380):
+   0  the image and the route lines
+   1  marks: the rover's image pins, the layer places, the route's stops and the crew position (mapLayers.css)
+   2  chrome: the caption, the legend, the rover key and the fit button
+   3  popups: the stop details and the rover images (placed by usePlacedPopup, never over the chrome)
+   1000  source tag details, in a portal on the page (SourceTag.css) */
+.table-map-caption, .table-map-legend, .table-map-traverse-key, .table-map-fit { z-index: 2; }
+
+/* the window a stop opens on the map; usePlacedPopup sets left and top */
 .map-pop {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
+  max-width: calc(100% - 16px);
+  max-height: calc(100% - 16px);
+  overflow: auto;
   width: 270px;
   padding: 12px 14px 14px;
   font-size: 13px;

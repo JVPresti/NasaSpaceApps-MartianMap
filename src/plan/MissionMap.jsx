@@ -13,6 +13,7 @@ import MapPosition from './MapPosition.jsx';
 import { useLayerPlaces } from './useLayerPlaces.js';
 import { useSkyView } from './routeExposure.js';
 import TraverseLayer from './TraverseLayer.jsx';
+import { usePlacedPopup } from './usePlacedPopup.js';
 import ReturnZoneLayer from '../zone/ReturnZoneLayer.jsx';
 import { useReturnZone, zoneFrameKey, zoneFramePoints } from '../zone/useReturnZone.js';
 import './mapLayers.css';
@@ -172,6 +173,8 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const [open, setOpen] = useState(null);   // index of the stop whose details are open
   const crop = view ?? fit;
   const boxRef = useRef(null);
+  // the stop details open beside the stop's marker, inside the map and clear of its caption, legend and key (#380)
+  const [popRef, popStyle] = usePlacedPopup(() => boxRef.current?.querySelector(`[data-stop="${open}"]`), [open, crop]);
   const dragRef = useRef(null);
 
   // Repaint at most once per frame while zooming or dragging.
@@ -274,6 +277,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
               <button
                 type="button"
                 className="map-marker-hit"
+                data-stop={k}
                 aria-expanded={open === k}
                 aria-label={t('map.marker.details', { name: route ? `${waypointNumber(k)} ${name}` : name })}
                 onPointerDown={(event) => event.stopPropagation()}
@@ -307,14 +311,12 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
       )}
       {open !== null && waypoints[open] && (() => {
         const w = waypoints[open];
-        const [u, v] = toMap(w.x, w.z, crop);
         const name = markerName(w, open);
         const fact = data ? pointFacts(data, w) : null;
         const leg = open > 0 ? legs[open - 1] : null;
         const walked = legs.slice(0, open).reduce((sum, l) => sum + (l?.distanceM ?? 0), 0);
-        const style = { left: u > 60 ? undefined : `calc(${u}% + 18px)`, right: u > 60 ? `calc(${100 - u}% + 18px)` : undefined, top: `clamp(8px, calc(${v}% - 40px), calc(100% - 260px))` };
         return (
-          <div className="map-pop" style={style} role="dialog" aria-label={t('map.marker.details', { name })} onPointerDown={(event) => event.stopPropagation()}>
+          <div className="map-pop" ref={popRef} style={popStyle} role="dialog" aria-label={t('map.marker.details', { name })} onPointerDown={(event) => event.stopPropagation()}>
             <div className="map-pop-head">
               <div><b>{name}</b></div>
               <button type="button" className="map-pop-close" aria-label={t('menu.close')} onClick={() => setOpen(null)}>×</button>
