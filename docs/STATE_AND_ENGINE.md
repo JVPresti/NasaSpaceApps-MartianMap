@@ -198,7 +198,7 @@ the mode buttons (#103). Touch and gamepad state is read through `subscribeTouch
 
 | Step | Real calls |
 |---|---|
-| App opens | `EngineView` starts the simulation, then `pauseMission()`. The start screen is a real pause: no mission seconds, no suit step and no player input advance behind it. |
+| App opens | The start screen is the first screen (#266): it shows at once with its video, Controls and Sources. `EngineView` loads the scene behind it; the main action stays disabled and shows the real progress until `ready`, then opens the mission table. `EngineView` starts the simulation, then `pauseMission()`. The start screen is a real pause: no mission seconds, no suit step and no player input advance behind it. |
 | Start / Resume in Walk | `engine.requestPointerLock()` first. Only after a real `true` grant: `engine.setInputEnabled(true)` and `resumeMission()`. A refusal keeps the pause and shows a retry message. |
 | Resume in Plan | `engine.setInputEnabled(true)` and `resumeMission()`; Plan uses orbit controls and needs no lock. |
 | Esc in the Walk pause menu | No lock request. Esc is a key press, not a user activation for pointer lock, so it cannot capture the mouse: the menu stays paused, cancels any request already in flight, focuses Resume and shows `Press Enter or click Resume to capture the mouse.` Esc inside Controls/Restart returns to the menu; the menu itself keeps the pause. |
@@ -211,6 +211,13 @@ the mode buttons (#103). Touch and gamepad state is read through `subscribeTouch
 before any input or clock write; when the interface paused, changed mode or restarted in the meantime, a
 late grant is released and the attempt is reported as `{ ok: false, stale: true, message: null }` instead
 of resuming behind the menu.
+
+`src/preload.js` runs once after the first render and fetches, behind the start screen, the files that would
+otherwise wait for a later screen (#266): the hazard illustrations, the visor art, every `@font-face` in
+`src/fonts.css` through `document.fonts.load`, and every image in `stops.json`. It never rejects; the screens
+that really need a file still report their own errors. When the scene itself fails, `LoadingScreen` is the
+failure panel alone: the real message with **Try again**, which remounts `EngineView` and returns to the
+start screen.
 
 Menus are native `<dialog>` modals (`src/components/Modal.jsx`): `showModal()` makes the scene and top bar
 inert, traps Tab and Shift+Tab, and returns focus when closed. The top bar's mode switch is repeated inside
