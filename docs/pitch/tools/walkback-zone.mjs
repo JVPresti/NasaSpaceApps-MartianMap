@@ -1,6 +1,6 @@
 // Exports the data for the deck's walkback zone and route animations. Not part of the app build.
 //
-//   node docs/pitch/tools/walkback-zone.mjs        writes docs/pitch/src/walkback-data.js
+//   node docs/pitch/tools/walkback-zone.mjs        writes docs/pitch/data/walkback-zone.json
 //
 // Everything is computed with the app's own code, imported from src/sim/:
 //   - buildCostGrid: the HiRISE 1 m DTM (public/marswalk/assets/terrain.json, about 2 m grid) and the 20 deg no-go cells;
@@ -183,5 +183,5 @@ const out = {
   last: Buffer.from(last).toString('base64'),
   blocked: Buffer.from(B).toString('base64'),
 };
-writeFileSync(join(ROOT, 'docs/pitch/src/walkback-data.js'), 'window.WALKBACK = ' + JSON.stringify(out) + ';\n');
+writeFileSync(join(ROOT, 'docs/pitch/data/walkback-zone.json'), JSON.stringify(out) + '\n');
 console.log('legs', JSON.stringify(legs));

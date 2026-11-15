@@ -43,7 +43,7 @@ area. Draw the zone with the app's own code so it is honest: `buildCostGrid` (20
 suit model (`constantEffortSpeed`, `metabolicPowerW`, `o2RateGs`, the 20 % walkback pad and the 30 min reserve).
 Two Dijkstra passes: from home over reversed edges (the walk back from every cell), and from the astronaut (the walk
 out). A cell is in the zone when walk out + walk back + reserve ≤ O2 left. A working reference is
-`docs/pitch/tools/walkback-zone.mjs`; it writes per-frame O2, walk-home grams, margin and zone area. The scenario
+`docs/pitch/tools/walkback-zone.mjs`; it writes `docs/pitch/data/walkback-zone.json` with the planned path, per-leg time and O2, and per frame the position, O2 left, walk-home grams, margin and zone area, plus a per-cell "last frame in the zone" mask (251 × 251, base64). The scenario
 start (205 g O2 left, late in a long EVA) and the 10 % corridor after the alert are ours: tag them SIM on screen in
 small type, for example "Scenario: late in an EVA, 205 g O2 left · SIM". A full suit (771 g) reaches the whole tile,
 so the clip needs the late-EVA scenario to show anything shrink.
