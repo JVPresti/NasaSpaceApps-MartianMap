@@ -252,6 +252,10 @@
   .quality-block { margin-top: 16px; padding-top: 14px; }
 }
 
+/* Settings view of the pause dialog: the language block follows the title, so it needs no divider of its own. */
+.settings-panel .dialog-head { margin-bottom: 18px; }
+.settings-panel .dialog-head + .language-block { margin-top: 0; padding-top: 0; border-top: 0; }
+
 /* ------------------------------------------------------------------ controls */
 
 /* Three columns of every key (#199), wide enough that each row stays on one line, so the controls fit 1366 x 768

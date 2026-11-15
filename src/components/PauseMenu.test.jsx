@@ -44,6 +44,19 @@ describe('PauseMenu primary action', () => {
     expect(match?.[1]).toBe('Back to pause menu');
   });
 
+  it('marks Back to pause menu in the settings view, which holds language, audio, quality and look', () => {
+    const html = renderToStaticMarkup(<PauseMenu {...PROPS} view="settings" />);
+    expect(primary(html)?.[1]).toBe('Back to pause menu');
+    for (const id of ['interface-language', 'look-sensitivity', 'quality-label']) expect(html).toContain(`id="${id}"`);
+  });
+
+  it('keeps the pause menu short: a Settings action instead of the settings themselves', () => {
+    const html = renderToStaticMarkup(<PauseMenu {...PROPS} />);
+    expect(html).toContain('>Settings</button>');
+    expect(html).not.toContain('id="interface-language"');
+    expect(html).not.toContain('id="look-sensitivity"');
+  });
+
   it('marks Cancel in the restart confirmation, never the destructive action', () => {
     const match = primary(renderToStaticMarkup(<PauseMenu {...PROPS} view="restart" />));
     expect(match?.[1]).toBe('Cancel');
