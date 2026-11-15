@@ -147,8 +147,8 @@ export const STORE_PATHS = Object.freeze({
   // values in between are DERIVED. The event banner prints `caption` next to this tag (#196).
   'environment.dustOpacity': {
     tag: 'DERIVED', label: 'Dust storm model', short: 'Dust storm model',
-    source: 'dust storm event: tau from the Jezero clear season 0.45 up to the 2018 global storm 8.0 in Gale crater, not Jezero; the ramp timing is SIM',
-    caption: 'global storm profile · up to Curiosity\'s Gale 2018 storm, not Jezero',
+    source: 'dust storm event: tau from the Jezero clear season 0.45 up to the 2018 global storm 8.0 in Gale crater, not Jezero; a worst case, and the ramp timing is SIM',
+    caption: 'global storm worst case · up to Curiosity\'s Gale 2018 storm, not Jezero',
     from: { hazards: ['dust.tau.gale_global_storm_2018', 'dust.tau.clear_season', 'dust.event.ramp_duration'] },
   },
   // The radiation event (src/sim/events/radiation.json) plays the September 2017 solar particle event from

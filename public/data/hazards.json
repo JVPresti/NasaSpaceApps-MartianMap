@@ -64,7 +64,7 @@
         "locator": "Section 3.2: 'Prior to the storm, visible optical depth was near 0.3'",
         "data_url": "https://atmos.nmsu.edu/data_and_services/atmospheres_data/PERSEVERANCE/meda.html",
         "license": "Cited fact. MEDA data in PDS are public with no restriction of use (NASA SPD-41A).",
-        "note": "Start value of the storm ramp."
+        "note": "Start value of the 2022 Jezero storm ramp used before #126. The current storm starts at dust.tau.clear_season 0.45 and ramps to dust.tau.gale_global_storm_2018."
       }
     },
     "dust.tau.storm_2022_peak": {
@@ -83,7 +83,7 @@
         "locator": "Abstract: 'Peak visible optical depth was ∼2'",
         "data_url": "https://atmos.nmsu.edu/data_and_services/atmospheres_data/PERSEVERANCE/meda.html",
         "license": "Cited fact. MEDA data in PDS are public with no restriction of use (NASA SPD-41A).",
-        "note": "Target value of the storm ramp. Sources differ: MEDA RDS peaked at 1.7 on sol 313 (dust.tau.storm_2022_meda_rds_peak), and Sanchez-Lavega et al. 2025 (doi 10.1029/2024JE008565, section 6.5) report about 1.4 on sols 316-317 from SkyCam and Mastcam-Z."
+        "note": "Peak of the 2022 Jezero storm used as the ramp target before #126; the current storm ramps to dust.tau.gale_global_storm_2018 (Gale 2018, not Jezero). Sources differ: MEDA RDS peaked at 1.7 on sol 313 (dust.tau.storm_2022_meda_rds_peak), and Sanchez-Lavega et al. 2025 (doi 10.1029/2024JE008565, section 6.5) report about 1.4 on sols 316-317 from SkyCam and Mastcam-Z."
       }
     },
     "dust.tau.storm_2022_meda_rds_peak": {
