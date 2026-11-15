@@ -18,7 +18,7 @@ HiRISE files are stretched 5.4 % east-west (equirectangular, lat_ts = 0); everyt
 | File | What it is |
 |---|---|
 | terrain.json | 751x751 heights (Uint16 base64, 2 m spacing) + 256x256 brightness map used for rock density. The routing team can read this directly. |
-| terrain_tiles.glb + terrain_tiles.json | The same 751x751 grid as a mesh: 25 tiles (nodes Terrain_<row>_<col>, row 0 = north, col 0 = west) with normals and UVs, Draco-compressed, 1.7 MB. Written by blender/export/export_all.py and checked against terrain.json by blender/export/check_terrain.py. Needs a DRACOLoader (see blender/export/README.md). The .json records the extent. |
+| terrain_tiles.glb + terrain_tiles.json | The same 751x751 grid as a mesh: 25 tiles (nodes Terrain_<row>_<col>, row 0 = north, col 0 = west) with normals and UVs, Draco-compressed, 1.7 MB. Written by blender/export/export_all.py and checked against terrain.json by blender/export/check_terrain.py. Needs a DRACOLoader (see blender/export/README.md). The .json records the extent. The app does not load them, and `vite.config.js` leaves both out of `dist/`, so they are not deployed. |
 | ring.json | 241x241 heights (50 m spacing) for the 12 km background terrain (CTX). |
 | ortho_hi.jpg / ortho_lo.jpg | HiRISE orthomosaic, grayscale (3000 px / 1500 px). The Mars colour ramp is applied in the shader. |
 | normal_ao.jpg | R,B = world-space normal x,z from the 1 m DEM; G = baked ambient occlusion. |

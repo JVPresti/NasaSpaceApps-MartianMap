@@ -7,8 +7,19 @@ const cheyava = (inReach, distanceM = 1.1) => ({ kind: 'rock', site: 'Cheyava Fa
 const keys = (p) => p.items.map((i) => i.key);
 
 describe('samplingPrompt', () => {
-  it('shows nothing before the engine reports', () => {
-    expect(samplingPrompt(null)).toEqual({ reticle: null, items: [], note: null });
+  it('shows only the aiming crosshair before the engine reports', () => {
+    expect(samplingPrompt(null)).toEqual({ reticle: 'aim', items: [], note: null });
+  });
+
+  it('keeps a crosshair on screen with nothing in view and during a clip (#199)', () => {
+    expect(samplingPrompt(status()).reticle).toBe('aim');
+    expect(samplingPrompt(status({ phase: 'collecting', target: cheyava(true) })).reticle).toBe('aim');
+  });
+
+  it('lights the crosshair when the target is in reach (#199)', () => {
+    const ground = { kind: 'ground', site: null, distanceM: 1.2, inReach: true };
+    expect(samplingPrompt(status({ target: ground, actions: { ...NONE, click: 'collect', photo: 'photo' } })).reticle).toBe('reach');
+    expect(samplingPrompt(status({ target: cheyava(false, 1.6), actions: { ...NONE, photo: 'photo' } })).reticle).toBe('look');
   });
 
   it('offers to chip Cheyava Falls within reach', () => {
@@ -28,7 +39,7 @@ describe('samplingPrompt', () => {
     const soil = samplingPrompt(status({ target: { kind: 'ground', site: null, distanceM: 1.2, inReach: true }, actions: { ...NONE, click: 'collect', photo: 'photo' } }));
     expect(soil.items[0]).toEqual({ key: 'Click', text: 'Scoop soil' });
     const far = samplingPrompt(status({ target: { kind: 'ground', site: null, distanceM: 6, inReach: false }, actions: { ...NONE, photo: 'photo' } }));
-    expect(far).toEqual({ reticle: null, items: [], note: null });
+    expect(far).toEqual({ reticle: 'aim', items: [], note: null });
   });
 
   it('offers stow and the case while holding a sample', () => {

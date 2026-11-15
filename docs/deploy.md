@@ -12,6 +12,8 @@ Workers Builds, Cloudflare's CI, watches this repository through the Cloudflare 
 - A pull request runs `npm run build`, then `npx wrangler preview`. Cloudflare posts a comment on the pull request with the preview URL and updates it on every push to the branch. Open that link to review a change without checking out the branch.
 - A failed build shows up as a failed check on the pull request or the commit. The build log is linked from that check.
 
+`vite.config.js` deletes the files listed in `NOT_DEPLOYED` from `dist/` after the build. Today that is `terrain_tiles.glb` and `terrain_tiles.json` (1.7 MB), which the Blender scripts use and the app does not.
+
 Unknown paths return `index.html` with status 200 (`not_found_handling: "single-page-application"`), so client-side routes work on reload.
 
 ## Limits that matter here

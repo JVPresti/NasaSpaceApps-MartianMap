@@ -2,9 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createAssets } from './assets.js';
 import { createProgressTracker } from './progress.js';
 import { AssetLoadError } from './errors.js';
+import { resetDataFiles } from '../data/dataFiles.js';
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  resetDataFiles();
 });
 
 function setup(expected) {

@@ -8,6 +8,7 @@ import { createInitialState, pauseMission, resetStore, resumeMission, setMode, u
 import { departRoute, startSimulation } from './simulation.js';
 import { startAtAirlock } from '../plan/routeStart.js';
 import { nextTarget } from '../sim/waypointRunner.js';
+import { resetDataFiles } from '../data/dataFiles.js';
 
 const ENGINE = { heightAt: () => 0 };
 const jsonResponse = (data) => ({ ok: true, json: async () => data });
@@ -49,6 +50,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  resetDataFiles();
   vi.useRealTimers();
   globalStorage.restore();
 });

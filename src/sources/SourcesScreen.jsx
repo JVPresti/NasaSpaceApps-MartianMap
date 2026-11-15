@@ -1,23 +1,14 @@
 import { t, translateText } from '../i18n/index.js';
 import { useEffect, useRef, useState } from 'react';
 import { groupEntries, linkHost } from './credits.js';
+import { loadDataFile } from '../data/dataFiles.js';
+import { CREDITS_PATH } from '../data/provenance.js';
 import { SOURCES_KEY, closeSources, openSources, useSourcesStore } from './sourcesStore.js';
 import './sources.css';
 
-const CREDITS_URL = import.meta.env.BASE_URL + 'data/credits.json';
-
-// The file is fetched on first open, not bundled: nothing at load time needs it.
-let creditsRequest = null;
-function loadCredits() {
-  creditsRequest ??= fetch(CREDITS_URL).then((response) => {
-    if (!response.ok) throw new Error(`credits.json ${response.status}`);
-    return response.json();
-  });
-  creditsRequest.catch(() => {
-    creditsRequest = null; // let the next open try again
-  });
-  return creditsRequest;
-}
+// Not bundled. The provenance registry has usually loaded it already, and the shared loader
+// returns that copy; a failed load is tried again on the next open.
+const loadCredits = () => loadDataFile(CREDITS_PATH);
 
 const STATEMENT = [
   { key: 'real', get label() { return t('ui.real'); } },
