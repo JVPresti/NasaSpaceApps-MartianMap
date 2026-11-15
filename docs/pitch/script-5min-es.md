@@ -10,7 +10,7 @@ Ritmo: 140 palabras por minuto. Los números salen de la app y de sus fuentes (v
 
 | Tiempo | Beat | Quién | Texto |
 |---|---|---|---|
-| 0:00 | 1 · Jezero | P1 | Cráter Jezero, Marte. Una astronauta está en Cheyava Falls, la roca donde Perseverance encontró una posible biofirma, a 913 metros del hábitat por la ruta. Es el final de su EVA: le quedan 160 gramos de oxígeno. Volver cuesta 54. Treinta minutos de reserva no se tocan. Y llega una alerta de radiación. |
+| 0:00 | 1 · Jezero | P1 | Cráter Jezero, Marte. Una astronauta está en Cheyava Falls, la roca donde Perseverance encontró una posible biofirma, a 913 metros del hábitat por la ruta. Es el final de su EVA: le quedan 160 gramos de oxígeno. Volver cuesta 53. Treinta minutos de reserva no se tocan. Y llega una alerta de radiación. |
 | 0:24 | 1 · Tesis | P1 | En Marte, la pregunta no es a dónde puedes ir. Es a dónde puedes ir y todavía volver. Somos Los Frijolitos Espaciales Refritos Nueva Generación, de Ensenada. Esto es Marswalk. |
 | 0:38 | 2 · Los límites | P1 | Tres límites de los trajes lunares de la NASA: ocho horas de caminata, treinta minutos de reserva, nada de más de veinte grados de pendiente. Y sin GPS: el camino a casa hay que leerlo en el terreno. |
 | 0:55 | 3 · La zona de regreso | P1 | Lo azul es todo lo que ella alcanza y todavía regresa con su reserva, calculado con el planificador y el modelo de traje de la app. Cada subida lo encoge. Con la alerta, se cierra al camino de vuelta. En la app, eso es un número en el visor: el margen. |
@@ -48,8 +48,8 @@ Solo si el equipo la elige en el ensayo. Va antes del beat 1 y usa los 20 segund
 
 | Número | Fuente |
 |---|---|
-| 913 m por la ruta, 54 g de O2 para volver, 18 min | Ruta del planeador de la app (`planRoute`, esclusa del hábitat, WP1, WP2, WP3, Cheyava Falls) y modelo del traje (`walkCost`, con el 20 % extra de Apolo 15 para el regreso). `tools/walkback-zone.mjs`, `data/walkback-zone.json`. La línea recta es 785 m (pestaña Sitio) |
-| 160 g al llegar a Cheyava Falls, 14 min de margen | Escenario nuestro (SIM): final de una EVA larga, 21 % del tanque de 771 g. Margen = (160 − 54 − 72.5 g de reserva) ÷ 2.42 g/min (145 g/h, caminar en plano) = 13.9 min |
+| 913 m por la ruta de ida; volver: 824 m, 53 g de O2, 18 min | Ida: ruta del planeador de la app (`planRoute`, esclusa del hábitat, WP1, WP2, WP3, Cheyava Falls). Vuelta: la ruta que replanea la alerta, de Cheyava Falls directo al hábitat, con el modelo del traje (`walkCost`, con el 20 % extra de Apolo 15). `data/walkback-zone.json`, campo `coldOpen`: 53.4 g, 18.4 min, margen 14.1 min. La línea recta es 785 m (pestaña Sitio) |
+| 160 g al llegar a Cheyava Falls, 14 min de margen | Escenario nuestro (SIM): final de una EVA larga, 21 % del tanque de 771 g. Margen = (160 − 53 − 72.5 g de reserva) ÷ 2.42 g/min (145 g/h, caminar en plano) = 13.9 min |
 | Reserva de 30 min = 72.5 g | `suit.reserve.time` (Apollo 17) al ritmo de caminar en plano, 145 g/h |
 | 8 h | `suit.eva_duration_max`, NASA EVA-EXP-0042 Rev B (xEVA Concept of Operations) |
 | 20° | `slope.no_go`, NASA EVA-EXP-0042 Rev B (requisito del traje xEVA) |

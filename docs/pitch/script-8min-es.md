@@ -8,7 +8,7 @@ La demo es `docs/DEMO.md` completo, segmentos 1 a 11, con los tiempos medidos po
 
 | Tiempo | Parte | Quién | Texto |
 |---|---|---|---|
-| 0:00 | Apertura | P1 | Cráter Jezero, Marte. Una astronauta está en Cheyava Falls, la roca donde Perseverance encontró una posible biofirma, a 913 metros del hábitat por la ruta. Final de su EVA: le quedan 160 gramos de oxígeno. Volver cuesta 54. Treinta minutos de reserva no se tocan. Y llega una alerta de radiación. |
+| 0:00 | Apertura | P1 | Cráter Jezero, Marte. Una astronauta está en Cheyava Falls, la roca donde Perseverance encontró una posible biofirma, a 913 metros del hábitat por la ruta. Final de su EVA: le quedan 160 gramos de oxígeno. Volver cuesta 53. Treinta minutos de reserva no se tocan. Y llega una alerta de radiación. |
 | 0:22 | Tesis | P1 | En Marte, la pregunta no es a dónde puedes ir. Es a dónde puedes ir y todavía volver. Somos Los Frijolitos Espaciales Refritos Nueva Generación, de Ensenada. Esto es Marswalk. |
 | 0:36 | Demo 1 · Inicio | P2 | Dos misiones: la primera salida, de 55 metros, y la EVA completa a Cheyava Falls. Abrimos la mesa de misión. |
 | 0:48 | Demo 2 · Sitio y capas | P2 | Estamos en Neretva Vallis, un antiguo río de Jezero. El mapa es la imagen de HiRISE a 25 centímetros. Cada capa dice qué decide. Terreno: la pendiente, y por dónde dobla la ruta; nunca cruza lo rojo, más de 20 grados. Rocas: lo que cuesta caminar. Afloramiento: dónde se para la tripulación. Radio: dónde se pierde contacto con el hábitat. Exposición: cuánto cielo te cae encima si llega radiación. Y la línea blanca: por donde manejó Perseverance. |

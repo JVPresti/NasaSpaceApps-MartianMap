@@ -14,14 +14,14 @@ Rules from the submission guide that apply here:
 | Time | Official beat | Narration (EN) | Subtitle if narrated in Spanish | On-screen text |
 |---|---|---|---|---|
 | 0:00-0:02 | Intro | (suit breathing, no words) | | Los Frijolitos Espaciales Refritos Nueva Generación · Ensenada, Mexico · NASA Space Apps 2026, Martian Map |
-| 0:02-0:05 | The challenge | "An astronaut, 913 metres from the habitat. Walking back costs 54 grams of oxygen." | (same) | 913 m to the habitat · 54 g of O2 to walk back |
+| 0:02-0:05 | The challenge | "An astronaut, 913 metres from the habitat. Walking back costs 53 grams of oxygen." | (same) | 913 m to the habitat · 53 g of O2 to walk back |
 | 0:05-0:10 | Name and tagline | "Marswalk puts one number on her visor: minutes to spare after the walk home." | (same) | Marswalk · MARGIN NOW: minutes to spare after the walk home |
-| 0:10-0:20 | How it works with NASA data | "HiRISE terrain sets the route around slopes over twenty degrees. When dust reaches the opacity Curiosity measured in 2018, Marswalk re-plans her route home." | (same) | HiRISE DTM · Mastcam-Z · MEDA · Curiosity RAD |
+| 0:10-0:20 | How it works with NASA data | "HiRISE terrain sets the route around slopes over twenty degrees. When dust reaches the opacity Curiosity measured in 2018, Marswalk re-plans her route home." | (same) | HiRISE terrain model · Mastcam-Z · storm opacity from Curiosity, Gale 2018 |
 | 0:20-0:30 | The future | "Next, a heart rate sensor sets her oxygen use. Our grid reproduces NASA's HiRISE model to fourteen centimetres." | (same) | Next: heart rate, other HiRISE sites · same HiRISE model as NASA Mars Trek, 0.14 m · martian-map.fernando-haro-c.workers.dev |
 
 Narration: 58 words in about 27 s of speaking slots, about 130 words per minute. Read it once against a stopwatch before recording.
 
-Spanish narration, if chosen (same timing, English subtitles above): "Una astronauta, a 913 metros del hábitat. Volver caminando cuesta 54 gramos de oxígeno." / "Marswalk pone un número en su visor: los minutos que le sobran después de volver." / "El terreno de HiRISE traza la ruta alrededor de pendientes de más de veinte grados. Si una tormenta de polvo le quita el horizonte, la ruta de regreso se recalcula." / "Lo siguiente: un sensor de ritmo cardiaco marca su consumo de oxígeno. Procesamos el mismo modelo HiRISE que NASA Mars Trek, con catorce centímetros de diferencia."
+Spanish narration, if chosen (same timing, English subtitles above): "Una astronauta, a 913 metros del hábitat. Volver caminando cuesta 53 gramos de oxígeno." / "Marswalk pone un número en su visor: los minutos que le sobran después de volver." / "El terreno de HiRISE traza la ruta alrededor de pendientes de más de veinte grados. Si una tormenta de polvo le quita el horizonte, la ruta de regreso se recalcula." / "Lo siguiente: un sensor de ritmo cardiaco marca su consumo de oxígeno. Procesamos el mismo modelo HiRISE que NASA Mars Trek, con catorce centímetros de diferencia."
 
 ## Shot list (30 fps, 1920 × 1080)
 

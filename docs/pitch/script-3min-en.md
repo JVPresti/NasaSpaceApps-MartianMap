@@ -10,7 +10,7 @@ Pace: written for 125 words per minute, the speed of Spanish speakers presenting
 
 | Time | Beat | Who | Text |
 |---|---|---|---|
-| 0:00 | 1 · Jezero | P1 | Jezero crater, Mars. An astronaut stands at Cheyava Falls, where Perseverance found a possible sign of life, 913 metres from the habitat. It is the end of her walk outside, her EVA. She has 160 grams of oxygen. Walking back costs 54. Her reserve, thirty minutes of breathing, is another 72. Then a radiation alert. |
+| 0:00 | 1 · Jezero | P1 | Jezero crater, Mars. An astronaut stands at Cheyava Falls, where Perseverance found a possible sign of life, 913 metres from the habitat. It is the end of her walk outside, her EVA. She has 160 grams of oxygen. Walking back costs 53. Her reserve, thirty minutes of breathing, is another 72. Then a radiation alert. |
 | 0:27 | 1 · Thesis | P1 | On Mars, the question isn't where you can go. It's where you can go and still get home. We are Los Frijolitos Espaciales Refritos Nueva Generación, from Ensenada. Marswalk counts those minutes on real NASA terrain. |
 | 0:45 | 3 · The walkback zone | P1 | This drawing, made with the app's own planner, shows everywhere she can reach and still get back. In the app, it is one number on the visor: the margin. |
 | 1:00 | 4 · Demo | P2 | (Demo, cut B, 1:15. Lines below.) |

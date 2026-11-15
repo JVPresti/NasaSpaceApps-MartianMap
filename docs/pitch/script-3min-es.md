@@ -8,7 +8,7 @@ Mismos beats (`beats.md`, tabla de 3 minutos) y la demo corta (`demo-run-sheet.m
 
 | Tiempo | Beat | Quién | Texto |
 |---|---|---|---|
-| 0:00 | 1 · Jezero | P1 | Cráter Jezero, Marte. Una astronauta está en Cheyava Falls, donde Perseverance encontró una posible señal de vida, a 913 metros del hábitat. Es el final de su caminata afuera, su EVA. Le quedan 160 gramos de oxígeno. Volver cuesta 54. Su reserva, treinta minutos de aire, son otros 72. Y llega una alerta de radiación. |
+| 0:00 | 1 · Jezero | P1 | Cráter Jezero, Marte. Una astronauta está en Cheyava Falls, donde Perseverance encontró una posible señal de vida, a 913 metros del hábitat. Es el final de su caminata afuera, su EVA. Le quedan 160 gramos de oxígeno. Volver cuesta 53. Su reserva, treinta minutos de aire, son otros 72. Y llega una alerta de radiación. |
 | 0:27 | 1 · Tesis | P1 | En Marte, la pregunta no es a dónde puedes ir. Es a dónde puedes ir y todavía volver. Somos Los Frijolitos Espaciales Refritos Nueva Generación, de Ensenada. Marswalk cuenta esos minutos sobre terreno real de la NASA. |
 | 0:45 | 3 · La zona de regreso | P1 | Este dibujo, hecho con el planificador de la app, muestra todo lo que alcanza y todavía regresa. En la app es un número en el visor: el margen. |
 | 1:00 | 4 · Demo | P2 | (Demo, corte B, 1:15. Líneas abajo.) |

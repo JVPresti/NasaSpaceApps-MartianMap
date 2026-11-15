@@ -8,7 +8,7 @@ The English version of `script-5min-es.md`, line for line, for rehearsal with no
 
 | Time | Beat | Who | Text |
 |---|---|---|---|
-| 0:00 | 1 · Jezero | P1 | Jezero crater, Mars. An astronaut stands at Cheyava Falls, the rock where Perseverance found a potential biosignature, 913 metres from the habitat by the route. It is the end of her EVA: she has 160 grams of oxygen left. Getting back costs 54. Thirty minutes of reserve stay untouched. And a radiation alert comes in. |
+| 0:00 | 1 · Jezero | P1 | Jezero crater, Mars. An astronaut stands at Cheyava Falls, the rock where Perseverance found a potential biosignature, 913 metres from the habitat by the route. It is the end of her EVA: she has 160 grams of oxygen left. Getting back costs 53. Thirty minutes of reserve stay untouched. And a radiation alert comes in. |
 | 0:24 | 1 · Thesis | P1 | On Mars, the question isn't where you can go. It's where you can go and still get home. We are Los Frijolitos Espaciales Refritos Nueva Generación, from Ensenada. This is Marswalk. |
 | 0:38 | 2 · The limits | P1 | Three limits from NASA's lunar suits: eight hours of walking, thirty minutes of reserve, nothing steeper than twenty degrees. And no GPS: the way home has to be read from the ground. |
 | 0:55 | 3 · The walkback zone | P1 | The blue area is everywhere she can reach and still get back with her reserve, computed with the app's planner and suit model. Every climb shrinks it. With the alert, it closes to the way home. In the app, that is one number on the visor: the margin. |

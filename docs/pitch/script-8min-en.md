@@ -10,7 +10,7 @@ The demo is all of `docs/DEMO.md`, segments 1 to 11, with the times keiwv measur
 
 | Time | Beat | Who | Text |
 |---|---|---|---|
-| 0:00 | Opening | P1 | Jezero crater, Mars. An astronaut stands at Cheyava Falls, the rock where Perseverance found a potential biosignature, 913 metres from the habitat by the route. End of her EVA: she has 160 grams of oxygen left. Getting back costs 54. Thirty minutes of reserve stay untouched. And a radiation alert comes in. |
+| 0:00 | Opening | P1 | Jezero crater, Mars. An astronaut stands at Cheyava Falls, the rock where Perseverance found a potential biosignature, 913 metres from the habitat by the route. End of her EVA: she has 160 grams of oxygen left. Getting back costs 53. Thirty minutes of reserve stay untouched. And a radiation alert comes in. |
 | 0:22 | Thesis | P1 | On Mars, the question isn't where you can go. It's where you can go and still get home. We are Los Frijolitos Espaciales Refritos Nueva Generación, from Ensenada. This is Marswalk. |
 | 0:36 | Demo 1 · Start | P2 | Two missions, the 55 metre First sortie and the full EVA to Cheyava Falls. We open the mission table. |
 | 0:48 | Demo 2 · Site and layers | P2 | We're at Neretva Vallis, an ancient Jezero river. The map is the HiRISE image at 25 centimetres. Each layer says what it decides. Terrain: the slope, and where the route turns. It never crosses red, over 20 degrees. Rocks: what walking costs. Outcrop: where the crew stands. Radio: where contact with the habitat drops. Exposure: how much sky falls on you if radiation arrives. And the white line: where Perseverance drove. |

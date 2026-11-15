@@ -13,7 +13,7 @@
   .s-problem .facts { display: grid; grid-template-columns: 1fr; gap: 26px; width: 820px; margin-top: 40px; }
   .s-problem .fact b { font-family: var(--font-display); font-size: 64px; font-weight: 600; display: block; line-height: 1; }
   .s-problem .fact span { font-size: 30px; color: var(--dim); }
-  .s-problem .map { position: absolute; right: 120px; top: 96px; width: 780px; height: 780px; }
+  .s-problem .map { position: absolute; right: 120px; top: 96px; width: 740px; height: 740px; }
   /* slide 3 */
   .bar { display: flex; height: 120px; margin-top: 64px; border: 1px solid var(--line-strong); border-radius: 3px; overflow: hidden; }
   .bar > div { display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 600; font-size: 34px; color: #0a0d11; text-align: center; line-height: 1.05; padding: 0 12px; }
@@ -80,12 +80,12 @@
   <p class="kicker">Cheyava Falls, Jezero crater</p>
   <h2 style="margin-top:24px;width:860px;font-size:68px">913 m from home, at the end of her walk outside (EVA), a radiation alert. Can she get back?</h2>
   <div class="facts">
-    <div class="fact"><b>160 g of O<sub>2</sub> left</b><span>Walking home costs 54 g and 18 min on this route (the app's suit model)</span></div>
+    <div class="fact"><b>160 g of O<sub>2</sub> left</b><span>Walking home costs 53 g and 18 min on this route (the app's suit model)</span></div>
     <div class="fact"><b>30 min reserve</b><span>Never touched: 72 g at walking pace (Apollo 17 rule)</span></div>
     <div class="fact"><b>8 h, 20°, no GPS</b><span>Longest EVA and steepest slope (NASA xEVA); position from the terrain</span></div>
   </div>
   <div class="frame map"><img src="../img/app-map-cheyava-terrain.jpg" alt="Planned route on HiRISE with slope bands"></div>
-  <p class="credit" style="left:auto;right:120px;bottom:150px;width:780px">The app's route to Cheyava Falls on HiRISE slope: amber 15-20°, red over 20° (the planner blocks those cells; at Bright Angel, a stop on 28.7° rock, it stops at the walkable edge). 785 m in a straight line</p>
+  <p class="credit" style="left:auto;right:120px;top:856px;bottom:auto;width:740px">The app's route to Cheyava Falls on HiRISE slope: amber 15-20°, red over 20° (the planner blocks those cells; at Bright Angel, a stop on 28.7° rock, it stops at the walkable edge). 785 m in a straight line</p>
   <p class="credit">160 g is our scenario (SIM): the end of a long EVA, 21 % of the 771 g tank</p>
 </section>
 
@@ -97,7 +97,7 @@
     <div style="flex:1">
       <p class="dim" style="font-size:26px">Her 160 g of O<sub>2</sub> at Cheyava Falls</p>
       <div class="bar" style="margin-top:12px">
-        <div class="home" style="width:34%">Walk home 54 g</div>
+        <div class="home" style="width:34%">Walk home 53 g</div>
         <div class="reserve" style="width:45%">Reserve 72 g</div>
         <div class="margin" style="width:21%">34 g = 14 min</div>
       </div>
@@ -106,7 +106,7 @@
         <div>30 min that nobody touches (Apollo 17 rule)</div>
         <div>At walking pace, 2.4 g/min</div>
       </div>
-      <p style="margin-top:44px">The visor shows this one number, in minutes: oxygen or the 8 h suit clock, whichever runs out first, recomputed every metre. Her numbers come from the app's planner and suit model for this scenario (<span class="mono" style="font-size:26px">docs/pitch/data/walkback-zone.json</span>).</p>
+      <p style="margin-top:44px">The visor shows this one number, in minutes: oxygen or the 8 h suit clock, whichever runs out first, recomputed every metre. Her numbers come from the app's planner and suit model for this scenario (<span class="mono" style="font-size:26px">docs/pitch/data/walkback-zone.json</span>, field coldOpen).</p>
     </div>
     <div style="width:520px;flex:none">
       <div class="frame" style="height:390px"><img src="../img/app-hud-margin.jpg" alt="HUD suit panel with the margin, +399 min"></div>
