@@ -16,6 +16,16 @@ function fakeRenderer(gpu) {
 const tierOf = (gpu) => detectTier(fakeRenderer(gpu)).tier;
 
 describe('detectTier', () => {
+  it('starts a touch-only device on Low whatever its GPU name says (#365)', () => {
+    const gpu = 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Direct3D11 vs_5_0 ps_5_0, D3D11)';
+    expect(detectTier(fakeRenderer(gpu)).tier).toBe('high');
+    expect(detectTier(fakeRenderer(gpu), { touchOnly: true }).tier).toBe('low');
+    expect(detectTier(fakeRenderer(''), { touchOnly: true }).tier).toBe('low');   // a browser that hides the name
+    expect(detectTier(fakeRenderer('Apple GPU')).tier).toBe('low');
+    expect(detectTier(fakeRenderer('Adreno (TM) 740')).tier).toBe('low');
+    expect(detectTier(fakeRenderer('Mali-G78 MP14')).tier).toBe('low');
+  });
+
   it('returns the tier and the GPU name it read', () => {
     const gpu = 'ANGLE (Intel, Intel(R) UHD Graphics 620 Direct3D11 vs_5_0 ps_5_0, D3D11)';
     expect(detectTier(fakeRenderer(gpu))).toEqual({ tier: 'low', gpu });

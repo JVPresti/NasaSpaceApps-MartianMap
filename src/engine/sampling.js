@@ -11,12 +11,13 @@ import * as THREE from 'three';
 import { CELL } from './rocks.js';
 import { JOG_SPEED } from './view.js';
 import { wristIsOpen } from './wrist.js';
+import { codeOf } from '../input/actions.js';
 import {
   BRIGHT_ANGEL, CASE_REACH_M, CASE_STAND_M, CHEYAVA_FALLS, GROUND_STAND_M, MIN_ROCK_D_M, PHOTO_RANGE_M, ROCK_STAND_M,
   angleDelta, caseState, classifyTarget, horizontalDistance, inputActions, marchGround, pickRock, pourStand, rayCylinder, raySphere, standPoint,
 } from './samplingRules.js';
 
-const KEYS = { KeyP: 'photo', KeyE: 'stow', KeyF: 'case' };
+const KEYS = { [codeOf('photo')]: 'photo', [codeOf('stow')]: 'stow', [codeOf('case')]: 'case' };
 const PARTNER_R = 0.35, PARTNER_H = 1.9, CASE_R = 0.24;   // m: the partner as an upright cylinder, the case body as a sphere
 const STEP_IN_SPEED = JOG_SPEED;   // m/s: how fast the player steps to the stand point at the start of a clip
 const CLIP_OF = { rock: 'collect_rock', ground: 'collect_ground' };

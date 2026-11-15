@@ -1,6 +1,7 @@
 // Slope grid switch (#50): the G key toggles view.slopeGrid in the mission store, and the bridge (engineBridge.js) passes
 // it to engine.setSlopeGrid. A HUD button can call toggleSlopeGrid() too. The engine shows the grid in Walk mode only.
 import { useMissionStore } from './store.js';
+import { codeOf } from '../input/actions.js';
 import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 
 /** Flips view.slopeGrid. @param {typeof useMissionStore} [store] */
@@ -20,7 +21,7 @@ const typing = (e) => {
  */
 export function connectSlopeGridKey(store = useMissionStore, target = window) {
   const onKey = (e) => {
-    if (e.code !== 'KeyG' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing(e) || wristOwnsKeys()) return;
+    if (e.code !== codeOf('slope-grid') || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing(e) || wristOwnsKeys()) return;
     if ((store.getState().stage ?? 'eva') !== 'eva') return;   // the grid is for the ground outside, not the habitat floor
     toggleSlopeGrid(store);
   };

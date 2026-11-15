@@ -12,6 +12,7 @@ import SharedSourceTag from '../components/SourceTag.jsx';
 import { FIND_HOLD_MS, FIND_RANGE_M, FIND_STEADY_M, MAX_FINDS } from '../sim/findDetour.js';
 import { createFindService, markFind, pruneFinds } from '../state/finds.js';
 import { useMissionStore } from '../state/store.js';
+import { codeOf } from '../input/actions.js';
 import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import { formatMinutes } from '../hud/format.js';
 import { useInCabin } from '../hud/useInCabin.js';
@@ -23,9 +24,9 @@ import './finds.css';
 
 /** Hold to point. Q sits next to WASD and is free: the engine uses WASD, arrows, Shift, P, E and F, the interface M, L, 0, H,
  * T, C and G (slope grid). */
-export const FIND_KEY = 'KeyQ';
-const ACCEPT_KEY = 'KeyY';
-const DISMISS_KEY = 'KeyN';
+export const FIND_KEY = codeOf('find');
+const ACCEPT_KEY = codeOf('find-accept');
+const DISMISS_KEY = codeOf('find-dismiss');
 const RING_R = 26, RING_C = 2 * Math.PI * RING_R;
 
 const hudSrc = (tag) => 'hud-src hud-src-' + tag;

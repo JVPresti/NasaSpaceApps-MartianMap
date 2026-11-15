@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
+import { codeOf } from '../input/actions.js';
 import { crewCss } from './crewColor.js';
 import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import { batteryLevel, formatValue } from './format.js';
@@ -18,7 +19,7 @@ import { useRef } from 'react';
 import { usePoseFrame } from './livePose.js';
 
 /** Key that opens and closes the partner detail. T for "team": the engine uses WASD, arrows, Shift, P, E and F. */
-const PARTNER_KEY = 'KeyT';
+const PARTNER_KEY = codeOf('partner');
 
 const hudSrc = (tag) => 'hud-src hud-src-' + tag;
 const SourceTag = ({ path }) => <SharedSourceTag path={path} variant="tag" interactive={false} requireSource className={hudSrc} />;

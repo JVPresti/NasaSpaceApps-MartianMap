@@ -1,0 +1,68 @@
+/* Touch action bar (#365, TouchActions.jsx). Bottom right, clear of the stick in the bottom-left corner and of the
+   home indicator and the notch (safe-area insets). Every button is at least 48 x 48 CSS px. It only renders on a
+   coarse pointer or after a touch on the scene, so desktop never sees it. */
+.touch-actions {
+  position: absolute;
+  z-index: 6;
+  right: calc(12px + env(safe-area-inset-right, 0px));
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: calc(100vw - 24px - 2 * 56px - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+  pointer-events: none;
+}
+
+.touch-actions-main,
+.touch-actions-more {
+  display: flex;
+  flex-wrap: wrap-reverse;
+  justify-content: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.touch-action {
+  pointer-events: auto;
+  min-width: 56px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 240, 225, 0.45);
+  border-radius: 24px;
+  background: rgba(20, 14, 12, 0.62);
+  backdrop-filter: blur(4px);
+  color: #f6efe7;
+  font: 600 14px/1 var(--font-ui, system-ui, sans-serif);
+  letter-spacing: 0.02em;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.touch-action:active {
+  background: rgba(255, 120, 60, 0.55);
+}
+
+.touch-action-sample,
+.touch-action-open-plan {
+  background: rgba(255, 106, 42, 0.85);
+  border-color: rgba(255, 220, 200, 0.8);
+  color: #120c08;
+}
+
+.touch-action-more[aria-expanded="true"] {
+  border-color: rgba(255, 240, 225, 0.9);
+}
+
+/* The pause and map buttons sit top right, where the thumb does not rest and the HUD keeps its corner free. */
+.touch-action-pause,
+.touch-action-mode {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  min-width: 64px;
+}
+.touch-action-pause { right: calc(10px + env(safe-area-inset-right, 0px)); }
+.touch-action-mode { right: calc(84px + env(safe-area-inset-right, 0px)); }

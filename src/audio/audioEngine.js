@@ -31,9 +31,11 @@ export function createAudioEngine({ AudioContextClass = globalThis.AudioContext 
   return {
     /** True once the context exists and plays. */
     get running() { return !!ctx && ctx.state === 'running'; },
-    /** Call from a user gesture (click or key). Does nothing the second time or without Web Audio. */
+    /** Call from a user gesture (click, tap or key). A second call resumes a context the browser made suspended: on a
+     *  phone a finger going down is not a user activation, only lifting it is (#365). Does nothing without Web Audio. */
     start() {
-      if (ctx || !AudioContextClass) return;
+      if (!AudioContextClass) return;
+      if (ctx) { applyState(); return; }
       ctx = new AudioContextClass();
       master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
       const noise = makeNoise(ctx);

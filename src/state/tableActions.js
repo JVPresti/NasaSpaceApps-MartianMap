@@ -16,10 +16,11 @@ import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import { requestEvaEnd } from './eva.js';
 import { STAGE } from './flow.js';
 import { useMissionStore } from './store.js';
+import { codeOf } from '../input/actions.js';
 
 export const OPEN_PLAN_KEY = 'E';
 export const END_EVA_KEY = 'X';
-const CODES = { KeyE: 'open-plan', KeyX: 'end-eva' };
+const CODES = { [codeOf('open-plan')]: 'open-plan', [codeOf('end-eva')]: 'end-eva' };
 /** The gamepad actions (gamepadInput.js) that belong to the table; they never reach the app's own gamepad handler. */
 export const TABLE_PAD_ACTIONS = Object.freeze(['open-plan', 'end-eva']);
 
