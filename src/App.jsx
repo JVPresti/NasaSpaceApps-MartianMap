@@ -21,6 +21,7 @@ import { createRouteProgress } from './hud/minimapRoute.js';
 import { openSources } from './sources/sourcesStore.js';
 import { pauseMission, resumeMission, setMode, useMissionStore } from './state/store.js';
 import { EVA_PHASE, PAUSE_VIEW, pauseEva, requestEvaLock, restartEva, resumeEva } from './state/evaSession.js';
+import { continueEva } from './state/eva.js';
 import './App.css';
 import './components/menu.css';
 
@@ -343,13 +344,20 @@ export default function App() {
     if (instance) setQuality(instance.getQuality());
   }, [minimapRoute, setBusyState, setEvaBegun, setOverlay, setPhase]);
 
-  /** Pause menu: end the EVA and go back to the mission table. A restart (new clock, full suit) that skips the
-   *  start screen; the table needs no pointer lock, so it opens at once. */
+  /** Pause menu (End EVA, Restart EVA) and debrief (Restart): a new EVA at the mission table (#244). A restart (new
+   *  clock, full suit) that skips the start screen, whose video is only for opening the app; the table needs no
+   *  pointer lock, so it opens at once. */
   const handleEndConfirm = useCallback(() => {
     handleRestartConfirm();
     setMode('plan');
     handleResume();
   }, [handleRestartConfirm, handleResume]);
+
+  /** Debrief: back to the EVA (#244). The summary goes, the statistics keep counting, and the walk resumes. */
+  const handleContinue = useCallback(() => {
+    if (busyRef.current || !continueEva(useMissionStore)) return;
+    handleResume();
+  }, [handleResume]);
 
   // Controls opened from the mission table close back to the table; opened from the pause menu, back to the menu.
   // The ref serves the handlers; the state labels the dialog's close button.
@@ -528,7 +536,7 @@ export default function App() {
           onResume={handleResume}
           onResumeWithoutCapture={handleResumeWithoutCapture}
           onRestartRequest={() => showOverlay(PAUSE_VIEW.RESTART)}
-          onRestartConfirm={handleRestartConfirm}
+          onRestartConfirm={handleEndConfirm}
           controlsToMenu={controlsFromMenu || mode !== 'plan'}
           onControls={() => openControls(true)}
           onControlsClose={closeControls}
@@ -546,7 +554,8 @@ export default function App() {
           summary={evaSummary}
           busy={busy}
           notice={notice}
-          onRestart={handleRestartConfirm}
+          onContinue={handleContinue}
+          onRestart={handleEndConfirm}
           onSources={openSources}
         />
       )}

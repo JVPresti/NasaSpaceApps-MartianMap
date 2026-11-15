@@ -9,17 +9,22 @@
  *   2. History. It records event start/end entries (written by the event runner through the event engine's log
  *      callback) and real route changes. A route change counts only when the path content is different: legs,
  *      totals, `nextIndex`, `visited` and a new array with the same points never add an entry.
- *   3. The end of the EVA. The astronaut must first be outside the habitat arrival area and then re-enter it, in
- *      Walk mode with the mission running. The mission clock is paused at that instant and the summary is stored,
- *      deeply frozen, so the debrief cannot change while the rest of the app keeps running.
+ *   3. The end of the EVA (#244). Being back at the habitat never ends it by itself: while the astronaut is at the
+ *      habitat during the EVA, `eva.atHabitat` is true and the interface offers to end it (a prompt over the planning
+ *      table, src/state/evaEnd.js). requestEvaEnd() then ends it on the next tick: the mission clock is paused at
+ *      that instant and the summary is stored, deeply frozen, so the debrief cannot change while the rest of the app
+ *      keeps running. continueEva() goes back to the EVA from the debrief; the statistics keep counting.
  *
  * Phases:
- *   'ready'  no statistics yet: the start screen, Plan mode, a paused mission, or the astronaut still inside the HAB
- *   'active' the astronaut has left the HAB arrival area and is outside
- *   'ended'  the astronaut re-entered the arrival area; `summary` is final
+ *   'ready'  no statistics yet: the start screen, Plan mode or a paused mission, before the first Walk tick
+ *   'active' from the first Walk tick with the mission running, wherever the astronaut stands; being at the habitat
+ *            (atHabitat) does not end it
+ *   'ended'  the astronaut ended the EVA at the habitat; `summary` is final until continueEva()
  *
- * The habitat entry is the real one in `public/data/shelters.json` (the foot of the airlock steps at 535.1, 574.1),
- * never the `HAB` route waypoint at 520, 600. The same 5 m arrival radius as a normal waypoint applies.
+ * "At the habitat" is the 5 m arrival circle around the real HAB entry in `public/data/shelters.json` (the foot of the
+ * airlock steps at 535.1, 574.1, never the `HAB` route waypoint at 520, 600), or any of the habitat's walk zones (the
+ * steps, porch, airlock and cabin, from the engine). The cabin is about 10 m from the foot of the steps, so the circle
+ * alone counted the cabin as outside.
  *
  * Plain JavaScript: no React, no three.js and no store import. The runner takes any store with
  * getState / setState / subscribe, as `src/state/store.js` provides.
@@ -43,6 +48,8 @@ export function createInitialEvaState() {
     events: [],                  // [{ type: 'start' | 'end', eventId, label, atSec }]
     routeChanges: [],            // [{ atSec, kind, reason, before, after }], see routeSnapshot below
     summary: null,               // final frozen snapshot; null until phase 'ended'
+    atHabitat: false,            // during the EVA: the astronaut is back at the habitat, where the EVA can be ended (#244)
+    endRequested: false,         // the astronaut asked to end the EVA; the runner ends it on its next tick
   };
 }
 
@@ -206,11 +213,34 @@ function buildSummary(state, eva, endedAtSec) {
 }
 
 /**
+ * Ask to end the EVA (#244). Only while it is active and the astronaut is at the habitat; the runner ends it on its
+ * next tick. @returns {boolean} true when the request was written
+ */
+export function requestEvaEnd(store) {
+  const eva = evaOf(store.getState());
+  if (eva.phase !== 'active' || !eva.atHabitat || eva.endRequested) return false;
+  store.setState((state) => ({ eva: { ...evaOf(state), endRequested: true } }));
+  return true;
+}
+
+/**
+ * Back to the EVA from the debrief (#244): drops the summary and keeps the statistics, so they go on counting. The
+ * mission clock stays paused until the interface resumes it (evaSession.js resumeEva). @returns {boolean}
+ */
+export function continueEva(store) {
+  const eva = evaOf(store.getState());
+  if (eva.phase !== 'ended') return false;
+  store.setState((state) => ({ eva: { ...evaOf(state), phase: 'active', endedAtSec: null, summary: null, endRequested: false } }));
+  return true;
+}
+
+/**
  * Start the EVA statistics runner.
  *
  * @param {{
  *   store: { getState: Function, setState: Function, subscribe: Function },
  *   habitat: { x: number, z: number },
+ *   habitatZoneAt?: (x: number, z: number) => string | null,   the habitat walk zone at a point (engine.habitatZoneAt)
  *   setInterval?: Function,
  *   clearInterval?: Function,
  *   tickMs?: number,
@@ -220,6 +250,7 @@ function buildSummary(state, eva, endedAtSec) {
 export function startEvaRunner({
   store,
   habitat,
+  habitatZoneAt = () => null,
   setInterval: si = setInterval,
   clearInterval: ci = clearInterval,
   tickMs = EVA_TICK_MS,
@@ -311,10 +342,11 @@ export function startEvaRunner({
   }
 
   function tick() {
-    if (stopped || ending) return;
+    if (stopped) return;
     const state = store.getState();
     const eva = evaOf(state);
     if (eva.phase === 'ended') return;
+    ending = false;   // continueEva() brought the EVA back
 
     const nav = state.navigation;
     const truth = truePosition(nav);
@@ -330,16 +362,13 @@ export function startEvaRunner({
       return;
     }
 
-    const inside = distanceToHab(truth, habitat) <= HAB_ARRIVAL_RADIUS_M;
+    const inside = distanceToHab(truth, habitat) <= HAB_ARRIVAL_RADIUS_M || habitatZoneAt(truth.x, truth.z) !== null;
 
     if (eva.phase === 'ready') {
-      // Starting inside the HAB (a future start screen) is not an EVA: wait until the astronaut has left.
-      if (inside) {
-        lastPosition = null;
-        return;
-      }
+      // The EVA starts on the first Walk tick with the mission running, wherever the astronaut stands (#244): they
+      // began it at the mission table, and being at the habitat no longer ends it by itself.
       lastPosition = { x: truth.x, z: truth.z };
-      const patch = { phase: 'active', startedAtSec: missionTimeSec(state) };
+      const patch = { phase: 'active', startedAtSec: missionTimeSec(state), atHabitat: inside };
       const minOxygen = lowest(null, state.suit?.marginSec);
       const minBattery = lowest(null, state.suit?.batteryPct);
       if (minOxygen !== null) patch.minOxygenMarginSec = minOxygen;
@@ -358,13 +387,15 @@ export function startEvaRunner({
     const minOxygen = lowest(eva.minOxygenMarginSec, state.suit?.marginSec);
     const minBattery = lowest(eva.minBatteryPct, state.suit?.batteryPct);
 
-    if (inside) {
-      // Count the last step into the airlock and the current margins before freezing the summary.
-      endEva({ distanceM, minOxygenMarginSec: minOxygen, minBatteryPct: minBattery });
+    if (inside && eva.endRequested) {
+      // Count the last steps and the current margins before freezing the summary.
+      endEva({ distanceM, minOxygenMarginSec: minOxygen, minBatteryPct: minBattery, atHabitat: false, endRequested: false });
       return;
     }
 
     const patch = {};
+    if (inside !== eva.atHabitat) patch.atHabitat = inside;
+    if (!inside && eva.endRequested) patch.endRequested = false;   // only at the habitat
     if (distanceM !== eva.distanceM) patch.distanceM = distanceM;
     if (minOxygen !== eva.minOxygenMarginSec) patch.minOxygenMarginSec = minOxygen;
     if (minBattery !== eva.minBatteryPct) patch.minBatteryPct = minBattery;

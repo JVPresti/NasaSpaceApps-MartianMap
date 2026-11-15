@@ -12,8 +12,8 @@
     { "atSec": 720, "set": { "environment.doseRateUgyH": 10.0 } }
   ],
   "alert": {
-    "level": "danger",
-    "text": "Radiation alert: solar particle event. Enter the habitat now."
+    "level": "warning",
+    "text": "Radiation alert: elevated dose rate. Early warning of a solar particle event; shelter early (ALARA)."
   },
   "planner": { "action": "replan", "target": "habitat" },
   "end": { "type": "area", "x": 535.1, "z": 574.1, "radius": 25 },

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createEventEngine } from '../sim/eventEngine.js';
 import exampleEvent from '../sim/events/example-event.json';
-import { recordEvaEvent, samePath, startEvaRunner } from './eva.js';
+import { continueEva, recordEvaEvent, requestEvaEnd, samePath, startEvaRunner } from './eva.js';
 import { resetStore, storeAdapter, useMissionStore } from './store.js';
 
 const HAB = { id: 'HAB', x: 535.1, z: 574.1 };
@@ -96,6 +96,11 @@ describe('EVA statistics runner', () => {
     place(INSIDE.x, INSIDE.z);
     mission(100);
     runner.tick();
+    // Back at the habitat the EVA goes on until the astronaut ends it (#244).
+    expect(eva().phase).toBe('active');
+    expect(eva().atHabitat).toBe(true);
+    expect(requestEvaEnd(useMissionStore)).toBe(true);
+    runner.tick();
 
     const ended = eva();
     expect(ended.phase).toBe('ended');
@@ -129,15 +134,16 @@ describe('EVA statistics runner', () => {
     expect(eva().events).toHaveLength(1);
   });
 
-  it('does not end at the spawn or while inside in Plan or paused; it needs a real leave and re-entry', () => {
+  it('starts at the spawn without ending, and ends only at the habitat when asked, not in Plan or paused', () => {
     const runner = runnerAt();
 
-    // Starting inside the HAB is not an EVA and must not end it.
+    // The first Walk tick starts the EVA even at the airlock (#244), and being there does not end it.
     place(INSIDE.x, INSIDE.z);
     mission(0);
     runner.tick();
-    expect(eva().phase).toBe('ready');
-    expect(eva().summary).toBeNull();
+    expect(eva()).toMatchObject({ phase: 'active', atHabitat: true, summary: null });
+    runner.tick();
+    expect(eva().phase).toBe('active');
 
     place(600, 600);
     runner.tick();
@@ -158,8 +164,55 @@ describe('EVA statistics runner', () => {
 
     mission(31, false);
     runner.tick();
+    expect(eva().phase).toBe('active');
+    requestEvaEnd(useMissionStore);
+    runner.tick();
     expect(eva().phase).toBe('ended');
     expect(eva().summary.endedAtSec).toBe(31);
+  });
+
+  it('counts the whole habitat as home: three steps out and back into the cabin offer the end, never force it (#244)', () => {
+    const CABIN = { x: 541, z: 582 };   // about 10 m from the foot of the steps, outside the 5 m circle
+    const zoneAt = (x, z) => (Math.hypot(x - CABIN.x, z - CABIN.z) < 3 ? 'main' : null);
+    const runner = runnerAt({ habitatZoneAt: zoneAt });
+    mission(0);
+    place(INSIDE.x, INSIDE.z); runner.tick();
+    place(INSIDE.x + 2, INSIDE.z); runner.tick();     // a few steps from the airlock, still at the habitat
+    place(CABIN.x, CABIN.z); runner.tick();
+    expect(eva()).toMatchObject({ phase: 'active', atHabitat: true });   // the cabin counts as the habitat
+    expect(requestEvaEnd(useMissionStore)).toBe(true);
+    useMissionStore.setState((s) => ({ eva: { ...s.eva, endRequested: false } }));
+
+    place(OUTSIDE.x, OUTSIDE.z); runner.tick();
+    expect(eva()).toMatchObject({ phase: 'active', atHabitat: false });
+    place(CABIN.x, CABIN.z); runner.tick();
+    expect(eva()).toMatchObject({ phase: 'active', atHabitat: true });
+    place(OUTSIDE.x, OUTSIDE.z); runner.tick();
+    expect(eva()).toMatchObject({ phase: 'active', atHabitat: false });   // walking out again does not end it either
+    expect(requestEvaEnd(useMissionStore)).toBe(false);                     // only at the habitat
+  });
+
+  it('continues the EVA from the debrief with the statistics still counting (#244)', () => {
+    const runner = runnerAt();
+    mission(0);
+    place(OUTSIDE.x, OUTSIDE.z); runner.tick();
+    place(490, 600); runner.tick();
+    place(INSIDE.x, INSIDE.z); runner.tick();
+    requestEvaEnd(useMissionStore); runner.tick();
+    expect(eva().phase).toBe('ended');
+    const walked = eva().distanceM;
+
+    expect(continueEva(useMissionStore)).toBe(true);
+    expect(eva()).toMatchObject({ phase: 'active', summary: null, endedAtSec: null });
+    mission(50, false);
+    runner.tick();                                     // new baseline after the pause
+    place(INSIDE.x + 20, INSIDE.z); runner.tick();
+    expect(eva().distanceM).toBeCloseTo(walked + 20, 9);
+    place(INSIDE.x, INSIDE.z); runner.tick();
+    requestEvaEnd(useMissionStore); runner.tick();
+    expect(eva().phase).toBe('ended');                 // and it can end again
+    expect(continueEva(useMissionStore)).toBe(true);
+    expect(continueEva(useMissionStore)).toBe(false);  // only from the debrief
   });
 
   it('records only real route content changes with before/after snapshots and a kind', () => {

@@ -4,12 +4,13 @@ import * as THREE from 'three';
 import * as SH from './shaders.js';
 import { CREW } from './crew.js';
 import { cloneSkinned } from './skinned.js';
+import { swingPhase } from './gait.js';
 import { SCREEN_CENTRE_Y_M, TAP_SECONDS, clampWristPointer, fingerHover, layerRowPointer, wristPixelToLocal } from './wrist.js';
 
 export const LAYER_NAMES = ['VISIBLE', 'SLOPE HAZARD', 'ELEVATION', 'ROCK ABUNDANCE', 'OUTCROP'];
 
 export function createArms(ctx) {
-  const { scene, camera, U, assets, sys, view } = ctx;
+  const { scene, camera, U, assets, sys, view, gait } = ctx;
   const arms = {
     L: null, R: null, state: 'down', canvas: null, tex: null, uPlayer: { value: new THREE.Vector3(...CREW[0].color) },
     // wrist screen (#67): the built-in canvas is the fallback; the interface may hand in its own canvas and owns
@@ -149,7 +150,7 @@ export function createArms(ctx) {
       if (this.tap > 0) this.tap = Math.max(0, this.tap - dt);
       if (!this.L) return; const k = Math.min(1, dt * 5);
       if (this.state === 'screen') { const t = this.tapTarget(); this.R.pos.copy(t.pos); this.R.quat.copy(t.quat); this.R.pose = t.pose; }
-      this.walk += ((view.moveSpeed > 0.1 ? 1 : 0) - this.walk) * k; this.swing += dt * 5.2;
+      this.walk += ((view.moveSpeed > 0.1 ? 1 : 0) - this.walk) * k; this.swing = swingPhase(gait);   // one arm swing per stride, from the shared gait phase (#228)
       for (const side of ['L', 'R']) if (this.P[this.state][side][4] === 'body') { const t = this.target(side); this[side].pos.copy(t.pos); this[side].quat.copy(t.quat); }
       for (const side of ['L', 'R']) {
         const a = this[side]; if (side === 'R' && this.clip) { a.mixer.update(dt); if (this.camClip) { this.camMixer.update(dt); this.cam.drop = this.camNode.position.y; this.cam.fwd = this.camNode.position.z; this.cam.pitch = this.camQ0.angleTo(this.camNode.quaternion); } continue; }
