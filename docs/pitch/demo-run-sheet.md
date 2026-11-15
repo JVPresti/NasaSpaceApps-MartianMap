@@ -2,7 +2,7 @@
 
 > **Format.** The organisers' official guidelines: at most 4 minutes, 5 to 6 slides. The talk is `script-en.md`, in English (`script-es.md` if they ask for Spanish), six beats, one per slide, and ends at 3:00. Then the judges ask questions (`qa.md`). There is no live demo. The `demo` beat plays an 85 s video of the real app, with no sound.
 
-**It opens paused.** The presentation waits on slide 1 behind a **Play** button. Press it, or Space, when the speaker is ready, and the six slides then play by themselves to 3:55. **P** pauses and resumes at any point, video included. **Right** and **Left** move one slide at once, and the digits **1** to **6** jump to that slide. The slide number is in the bottom right corner, so a speaker can say "slide 4" and the operator presses 4.
+**It opens paused.** The presentation waits on slide 1 behind a **Play** button. Press it, or Space, when the speaker is ready, and the seven slides then play by themselves to 3:26. **P** pauses and resumes at any point, video included. **Right** and **Left** move one slide at once, and the digits **1** to **7** jump to that slide. The slide number is in the bottom right corner, so a speaker can say "slide 4" and the operator presses 4.
 
 Two versions of the talk are in `script-en.md`. **A**: P1 tells the story and says the last lines, P2 gives the video cues and the data part of the close. **B**: one presenter says everything. A third person, or P2 in version A, stands by the laptop only to take over if needed.
 
@@ -13,7 +13,7 @@ Two versions of the talk are in `script-en.md`. **A**: P1 tells the story and sa
 | **Play** button, **Space**, **P** | Play, and pressed again, pause. A pause freezes the slide and the video |
 | **Right**, **PageDown**, **Enter** | Next slide at once. The play state carries over |
 | **Left**, **PageUp** | Previous slide, from its start |
-| **1** to **6** | Jump to that slide |
+| **1** to **7** | Jump to that slide |
 | **L** | Switch the captions between English and Spanish |
 | **Esc** | Leave the presentation for the app. Do not press it during the talk |
 
@@ -27,7 +27,7 @@ Two versions of the talk are in `script-en.md`. **A**: P1 tells the story and sa
 | 4 | Tab 2: `docs/pitch/out/deck-global.pdf`, full screen, on slide 1. Tab 3: the backup video file the presentation thread records (the same cut as an mp4), paused at 0:00. | One click plays it |
 | 5 | **F11** for full screen. The presentation's video is muted (`Present.jsx`), so no sound is needed for it. | |
 | 6 | Close every other app, notification and chat. | |
-| 7 | Let the whole presentation autoplay once against a stopwatch. | After Play it runs open, stakes, zone, radiation, demo, close and stops at 3:55 without another key, with the QR code on the close. If there is no Play button and no slide number, this change is not deployed: it still plays, but the first Right press only takes over. If it shows `plan`, `sources` and `credits`, the story cut is not deployed: tell Fernando and run from the PDF |
+| 7 | Let the whole presentation autoplay once against a stopwatch. | After Play it runs open, plan, zone, radiation, demo, sources, close and holds on the team and the QR code at 3:26 without another key. If there is no Play button and no slide number, this change is not deployed: run from the PDF |
 
 **No network.** The site makes no live calls to NASA. As a backup the night before: check out `main`, `npm ci`, `npm run build`, `npm run preview`, and keep `http://localhost:4173/?present=1`.
 
@@ -38,22 +38,23 @@ Speakers in version A. In version B the one presenter says every line.
 | Time | Beat on screen | Speaker and first words | If it slips or fails |
 |---|---|---|---|
 | 0:00 | `open` | P1: "The first people on Mars…" | Black screen or captions only: switch to tab 2 and follow the PDF column below |
-| 0:16 | `stakes` | P1: "Two astronauts walk out…" | If the screen is still on `open`, press **Right** twice: once to take over, once to move |
-| 0:30 | `zone` | P1: "So the question is not…" | If the zone does not draw, say the line anyway |
-| 0:47 | (end of `zone`) | P1: "Watch a radiation alert." Start 1 s before the beat changes, so "alert" lands with the alert at 0:48 | |
-| 0:48 | `radiation` | P1: silence while the zone closes (0:50.5 to 0:57.5) | |
-| 0:56 | `radiation` | P1: "Only the way home is left." **Handover to P2** | |
-| 1:00 | `demo` | P2: one cue per chapter, at the times in `script-en.md` (placeholders until #373 posts the re-recorded video's chapters) | See "If the video fails" |
-| 2:25 | `close`, sources list | P2: "Marswalk combines NASA images, terrain, weather and radiation…", ending "Scan the code and try it." | |
-| 2:47 | `close`, the names | **Handover to P1.** P1: "On Mars, the question is where you can still get home…" | If the names are not up yet, wait for them |
-| 3:00 | end | P1: "Thank you." Then questions | Nobody presses anything |
+| 0:22 | `plan` | P1: "Marswalk plans the walk…" | If the screen is still on `open`, press **Right** once |
+| 0:44 | `zone` | P1: "So the question is not…" | If the zone does not draw, say the line anyway |
+| 1:07 | (end of `zone`) | P1: "Watch a radiation alert." Start 1 s before the beat changes, so "alert" lands with the alert at 1:08 | |
+| 1:09 | `radiation` | P1: silence while the zone closes (1:11 to 1:21) | |
+| 1:21 | `radiation` | P1: "Only the way home is left." **Handover to P2** | |
+| 1:24 | `demo` | P2: one cue per chapter, at the times in `script-en.md` | See "If the video fails" |
+| 2:38 | `sources` | P2: "Every number on screen says whether…" | |
+| 2:56 | `close`, references | P2: "Marswalk combines NASA images…" | |
+| 3:15 | `close`, the names | **Handover to P1.** P1: "The question is not where you can go…", ending "Thank you." | If the names are not up yet, wait for them |
+| 3:30 | end | Questions. The last slide holds | Nobody presses anything |
 
 ## If the video fails
 
 The `demo` beat shows no picture or freezes.
 
-1. Click tab 3 and play the backup mp4 full screen. P2 says the cues over it. When it ends, click tab 1 and press **Right** twice for `close`: the first press takes over, the second moves on. Autoplay is now off.
-2. No backup file: show PDF slide 4 (the walk in four screens) and say the six cues over it in about 30 s, then go to `close`. The talk ends about 55 s early, which leaves more time for questions.
+1. Click tab 3 and play the backup mp4 full screen. P2 says the cues over it. When it ends, click tab 1 and press **6** for `sources`. Playing stays playing.
+2. No backup file: show PDF slide 4 (the walk in four screens) and say the six cues over it in about 30 s, then press **6** for `sources`. The talk ends about 45 s early, which leaves more time for questions.
 
 ## If the whole presentation fails: the PDF
 
@@ -62,10 +63,11 @@ The `demo` beat shows no picture or freezes.
 | Beats | Slide |
 |---|---|
 | `open` | 2 (Cheyava Falls, Jezero) |
-| `stakes` | 2 (the limits: 8 h, 20°, no GPS) |
+| `plan` | 2 (the limits: 8 h, 20°, no GPS) |
 | `zone`, `radiation` | 3 (the margin). Do not read its 11 minutes aloud |
 | `demo` | 4 (the walk in four screens), with the six cues |
-| `close` | 5 (NASA sources, "listed by name"), then 7 (0.14 m), then 1 (team and thesis) at "We are" |
+| `sources` | 7 (0.14 m) |
+| `close` | 5 (NASA sources, "listed by name"), then 1 (team and thesis) at "We are" |
 
 ## Rehearsal checklist
 
