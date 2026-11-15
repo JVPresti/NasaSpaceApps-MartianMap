@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useMissionStore } from '../state/store.js';
 import { fixed as num, minutesFixed as min } from './routePlan.js';
 import SourceTag from './SourceTag.jsx';
+import { waypointNumber } from '../sim/waypointNumber.js';
 
 // Time, oxygen and battery per leg of the planned route (#41, first shipped as RouteLegsPanel in #107). Reads
 // route.legs and route.totals, which src/sim/legCosts.js keeps in step with route.path. Hosted by RoutePanel.
@@ -75,7 +76,7 @@ export default function RouteLegs() {
           {legs.map((l, k) => (
             <Row
               key={k}
-              label={<><span className="legs-num">{k + 1}</span>{short(l.to)}</>}
+              label={<><span className="legs-num">{waypointNumber(k + 1)}</span>{short(l.to)}</>}
               title={t('ui.p0.to.p1', { p0: l.from ?? 'start', p1: l.to ?? 'end' })}
               v={l}
             />
