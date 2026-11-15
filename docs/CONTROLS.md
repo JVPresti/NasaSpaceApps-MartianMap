@@ -22,6 +22,7 @@ gamepad keys and a keyboard player is not shown the on-screen stick.
 | Y / N | Add the marked find to the route or dismiss it |
 | T | Partner detail |
 | G | Slope grid |
+| V | Hide or show the visor frame and alert ring, for screenshots (#28) |
 | R | Wrist screen: open or close |
 | [ / ] | Wrist screen up: previous / next page |
 | J / K | Wrist screen up: next / previous row |

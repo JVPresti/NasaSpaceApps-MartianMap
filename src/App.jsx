@@ -7,6 +7,7 @@ import LoadingScreen from './components/LoadingScreen.jsx';
 import PauseMenu from './components/PauseMenu.jsx';
 import StartScreen from './components/StartScreen.jsx';
 import TouchStick from './components/TouchStick.jsx';
+import VisorFrame from './components/VisorFrame.jsx';
 import { cycleLayer } from './components/shortcuts.js';
 import { useShortcuts } from './components/useShortcuts.js';
 import DebriefScreen from './debrief/DebriefScreen.jsx';
@@ -473,6 +474,9 @@ export default function App() {
         onEngine={handleEngine}
         onGamepadAction={handleGamepadAction}
       />
+
+      {/* Helmet bezel and alert ring (#28): over the 3D view, under every interface layer, so HUD text stays on top. */}
+      {load.status === 'ready' && mode === 'walk' && <VisorFrame />}
 
       {load.status === 'ready' && (
         <PlanMode

@@ -41,7 +41,8 @@ export function createInitialState() {
     view: { layer: 0, sky: 'late_afternoon', skyBlend: 0, slopeGrid: false },   // what the engine draws; #59 demo starts in late-afternoon light
     // Player preferences, not mission state: the look settings (#102) are remembered per browser and survive
     // a reset; sensitivity multiplies the base look rate (0.5-2, step 0.1) and invertY flips only the pitch.
-    settings: { look: { ...LOOK_DEFAULTS } },
+    // visorFrame (#28): the helmet bezel and alert ring over the Walk view; V turns it off for screenshots.
+    settings: { look: { ...LOOK_DEFAULTS }, visorFrame: true },
     sources: {},                                    // { 'environment.tempC': { tag: 'DATA' | 'DERIVED' | 'SIM', source } }
   };
 }
@@ -50,7 +51,10 @@ export function createInitialState() {
 const savedLook = readLookSettings();
 
 /** React hook and store. Select slices: useMissionStore((s) => s.suit.oxygenPct). */
-export const useMissionStore = create(() => ({ ...createInitialState(), settings: { look: savedLook } }));
+export const useMissionStore = create(() => {
+  const initial = createInitialState();
+  return { ...initial, settings: { ...initial.settings, look: savedLook } };
+});
 
 const FORBIDDEN = new Set(['__proto__', 'constructor', 'prototype']);
 function splitPath(path) {
@@ -121,6 +125,18 @@ export const setLookSettings = (patch) => {
   const next = clampLookSettings({ ...current, ...(patch && typeof patch === 'object' ? patch : {}) });
   useMissionStore.setState((s) => ({ settings: { ...s.settings, look: next } }));
   writeLookSettings(next);
+  return next;
+};
+
+/**
+ * Show or hide the visor frame and its alert ring (#28), for example for screenshots. Session only; it survives a
+ * restart like the other settings.
+ * @param {boolean} [on] omit to toggle
+ * @returns {boolean} the new value
+ */
+export const setVisorFrame = (on) => {
+  const next = typeof on === 'boolean' ? on : !useMissionStore.getState().settings.visorFrame;
+  useMissionStore.setState((s) => ({ settings: { ...s.settings, visorFrame: next } }));
   return next;
 };
 
