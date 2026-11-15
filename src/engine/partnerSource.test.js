@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertPartnerState, CASE_CLIP, createScriptedPartner, createStaticPartner } from './partnerSource.js';
+import { assertPartnerState, CASE_CLIP, createScriptedPartner, createStaticPartner, HANDOVER_M, HANDOVER_REACH_M } from './partnerSource.js';
 import { CREW, PLAYER_COLORS } from './crew.js';
 
 const DT = 1 / 60;
@@ -67,6 +67,73 @@ describe('scripted partner: case hand-over', () => {
     expect(after.carrying).toBe(true);
     expect(after.action).toBeNull();
     expect(after.gait).toBe('walk');
+  });
+
+  // #172: the partner used to walk to a point fixed when the case was asked for, past a player who walked up to it.
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+  const stepToward = (player, to, speed, stopAt) => {   // moves the player toward `to` and stops `stopAt` metres from it
+    const d = dist(player, to); if (d <= stopAt) return;
+    const st = Math.min(speed * DT, d - stopAt); player.x += (to.x - player.x) / d * st; player.z += (to.z - player.z) / d * st;
+  };
+
+  it('stops as soon as a player who walks up during its walk is within reach (#172)', () => {
+    const p = createScriptedPartner(), player = { x: 20, z: 40 }, w = world(player);
+    const start = run(p, 1, w);
+    expect(p.command('toggleCase', w)).toBe(true);
+    const d0 = dist(start, player);
+    const fixedGoal = { x: player.x + (start.x - player.x) / d0 * HANDOVER_M, z: player.z + (start.z - player.z) / d0 * HANDOVER_M };
+    let stopped = null, bend = null, moves = 0, prev = start;
+    run(p, 30, w, (s) => {
+      const d = dist(s, player);
+      if (!stopped && s.gait === 'idle') stopped = { ...s, d };
+      if (stopped && dist(s, prev) > 1e-9) moves++;
+      if (s.action && !bend) bend = { ...s, d };
+      prev = s;
+      stepToward(player, s, 1.1, 1.2);   // the player walks to the partner at 1.1 m/s and stops 1.2 m from it
+    });
+    expect(stopped.d).toBeLessThanOrEqual(HANDOVER_M);   // stopped on reaching the player, not at the old point
+    expect(stopped.d).toBeGreaterThan(HANDOVER_M - 0.1);
+    expect(dist(stopped, fixedGoal)).toBeGreaterThan(3);
+    expect(moves).toBe(0);                               // never walked on, past or around the player
+    expect(bend).not.toBeNull();
+    expect(bend.d).toBeLessThanOrEqual(HANDOVER_REACH_M);
+    const down = p.update(DT, w);
+    expect(down.carrying).toBe(false);
+    // pick-up: grab, then walk back to the patrol, no longer following the player
+    expect(p.command('toggleCase', w)).toBe(true);
+    const back = run(p, 8, w);
+    expect(back.carrying).toBe(true);
+    expect(back.gait).toBe('walk');
+    expect(dist(back, player)).toBeGreaterThan(4);
+  });
+
+  it('follows a player who walks away and sets the case down HANDOVER_M from where they stop (#172)', () => {
+    const p = createScriptedPartner(), player = { x: 20, z: 40 }, w = world(player);
+    run(p, 1, w);
+    expect(p.command('toggleCase', w)).toBe(true);
+    const end = { x: 30, z: 45 };   // the player wanders off sideways for about 10 s, then waits there
+    let bend = null;
+    run(p, 60, w, (s) => {
+      if (s.action && !bend) bend = { ...s };
+      stepToward(player, end, 1.1, 0);
+    });
+    expect(bend).not.toBeNull();
+    expect(dist(bend, end)).toBeCloseTo(HANDOVER_M, 1);
+  });
+
+  it('does not back away when the player steps inside the hand-over distance (#172)', () => {
+    const p = createScriptedPartner(), player = { x: 20, z: 40 }, w = world(player);
+    run(p, 1, w);
+    expect(p.command('toggleCase', w)).toBe(true);
+    const mid = run(p, 4, w);
+    expect(mid.gait).toBe('walk');
+    // the player jogs right up to it: 1.0 m away
+    const d = dist(mid, player); player.x = mid.x + (player.x - mid.x) / d; player.z = mid.z + (player.z - mid.z) / d;
+    let bend = null;
+    run(p, 5, w, (s) => { if (s.action && !bend) bend = { ...s }; });
+    expect(bend).not.toBeNull();
+    expect(dist(bend, mid)).toBeLessThan(0.02);   // stopped where it was (one frame of walking at most)
+    expect(dist(bend, player)).toBeLessThan(1.05);
   });
 
   it('ignores a second command while busy', () => {

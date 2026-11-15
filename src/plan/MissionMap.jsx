@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { loadDataFile, TERRAIN_PATH } from '../data/dataFiles.js';
 import { decodeTerrain } from '../sim/costGrid.js';
+import { waypointNumber } from '../sim/waypointNumber.js';
 import { acrossLabel, clampCrop, mapCrop, paintMap, slopeGrid, toMap, zoomCrop } from './mapLayers.js';
 import { SLOPE_LIMITS } from './layers.js';
 
 // Flat map of the mission table (#11). The picture is painted once per layer from the HiRISE image, the outcrop mask
-// and the height grid the 3D terrain uses (the browser already has them cached); the route and stops are an SVG on top.
+// and the height grid the 3D terrain uses (terrain.json comes through the shared loader, #217, so it is the copy the
+// engine and the planner already have); the route and stops are an SVG on top.
 // Scroll zooms about the pointer, dragging moves the map, and Fit (or a double click) frames the whole route again.
 
 const BASE = import.meta.env.BASE_URL + 'marswalk/assets/';
@@ -32,10 +35,7 @@ function loadMapData() {
   dataRequest ??= Promise.all([
     loadPixels(BASE + 'ortho_lo.jpg'),
     loadPixels(BASE + 'outcrop_mask.jpg').catch(() => null),
-    fetch(BASE + 'terrain.json').then((response) => {
-      if (!response.ok) throw new Error(`terrain.json ${response.status}`);
-      return response.json();
-    }),
+    loadDataFile(TERRAIN_PATH),
   ]).then(([ortho, mask, json]) => {
     const terrain = decodeTerrain(json);
     return { ortho, mask, terrain, slopes: slopeGrid(terrain) };
@@ -152,7 +152,8 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
         {route && line && <polyline points={line} className="map-route-shadow" />}
         {route && line && <polyline points={line} className="map-route" />}
       </svg>
-      {/* Stops as numbered markers with a label, as on the 3D plan map: HTML, so the text stays sharp at any zoom. */}
+      {/* Stops as numbered markers with a label, as on the 3D plan map: HTML, so the text stays sharp at any zoom. The
+          numbers are the app's one numbering (#220, src/sim/waypointNumber.js): HAB is 0 and WP1 is 1. */}
       <ol className="map-markers">
         {waypoints.map((w, k) => {
           const [u, v] = toMap(w.x, w.z, crop);
@@ -170,7 +171,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={() => setOpen(open === k ? null : k)}
               >
-                {route ? <span className="map-marker-num">{k + 1}</span> : <span className={k === 0 ? 'map-marker-home' : 'map-marker-num'} />}
+                {route ? <span className="map-marker-num">{waypointNumber(k)}</span> : <span className={k === 0 ? 'map-marker-home' : 'map-marker-num'} />}
                 <span className="map-marker-tag"><b>{code}</b>{name && <small>{name}</small>}</span>
               </button>
             </li>
@@ -192,7 +193,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
               <button type="button" className="map-pop-close" aria-label="Close" onClick={() => setOpen(null)}>×</button>
             </div>
             <dl>
-              <div><dt>Stop</dt><dd>{open + 1} of {waypoints.length}</dd></div>
+              <div><dt>Stop</dt><dd>{waypointNumber(open)} of {waypointNumber(last)}</dd></div>
               {fact && <div><dt>Height</dt><dd>{Math.round(fact.height)} m <small>above the lowest point</small></dd></div>}
               {fact && <div><dt>Slope here</dt><dd className={fact.slope > SLOPE_LIMITS.noGo ? 'tone-warning' : fact.slope > SLOPE_LIMITS.caution ? 'tone-caution' : undefined}>{Math.round(fact.slope)}°</dd></div>}
               {leg && <div><dt>From the last stop</dt><dd>{Math.round(leg.distanceM)} m · {Math.round(leg.timeSec / 60)} min · +{Math.round(leg.climbM)} m</dd></div>}

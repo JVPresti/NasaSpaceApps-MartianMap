@@ -1,3 +1,4 @@
+import { t, translateText } from '../i18n/index.js';
 /**
  * Provenance registry (#62): where each value on screen comes from.
  *
@@ -13,6 +14,7 @@
  * Plain JavaScript, no React and no three.js. The component is src/components/SourceTag.jsx.
  */
 import { hudLabel, MEDA_SOL_PATH, parseMedaSol, parseRad, RAD_PATH } from './medaRad.js';
+import { loadDataFile } from './dataFiles.js';
 
 export const HAZARDS_PATH = 'data/hazards.json';
 export const CREDITS_PATH = 'data/credits.json';
@@ -34,11 +36,15 @@ const SUIT_MARGIN = [...SUIT_O2, 'suit.reserve.time', 'suit.reserve.walkback_pad
 const suitModel = (source, ids) => ({ tag: 'DERIVED', label: 'Suit model', source, from: { hazards: ids } });
 const sim = (source) => ({ tag: 'SIM', source });
 
+// Plan route costs (src/sim/legCosts.js) take the weakest tag of their hazards.json inputs (combinedTag). Time, O2,
+// battery and margin all rest on the SIM speed rule (mobility.speed_rule), so they are SIM here too: the Plan chips
+// "O2 out" and "Battery out" then show the same tag as their tooltip (#196). provenance.test.js checks the match.
+const routeModel = (source, ids) => ({ ...suitModel(source, ids), tag: 'SIM' });
 const LEG_TERRAIN = { tag: 'DERIVED', label: 'HiRISE DTM', source: 'planner path on the HiRISE height map, sampled every 10 m', from: HIRISE };
-const LEG_TIME = suitModel('suit model: walking speed at constant effort, no stops', SUIT_O2);
-const LEG_O2 = suitModel('suit model: walking O2 use, share of the xEMU primary tank', SUIT_O2);
-const LEG_BATTERY = suitModel('suit model: xEMU battery, the effort share of the draw is SIM', SUIT_BATTERY);
-const LEG_MARGIN = suitModel('suit model: O2 after the walk out and the padded walk home, minus the 30 min reserve', SUIT_MARGIN);
+const LEG_TIME = routeModel('suit model: walking speed at constant effort, no stops', SUIT_O2);
+const LEG_O2 = routeModel('suit model: walking O2 use, share of the xEMU primary tank', SUIT_O2);
+const LEG_BATTERY = routeModel('suit model: xEMU battery, the effort share of the draw is SIM', [...SUIT_BATTERY, 'mobility.speed_rule']);
+const LEG_MARGIN = routeModel('suit model: O2 after the walk out and the padded walk home, minus the 30 min reserve', SUIT_MARGIN);
 const LEG_FIELDS = {
   distanceM: LEG_TERRAIN, climbM: LEG_TERRAIN, descentM: LEG_TERRAIN, maxSlopeDeg: LEG_TERRAIN,
   timeSec: LEG_TIME, o2G: LEG_O2, o2Pct: LEG_O2, batteryWh: LEG_BATTERY, batteryPct: LEG_BATTERY,
@@ -121,6 +127,11 @@ export const STORE_PATHS = Object.freeze({
   ...prefixed('route.legs.', LEG_FIELDS),
   ...prefixed('route.totals.', TOTAL_FIELDS),
 
+  // EVA history and debrief (#43): the frozen summary copied from the store when the astronaut re-entered the HAB
+  'eva.distanceM': { tag: 'DERIVED', source: 'sum of horizontal steps between navigation readings in Walk mode while the mission ran' },
+  'eva.elapsedOutsideSec': { tag: 'DERIVED', source: 'mission clock time between leaving and re-entering the habitat arrival area' },
+  'eva.sampleCount': sim('samples secured in a container this EVA (engine sampling bridge)'),
+
   // environment: MEDA replay, RAD curve and the dust event
   'environment.pressurePa': { ...MEDA, source: 'MEDA pressure, replayed sol', from: { meda: 'pressure' } },
   'environment.tempC': { ...MEDA, source: 'MEDA air temperature, replayed sol', from: { meda: 'air_temperature' } },
@@ -129,14 +140,26 @@ export const STORE_PATHS = Object.freeze({
   'environment.rhPct': { ...MEDA, source: 'MEDA relative humidity, replayed sol', from: { meda: 'relative_humidity' } },
   'environment.doseRateUgyH': { ...RAD, source: 'RAD surface dose rate', from: { rad: 'background' } },
   'environment.doseUgy': { ...RAD, tag: 'DERIVED', source: 'dose this EVA: the RAD dose rate summed over mission time', from: { rad: 'background' } },
+  // The dust storm event (src/sim/events/dust-storm.json) ramps tau from the Jezero clear season (0.45, Perseverance)
+  // to the 2018 global storm Curiosity measured in Gale crater (8.0). The ramp shape and timing are ours, so the
+  // values in between are DERIVED. The event banner prints `caption` next to this tag (#196).
   'environment.dustOpacity': {
-    tag: 'DATA', label: 'Mastcam-Z + MEDA · Perseverance', short: 'MEDA · Perseverance',
-    source: 'tau from the January 2022 Jezero dust storm; the ramp timing is SIM',
-    from: { hazards: ['dust.tau.storm_2022_peak', 'dust.tau.clear_season', 'dust.event.ramp_duration'] },
+    tag: 'DERIVED', label: 'Dust storm model', short: 'Dust storm model',
+    source: 'dust storm event: tau from the Jezero clear season 0.45 up to the 2018 global storm 8.0 in Gale crater, not Jezero; the ramp timing is SIM',
+    caption: 'global storm profile · up to Curiosity\'s Gale 2018 storm, not Jezero',
+    from: { hazards: ['dust.tau.gale_global_storm_2018', 'dust.tau.clear_season', 'dust.event.ramp_duration'] },
+  },
+  // The radiation event (src/sim/events/radiation.json) plays the September 2017 solar particle event from
+  // hazards.json models.sep_2017_profile, not the background rate above. The event banner shows this entry (#196).
+  'events.radiation.doseRateUgyH': {
+    tag: 'DATA', label: 'RAD · Curiosity (Gale)', short: 'RAD · Curiosity',
+    source: 'radiation event: RAD B dose rate of the September 2017 solar particle event, hazards.json models.sep_2017_profile; the 12 min timeline is SIM',
+    caption: 'September 2017 solar particle event · RAD · Curiosity · Gale crater, not Jezero',
+    from: { hazards: ['model:sep_2017_profile'] },
   },
 });
 
-const FIELDS = ['tag', 'label', 'short', 'source', 'mission', 'instrument', 'site', 'solOrDate', 'reference', 'link', 'dataLink', 'note'];
+const FIELDS = ['tag', 'label', 'short', 'source', 'caption', 'mission', 'instrument', 'site', 'solOrDate', 'reference', 'link', 'dataLink', 'note'];
 
 function checkEntry(path, entry) {
   if (typeof path !== 'string' || !path) throw new Error('provenance path must be a non-empty string');
@@ -176,7 +199,8 @@ function dataFor(spec, files) {
     return { ...fromBlock(p), label: hudLabel(p), short: hudLabel(p, { site: false }) };
   }
   if (from.hazards && files.hazards) {
-    const values = from.hazards.map((id) => files.hazards.values?.[id]).filter(Boolean);
+    const h = files.hazards;
+    const values = from.hazards.map((id) => (id.startsWith('model:') ? h.models?.[id.slice(6)] : h.values?.[id])).filter((v) => v?.provenance);
     if (values.length === 0) return null;
     const blocks = values.map((v) => v.provenance);
     const measured = values.filter((v) => v.tag !== 'SIM');
@@ -278,7 +302,7 @@ export function createProvenanceRegistry({ dev = defaultDev(), warn = (...a) => 
 export function describeEntry(entry) {
   if (!entry) return [];
   const lines = [
-    ['Tag', `${entry.tag}: ${TAG_MEANING[entry.tag]}`],
+    ['Tag', `${entry.tag}: ${translateText(TAG_MEANING[entry.tag])}`],
     ['Value', entry.source],
     ['Mission', entry.mission],
     ['Instrument', entry.instrument],
@@ -288,14 +312,14 @@ export function describeEntry(entry) {
     ['Data', entry.dataLink ? 'archive' : null, entry.dataLink],
     ['Note', entry.note],
   ];
-  return lines.filter(([, v]) => v);
+  return lines.filter(([, v]) => v).map(([label, value, href]) => [translateText(label), value, href]);
 }
 
 /** One sentence for screen readers: "Source: MEDA · Perseverance · sol 1187, DATA. Mission Mars 2020. ..." */
 export function textAlternative(entry) {
   if (!entry) return '';
-  const parts = [`Source: ${entry.label === entry.tag ? entry.tag : `${entry.label}, ${entry.tag}`}`];
-  for (const [k, v] of describeEntry(entry).slice(1)) if (k !== 'Data') parts.push(`${k} ${v}`);
+  const parts = [t('ui.source.label', { label: entry.label === entry.tag ? entry.tag : `${entry.label}, ${entry.tag}` })];
+  for (const [k, v] of describeEntry(entry).slice(1)) if (k !== translateText('Data')) parts.push(`${k} ${v}`);
   return parts.join('. ') + '.';
 }
 
@@ -304,12 +328,14 @@ export const provenance = createProvenanceRegistry({ entries: STORE_PATHS });
 
 /**
  * Fetch the data files and fill the registry. A file that fails keeps its declared entries and logs a warning.
+ * Without `fetchFn` the files come from the shared loader (src/data/dataFiles.js), one request per file per page.
  * @param {{ registry?: ReturnType<typeof createProvenanceRegistry>, fetchFn?: typeof fetch, base?: string }} [options]
  */
-export async function loadProvenance({ registry = provenance, fetchFn = fetch, base = import.meta.env?.BASE_URL ?? '/' } = {}) {
+export async function loadProvenance({ registry = provenance, fetchFn, base = import.meta.env?.BASE_URL ?? '/' } = {}) {
   const files = { hazards: HAZARDS_PATH, meda: MEDA_SOL_PATH, rad: RAD_PATH, credits: CREDITS_PATH };
   const keys = Object.keys(files);
   const results = await Promise.allSettled(keys.map(async (k) => {
+    if (!fetchFn) return loadDataFile(files[k], base);
     const r = await fetchFn(base + files[k]);
     if (!r.ok) throw new Error(`${files[k]} ${r.status}`);
     return r.json();

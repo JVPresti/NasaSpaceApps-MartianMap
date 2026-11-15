@@ -1,0 +1,42 @@
+/* Layer preview (#51): a small card beside the Plan panel while a layer button is hovered or focused. It never takes
+   the mouse and adds nothing to the panel's layout. Colours and radii come from the app's theme variables. */
+.layer-preview-anchor { display: none; }
+
+.layer-preview {
+  position: fixed;
+  z-index: 40;
+  margin: 0;
+  padding: 6px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  animation: layer-preview-in 120ms ease-out;
+}
+
+.layer-preview img {
+  display: block;
+  width: 240px;
+  height: 150px;
+  border-radius: calc(var(--radius-m) - 4px);
+  object-fit: cover;
+}
+
+.layer-preview figcaption {
+  margin-top: 4px;
+  font-size: var(--text-s);
+  color: var(--dim);
+  text-align: center;
+}
+
+@keyframes layer-preview-in {
+  from { opacity: 0; transform: translateY(-50%) translateX(-4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layer-preview { animation: none; }
+}

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { loadDataFile } from '../data/dataFiles.js';
+import { HAZARDS_PATH } from '../data/provenance.js';
 import { imageUrl, stopForWaypoint } from '../data/stops.js';
 import EventBanner from '../events/EventBanner.jsx';
 import { formatEva } from '../hud/format.js';
@@ -13,8 +15,10 @@ import { PlanStopCard } from '../stops/ScienceStops.jsx';
 import { cardImage, stopHasContent } from '../stops/content.js';
 import { toggleWaypoint } from '../stops/selection.js';
 import { useStops } from '../stops/useStops.js';
-import { SLOPE_LIMITS } from './layers.js';
+import { LAYERS, SLOPE_LIMITS } from './layers.js';
+import LayerPreview from './LayerPreview.jsx';
 import MissionMap from './MissionMap.jsx';
+import SourceTag from './SourceTag.jsx';
 import SuitFigure from './SuitFigure.jsx';
 import dustArt from '../assets/ui/hazard_dust.webp';
 import oxygenArt from '../assets/ui/hazard_oxygen.webp';
@@ -91,16 +95,16 @@ const HAZARDS = [
   },
 ];
 
-const HAZARDS_URL = import.meta.env.BASE_URL + 'data/hazards.json';
 const sentence = (text) => (text ? text.charAt(0).toUpperCase() + text.slice(1) : '');
 
-function useJson(url) {
+/** A data file under public/, through the shared loader (#217): one request per file per page, shared and read-only. */
+function useDataFile(path) {
   const [value, setValue] = useState(null);
   useEffect(() => {
     let cancelled = false;
-    fetch(url).then((response) => (response.ok ? response.json() : null)).then((json) => !cancelled && setValue(json)).catch(() => {});
+    loadDataFile(path).then((json) => !cancelled && setValue(json)).catch(() => {});
     return () => { cancelled = true; };
-  }, [url]);
+  }, [path]);
   return value;
 }
 
@@ -160,7 +164,7 @@ function Stops({ waypoints, legs }) {
 
 function SuitNow() {
   const suit = useMissionStore(useShallow((s) => ({ o2: s.suit.oxygenPct, battery: s.suit.batteryPct, pressure: s.suit.pressurePsi })));
-  const hazards = useJson(HAZARDS_URL);
+  const hazards = useDataFile(HAZARDS_PATH);
   // Before the EVA the suit runner has not started: the suit is full, at its nominal pressure (hazards.json).
   const o2 = Number.isFinite(suit.o2) ? suit.o2 : 100;
   const battery = Number.isFinite(suit.battery) ? suit.battery : 100;
@@ -258,7 +262,8 @@ function ReturnPanel({ totals }) {
       </div>
       <div className="return-margin">
         <b className={tone ? 'tone-' + tone : undefined}>{t ? `${marginMin >= 0 ? '+' : ''}${marginMin}` : '–'}<small>min</small></b>
-        <span>of oxygen to spare over the 30 min reserve</span>
+        {/* route.totals.marginSec is capped at the 8 h EVA limit (#208); the tag's details say so. */}
+        <span>margin at the end of the plan, over the 30 min reserve<SourceTag path="route.totals.marginSec" /></span>
       </div>
     </div>
   );
@@ -409,6 +414,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
                 onClick={() => setLayer(item.index)}
               >
                 {item.label}
+                {LAYERS.some((entry) => entry.index === item.index) && <LayerPreview layer={LAYERS.find((entry) => entry.index === item.index)} />}
               </button>
             ))}
             </div>

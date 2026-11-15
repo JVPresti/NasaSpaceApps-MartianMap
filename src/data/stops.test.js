@@ -155,10 +155,10 @@ describe('lookups', () => {
 
   it('returns the nearest stop with its distance', () => {
     expect(nearestStop(stops, { x: 0, z: 0 })).toMatchObject({ stop: { id: 'cheyava-falls' }, distanceM: 0 });
-    const ba = nearestStop(stops, { x: -40, z: -57 });
+    const ba = nearestStop(stops, { x: -11, z: -47 });
     expect(ba.stop.id).toBe('bright-angel');
     expect(ba.distanceM).toBeCloseTo(3, 6);
-    // From the habitat Cheyava Falls is closer: hypot(520, 600) = 794 m vs hypot(560, 660) = 866 m.
+    // From the habitat Cheyava Falls is closer: hypot(520, 600) = 794 m vs hypot(531, 650) = 839 m.
     expect(nearestStop(stops, { x: 520, z: 600 }).stop.id).toBe('cheyava-falls');
     expect(nearestStop([], { x: 0, z: 0 })).toBeNull();
   });
@@ -167,7 +167,7 @@ describe('lookups', () => {
     const cf = stopById(stops, 'cheyava-falls');
     expect(hasArrived(cf, { x: 1.2, z: 1.6 })).toBe(true);    // exactly 2 m
     expect(hasArrived(cf, { x: 1.5, z: 1.5 })).toBe(false);   // 2.12 m
-    expect(arrivedStop(stops, { x: -41, z: -61 }).id).toBe('bright-angel');
+    expect(arrivedStop(stops, { x: -12, z: -51 }).id).toBe('bright-angel');
     expect(arrivedStop(stops, { x: -20, z: -30 })).toBeNull();
   });
 });

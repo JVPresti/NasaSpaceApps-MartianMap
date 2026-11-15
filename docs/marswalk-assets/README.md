@@ -18,13 +18,13 @@ HiRISE files are stretched 5.4 % east-west (equirectangular, lat_ts = 0); everyt
 | File | What it is |
 |---|---|
 | terrain.json | 751x751 heights (Uint16 base64, 2 m spacing) + 256x256 brightness map used for rock density. The routing team can read this directly. |
-| terrain_tiles.glb + terrain_tiles.json | The same 751x751 grid as a mesh: 25 tiles (nodes Terrain_<row>_<col>, row 0 = north, col 0 = west) with normals and UVs, Draco-compressed, 1.7 MB. Written by blender/export/export_all.py and checked against terrain.json by blender/export/check_terrain.py. Needs a DRACOLoader (see blender/export/README.md). The .json records the extent. |
+| terrain_tiles.glb + terrain_tiles.json | The same 751x751 grid as a mesh: 25 tiles (nodes Terrain_<row>_<col>, row 0 = north, col 0 = west) with normals and UVs, Draco-compressed, 1.7 MB. Written by blender/export/export_all.py and checked against terrain.json by blender/export/check_terrain.py. Needs a DRACOLoader (see blender/export/README.md). The .json records the extent. The app does not load them, and `vite.config.js` leaves both out of `dist/`, so they are not deployed. |
 | ring.json | 241x241 heights (50 m spacing) for the 12 km background terrain (CTX). |
 | ortho_hi.jpg / ortho_lo.jpg | HiRISE orthomosaic, grayscale (3000 px / 1500 px). The Mars colour ramp is applied in the shader. |
 | normal_ao.jpg | R,B = world-space normal x,z from the 1 m DEM; G = baked ambient occlusion. |
 | outcrop_mask.jpg | Where light-toned outcrop is (from HiRISE brightness). Drives the slab detail and the Outcrop layer. |
 | outcrop.glb + outcrop_color.jpg, outcrop_nao.jpg (+ _lo versions) | Layered pale outcrop for the Bright Angel stop, 6.7 x 3.4 m, 1.0 m above its ground line: about 60 thin beds, a steep broken face and loose chips. Three detail levels in one file (Outcrop_LOD0 / LOD1 / LOD2: 16k, 4k and 1.8k triangles), 0.96 MB. Hand-made model, see "Layered outcrop" below. |
-| gravel_nl.jpg, slab_nl.jpg | Close-up detail, 2 m tiles. R,G = normal map (GL), B = sqrt(luminance). |
+| gravel_nl.jpg, slab_nl.jpg | Close-up detail, 2 m tiles. R,G = normal map (GL), B = sqrt(luminance). The terrain shader reads gravel at 2 m plus two rotated far octaves (13.7 and 29.3 m), and slab twice (2 m at 0.7 rad, 2.6 m at 2.9 rad), so neither repeats on a grid (#193). slab_nl.jpg was made tileable on 2026-11-14 by scripts/heal-slab-tile.py: each axis cross-faded with a half-offset copy over the outer 6 to 36 % of the tile (contrast kept), and brightness flattened with a 96 px and a 128 px wrapped Gaussian. Edge step went from 11.2 / 16.4 to 8.0 / 10.2 (9.3 / 10.4 inside), 4x4 block brightness from 104-128 to 117-121. |
 | ring_gray.jpg | CTX mosaic for the background, brightness-matched to HiRISE. |
 | rocks.json + rock_*.jpg, namaqualand_*.jpg | 5 rock scans x 3 detail levels (500 / 120 / 28 triangles), normalised to 1 m longest side. |
 | cheyava.json + cheyava_color.jpg, cheyava_nao.jpg | Cheyava Falls rock (10k triangles). nao: R,G = tangent normal, B = AO. |
@@ -100,10 +100,11 @@ so the GPU check now starts AMD integrated graphics on Low. On High, walking stu
   uRockH = 1.0). v is flipped after loading (uv.y = 1 - uv.y): glTF stores v flipped and these textures are loaded the three.js way,
   like the Cheyava ones. The three meshes go into one THREE.LOD: LOD1 from 30 m and LOD2 from 90 m on High, 14 m and 60 m on Low.
 - Placement: computed from the "WP3" waypoint in route.json (outcropPlacement in src/engine/rocks.js), not stored anywhere else, so
-  it follows the waypoint if the route team moves it. The ground at WP3 is a steady 30 degree slope. The outcrop is laid on that
-  slope 4.2 m uphill of the waypoint (outside the 2 m arrival circle), tilted to the ground plane, with its buried end uphill and its
-  broken face towards the walker, and sunk 20 cm so the lowest beds and the loose chips are half buried. The beds dip 24 degrees
-  inside the model, so on this slope they end up nearly level: strata cropping out of a hillside. It is placed on the drawn mesh and
+  it follows the waypoint if the route team moves it. WP3 is the stance point at (-11, -50), on 14 degree ground (#192; it was at
+  (-40, -60) on a 29 degree slope, inside the 20 degree no-go limit). The outcrop is laid on the 22 degree slope 4.2 m uphill of the
+  waypoint (outside the 2 m arrival circle), tilted to the ground plane, with its buried end uphill and its broken face towards the
+  walker, and sunk 20 cm so the lowest beds and the loose chips are half buried. The beds dip 24 degrees inside the model, so on
+  this slope they end up nearly level: strata cropping out of a hillside. It is placed on the drawn mesh and
   placed again when the tier changes, so it does not float or sink on either tier. Scattered rocks keep 4.2 m clear of it.
   It has no collision yet: the walker can pass through it.
 - Cost: at most 16k triangles, one draw call, two textures (2048 px on High, 1024 px on Low), in a scene that draws about 400k
@@ -159,7 +160,14 @@ It is now matched to colour photos Perseverance took at this exact spot: nine Ma
 - Changed: the terrain colour ramp (ramp() in TERRAIN_FRAG and RING_FRAG), slab and dust tints, the loose-rock tint (rocks at the site are as pale as the soil,
   not dark red), the ground seen through the habitat portholes, and the clear_day sky, halo and haze in atmosphere_presets.json.
 - Raw frames are auto-stretched, so only the hue was taken from them, not the brightness. Not changed: dust_storm, late_afternoon and night skies,
-  the Cheyava Falls hero rock texture, the sample soil in the scoop and case.
+  the sample soil in the scoop and case.
+- Cheyava Falls hero rock (cheyava_color.jpg), re-graded 2026-11-14 (#194) by scripts/grade-cheyava-rock.py. The script starts from the original
+  painted texture in Git (commit d972866), so it gives the same file every run, and prints the numbers below.
+  Rock body went from 2.06 and 1.57 to 1.50 and 1.79, mean linear luminance from 0.21 to 0.30. The leopard spots stay dark (0.10) at 1.41 and 1.61.
+  The white veins went from 4 to 12 px painted lines to 2 to 3 px centre lines, about 62 % of their length kept, the rest broken into gaps;
+  white cover fell from 6.5 % to 2.6 % of the rock. The drill-tailings discs and the grey abrasion patch keep their paint.
+  The PIA26401 frame on the stop card measures 1.16 and 1.31 on clean rock: it is a colour-balanced press product, so the rock follows
+  the raw-frame numbers above, the same ones as the ground. No tint uniform touches it: ROCK_FRAG with HERO uses the texture as is.
 - Credit for these frames: NASA/JPL-Caltech/ASU.
 
 ## Credits

@@ -2,7 +2,7 @@
 
     blender -b --python blender/export/check_terrain.py
 
-Reads public/marswalk/assets/terrain_tiles.glb (the file the app loads, Draco included) and
+Reads public/marswalk/assets/terrain_tiles.glb (the exported mesh, Draco included; not deployed, see #205) and
 compares its surface with public/marswalk/assets/terrain.json at 100 fixed random points.
 Fails (exit code 1) if any point differs by more than 0.2 m.
 

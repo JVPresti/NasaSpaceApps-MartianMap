@@ -1,7 +1,9 @@
+import { t } from '../i18n/index.js';
 import { useShallow } from 'zustand/react/shallow';
 import { useMissionStore } from '../state/store.js';
 import { fixed as num, minutesFixed as min } from './routePlan.js';
 import SourceTag from './SourceTag.jsx';
+import { waypointNumber } from '../sim/waypointNumber.js';
 
 // Time, oxygen and battery per leg of the planned route (#41, first shipped as RouteLegsPanel in #107). Reads
 // route.legs and route.totals, which src/sim/legCosts.js keeps in step with route.path. Hosted by RoutePanel.
@@ -48,38 +50,38 @@ export default function RouteLegs() {
   const terrainShared = useGroupTag(TERRAIN);
   const suitShared = useGroupTag(SUIT);
 
-  if (!totals) return <p className="legs-empty">No planned route yet.</p>;
+  if (!totals) return <p className="legs-empty">{t('ui.no.planned.route.yet')}</p>;
 
   return (
     <div className="legs-scroll">
       <table className="legs-table">
-        <caption className="visually-hidden">Distance, climb, slope, time, oxygen and battery for each leg of the walk out</caption>
+        <caption className="visually-hidden">{t('ui.distance.climb.slope.time.oxygen.and.battery.for')}</caption>
         <thead>
           <tr className="legs-groups">
             <td />
-            <th scope="colgroup" colSpan={3}>Terrain {terrainShared && <SourceTag path={TERRAIN[0]} />}</th>
-            <th scope="colgroup" colSpan={3}>Suit model {suitShared && <SourceTag path={SUIT[0]} />}</th>
+            <th scope="colgroup" colSpan={3}>{t('ui.terrain')}{terrainShared && <SourceTag path={TERRAIN[0]} />}</th>
+            <th scope="colgroup" colSpan={3}>{t('ui.suit.model')}{suitShared && <SourceTag path={SUIT[0]} />}</th>
           </tr>
           <tr>
-            <th scope="col" className="legs-leg-head">Leg</th>
-            <Head label="Dist" unit="m" path={TERRAIN[0]} showTag={!terrainShared} />
-            <Head label="Climb" unit="m" path={TERRAIN[1]} showTag={!terrainShared} />
-            <Head label="Slope" unit="°" path={TERRAIN[2]} showTag={!terrainShared} />
-            <Head label="Time" unit="min" path={SUIT[0]} showTag={!suitShared} />
-            <Head label="O2" unit="g" path={SUIT[1]} showTag={!suitShared} />
-            <Head label="Batt" unit="Wh" path={SUIT[2]} showTag={!suitShared} />
+            <th scope="col" className="legs-leg-head">{t('ui.leg')}</th>
+            <Head label={t('ui.dist')} unit={t('units.metres')} path={TERRAIN[0]} showTag={!terrainShared} />
+            <Head label={t('ui.climb')} unit={t('units.metres')} path={TERRAIN[1]} showTag={!terrainShared} />
+            <Head label={t('ui.slope.155')} unit={t('units.degree')} path={TERRAIN[2]} showTag={!terrainShared} />
+            <Head label={t('ui.time')} unit={t('ui.min')} path={SUIT[0]} showTag={!suitShared} />
+            <Head label={t('ui.o2')} unit={t('ui.g')} path={SUIT[1]} showTag={!suitShared} />
+            <Head label={t('ui.batt')} unit={t('ui.wh')} path={SUIT[2]} showTag={!suitShared} />
           </tr>
         </thead>
         <tbody>
           {legs.map((l, k) => (
             <Row
               key={k}
-              label={<><span className="legs-num">{k + 1}</span>{short(l.to)}</>}
-              title={`${l.from ?? 'start'} to ${l.to ?? 'end'}`}
+              label={<><span className="legs-num">{waypointNumber(k + 1)}</span>{short(l.to)}</>}
+              title={t('ui.p0.to.p1', { p0: l.from ?? 'start', p1: l.to ?? 'end' })}
               v={l}
             />
           ))}
-          <Row label="Total out" v={totals} total />
+          <Row label={t('ui.total.out')} v={totals} total />
         </tbody>
       </table>
     </div>

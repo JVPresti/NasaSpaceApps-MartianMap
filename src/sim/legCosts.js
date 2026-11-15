@@ -7,14 +7,14 @@
  *
  * Plain JavaScript with no React and no three.js. Coordinates: x east, z south, metres from Cheyava Falls.
  */
-import { metabolicPowerW, o2RateGs, walkCost } from './suitModel.js';
+import { combinedTag, metabolicPowerW, o2RateGs, SUIT_INPUTS, walkCost } from './suitModel.js';
+
+export { combinedTag };
 
 /** Paths that end this close to their start are round trips: no extra walk home is added. Metres. */
 export const ROUND_TRIP_M = 20;
 /** A path vertex this much farther from a waypoint than the closest vertex still counts as reaching it. Metres. */
 const MATCH_SLACK_M = 0.5;
-
-const TAG_RANK = { SIM: 0, DERIVED: 1, DATA: 2 };
 
 /**
  * Split a route path into legs at its waypoints.
@@ -94,7 +94,10 @@ export function routeLegCosts(path, waypoints, heightAt, c, { stepM = 10 } = {})
   const walkRate = o2RateGs(metabolicPowerW(c.speedFlat, 0, c), c);
   const arrivalO2G = c.o2UsableG - out.o2G - back.o2G;
   const arrivalBatteryWh = c.batteryWh - out.batteryWh - back.batteryWh;
-  const marginSec = arrivalO2G / walkRate - c.reserveSec;
+  // Margin at the end of the plan: the O2 left on arrival as walking time, minus the reserve, capped at the
+  // suit.eva_duration_max time left after the walk out and back, as the HUD's margin now (suitReadout).
+  const evaMarginSec = c.evaMaxSec - out.timeSec - back.timeSec;
+  const marginSec = Math.min(arrivalO2G / walkRate - c.reserveSec, evaMarginSec);
   const status = marginSec <= c.warningSec ? 'warning' : marginSec < c.cautionSec ? 'caution' : 'nominal';
 
   return {
@@ -110,26 +113,7 @@ export function routeLegCosts(path, waypoints, heightAt, c, { stepM = 10 } = {})
   };
 }
 
-/**
- * Tag of a value computed from several inputs: the weakest of their tags (SIM < DERIVED < DATA), and never better
- * than DERIVED because we did the computing (plan section 4.1).
- * @param {object} hazards parsed hazards.json
- * @param {string[]} ids keys of hazards.values; 'model:<name>' for hazards.models
- */
-export function combinedTag(hazards, ids) {
-  let rank = TAG_RANK.DERIVED;
-  for (const id of ids) {
-    const e = id.startsWith('model:') ? hazards.models[id.slice(6)] : hazards.values[id];
-    if (!e || !(e.tag in TAG_RANK)) throw new Error('hazards.json has no tag for ' + id);
-    rank = Math.min(rank, TAG_RANK[e.tag]);
-  }
-  return Object.keys(TAG_RANK).find((k) => TAG_RANK[k] === rank);
-}
-
-const SPEED = ['mobility.speed_rule', 'mobility.speed.flat', 'mobility.speed.min', 'mobility.speed.jog', 'model:walking_metabolic'];
-const O2 = [...SPEED, 'metabolic.model_mass', 'suit.o2.primary_usable'];
-const BATTERY = [...SPEED, 'suit.battery.primary_capacity', 'suit.battery.average_draw', 'suit.battery.effort_share', 'suit.metabolic.design_average'];
-const MARGIN = [...O2, 'suit.reserve.time', 'suit.reserve.walkback_pad', 'suit.alert.caution_margin', 'suit.alert.warning_margin'];
+const { speed: SPEED, o2: O2, battery: BATTERY, margin: MARGIN } = SUIT_INPUTS;
 
 /**
  * Sources for the store's `sources` map: one entry per route.legs and route.totals field, tags from hazards.json.
@@ -141,7 +125,7 @@ export function legCostSources(hazards) {
   const time = entry(SPEED, 'suit model: walking_metabolic at constant effort (mobility.speed_rule), no stops');
   const o2 = entry(O2, 'suit model: walking_metabolic O2, share of the xEMU primary tank');
   const battery = entry(BATTERY, 'suit model: xEMU battery, the effort share of the draw is SIM');
-  const margin = entry(MARGIN, 'suit model: O2 after the walk out and the padded walk home, minus the 30 min reserve');
+  const margin = { ...entry(MARGIN, 'suit model: margin at the end of the plan, the O2 after the walk out and the padded walk home minus the 30 min reserve, capped at the 8 h EVA limit'), label: 'Suit model' };
   const fields = {
     distanceM: terrain, climbM: terrain, descentM: terrain, maxSlopeDeg: terrain,
     timeSec: time, o2G: o2, o2Pct: o2, batteryWh: battery, batteryPct: battery,

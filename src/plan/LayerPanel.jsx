@@ -1,4 +1,6 @@
+import { t } from '../i18n/index.js';
 import { LAYERS, layerMeta } from './layers.js';
+import LayerPreview from './LayerPreview.jsx';
 
 function LayerLegend({ meta }) {
   return (
@@ -48,15 +50,15 @@ export default function LayerPanel({ layer, onLayer, radioShadow, onRadioShadow 
   const meta = layerMeta(layer);
 
   return (
-    <aside className="plan-panel" aria-label="Plan mode layers and waypoints">
+    <aside className="plan-panel" aria-label={t('ui.plan.mode.layers.and.waypoints')}>
       <header className="plan-panel-head">
-        <h2>Map layers</h2>
-        <p className="plan-panel-source">Cheyava Falls</p>
+        <h2>{t('ui.map.layers')}</h2>
+        <p className="plan-panel-source">{t('ui.cheyava.falls')}</p>
       </header>
 
       <section className="plan-section">
-        <h3>Data layer</h3>
-        <div className="layer-list" role="group" aria-label="Terrain data layer">
+        <h3>{t('ui.data.layer')}</h3>
+        <div className="layer-list" role="group" aria-label={t('ui.terrain.data.layer')}>
           {LAYERS.map((item) => (
             <button
               key={item.id}
@@ -68,35 +70,38 @@ export default function LayerPanel({ layer, onLayer, radioShadow, onRadioShadow 
             >
               <span className="layer-index">{item.index || '—'}</span>
               <span className="layer-name">{item.name}</span>
+              <LayerPreview layer={item} />
             </button>
           ))}
         </div>
       </section>
 
       <section className="plan-section">
-        <h3>Overlays</h3>
+        <h3>{t('ui.overlays')}</h3>
         <div className="layer-list">
           <button
             type="button"
             aria-pressed={radioShadow}
+            aria-describedby="radio-shadow-note"
+            title={t('ui.blue.grey.cells.are.out.of.direct.line')}
             className={radioShadow ? 'on' : undefined}
             onClick={() => onRadioShadow(!radioShadow)}
           >
-            <span className="layer-index">R</span>
-            <span className="layer-name">Radio shadow</span>
+            <span className="layer-index">{t('ui.r')}</span>
+            <span className="layer-name">{t('ui.radio.shadow')}</span>
           </button>
         </div>
-        <p className="plan-note">Blue-grey cells are out of direct line of sight to the habitat mast.</p>
+        <p id="radio-shadow-note" className="plan-note">{t('ui.blue.grey.cells.are.out.of.direct.line')}</p>
       </section>
 
       <section className="plan-section">
-        <h3>Legend</h3>
+        <h3>{t('ui.legend')}</h3>
         <LayerLegend meta={meta} />
       </section>
 
       {/* The tile size is in the readout under the map; it is not repeated here. */}
       <footer className="plan-panel-foot">
-        <span>HiRISE DTM 1 m · ortho 25 cm</span>
+        <span>{t('ui.hirise.dtm.1.m.ortho.25.cm')}</span>
       </footer>
     </aside>
   );

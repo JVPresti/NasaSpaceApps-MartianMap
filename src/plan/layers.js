@@ -1,13 +1,20 @@
+import { t, formatNumber } from '../i18n/index.js';
+import { COST_CONSTANTS } from '../sim/costGrid.js';
 /**
  * Plan-mode layer metadata: names, thresholds, colours and units.
  *
  * The colours and thresholds mirror `uLayer` in `src/engine/shaders.js`
- * (TERRAIN_FRAG). The slope limits (15 and 25 degrees) are the mobility limits
- * recorded in the project plan and used by the cost grid.
+ * (TERRAIN_FRAG). The slope limits come from `COST_CONSTANTS` in
+ * `src/sim/costGrid.js`, which the shader and the route planner also read, and
+ * which `costGrid.test.js` checks against `slope.caution` and `slope.no_go` in
+ * `public/data/hazards.json`.
  */
 
 /** Slope thresholds in degrees. */
-export const SLOPE_LIMITS = Object.freeze({ caution: 15, noGo: 25 });
+export const SLOPE_LIMITS = Object.freeze({
+  caution: COST_CONSTANTS.SLOPE_CAUTION_DEG,
+  noGo: COST_CONSTANTS.SLOPE_LIMIT_DEG,
+});
 
 /** @typedef {{ id: string, index: number, name: string, unit: string, summary: string,
  *   source: string, swatches?: Array<{ color: string, label: string, detail?: string }>,
@@ -18,58 +25,58 @@ export const LAYERS = [
   {
     id: 'none',
     index: 0,
-    name: 'None',
-    unit: 'photo',
-    summary: 'HiRISE orthomosaic, 25 cm per pixel. No analysis layer.',
+    get name() { return t('ui.none'); },
+    get unit() { return t('layers.photo'); },
+    get summary() { return t('ui.hirise.orthomosaic.25.cm.per.pixel.no.analysis'); },
     source: 'DATA · NASA/JPL-Caltech/UArizona/MSSS · HiRISE',
   },
   {
     id: 'slope',
     index: 1,
-    name: 'Slope hazard',
-    unit: 'degrees',
-    summary: 'Slope from the HiRISE 1 m DEM. Suit mobility limits: 15° caution, 25° no-go.',
-    source: 'DERIVED · HiRISE DTM · limits in hazards.json',
+    get name() { return t('ui.slope.hazard'); },
+    get unit() { return t('ui.degrees'); },
+    get summary() { return t('ui.slope.from.the.hirise.1.m.dem.suit', SLOPE_LIMITS); },
+    get source() { return t('ui.derived.hirise.dtm.limits.in.hazards.json'); },
     swatches: [
-      { color: '#33cc66', label: '0–15°', detail: 'walkable' },
-      { color: '#f2991a', label: '15–25°', detail: 'caution' },
-      { color: '#e6140d', label: '>25°', detail: 'no-go' },
+      { color: '#33cc66', label: `0–${SLOPE_LIMITS.caution}°`, get detail() { return t('ui.walkable'); } },
+      { color: '#f2991a', label: `${SLOPE_LIMITS.caution}–${SLOPE_LIMITS.noGo}°`, get detail() { return t('caution'); } },
+      { color: '#e6140d', label: `>${SLOPE_LIMITS.noGo}°`, get detail() { return t('walkableNoGo'); } },
     ],
   },
   {
     id: 'elevation',
     index: 2,
-    name: 'Elevation',
+    get name() { return t('ui.elevation'); },
     unit: 'm',
-    summary: 'Height above the lowest point of the tile, with a contour every 5 m.',
-    source: 'DATA · HiRISE DTM · 2 m grid',
+    get summary() { return t('ui.height.above.the.lowest.point.of.the.tile'); },
+    get source() { return t('ui.data.hirise.dtm.2.m.grid'); },
     gradient: ['#1a4ce6', '#33d980', '#fad933', '#e6331a'],
     minLabel: '0 m',
     maxLabel: '221 m',
-    swatches: [{ color: '#ffffff', label: 'Contours', detail: 'every 5 m' }],
+    swatches: [{ color: '#ffffff', get label() { return t('ui.contours'); }, get detail() { return t('ui.every.5.m'); } }],
   },
   {
     id: 'rock',
     index: 3,
-    name: 'Rock abundance',
-    unit: 'fraction 0–1',
-    summary: 'HiRISE brightness remapped to rock cover with the Golombek size-frequency model.',
-    source: 'DERIVED · HiRISE · Golombek model',
+    get name() { return t('ui.rock.abundance'); },
+    get unit() { return t('ui.fraction.0.1'); },
+    get summary() { return t('ui.hirise.brightness.remapped.to.rock.cover.with.the'); },
+    get source() { return t('ui.derived.hirise.golombek.model'); },
     gradient: ['#263399', '#ffbf1a'],
-    minLabel: '0.08',
-    maxLabel: '1.0',
+    get minLabel() { return formatNumber(0.08, 2); },
+    get maxLabel() { return formatNumber(1, 1); },
     swatches: [],
   },
   {
     id: 'outcrop',
     index: 4,
-    name: 'Outcrop',
-    unit: 'fraction 0–1',
-    summary: 'Light-toned bedrock from the HiRISE brightness mask.',
-    source: 'DERIVED · HiRISE orthomosaic · outcrop mask',
+    get name() { return t('ui.outcrop'); },
+    get unit() { return t('ui.fraction.0.1'); },
+    get summary() { return t('ui.light.toned.bedrock.from.the.hirise.brightness.mask'); },
+    get source() { return t('ui.derived.hirise.orthomosaic.outcrop.mask'); },
     gradient: ['rgba(77, 230, 242, 0)', '#4de6f2'],
-    minLabel: 'none',
-    maxLabel: 'outcrop',
+    get minLabel() { return t('ui.none'); },
+    get maxLabel() { return t('layers.outcropMaximum'); },
     swatches: [],
   },
 ];

@@ -10,11 +10,12 @@ Never commit, push, or merge directly to `main`, not even for a one-line fix. A 
 2. **Branch** from an up-to-date `main`: `git switch main && git pull && git switch -c <type>/<short-description>`.
    Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`.
 3. **Commit** on the branch.
-4. **Pull request** against `main`. Title format: `<type>(<scope>): <description>`, for example `feat(layers): add thermal data overlay`. The description links the issue with `Closes #<issue-number>`.
-5. **Review.** One approval from a teammate other than the author. The author cannot approve their own PR.
-6. **Merge** with **Squash and merge** on GitHub, then delete the branch.
+4. **Check for merge conflicts (mandatory) before opening the PR.** Run `git fetch origin && git merge-tree --write-tree origin/main HEAD`. Exit code 0 with no `CONFLICT` lines means the branch merges cleanly. If there are conflicts, run `git merge origin/main` (never rebase or force-push a shared branch), resolve them keeping both sides' intent, run `npm run lint` and `npm run build` again, push, and check again. Open the PR only when the check is clean.
+5. **Pull request** against `main`. Title format: `<type>(<scope>): <description>`, for example `feat(layers): add thermal data overlay`. The description links the issue with `Closes #<issue-number>`.
+6. **Review.** One approval from a teammate other than the author. The author cannot approve their own PR.
+7. **Merge** with **Squash and merge** on GitHub, then delete the branch.
 
-Before asking for review: `npm run lint` and `npm run build` must pass, and the PR contains only the changes for its issue. One PR resolves one issue.
+Before asking for review: `npm run lint` and `npm run build` must pass, the branch has no merge conflicts with an up-to-date `main`, and the PR contains only the changes for its issue. One PR resolves one issue.
 
 ## Environment notes (this machine)
 

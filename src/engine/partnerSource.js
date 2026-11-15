@@ -12,6 +12,11 @@
 /** The case clip in z2_astronaut.glb (assets_astronaut/astronaut.json, animations.case_set_down). */
 export const CASE_CLIP = Object.freeze({ name: 'case_set_down', seconds: 2.07, releaseAt: 0.9 });
 
+/** Case hand-over: the scripted partner sets the case down this far from the player (m)... */
+export const HANDOVER_M = 1.6;
+/** ...and bends at once, without walking, when the player is already this close (m). */
+export const HANDOVER_REACH_M = 1.7;
+
 /** Throws if a state does not match the PartnerState contract. Network sources can use it in their tests. */
 export function assertPartnerState(s) {
   const fail = (m) => { throw new Error('invalid PartnerState: ' + m); };
@@ -42,7 +47,7 @@ export function createStaticPartner({ id = 'EV2', color = [1, 0.32, 0.03], x = 0
 export function createScriptedPartner({ id = 'EV2', color = [1, 0.32, 0.03], A = { x: 14, z: 58 }, B = { x: 5, z: 12 } } = {}) {
   const len = Math.hypot(B.x - A.x, B.z - A.z);
   let t = 0, dir = 1, pause = 0;          // patrol: position along A-B, direction, pause left
-  let free = null;                        // off the patrol: { x, z, goal, queue, face, then, leave }
+  let free = null;                        // off the patrol: { x, z, goal, queue, face, then, leave, follow }
   let yaw = Math.atan2(B.x - A.x, B.z - A.z);
   let carrying = true, wantCarry = true;  // wantCarry: what carrying becomes at the release point of the bend
   let bendTime = null;                    // seconds into the case clip while bending
@@ -51,13 +56,19 @@ export function createScriptedPartner({ id = 'EV2', color = [1, 0.32, 0.03], A =
   const patrolPoint = () => ({ x: A.x + (B.x - A.x) * t, z: A.z + (B.z - A.z) * t });
   const startBend = () => { bendTime = 0; };
 
-  function toggleCase(world) {   // Down: walk to 1.6 m from the player, face them, bend and release (0.9 s). Up: bend and grab, walk back.
+  // Down: walk to HANDOVER_M from the player, face them, bend and release (0.9 s). Up: bend and grab, walk back.
+  // The walk follows the player (follow: true): update() re-aims it every frame at where the player is now (#172).
+  function toggleCase(world) {
     if (bendTime !== null || (free && (free.goal || free.then))) return false;
     const p = last || patrolPoint();
     if (carrying) {
       const px = world.player.x, pz = world.player.z, dx = p.x - px, dz = p.z - pz, d = Math.hypot(dx, dz) || 1;
       wantCarry = false;
-      free = { x: p.x, z: p.z, goal: d > 1.7 ? { x: px + dx / d * 1.6, z: pz + dz / d * 1.6 } : null, face: { x: px, z: pz }, then: startBend };
+      free = {
+        x: p.x, z: p.z, face: { x: px, z: pz }, follow: true,
+        goal: d > HANDOVER_REACH_M ? { x: px + dx / d * HANDOVER_M, z: pz + dz / d * HANDOVER_M } : null,
+        then: () => { free.follow = false; startBend(); },
+      };
     } else { wantCarry = true; startBend(); }
     return true;
   }
@@ -88,6 +99,13 @@ export function createScriptedPartner({ id = 'EV2', color = [1, 0.32, 0.03], A =
     let walking = true, x, z, target = null, turn = 6;
     if (free) {   // off the patrol: walk to a goal, then face a point, then act
       const f = free;
+      if (f.follow && world && world.player) {   // bringing the case: aim at the player as they are now, not as they were (#172)
+        const px = world.player.x, pz = world.player.z, dx = f.x - px, dz = f.z - pz, d = Math.hypot(dx, dz);
+        f.face = { x: px, z: pz };
+        // still walking: re-aim at the HANDOVER_M ring around the player. Already on or inside it (the player walked up): stop
+        // here, never back away. Once stopped it stays stopped and turns to face the player until the bend starts.
+        if (f.goal) f.goal = d > HANDOVER_M ? { x: px + dx / d * HANDOVER_M, z: pz + dz / d * HANDOVER_M } : null;
+      }
       if (f.goal) {
         const gx = f.goal.x - f.x, gz = f.goal.z - f.z, gd = Math.hypot(gx, gz), st = speed * dt;
         if (gd <= st) { f.x = f.goal.x; f.z = f.goal.z; f.goal = f.queue && f.queue.length ? f.queue.shift() : null; if (!f.goal && f.leave) free = null; }

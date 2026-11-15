@@ -1,3 +1,4 @@
+import { t, subscribeLanguage } from '../i18n/index.js';
 // Helmet minimap (#60). App mounts it in Walk mode and owns the route tracker, so leaving Walk for
 // Plan and coming back keeps the walked distance. `tracker` (required) is App's `createRouteProgress()`
 // instance. It reads the store through a subscription and paints a canvas at most 10 times per second.
@@ -7,10 +8,11 @@ import { useMissionStore } from '../state/store.js';
 import { MINIMAP_RANGE_M } from './minimapGeometry.js';
 import { drawMinimap } from './minimapDraw.js';
 import { createRedrawScheduler, MINIMAP_MAX_REDRAWS_PER_SECOND } from './minimapRedraw.js';
+import { loadDataFile } from '../data/dataFiles.js';
+import { SHELTERS_PATH } from '../sim/shelters.js';
 import './minimap.css';
 
 const ORTHO_URL = import.meta.env.BASE_URL + 'marswalk/assets/ortho_lo.jpg';
-const SHELTERS_URL = import.meta.env.BASE_URL + 'data/shelters.json';
 
 function relevantState(s) {
   return {
@@ -24,6 +26,7 @@ function relevantState(s) {
     partnerX: s.crew?.[0]?.x,
     partnerZ: s.crew?.[0]?.z,
     partnerLink: s.crew?.[0]?.link,
+    finds: s.finds?.list,
   };
 }
 
@@ -37,7 +40,8 @@ function changed(prev, next) {
     || prev.zones !== next.zones
     || prev.partnerX !== next.partnerX
     || prev.partnerZ !== next.partnerZ
-    || prev.partnerLink !== next.partnerLink;
+    || prev.partnerLink !== next.partnerLink
+    || prev.finds !== next.finds;
 }
 
 export default function Minimap({ tracker }) {
@@ -87,6 +91,7 @@ export default function Minimap({ tracker }) {
         shelters,
         zones: state.hazards?.zones,
         partner: state.crew?.[0] ?? null,
+        finds: state.finds?.list,
       });
     }
 
@@ -107,6 +112,7 @@ export default function Minimap({ tracker }) {
       },
     });
 
+    const unsubscribeLanguage = subscribeLanguage(() => scheduler.request('language'));
     const unsubscribe = useMissionStore.subscribe((nextState) => {
       state = nextState;
       if (nextState.route?.path !== lastPath) {
@@ -120,12 +126,7 @@ export default function Minimap({ tracker }) {
       }
     });
 
-    const controller = new AbortController();
-    fetch(SHELTERS_URL, { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) throw new Error('shelters.json HTTP ' + response.status);
-        return response.json();
-      })
+    loadDataFile(SHELTERS_PATH)
       .then((data) => {
         if (disposed) return;
         shelters = Array.isArray(data?.shelters)
@@ -141,6 +142,9 @@ export default function Minimap({ tracker }) {
 
     const img = new Image();
     img.decoding = 'async';
+    // Same CORS mode as three.js's TextureLoader (crossOrigin 'anonymous'), which loads this file for the Low tier.
+    // Without it the browser keys the two requests apart and downloads ortho_lo.jpg twice (#205).
+    img.crossOrigin = 'anonymous';
     img.onload = () => {
       if (disposed) return;
       image = img;
@@ -165,7 +169,7 @@ export default function Minimap({ tracker }) {
     return () => {
       disposed = true;
       unsubscribe();
-      controller.abort();
+      unsubscribeLanguage();
       ro?.disconnect();
       window.removeEventListener('resize', requestResize);
       img.onload = null;
@@ -176,21 +180,22 @@ export default function Minimap({ tracker }) {
 
   return (
     <div className="hud-map-wrap" ref={wrapRef}>
-      <section className="hud-map" aria-label="Minimap">
+      <section className="hud-map" aria-label={t('ui.minimap')}>
         <canvas
           ref={canvasRef}
           className="hud-map-canvas"
           role="img"
-          aria-label="Minimap centred on the astronaut"
+          aria-label={t('ui.minimap.centred.on.the.astronaut')}
         />
       </section>
-      <div className="hud-map-legend" aria-label="Map legend">
-        <span><i className="hud-map-key hud-map-key-route" />Route</span>
-        <span><i className="hud-map-key hud-map-key-wp">3</i>WP</span>
-        <span><i className="hud-map-key hud-map-key-shelter" />Refuge</span>
-        <span><i className="hud-map-key hud-map-key-hazard" />Hazard</span>
-        <span><i className="hud-map-key hud-map-key-hab" />Habitat</span>
-        <span><i className="hud-map-key hud-map-key-partner" />Partner</span>
+      <div className="hud-map-legend" aria-label={t('ui.map.legend')}>
+        <span><i className="hud-map-key hud-map-key-route" />{t('ui.route')}</span>
+        <span><i className="hud-map-key hud-map-key-wp">3</i>{t('ui.wp')}</span>
+        <span><i className="hud-map-key hud-map-key-shelter" />{t('ui.refuge')}</span>
+        <span><i className="hud-map-key hud-map-key-hazard" />{t('ui.hazard')}</span>
+        <span><i className="hud-map-key hud-map-key-hab" />{t('ui.habitat')}</span>
+        <span><i className="hud-map-key hud-map-key-partner" />{t('menu.partner')}</span>
+
       </div>
     </div>
   );

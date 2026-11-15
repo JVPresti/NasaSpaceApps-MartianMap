@@ -162,6 +162,13 @@
   }
 }
 
+/* Walk: the one place an alert shows (#191). Under the heading box, where the HUD strip used to be; --u is the HUD's
+   base unit (src/hud/hud.css), so it tracks the heading tape at every height. */
+.event-banner.event-banner-walk {
+  --u: clamp(11px, 1.4vh, 20px);
+  top: calc(var(--u) * 10.6);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .event-banner {
     animation: none;

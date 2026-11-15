@@ -7,9 +7,10 @@ const chip = (tag) => 'src-tag src-tag-' + tag;
 
 /**
  * DATA, DERIVED or SIM tag for a store path (plan section 4.1).
- * @param {{ path: string, interactive?: boolean, requireSource?: boolean }} props
+ * @param {{ path: string, interactive?: boolean, requireSource?: boolean, source?: object | null }} props
  *   requireSource: render nothing until the store has sources[path] (default), so a placeholder shows no tag.
+ *   source: a live entry to use instead of the store's sources[path]; null shows the registry entry alone.
  */
-export default function SourceTag({ path, interactive = true, requireSource = true }) {
-  return <SharedSourceTag path={path} variant="tag" interactive={interactive} requireSource={requireSource} className={chip} />;
+export default function SourceTag({ path, interactive = true, requireSource = true, source }) {
+  return <SharedSourceTag path={path} variant="tag" interactive={interactive} requireSource={requireSource} source={source} className={chip} />;
 }

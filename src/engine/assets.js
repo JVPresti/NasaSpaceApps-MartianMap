@@ -6,6 +6,19 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { AssetLoadError } from './errors.js';
+import { loadJsonUrl } from '../data/dataFiles.js';
+
+// The JSON is shared with the rest of the app (src/data/dataFiles.js), so an abort stops this engine
+// waiting for it but does not cancel the request another module may still need.
+function untilAborted(promise, signal) {
+  if (!signal) return promise;
+  if (signal.aborted) return Promise.reject(signal.reason);
+  return new Promise((resolve, reject) => {
+    const onAbort = () => reject(signal.reason);
+    signal.addEventListener('abort', onAbort, { once: true });
+    promise.then(resolve, reject).finally(() => signal.removeEventListener('abort', onAbort));
+  });
+}
 
 /**
  * @param {string} base URL of the public/marswalk/ folder, ending in '/'
@@ -35,15 +48,8 @@ export function createAssets(base, { tracker = null, signal } = {}) {
     );
   }
 
-  const getJson = (file) => load(file, async () => {
-    const response = await fetch(base + file, signal ? { signal } : undefined);
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    try {
-      return await response.json();
-    } catch (cause) {
-      throw new Error('invalid JSON', { cause });
-    }
-  });
+  // One request per file per page, however many engines or modules ask for it.
+  const getJson = (file) => load(file, () => untilAborted(loadJsonUrl(base + file), signal));
 
   /** Texture from assets/, with the bench's sampling settings. */
   function tex(name, { srgb = false, repeat = false, aniso = 4 } = {}) {

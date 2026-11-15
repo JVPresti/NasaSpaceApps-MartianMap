@@ -131,6 +131,36 @@
   border-top: 1px solid rgba(255, 255, 255, 0.14);
 }
 
+/* Interface language (#177): the select follows the quality buttons' look. */
+.language-block {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.language-block label {
+  display: block;
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--dim);
+}
+
+.language-block select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  font: 500 15px var(--font-ui);
+  color: var(--ink);
+  background: rgba(10, 13, 17, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0;
+}
+
+.language-block select:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+.menu-note { margin: 8px 0 0; font-size: 12px; line-height: 1.45; color: var(--dim); }
+
 .quality-block h3,
 .controls-group h3 {
   margin: 0 0 10px;
@@ -164,14 +194,34 @@
 
 .quality-status { margin: 8px 0 0; font-size: 12px; color: var(--dim); }
 
+/* Short screens (1366 x 768 and similar): the menu with the language select keeps its actions and settings on
+   screen; a notice or the drag-to-look offer may still scroll the dialog, with Resume at the top. */
+@media (max-height: 820px) {
+  .pause-dialog > .dialog-body { padding: 26px 32px 24px; }
+  .pause-dialog .dialog-title { font-size: 38px; }
+  .menu-actions { gap: 8px; margin-top: 16px; }
+  .menu-actions .ui-button { min-height: 42px; }
+  .menu-actions .menu-resume { min-height: 50px; }
+  .language-block,
+  .quality-block { margin-top: 16px; padding-top: 14px; }
+}
+
 /* ------------------------------------------------------------------ controls */
 
-.controls-dialog { width: min(860px, calc(100% - 32px)); }
+/* Three columns of every key (#199), wide enough that each row stays on one line, so the controls fit 1366 x 768
+   without scrolling from the start screen and from the pause menu. Narrower windows wrap to two columns, then one. */
+.controls-dialog { width: min(1040px, calc(100% - 32px)); }
 
 .controls-help {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 36px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px 36px;
+}
+
+.controls-column {
+  display: grid;
+  align-content: start;
+  gap: 24px;
 }
 
 .controls-group h3 {
@@ -188,7 +238,9 @@
   gap: 16px;
 }
 
-.controls-row dt { display: flex; gap: 6px; }
+.controls-row dt { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.controls-or { font-size: 13px; color: var(--dim); }
 
 .controls-row kbd {
   min-width: 30px;
@@ -201,7 +253,20 @@
   border-radius: var(--radius-s);
 }
 
-.controls-row dd { margin: 0; font-size: 15px; text-align: right; }
+.controls-row dd { margin: 0; font-size: 14px; text-align: right; }
+
+@media (max-width: 900px) {
+  .controls-help { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Short screens (1366 x 768 and similar): a tighter rhythm keeps the whole reference on screen. */
+@media (max-height: 820px) {
+  .controls-panel.dialog-body { padding: 26px 32px 24px; }
+  .controls-panel .dialog-head { margin-bottom: 16px; }
+  .controls-panel .dialog-title { font-size: 38px; }
+  .controls-panel .dialog-footnote { margin-top: 16px; }
+  .controls-list { gap: 8px; }
+}
 
 /* ------------------------------------------------------------------ start screen */
 
@@ -248,7 +313,9 @@
 }
 
 .start-controls {
-  width: min(860px, calc(100% - 32px));
+  width: min(1040px, calc(100% - 32px));
+  max-height: 100%;
+  overflow-y: auto;
   background: rgba(10, 13, 17, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.18);
 }
@@ -300,6 +367,8 @@
 
 .start-primary:hover { background: #ff8148; }
 .start-primary:disabled { opacity: 0.6; cursor: wait; }
+
+.start-note { margin: 16px 0 0; max-width: 420px; font-size: 14px; line-height: 1.5; color: var(--dim); }
 
 .start-credit {
   position: absolute;

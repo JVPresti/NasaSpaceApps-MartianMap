@@ -1,3 +1,4 @@
+import { t, translateText } from '../i18n/index.js';
 // Canvas painter for the helmet minimap (#60). Draws the ortho photo, the route split into walked and
 // remaining, waypoints, the habitat, refuges, active hazard zones, the partner (#70), a north ring and a scale bar.
 // No player marker and no uncertainty ring: those belong to #21. No Plan-mode map: that is #14.
@@ -8,7 +9,9 @@ import {
   cardinalPoints, niceScaleBar, projectToMap, splitShelters,
 } from './minimapGeometry.js';
 import { resampleRoute } from './minimapRoute.js';
+import { waypointNumber } from '../sim/waypointNumber.js';
 import { drawPartner } from './minimapPartner.js';
+import { drawFinds } from './minimapFinds.js';
 
 const TAU = Math.PI * 2;
 const COLORS = {
@@ -190,7 +193,7 @@ function drawShelters(g, view, project, radius) {
       g.font = font(Math.max(7, radius * 0.065), 700);
       g.textAlign = 'center';
       g.textBaseline = 'top';
-      g.fillText('HAB', p.x, p.y + icon * 1.2);
+      g.fillText(t('hab'), p.x, p.y + icon * 1.2);
     }
   }
   for (const shelter of refuges) {
@@ -246,7 +249,7 @@ function drawWaypoints(g, view, project, radius) {
     g.font = `700 ${Math.max(8, r * 1.15)}px system-ui, 'Segoe UI', sans-serif`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText(String(index + 1), p.x, p.y + 0.5);
+    g.fillText(waypointNumber(index), p.x, p.y + 0.5);
   });
 }
 
@@ -268,7 +271,7 @@ function drawCardinalRing(g, cx, cy, radius, headingDeg) {
     g.font = font(Math.max(8, radius * (north ? 0.09 : 0.072)), north ? 700 : 600);
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText(point.label, point.x, point.y);
+    g.fillText(translateText(point.label), point.x, point.y);
   }
 }
 
@@ -308,6 +311,7 @@ function drawScaleBar(g, cx, cy, radius, rangeM) {
  *   progress?: object,
  *   shelters?: Array<object>, zones?: Array<object>,
  *   partner?: object|null,   crew[0]: the partner marker (#70)
+ *   finds?: Array<object>,   finds.list: marked finds (#71)
  * }} view
  */
 export function drawMinimap(g, view) {
@@ -332,7 +336,7 @@ export function drawMinimap(g, view) {
     g.font = font(Math.max(10, radius * 0.09), 700);
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText('NO FIX', cx, cy);
+    g.fillText(t('ui.no.fix'), cx, cy);
     g.restore();
     return;
   }
@@ -347,6 +351,7 @@ export function drawMinimap(g, view) {
   drawRoute(g, view, project, radius);
   drawShelters(g, view, project, radius);
   drawWaypoints(g, view, project, radius);
+  drawFinds(g, view.finds, project, cx, cy, radius);
   drawPartner(g, view.partner, project, cx, cy, radius);
   drawCardinalRing(g, cx, cy, radius, headingDeg);
   drawScaleBar(g, cx, cy, radius, rangeM);
@@ -355,7 +360,7 @@ export function drawMinimap(g, view) {
     g.font = font(Math.max(7, radius * 0.06), 600);
     g.textAlign = 'right';
     g.textBaseline = 'bottom';
-    g.fillText('N-UP', cx + radius * 0.55, cy + radius * 0.72);
+    g.fillText(t('northUp'), cx + radius * 0.55, cy + radius * 0.72);
   }
   g.restore();
 }

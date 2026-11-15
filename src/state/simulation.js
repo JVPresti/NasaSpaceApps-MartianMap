@@ -1,26 +1,38 @@
 // Starts the simulation modules that write the mission store. Called by EngineView once the engine is ready.
-// Today: the mission clock (#59), the suit model (#19), the per-leg route costs (#41) and the partner (#70). Navigation and events join here as they land.
+// Today: the mission clock (#59), the suit model (#19), the per-leg route costs (#41), events and the EVA statistics
+// (#43), the partner (#70) and the environment: MEDA weather replay and RAD dose (#189). Navigation joins here as it lands.
 //
 // Two phases (#166). The app opens in Plan mode, at the habitat's planning table: only the clock (for the Plan top bar)
 // and the per-leg costs run. The EVA starts on the first switch to Walk, with the astronaut at the airlock (the engine
 // places them there, src/engine/spawn.js): a fresh clock, full consumables, a fresh terrain fix, WP1 as the next target,
-// and the walkback, partner, off-route, waypoint and event runners. Later switches between Plan and Walk change nothing here.
+// and the walkback, partner, off-route, waypoint, event, environment and EVA statistics runners. Later switches between Plan and Walk
+// change nothing here.
 import { useMissionStore } from './store.js';
 import { DEMO_MISSION_CLOCK, SKY_PRESETS, startMissionClock } from '../sim/missionClock.js';
 import { startEventRunner } from './events.js';
+import { recordEvaEvent, startEvaRunner } from './eva.js';
 import { startOffRoute } from './offRoute.js';
 import { startSlopeDetourService } from './slopeDetour.js';
 import { startWaypointRunner } from '../sim/waypointRunner.js';
 import { loadStops } from '../data/stops.js';
-import { parseShelters } from '../sim/shelters.js';
+import { parseShelters, SHELTERS_PATH } from '../sim/shelters.js';
+import { HAZARDS_PATH } from '../data/provenance.js';
+import { loadDataFile } from '../data/dataFiles.js';
 import { suitConstantsFromHazards } from '../sim/suitModel.js';
 import { startSuitRunner } from '../sim/suitRunner.js';
 import { startPartnerRunner } from '../sim/partnerRunner.js';
 import { legCostSources, startLegCostRunner } from '../sim/legCosts.js';
 import { initNavigation } from '../sim/navigation.js';
+import { startEnvironmentRunner } from '../sim/environmentRunner.js';
+import { MEDA_SOL_PATH, parseMedaSol, parseRad, RAD_PATH } from '../data/medaRad.js';
 
-const HAZARDS_URL = import.meta.env.BASE_URL + 'data/hazards.json';
-const SHELTERS_URL = import.meta.env.BASE_URL + 'data/shelters.json';
+// One parsed environment file through the shared loader (provenance reads the same files). null when it is missing
+// or invalid, with the reason in the console.
+function loadEnvironmentFile(path, name, parse) {
+  return loadDataFile(path)
+    .then(parse)
+    .catch((e) => { console.warn(name + ' not loaded, its environment values stay empty:', e); return null; });
+}
 
 // The clock may start from an alternate sky preset (?); it takes its coarse demo local start time.
 function initialSky(state) {
@@ -47,7 +59,11 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
   if (mock) return () => {};
   const slopeDetour = startSlopeDetourService();
   const stopsReady = loadStops().catch((e) => { console.error('stops.json not loaded, arrival radius 5 m:', e); return null; });
-  let stopped = false, suit = null, legs = null, clock = null, eva = null, partner = null;
+  let stopped = false, suit = null, legs = null, clock = null, eva = null, partner = null, environment = null;
+  const environmentData = Promise.all([
+    loadEnvironmentFile(MEDA_SOL_PATH, 'meda_sol.json', parseMedaSol),
+    loadEnvironmentFile(RAD_PATH, 'rad.json', parseRad),
+  ]);
 
   const startClock = (restore) => {
     try {
@@ -61,22 +77,24 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
   // fetch must not stop the EVA timer.
   startClock(true);
 
-  const shelters = fetch(SHELTERS_URL)
-    .then((r) => { if (!r.ok) throw new Error('shelters.json ' + r.status); return r.json(); })
-    .catch(() => null);
+  const shelters = loadDataFile(SHELTERS_PATH).catch(() => null);
+  // The habitat entry is the first shelter in the real file (the foot of the airlock steps), not the HAB route waypoint.
+  // null when the file is missing or invalid: the suit runner then uses its DEFAULT_HABITAT and the EVA statistics do not start.
+  const habitatEntry = shelters.then((data) => {
+    try {
+      return data ? parseShelters(data)[0] ?? null : null;
+    } catch {
+      return null;
+    }
+  });
 
   const suitData = Promise.all([
-    fetch(HAZARDS_URL).then((r) => { if (!r.ok) throw new Error('hazards.json ' + r.status); return r.json(); }),
-    shelters,
+    loadDataFile(HAZARDS_PATH),
+    habitatEntry,
   ])
-    .then(([hazards, shelterData]) => {
+    .then(([hazards, entry]) => {
       const constants = suitConstantsFromHazards(hazards);
-      let habitat;
-      try {
-        habitat = shelterData ? parseShelters(shelterData)[0] : undefined;
-      } catch {
-        habitat = undefined;   // DEFAULT_HABITAT in the suit runner remains the fallback
-      }
+      const habitat = entry ?? undefined;   // DEFAULT_HABITAT in the suit runner remains the fallback
       if (!stopped) legs = startLegCostRunner({ store, heightAt: engine.heightAt, constants, sources: legCostSources(hazards) });
       return { constants, habitat };
     });
@@ -94,7 +112,27 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     store.setState((s) => ({ route: departRoute(s.route) }));
     const waypoints = startWaypointRunner({ store });
     stopsReady.then((stops) => { if (stops) waypoints.setStops(stops); });
-    eva = { events: startEventRunner({ store }), offRoute: startOffRoute({ store }), waypoints };
+    eva = {
+      events: startEventRunner({ store, onEventLog: (entry) => recordEvaEvent(store, entry) }),
+      offRoute: startOffRoute({ store }),
+      waypoints,
+      stats: null,
+    };
+    // Weather and dose of this EVA (#189): the HUD environment strip shows them with their tags.
+    environmentData.then(([meda, rad]) => {
+      if (stopped || (!meda && !rad)) return;
+      environment = startEnvironmentRunner({ store, meda, rad });
+    });
+    // The debrief statistics (#43): distance, minima and history from this EVA's clock, ended at the real HAB entry.
+    habitatEntry.then((entry) => {
+      if (stopped) return;
+      if (!entry) { console.error('shelters.json not loaded, EVA statistics not started'); return; }
+      try {
+        eva.stats = startEvaRunner({ store, habitat: { x: entry.x, z: entry.z } });
+      } catch (e) {
+        console.error('EVA statistics not started:', e);
+      }
+    });
     suitData.then(({ constants, habitat }) => {
       if (stopped) return;
       suit = startSuitRunner({ store, heightAt: engine.heightAt, constants, habitat });   // full O2 and battery
@@ -112,9 +150,10 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     unsubscribe();
     if (clock) clock.stop();
     slopeDetour.stop();
-    if (eva) { eva.events.stop(); eva.offRoute.stop(); eva.waypoints.stop(); }
+    if (eva) { eva.events.stop(); eva.offRoute.stop(); eva.waypoints.stop(); if (eva.stats) eva.stats.stop(); }
     if (suit) suit.stop();
     if (legs) legs.stop();
     if (partner) partner.stop();
+    if (environment) environment.stop();
   };
 }

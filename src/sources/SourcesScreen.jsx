@@ -1,34 +1,26 @@
+import { t, translateText } from '../i18n/index.js';
 import { useEffect, useRef, useState } from 'react';
 import { groupEntries, linkHost } from './credits.js';
+import { loadDataFile } from '../data/dataFiles.js';
+import { CREDITS_PATH } from '../data/provenance.js';
 import { SOURCES_KEY, closeSources, openSources, useSourcesStore } from './sourcesStore.js';
 import './sources.css';
 
-const CREDITS_URL = import.meta.env.BASE_URL + 'data/credits.json';
-
-// The file is fetched on first open, not bundled: nothing at load time needs it.
-let creditsRequest = null;
-function loadCredits() {
-  creditsRequest ??= fetch(CREDITS_URL).then((response) => {
-    if (!response.ok) throw new Error(`credits.json ${response.status}`);
-    return response.json();
-  });
-  creditsRequest.catch(() => {
-    creditsRequest = null; // let the next open try again
-  });
-  return creditsRequest;
-}
+// Not bundled. The provenance registry has usually loaded it already, and the shared loader
+// returns that copy; a failed load is tried again on the next open.
+const loadCredits = () => loadDataFile(CREDITS_PATH);
 
 const STATEMENT = [
-  { key: 'real', label: 'Real' },
-  { key: 'artistic', label: 'Artistic' },
-  { key: 'modelled', label: 'Modelled' },
+  { key: 'real', get label() { return t('ui.real'); } },
+  { key: 'artistic', get label() { return t('ui.artistic'); } },
+  { key: 'modelled', get label() { return t('ui.modelled'); } },
 ];
 
 // Plain-text tags until #62 ships the SourceTag component and provenance registry. Swap these spans for it then.
 const TAGS = [
-  { id: 'data', label: 'DATA', text: 'measured by a mission or stated in a NASA document' },
-  { id: 'derived', label: 'DERIVED', text: 'calculated by us from data' },
-  { id: 'sim', label: 'SIM', text: 'our assumption or a game choice' },
+  { id: 'data', label: 'DATA', get text() { return t('ui.measured.by.a.mission.or.stated.in.a'); } },
+  { id: 'derived', label: 'DERIVED', get text() { return t('ui.calculated.by.us.from.data'); } },
+  { id: 'sim', label: 'SIM', get text() { return t('ui.our.assumption.or.a.game.choice'); } },
 ];
 
 const sentence = (text) => (text ? text.charAt(0).toUpperCase() + text.slice(1) : '');
@@ -143,19 +135,17 @@ export function SourcesScreen({ credits, status, onClose }) {
         <header className="sources-head">
           <div>
             <p className="sources-kicker">
-              Credits{groups.length ? ` · ${credits.entries.length} sources in ${groups.length} groups` : ''}
+              {t('ui.credits')}{groups.length ? ` · ${t('ui.p0.sources.in.p1.groups', { p0: credits.entries.length, p1: groups.length })}` : ''}
             </p>
-            <h2 id="sources-title">Sources</h2>
+            <h2 id="sources-title">{t('ui.sources.188')}</h2>
           </div>
-          <button ref={closeRef} type="button" className="sources-close" onClick={onClose} aria-label="Close sources" title="Close (Esc)">
-            Close
+          <button ref={closeRef} type="button" className="sources-close" onClick={onClose} aria-label={t('ui.close.sources')} title={t('ui.close.esc')}>
+            {t('ui.close').trim()}
           </button>
         </header>
 
         <section className="sources-statement" aria-labelledby="sources-statement-title">
-          <h3 id="sources-statement-title" className="sources-visually-hidden">
-            What is real, what is artistic and what is modelled
-          </h3>
+          <h3 id="sources-statement-title" className="sources-visually-hidden">{t('ui.what.is.real.what.is.artistic.and.what')}</h3>
           <dl className="sources-truth">
             {STATEMENT.map(({ key, label }) => (
               <div key={key} className={`sources-truth-item sources-truth-${key}`}>
@@ -174,24 +164,24 @@ export function SourcesScreen({ credits, status, onClose }) {
         </section>
 
         <div className="sources-body" tabIndex={-1}>
-          {status === 'error' && <p className="sources-status">credits.json could not be loaded. Close and open the screen to try again.</p>}
-          {status === 'loading' && !credits && <p className="sources-status">Loading sources…</p>}
+          {status === 'error' && <p className="sources-status">{t('ui.credits.json.could.not.be.loaded.close.and')}</p>}
+          {status === 'loading' && !credits && <p className="sources-status">{t('ui.loading.sources')}</p>}
 
           {groups.map((group) => (
             <section key={group.id} className="sources-group" aria-labelledby={`sources-${group.id}`}>
               <h3 id={`sources-${group.id}`}>
-                {group.label} <span>· {group.entries.length}</span>
+                {translateText(group.label)} <span>· {group.entries.length}</span>
               </h3>
               <ul className="sources-list">
                 {group.entries.map((entry) => (
                   <li key={entry.id} className="sources-entry" data-entry={entry.id}>
                     <h4>{entry.name}</h4>
                     <p className="sources-provider">{entry.provider}</p>
-                    <p className="sources-credit">Credit: {entry.credit_line}</p>
-                    <p className="sources-licence">Licence: {entry.license}</p>
+                    <p className="sources-credit">{t('ui.credit.line', { text: entry.credit_line })}</p>
+                    <p className="sources-licence">{t('ui.licence.line', { text: entry.license })}</p>
                     <a href={entry.url} target="_blank" rel="noopener noreferrer">
                       {linkHost(entry.url)}
-                      <span className="sources-visually-hidden"> (opens in a new tab)</span>
+                      <span className="sources-visually-hidden">{t('ui.opens.in.a.new.tab')}</span>
                     </a>
                   </li>
                 ))}
@@ -201,19 +191,19 @@ export function SourcesScreen({ credits, status, onClose }) {
 
           {resources.length > 0 && (
             <section className="sources-group" aria-labelledby="sources-challenge">
-              <h3 id="sources-challenge">Space Apps challenge resources</h3>
+              <h3 id="sources-challenge">{t('ui.space.apps.challenge.resources')}</h3>
               <ul className="sources-resources">
                 {resources.map((r) => (
                   <li key={r.name}>
                     {r.url ? (
                       <a href={r.url} target="_blank" rel="noopener noreferrer">
                         {r.name}
-                        <span className="sources-visually-hidden"> (opens in a new tab)</span>
+                        <span className="sources-visually-hidden">{t('ui.opens.in.a.new.tab')}</span>
                       </a>
                     ) : (
                       <b>{r.name}</b>
                     )}
-                    <span>{r.used ? `Used: ${r.used}` : r.pending ? `Pending: ${r.pending}` : 'Not used'}</span>
+                    <span>{r.used ? t('used', { text: r.used }) : r.pending ? t('pendingResource', { text: r.pending }) : t('ui.not.used')}</span>
                   </li>
                 ))}
               </ul>

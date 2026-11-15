@@ -3,9 +3,9 @@ import { useMissionStore } from '../state/store.js';
 import MissionTable from './MissionTable.jsx';
 import { useRoutePlanner } from './useRoutePlanner.js';
 import { startAtAirlock } from './routeStart.js';
+import { loadDataFile, ROUTE_PATH } from '../data/dataFiles.js';
+import { SHELTERS_PATH } from '../sim/shelters.js';
 
-const ROUTE_URL = import.meta.env.BASE_URL + 'marswalk/assets/route.json';
-const SHELTERS_URL = import.meta.env.BASE_URL + 'data/shelters.json';
 
 /**
  * Plan mode: the mission table in the habitat (#11). It loads the route, keeps the planner running and hands the
@@ -22,12 +22,8 @@ export default function PlanMode({ engine, active, evaBegun = false, onBeginEva,
   // without shelters.json it starts at the HAB waypoint as before.
   useEffect(() => {
     let cancelled = false;
-    const shelters = fetch(SHELTERS_URL).then((response) => (response.ok ? response.json() : null)).catch(() => null);
-    fetch(ROUTE_URL)
-      .then((response) => {
-        if (!response.ok) throw new Error(`route.json ${response.status}`);
-        return response.json();
-      })
+    const shelters = loadDataFile(SHELTERS_PATH).catch(() => null);
+    loadDataFile(ROUTE_PATH)
       .then(async (route) => {
         const start = await shelters;
         if (cancelled) return;

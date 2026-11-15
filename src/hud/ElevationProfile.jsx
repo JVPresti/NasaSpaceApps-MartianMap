@@ -1,5 +1,7 @@
+import { t } from '../i18n/index.js';
 import { useMemo } from 'react';
 import { buildProfile, slopeClass } from './profile.js';
+import { waypointNumber } from '../sim/waypointNumber.js';
 import './elevation.css';
 
 const W = 360;
@@ -33,7 +35,7 @@ export default function ElevationProfile({ path, waypoints, heightAt, slopeAt, p
   const x = (distanceM) => PAD + (distanceM / totalM) * (W - PAD * 2);
   const y = (heightM) => H - PAD - ((heightM - minHeightM) / range) * (H - PAD * 2);
   const area = `M${x(0)} ${H - PAD} ${samples.map((sample) => `L${x(sample.distanceM)} ${y(sample.heightM)}`).join(' ')} L${x(totalM)} ${H - PAD} Z`;
-  const label = `Elevation profile · ${Math.round(totalM)} m · ${Math.round(minHeightM)} to ${Math.round(maxHeightM)} m`;
+  const label = t('ui.elevation.profile.p0.m.p1.to.p2.m', { p0: Math.round(totalM), p1: Math.round(minHeightM), p2: Math.round(maxHeightM) });
   const heightAtDistance = (distanceM) => {
     if (samples.length < 2) return samples[0]?.heightM ?? 0;
     const t = Math.max(0, Math.min(1, distanceM / totalM)) * (samples.length - 1);
@@ -61,7 +63,7 @@ export default function ElevationProfile({ path, waypoints, heightAt, slopeAt, p
           <g key={`w${mark.index}`} className="elevation-waypoint">
             <line x1={x(mark.distanceM)} y1={PAD} x2={x(mark.distanceM)} y2={H - PAD} />
             <circle cx={x(mark.distanceM)} cy={y(heightAtDistance(mark.distanceM))} r="2.6" />
-            <text x={x(mark.distanceM)} y={PAD - 1} textAnchor="middle">{mark.index + 1}</text>
+            <text x={x(mark.distanceM)} y={PAD - 1} textAnchor="middle">{waypointNumber(mark.index)}</text>
           </g>
         ))}
         {Number.isFinite(positionM) && (
@@ -70,8 +72,8 @@ export default function ElevationProfile({ path, waypoints, heightAt, slopeAt, p
             <circle cx={x(positionM)} cy={y(heightAtDistance(positionM))} r="3" />
           </g>
         )}
-        <text x={PAD} y={H - 1} className="elevation-label">{Math.round(minHeightM)} m</text>
-        <text x={W - PAD} y={H - 1} className="elevation-label" textAnchor="end">{Math.round(maxHeightM)} m</text>
+        <text x={PAD} y={H - 1} className="elevation-label">{Math.round(minHeightM)}{t('units.metresSuffix')}</text>
+        <text x={W - PAD} y={H - 1} className="elevation-label" textAnchor="end">{Math.round(maxHeightM)}{t('units.metresSuffix')}</text>
       </svg>
     </figure>
   );
