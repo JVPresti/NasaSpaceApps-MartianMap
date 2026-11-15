@@ -4,8 +4,9 @@ Source of truth for the presentation mode (`?present=1`, branch `feat/present-mo
 (`script-5min-es.md`, `script-5min-en.md`, `script-8min-es.md`) and this file change together. Each push to
 `docs/pitch-hill-climb` that changes a beat updates the "Changed" line at the bottom.
 
-> **Format not confirmed.** Confirm with the Ensenada organisers: 5 minutes plus Q&A is our assumption. The 8-minute
-> version uses the same beats with the full demo (`demo-run-sheet.md`, cut C).
+> **Format.** The Ensenada organisers asked for a presentation in English, 3 minutes at most, at 2:30 pm, with the file
+> sent to them by 2:00 pm (`docs/SUBMISSION.md`, PR #316). The 3-minute table below is the primary. **Confirm with
+> the organisers** whether the live demo counts inside the 3 minutes. The 5-minute table stays for a longer slot.
 
 Rules for every beat:
 
@@ -19,6 +20,23 @@ Rules for every beat:
 - Each beat needs a still final frame that reads on its own. The 7-slide PDF uses those frames.
 - `prefers-reduced-motion`: cut straight to each final frame.
 - Transitions about 300 ms. The globe zoom is the only long move.
+
+## 3-minute pitch (primary)
+
+Spoken in English (`script-3min-en.md`); the Spanish on-screen words stay as the second line for the local judges.
+Beats 1a, 1b and 3 reuse the camera ideas and on-screen words of the 5-minute table below; beat 2 (the limits) is
+cut, and its three numbers move into the cold open's oxygen bar.
+
+| # | Time | Beat | Camera idea | On screen (EN / ES) | Presenter says (EN, from script-3min-en.md) |
+|---|---|---|---|---|---|
+| 1a | 0:00-0:24 | Cold open | As 5-minute beat 1a: globe to Jezero to the HiRISE tile, astronaut at Cheyava Falls, the route home drawn, the oxygen bar | As 5-minute beat 1a | "Jezero crater, Mars. An astronaut stands at Cheyava Falls, the rock where Perseverance found a potential biosignature, 913 metres from the habitat by the route. It is the end of her EVA: 160 grams of oxygen left. Walking back costs 54. Thirty minutes of reserve stay untouched. And a radiation alert comes in." |
+| 1b | 0:24-0:38 | Thesis and team | As 5-minute beat 1b | Thesis; team name | "On Mars, the question isn't where you can go. It's where you can go and still get home. We are Los Frijolitos Espaciales Refritos Nueva Generación, from Ensenada. This is Marswalk." |
+| 3 | 0:38-0:55 | The walkback zone | As 5-minute beat 3, shortened to 17 s: the zone shrinks along the route, snaps at the alert, final frame next to the HUD margin. Caption on screen the whole beat | As 5-minute beat 3 | "The blue area is everywhere she can reach and still get back with her reserve, computed with the app's planner and suit model on NASA's HiRISE terrain. In the app, that is one number on the visor: the margin." |
+| 4 | 0:55-2:10 | Live demo | Handoff to the mission table's Route step | Nothing extra | Demo cut B, `demo-run-sheet.md` (1:15): Terrain layer, O2 to 20 %, Begin EVA, walk, dust storm fired by hand, the route home on the map |
+| 5 | 2:10-2:28 | The answer | Back to the beat 3 final frame at Cheyava Falls; the corridor home lights; the oxygen bar shows its green slice | "Margin 13 min · head home now" / "Margen 13 min · regresa ya"; "Radiation: Curiosity RAD, Gale crater, not Jezero" / "Radiación: RAD de Curiosity, cráter Gale, no Jezero" | "And the astronaut at Cheyava Falls? Thirteen minutes of margin: Marswalk sends her home now, around slopes over twenty degrees. Curiosity measured that radiation in Gale crater, not Jezero, and the alert says so." |
+| 7 | 2:28-2:42 | One hard fact | End frame: one big number, the team names, the QR | "Our grid reproduces NASA's HiRISE model to 0.14 m" / "Nuestra malla reproduce el modelo HiRISE de la NASA a 0.14 m"; QR | "One last number: our grid reproduces the HiRISE model on NASA Mars Trek to fourteen centimetres. The QR code opens the demo." |
+
+18 seconds of slack after beat 7 (2:42 to 3:00).
 
 ## 5-minute pitch
 
@@ -72,4 +90,4 @@ the real app: the walkback zone is not in the video, because the app shows the m
 | 0:10-0:20 | How it works with NASA data | Terrain layer: the route bends around red slopes; the helmet view with the margin; the dust storm and the map's route home | "HiRISE DTM · Mastcam-Z · MEDA · Curiosity RAD" | "HiRISE terrain sets the route around slopes over twenty degrees. When a dust storm takes the horizon, the way home re-plans." |
 | 0:20-0:30 | The future | The three route profiles at the table; end card with the number | "Next: heart rate · other HiRISE sites · same HiRISE model as NASA Mars Trek, 0.14 m" | "Next, a heart rate sensor sets her oxygen use. We process the same HiRISE model as NASA Mars Trek, to fourteen centimetres." |
 
-Changed: 15 Nov 2026, 12:00 UTC. Council round 2 (A/B, 3 of 3 kept the revision): Gale and MEDA said aloud in beat 6; the scenario framed as the end of an EVA; close on the 0.14 m processing check; 913 m by the route, 785 m straight.
+Changed: 15 Nov 2026, 13:20 UTC (5:20 am PST). The organisers asked for 3 minutes in English: the 3-minute table is now the primary, spoken in English. The 5-minute table stays.

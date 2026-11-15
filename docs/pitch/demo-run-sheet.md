@@ -1,6 +1,6 @@
 # Live demo run sheet
 
-> **Confirm with the Ensenada organisers:** how long the pitch is, whether Q&A is separate, and whether we can plug in our own laptop. This sheet has three cuts of the same demo: 2:25 inside the 5-minute pitch, 1:15 inside the 3-minute pitch, and the full 6:30 inside the 8-minute version.
+> **Confirm with the Ensenada organisers:** how long the pitch is, whether Q&A is separate, and whether we can plug in our own laptop. The organisers asked for 3 minutes at most, in English (`docs/SUBMISSION.md`, PR #316), so cut B is the primary. This sheet has three cuts of the same demo: 1:15 inside the 3-minute pitch (primary), 2:25 inside the 5-minute pitch, and the full 6:30 inside the 8-minute version.
 
 The demo is the first mission from PR #282 (`docs/DEMO.md`, keiwv): a 55 m sortie from the airlock to **S1 · light-toned patch**, with the dust storm and the radiation alert brought forward so both play before the crew is home. Every key and button below was checked against the #282 code (`src/`, `docs/CONTROLS.md` on that branch). Timings come from keiwv's measured run (15 Nov, RTX 5070, 1366 x 768): stop reached at T+79 s, storm at T+97 s, radiation at T+113 s, back in the habitat at T+173 s. Walking straight to the stop, without the find detour, saves about 25 s.
 
@@ -13,7 +13,7 @@ Where `main` and #282 differ, this sheet follows #282 and says so in a note.
 | 1 | Plug the demo laptop into power and the projector. Set the display to duplicate, 1920 x 1080. | The projector shows the desktop |
 | 2 | Switch the keyboard layout to English (US). | The backtick key types ` (on a Spanish layout it is a dead key, and the Events strip needs it) |
 | 3 | Open Chrome and go to the demo URL with `?debug=1` (below). Wait on the start screen until the main button reads **Open the mission table** instead of "Loading scene". | About 20 s on the GPU laptop |
-| 4 | Language: open the table once, press **Esc**, **Settings**, set **Idioma / Language** to **Español** for the local judges, then reload the page. The choice is saved in the browser. | The start screen says "Abrir la mesa de misión" |
+| 4 | Language: English, since the organisers asked for the presentation in English. If it was switched: open the table, press **Esc**, **Settings**, set **Language** to **English**, reload. The choice is saved in the browser. | The start screen says "Open the mission table" |
 | 5 | Press **F11** for full screen. Turn the laptop sound on at about 30 %: the suit audio (fans, breathing, alarms) helps the storm beat. | |
 | 6 | Open the backup video (recorded from the app by the presentation mode, `feat/present-mode`) in a second browser tab, paused at 0:00, and the stills folder `docs/pitch/fallback/stills/` in an image viewer. | One click plays it |
 | 7 | Close every other app, notification and chat. | |
@@ -39,15 +39,17 @@ Uses DEMO.md segments 2, 3, 4, 5, 6 and 7, cut short. One change from DEMO.md: t
 
 `main` note: on `main` the storm comes at T+480 s and there is no first sortie. Do not run Cut A on `main`.
 
-## Cut B: 1:15 inside the 3-minute pitch
+## Cut B: 1:15 inside the 3-minute pitch (primary for Ensenada)
 
-| Beat | Time | Do | Say |
-|---|---|---|---|
-| B1 | 0:00 | **Abrir la mesa de misión**, **Siguiente: ruta**, layer **Terreno** | "La ruta sale del modelo de terreno de HiRISE y rodea las pendientes peligrosas." |
-| B2 | 0:15 | Tab **Traje**, **Empezar la EVA**, **Empezar a caminar**. Do **not** click the scene: without the mouse capture the cursor stays free for the Events strip in B4. Steer with **A** / **D** or drag on the scene to look | "El plan dice que sí podemos salir." |
-| B3 | 0:25 | Hold **W** toward S1 for about 20 s | "El margen de regreso, arriba a la izquierda, baja con cada paso." |
-| B4 | 0:45 | Press **`**, click **Dust storm**, press **`**. Wait for the banner. Press **M**, then **M** | "Disparo la tormenta ahora para ahorrar tiempo. La ruta se recalcula al hábitat." |
-| | 1:15 | Back to slides | |
+The organisers asked for 3 minutes at most, in English (`docs/SUBMISSION.md`, PR #316), so this is the cut to rehearse first. Lines in English from `script-3min-en.md`; the Spanish twin is `script-3min-es.md`. It uses DEMO.md segments 2, 4, 5 and 7, cut short, and fires the storm by hand.
+
+| Beat | Time | Do | Say | If it fails |
+|---|---|---|---|---|
+| B1 | 0:00 | **Open the mission table**, **Next: route**, click the **Terrain** layer | "The mission table. The route comes from the HiRISE terrain and never crosses slopes over twenty degrees: the red ground." | Layer does not paint: say it over `fallback/stills/D2-terrain-layer.jpg` |
+| B2 | 0:15 | Drag **O2** in the crew's needs to **20 %**. Tab **Suit**, **Begin EVA**, **Start walking**. Do **not** click the scene: without the mouse capture the cursor stays free for the Events strip in B4. Steer with **A** / **D** or drag on the scene to look | "I play the end of an EVA: twenty percent oxygen. The plan says go." | The table says No-go: drag O2 up until it says Go. Not rehearsed at 20 %: skip the slider and say "The margin reads 480: this close to home the 8 hour clock limits it, not oxygen." |
+| B3 | 0:25 | Hold **W** toward the S1 marker for about 20 s. Point at the margin on the left | "On the left, the margin: minutes left after walking home and keeping the reserve. It drops as I walk." | Walk stalls: keep talking, the storm does not need the stop when fired by hand |
+| B4 | 0:45 | Press **`** (US layout), click **Dust storm**, press **`** to close the strip. Wait 5 s for the banner. Press **M**: the table opens on Route; point at the route home on the map. Press **M** again | "I fire the dust storm by hand to save time. It takes the horizon, so no position fix, and the route re-plans to the habitat." | Backtick does nothing: the keyboard is not on US layout; click the "Events `" chip instead. No banner: say the line over `D7-storm-walk.jpg` and `D7-storm-plan.jpg` |
+| | 1:15 | Back to the presentation mode | | |
 
 Say that you fire the storm by hand. A judge who sees the Events strip will ask. Rehearse B2 to B4 once: with the mouse captured, a click lands on the scene (it samples the ground) instead of on the Events strip, and Esc closes the strip, so the cursor has to stay free from the start.
 
