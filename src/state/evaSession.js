@@ -16,7 +16,8 @@ import { pauseMission, resetStore, resumeMission, useMissionStore } from './stor
 
 export const EVA_PHASE = Object.freeze({ START: 'start', PLAYING: 'playing', PAUSED: 'paused' });
 // END: confirm ending the EVA and going back to the mission table (#11), a restart that lands on the table.
-export const PAUSE_VIEW = Object.freeze({ MENU: 'menu', CONTROLS: 'controls', RESTART: 'restart', END: 'end' });
+// SETTINGS: language, suit audio, scene quality and mouse look, in their own view so the pause menu stays short.
+export const PAUSE_VIEW = Object.freeze({ MENU: 'menu', CONTROLS: 'controls', RESTART: 'restart', END: 'end', SETTINGS: 'settings' });
 
 // Honest for every refusal: a denial is not always a permission problem. Right after Escape, browsers can
 // need a short moment before they accept a new capture, and the next attempt must come from Resume.
