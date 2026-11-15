@@ -12,10 +12,10 @@ function formatMargin(seconds) {
 }
 
 /**
- * Minimal event alert strip. It reads the store contract that #20 will use for
- * the full visor HUD, so the same alerts appear here now and in the HUD later.
+ * Event alert strip: the one place an alert shows, in Plan's alert region and in Walk under the heading box.
+ * `className` adds a placement class, for example `event-banner-walk`.
  */
-export default function EventBanner() {
+export default function EventBanner({ className = '' }) {
   const alerts = useMissionStore((s) => s.alerts);
   const environment = useMissionStore((s) => s.environment);
   const suit = useMissionStore((s) => s.suit);
@@ -30,7 +30,7 @@ export default function EventBanner() {
   const skipped = route.skipped ?? [];
 
   return (
-    <div className={`event-banner ${translateText(alert.level)}`} role="alert" aria-live="assertive">
+    <div className={`event-banner ${translateText(alert.level)}${className ? ' ' + className : ''}`} role="alert" aria-live="assertive">
       <div className="event-banner-main">
         <span className="event-level">{translateText(alert.level)}</span>
         <span className="event-text">{translateText(alert.text)}</span>
