@@ -1218,7 +1218,20 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
 /* Five figures in a row over the suit model, level with go / no-go: the table's panel, label and number styles */
 .table-centre-wrap .outlook-strip { flex: none; width: 100%; }
 .outlook-strip .outlook-window { margin-left: auto; text-align: right; }
-.outlook-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.outlook-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.outlook-strip.is-detail .outlook-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* More detail / Less detail (#397): a quiet text button at the end of the heading row */
+.outlook-toggle {
+  flex: none;
+  padding: 2px 0;
+  font: 500 13px/1.3 var(--font-ui);
+  color: var(--cyan);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  cursor: pointer;
+}
+.outlook-toggle:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 .outlook-grid dt { overflow: hidden; font-size: 13px; color: var(--dim); text-overflow: ellipsis; white-space: nowrap; }
 .outlook-grid dd { margin: 4px 0 0; white-space: nowrap; }
 .outlook-grid b { font: 600 20px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }

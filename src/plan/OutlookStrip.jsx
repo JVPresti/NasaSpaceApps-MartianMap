@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { MEDA_SOL_PATH, parseMedaSol } from '../data/medaRad.js';
 import { HAZARDS_PATH, provenance } from '../data/provenance.js';
@@ -15,6 +15,8 @@ import { useDataFile } from './useConditions.js';
 // The conditions outlook on the mission table (#248), next to go / no-go: the MEDA weather over the planned walk, the
 // dust opacity against the terrain-fix limit and the space-weather warning. Honest tags: MEDA is a replayed sol, not a
 // forecast, and the warning's lead time is the September 2017 event, measured by RAD in Gale crater, not Jezero.
+// Compact by default (#397): only the dust opacity and the space weather bear on go / no-go, so the strip opens with
+// those and one short line; More detail shows the MEDA weather, the full radiation note and the route's sky exposure.
 
 // Registry entries for the values that are not store paths; the details fill in from hazards.json once it loads.
 provenance.define({
@@ -56,10 +58,13 @@ function Cell({ label, tag, value, unit, tone, note }) {
 /**
  * The strip itself, from computed values: tested without the data files.
  * @param {{ window: ReturnType<typeof medaOverWindow> | null, dust: object | null, dustSource?: object | null,
- *   space: ReturnType<typeof spaceWeather>, missionId: string, exposure?: { label: string, value: string, note: string } | null }} props
- *   exposure: the sky exposure along the route (routeExposure.exposureText), the route's own radiation figure
+ *   space: ReturnType<typeof spaceWeather>, missionId: string, exposure?: { label: string, value: string, note: string } | null,
+ *   detail?: boolean, onToggleDetail?: () => void }} props
+ *   exposure: the sky exposure along the route (routeExposure.exposureText), the route's own radiation figure;
+ *   detail: show everything (More detail), otherwise only dust and space weather with a short radiation line
  */
-export function OutlookView({ window, dust, dustSource = null, space, missionId, exposure = null }) {
+export function OutlookView({ window, dust, dustSource = null, space, missionId, exposure = null, detail = false, onToggleDetail }) {
+  const detailId = useId();
   const weather = (key, path, label, unit) => {
     const c = window?.channels[key] ?? null;
     return (
@@ -72,19 +77,26 @@ export function OutlookView({ window, dust, dustSource = null, space, missionId,
     : space.state === 'off' ? t('outlook.space.off')
       : space.state === 'scheduled' ? t('outlook.space.scheduled', { when: lowerFirst(space.when ?? eventTimingText({ earliestSec: space.atSec })), lead })
         : t('outlook.space.watch', { lead });
+  const spaceShort = space.state === 'active' ? t('outlook.space.active')
+    : space.state === 'off' ? t('outlook.space.off')
+      : space.state === 'scheduled' ? t('outlook.space.scheduled.short', { when: lowerFirst(space.when ?? eventTimingText({ earliestSec: space.atSec })) })
+        : t('outlook.space.watch.short');
 
   return (
-    <div className="table-panel outlook-strip">
+    <div className={'table-panel outlook-strip' + (detail ? ' is-detail' : '')} id={detailId}>
       <div className="table-panel-head">
         <p className="table-label">{t('outlook.title')}</p>
         <p className="table-label outlook-window">
           {window ? t('outlook.window', { from: window.fromLmst, to: window.toLmst }) : t('outlook.window.waiting')}
         </p>
+        <button type="button" className="outlook-toggle" aria-expanded={detail} aria-controls={detailId} onClick={onToggleDetail}>
+          {t(detail ? 'outlook.less' : 'outlook.more')}
+        </button>
       </div>
       <dl className="outlook-grid">
-        {weather('pressurePa', 'environment.pressurePa', t('outlook.pressure'), 'Pa')}
-        {weather('tempC', 'environment.tempC', t('outlook.temperature'), '°C')}
-        {weather('windMs', 'environment.windMs', t('outlook.wind'), 'm/s')}
+        {detail && weather('pressurePa', 'environment.pressurePa', t('outlook.pressure'), 'Pa')}
+        {detail && weather('tempC', 'environment.tempC', t('outlook.temperature'), '°C')}
+        {detail && weather('windMs', 'environment.windMs', t('outlook.wind'), 'm/s')}
         <Cell
           label={t('outlook.dust')}
           tag={dust ? (dust.measured ? <SourceTag path="environment.dustOpacity" requireSource={false} source={dustSource} /> : <SourceTag path="outlook.clearTau" requireSource={false} />) : null}
@@ -101,12 +113,12 @@ export function OutlookView({ window, dust, dustSource = null, space, missionId,
         />
       </dl>
       <p className="table-note">
-        {spaceLine}
+        {detail ? spaceLine : spaceShort}
         {space.state === 'scheduled' && <SourceTag path={missionSourcePath(missionId, 'radiation')} requireSource={false} />}
-        {' '}{t('outlook.replay')}
+        {detail && <>{' '}{t('outlook.replay')}</>}
       </p>
       {/* The route's own radiation figure (Exposure layer): how open the sky is along it, so it moves with the route. */}
-      {exposure && (
+      {detail && exposure && (
         <p className="table-note outlook-exposure">
           <b>{exposure.label}</b>: {exposure.value}<SourceTag path="map.exposure" requireSource={false} /> {exposure.note}
         </p>
@@ -121,6 +133,7 @@ export function OutlookView({ window, dust, dustSource = null, space, missionId,
  *   planned one, so its budget sets the walk window
  */
 export default function OutlookStrip({ dust, planCurrent = true }) {
+  const [detail, setDetail] = useState(false);
   const medaJson = useDataFile(MEDA_SOL_PATH);
   const hazards = useDataFile(HAZARDS_PATH);
   const meda = useMemo(() => {
@@ -145,5 +158,8 @@ export default function OutlookStrip({ dust, planCurrent = true }) {
     off: (s.off ?? []).includes('radiation'),
     active: s.radiationActive,
   }), when };
-  return <OutlookView window={window} dust={dust} dustSource={s.dustSource ?? null} space={space} missionId={missionForObjective(s.objective).id} exposure={exposure} />;
+  return (
+    <OutlookView window={window} dust={dust} dustSource={s.dustSource ?? null} space={space} missionId={missionForObjective(s.objective).id}
+      exposure={exposure} detail={detail} onToggleDetail={() => setDetail((value) => !value)} />
+  );
 }

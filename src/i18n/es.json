@@ -1203,5 +1203,9 @@
   "outlook.space.watch": "En septiembre de 2017 la alerta de fulguración llegó {lead} min antes que las partículas a Marte (Gale, no Jezero).",
   "outlook.space.scheduled": "Aviso por adelantado: la alerta de radiación de esta salida llega {when}, acortada desde los {lead} min de antelación de septiembre de 2017 (RAD, Gale, no Jezero).",
   "outlook.space.off": "La alerta de radiación está desactivada en esta salida.",
-  "outlook.space.active": "Evento de partículas en curso: refúgiate pronto en el hábitat (ALARA)."
+  "outlook.space.active": "Evento de partículas en curso: refúgiate pronto en el hábitat (ALARA).",
+  "outlook.more": "Más detalle",
+  "outlook.less": "Menos detalle",
+  "outlook.space.scheduled.short": "Alerta de radiación prevista {when}.",
+  "outlook.space.watch.short": "No se prevé alerta de radiación en esta salida."
 }

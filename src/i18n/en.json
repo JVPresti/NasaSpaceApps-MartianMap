@@ -1203,5 +1203,9 @@
   "outlook.space.watch": "A flare alert came {lead} min before the particles reached Mars in September 2017 (Gale, not Jezero).",
   "outlook.space.scheduled": "Warned ahead: this run's radiation alert comes {when}, shortened from the {lead} min lead of September 2017 (RAD, Gale, not Jezero).",
   "outlook.space.off": "The radiation alert is switched off for this run.",
-  "outlook.space.active": "Particle event under way: shelter in the habitat early (ALARA)."
+  "outlook.space.active": "Particle event under way: shelter in the habitat early (ALARA).",
+  "outlook.more": "More detail",
+  "outlook.less": "Less detail",
+  "outlook.space.scheduled.short": "Radiation alert expected {when}.",
+  "outlook.space.watch.short": "No radiation alert expected on this walk."
 }

@@ -20,8 +20,9 @@ const limit = hazards.values['dust.event.nav_fix_tau_max'].value;
 const window = medaOverWindow(parseMedaSol(meda), parseLmst('17:45'), 420);
 const clear = { ...dustAgainstLimit(hazards.values['dust.tau.clear_season'].value, limit), measured: false };
 const render = (props) => renderToStaticMarkup(
-  <OutlookView window={window} dust={clear} space={spaceWeather({ leadMin: lead, atSec: 95 })} missionId="first" {...props} />,
+  <OutlookView window={window} dust={clear} space={spaceWeather({ leadMin: lead, atSec: 95 })} missionId="first" detail {...props} />,
 );
+// The tests above the compact block read the whole strip, as More detail shows it (#397).
 const text = (html) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 
 afterEach(() => setLanguage('en'));
@@ -86,5 +87,41 @@ describe('conditions outlook strip (#248)', () => {
     const t = text(render());
     for (const label of ['Previsión de condiciones', 'Presión', 'Viento', 'Polvo (opacidad)', 'Clima espacial', 'min de aviso', 'Gale, no Jezero', 'no una previsión']) expect(t).toContain(label);
     expect(t).toContain('τ 0,45');
+  });
+
+  describe('compact by default (#397)', () => {
+    const exposure = { label: 'Sky exposure on the route', value: '0.93 mean', note: 'Dose scales with it.' };
+    const compact = (props) => render({ detail: false, exposure, ...props });
+
+    it('shows only the dust opacity and the space weather, with a short radiation line', () => {
+      const t = text(compact());
+      for (const label of ['Dust opacity', 'Space weather', '224 min warning', 'Radiation alert expected 95 s into the EVA.']) expect(t).toContain(label);
+      for (const hidden of ['Pressure', 'Temperature', 'Wind', 'not a forecast', 'Gale, not Jezero', 'Sky exposure on the route']) expect(t).not.toContain(hidden);
+    });
+
+    it('keeps the dust and space-weather source tags', () => {
+      const html = compact();
+      expect(html).toContain('src-tag-sim');
+      expect(html).toContain('src-tag-derived');
+    });
+
+    it('offers More detail, collapsed, and Less detail once open', () => {
+      expect(compact()).toMatch(/<button[^>]*aria-expanded="false"[^>]*>More detail<\/button>/);
+      expect(render({ exposure })).toMatch(/<button[^>]*aria-expanded="true"[^>]*>Less detail<\/button>/);
+      expect(text(render({ exposure }))).toContain('Sky exposure on the route');
+    });
+
+    it('says plainly when no alert is planned, or the event is under way or off', () => {
+      expect(text(compact({ space: spaceWeather({ leadMin: lead }) }))).toContain('No radiation alert expected on this walk.');
+      expect(text(compact({ space: spaceWeather({ leadMin: lead, atSec: 95, active: true }) }))).toContain('Particle event under way');
+      expect(text(compact({ space: spaceWeather({ leadMin: lead, atSec: 95, off: true }) }))).toContain('switched off for this run');
+    });
+
+    it('speaks Spanish', () => {
+      setLanguage('es');
+      const t = text(compact());
+      for (const label of ['Polvo (opacidad)', 'Clima espacial', 'Más detalle', 'Alerta de radiación prevista']) expect(t).toContain(label);
+      expect(t).not.toContain('Presión');
+    });
   });
 });
