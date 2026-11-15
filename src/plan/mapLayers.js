@@ -127,7 +127,7 @@ export function acrossLabel(size) {
 const droppedDetail = (limit) => t('layers.stop.dropped.' + (['time', 'o2', 'battery'].includes(limit) ? limit : 'unreachable'));
 
 /** A task as a map tag says it: "Rock ×1". */
-export function taskTag(task) {
+function taskTag(task) {
   return `${t('tasktable.what.' + task.what)} ${t('tasktable.count', { n: task.count })}`;
 }
 
