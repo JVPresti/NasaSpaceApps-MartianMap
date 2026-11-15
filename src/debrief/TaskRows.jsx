@@ -1,6 +1,6 @@
 import SourceTag from '../components/SourceTag.jsx';
 import { formatUnit, t, translateText } from '../i18n/index.js';
-import { taskWhat } from '../mission/useTaskProgress.js';
+import { taskText } from '../plan/routeWhy.js';
 import { formatMissionTime } from './format.js';
 
 /** The tag chip of the debrief's rows (debrief.css .debrief-tag), not interactive inside the modal. */
@@ -42,7 +42,7 @@ export default function TaskRows({ tasks }) {
               <span className="debrief-time">{formatMissionTime(row.atSec)}</span>
               <div className="debrief-entry-body">
                 <p className="debrief-entry-title">
-                  {t('taskreview.row', { state: t(STATE_KEY[row.state] ?? STATE_KEY.open), what: taskWhat(row), place: translateText(row.place?.label ?? row.place?.key ?? '—') })}
+                  {t('taskreview.row', { state: t(STATE_KEY[row.state] ?? STATE_KEY.open), what: taskText(row), place: translateText(row.place?.label ?? row.place?.key ?? '—') })}
                   <SourceTag path="eva.tasks" variant="tag" interactive={false} className={TAG_CLASS} />
                 </p>
                 <p className="debrief-entry-meta">

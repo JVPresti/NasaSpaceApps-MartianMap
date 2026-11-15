@@ -1,11 +1,12 @@
 import { t, translateText } from '../i18n/index.js';
+import { taskText } from '../plan/routeWhy.js';
 import SourceTag from '../plan/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
-import { taskWhat, useTaskProgress } from './useTaskProgress.js';
+import { useTaskProgress } from './useTaskProgress.js';
 
 /** The banner's line for one task: what to collect here and how many are in, or the tick once all are in. */
 function taskBannerText(row) {
-  const values = { what: taskWhat(row), here: row.here, count: row.count };
+  const values = { what: taskText(row), here: row.here, count: row.count };
   if (row.state === 'done') return t('taskwalk.done', values);
   return t(row.what === 'photo' ? 'taskwalk.todo.photo' : 'taskwalk.todo', values);
 }
@@ -23,7 +24,7 @@ function placeLine(rows) {
     return { text: taskBannerText(current) + (others > 0 ? ' · ' + t('taskwalk.more', { count: others }) : ''), row: current };
   }
   if (rows.length === 1) return { text: taskBannerText(rows[0]), row: rows[0] };
-  return { text: t('taskwalk.done.all', { list: rows.map(taskWhat).join(', ') }), row: null };
+  return { text: t('taskwalk.done.all', { list: rows.map(taskText).join(', ') }), row: null };
 }
 
 /**

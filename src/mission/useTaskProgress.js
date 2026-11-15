@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { taskText } from '../plan/routeWhy.js';
 import { taskProgress, tasksAt } from '../sim/taskProgress.js';
 import { useMissionStore } from '../state/store.js';
 
@@ -31,6 +30,3 @@ function nearestFirst(rows, position) {
     .sort((a, b) => a.d - b.d)
     .map((entry) => entry.id);
 }
-
-/** "1 rock sample", "2 photos": what a task asks for, with its count, in the mission table's words (routeWhy.taskText). */
-export const taskWhat = taskText;
