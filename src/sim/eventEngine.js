@@ -126,11 +126,40 @@ function validateThreshold(threshold, field, errors) {
   }
 }
 
-// A trigger's `requires` entry (#265): a store threshold that has held for `forSec` seconds, or another event that
-// started at least `afterSec` seconds ago.
+// A trigger's `requires` entry (#265): a store threshold that has held for `forSec` seconds; a place the position has
+// reached, at least `forSec` seconds ago (latched: leaving it again changes nothing); the position within `nearEndM`
+// metres of the event's own end area (held while it is there); another event that started at least `afterSec` seconds
+// ago; or `anyOf`, a list of which one is enough.
+function validateForSec(requirement, field, errors) {
+  if (requirement.forSec !== undefined && (!isFiniteNumber(requirement.forSec) || requirement.forSec < 0)) {
+    errors.push(`${field}.forSec must be a finite number of seconds >= 0`)
+  }
+}
+
 function validateRequirement(requirement, field, errors) {
   if (!isPlainObject(requirement)) {
     errors.push(`${field} must be an object`)
+    return
+  }
+  if (requirement.anyOf !== undefined) {
+    if (!Array.isArray(requirement.anyOf) || requirement.anyOf.length === 0) {
+      errors.push(`${field}.anyOf must be a non-empty array`)
+      return
+    }
+    requirement.anyOf.forEach((inner, index) => validateRequirement(inner, `${field}.anyOf[${index}]`, errors))
+    return
+  }
+  if (requirement.nearEndM !== undefined) {
+    if (!isFiniteNumber(requirement.nearEndM) || requirement.nearEndM < 0) {
+      errors.push(`${field}.nearEndM must be a finite number of metres >= 0`)
+    }
+    validateForSec(requirement, field, errors)
+    return
+  }
+  if (requirement.area !== undefined) {
+    if (!isPlainObject(requirement.area)) errors.push(`${field}.area must be an object`)
+    else validateArea(requirement.area, `${field}.area`, errors)
+    validateForSec(requirement, field, errors)
     return
   }
   if (requirement.event !== undefined) {
@@ -143,9 +172,7 @@ function validateRequirement(requirement, field, errors) {
     return
   }
   validateThreshold(requirement, field, errors)
-  if (requirement.forSec !== undefined && (!isFiniteNumber(requirement.forSec) || requirement.forSec < 0)) {
-    errors.push(`${field}.forSec must be a finite number of seconds >= 0`)
-  }
+  validateForSec(requirement, field, errors)
 }
 
 function validateTrigger(trigger, field, errors) {
@@ -263,6 +290,9 @@ function validateEnd(end, errors) {
     errors.push(`end.type must be one of ${END_TYPES.join(', ')}`)
     return
   }
+  if (end.minSec !== undefined && (!isFiniteNumber(end.minSec) || end.minSec < 0)) {
+    errors.push('end.minSec must be a finite number of seconds >= 0')
+  }
   if (end.type === 'duration') {
     if (!isFiniteNumber(end.afterSec) || end.afterSec < 0) {
       errors.push('end.afterSec must be a finite number of seconds >= 0')
@@ -320,6 +350,10 @@ export function validateEvent(definition) {
   if (definition.end !== undefined) validateEnd(definition.end, errors)
   if (definition.trigger?.holdInsideEnd === true && definition.end?.type !== 'area') {
     errors.push('trigger.holdInsideEnd needs an end of type "area"')
+  }
+  const usesNearEnd = (list) => Array.isArray(list) && list.some((r) => isPlainObject(r) && (r.nearEndM !== undefined || usesNearEnd(r.anyOf)))
+  if (usesNearEnd(definition.trigger?.requires) && definition.end?.type !== 'area') {
+    errors.push('a nearEndM requirement needs an end of type "area"')
   }
   if (definition.endSet !== undefined) validateSetObject(definition.endSet, 'endSet', errors)
 
@@ -432,58 +466,66 @@ export function createEventEngine(options) {
     throw new Error(`Invalid event definitions:\n- ${definitionErrors.join('\n- ')}`)
   }
 
-  // heldSinceSec: per `requires` threshold, the mission time since which it has held (null while it does not).
+  // since: per `requires` entry (keyed by the frozen requirement object), the mission time since which a threshold has
+  // held (dropped when it stops holding) or since a place was first reached (kept: reaching it is for good).
   const states = new Map(
     definitions.map((definition) => [
       definition.id,
-      {
-        status: STATUS.idle, startedAtSec: null, nextTimelineIndex: 0, alert: null,
-        heldSinceSec: (definition.trigger.requires ?? []).map(() => null),
-      },
+      { status: STATUS.idle, startedAtSec: null, nextTimelineIndex: 0, alert: null, since: new Map() },
     ]),
   )
 
-  // Follow every `requires` threshold of an idle event, so `forSec` counts from the moment it first held.
-  function trackRequirements(definition, state, missionTimeSec) {
-    const requires = definition.trigger.requires
-    if (!requires) return
-    requires.forEach((requirement, index) => {
-      if (requirement.event !== undefined) return
-      if (!thresholdPasses(requirement, store)) state.heldSinceSec[index] = null
-      else if (state.heldSinceSec[index] === null) state.heldSinceSec[index] = missionTimeSec
-    })
+  // Follow every `requires` entry of an idle event, so `forSec` counts from the moment it first held.
+  function trackRequirement(definition, requirement, state, missionTimeSec, position) {
+    if (requirement.anyOf) {
+      for (const inner of requirement.anyOf) trackRequirement(definition, inner, state, missionTimeSec, position)
+      return
+    }
+    if (requirement.event !== undefined) return
+    if (requirement.area) {
+      if (!state.since.has(requirement) && isInsideArea(requirement.area, position)) state.since.set(requirement, missionTimeSec)
+      return
+    }
+    const holds = requirement.nearEndM !== undefined
+      ? isInsideArea({ x: definition.end.x, z: definition.end.z, radius: definition.end.radius + requirement.nearEndM }, position)
+      : thresholdPasses(requirement, store)
+    if (!holds) state.since.delete(requirement)
+    else if (!state.since.has(requirement)) state.since.set(requirement, missionTimeSec)
   }
 
-  // An event requirement on an event this engine does not run (switched off at the mission table) counts as met.
-  // `kind` 'event' checks only the event requirements, 'threshold' only the store thresholds.
+  function requirementMet(requirement, state, missionTimeSec) {
+    if (requirement.anyOf) return requirement.anyOf.some((inner) => requirementMet(inner, state, missionTimeSec))
+    if (requirement.event !== undefined) {
+      // An event this engine does not run (switched off at the mission table) counts as met.
+      const other = states.get(requirement.event)
+      if (!other) return true
+      return other.status !== STATUS.idle && missionTimeSec - other.startedAtSec >= requirement.afterSec
+    }
+    const since = state.since.get(requirement)
+    return since !== undefined && missionTimeSec - since >= (requirement.forSec ?? 0)
+  }
+
+  // `kind` 'event' checks only the event requirements, 'state' every other one (thresholds, places, anyOf).
   function requirementsMet(definition, state, missionTimeSec, kind) {
     const requires = definition.trigger.requires
     if (!requires) return true
-    return requires.every((requirement, index) => {
-      if ((requirement.event !== undefined) !== (kind === 'event')) return true
-      if (requirement.event !== undefined) {
-        const other = states.get(requirement.event)
-        if (!other) return true
-        return other.status !== STATUS.idle && missionTimeSec - other.startedAtSec >= requirement.afterSec
-      }
-      const since = state.heldSinceSec[index]
-      return since !== null && missionTimeSec - since >= (requirement.forSec ?? 0)
-    })
+    return requires.every((requirement) => (requirement.event !== undefined) !== (kind === 'event') || requirementMet(requirement, state, missionTimeSec))
   }
 
   /**
    * Whether an idle event starts now. The basic trigger and every `requires` entry must pass. From `latestSec` the
-   * basic trigger and the store thresholds no longer count, but an event requirement still does, so two events keep
-   * their order. `holdInsideEnd` keeps it waiting while the position is inside its own end area, where it would end
-   * at once and never play (#265).
+   * basic trigger and the state requirements no longer count, but an event requirement still does, so two events keep
+   * their order. `holdInsideEnd` keeps it waiting while the position is inside its own end area, where it would end at
+   * once and never play (#265); the hold lasts until `latestSec` when there is one, so a crew that stays inside still
+   * meets the event (give its `end` a `minSec` so it then plays for a while).
    */
   function triggerPasses(definition, state, missionTimeSec, position) {
     const trigger = definition.trigger
     if (trigger.type === 'manual') return false
     const late = isFiniteNumber(trigger.latestSec) && missionTimeSec >= trigger.latestSec
-    const due = late || (basicTriggerPasses(trigger, missionTimeSec, position, store) && requirementsMet(definition, state, missionTimeSec, 'threshold'))
+    const due = late || (basicTriggerPasses(trigger, missionTimeSec, position, store) && requirementsMet(definition, state, missionTimeSec, 'state'))
     if (!due || !requirementsMet(definition, state, missionTimeSec, 'event')) return false
-    return !(trigger.holdInsideEnd === true && isInsideArea(definition.end, position))
+    return late || !(trigger.holdInsideEnd === true && isInsideArea(definition.end, position))
   }
 
   let lastMissionTimeSec = 0
@@ -560,9 +602,12 @@ export function createEventEngine(options) {
     return true
   }
 
+  // `end.minSec`: the end condition is not checked until the event has run that long, so an event that starts inside its
+  // own end area still plays (#265).
   function shouldEnd(definition, state, missionTimeSec, position) {
     const end = definition.end
     if (!end) return false
+    if (isFiniteNumber(end.minSec) && missionTimeSec - state.startedAtSec < end.minSec) return false
     if (end.type === 'duration') return missionTimeSec - state.startedAtSec >= end.afterSec
     if (end.type === 'missionTime') return missionTimeSec >= end.atSec
     if (end.type === 'area') return isInsideArea(end, position)
@@ -607,7 +652,8 @@ export function createEventEngine(options) {
     // mid-frame, which keeps one update deterministic.
     for (const definition of definitions) {
       const state = states.get(definition.id)
-      if (state.status === STATUS.idle) trackRequirements(definition, state, missionTimeSec)
+      if (state.status !== STATUS.idle) continue
+      for (const requirement of definition.trigger.requires ?? []) trackRequirement(definition, requirement, state, missionTimeSec, position)
     }
     const toStart = definitions.filter((definition) => {
       const state = states.get(definition.id)
