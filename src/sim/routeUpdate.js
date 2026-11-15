@@ -40,7 +40,7 @@ export function applyPlannedRoute(store, result, { reason, etaSec = null }) {
       etaSec: etaSec ?? result.distance ?? null,
       reason,
       decision: 'pending',
-      skipped: [],
+      // route.skipped stays: a stop a hazard left out comes back only through Re-plan at the table (D12)
     },
     sources: { ...state.sources, ...PLANNED_ROUTE_SOURCES },
   }));

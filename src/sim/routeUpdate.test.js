@@ -34,6 +34,12 @@ describe('planned route writer', () => {
     expect(store.getState().sources['route.etaSec'].tag).toBe('SIM');
   });
 
+  it('keeps the stops a hazard skipped: only Re-plan at the table brings them back (D12)', () => {
+    const store = memoryStore();
+    applyPlannedRoute(store, result, { reason: 'Off route: new route from your position' });
+    expect(store.getState().route.skipped).toEqual(['WP1']);
+  });
+
   it('keeps the old path on failure and records the reason', () => {
     const store = memoryStore();
     expect(applyPlannedRoute(store, { ok: false, detail: 'no path' }, { reason: 'Detour' })).toBe(false);

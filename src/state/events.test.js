@@ -4,6 +4,10 @@ import { eventEnvironmentSources, listEvents, plannedStops, startEventRunner, wr
 import { resetStore, setMode, setNeeds, useMissionStore } from './store.js';
 import { provenance } from '../data/provenance.js';
 import { MISSION_SOURCES } from '../sim/missions.js';
+import { nextTarget, startWaypointRunner } from '../sim/waypointRunner.js';
+import { allStops } from '../data/stops.js';
+import { createArrivalTracker } from '../stops/content.js';
+import stopsJson from '../../public/data/stops.json';
 import { resetDataFiles } from '../data/dataFiles.js';
 
 beforeEach(() => resetStore());
@@ -317,5 +321,80 @@ describe('event route', () => {
     }));
     writeRoute(useMissionStore, { ok: true, path: [[2, 2], [0, 0]], distance: 3, climb: 0, steepestSlopeDeg: 1, target: { id: 'HAB', name: 'Habitat' } }, 'storm');
     expect(useMissionStore.getState().route.skipped).toEqual(['S2']);
+  });
+});
+
+describe('resuming after a shelter return (D12)', () => {
+  const BA = { name: 'WP3 · Bright Angel outcrop', x: -11, z: -50, stopId: 'bright-angel', required: false };
+  const CF = { name: 'Cheyava Falls', x: 0, z: 0, stopId: 'cheyava-falls', required: true };
+  const stops = allStops(stopsJson);
+  const quietWaypoints = () => startWaypointRunner({ store: useMissionStore, stops, setInterval: () => 0, clearInterval: () => {} });
+  const stormRouteHome = (from) => writeRoute(useMissionStore, {
+    ok: true, path: [[from.x, from.z], [AIRLOCK.x, AIRLOCK.z]], distance: 60, climb: 0, steepestSlopeDeg: 3, target: { id: 'HAB', name: 'Habitat' },
+  }, 'storm', HAB_SHELTER);
+  /** What the table's Re-plan does once no alert route is active (src/plan/useRoutePlanner.js): the skipped stops back, progress kept. */
+  const replanAtTable = () => useMissionStore.setState((state) => ({ route: { ...state.route, skipped: [], path: [[AIRLOCK.x, AIRLOCK.z], [BA.x, BA.z], [CF.x, CF.z]] } }));
+  const atHabitat = (value) => useMissionStore.setState((state) => ({ eva: { ...state.eva, atHabitat: value } }));
+
+  it('full EVA: storm, shelter return, Re-plan at the table, walk out: Bright Angel is the next target and its arrival counts', () => {
+    setNeeds({ objective: 'cheyava' });
+    useMissionStore.setState((state) => ({ mode: 'walk', route: { ...state.route, waypoints: [HAB_WAYPOINT, BA, CF], nextIndex: 1, visited: ['HAB'] } }));
+    const runner = quietRunner();
+    const waypoints = quietWaypoints();
+    const out = { x: 300, z: 300 };
+    at(480, out); runner.tick();
+    expect(activeAlerts()).toEqual(['dust-storm']);
+    stormRouteHome(out);
+    expect(useMissionStore.getState().route.skipped).toEqual([BA.name, CF.name]);
+    waypoints.tick();
+    expect(nextTarget(useMissionStore.getState().route).kind).toBe('shelter');
+
+    at(560, AIRLOCK); runner.tick();                 // home: the storm ends, the habitat stays the target
+    expect(activeAlerts()).toEqual([]);
+    expect(nextTarget(useMissionStore.getState().route).kind).toBe('shelter');
+    atHabitat(true);
+    at(565, AIRLOCK); runner.tick();
+    expect(nextTarget(useMissionStore.getState().route).kind).toBe('complete');   // nothing resumes by itself
+
+    replanAtTable();
+    atHabitat(false);
+    at(570, AIRLOCK); waypoints.tick(); runner.tick();
+    const target = nextTarget(useMissionStore.getState().route);
+    expect(target).toMatchObject({ kind: 'waypoint', name: BA.name });
+    expect(useMissionStore.getState().navigation.waypointRangeM).toBeCloseTo(Math.hypot(BA.x - AIRLOCK.x, BA.z - AIRLOCK.z), 0);
+
+    at(650, { x: BA.x + 1, z: BA.z }); waypoints.tick(); runner.tick();   // at Bright Angel
+    const route = useMissionStore.getState().route;
+    expect(route.visited).toContain(BA.name);
+    expect(nextTarget(route)).toMatchObject({ kind: 'waypoint', name: CF.name });
+    expect(createArrivalTracker().update(stops, route.visited)?.id).toBe('bright-angel');   // its card opens, as on main
+    expect(activeAlerts()).toEqual([]);              // the storm ran once: it does not send the crew home again
+    waypoints.stop();
+    runner.stop();
+  });
+
+  it('first mission: with its stop visited it still reads complete after a shelter return, and Re-plan restores nothing', () => {
+    planSortie();
+    useMissionStore.setState({ mode: 'walk' });
+    const runner = quietRunner();
+    const waypoints = quietWaypoints();
+    at(55, STOP); waypoints.tick(); runner.tick();
+    expect(useMissionStore.getState().route.visited).toContain(S1.name);
+    at(60, STOP, { sample: true }); runner.tick();
+    at(63, STOP); runner.tick();
+    expect(activeAlerts()).toEqual(['dust-storm']);
+    stormRouteHome(STOP);
+    expect(useMissionStore.getState().route.skipped).toEqual([]);   // the stop was reached: nothing skipped
+    at(120, AIRLOCK); runner.tick();                 // home: the storm ends, the radiation alert starts and plays 20 s
+    at(145, AIRLOCK); runner.tick();
+    expect(activeAlerts()).toEqual([]);
+    atHabitat(true);
+    at(150, AIRLOCK); runner.tick();
+    expect(nextTarget(useMissionStore.getState().route).kind).toBe('complete');
+    useMissionStore.setState((state) => ({ route: { ...state.route, skipped: [] } }));   // Re-plan at the table
+    waypoints.tick();
+    expect(nextTarget(useMissionStore.getState().route).kind).toBe('complete');
+    waypoints.stop();
+    runner.stop();
   });
 });

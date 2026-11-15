@@ -201,6 +201,28 @@ describe('off-route runner', () => {
     runner.stop();
   });
 
+  it('leads to the shelter while the route home is set, and never to a skipped stop (D12)', async () => {
+    const home = memoryStore({ route: { ...memoryStore().getState().route, shelter: { id: 'HAB', name: 'Habitat', x: 0, z: 0 }, skipped: ['WP2', 'WP3', 'Cheyava'] } });
+    const skipped = memoryStore({ route: { ...memoryStore().getState().route, skipped: ['WP2'] } });
+    for (const [store, expected] of [[home, ['Habitat']], [skipped, ['WP3', 'Cheyava']]]) {
+      const calls = [];
+      const runner = startOffRouteRunner({
+        store,
+        plan: async (waypoints) => { calls.push(waypoints.map((waypoint) => waypoint.name)); return planResult(); },
+        setInterval: () => 1,
+        clearInterval: () => {},
+      });
+      for (let second = 0; second <= 5; second += 1) {
+        store.getState().mission.elapsedSec = second;
+        store.getState().navigation = { x: 50, z: 30 + second };
+        await runner.tick();
+      }
+      expect(calls).toEqual([expected]);
+      expect(store.getState().route.skipped).toEqual(store === home ? ['WP2', 'WP3', 'Cheyava'] : ['WP2']);
+      runner.stop();
+    }
+  });
+
   it('does not replace an event route', async () => {
     const store = memoryStore({ alerts: { 'dust-storm': { active: true } } });
     let calls = 0;
