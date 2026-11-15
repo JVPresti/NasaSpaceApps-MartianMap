@@ -128,24 +128,41 @@ void main(){
   vec3 toFrag = vW - cameraPosition;
   float fade = 1.0 - smoothstep(uFadeStart, uFadeEnd, length(toFrag));
   vec2 p = vec2(vW.x, -vW.z);
+  float dist = length(toFrag);
   // gravel: 2 m tile, luminance multiplies the HiRISE colour, GL normal map perturbs the DEM normal
   vec3 gv = texture2D(tGravel, p*0.5).rgb;
   float gm = clamp(gv.b*gv.b/0.165, 0.55, 1.5);
-  float dist = length(toFrag);
-  // fine tile only close up; a second, 16 m-wide octave hides the repetition further out
-  vec3 gv2 = texture2D(tGravel, p*0.061).rgb;
-  float gm2 = clamp(gv2.b*gv2.b/0.165, 0.7, 1.35);
-  alb *= mix(1.0, gm, 1.0 - smoothstep(12.0, 55.0, dist)) * mix(1.0, gm2, 0.6*(1.0 - smoothstep(60.0, 260.0, dist)));
+  // fine tile only close up. Further out, two more reads of the same texture break up the brightness: each is rotated
+  // (0.83 and -1.91 rad), offset and scaled to a period that is not a multiple of 2 m (13.7 and 29.3 m), so their average
+  // never lines up into a grid. The weight drops past 60 m, where one scaled-up copy drew a quilt (#193).
+  const mat2 RG1 = mat2(0.6749, 0.7379, -0.7379, 0.6749), RG2 = mat2(-0.3327, -0.9430, 0.9430, -0.3327);
+  float b2 = 0.5*(texture2D(tGravel, RG1*p*0.073 + vec2(0.37, 0.71)).b + texture2D(tGravel, RG2*p*0.0341 + vec2(0.19, 0.53)).b);
+  float gm2 = clamp(1.0 + 1.4*(b2*b2/0.165 - 1.0), 0.7, 1.35);   // 1.4 restores the contrast lost by averaging two reads
+  float wFar = mix(0.55, 0.2, smoothstep(60.0, 140.0, dist)) * (1.0 - smoothstep(140.0, 260.0, dist));
+  alb *= mix(1.0, gm, 1.0 - smoothstep(12.0, 55.0, dist)) * mix(1.0, gm2, wFar);
   vec2 dn = (gv.rg*2.0-1.0) * fade;
-  // outcrop slabs where the HiRISE-derived mask says so (texture rotated 0.7 rad like in Blender)
+  // outcrop slabs where the HiRISE-derived mask says so, with stochastic tiling (after Quilez, "texture repetition"): a 9 m
+  // noise picks two neighbouring variants of slab_nl.jpg, each with its own rotation and offset, and blends them, so the
+  // tile never lines up into rows or a grid (#193). Variant k is rotated 0.7 + 2.4 k rad (0.7 rad is the Blender rotation).
+  // Ground without outcrop skips both reads. Gradients come from outside the branch, where derivatives are defined, and are
+  // passed explicitly because the per-variant offset jumps where the variant changes.
+  vec2 gpx = dFdx(p), gpy = dFdy(p);
   float mask = smoothstep(0.05, 0.45, texture2D(tMask, uv).r) * fade;
-  const float cs = 0.7648, sn = 0.6442;
-  vec3 sl = texture2D(tSlab, vec2(cs*p.x - sn*p.y, sn*p.x + cs*p.y)*0.5).rgb;
-  vec3 slabCol = mix(vec3(0.31,0.207,0.12), vec3(0.698,0.537,0.34), smoothstep(0.06, 0.34, sl.b*sl.b));
-  vec2 sN = (sl.rg*2.0-1.0) * 2.2;
-  vec2 sNw = vec2(cs*sN.x + sn*sN.y, -sn*sN.x + cs*sN.y);
-  alb = mix(alb, slabCol, mask);
-  dn = mix(dn, sNw, mask);
+  if(mask > 0.002){
+    float l = wvn(p*0.11 + 3.7)*6.0, ka = floor(l), ws = smoothstep(0.25, 0.75, fract(l));
+    vec2 ca = vec2(cos(0.7 + 2.4*ka), sin(0.7 + 2.4*ka)), cb = vec2(cos(3.1 + 2.4*ka), sin(3.1 + 2.4*ka));
+    mat2 RA = mat2(ca.x, ca.y, -ca.y, ca.x), RB = mat2(cb.x, cb.y, -cb.y, cb.x);
+    vec3 sa = textureGrad(tSlab, RA*p*0.5 + sin(vec2(3.0, 7.0)*ka), RA*gpx*0.5, RA*gpy*0.5).rgb;
+    vec3 sb = textureGrad(tSlab, RB*p*0.5 + sin(vec2(3.0, 7.0)*(ka + 1.0)), RB*gpx*0.5, RB*gpy*0.5).rgb;
+    // past 25 m a 2 m tile repeats every few pixels whatever its content, so the slab contrast fades to the tile mean (0.46)
+    // by 70 m and the far gravel octave, which does not repeat, carries the brightness variation there
+    float sFar = smoothstep(25.0, 70.0, dist);
+    float lb = mix(0.46 + 1.2*(mix(sa.b, sb.b, ws) - 0.46), 0.46 + 0.8*(b2 - 0.40), sFar);   // 1.2 restores the contrast the healed tile lost
+    vec3 slabCol = mix(vec3(0.31,0.207,0.12), vec3(0.698,0.537,0.34), smoothstep(0.06, 0.34, lb*lb));
+    vec2 sNw = mix((sa.rg*2.0-1.0) * RA, (sb.rg*2.0-1.0) * RB, ws) * 2.2 * (1.0 - 0.9*sFar);   // v * R rotates the tangent normal back to world axes
+    alb = mix(alb, slabCol, mask);
+    dn = mix(dn, sNw, mask);
+  }
   vec3 nd = normalize(n + vec3(dn.x, 0.0, -dn.y));
 
   float sun = texture2D(tShadow, uv).r;

@@ -24,7 +24,7 @@ HiRISE files are stretched 5.4 % east-west (equirectangular, lat_ts = 0); everyt
 | normal_ao.jpg | R,B = world-space normal x,z from the 1 m DEM; G = baked ambient occlusion. |
 | outcrop_mask.jpg | Where light-toned outcrop is (from HiRISE brightness). Drives the slab detail and the Outcrop layer. |
 | outcrop.glb + outcrop_color.jpg, outcrop_nao.jpg (+ _lo versions) | Layered pale outcrop for the Bright Angel stop, 6.7 x 3.4 m, 1.0 m above its ground line: about 60 thin beds, a steep broken face and loose chips. Three detail levels in one file (Outcrop_LOD0 / LOD1 / LOD2: 16k, 4k and 1.8k triangles), 0.96 MB. Hand-made model, see "Layered outcrop" below. |
-| gravel_nl.jpg, slab_nl.jpg | Close-up detail, 2 m tiles. R,G = normal map (GL), B = sqrt(luminance). |
+| gravel_nl.jpg, slab_nl.jpg | Close-up detail, 2 m tiles. R,G = normal map (GL), B = sqrt(luminance). The terrain shader reads gravel at 2 m plus two rotated far octaves (13.7 and 29.3 m), and slab twice (2 m at 0.7 rad, 2.6 m at 2.9 rad), so neither repeats on a grid (#193). slab_nl.jpg was made tileable on 2026-11-14 by scripts/heal-slab-tile.py: each axis cross-faded with a half-offset copy over the outer 6 to 36 % of the tile (contrast kept), and brightness flattened with a 96 px and a 128 px wrapped Gaussian. Edge step went from 11.2 / 16.4 to 8.0 / 10.2 (9.3 / 10.4 inside), 4x4 block brightness from 104-128 to 117-121. |
 | ring_gray.jpg | CTX mosaic for the background, brightness-matched to HiRISE. |
 | rocks.json + rock_*.jpg, namaqualand_*.jpg | 5 rock scans x 3 detail levels (500 / 120 / 28 triangles), normalised to 1 m longest side. |
 | cheyava.json + cheyava_color.jpg, cheyava_nao.jpg | Cheyava Falls rock (10k triangles). nao: R,G = tangent normal, B = AO. |
