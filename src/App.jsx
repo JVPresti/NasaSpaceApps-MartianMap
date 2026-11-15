@@ -196,19 +196,25 @@ export default function App() {
     setBusyState(true);
     setNotice(null);
     setQualityError(null);
-    const result = await resumeEva({ engine: instance, mode: resumeMode, isCurrent, capture: !freeLookRef.current });
-    setBusyState(false);
-    // A superseded attempt stays paused and silent: the action that ended it owns the menu and its message.
-    if (result.stale) return;
-    if (!result.ok) {
-      if (result.lockFailed) setLockFailed(true);
-      setNotice(result.message);
-      return;
+    try {
+      const result = await resumeEva({ engine: instance, mode: resumeMode, isCurrent, capture: !freeLookRef.current });
+      // A superseded attempt stays paused and silent: the action that ended it owns the menu and its message.
+      if (result.stale) return;
+      if (!result.ok) {
+        if (result.lockFailed) setLockFailed(true);
+        setNotice(result.message);
+        return;
+      }
+      setLockFailed(false);
+      setOverlay(null);
+      setPhase(EVA_PHASE.PLAYING);
+      setNotice(null);
+    } catch (cause) {
+      // Resume must never stay disabled: the menu is the only way back into the EVA.
+      setNotice((cause && cause.message) || 'menu.the.eva.could.not.be.resumed');
+    } finally {
+      setBusyState(false);
     }
-    setLockFailed(false);
-    setOverlay(null);
-    setPhase(EVA_PHASE.PLAYING);
-    setNotice(null);
   }, [setBusyState, setOverlay, setPhase]);
 
   /** The fallback button: switch to drag-to-look for the rest of the session and resume now. */

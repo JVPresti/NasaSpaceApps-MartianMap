@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react';
-
-const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+import { FOCUSABLE, focusTarget, isUsableControl } from './focus.js';
 
 /**
  * Native modal dialog: showModal() makes the page behind it inert, keeps Tab and Shift+Tab inside and
  * returns focus to the previous element on close. Esc is intercepted through the cancel event so each
- * menu can decide what "Back" means. The first element marked data-autofocus receives focus on open.
+ * menu can decide what "Back" means. The first element marked data-autofocus receives focus on open;
+ * when it cannot take focus (disabled while the browser answers a request, or inert), the first usable
+ * control does, so the dialog is never left without a button to press.
  */
 export default function Modal({ labelledBy, className = '', onCancel, children }) {
   const ref = useRef(null);
@@ -14,7 +15,8 @@ export default function Modal({ labelledBy, className = '', onCancel, children }
     const dialog = ref.current;
     if (!dialog) return undefined;
     if (!dialog.open) dialog.showModal();
-    const target = dialog.querySelector('[data-autofocus="true"]') || dialog.querySelector(FOCUSABLE);
+    const primary = dialog.querySelector('[data-autofocus="true"]');
+    const target = focusTarget(primary, [...dialog.querySelectorAll(FOCUSABLE)]);
     if (target) target.focus();
     else dialog.focus();
     return () => { if (dialog.open) dialog.close(); };
@@ -30,10 +32,9 @@ export default function Modal({ labelledBy, className = '', onCancel, children }
         onCancel?.();
       }}
       onKeyDown={(event) => {
+        const dialog = ref.current;
         if (event.key === 'Tab') {
-          const dialog = ref.current;
-          const controls = [...dialog.querySelectorAll(FOCUSABLE)]
-            .filter((element) => element.getClientRects().length > 0 && !element.closest('[inert]'));
+          const controls = [...dialog.querySelectorAll(FOCUSABLE)].filter(isUsableControl);
           const first = controls[0], last = controls[controls.length - 1];
           if (!first) {
             event.preventDefault();
@@ -45,6 +46,16 @@ export default function Modal({ labelledBy, className = '', onCancel, children }
             event.preventDefault();
             first.focus();
           }
+          return;
+        }
+        if (event.key === 'Enter') {
+          // The menus say "press Enter": it must not die because focus sits on the dialog itself
+          // (a click on the backdrop, or a primary action that was disabled when the dialog opened).
+          if (event.defaultPrevented || event.target !== dialog) return;
+          const primary = dialog.querySelector('[data-autofocus="true"]');
+          if (!isUsableControl(primary)) return;
+          event.preventDefault();
+          primary.click?.();
           return;
         }
         if (event.key !== 'Escape') return;
