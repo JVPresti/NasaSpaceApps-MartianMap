@@ -21,7 +21,7 @@ with the walk home; the work time is a planning figure, not played in real time.
 | T+0 | Start walking at the airlock | the clock starts at the walk keys card's Start walking (the EVA clock reads h:mm:ss) |
 | about T+52, later with a detour | At the sortie stop, "Light-toned patch" | reached for good within 8 m (its stops.json arrival radius); a find added on the way or a re-plan at the table does not count as the stop |
 | at the stop | Why it is worth the walk (its stops.json reason, SIM, "no rover has looked here") and what to do: look down, **P** photo, click to sample, **E** to bag | the stop's banner and beat line, until a sample is secured |
-| 3 s after the sample | **Dust storm**: tau 0.45 to 8.0 in 30 s, re-plan to the habitat | or after 90 s at the stop without a sample, or as soon as the crew turns home (10 m from the 25 m end area); not before T+45 s; by T+240 s at the latest; held outside the end area until then |
+| 3 s after the sample | **Dust storm**: tau 0.45 to 8.0 in 30 s, re-plan to the habitat | a sample secured at the stop (one taken at a find on the way does not count); or 90 s after first reaching the stop without one, or as soon as the crew turns home (10 m from the 25 m end area); not before T+45 s; by T+240 s at the latest; held outside the end area until then |
 | 15 s after the storm | **Radiation alert**: RAD dose rates, re-plan to the habitat | sooner if the crew comes within 10 m of the end area first, so it always starts before they are home; by T+255 s at the latest |
 | back within 25 m of the airlock | Both alerts end, each after playing at least 20 s | the habitat stays the target until the crew is at the habitat; a stop left out stays skipped |
 | in the cabin | `[E] Open plan`, `[X] Finish EVA` | the habitat table (#244) |
@@ -29,6 +29,12 @@ with the walk home; the work time is a planning figure, not played in real time.
 The full EVA (goals "Sample Cheyava Falls" and "Survey Bright Angel") keeps the storm at T+480 s and the radiation alert
 at T+720 s, as before. A crew of one walks without the partner (no EV2 chip, no separation alert, no hand-over); the
 demo is walked as a pair. Restart and End the EVA keep the crew's needs; a page load opens the first sortie.
+
+In the full EVA a crew that shelters from the storm resumes its remaining stops by choosing **Re-plan** at the table
+once the alert is over; nothing resumes by itself, and an off-route re-plan never leads to a skipped stop.
+
+**The demo machine:** `npm run measure:demo` must report at least 0.95 m/s of walking. A machine busy with builds or
+tests drops the frame rate, and the walk (the engine caps a frame's step at 0.1 s) then runs slower than 1.0 m/s.
 
 ## Script
 
@@ -43,7 +49,7 @@ Budget in minutes and seconds. The beat line on screen says the same as the pres
 | 5 | Walk out | 1:35 | Walk 12 m: the visor, the minimap. **R** raises the wrist: **J** and **Enter** choose a layer on the arm, **]** the map page, **R** lowers it, **0** clears the layer. **G** slope grid on and off; **V** visor frame off and on. Step off the line toward a light patch, hold **Q** on the ground to mark a find, read its card and press **Y** to add it; on to the stop | visor HUD, minimap, waypoint panel, navigation line, partner, wrist screen, slope grid, visor frame, mark-a-find and its detour price | HiRISE DTM (slope, elevation profile), MEDA weather, suit model |
 | 6 | Science stop and sample | 0:20 | Read the stop's banner (why it is worth the walk, SIM) and the beat line; look down, **P** photo, click the ground, **E** stow and seal | the stop's reason, sampling clips and checklist | HiRISE outcrop mask (SIM stop) |
 | 7 | Dust storm | 0:20 | The banner and the beat line; the sky closes in; **M** opens the table on the Route step: the route home on the map; **M** back | event banner with source, storm visuals, re-plan to the habitat | tau: Mastcam-Z (Jezero) up to Curiosity's 2018 Gale storm |
-| 8 | Radiation, walk back, hand-over | 1:10 | The radiation banner takes over (the storm is "+1 more alert"); the dose on the HUD; **M** shows the second re-plan, **M** back. Press **F** to call the partner with the case and walk home; where the partner sets the case down, take a second sample and press **F** to pour it in | radiation alert (early warning, ALARA), dose, walk back, partner hand-over | RAD, Curiosity, September 2017 event (Gale, not Jezero) |
+| 8 | Radiation, walk back, hand-over | 1:10 | The radiation banner takes over (the storm is "+1 more alert"); the dose on the HUD; **M** shows the second re-plan, **M** back. Press **F** right after the radiation map, to call the partner with the case, and walk toward home; stop and wait where the partner sets the case down, take a second sample there and press **F** to pour it in (walking on past the partner adds about 30 m and half a minute) | radiation alert (early warning, ALARA), dose, walk back, partner hand-over | RAD, Curiosity, September 2017 event (Gale, not Jezero) |
 | 9 | Habitat | 0:20 | In the cabin: **Esc**, **Settings**, switch the language to Spanish and back, resume. **E** Open plan (the table on Route), **M** back, **X** Finish EVA | pause menu, settings and language, habitat table prompt, Open plan, Finish EVA | — |
 | 10 | Debrief | 0:45 | Metrics, the route review (the detour to the find judged fairly), the recap of each beat | debrief, walked route against the plan, beat recap | every value tagged DATA / DERIVED / SIM |
 | 11 | Sources | 0:10 | **Sources** on the debrief | the sources screen | every dataset and model used |
@@ -102,7 +108,7 @@ Every feature on `main`, where the timed demo shows it, and how the measurement 
 npm run measure:demo
 npm run measure:demo -- --lang es --viewport 1920x1080 --shots <folder>
 npm run measure:demo -- --dwell-scale 1.3        # a presenter 30 % slower
-npm run measure:demo -- --dwell-scale 0.1        # a quick player instead of a presenter
+npm run measure:demo -- --player                 # a player: no tour, a quick reader
 ```
 
 `scripts/measure-demo.mjs` starts the Vite dev server and a browser (headless unless `--headed`) and drives the real
@@ -156,7 +162,8 @@ step at 0.1 s, then walks slower than 1.0 m/s. The script reports the frame rate
 12 fps, and gives the total at a steady 0.97 m/s. Two runs on a loaded machine (2 fps at moments, 0.55 to 0.68 m/s)
 took over 9 minutes; measure on a quiet machine.
 
-**A player.** The first mission alone, without the demo's tour, reached the debrief in 3:33 in the round 1 measurement
-(Spanish, 1366 x 768, `--dwell-scale 0.25`, a detour to a find included). The storm now comes 3 s after the sample
-instead of 20 s after the stop, so a player who samples at once is a little faster. #265 asks for about 3 minutes and
-no more than 4.
+**A player** (`npm run measure:demo -- --player`: the first mission as the on-screen guidance leads it, with no tour,
+no detour to a find and a quick reader's dwell, x0.25): 15 November 2026, the same machine, 1366 x 768, English, 104 to
+163 fps, 113 m in 115 s (0.99 m/s). **Start screen to the debrief: 2:31**, of which 2:17 is the EVA (at the stop
+T+53 s, sample secured T+63 s, storm T+68 s, radiation T+83 s, 42 m from the airlock, back in the habitat T+136 s).
+#265 asks for about 3 minutes and no more than 4.

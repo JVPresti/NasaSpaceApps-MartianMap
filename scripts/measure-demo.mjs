@@ -129,7 +129,11 @@ const arg = (name, fallback) => { const i = args.indexOf('--' + name); return i 
 const flag = (name) => args.includes('--' + name);
 const LANG = arg('lang', 'en');
 const [VW, VH] = arg('viewport', '1366x768').split('x').map(Number);
-const DWELL_SCALE = Number(arg('dwell-scale', 1));
+// --player: the first mission as a player plays it, following the on-screen guidance (#265: the debrief in about 3 min,
+// no more than 4). No tour: no layers, plans or card, no wrist, G, V or H, no detour to a find, no hand-over, no
+// language change and no Open plan; the dwell is a quick reader's (x0.25 unless --dwell-scale says otherwise).
+const PLAYER = flag('player');
+const DWELL_SCALE = Number(arg('dwell-scale', PLAYER ? 0.25 : 1));
 const SHOTS = arg('shots', null);
 const HEADED = flag('headed');
 
@@ -396,7 +400,7 @@ try {
   page.on('pageerror', (e) => console.log('  page error: ' + e.message));
   await page.evaluateOnNewDocument((lang) => { try { localStorage.setItem('marswalk.language', lang); } catch { /* fine */ } }, LANG);
   await page.goto(base, { waitUntil: 'load', timeout: 300000 });
-  console.log(`Loading the app (${VW}x${VH}, ${LANG}, dwell x${DWELL_SCALE})…`);
+  console.log(`Loading the app (${VW}x${VH}, ${LANG}, dwell x${DWELL_SCALE}${PLAYER ? ', player' : ''})…`);
   await page.waitForFunction(() => { const b = document.querySelector('.start-primary'); return b && !b.disabled && window.__marswalk; }, { timeout: 300000, polling: 500 });
 
   // 1. Start screen ------------------------------------------------------------------------------------------------
@@ -415,89 +419,93 @@ try {
   await dwell(DWELL.site);
   shown('Site step and the plan beat line', await exists('.mission-beat'));
   await click(SEL.tab('route'));
-  await waitFor((sel) => document.querySelector(sel), 10, 'needs panel', SEL.goal);
-  await act({ select: SEL.goal, value: 'cheyava' });
-  shown('goal: Sample Cheyava Falls', await planned('route.waypoints.some((w) => w.stopId === "cheyava-falls")', 'the Cheyava Falls route'));
-  // the map: scroll in on the route, then back out (the fit button would do the same)
-  const box = await S((sel) => { const r = document.querySelector(sel)?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; }, SEL.map);
-  if (box) {
-    await page.mouse.move(box.x, box.y);
-    await page.mouse.wheel({ deltaY: -400 });
-    await sleep(0.8);
-    await page.mouse.wheel({ deltaY: 400 });
+  if (!PLAYER) {
+    await waitFor((sel) => document.querySelector(sel), 10, 'needs panel', SEL.goal);
+    await act({ select: SEL.goal, value: 'cheyava' });
+    shown('goal: Sample Cheyava Falls', await planned('route.waypoints.some((w) => w.stopId === "cheyava-falls")', 'the Cheyava Falls route'));
+    // the map: scroll in on the route, then back out (the fit button would do the same)
+    const box = await S((sel) => { const r = document.querySelector(sel)?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; }, SEL.map);
+    if (box) {
+      await page.mouse.move(box.x, box.y);
+      await page.mouse.wheel({ deltaY: -400 });
+      await sleep(0.8);
+      await page.mouse.wheel({ deltaY: 400 });
+    }
+    shown('HiRISE map zoom (scroll)', !!box);
+    await dwell(DWELL.goal);
+    await layerButton('terrain');
+    await clickIndex(SEL.risk, 0);          // cautious: a dearer slope
+    await planned('window.__missionStore.getState().needs.risk === "cautious"', 'the cautious plan');
+    shown('layer Terrain with risk cautious');
+    await dwell(DWELL.terrain);
+    await snap('layer-terrain');
+    await layerButton('rocks');
+    shown('layer Rocks');
+    await dwell(DWELL.rocks);
+    await layerButton('outcrop');
+    shown('layer Outcrop with the kept stops');
+    await dwell(DWELL.outcrop);
+    await layerButton('radio');
+    await clickIndex(SEL.crew, 0);          // a crew of one: the radio route
+    await planned('route.profile !== undefined && window.__missionStore.getState().needs.crew === 1', 'the solo plan');
+    await sleep(1.5);
+    const solo = await planSummary();
+    shown('layer Radio with a crew of one (radio route, a stop dropped)', solo.dropped !== 'none');
+    console.log(`  solo + cautious: ${solo.km} km, stops ${solo.stops}, dropped ${solo.dropped}, profile ${solo.profile}`);
+    await dwell(DWELL.radio);
+    await snap('layer-radio');
+    await layerButton('exposure');
+    shown('layer Exposure');
+    await dwell(DWELL.exposure);
+    const rover = await click(SEL.roverToggle);
+    await dwell(DWELL.rover / 2);
+    if (rover) await click(SEL.roverToggle);
+    await dwell(DWELL.rover / 2);
+    shown('Perseverance drives (Rover)', rover);
+    await layerButton('image');
   }
-  shown('HiRISE map zoom (scroll)', !!box);
-  await dwell(DWELL.goal);
-  await layerButton('terrain');
-  await clickIndex(SEL.risk, 0);          // cautious: a dearer slope
-  await planned('window.__missionStore.getState().needs.risk === "cautious"', 'the cautious plan');
-  shown('layer Terrain with risk cautious');
-  await dwell(DWELL.terrain);
-  await snap('layer-terrain');
-  await layerButton('rocks');
-  shown('layer Rocks');
-  await dwell(DWELL.rocks);
-  await layerButton('outcrop');
-  shown('layer Outcrop with the kept stops');
-  await dwell(DWELL.outcrop);
-  await layerButton('radio');
-  await clickIndex(SEL.crew, 0);          // a crew of one: the radio route
-  await planned('route.profile !== undefined && window.__missionStore.getState().needs.crew === 1', 'the solo plan');
-  await sleep(1.5);
-  const solo = await planSummary();
-  shown('layer Radio with a crew of one (radio route, a stop dropped)', solo.dropped !== 'none');
-  console.log(`  solo + cautious: ${solo.km} km, stops ${solo.stops}, dropped ${solo.dropped}, profile ${solo.profile}`);
-  await dwell(DWELL.radio);
-  await snap('layer-radio');
-  await layerButton('exposure');
-  shown('layer Exposure');
-  await dwell(DWELL.exposure);
-  const rover = await click(SEL.roverToggle);
-  await dwell(DWELL.rover / 2);
-  if (rover) await click(SEL.roverToggle);
-  await dwell(DWELL.rover / 2);
-  shown('Perseverance drives (Rover)', rover);
-  await layerButton('image');
 
   // 3. Two contrasting plans, profiles, a stop card, back to the first sortie --------------------------------------
   begin('needs');
-  await setRange(SEL.time, 100);          // plan A: solo, cautious, 100 min
-  await planned('window.__missionStore.getState().needs.timeMin === 100', 'plan A');
-  await sleep(1.5);
-  const planA = await planSummary();
-  console.log(`  plan A (${planA.needs}): ${planA.km} km, stops ${planA.stops}, dropped ${planA.dropped}, fits ${planA.fits}`);
-  shown('why-this-route lines', await exists(SEL.whyLines));
-  await dwell(DWELL.planA);
-  await snap('plan-a');
-  await clickIndex(SEL.crew, 1);          // plan B: pair, bold, 2 h
-  await clickIndex(SEL.risk, 2);
-  await setRange(SEL.time, 120);
-  await planned('window.__missionStore.getState().needs.timeMin === 120 && route.waypoints.length >= 3', 'plan B');
-  await sleep(1.5);
-  const planB = await planSummary();
-  console.log(`  plan B (${planB.needs}): ${planB.km} km, stops ${planB.stops}, dropped ${planB.dropped}, fits ${planB.fits}`);
-  shown('two contrasting plans', planA.stops !== planB.stops);
-  await dwell(DWELL.planB);
-  await snap('plan-b');
-  if (await exists(SEL.profileButton('gentlest'))) {
-    await click(SEL.profileButton('gentlest'));
-    await dwell(DWELL.profiles / 2);
-    await click(SEL.profileButton('fastest'));
-    await dwell(DWELL.profiles / 2);
-    shown('route profiles');
-  } else shown('route profiles', false);
-  await act({ marker: 'Cheyava', wait: 0.5 });   // the marker's details, then the Cheyava Falls card and its images
-  await click(SEL.openCard);
-  const card = await waitFor((sel) => document.querySelector(sel), 5, 'Cheyava Falls card', SEL.card);
-  shown('Cheyava Falls stop card and Perseverance images', card);
-  await dwell(DWELL.card);
-  await snap('card');
-  await click(SEL.cardClose);
-  // back to the first sortie: standard risk, the goal (its time comes back to 30 min)
-  await clickIndex(SEL.risk, 1);
-  await act({ select: SEL.goal, value: 'sortie' });
-  await planned('route.waypoints.length === 2 && window.__missionStore.getState().needs.objective === "sortie"', 'the sortie planned again');
-  await snap('route');
+  if (!PLAYER) {
+    await setRange(SEL.time, 100);          // plan A: solo, cautious, 100 min
+    await planned('window.__missionStore.getState().needs.timeMin === 100', 'plan A');
+    await sleep(1.5);
+    const planA = await planSummary();
+    console.log(`  plan A (${planA.needs}): ${planA.km} km, stops ${planA.stops}, dropped ${planA.dropped}, fits ${planA.fits}`);
+    shown('why-this-route lines', await exists(SEL.whyLines));
+    await dwell(DWELL.planA);
+    await snap('plan-a');
+    await clickIndex(SEL.crew, 1);          // plan B: pair, bold, 2 h
+    await clickIndex(SEL.risk, 2);
+    await setRange(SEL.time, 120);
+    await planned('window.__missionStore.getState().needs.timeMin === 120 && route.waypoints.length >= 3', 'plan B');
+    await sleep(1.5);
+    const planB = await planSummary();
+    console.log(`  plan B (${planB.needs}): ${planB.km} km, stops ${planB.stops}, dropped ${planB.dropped}, fits ${planB.fits}`);
+    shown('two contrasting plans', planA.stops !== planB.stops);
+    await dwell(DWELL.planB);
+    await snap('plan-b');
+    if (await exists(SEL.profileButton('gentlest'))) {
+      await click(SEL.profileButton('gentlest'));
+      await dwell(DWELL.profiles / 2);
+      await click(SEL.profileButton('fastest'));
+      await dwell(DWELL.profiles / 2);
+      shown('route profiles');
+    } else shown('route profiles', false);
+    await act({ marker: 'Cheyava', wait: 0.5 });   // the marker's details, then the Cheyava Falls card and its images
+    await click(SEL.openCard);
+    const card = await waitFor((sel) => document.querySelector(sel), 5, 'Cheyava Falls card', SEL.card);
+    shown('Cheyava Falls stop card and Perseverance images', card);
+    await dwell(DWELL.card);
+    await snap('card');
+    await click(SEL.cardClose);
+    // back to the first sortie: standard risk, the goal (its time comes back to 30 min)
+    await clickIndex(SEL.risk, 1);
+    await act({ select: SEL.goal, value: 'sortie' });
+    await planned('route.waypoints.length === 2 && window.__missionStore.getState().needs.objective === "sortie"', 'the sortie planned again');
+    await snap('route');
+  }
 
   // 4. Hazards, outlook, go / no-go, Begin EVA, keys, help -----------------------------------------------------------
   begin('go');
@@ -519,12 +527,14 @@ try {
   if (!(await timeStep('Start walking to play', resumePlay))) throw new Error('The EVA did not start (pause menu still open).');
   const eva0 = await state();
   console.log(`  EVA started at T+${eva0.t.toFixed(1)} s, needs locked: ${eva0.locked}`);
-  await key('KeyH');                      // the controls help, with the pause behind it
-  const help = await waitFor(() => document.querySelector('dialog[open].controls-dialog'), 5, 'controls help (H)');
-  await dwell(DWELL.help);
-  await snap('help');
-  await timeStep('help closed to play', async () => { await click(SEL.controlsClose); await resumeFromMenu(); });
-  shown('controls help (H) and the pause menu', help);
+  if (!PLAYER) {
+    await key('KeyH');                      // the controls help, with the pause behind it
+    const help = await waitFor(() => document.querySelector('dialog[open].controls-dialog'), 5, 'controls help (H)');
+    await dwell(DWELL.help);
+    await snap('help');
+    await timeStep('help closed to play', async () => { await click(SEL.controlsClose); await resumeFromMenu(); });
+    shown('controls help (H) and the pause menu', help);
+  }
 
   // 5. Walk out: HUD, wrist, slope grid, visor frame, a detour to a find --------------------------------------------
   begin('walkOut');
@@ -533,48 +543,50 @@ try {
   const ax = start.x, az = start.z, dx = stop.x - ax, dz = stop.z - az, len = Math.hypot(dx, dz);
   await walkPath([[ax + (dx / len) * WALK.hudM, az + (dz / len) * WALK.hudM]], { tolerance: 1.5 });
   await snap('walk');
-  // the wrist screen: R up, the next layer row chosen with J and Enter, the map page with ], R down
-  const layer0 = await S(() => window.__missionStore.getState().view.layer);
-  await key('KeyR');
-  const wristUp = await waitFor(() => window.__marswalkWrist?.snapshot().open === true, 5, 'wrist screen up');
-  await sleep(0.8);
-  await key('KeyJ');
-  await key('Enter');
-  await sleep(0.5);
-  const wristLayer = await S(() => window.__missionStore.getState().view.layer);
-  await snap('wrist');
-  await key('BracketRight');
-  await dwell(DWELL.wrist);
-  await key('KeyR');
-  await waitFor(() => window.__marswalkWrist?.snapshot().open === false, 5, 'wrist screen down');
-  await key('Digit0');                    // the layer off again
-  shown('wrist screen: a layer chosen on the arm, the map page', wristUp && wristLayer !== layer0);
-  await key('KeyG');                      // the slope grid
-  const grid = await waitFor(() => window.__missionStore.getState().view.slopeGrid === true, 3, 'slope grid on');
-  await dwell(DWELL.slopeGrid);
-  await snap('slope-grid');
-  await key('KeyG');
-  shown('slope grid (G)', grid);
-  await key('KeyV');                      // the visor frame off and on
-  const visor = await waitFor(() => window.__missionStore.getState().settings.visorFrame === false, 3, 'visor frame off');
-  await dwell(DWELL.visor);
-  await key('KeyV');
-  shown('visor frame (V)', visor);
-  // left of the walking direction: forward (dx, dz) turned 90 degrees (x east, z south)
-  const lx = (dz / len) * WALK.detour.side, lz = (-dx / len) * WALK.detour.side;
-  const detour = [ax + dx * WALK.detour.alongShare + lx * WALK.detour.offsetM, az + dz * WALK.detour.alongShare + lz * WALK.detour.offsetM];
-  console.log(`  walking to the find at (${detour[0].toFixed(0)}, ${detour[1].toFixed(0)}), off the ${len.toFixed(0)} m line by ${WALK.detour.offsetM} m`);
-  marks.detourResult = await walkPath([detour], { tolerance: 2 });
-  // Mark a find: look at the ground ahead and hold Q until the ring closes (FIND_HOLD_MS, 2 s).
-  await S((pt) => { const m = window.__marswalk, p = m.pose(); m.walking(false); m.place(p.x, p.z, p.yaw, pt); }, WALK.lookDownPitch);
-  await sleep(0.3);
-  await key('KeyQ', 2.6);
-  marks.find = await waitFor(() => window.__missionStore.getState().finds.list.some((f) => f.status === 'priced'), 8, 'find priced');
-  await dwell(DWELL.find);
-  await snap('find');
-  await key(WALK.findAnswer);             // answer the card as a presenter would (Y: add it to the route)
-  marks.findStatus = await S(() => window.__missionStore.getState().finds.list.map((f) => f.status).join(','));
-  shown('mark a find (Q) and answer its card', marks.find);
+  if (!PLAYER) {
+    // the wrist screen: R up, the next layer row chosen with J and Enter, the map page with ], R down
+    const layer0 = await S(() => window.__missionStore.getState().view.layer);
+    await key('KeyR');
+    const wristUp = await waitFor(() => window.__marswalkWrist?.snapshot().open === true, 5, 'wrist screen up');
+    await sleep(0.8);
+    await key('KeyJ');
+    await key('Enter');
+    await sleep(0.5);
+    const wristLayer = await S(() => window.__missionStore.getState().view.layer);
+    await snap('wrist');
+    await key('BracketRight');
+    await dwell(DWELL.wrist);
+    await key('KeyR');
+    await waitFor(() => window.__marswalkWrist?.snapshot().open === false, 5, 'wrist screen down');
+    await key('Digit0');                    // the layer off again
+    shown('wrist screen: a layer chosen on the arm, the map page', wristUp && wristLayer !== layer0);
+    await key('KeyG');                      // the slope grid
+    const grid = await waitFor(() => window.__missionStore.getState().view.slopeGrid === true, 3, 'slope grid on');
+    await dwell(DWELL.slopeGrid);
+    await snap('slope-grid');
+    await key('KeyG');
+    shown('slope grid (G)', grid);
+    await key('KeyV');                      // the visor frame off and on
+    const visor = await waitFor(() => window.__missionStore.getState().settings.visorFrame === false, 3, 'visor frame off');
+    await dwell(DWELL.visor);
+    await key('KeyV');
+    shown('visor frame (V)', visor);
+    // left of the walking direction: forward (dx, dz) turned 90 degrees (x east, z south)
+    const lx = (dz / len) * WALK.detour.side, lz = (-dx / len) * WALK.detour.side;
+    const detour = [ax + dx * WALK.detour.alongShare + lx * WALK.detour.offsetM, az + dz * WALK.detour.alongShare + lz * WALK.detour.offsetM];
+    console.log(`  walking to the find at (${detour[0].toFixed(0)}, ${detour[1].toFixed(0)}), off the ${len.toFixed(0)} m line by ${WALK.detour.offsetM} m`);
+    marks.detourResult = await walkPath([detour], { tolerance: 2 });
+    // Mark a find: look at the ground ahead and hold Q until the ring closes (FIND_HOLD_MS, 2 s).
+    await S((pt) => { const m = window.__marswalk, p = m.pose(); m.walking(false); m.place(p.x, p.z, p.yaw, pt); }, WALK.lookDownPitch);
+    await sleep(0.3);
+    await key('KeyQ', 2.6);
+    marks.find = await waitFor(() => window.__missionStore.getState().finds.list.some((f) => f.status === 'priced'), 8, 'find priced');
+    await dwell(DWELL.find);
+    await snap('find');
+    await key(WALK.findAnswer);             // answer the card as a presenter would (Y: add it to the route)
+    marks.findStatus = await S(() => window.__missionStore.getState().finds.list.map((f) => f.status).join(','));
+    shown('mark a find (Q) and answer its card', marks.find);
+  }
   await S(() => { const m = window.__marswalk, p = m.pose(); m.place(p.x, p.z, p.yaw, 0); });
   marks.arriveResult = await walkPath([[stop.x, stop.z]], { tolerance: WALK.stopToleranceM });
   const atStop = await state();
@@ -640,28 +652,30 @@ try {
   const at = (m) => [hab.x + hab.dirX * m, hab.z + hab.dirZ * m];
   // the hand-over: the partner is called with the case now (F), and walks out to meet the crew on its way home; where
   // the case goes down, a second sample is poured into it (F) and the partner closes the lid
-  const handOver0 = Date.now();
-  await key('KeyF');
   const caseState = () => S(() => window.__missionStore.getState().sampling.status ?? {});
-  const radPath = remainingPath(await home(), await S(() => window.__marswalk.pose()));
-  await walkPath([...radPath, at(WALK.handOverM)], { timeoutS: 150, until: async () => (await caseState()).caseState === 'down' });
-  const caseDown = await waitFor(() => window.__missionStore.getState().sampling.status?.caseState === 'down', 30, 'the case down');
-  await S((pt) => { const m = window.__marswalk, p = m.pose(); m.place(p.x, p.z, p.yaw, pt); }, WALK.samplePitch);
-  await sleep(0.5);
-  await page.mouse.click(VW / 2, VH / 2);
-  const second = await waitFor(() => window.__missionStore.getState().sampling.status?.phase === 'holding', 15, 'second sample in the scoop');
-  if (!(await caseState()).caseInReach) {
-    // step toward the partner, who stands by the case
-    const partner = await S(() => window.__marswalk.partnerState());
-    if (partner) await walkPath([[partner.x, partner.z]], { tolerance: 1.2, timeoutS: 20, until: async () => (await caseState()).caseInReach === true });
+  if (!PLAYER) {
+    const handOver0 = Date.now();
+    await key('KeyF');
+    const radPath = remainingPath(await home(), await S(() => window.__marswalk.pose()));
+    await walkPath([...radPath, at(WALK.handOverM)], { timeoutS: 150, until: async () => (await caseState()).caseState === 'down' });
+    const caseDown = await waitFor(() => window.__missionStore.getState().sampling.status?.caseState === 'down', 30, 'the case down');
+    await S((pt) => { const m = window.__marswalk, p = m.pose(); m.place(p.x, p.z, p.yaw, pt); }, WALK.samplePitch);
+    await sleep(0.5);
+    await page.mouse.click(VW / 2, VH / 2);
+    const second = await waitFor(() => window.__missionStore.getState().sampling.status?.phase === 'holding', 15, 'second sample in the scoop');
+    if (!(await caseState()).caseInReach) {
+      // step toward the partner, who stands by the case
+      const partner = await S(() => window.__marswalk.partnerState());
+      if (partner) await walkPath([[partner.x, partner.z]], { tolerance: 1.2, timeoutS: 20, until: async () => (await caseState()).caseInReach === true });
+    }
+    await key('KeyF');                      // pour into the case
+    const handed = await waitFor(() => window.__missionStore.getState().sampling.count >= 2, 30, 'sample in the case');
+    steps['hand-over (F to the case closed)'] = (Date.now() - handOver0) / 1000;
+    await dwell(DWELL.handOver);
+    await snap('hand-over');
+    shown('hand-over to the partner (F)', second && caseDown && handed);
+    await S(() => { const m = window.__marswalk, p = m.pose(); m.place(p.x, p.z, p.yaw, 0); });
   }
-  await key('KeyF');                      // pour into the case
-  const handed = await waitFor(() => window.__missionStore.getState().sampling.count >= 2, 30, 'sample in the case');
-  steps['hand-over (F to the case closed)'] = (Date.now() - handOver0) / 1000;
-  await dwell(DWELL.handOver);
-  await snap('hand-over');
-  shown('hand-over to the partner (F)', second && caseDown && handed);
-  await S(() => { const m = window.__marswalk, p = m.pose(); m.place(p.x, p.z, p.yaw, 0); });
   // up the steps, through the airlock, to the planning table (the cabin, where the table's prompt shows)
   const homePath = remainingPath(await home(), await S(() => window.__marswalk.pose()));
   await walkPath([...homePath, at(9.9), at(6), at(1.45)], { tolerance: 0.8, timeoutS: 120 });
@@ -672,26 +686,28 @@ try {
   // 9. Habitat: settings and language, Open plan, Finish EVA ---------------------------------------------------------
   begin('habitat');
   await snap('habitat-prompt');
-  await key('Escape');                    // the pause menu, then Settings: the interface language
-  const menu = await waitFor(() => document.querySelector('dialog[open].pause-dialog'), 5, 'pause menu');
-  await clickText(T('menu.settings'), '.pause-dialog button');
-  const settings = await waitFor((sel) => document.querySelector(sel), 5, 'settings', SEL.settingsLanguage);
-  const other = LANG === 'es' ? 'en' : 'es';
-  await act({ select: SEL.settingsLanguage, value: other, wait: 0.5 });
-  await dwell(DWELL.language);
-  await snap('language');
-  await act({ select: SEL.settingsLanguage, value: LANG, wait: 0.5 });
-  await click(SEL.settingsClose);
-  await resumeFromMenu();
-  shown('pause menu, settings and language', menu && settings);
-  await key('KeyE');                      // Open plan
-  if (await waitFor(() => window.__missionStore.getState().mode === 'plan', 5, 'Open plan at the habitat table')) {
-    await dwell(DWELL.habitatPlan);
-    await snap('habitat-plan');
-    await key('KeyM');
-    await resumePlay();
-    shown('habitat table: Open plan');
-  } else shown('habitat table: Open plan', false);
+  if (!PLAYER) {
+    await key('Escape');                    // the pause menu, then Settings: the interface language
+    const menu = await waitFor(() => document.querySelector('dialog[open].pause-dialog'), 5, 'pause menu');
+    await clickText(T('menu.settings'), '.pause-dialog button');
+    const settings = await waitFor((sel) => document.querySelector(sel), 5, 'settings', SEL.settingsLanguage);
+    const other = LANG === 'es' ? 'en' : 'es';
+    await act({ select: SEL.settingsLanguage, value: other, wait: 0.5 });
+    await dwell(DWELL.language);
+    await snap('language');
+    await act({ select: SEL.settingsLanguage, value: LANG, wait: 0.5 });
+    await click(SEL.settingsClose);
+    await resumeFromMenu();
+    shown('pause menu, settings and language', menu && settings);
+    await key('KeyE');                      // Open plan
+    if (await waitFor(() => window.__missionStore.getState().mode === 'plan', 5, 'Open plan at the habitat table')) {
+      await dwell(DWELL.habitatPlan);
+      await snap('habitat-plan');
+      await key('KeyM');
+      await resumePlay();
+      shown('habitat table: Open plan');
+    } else shown('habitat table: Open plan', false);
+  }
   await key('KeyX');                      // Finish EVA
   if (!(await waitFor((sel) => document.querySelector(sel), 10, 'debrief', SEL.debrief))) {
     shown('habitat table: Finish EVA', false);
@@ -707,7 +723,7 @@ try {
   const debriefText = await S((sel) => document.querySelector(sel)?.innerText ?? '', SEL.debrief);
   marks.noDeviations = /No deviations|Sin desv/i.test(debriefText);
   marks.verdict = (debriefText.match(/\d+ (deviation|desv)[^\n]*/i) ?? [''])[0];
-  shown('debrief: route review with a verdict', !marks.noDeviations);
+  if (!PLAYER) shown('debrief: route review with a verdict', !marks.noDeviations);   // a player walks no detour
   shown('debrief: beat recap', await exists('[aria-labelledby="mission-recap-title"]'));
   await S((sel, k) => {
     const d = document.querySelector(sel);
@@ -744,6 +760,8 @@ try {
   console.log(`\nTarget ${fmt(TARGET_SEC)}, limit ${fmt(LIMIT_SEC)}: ${total <= LIMIT_SEC ? 'within the limit' : 'OVER the limit'} (${fmt(total)}).`);
   const evaWall = ['walkOut', 'stop', 'storm', 'radiation', 'habitat'].reduce((sum, id) => sum + (byId.get(id)?.sec ?? 0), 0);
   console.log(`EVA (Start walking to the debrief): ${fmt(evaWall)} of play, mission clock T+${marks.endT?.toFixed(0)} s.`);
+  const toDebrief = total - (byId.get('debrief')?.sec ?? 0) - (byId.get('sources')?.sec ?? 0);
+  console.log(`Start screen to the debrief: ${fmt(toDebrief)}${PLAYER ? ' (a player, #265: about 3 min, no more than 4)' : ''}.`);
   console.log(`Mission times: at the stop T+${marks.arriveT?.toFixed(0)} s, sample secured T+${marks.sampledT?.toFixed(0)} s, storm T+${marks.stormT?.toFixed(0)} s, radiation T+${marks.radiationT?.toFixed(0)} s, back in the habitat T+${marks.backT?.toFixed(0)} s.`);
   console.log(`With a presenter 30 % slower (dwell x${(DWELL_SCALE * 1.3).toFixed(2)}): about ${fmt(total + dwellTotal * 0.3)}.`);
   console.log(`Find marked: ${marks.find ? 'yes' : 'no'}. Debrief review: ${marks.noDeviations ? '"No deviations"' : 'a deviation with its verdict'}.`);
