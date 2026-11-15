@@ -256,17 +256,6 @@ export function cheapestInsertion(chain, place) {
 }
 
 /**
- * Whether a sampling task after the first is kept (PO Q2, decided: list order, each later task kept if the plan with it
- * still fits, as the optional stops). The caller also passes `firstDrop`, the drop of an earlier task or null: strictly
- * from the end of the list would be `(fits, firstDrop) => fits && !firstDrop`, the task then reporting the earlier
- * task's limit.
- * @param {boolean} fits the plan with the task fits the time, O2 and battery
- */
-function keepsTask(fits) {
-  return fits;
-}
-
-/**
  * Plan the route from the crew's needs.
  *
  * For the 'samples' objective (#352) the stops are the places of the crew's sampling tasks (needs.tasks, see
@@ -430,7 +419,8 @@ export function planFromNeeds(needs, site) {
    * Collect samples (#352): the crew's sampling tasks give the places. Each task in list order goes in where it adds
    * the least straight-line walking (findDetour.rankInsertions, as the finds); a task at a place already on the route
    * adds its work there. The first task is the goal: kept even when it does not fit. Each later one is kept only when
-   * the plan with it still fits the time, O2 and battery (keepsTask).
+   * the plan with it still fits the time, O2 and battery, and a task left out does not stop the next one being tried
+   * (PO Q2: the optional stops' rule).
    */
   const planTasks = () => {
     const tasks = normaliseTasks(needs?.tasks);
@@ -441,7 +431,6 @@ export function planFromNeeds(needs, site) {
     let chain = [start];
     let current = null;
     let first = null;   // the goal task and its place, once one is on the route
-    let firstDrop = null;
     const planned = [];
     // the tasks after a goal task with no path: not tried, so neither kept nor dropped
     const unplanned = (from) => tasks.slice(from).map((task) => taskEntry(task, resolvePlace(task.place, site.stops)));
@@ -488,8 +477,7 @@ export function planFromNeeds(needs, site) {
         current = tried;
         continue;
       }
-      const fits = tried.ok && tried.check.fits;
-      if (keepsTask(fits, firstDrop)) {
+      if (tried.ok && tried.check.fits) {
         reasons.push({
           code: 'task-added', task: task.id, place: place.key, name: place.label,
           extraWalkSec: walking(tried) - walking(current), extraM: walked(tried) - walked(current), workSec: entry.workSec,
@@ -499,8 +487,7 @@ export function planFromNeeds(needs, site) {
         current = tried;
         continue;
       }
-      entry.drop = fits ? { ...shortfall(tried, current), limit: firstDrop.limit } : shortfall(tried, current);
-      firstDrop ??= entry.drop;
+      entry.drop = shortfall(tried, current);
       reasons.push({ code: 'task-dropped', task: task.id, place: place.key, name: place.label, ...entry.drop, workSec: entry.workSec });
     }
 
