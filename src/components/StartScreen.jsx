@@ -16,12 +16,14 @@ import { FOCUSABLE, focusTarget } from './focus.js';
  * bar and the table while it is open). Nothing runs behind it: the EVA's clock, suit and events start at Begin EVA.
  * The mission table needs no pointer lock, so nothing is captured here; once the player has chosen drag-to-look
  * after a refused capture (#197), a note says that Walk will not capture the mouse either.
+ * The main action opens the first mission (the first sortie, #265). `onFullEva`, when given, adds one secondary button
+ * that opens the table on the full EVA instead (the Cheyava Falls objective); the table's objective can change either.
  * @param {{ busy: boolean, notice: string|null, freeLook?: boolean,
  *   scene?: { status: string, stage?: string, progress?: number }|null,
- *   onStart: () => void, onSources?: () => void }} props
+ *   onStart: () => void, onFullEva?: () => void, onSources?: () => void }} props
  *   scene is App's load state. A null scene counts as ready, so a caller that already has the engine can use the screen as it was.
  */
-export default function StartScreen({ busy, notice, freeLook = false, scene = null, onStart, onSources }) {
+export default function StartScreen({ busy, notice, freeLook = false, scene = null, onStart, onFullEva, onSources }) {
   const [controls, setControls] = useState(false);
   const startRef = useRef(null);
   const closeRef = useRef(null);
@@ -80,6 +82,11 @@ export default function StartScreen({ busy, notice, freeLook = false, scene = nu
                   </span>
                 )}
               </button>
+              {onFullEva && (
+                <button type="button" className="ui-button ghost start-full" onClick={onFullEva} disabled={busy || !ready}>
+                  {t('mission.start.full')}
+                </button>
+              )}
               <button type="button" className="ui-button ghost" onClick={() => setControls(true)}>{t('menu.controls')}</button>
               {onSources && <button type="button" className="ui-button ghost" onClick={onSources}>{t('ui.sources.188')}</button>}
             </div>

@@ -14,6 +14,7 @@ import { useShortcuts } from './components/useShortcuts.js';
 import DebriefScreen from './debrief/DebriefScreen.jsx';
 import EventBanner from './events/EventBanner.jsx';
 import EventDebug from './events/EventDebug.jsx';
+import { WalkBeat } from './mission/MissionBeat.jsx';
 import Finds from './finds/Finds.jsx';
 import Hud from './hud/Hud.jsx';
 import PlanMode from './plan/PlanMode.jsx';
@@ -21,7 +22,8 @@ import SourcesRoot from './sources/SourcesScreen.jsx';
 import { WalkStopCard } from './stops/ScienceStops.jsx';
 import { createRouteProgress } from './hud/minimapRoute.js';
 import { openSources } from './sources/sourcesStore.js';
-import { pauseMission, resumeMission, setMode, useMissionStore } from './state/store.js';
+import { pauseMission, resumeMission, setMode, setNeeds, useMissionStore } from './state/store.js';
+import { FIRST_OBJECTIVE, FULL_OBJECTIVE } from './sim/missions.js';
 import { EVA_PHASE, PAUSE_VIEW, pauseEva, requestEvaLock, restartEva, resumeEva } from './state/evaSession.js';
 import { continueEva } from './state/eva.js';
 import { preloadAppAssets } from './preload.js';
@@ -504,6 +506,17 @@ export default function App() {
   }, [handleModeChange]);
   useShortcuts(playing, handleShortcutMode);
 
+  // The start screen always opens the mission table, on the mission the player chose (#265): the main action opens the
+  // first sortie, the secondary button the full EVA. The objective defines the mission and stays editable at the table
+  // until Begin EVA. The table needs no pointer lock, so a refused capture is met at Begin EVA, where the pause menu
+  // offers drag-to-look. Both actions are disabled until the scene is ready; this guard keeps a stale click harmless.
+  const startMission = (objective) => {
+    if (load.status !== 'ready') return;
+    setNeeds({ objective });
+    if (useMissionStore.getState().mode !== 'plan') setMode('plan');
+    handleResume();
+  };
+
   // The start screen is up from the first frame: the scene loads behind it, and the screen also owns the failure
   // panel. The class hides the top bar and the table behind it, as it did once the scene was ready.
   const atStart = phase === EVA_PHASE.START && !evaSummary && load.status !== 'error';
@@ -551,6 +564,8 @@ export default function App() {
       {load.status === 'ready' && <WalkStopCard active={mode === 'walk'} />}
 
       {playing && mode === 'walk' && wristOpen && <p className="hint">{t(WRIST_HINT)}</p>}
+      {/* The first mission's beat line (#265) takes the key strip's place while the wrist screen is down. */}
+      {playing && mode === 'walk' && !wristOpen && <WalkBeat evaBegun={evaBegun} />}
 
       {atStart && (
         <StartScreen
@@ -558,14 +573,8 @@ export default function App() {
           notice={notice}
           freeLook={freeLook}
           scene={load}
-          onStart={() => {
-            // The start screen always opens the mission table; the EVA begins from there. The table needs no
-            // pointer lock, so a refused capture is met at Begin EVA, where the pause menu offers drag-to-look.
-            // The main action is disabled until the scene is ready; this guard keeps a stale click harmless.
-            if (load.status !== 'ready') return;
-            if (useMissionStore.getState().mode !== 'plan') setMode('plan');
-            handleResume();
-          }}
+          onStart={() => startMission(FIRST_OBJECTIVE)}
+          onFullEva={() => startMission(FULL_OBJECTIVE)}
           onSources={openSources}
         />
       )}
