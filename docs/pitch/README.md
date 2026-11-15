@@ -3,12 +3,12 @@
 Everything the team needs to present Marswalk at NASA Space Apps 2026 (challenge "Interplanetary Survival Guide:
 Martian Map", Ensenada local event). Built on the presentation mode on `main` (#330) and the first mission of #282.
 
-> **Format.** The talk is at 2:30 pm on 15 November, in English. It runs at most 4 minutes, video included: target
-> 3:40, hard cap 4:00 (Fernando, 9:25 am). The organisers' page quoted in `docs/SUBMISSION.md` (PR #316) says
-> "prepárate para exponer en idioma inglés durante un tiempo máximo de 3 minutos"; the team takes 4 and confirms with
-> them. There is one script, `script-4min-en.md`, spoken over the presentation mode on `main`
-> (https://martian-map.fernando-haro-c.workers.dev/?present=1), one Right per beat. An edited app video, a beat inside
-> the presentation, replaces the live demo. With an 88 s video the talk ends at 3:43.
+> **Format.** The talk is at 2:30 pm on 15 November. It runs at most 4 minutes, video included, with a 3:40 target
+> (Fernando). The organisers' page quoted in `docs/SUBMISSION.md` (PR #316) says "prepárate para exponer en idioma
+> inglés durante un tiempo máximo de 3 minutos". The team takes 4 and confirms with them. The talk is
+> `script-4min-en.md`, with `script-4min-es.md` as the same talk in Spanish, spoken over the presentation mode
+> (https://martian-map.fernando-haro-c.workers.dev/?present=1), one Right per beat. A recorded app video, the `demo`
+> beat of draft PR #356, replaces the live demo. With an 85 s video the talk ends at 3:35.
 >
 > **The file for the organisers is `docs/pitch/out/deck-global.pdf`**, the 7-slide deck, due by 2:00 pm. It is also
 > the backup on the day: if WebGL fails on the laptop, the presenter switches to the same PDF (slide per beat in
@@ -19,8 +19,8 @@ Martian Map", Ensenada local event). Built on the presentation mode on `main` (#
 | File | What it is |
 |---|---|
 | `beats.md` | The presentation's beats on `main` (captions, chips, source lines, numbers) with the line the presenter says over each, generated from `src/present/beats.js` and `script-4min-en.md` by `tools/sync-present.mjs`. `src/present/beats.js` on `main` is the source; this file follows it |
-| `script-4min-en.md`, `script-4min-es.md` | **The talk**: 4 minutes at most in English, one row per presentation beat, and where each number comes from; Spanish twin for rehearsal and questions |
-| `demo-run-sheet.md` | How to run the talk: setup, the keys, one Right per beat with its cue, what to do if the video or the whole presentation fails, the PDF slide per beat |
+| `script-4min-en.md`, `script-4min-es.md` | **The talk** in English and in Spanish, 4 minutes at most, one row per presentation beat, and where each number comes from |
+| `demo-run-sheet.md` | How to run the talk: setup, the keys, one Right per beat with its cue, what to do if the video or the whole presentation fails, what changes when #356 merges, the PDF slide per beat |
 | `qa.md` | The 14 hardest questions, plus three quick ones, with short, honest answers |
 | `video-30s.md` | The 30-second video script and frame-accurate shot list |
 | `deck-global.html`, `out/deck-global.pdf`, `out/deck-global/*.png` | The 7-slide global deck: one self-contained HTML file (fonts and images inlined), its PDF and one PNG per slide |
@@ -36,10 +36,10 @@ the others.
 
 | Number | Where it comes from | Used in |
 |---|---|---|
-| 913 m, habitat to Cheyava Falls | Our planner export on `main` (`tools/walkback-zone.mjs`, `planRoute` through WP1, WP2 and WP3; legs 356 + 255 + 242 + 60 m in `data/walkback-zone.json`) | Every script, slide 2, the video |
+| 913 m, habitat to Cheyava Falls | Our planner export on `main` (`tools/walkback-zone.mjs`, `planRoute` through WP1, WP2 and WP3; legs 356 + 255 + 242 + 60 m in `data/walkback-zone.json`) | On screen in the `plan` beat, slide 2, the video |
 | 934 m | #282's mission table, goal **Sample Cheyava Falls**, Fastest profile, by Bright Angel (`docs/DEMO.md` on 8ec6f72) | What the screen shows in the demo; don't read it aloud |
-| 824 m, 53 g, 18 min | The re-planned walk home from Cheyava Falls in the same export (`coldOpen`) | Cold open, slide 2 |
-| 14 min margin | Our SIM scenario: 160 g left at Cheyava Falls, minus 53 g home and the 72.5 g reserve, at 2.42 g/min | Cold open, beat 5, slide 3 |
+| 824 m, 53 g, 18 min | The re-planned walk home from Cheyava Falls in the same export (`coldOpen`) | Slide 2 |
+| 14 min margin | Our SIM scenario: 160 g left at Cheyava Falls, minus 53 g home and the 72.5 g reserve, at 2.42 g/min | Slide 3 only. The talk speaks no margin figure |
 | +399 min | The HUD on `main`, 40 m from home with a full tank (screenshot `img/app-hud-margin.jpg`) | Slide 3 caption, `qa.md` 5c |
 | +457 and +245 min | `main`, Fastest profile to Cheyava Falls: HUD at the airlock and the Suit tab (#328) | Not in the pitch |
 | +479, +285 and +224 min | #282's first sortie: HUD at the airlock, the Suit step, the debrief's lowest margin (#338) | Not in the pitch |
@@ -51,10 +51,10 @@ The HUD and the Suit tab disagree because the HUD takes the smaller of the oxyge
 
 ```
 node docs/pitch/tools/render.mjs           # src/*.html -> self-contained HTML, PNG per slide, PDF
-node docs/pitch/tools/timing.mjs           # every script row against its slot at 140 wpm, the ceiling; the scripts are written for 125
-node docs/pitch/tools/timing.mjs --wpm 125 --out council/timing-4min-125.md script-4min-en.md script-4min-es.md
+node docs/pitch/tools/timing.mjs           # every script row against its slot at 140 wpm, the ceiling; the scripts are written for 130
+node docs/pitch/tools/timing.mjs --wpm 130 --out council/timing-4min-130.md script-4min-en.md script-4min-es.md
 node docs/pitch/tools/sync-present.mjs     # main's src/present/beats.js + script-4min-en.md -> beats.md
-node docs/pitch/tools/sync-present.mjs --beats /tmp/beats.js   # the same from an open PR's beats.js (git show origin/<branch>:src/present/beats.js)
+node docs/pitch/tools/sync-present.mjs --beats <file>   # the same from an open PR's beats.js (git show origin/<branch>:src/present/beats.js > <file>)
 node docs/pitch/tools/walkback-zone.mjs    # walkback zone and leg numbers from src/sim (for beats 1 and 3)
 ```
 
@@ -65,7 +65,8 @@ change to that block.
 ## Assumptions the team must confirm
 
 - That the slot is 4 minutes and not the 3 the organisers' page says, whether Q&A follows, and whether we can plug in our own laptop.
-- The video beat's final length and scene order, from the presentation thread's PR; then rerun `sync-present.mjs` and fix the script times.
+- The `demo` beat's final length, scene order and event, from #356. Then rerun `sync-present.mjs` and fix the script times.
+- Whether the talk is in English or Spanish.
 - Presenters P1, P2, P3 and who drives the laptop.
 - Who records the 30-second video and on which machine.
 - The AI-use and "built before the event" answers in `qa.md` (questions 10 and 11).

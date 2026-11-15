@@ -5,17 +5,17 @@ Its beats live in `src/present/beats.js`; this file follows them. The table belo
 `node docs/pitch/tools/sync-present.mjs`: each beat's captions, chips and source line as the judges see them, with the
 numbers from `public/present/plan.json`, and the line `script-4min-en.md` says over it. Do not edit the table by hand.
 
-> **Format.** At most 4 minutes, video included: target 3:40, hard cap 4:00 (Fernando, 9:25 am, 15 November). The
-> edited app video is a beat inside `?present=1` and replaces the live demo. One **Right** per beat. The organisers'
-> page quoted in `docs/SUBMISSION.md` says 3 minutes at most; the team confirms the 4 with them.
+> **Format.** At most 4 minutes, video included, with a 3:40 target (Fernando, 15 November). The recorded app video
+> is the `demo` beat and replaces the live demo. One **Right** per beat. The organisers' page quoted in
+> `docs/SUBMISSION.md` says 3 minutes at most, and the team confirms the 4 with them.
 
 Keys: **Right**, **Space**, **PageDown** or **Enter** go forward; **Left** or **PageUp** go back; **L** switches
 English and Spanish; **Esc** leaves the presentation. If WebGL fails, the page shows "3D view unavailable. Captions
 only"; use `out/deck-global.pdf` instead (`demo-run-sheet.md`).
 
-**Draft.** Until the presentation thread posts the PR that adds the video beat, the table comes from #353
-(`fix/present-polish`, 63298ed) on top of `main`, and the script's `video` row is a placeholder. That PR's `live` beat
-will go; if it is still there, do not press Right after `credits`, or the presentation hands over to the app.
+**Which beats.** The table comes from `src/present/beats.js` on `main`. The script's `demo` and `credits` rows belong
+to draft PR #356, so they sit at the bottom as "not in this beats.js yet". The last beat, `live`, hands over to the
+app. Do not press Right into it.
 
 ## What ?present=1 shows, and what the presenter says
 
@@ -23,24 +23,25 @@ will go; if it is still there, do not press Right after `credits`, or the presen
 | # | Beat id | Seconds | Caption (EN / ES) | Chips (EN) | Source line | Presenter says (script-4min-en.md) |
 |---|---|---|---|---|---|---|
 | 1 | `mars` | 8 | Plan a Mars walk you can return from. / Planea en Marte una caminata con regreso. |  | Viking colour mosaic, MDIM 2.1, USGS (DATA) | 0:00 P1: On Mars, nobody can come and get you. Marswalk shows an astronaut where she can go and still get home. |
-| 2 | `jezero` | 9 | Jezero, a lake about 3.5 billion years ago. / Jezero. Un lago hace 3,500 millones de años. | Jezero crater · Perseverance landed here, 2021 (DATA) | THEMIS day IR 100 m, Mars Odyssey. Colour: our tint (DATA) | 0:12 P1: This is Jezero crater, an ancient lake, on NASA's HiRISE terrain. |
-| 3 | `cheyava` | 13 | Cheyava Falls. A possible sign of ancient life. / Cheyava Falls. Una posible señal de vida antigua. | Cheyava Falls · Perseverance, 2024 (DATA); 1 m HiRISE terrain model, Mars 2020 landing maps (DATA) | CTX 6 m, then HiRISE 1 m terrain and 25 cm image shown at 0.5 m, MRO. Colour: our tint (DATA) | 0:22 P1: Her goal is Cheyava Falls, where Perseverance found a potential biosignature, unconfirmed. She walks there from the habitat. |
-| 4 | `danger` | 9 | On Mars, nobody can come and get you. / En Marte, nadie puede ir por ti. | 8 h longest EVA a suit allows (DATA); 30 min oxygen reserve, kept untouched (DATA) | Suit limits: NASA xEVA concept of operations. Reserve: Apollo 17 procedures (DATA) | 0:34 P1: If something goes wrong out here, the only rescue is her own walk home. |
-| 5 | `plan` | 15 | Marswalk prices every metre in oxygen. / Marswalk cobra cada metro en oxígeno. | 356 m 6 min · 15 g O2 (DERIVED); 242 m 7 min · 17 g O2, uphill (DERIVED); 913 m habitat to Cheyava Falls (DERIVED); 24.6° slope here. Over 20° is no-go (DERIVED) | Route: our planner on the HiRISE slope. O2: NASA suit tests (DERIVED) | 0:43 P1: Marswalk plans that walk on the terrain. Slopes over twenty degrees are no-go, and every metre costs time and oxygen, priced from NASA's suited walking tests. |
-| 6 | `zone` | 18 | The question is not where you can go. / La pregunta no es a dónde puedes ir.; then It is where you can still get home. / Es desde dónde todavía vuelves a casa. | (live) ha you can reach and still get home (SIM); Habitat (DATA) | Zone: computed by our planner from the HiRISE cost grid and suit model. Not in the walk HUD yet. Clock sped up (SIM) | 0:58 P1: On Mars, the question isn't where you can go. It's where you can go and still get home. Her first sortie keeps a thirty minute reserve, so the orange area is everywhere she can reach and still get back in time. |
-| 7 | `radiation` | 11 | Radiation alert. Only ground toward home stays. / Alerta de radiación: solo el camino a casa. | Habitat (DATA); 26 µGy/h peak dose rate, September 2017, 2.5× normal (DATA) | RAD on Curiosity, Gale crater, not Jezero. Timing: NASA DONKI (DATA) | 1:19 P1: Then a radiation alert. Watch the zone. Only the way home is left. She turns back now. |
-| 8 | `storm` | 10 | Dust storm. The sky closes in. / Tormenta de polvo. El cielo se cierra. | τ 8 dust opacity, 2018 global storm (DATA); 3 km farthest view at Gale, 2018 storm (DATA) | Dust and visibility: Curiosity, Gale 2018. Weather: MEDA, Jezero, sol 1187 (DATA) | 1:33 P1:  |
-| 9 | `sources` | 12 | Measured, derived or simulated. Every number says which. / Medido, derivado o simulado. Cada número lo dice. | Terrain: HiRISE DTM, MRO (DATA); Slope, route, O2 per metre (DERIVED); Walking speed, storm timing (SIM); 0.14 m our terrain against NASA's DTM, via Mars Trek (DERIVED) | Every dataset is listed in Sources, in the app (DATA) | 3:06 P3: Every number on screen says if it is measured, derived or simulated. The radiation and the storm are real readings from Gale crater, not Jezero, and their timing is ours. Our terrain matches NASA's HiRISE model to fourteen centimetres. |
-| 10 | `credits` | 14 | Every source on screen, by name. / Cada fuente en pantalla, por su nombre. |  |  | 3:26 P3: Every source is on screen. On Mars, the question is not where you can go. It is where you can still get home. We are Los Frijolitos Espaciales Refritos Nueva Generación. Thank you. |
-| 11 | `live` | 6 | Now we walk it, live. / Ahora la caminamos, en vivo. · button "Open the mission table" |  |  | (do not reach it: Right here hands over to the app) |
-| - | `video` | | (not in this beats.js yet) | | | 1:38 P2: The crew plans at the mission table. The same orange zone, in the app. Out through the airlock. A dust storm, and her partner reacts. Back inside, the review compares the walk with the plan. |
+| 2 | `jezero` | 9 | Jezero, a lake about 3.5 billion years ago. / Jezero. Un lago hace 3,500 millones de años. | Jezero crater · Perseverance landed here, 2021 (DATA) | THEMIS day IR 100 m, Mars Odyssey. Colour: our tint (DATA) | 0:10 P1: This is Jezero crater, once a lake. Every picture here comes from NASA orbiters. |
+| 3 | `cheyava` | 13 | Cheyava Falls. A possible sign of ancient life. / Cheyava Falls. Una posible señal de vida antigua. | Cheyava Falls · Perseverance, 2024 (DATA); 1 m HiRISE elevation, one height per metre (DATA) | CTX 6 m, then HiRISE 1 m elevation and 25 cm image, MRO. Colour: our tint (DATA) | 0:18 P1: Her goal is Cheyava Falls, where Perseverance found a potential biosignature, unconfirmed. She walks there from the habitat. |
+| 4 | `danger` | 9 | On Mars, nobody can come and get you. / En Marte, nadie puede ir por ti. | 8 h longest EVA a suit allows (DATA); 30 min oxygen reserve, kept untouched (DATA) | Suit limits: NASA xEVA and Apollo rules, hazards.json (DATA) | 0:30 P1: If something goes wrong out here, the only rescue is her own walk home. |
+| 5 | `plan` | 15 | Marswalk prices every metre in oxygen. / Marswalk cobra cada metro en oxígeno. | 356 m 6 min · 15 g O2 (DERIVED); 242 m 7 min · 17 g O2, uphill (DERIVED); 24.6° slope here. Over 20° is no-go (DERIVED) | Route: our planner on the HiRISE slope. O2: NASA suit tests (DERIVED) | 0:38 P1: Marswalk plans that walk on NASA's HiRISE terrain. Slopes over twenty degrees are no-go, and every metre costs time and oxygen, priced from NASA's suited walking tests. |
+| 6 | `zone` | 18 | The question is not where you can go. / La pregunta no es a dónde puedes ir.; then It is where you can still get home. / Es desde dónde todavía vuelves a casa. | (live) ha you can reach and still get home (SIM); Habitat (DATA) | Zone: HiRISE cost grid, NASA suit model, 30 min first sortie. Clock sped up (SIM) | 0:52 P1: On Mars, the question isn't where you can go. It's where you can go and still get home. Her first sortie keeps a thirty minute reserve, so the orange area is everywhere she can reach and still get back in time. Then a radiation alert. Watch the zone. |
+| 7 | `radiation` | 11 | Radiation alert. Only ground toward home stays. / Alerta de radiación: solo el camino a casa. | Habitat (DATA); 26 µGy/h peak dose rate, September 2017, 2.5× normal (DATA) | RAD on Curiosity, Gale crater, not Jezero. Timing: NASA DONKI (DATA) | 1:15 P1: Only the way home is left. She turns back now. |
+| 8 | `storm` | 10 | Dust storm. Visibility drops; the zone does not. / Tormenta: baja la visibilidad, la zona no. | τ 8 dust opacity, 2018 global storm (DATA) | Dust: Curiosity, Gale 2018. Weather: MEDA, Jezero, sol 1187 (DATA) | 1:23 P1: Then a dust storm, and she sees less. That is the idea. Now the real app, recorded. |
+| 9 | `sources` | 12 | Measured, derived or simulated. Every number says which. / Medido, derivado o simulado. Cada número lo dice. | Terrain: HiRISE DTM, MRO (DATA); Slope, route, O2 per metre (DERIVED); Walking speed, storm timing (SIM); 0.14 m our terrain against NASA's DTM, via Mars Trek (DERIVED) | Every dataset is listed in Sources, in the app (DATA) | 2:57 P3: Every number on screen says if it is measured, derived or simulated. The radiation and storm readings are real, from Gale crater, not Jezero. Their timing is simulated. Our terrain matches NASA's HiRISE model to fourteen centimetres. |
+| 10 | `live` | 6 | Now we walk it, live. / Ahora la caminamos, en vivo. · button "Start the first sortie" |  |  | (do not reach it: Right here hands over to the app) |
+| - | `demo` | | (not in this beats.js yet) | | | 1:32 P2: The crew tells the mission table what it needs, and Marswalk builds the routes. The same orange zone, now in the app. Out through the airlock. An event hits, and her crewmate, EV2, reacts. Back inside, the review compares the route she walked with the plan. |
+| - | `credits` | | (not in this beats.js yet) | | | 3:15 P3: The challenge asked for a survival guide to Mars. Ours starts with one question. On Mars, it is not where you can go. It is where you can still get home. We are Los Frijolitos Espaciales Refritos Nueva Generación. Thank you. |
 <!-- present-beats:end -->
 
-## What the video beat needs to show
+## What the demo beat needs to show
 
-The five cues in the script's `video` row assume these scenes, in this order: planning at the mission table, the
-orange return zone in the app, egress through the airlock, EV2 reacting to an event, and the walked-route review.
-If the cut changes the order, change the cues in `script-4min-en.md` and `script-4min-es.md` and rerun
+The five cues in the script's `demo` row assume these scenes, in this order: planning at the mission table with routes
+from the crew's needs, the orange return zone in the app, egress through the airlock, EV2 reacting to an event, and the
+walked-route review. The cue for the event names no storm and no alert, because #356 has not fixed which one the cut
+shows. If the cut changes the order, change the cues in `script-4min-en.md` and `script-4min-es.md` and rerun
 `sync-present.mjs`. Keep the video's own captions at 8 words or fewer, like the other beats.
 
 ## 30-second video
@@ -56,4 +57,4 @@ the real app: the walkback zone is not in the video, because the app shows the m
 | 0:10-0:20 | How it works with NASA data | Terrain layer: the route bends around red slopes, touching red only at the Bright Angel stop; the helmet view with the margin; the dust storm and the map's route home | "HiRISE terrain model · Mastcam-Z · storm opacity from Curiosity, Gale 2018" | "The planner blocks HiRISE slopes over twenty degrees. When dust reaches the opacity Curiosity measured in 2018, the route home re-plans." |
 | 0:20-0:30 | The future | The three route profiles at the table; end card with the number | "Next: heart rate, other HiRISE sites · our grid reproduces NASA's HiRISE model to 0.14 m" | "Next, a heart rate sensor sets her oxygen use. Our grid reproduces NASA's HiRISE model to fourteen centimetres." |
 
-Changed: 15 Nov 2026, 9:40 am PST. One 4-minute talk over the presentation beats, with the app video in place of the live demo. The 3-, 5- and 8-minute scripts are gone. The table is generated from `src/present/beats.js` and `script-4min-en.md`.
+Changed: 15 Nov 2026. One talk of at most 4 minutes over the presentation beats on `main`, with the `demo` video beat in place of the live demo. `tools/sync-present.mjs` generates the table from `src/present/beats.js` and `script-4min-en.md`.
