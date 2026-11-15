@@ -358,6 +358,7 @@
 .hud:not(.hud-detail) .hud-lmst,
 .hud:not(.hud-detail) .hud-nav:not(.hud-caution),
 .hud:not(.hud-detail) .hud-radio-linked { display: none; }
+.app:not(:has(.stop-card-walk)) .hud:not(.hud-detail):not(.hud-sampling-on) .hud-sampling { display: none; }
 
 /* the two keys that open everything else, under the EVA clock */
 .hud-keys {
