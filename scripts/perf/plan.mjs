@@ -142,6 +142,9 @@ async function step(page, rec, label, fn, { wait = 600 } = {}) {
 
 // --film: a CDP screencast of the steps in FILM_STEPS, every frame the compositor produced
 // with its timestamp, for the council's filmstrips (scripts/perf/filmstrip.py picks 6 and prints the times).
+// The map's layer buttons. #282's NeedsPanel reuses the .table-layers class for its crew and risk choices, so match the
+// map's group by its aria-label (NeedsPanel's groups use aria-labelledby).
+const LAYER_BUTTONS = '.table-layers[aria-label] button';
 const FILM = flag('film');
 const FILM_STEPS = new Set(['map:drag', 'map:zoom', 'tab:route', 'tab:suit', 'layer:1', 'layer:2']);
 async function startFilm(page) {
@@ -211,13 +214,13 @@ async function runOnce(browser, base, dist, runIndex, { trace, frames }) {
     if (id.endsWith('route')) {
       rec.steps.idleRoute = await (async () => { const a = await snap(page); await sleep(IDLE_MS); return delta(a, await snap(page)); })();
       // every layer button on the route step, then back to the first
-      const layers = await page.$$eval('.table-layers button', (els) => els.length);
+      const layers = await page.$$eval(LAYER_BUTTONS, (els) => els.length);
       for (let i = 0; i < layers; i++) {
         // a real mouse click on the button, so the Event Timing API records it
-        await step(page, rec, 'layer:' + i, async () => { const buttons = await page.$$('.table-layers button'); await buttons[i].click(); }, { wait: 900 });
+        await step(page, rec, 'layer:' + i, async () => { const buttons = await page.$$(LAYER_BUTTONS); await buttons[i].click(); }, { wait: 900 });
         if (i === 1) await shot(page, frameDir, 'layer-1');
       }
-      if (layers) await step(page, rec, 'layer:back', async () => { const buttons = await page.$$('.table-layers button'); await buttons[0].click(); });
+      if (layers) await step(page, rec, 'layer:back', async () => { const buttons = await page.$$(LAYER_BUTTONS); await buttons[0].click(); });
       if (await page.$('.table-overlay-toggle')) {
         await step(page, rec, 'overlay:on', () => page.click('.table-overlay-toggle'));
         await step(page, rec, 'overlay:off', () => page.click('.table-overlay-toggle'));
