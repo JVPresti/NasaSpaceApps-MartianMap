@@ -90,7 +90,7 @@ describe('the task banner (#352)', () => {
     expect(html).toContain('data-task-place="P2"');
     expect(html).toContain('Take 1 photo here · 0 of 1');
     expect(html).not.toContain('soil');
-    expect(renderToStaticMarkup(<SamplingChecklist />)).toContain('data-tasks="t2">Task · 1 photo · 0 of 1</div>');
+    expect(renderToStaticMarkup(<SamplingChecklist />)).toContain('data-tasks="t2">Task · Photo 0/1</div>');
   });
 
   it('shows nothing for a goal without tasks', () => {
@@ -103,7 +103,7 @@ describe('the task banner (#352)', () => {
     secure([{ id: 1, kind: 'rock', site: 'Bright Angel', x: -11.5, z: -49, into: 'pouch', atSec: 300 }]);
     const html = renderToStaticMarkup(<SamplingChecklist />);
     // in the "Last" line's slot and style, so the panel keeps its height
-    expect(html).toContain('<div class="hud-caption hud-sampling-last" data-tasks="t1 t2">Task · 1 rock sample · 1 of 1; 2 photos · 0 of 2</div>');
+    expect(html).toContain('<div class="hud-caption hud-sampling-last" data-tasks="t1 t2">Task · Rock 1/1 · Photo 0/2</div>');
     expect(html).not.toContain('LAST');
     at(200, 200);
     expect(renderToStaticMarkup(<SamplingChecklist />)).not.toContain('Task ·');
@@ -120,6 +120,7 @@ describe('the task banner (#352)', () => {
     expect(html).toContain('Recoge 1 muestra de roca aquí · 0 de 1 · +1 más');
     secure([{ id: 1, kind: 'rock', site: 'Bright Angel', x: -11.5, z: -49, into: 'pouch', atSec: 300 }]);
     expect(banner()).toContain('Toma 2 fotos aquí · 0 de 2');
+    expect(renderToStaticMarkup(<SamplingChecklist />)).toContain('Tarea · Roca 1/1 · Foto 0/2');
     expect(catalogs.es['taskwalk.done']).not.toBe(catalogs.en['taskwalk.done']);
   });
 });

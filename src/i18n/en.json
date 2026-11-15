@@ -671,7 +671,7 @@
   "taskwalk.done.all": "✓ Done · {list} here",
   "taskwalk.more": "+{count} more",
   "taskwalk.hud": "Task · {list}",
-  "taskwalk.hud.item": "{what} · {here} of {count}",
+  "taskwalk.hud.item": "{what} {here}/{count}",
   "mission.recap.title": "What this mission showed",
   "debrief.title": "EVA debrief",
   "debrief.site": "Back in the habitat · mission clock stopped",

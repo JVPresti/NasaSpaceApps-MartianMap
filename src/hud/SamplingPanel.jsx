@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useMissionStore } from '../state/store.js';
 import { CHECKLIST, samplingPrompt } from './samplingPrompt.js';
 import { subscribeWristKeyOwner, wristOwnsKeys } from '../screens/wrist/ownership.js';
-import { taskWhat, useTaskProgress } from '../mission/useTaskProgress.js';
+import { useTaskProgress } from '../mission/useTaskProgress.js';
 import './sampling.css';
 
 const S = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
@@ -26,15 +26,16 @@ function describe(x) {
 }
 
 /**
- * Near a sampling task's place (#352): what each task of the nearest place asks for and how many are in there, as the
- * banner counts it. It takes the "Last" line's slot and style while it shows, so the panel keeps its height and the
- * right column still fits a 768 px screen with every instrument on (I).
+ * Near a sampling task's place (#352): each task of the nearest place and how many are in there, as the banner counts
+ * it, "Task · Rock 0/1 · Photo 1/2" in the table's short words. It takes the "Last" line's slot and style while it
+ * shows, so the panel keeps its height (the right column still fits a 768 px screen with every instrument on, I), and it
+ * stays short, so the panel does not widen into the science card beside it.
  */
 function taskLine(near) {
   const place = near[0]?.place.key;
   const rows = near.filter((row) => row.place.key === place);
   if (rows.length === 0) return null;
-  const list = rows.map((row) => t('taskwalk.hud.item', { what: taskWhat(row), here: row.here, count: row.count })).join('; ');
+  const list = rows.map((row) => t('taskwalk.hud.item', { what: t(`tasktable.what.${row.what}`), here: row.here, count: row.count })).join(' · ');
   return <div className="hud-caption hud-sampling-last" data-tasks={rows.map((row) => row.id).join(' ')}>{t('taskwalk.hud', { list })}</div>;
 }
 
