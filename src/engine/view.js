@@ -21,6 +21,7 @@ import { createTouchControls } from './touchInput.js';
 import { walkVector } from './walkVector.js';
 import { LOOK_DEFAULTS, clampLookSettings } from './lookSettings.js';
 import { walkStep } from './walkInput.js';
+import { bobCycle, stepGait } from './gait.js';
 
 // The test bench's start, 70 m south of Cheyava Falls in Neretva Vallis. Only a debug teleport now (__marswalk.cheyavaView,
 // scripts/measure-fps.mjs): the EVA starts at the habitat airlock (spawn.js, placed by the engine once the habitat is down, #166).
@@ -74,7 +75,7 @@ export function createView(ctx, canvas, signal, {
   onGamepadAction = () => {},
   document: doc = globalThis.document,
 } = {}) {
-  const { camera, controls, view, sys } = ctx;
+  const { camera, controls, view, sys, gait } = ctx;
   const { meshH, groundH, tileH } = ctx.terrain;
   const { T } = ctx;
   const gate = createInputGate({ enabled: inputEnabled });
@@ -240,7 +241,7 @@ export function createView(ctx, canvas, signal, {
   }
 
   const fwd = new THREE.Vector3(), right = new THREE.Vector3();
-  let bobAmp = 0, bobPhase = 0, camGround = 0, camDuck = 0, groundInit = false;
+  let bobAmp = 0, camGround = 0, camDuck = 0, groundInit = false;
   const obs = [];   // this frame's obstacles near the walker (collide.js), reused
 
   /**
@@ -306,9 +307,14 @@ export function createView(ctx, canvas, signal, {
       view.moveSpeed = pinned ? 0 : Math.hypot(eye.x - ex, eye.z - ez) / Math.max(dt, 1e-4);
       view.forwardSpeed = pinned ? 0 : (step.forward || 0);   // signed forward m/s for the legs (#228): negative walking backward, 0 strafing
       // reference head bob: one bounce per step; jogging on Mars is a slow lope (long 2 m strides, bigger bounce). Camera only, no asset involved.
-      // The gait is chosen by the Shift key (#227), never by the measured speed.
-      const jog = (shift || analogueJog) && speed > 0, bt = arms.clip ? 0 : view.moveSpeed > 0.1 ? (jog ? 0.045 : 0.012) : 0; bobAmp += (bt - bobAmp) * Math.min(1, dt * 6); bobPhase += view.moveSpeed * dt * Math.PI * 2 / (jog ? 1.0 : 0.5);
-      camera.position.y += Math.abs(Math.sin(bobPhase * 0.5)) * bobAmp * 2 - bobAmp; camera.position.addScaledVector(right, Math.sin(bobPhase * 0.5) * bobAmp * 0.4);
+      // The gait is chosen by the Shift key or the analogue jog (#227), never by the measured speed. The phase is the
+      // shared gait (#228): it advances with the distance walked, so a footfall, a bounce, the arm swing and a print
+      // stay in step.
+      const jog = (shift || analogueJog) && speed > 0;
+      stepGait(gait, step.forward * dt, jog);
+      const bt = arms.clip ? 0 : view.moveSpeed > 0.1 ? (jog ? 0.045 : 0.012) : 0; bobAmp += (bt - bobAmp) * Math.min(1, dt * 6);
+      const bc = bobCycle(gait);
+      camera.position.y += bc.bounce * bobAmp; camera.position.addScaledVector(right, bc.sway * bobAmp * 0.4);
     } else {
       view.moveSpeed = 0;
       view.forwardSpeed = 0;
@@ -331,7 +337,7 @@ export function createView(ctx, canvas, signal, {
     gate.clear();
     drag = false;
     touch.clear(); pad.reset(); publishTouch();
-    bobAmp = 0; bobPhase = 0; camGround = 0; camDuck = 0; groundInit = false;
+    bobAmp = 0; camGround = 0; camDuck = 0; groundInit = false;
     pointerLock.release();
     setMode(mode);
     update(0);   // snap the camera to the new eye position before the next frame

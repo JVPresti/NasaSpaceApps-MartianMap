@@ -21,7 +21,7 @@ const LIFT_M = 0.015;
 const FLOATS_PER_MATRIX = 16;
 
 export function createBootPrints(ctx) {
-  const { scene, U, sys, view } = ctx;
+  const { scene, U, sys, view, gait } = ctx;
   const { meshTriH } = ctx.terrain;
   const uniforms = {
     uSunDir: U.uSunDir, uFogK: U.uFogK, uDust: U.uDust, uStormSun: U.uStormSun, uDustK: U.uDustK, uDustOff: U.uDustOff,   // uDust: haze and storm dust in the prints (#142)
@@ -113,9 +113,10 @@ export function createBootPrints(ctx) {
     /** @param {number} _dt */
     update(_dt) {
       added = 0;
-      // the player, in Walk mode and not in the middle of a crouching sampling clip; Shift is the jog (view.js)
+      // the player, in Walk mode and not in the middle of a crouching sampling clip; Shift is the jog (view.js).
+      // The tracker starts from the shared gait phase (#228), so a print lands on the same footfall as a bounce.
       const keys = view.keys || {};
-      if (view.mode === 'eye' && !(sys.arms && sys.arms.clip)) walkers.player.tracker.track(view.eye.x, view.eye.z, view.yaw, !!(keys.ShiftLeft || keys.ShiftRight), emitPlayer);
+      if (view.mode === 'eye' && !(sys.arms && sys.arms.clip)) walkers.player.tracker.track(view.eye.x, view.eye.z, view.yaw, !!(keys.ShiftLeft || keys.ShiftRight), emitPlayer, ctx.gait.phase);
       else walkers.player.tracker.reset();
       const pr = sys.partner && sys.partner.root;
       // the partner model faces +z at rotation.y = 0, which is yaw = PI in the view.yaw convention; it only walks

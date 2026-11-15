@@ -46,8 +46,8 @@ export function createProps(ctx) {
       this.scoop.traverse(o => { if (o.name === 'ScoopSoil' || o.name === 'ScoopRocks') o.visible = o.name === this.content; });
       this.tcase.visible = sys.partner.root.visible && !!this.hand; if (!this.tcase.visible) return;
       const open = !sys.partner.carrying && !(sys.partner.bending && sys.partner.wantCarry) ? -1.75 : 0;   // lid: rotation.x = -1.75 rad is fully open
-      if (this.lid) this.lid.rotation.x += (open - this.lid.rotation.x) * 0.12;
-      if (!sys.partner.carrying) { this.tcase.position.y += (this.restY - this.tcase.position.y) * 0.25; return; }   // resting on the ground where it was released
+      if (this.lid) this.lid.rotation.x += (open - this.lid.rotation.x) * (1 - Math.exp(-8 * dt));   // frame-rate independent (#228)
+      if (!sys.partner.carrying) { this.tcase.position.y += (this.restY - this.tcase.position.y) * (1 - Math.exp(-18 * dt)); return; }   // resting on the ground where it was released
       this.hand.getWorldPosition(this.tmp); this.tcase.position.copy(this.tmp); this.tcase.position.y -= 0.10; this.tcase.rotation.y = sys.partner.root.rotation.y + Math.PI / 2;
     },
   };
