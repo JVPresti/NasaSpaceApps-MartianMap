@@ -24,7 +24,9 @@ export const TABLE_PAD_ACTIONS = Object.freeze(['open-plan', 'end-eva']);
 
 // In the habitat before the EVA the mission clock is held (mission.paused with mission.held) while the astronaut walks
 // (#260), so that counts as walking. A pause menu clears `held`, so the prompt goes and the keys do nothing behind it.
-const walking = (state) => !!state && state.mode === 'walk' && (!state.mission?.paused || state.mission?.held === true);
+// The airlock cycle also holds the clock, but it owns the screen: only stage 'habitat' counts a held clock as walking.
+const walking = (state) => !!state && state.mode === 'walk'
+  && (!state.mission?.paused || (state.mission?.held === true && state.stage === 'habitat'));
 
 /**
  * The player walks in the habitat's cabin (engine.inHabitatCabin): where the table prompt shows and its keys act. There

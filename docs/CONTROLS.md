@@ -57,7 +57,7 @@ returns to Walk. The pause menu's End the EVA is a different action: it discards
 
 | Input | Action |
 | --- | --- |
-| M | Switch between Walk and Plan. Entering Plan releases the pointer lock. Before the EVA, Walk is the habitat; during the airlock cycle M does nothing (#260). |
+| M | Switch between Walk and Plan. Entering Plan releases the pointer lock. Before Begin EVA, M only opens the table (#282) and Back to the habitat closes it. During the airlock cycle M does nothing (#260). |
 | L | Next data layer |
 | Shift+L | Previous data layer |
 | 0 (top row or numeric keypad) | Turn the data layer off |

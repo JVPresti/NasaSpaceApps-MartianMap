@@ -64,7 +64,6 @@ describe('flow stages', () => {
     const s = useMissionStore.getState();
     expect(s.stage).toBe(STAGE.HABITAT);
     expect(s.mode).toBe('walk');
-    expect(s.stage).toBe(STAGE.HABITAT);
   });
 
   it('goes habitat, egress, eva, debrief, and back to eva only through Continue EVA', () => {
@@ -80,7 +79,6 @@ describe('flow stages', () => {
     expect(useMissionStore.getState().stage).toBe(STAGE.EGRESS);
     completeEgress();
     expect(useMissionStore.getState().stage).toBe(STAGE.EVA);
-    expect(useMissionStore.getState().stage).not.toBe(STAGE.EGRESS);
     showDebrief();   // X at the table (#244) froze the summary
     expect(useMissionStore.getState().stage).toBe(STAGE.DEBRIEF);
     continueFromDebrief();   // Continue EVA

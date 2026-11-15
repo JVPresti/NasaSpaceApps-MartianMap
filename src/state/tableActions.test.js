@@ -164,6 +164,20 @@ describe('the habitat table actions (#244)', () => {
     expect(onOpenPlan).toHaveBeenCalledTimes(1);
   });
 
+  it('draws no prompt and ignores E during the airlock cycle, though Start walking holds the clock (#260)', () => {
+    const engine = fakeEngine();
+    const { target, onOpenPlan } = connect(engine);
+    setMode('walk');
+    holdMission();
+    expect(rowTexts(engine)).not.toBeNull();
+    useMissionStore.setState({ stage: 'egress' });   // Begin EVA, then Start walking: resumeEva({ holdClock }) holds it
+    holdMission();
+    expect(useMissionStore.getState().mission.held).toBe(true);
+    expect(engine.setHabitatPrompt).toHaveBeenLastCalledWith(null);
+    target.press('KeyE');
+    expect(onOpenPlan).not.toHaveBeenCalled();
+  });
+
   it('ignores a paused mission, Plan, key repeat, modifier keys and typing in a field', () => {
     const engine = fakeEngine();
     const { target, onOpenPlan } = connect(engine);
