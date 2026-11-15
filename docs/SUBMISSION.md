@@ -16,6 +16,8 @@ The Ensenada event has its own deadlines and deliverables, from the [Ensenada lo
 | 2:30 pm | Present to the local judges | Local winners become Global Nominees directly |
 | 11:59 pm | Upload the **technical report** and the **final presentation** through the portal, both in English | The report must contain "your team members, the challenge you solved, your resolution methodology, and evidence of it" |
 
+The team plans a 5-minute local pitch ([`docs/pitch/script-5min-en.md`](https://github.com/JVPresti/NasaSpaceApps-MartianMap/pull/329)), with `docs/pitch/script-3min-en.md` as the fallback, because the page above says 3 minutes. Confirm the limit with the local lead before 2:00 pm.
+
 The portal's project page takes images only ("DOES NOT allow for the upload of videos or documents"). Ask the local lead today how they want the technical report. Our default: export this file plus `docs/VALIDITY.md` as one PDF, put it at a public link, and add that link under "Space Agency Partner & Other Data" with the text "Technical report".
 
 Checklist:
