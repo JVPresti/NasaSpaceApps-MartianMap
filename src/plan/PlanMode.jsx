@@ -21,7 +21,9 @@ export default function PlanMode({ engine, active, evaBegun = false, onBeginEva,
   const planner = useRoutePlanner({ waypoints, enabled: active, engine });
 
   // route.json holds the five placeholder waypoints from the assets team. The route starts at the airlock (#166);
-  // without shelters.json it starts at the HAB waypoint as before.
+  // without shelters.json it starts at the HAB waypoint as before. The planner chooses the stops from the crew's needs
+  // (useRoutePlanner, src/sim/missionNeeds.js), so these anchors are only the fallback while nothing has planned yet
+  // (or when stops.json gives nothing to choose from): they never replace a planned list.
   useEffect(() => {
     let cancelled = false;
     const shelters = loadDataFile(SHELTERS_PATH).catch(() => null);
@@ -29,7 +31,7 @@ export default function PlanMode({ engine, active, evaBegun = false, onBeginEva,
       .then(async (route) => {
         const start = await shelters;
         if (cancelled) return;
-        useMissionStore.setState((state) => ({
+        useMissionStore.setState((state) => (state.route.waypoints.length > 0 ? state : {
           route: { ...state.route, waypoints: startAtAirlock(route.waypoints ?? [], start) },
         }));
       })
