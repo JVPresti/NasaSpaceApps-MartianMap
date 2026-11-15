@@ -46,7 +46,7 @@ describe('route profiles panel (#245)', () => {
 
   it('compares distance, steepest slope, steep ground, radio shadow, time and oxygen', () => {
     const t = text(render());
-    for (const label of ['Distance', 'Steepest', 'Over 15°', 'No radio', 'Walk out', 'Oxygen']) expect(t).toContain(label);
+    for (const label of ['Distance', 'Steepest', 'Over 15°', 'No radio', 'Planned out', 'Oxygen']) expect(t).toContain(label);
     expect(t).toContain('0.91');
     expect(t).toContain('0.94');
     expect(t).toContain('151');
@@ -76,6 +76,6 @@ describe('route profiles panel (#245)', () => {
   it('speaks Spanish', () => {
     setLanguage('es');
     const t = text(render());
-    for (const label of ['Rápida', 'Suave', 'Sin radio', 'Ida a pie', 'Esperando al hábitat']) expect(t).toContain(label);
+    for (const label of ['Rápida', 'Suave', 'Sin radio', 'Ida prevista', 'Esperando al hábitat']) expect(t).toContain(label);
   });
 });

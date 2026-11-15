@@ -117,9 +117,9 @@ function stopLabel(name, index, count) {
   return [index === count - 1 ? 'END' : code, sentence(translateText(rest))];
 }
 
-function Big({ value, unit, label, tone }) {
+function Big({ value, unit, label, tone, title }) {
   return (
-    <div className="table-big">
+    <div className="table-big" title={title}>
       <p><b className={tone ? 'tone-' + tone : undefined}>{value}</b>{unit && <span>{unit}</span>}</p>
       <span>{label}</span>
     </div>
@@ -226,7 +226,7 @@ function BudgetPanel({ totals, metrics }) {
         )}
         {tot && (
           <p className="budget-key">
-            <i className="seg-out" />{t('table.budget.key.out', { min: minutes(tot.timeSec) })}{' '}
+            <i className="seg-out" />{tot.workSec > 0 ? t('table.budget.key.out.work', { min: minutes(tot.timeSec), work: shortDuration(tot.workSec) }) : t('table.budget.key.out', { min: minutes(tot.timeSec) })}{' '}
             <i className="seg-back" />{tot.roundTrip ? t('table.budget.key.round.trip') : t('table.budget.key.back', { min: minutes(tot.returnTimeSec) })}{' '}
             <i className="seg-spare" />{t('table.budget.key.spare', { min: minutes(tot.marginSec) })}{' '}
             <i className="seg-reserve" />{t('table.budget.key.reserve')}
@@ -467,7 +467,8 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
             </div>
             <div className="table-grid2">
               <Big value={metrics.distance.value} unit="km" label={t('ui.distance')} />
-              <Big value={metrics.time.value} unit="min" label={t('ui.walk.out')} />
+              {/* Walk out plus the work at the stops (#247): planned time, not played in real time */}
+              <Big value={metrics.time.value} unit="min" label={t('table.planned.out')} title={t('table.planned.out.title')} />
               <Big value={metrics.climb.value} unit="m" label={t('ui.climb')} />
               <Big value={metrics.steepest.value} unit="°" label={t('table.steepest.slope')} tone={steepTone} />
             </div>
