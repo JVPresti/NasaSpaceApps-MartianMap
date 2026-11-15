@@ -83,6 +83,22 @@ start of the EVA.
 Each event runs at most once per engine instance. An event that has ended does
 not start again if its trigger stays true; create a new engine for a new EVA.
 
+#### Trigger conditions (#265)
+
+Any trigger except `manual` can carry these optional fields. They are what lets the
+first mission (`src/sim/missions.js`) meet both events at any walking pace.
+
+| Field | Shape | Effect |
+| --- | --- | --- |
+| `requires` | `[{ "path": "route.nextIndex", "op": "gte", "value": 2, "forSec": 20 }]` | A store threshold that must have held for `forSec` seconds of mission time (0 when left out). The time counts from the first update it held; it restarts if the threshold stops holding. |
+| `requires` | `[{ "event": "dust-storm", "afterSec": 15 }]` | Another event must have started at least `afterSec` seconds ago. An event this engine does not run (switched off at the mission table) counts as met. |
+| `latestSec` | `180` | From this mission time the basic trigger and the store thresholds no longer count; event requirements still do, so two late events keep their order. Not before `atSec`. |
+| `holdInsideEnd` | `true` | The event does not start while the position is inside its own `end` area (it would end in the same update and never play); it starts on the first update outside. Needs an `end` of type `area`. |
+
+The real storm and radiation events carry `{ "type": "manual" }` in their files: the
+mission gives them their trigger (`missionEventDefinitions`), T+480 s and T+720 s in
+the full EVA.
+
 ### Timeline
 
 Entries are applied in order, relative to the event start:
@@ -181,6 +197,9 @@ update. This keeps a single update deterministic and avoids trigger chains insid
 one frame.
 
 ## Adding a fourth event
+
+To give an event a start time, add it to each mission's `events` in
+`src/sim/missions.js`; the event file says what happens, the mission says when.
 
 No code path changes. Add a JSON file under `src/sim/events/`, then register it:
 
