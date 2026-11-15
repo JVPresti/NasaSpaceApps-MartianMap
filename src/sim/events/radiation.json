@@ -3,13 +3,13 @@
   "label": "Radiation alert",
   "trigger": { "type": "missionTime", "atSec": 720 },
   "timeline": [
-    { "atSec": 0, "set": { "environment.doseRateUgyH": 10.0, "environment.doseUgy": 0 } },
-    { "atSec": 90, "set": { "environment.doseRateUgyH": 10.0, "environment.doseUgy": 0.25 } },
-    { "atSec": 150, "set": { "environment.doseRateUgyH": 20.0, "environment.doseUgy": 0.50 } },
-    { "atSec": 210, "set": { "environment.doseRateUgyH": 29.92, "environment.doseUgy": 0.92 } },
-    { "atSec": 570, "set": { "environment.doseRateUgyH": 29.92, "environment.doseUgy": 3.91 } },
-    { "atSec": 690, "set": { "environment.doseRateUgyH": 12.0, "environment.doseUgy": 4.61 } },
-    { "atSec": 720, "set": { "environment.doseRateUgyH": 10.0, "environment.doseUgy": 4.70 } }
+    { "atSec": 0, "set": { "environment.doseRateUgyH": 10.0 } },
+    { "atSec": 90, "set": { "environment.doseRateUgyH": 10.0 } },
+    { "atSec": 150, "set": { "environment.doseRateUgyH": 20.0 } },
+    { "atSec": 210, "set": { "environment.doseRateUgyH": 29.92 } },
+    { "atSec": 570, "set": { "environment.doseRateUgyH": 29.92 } },
+    { "atSec": 690, "set": { "environment.doseRateUgyH": 12.0 } },
+    { "atSec": 720, "set": { "environment.doseRateUgyH": 10.0 } }
   ],
   "alert": {
     "level": "danger",
@@ -18,5 +18,5 @@
   "planner": { "action": "replan", "target": "habitat" },
   "end": { "type": "area", "x": 535.1, "z": 574.1, "radius": 25 },
   "endSet": { "environment.doseRateUgyH": 10.0 },
-  "notes": "Peak window of the September 2017 event in hazards.json models.sep_2017_profile: background 240 uGy/day (10 uGy/h) and peak 718 uGy/day (29.92 uGy/h), RAD B detector in Gale crater, not Jezero. The 12-minute duration is a SIM compression for one EVA; the accumulated dose uses the real rates. Shelter is the habitat, the only full-protection shelter in public/data/shelters.json."
+  "notes": "Peak window of the September 2017 event in hazards.json models.sep_2017_profile: background 240 uGy/day (10 uGy/h) and peak 718 uGy/day (29.92 uGy/h), RAD B detector in Gale crater, not Jezero. The 12-minute duration is a SIM compression for one EVA; the accumulated dose uses the real rates: the environment runner (src/sim/environmentRunner.js) sums environment.doseRateUgyH into environment.doseUgy over mission time, so the event sets only the rate. Shelter is the habitat, the only full-protection shelter in public/data/shelters.json."
 }
