@@ -3,9 +3,8 @@ import { useLanguage } from '../i18n/useLanguage.js';
 import { useEffect, useRef } from 'react';
 import { LOOK_SENSITIVITY_MAX, LOOK_SENSITIVITY_MIN, LOOK_SENSITIVITY_STEP } from '../engine/lookSettings.js';
 import { setLookSettings, useMissionStore } from '../state/store.js';
-import ControlsHelp from './ControlsHelp.jsx';
+import { ControlsPanel } from './ControlsHelp.jsx';
 import Modal from './Modal.jsx';
-import ModeSwitch from './ModeSwitch.jsx';
 import { FOCUSABLE, focusTarget } from './focus.js';
 
 const QUALITY = [
@@ -21,13 +20,16 @@ function qualityLabel(quality) {
 }
 
 /**
- * Pause dialog. One native modal holds the menu, controls help and restart confirmation, so focus stays
+ * Pause dialog (#11 design). There is no Plan / Walk switch: once the EVA has begun, End the EVA goes back to the
+ * mission table with a fresh EVA. One native modal holds the menu, controls help and restart confirmation, so focus stays
  * inside it and the scene behind is inert. Esc closes a sub-view; on the menu it keeps the pause in Walk
- * (a key press cannot capture the mouse) and resumes in Plan, which needs no lock.
+ * (a key press cannot capture the mouse) and resumes in Plan, which needs no lock. After a refused capture in Walk
+ * the menu also offers drag-to-look (#197).
  */
 export default function PauseMenu({
   view,
   mode,
+  evaBegun = false,
   busy,
   notice,
   freeLook = false,
@@ -36,15 +38,18 @@ export default function PauseMenu({
   quality,
   qualityBusy,
   qualityError,
+  controlsToMenu = true,
   onResume,
   onResumeWithoutCapture,
   onRestartRequest,
   onRestartConfirm,
   onControls,
+  onControlsClose,
   onSources,
   onMenu,
   onQuality,
-  onModeChange,
+  onEndRequest,
+  onEndConfirm,
   onCancel,
 }) {
   const language = useLanguage();
@@ -58,7 +63,7 @@ export default function PauseMenu({
     // dialog itself keeps it and Enter would do nothing. Focus the primary as soon as it can take focus
     // again, including when the dialog was (re)opened during an attempt that has just ended.
     if (busy) return;
-    const primary = view === 'controls' ? backRef.current : view === 'restart' ? cancelRef.current : resumeRef.current;
+    const primary = view === 'controls' ? backRef.current : view === 'restart' || view === 'end' ? cancelRef.current : resumeRef.current;
     const dialog = primary?.closest?.('dialog') || null;
     const target = focusTarget(primary, dialog ? [...dialog.querySelectorAll(FOCUSABLE)] : []);
     target?.focus();
@@ -71,26 +76,21 @@ export default function PauseMenu({
 
   return (
     <Modal
-      labelledBy={view === 'controls' ? 'pause-controls-title' : view === 'restart' ? 'pause-restart-title' : 'pause-menu-title'}
-      className="pause-dialog"
+      labelledBy={view === 'controls' ? 'pause-controls-title' : view === 'menu' ? 'pause-menu-title' : 'pause-confirm-title'}
+      className={view === 'controls' ? 'pause-dialog controls-dialog' : 'pause-dialog'}
       onCancel={onCancel}
     >
       {view === 'menu' && (
         <div className="dialog-body">
-          <p className="dialog-kicker">{t('app.brand')}</p>
-          <h2 id="pause-menu-title" className="dialog-title">{t('menu.eva.paused')}</h2>
-          <p className="dialog-site">
-            {mode === 'plan' ? t('menu.plan.view') : t('menu.walk.view')}{t('menu.mission.clock.paused')}</p>
-
-          <div className="pause-view-switch" inert={busy ? true : undefined}>
-            <span>{t('menu.view')}</span>
-            <ModeSwitch mode={mode} onChange={onModeChange} />
-          </div>
+          <p className="dialog-kicker">{t('menu.mission.clock.paused.kicker')}</p>
+          <h2 id="pause-menu-title" className="dialog-title">
+            {evaBegun || mode === 'walk' ? t('menu.eva.paused') : t('menu.planning.paused')}
+          </h2>
 
           <div className="menu-actions">
             <button
               type="button"
-              className="ui-button primary"
+              className="ui-button primary menu-resume"
               ref={resumeRef}
               data-autofocus="true"
               onClick={onResume}
@@ -103,10 +103,20 @@ export default function PauseMenu({
                 {t('menu.continue.without.mouse.capture')}
               </button>
             )}
-            <button type="button" className="ui-button ghost" onClick={onRestartRequest} disabled={busy}>{t('menu.restart.eva')}</button>
-            <button type="button" className="ui-button ghost" onClick={onControls} disabled={busy}>{t('menu.controls')}</button>
-            <button type="button" className="ui-button ghost" onClick={onSources} disabled={busy}>{t('ui.sources.188')}</button>
-            <p id="sources-note" className="menu-note">{t('menu.credits.and.the.data.artistic.and.modelled.sources')}</p>
+            <button type="button" className="ui-button ghost" onClick={onControls} disabled={busy}>
+              {t('menu.controls')}
+            </button>
+            <button type="button" className="ui-button ghost" onClick={onSources} disabled={busy} title={t('menu.credits.and.the.data.artistic.and.modelled.sources')}>
+              {t('ui.sources.188')}
+            </button>
+            <button type="button" className="ui-button ghost" onClick={onRestartRequest} disabled={busy}>
+              {t('menu.restart.the.eva')}
+            </button>
+            {evaBegun && (
+              <button type="button" className="ui-button ghost" onClick={onEndRequest} disabled={busy}>
+                {t('menu.end.eva.to.table')}
+              </button>
+            )}
           </div>
 
           {notice && <p className="dialog-notice" role="alert">{translateText(notice)}</p>}
@@ -139,7 +149,6 @@ export default function PauseMenu({
             <p id="quality-status" className="quality-status" role="status" aria-live="polite">
               {qualityBusy ? t('menu.changing.scene.quality') : qualityLabel(quality)}
             </p>
-            {quality?.gpu && <p className="quality-device">{t('menu.gpu')}{quality.gpu}</p>}
             {qualityError && <p className="dialog-error" role="alert">{translateText(qualityError)}</p>}
           </div>
 
@@ -176,31 +185,38 @@ export default function PauseMenu({
             <p id="look-help" className="menu-note">{t('menu.look.saved')}</p>
           </div>
 
-          {mode === 'plan' && <p className="dialog-footnote">{t('menu.plan.resumes.without.capturing.the.mouse')}</p>}
           {mode === 'walk' && freeLook && <p className="dialog-footnote">{t('menu.drag.to.look.pause')}</p>}
         </div>
       )}
 
       {view === 'controls' && (
-        <div className="dialog-body">
-          <p className="dialog-kicker">{t('app.brand')}</p>
-          <h2 id="pause-controls-title" className="dialog-title">{t('menu.controls')}</h2>
-          <ControlsHelp />
-          <div className="dialog-actions">
-            <button type="button" className="ui-button primary" ref={backRef} data-autofocus="true" onClick={onMenu}>{t('menu.back.to.pause.menu')}</button>
-          </div>
-        </div>
+        <ControlsPanel
+          titleId="pause-controls-title"
+          onClose={onControlsClose ?? onMenu}
+          closeRef={backRef}
+          closeLabel={controlsToMenu ? t('menu.back.to.pause.menu') : undefined}
+        />
       )}
 
-      {view === 'restart' && (
+      {(view === 'restart' || view === 'end') && (
         <div className="dialog-body">
-          <p className="dialog-kicker">{t('app.brand')}</p>
-          <h2 id="pause-restart-title" className="dialog-title">{t('menu.restart.eva')}</h2>
-          <p className="dialog-mission" id="restart-warning">{t('menu.this.resets.your.position.route.alerts.suit.and')}</p>
+          <p className="dialog-kicker">{view === 'end' ? t('menu.end.eva') : t('menu.restart.kicker')}</p>
+          <h2 id="pause-confirm-title" className="dialog-title">{view === 'end' ? t('menu.end.title') : t('menu.restart.title')}</h2>
+          <p className="dialog-mission" id="confirm-warning">
+            {view === 'end' ? t('menu.end.warning') : t('menu.this.resets.your.position.route.alerts.suit.and')}
+          </p>
           <div className="dialog-actions">
-            <button type="button" className="ui-button ghost" ref={cancelRef} data-autofocus="true" onClick={onMenu} disabled={busy}>{t('menu.cancel')}</button>
-            <button type="button" className="ui-button danger" onClick={onRestartConfirm} disabled={busy} aria-describedby="restart-warning">
-              {busy ? t('menu.restarting') : t('menu.restart.eva')}
+            <button type="button" className="ui-button ghost" ref={cancelRef} data-autofocus="true" onClick={onMenu} disabled={busy}>
+              {t('menu.cancel')}
+            </button>
+            <button
+              type="button"
+              className="ui-button danger"
+              onClick={view === 'end' ? onEndConfirm : onRestartConfirm}
+              disabled={busy}
+              aria-describedby="confirm-warning"
+            >
+              {busy ? t('menu.working') : view === 'end' ? t('menu.end.eva') : t('menu.restart.the.eva')}
             </button>
           </div>
         </div>

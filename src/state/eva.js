@@ -24,6 +24,7 @@
  * Plain JavaScript: no React, no three.js and no store import. The runner takes any store with
  * getState / setState / subscribe, as `src/state/store.js` provides.
  */
+import { truePosition } from '../sim/navigation.js';
 
 /** Arrival radius at the habitat, in metres. The same radius as a non-science waypoint (#61). */
 export const HAB_ARRIVAL_RADIUS_M = 5;
@@ -316,7 +317,8 @@ export function startEvaRunner({
     if (eva.phase === 'ended') return;
 
     const nav = state.navigation;
-    if (!isFiniteNumber(nav?.x) || !isFiniteNumber(nav?.z)) {
+    const truth = truePosition(nav);
+    if (!isFiniteNumber(truth.x) || !isFiniteNumber(truth.z)) {
       lastPosition = null;
       return;
     }
@@ -328,7 +330,7 @@ export function startEvaRunner({
       return;
     }
 
-    const inside = distanceToHab(nav, habitat) <= HAB_ARRIVAL_RADIUS_M;
+    const inside = distanceToHab(truth, habitat) <= HAB_ARRIVAL_RADIUS_M;
 
     if (eva.phase === 'ready') {
       // Starting inside the HAB (a future start screen) is not an EVA: wait until the astronaut has left.
@@ -336,7 +338,7 @@ export function startEvaRunner({
         lastPosition = null;
         return;
       }
-      lastPosition = { x: nav.x, z: nav.z };
+      lastPosition = { x: truth.x, z: truth.z };
       const patch = { phase: 'active', startedAtSec: missionTimeSec(state) };
       const minOxygen = lowest(null, state.suit?.marginSec);
       const minBattery = lowest(null, state.suit?.batteryPct);
@@ -348,10 +350,10 @@ export function startEvaRunner({
 
     let distanceM = eva.distanceM;
     if (lastPosition) {
-      const step = Math.hypot(nav.x - lastPosition.x, nav.z - lastPosition.z);
+      const step = Math.hypot(truth.x - lastPosition.x, truth.z - lastPosition.z);
       if (isFiniteNumber(step) && step > 0) distanceM += step;
     }
-    lastPosition = { x: nav.x, z: nav.z };
+    lastPosition = { x: truth.x, z: truth.z };
 
     const minOxygen = lowest(eva.minOxygenMarginSec, state.suit?.marginSec);
     const minBattery = lowest(eva.minBatteryPct, state.suit?.batteryPct);
