@@ -286,7 +286,7 @@ export function profileSources(hazards) {
     'route.profiles.steepestSlopeDeg': { tag: 'DERIVED', source: 'slope of the HiRISE height map, sampled every metre along the route' },
     'route.profiles.overCautionM': { tag: 'DERIVED', source: 'route length on HiRISE slopes over the 15 degree caution limit' },
     'route.profiles.shadowShare': { tag: 'DERIVED', source: 'line of sight on the HiRISE height map from 1.7 m above the ground to the habitat mast, every 5 m along the route' },
-    'route.profiles.weights': { tag: 'SIM', source: 'profile weights are our choice: gentlest prices slope cubed, radio contact triples the cost out of sight of the mast' },
+    'route.profiles.weights': { tag: 'SIM', source: 'profile weights are our choice: gentlest prices slope cubed, radio contact triples the cost out of sight of the mast; under them, the slope divisor and rock weight of the risk setting, also our choice, on a brightness proxy for rock cover' },
     'route.profiles.timeSec': { ...legs['route.totals.timeSec'] },
     'route.profiles.o2G': { ...legs['route.totals.o2G'] },
   };
