@@ -2,12 +2,12 @@
 
 End-to-end check of the habitat seat (#55) on one laptop: `wrangler dev` on port 8791 serving a development build from `dist/`, with `.wrangler/state` deleted first. Port 8787 belonged to another worktree. The protocol checks use Node clients from `scripts/room-smoke.mjs`; the app checks use two headed Chromium windows on the RTX 3070 through WSLg (`QA_GPU=1`, `scripts/qaBrowser.mjs`), one for the habitat seat and one for a surface player. Every check passed.
 
-The habitat role comes from the dev-only `?role=habitat` link until the join panel's role choice lands, so the browser run needs a development build. Production builds drop that branch.
+The browser run needs a development build because the scripts drive the app through `window.__missionStore`, `window.__online` and the engine's `window.__marswalk.place` (all dev-only). The habitat role comes from the join panel's role choice (#308, merged from `feat/online`): each page opens on the join panel for `?room=`, the habitat page picks the Habitat seat there, and both join with the panel's main action. The temporary `?role=habitat` link hook that earlier runs used is gone.
 
 ## How to rerun
 
 ```sh
-NODE_ENV=development npx vite build --mode development   # dev build: ?role=habitat, window.__missionStore, window.__online
+NODE_ENV=development npx vite build --mode development   # dev build: window.__missionStore, window.__online
 npx wrangler dev --port 8791                              # terminal 1
 ONLY=habitat node scripts/room-smoke.mjs http://localhost:8791
 QA_GPU=1 BASE=http://localhost:8791 SHOTS=docs/qa/img node scripts/room-e2e-habitat.mjs
@@ -35,7 +35,7 @@ The surface player is moved with the engine's `window.__marswalk.place`. The spo
 
 | Check | Result |
 | --- | --- |
-| Habitat seat joins with role `habitat` and no colour; the table opens on the Crew step | pass |
+| Habitat seat joins with role `habitat` and no colour, through the join panel's seat choice; the table opens on the Crew step | pass |
 | The habitat map shows the surface player move, live, in their colour | surface estimate (535.7, 544.7) then (550.8, 549.0); the habitat map shows the same two points |
 | Update rate on the habitat map while the surface player steps | 9 crew updates in about 4 s |
 | Behind the ridge | the surface HUD radio goes from linked to lost; the habitat marker turns grey with "Last known" at (542.1, 544.5), where it was last heard; the crew list reads "Last known · 2 s ago" |

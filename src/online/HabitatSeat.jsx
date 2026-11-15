@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { formatNumber, t } from '../i18n/index.js';
 import { addHabitatNote, sendGoCall, sendHabitatRoute } from '../state/habitatHooks.js';
 import { useMissionStore } from '../state/store.js';
+import { OnlineIssue, RoomPanel } from './CrewPanel.jsx';
 import CrewOnMap from './CrewOnMap.jsx';
 import { ageText, suitCss } from './crewMap.js';
 import './online.css';
@@ -20,18 +21,19 @@ function useNow(ms = 1000) {
   return now;
 }
 
+/** The crew outside, from the radio (habitat.crew), with the range or the age of the last word from each suit. */
 function CrewList() {
   const crew = useMissionStore((s) => s.habitat?.crew ?? EMPTY);
   const now = useNow();
   return (
-    <div className="table-panel online-crew">
+    <div className="table-panel habitat-crew">
       <p className="table-label">{t('online.habitat.crew')}</p>
       {crew.length === 0 && <p className="table-note">{t('online.habitat.crew.empty')}</p>}
       <ul>
         {crew.map((c) => (
           <li key={c.id} className={c.lastKnown ? 'last-known' : undefined} style={{ '--c': suitCss(c.color) }}>
             <i aria-hidden="true" />
-            <div className="online-crew-who">
+            <div className="habitat-crew-who">
               <b>{c.name}</b>
               <small className={c.lastKnown ? 'tone-caution' : undefined}>
                 {c.lastKnown
@@ -136,18 +138,21 @@ function RouteOut() {
 }
 
 /**
- * The habitat seat's step at the mission table (#55): the crew list and the go or no-go call on the left, the map with
- * the crew in the middle, a note and the route for the crew on the right. The table passes its own map renderer, so
- * the map is the same one the Route step uses.
+ * The habitat seat's Crew step at the mission table (#55), on the canonical Crew tab from the M1 UI: the room and its
+ * issues on top (so the seat can leave or switch, as in src/online/CrewPanel.jsx), the radio crew and the go or no-go
+ * call on the left, the map with the crew in the middle, a note and the route for the crew on the right. The table
+ * passes its own map renderer, so the map is the same one the Route step uses.
  * @param {{ renderMap: (props: object) => import('react').ReactNode }} props
  */
 export default function HabitatSeat({ renderMap }) {
   const [pick, setPick] = useState(null);
+  const inRoom = useMissionStore((s) => s.online?.code !== null);
   return (
     <>
       <section className="table-left">
         <h2 className="table-h">{t('online.habitat.title')}</h2>
         <p className="table-text small">{t('online.habitat.intro')}</p>
+        {inRoom && <><RoomPanel /><OnlineIssue /></>}
         <CrewList />
         <GoPanel />
       </section>

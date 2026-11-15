@@ -18,7 +18,7 @@ import { installSharedHooks } from '../state/sharedHooks.js';
 import { createHabitatState } from './habitat.js';
 import { installHabitatHooks } from '../state/habitatHooks.js';
 
-export { getPlayerName, setPlayerName } from './identity.js';
+export { getPlayerName, newPlayerId, setPlayerName } from './identity.js';
 
 /** The store slice that means "offline". Keep in sync with createInitialState() in src/state/store.js. */
 export const OFFLINE_STATE = Object.freeze({

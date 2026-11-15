@@ -1,15 +1,15 @@
 // Habitat seat end-to-end check (#55): one habitat browser and one surface browser in the same room, driven by
-// puppeteer-core. Needs a development build served on one origin, because the habitat role comes from the dev-only
-// ?role=habitat link until the join panel's role choice lands, and the scripts drive the app through window.__missionStore,
-// window.__online and the engine's window.__marswalk.place:
+// puppeteer-core. Needs a development build served on one origin, because the scripts drive the app through
+// window.__missionStore, window.__online and the engine's window.__marswalk.place:
 //
 //   NODE_ENV=development npx vite build --mode development && npx wrangler dev --port 8791
 //   QA_GPU=1 BASE=http://localhost:8791 node scripts/room-e2e-habitat.mjs        GPU through WSLg (scripts/qaBrowser.mjs)
 //   CHROME=/path/to/chrome-headless-shell node scripts/room-e2e-habitat.mjs      SwiftShader, slow
 //
-// SHOTS=dir saves screenshots. The spots (535, 544) in sight of the habitat mast and (535, 474) behind the ridge north of
-// it come from the terrain height map; the surface HUD's own radio indicator confirms the second one. Results:
-// docs/qa/online-m4.md.
+// Each page opens on the join panel (?room=); the habitat page picks the Habitat seat there, then both join the room
+// with the panel's main action (#308). SHOTS=dir saves screenshots. The spots (535, 544) in sight of the habitat mast
+// and (535, 474) behind the ridge north of it come from the terrain height map; the surface HUD's own radio indicator
+// confirms the second one. Results: docs/qa/online-m4.md.
 import { checkRenderer, launchBrowser } from './qaBrowser.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8791';
@@ -35,9 +35,9 @@ async function until(page, fn, arg, ms = 60000, label = '') {
   }
 }
 
-const launch = () => launchBrowser();
+const launch = () => launchBrowser({ viewport: { width: 1280, height: 800 } });
 
-async function openPage(browser, query) {
+async function openPage(browser, { role } = {}) {
   const p = await browser.newPage();
   p.on('pageerror', (e) => log('pageerror', e.message));
   // Count every message this page sends, by type, before the app opens its socket.
@@ -50,10 +50,20 @@ async function openPage(browser, query) {
     };
     if (slow) window.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), slow);
   }, Number(process.env.SLOW_RAF || 0));
-  await p.goto(`${BASE}/?room=${ROOM}&tier=low${query}`, { waitUntil: 'domcontentloaded', timeout: 300000 });
+  await p.goto(`${BASE}/?room=${ROOM}&tier=low`, { waitUntil: 'domcontentloaded', timeout: 300000 });
   log('WebGL renderer', await checkRenderer(p));
+  // ?room= opens the join panel (#308); the socket opens only on the panel's main action, with the seat picked there.
+  await p.waitForSelector('.online-join button.start-primary:not([disabled])', { timeout: 300000 });
+  if (role === 'habitat') await p.evaluate(() => document.querySelector('.online-role input[value="habitat"]')?.click());
+  await p.click('.online-join button.start-primary');
   await until(p, () => window.__missionStore?.getState().online.status === 'open' && !!window.__online, null, 300000, 'online open');
   return p;
+}
+
+/** Joins again after a reload: the fresh page shows the join panel, the saved role preference picks the same seat. */
+async function rejoin(p) {
+  await p.waitForSelector('.online-join button.start-primary:not([disabled])', { timeout: 300000 });
+  await p.click('.online-join button.start-primary');
 }
 
 /** Start screen, then the mission table. */
@@ -71,7 +81,6 @@ async function beginEva(p) {
 }
 
 const place = (p, x, z) => p.evaluate(([x, z]) => window.__marswalk.place(x, z, 0), [x, z]);
-const habCrew = (h) => h.evaluate(() => window.__missionStore.getState().habitat.crew.map((c) => ({ ...c })));
 
 const hb = await launch(), sb = await launch();
 // Close both browsers however the run ends, so a failed check leaves no Chromium behind.
@@ -79,9 +88,9 @@ const closeAll = () => Promise.allSettled([hb.close(), sb.close()]);
 process.on('uncaughtException', async (e) => { console.error(e); await closeAll(); process.exit(1); });
 process.on('unhandledRejection', async (e) => { console.error(e); await closeAll(); process.exit(1); });
 const t0 = Date.now();
-const S = await openPage(sb, '');
+const S = await openPage(sb);
 log('surface online', S && (await S.evaluate(() => window.__missionStore.getState().online.me)));
-const H = await openPage(hb, '&role=habitat');
+const H = await openPage(hb, { role: 'habitat' });
 const me = await H.evaluate(() => window.__missionStore.getState().online.me);
 log('habitat online', me);
 check('habitat client is seated with role habitat and no colour', me.role === 'habitat' && me.color === null);
@@ -124,7 +133,7 @@ await H.evaluate(() => { window.__crewWrites = 0; window.__missionStore.subscrib
 for (let i = 0; i < 10; i++) { await place(S, 550 - i, 548 - i * 0.5); await sleep(400); }
 const writes = await H.evaluate(() => window.__crewWrites);
 check('crew positions update a few times per second on the habitat map', writes >= 5, `${writes} crew updates in about 4 s of stepping`);
-const list = await H.evaluate(() => document.querySelector('.online-crew')?.innerText);
+const list = await H.evaluate(() => document.querySelector('.habitat-crew')?.innerText);
 log('crew list:', JSON.stringify(list));
 if (SHOTS) await H.screenshot({ path: SHOTS + '/online-m4-habitat-crew.jpg', type: 'jpeg', quality: 70 });
 
@@ -135,7 +144,7 @@ const hidden = await until(H, () => { const c = window.__missionStore.getState()
 const radioOut = await until(S, () => /lost/.test(document.querySelector('.hud-radio')?.className || '') && document.querySelector('.hud-radio').className, null, 30000, 'hud radio lost').catch(() => 'not lost');
 await sleep(1500);
 const domHidden = await H.evaluate(() => [...document.querySelectorAll('.online-map-suit')].map((li) => ({ cls: li.className, left: li.style.left, top: li.style.top, text: li.textContent })));
-const listHidden = await H.evaluate(() => document.querySelector('.online-crew')?.innerText);
+const listHidden = await H.evaluate(() => document.querySelector('.habitat-crew')?.innerText);
 check('behind the ridge the habitat map shows the last known position in grey',
   hidden.lastKnown && Math.abs(hidden.z - 474) > 30 && Math.hypot(hidden.x - second.x, hidden.z - second.z) < 25 && domHidden[0]?.cls.includes('last-known') && /lost/.test(radioOut),
   `true position (535, 474); habitat shows (${hidden.x.toFixed(1)}, ${hidden.z.toFixed(1)}) last known; surface HUD radio ${radioIn} -> ${radioOut}; DOM ${JSON.stringify(domHidden[0])}; list ${JSON.stringify(listHidden)}`);
@@ -185,8 +194,9 @@ const note = await until(S, () => window.__missionStore.getState().shared.marker
 const onHabMap = await until(H, () => [...document.querySelectorAll('.online-map-note')].map((li) => li.textContent).join(','), null, 10000).catch(() => '');
 check('a note dropped on the habitat map reaches the surface, labelled', note.label === 'Check the dark band' && /Check the dark band/.test(onHabMap), `at (${note.x}, ${note.z}), author ${note.author === habId ? 'habitat' : note.author}; habitat map "${onHabMap}"`);
 
-// 6. the surface player reloads: the route comes back from the welcome
+// 6. the surface player reloads: the join panel again, then the route comes back from the welcome
 await S.reload({ waitUntil: 'domcontentloaded', timeout: 300000 });
+await rejoin(S);
 await until(S, () => window.__missionStore?.getState().online.status === 'open', null, 300000, 'S reopen');
 await toTable(S);
 const back = await until(S, () => { const s = window.__missionStore.getState(); return s.route.origin?.kind === 'habitat' && s.route.waypoints.length ? { n: s.route.path.length, origin: s.route.origin } : null; }, null, 120000, 'route after reload');

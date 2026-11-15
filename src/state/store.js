@@ -14,6 +14,8 @@ export function createInitialState() {
     mission: {
       startedAtMs: null, elapsedSec: 0, paused: false, sol: null, lmst: null,
       anchorMs: null, timeScale: 1, initialSol: null, initialLmst: null, longitudeDeg: null, sky: null,
+      // Online (#52): the room's mission start on this machine's clock, written by src/online/clockSync.js. null offline.
+      sharedStartMs: null,
     },
     suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
     navigation: { x: null, z: null, trueX: null, trueZ: null, headingDeg: null, slopeDeg: null, waypointRangeM: null, waypointBearingDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // x/z: the estimate the HUD shows (#42); trueX/trueZ: the true position, engine bridge only
@@ -121,7 +123,8 @@ export const setHazardEnabled = (eventId, enabled) => {
 };
 // A restart must not lose the player's look settings (#102): the preference survives resetStore, and a new
 // page load re-reads it from 'marswalk.look'.
-export const resetStore = () => useMissionStore.setState((s) => ({ ...createInitialState(), settings: s.settings }), true);
+// The room connection and the room's shared state outlive a restart: a restart is this player's EVA, not the room's.
+export const resetStore = () => useMissionStore.setState((s) => ({ ...createInitialState(), settings: s.settings, online: s.online, shared: s.shared }), true);
 
 /**
  * Partial update of the look preference (#102): clamps, writes the store and saves it in this browser.

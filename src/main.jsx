@@ -17,13 +17,9 @@ applyMockFromUrl()
 // fill the source tags' registry from the provenance blocks in public/data (#62); tags show declared entries until then
 loadProvenance()
 
-// ?room=ABCD joins an online room (#52). Without it nothing under src/net/ loads and nothing reaches /api/.
-const online = bootOnline({ store: useMissionStore })
-if (online) {
-  online
-    .then((handle) => { if (import.meta.env.DEV) window.__online = handle })
-    .catch((err) => console.warn('online: could not start', err))
-}
+// ?room=ABCD opens the join panel of an online room (#52); the socket opens only on "Join the room". Without it
+// nothing under src/net/ loads and nothing reaches /api/.
+bootOnline({ store: useMissionStore, onHandle: (handle) => { if (import.meta.env.DEV) window.__online = handle } })
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

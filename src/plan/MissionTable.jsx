@@ -24,8 +24,12 @@ import dustArt from '../assets/ui/hazard_dust.webp';
 import oxygenArt from '../assets/ui/hazard_oxygen.webp';
 import radiationArt from '../assets/ui/hazard_radiation.webp';
 import { fixed as num, routeMetrics } from './routePlan.js';
+import { CrewTab } from '../online/CrewPanel.jsx';
 import HabitatSeat from '../online/HabitatSeat.jsx';
+import HabitatNote from '../online/HabitatNote.jsx';
 import { HABITAT_TAB } from '../online/crewMap.js';
+import { CREW_TAB, useHabitatSeat, useOnlineTabs } from '../online/hooks.js';
+import { ROLE } from '../onlineLink.js';
 import './table.css';
 
 // The mission table (#11): the screen in the habitat where the EVA is planned, before the helmet view. Four steps
@@ -283,9 +287,11 @@ function Actions({ children }) {
   return <div className="table-actions">{children}</div>;
 }
 
-function BeginButton({ planner, totals, evaBegun, onBeginEva }) {
+export function BeginButton({ planner, totals, evaBegun, onBeginEva }) {
   const route = useMissionStore((s) => s.route);
   const decision = decisionFor(planner, totals);
+  const habitatSeat = useHabitatSeat();
+  if (habitatSeat) return <HabitatNote />;   // online (#55): the habitat seat never goes out
   return (
     <button
       type="button"
@@ -304,12 +310,17 @@ function BeginButton({ planner, totals, evaBegun, onBeginEva }) {
  *   onControls?: () => void }} props
  */
 export default function MissionTable({ planner, waypoints, evaBegun = false, onBeginEva, onControls }) {
-  // The habitat seat (#55) gets a Crew step first and opens on it.
-  const habitatSeat = useMissionStore((s) => s.online?.me?.role === 'habitat');
-  const [tab, setTab] = useState(() => (habitatSeat ? 'crew' : 'site'));   // the table opens on step 1
-  const [seat, setSeat] = useState(habitatSeat);
-  if (seat !== habitatSeat) { setSeat(habitatSeat); setTab(habitatSeat ? 'crew' : 'site'); }
-  const tabs = habitatSeat ? [HABITAT_TAB(), ...TABS] : TABS;
+  // The habitat seat (#55) opens the table on its Crew step, which comes before Site. The seat counts once the room
+  // seated this player (the room's role, as the canonical M1 UI reads it), not while the join is still pending.
+  const habitatSeat = useHabitatSeat();
+  const seated = useMissionStore((s) => s.online?.me?.role === ROLE.HABITAT);
+  const [tab, setTab] = useState(() => (seated ? CREW_TAB : 'site'));   // the table opens on step 1
+  const [seat, setSeat] = useState(seated);
+  if (seat !== seated) { setSeat(seated); setTab(seated ? CREW_TAB : 'site'); }
+  const onlineTabs = useOnlineTabs(TABS, tab, setTab);   // online (#52): adds the Crew tab, leaves it after Leave
+  // The habitat seat's Crew step is there while the seat is held or asked for, first and with its own label; the
+  // canonical Crew tab (appended, online.crew.tab) serves everyone else.
+  const tabs = habitatSeat ? [HABITAT_TAB(), ...TABS] : onlineTabs;
   const route = useMissionStore((s) => s.route);
   const layer = useMissionStore((s) => s.view.layer);
   const clock = useMissionStore(useShallow((s) => ({ lmst: s.mission.lmst, elapsedSec: s.mission.elapsedSec })));
@@ -351,8 +362,12 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
   );
 
   let body;
-  if (tab === 'crew') {
-    body = <HabitatSeat renderMap={map} />;
+  if (tab === CREW_TAB) {
+    // The habitat seat (#55) has its own Crew step: the radio crew, go or no-go, notes and the route, on the table's
+    // map. Every other seat gets the canonical Crew tab (room, issues, crew and the begin action).
+    body = habitatSeat
+      ? <HabitatSeat renderMap={map} />
+      : <CrewTab map={map({ layer, title: 'Route on the map' })} actions={<Actions><BeginButton planner={planner} totals={totals} evaBegun={evaBegun} onBeginEva={onBeginEva} /></Actions>} />;
   } else if (tab === 'site') {
     const target = stopForWaypoint(stops, waypoints.at(-1)?.name ?? 'Cheyava Falls');
     // The close-up of the leopard spots (PIA26368) fills a tall panel better than the wide overhead mosaic.
