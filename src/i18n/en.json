@@ -1012,6 +1012,7 @@
   "why.plan.missing": "{stop} is not in the stop list.",
   "why.plan.no.stops": "This goal has no stops to plan.",
   "why.plan.unreachable": "No walkable route to the stops of this goal.",
+  "why.plan.profile.over": "The {profile} route: {what}; the stops fit on the {reference} route.",
   "profiles.solo": "A solo crew keeps radio contact.",
   "needs.title": "Mission needs",
   "needs.title.help": "Change any of these and the route on the map is planned again.",

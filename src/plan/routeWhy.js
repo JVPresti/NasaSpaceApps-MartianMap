@@ -8,6 +8,7 @@ import { shortDuration } from './tableFormat.js';
 
 const finite = (value) => typeof value === 'number' && Number.isFinite(value);
 const sentence = (text) => (text ? text.charAt(0).toUpperCase() + text.slice(1) : '');
+const lowerFirst = (text) => (text ? text.charAt(0).toLowerCase() + text.slice(1) : '');
 
 /** A detour shorter than this, in metres and seconds, is not worth a number. */
 const NOTHING_M = 1;
@@ -103,7 +104,13 @@ export function planReasonLines(reasons) {
         else if (reason.limit === 'battery') lines.push(t('why.plan.over.battery', { wh: Math.ceil(reason.batteryShortWh ?? 0) }));
         break;
       case 'stop-missing':
-        lines.push(t('why.plan.missing', { stop: reason.stop }));
+        lines.push(t('why.plan.missing', { stop: reason.name ?? reason.stop }));
+        break;
+      case 'profile-over':
+        // the stops fit on the reference route, not on the profile the crew chose
+        lines.push(t('why.plan.profile.over', {
+          profile: t(`profiles.${reason.profile}`), reference: t(`profiles.${reason.reference}`), what: lowerFirst(droppedWhy(reason)),
+        }));
         break;
       case 'no-stops':
         lines.push(t('why.plan.no.stops'));

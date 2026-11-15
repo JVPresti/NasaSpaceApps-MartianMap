@@ -1012,6 +1012,7 @@
   "why.plan.missing": "{stop} no está en la lista de paradas.",
   "why.plan.no.stops": "Este objetivo no tiene paradas que planificar.",
   "why.plan.unreachable": "No hay ruta transitable hasta las paradas de este objetivo.",
+  "why.plan.profile.over": "Ruta {profile}: {what}; las paradas caben en la ruta {reference}.",
   "profiles.solo": "En solitario se mantiene la radio.",
   "needs.title": "Necesidades de la misión",
   "needs.title.help": "Cambia cualquiera de estos datos y la ruta del mapa se vuelve a planificar.",

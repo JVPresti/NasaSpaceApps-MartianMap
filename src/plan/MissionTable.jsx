@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { t, translateText } from '../i18n/index.js';
+import { getLanguage, t, translateText } from '../i18n/index.js';
 import { useShallow } from 'zustand/react/shallow';
 import { HAZARDS_PATH } from '../data/provenance.js';
-import { imageUrl, stopForWaypoint } from '../data/stops.js';
+import { imageUrl, stopForWaypoint, stopReason } from '../data/stops.js';
 import EventBanner from '../events/EventBanner.jsx';
 import { formatEva } from '../hud/format.js';
 import dustStorm from '../sim/events/dust-storm.json';
@@ -16,6 +16,7 @@ import { cardImage, stopHasContent } from '../stops/content.js';
 import { clearWaypoint, toggleWaypoint, useStopSelection } from '../stops/selection.js';
 import { useStops } from '../stops/useStops.js';
 import { PROFILE_IDS } from '../sim/routeProfiles.js';
+import { waypointNumber } from '../sim/waypointNumber.js';
 import { eventTiming, missionEventDefinitions } from '../sim/missions.js';
 import { PlanBeat } from '../mission/MissionBeat.jsx';
 import { LAYERS, SLOPE_LIMITS } from './layers.js';
@@ -121,11 +122,24 @@ const HAZARDS = [
 
 const sentence = (text) => (text ? text.charAt(0).toUpperCase() + text.slice(1) : '');
 
-/** "WP1 · channel floor" → ["WP1", "Channel floor"]; the start is the habitat and the last stop is the end. */
-function stopLabel(name, index, count) {
-  if (index === 0) return ['HAB', t('table.habitat')];
-  const [code, rest] = name.includes(' · ') ? name.split(' · ') : [index === count - 1 ? 'END' : `WP${index}`, name];
-  return [index === count - 1 ? 'END' : code, sentence(translateText(rest))];
+/** A place name in the interface language: the name itself when en.json has it, else its lower-case form ("light-toned
+    patch"), else the name as it is (a proper name such as Bright Angel). */
+function placeName(name) {
+  const direct = translateText(name);
+  if (direct !== name) return direct;
+  const lower = translateText(name.charAt(0).toLowerCase() + name.slice(1));
+  return lower !== name.charAt(0).toLowerCase() + name.slice(1) ? sentence(lower) : name;
+}
+
+/**
+ * One number and one name per stop, as the map shows them (P8): the number is the stop's place in route.waypoints
+ * (waypointNumber: the habitat is 0), the name its `label` (stops.json). A route.json anchor without a label falls
+ * back to the part of its name after " · ".
+ */
+function stopLabel(waypoint, index) {
+  if (index === 0) return [waypointNumber(0), t('table.habitat')];
+  const name = waypoint.label ?? (waypoint.name.includes(' · ') ? waypoint.name.split(' · ')[1] : waypoint.name);
+  return [waypointNumber(index), sentence(placeName(name))];
 }
 
 function Big({ value, unit, label, tone, title }) {
@@ -144,17 +158,20 @@ function Big({ value, unit, label, tone, title }) {
  * @param {{ waypoints: Array<object>, legs: Array<object>, explain?: Array<object>, dropped?: Array<object> }} props
  *   explain and dropped: route.explain and route.dropped, empty when an event re-plan replaced the planned route
  */
-function Stops({ waypoints, legs, explain = [], dropped = [] }) {
+function Stops({ waypoints, legs, explain = [], dropped = [], planStops = [] }) {
   const stops = useStops();
+  const language = getLanguage();
   return (
     <ol className="table-stops">
       {waypoints.map((waypoint, k) => {
-        const [code, label] = stopLabel(waypoint.name, k, waypoints.length);
+        const [code, label] = stopLabel(waypoint, k);
         const stop = stopForWaypoint(stops, waypoint.name);
         const science = stopHasContent(stop);
         const leg = k > 0 ? legs[k - 1] : null;
         const distance = k === 0 ? t('table.stop.start') : Number.isFinite(leg?.distanceM) ? `${Math.round(leg.distanceM)} m` : '';
         const line = k > 0 ? stopLine({ workSec: leg?.workSec ?? waypoint.workSec, explain: explain[k - 1] }) : null;
+        // why the stop is worth the walk, when stops.json says (D10: the sortie's light-toned patch), tagged SIM
+        const reason = k > 0 ? stopReason(planStops.find((entry) => entry.id === waypoint.stopId), language) : null;
         return (
           <li key={k} className={science ? 'science' : undefined}>
             <code>{code}</code>
@@ -164,7 +181,12 @@ function Stops({ waypoints, legs, explain = [], dropped = [] }) {
               <span className="table-stop-name">{label}</span>
             )}
             <span className="table-stop-dist">{distance}</span>
-            {line && <small className="table-stop-why">{line}</small>}
+            {(line || reason) && (
+              <small className="table-stop-why">
+                {line}
+                {reason && <>{line ? ' · ' : ''}{reason}<SourceTag path="route.stops" requireSource={false} /></>}
+              </small>
+            )}
           </li>
         );
       })}
@@ -186,7 +208,7 @@ function Stops({ waypoints, legs, explain = [], dropped = [] }) {
  * when the event ends.
  * @param {{ event: ReturnType<typeof eventRouteOf> }} props
  */
-function EventStops({ event }) {
+function EventStops({ event, waypoints }) {
   const [code, name] = shelterLabel(event.shelter);
   return (
     <ol className="table-stops">
@@ -202,7 +224,8 @@ function EventStops({ event }) {
         {event.alertText && <small className="table-stop-why">{translateText(event.alertText)}</small>}
       </li>
       {event.skipped.map((stop) => {
-        const [skippedCode, label] = stop.includes(' · ') ? stop.split(' · ') : ['–', stop];
+        const k = waypoints.findIndex((waypoint) => waypoint.name === stop);
+        const [skippedCode, label] = k > 0 ? stopLabel(waypoints[k], k) : ['–', placeName(stop)];
         return (
           <li key={'skipped-' + stop} className="dropped">
             <code>{skippedCode}</code>
@@ -452,7 +475,8 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
   const soloRadio = needs.crew === 1 && profiles?.radio?.ok === true;
   const noGo = !decision.go && decision.reason !== 'planning';
   const said = (r) => (soloRadio && r.code === 'solo-radio') || r.code === 'fits' || r.code === 'required-over';
-  const reasonLines = planCurrent && !noGo ? planReasonLines((route.planReasons ?? []).filter((r) => !said(r))) : [];
+  // a no-go keeps one reason: the stops fit on another profile (the way out the profile buttons offer)
+  const reasonLines = planCurrent ? planReasonLines((route.planReasons ?? []).filter((r) => !said(r) && (!noGo || r.code === 'profile-over'))) : [];
   const whyLines = planCurrent && !noGo && limits?.tightest ? [tightestText(limits.tightest), ...reasonLines] : reasonLines;
   // The plan being approved, in one line (P9): goal · crew · profile.
   const planLine = t('table.plan.line', {
@@ -538,10 +562,10 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
             <div className="table-panel-head">
               <p className="table-label">{event ? t('table.event.stops') : t('table.stops')}</p>
               {/* the work at each stop (SIM) and why each leg bends (DERIVED) */}
-              {!event && <span><SourceTag path="route.legs.workSec" /><SourceTag path="route.explain" /></span>}
+              {!event && <span><SourceTag path="route.legs.workSec" requireSource={false} /><SourceTag path="route.explain" requireSource={false} /></span>}
             </div>
-            {event ? <EventStops event={event} /> : (
-              <Stops waypoints={waypoints} legs={route.legs ?? []} explain={planCurrent ? route.explain ?? [] : []} dropped={planCurrent ? route.dropped ?? [] : []} />
+            {event ? <EventStops event={event} waypoints={waypoints} /> : (
+              <Stops waypoints={waypoints} legs={route.legs ?? []} explain={planCurrent ? route.explain ?? [] : []} dropped={planCurrent ? route.dropped ?? [] : []} planStops={planCurrent ? route.stops ?? [] : []} />
             )}
           </div>
           <div className="table-panel">
@@ -598,7 +622,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
             {/* Why this route (#246), plan level: the crew rules, the risk and the budget; each leg's reason is in the stop
                 list. A no-go reason comes first, so a locked Begin EVA always says why. */}
             {!evaBegun && !decision.go && decision.tone && <p className={'table-note tone-' + decision.tone}>{decision.text}</p>}
-            {whyLines.length > 0 && <p className="table-note route-why">{whyLines.join(' ')}<SourceTag path="route.planReasons" /></p>}
+            {whyLines.length > 0 && <p className="table-note route-why">{whyLines.join(' ')}<SourceTag path="route.planReasons" requireSource={false} /></p>}
           </div>
           {/* The comparison takes the place of the suit readout, which the Suit step shows in full (#245). */}
           <div className="table-panel table-fill profiles-panel">
@@ -686,7 +710,10 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
             ) : (
               <>
                 <p className={'table-decision' + (decision.tone ? ' tone-' + decision.tone : '')}>{decision.title}</p>
-                <p className="table-text small"><span className="decision-plan">{planLine}</span>{decision.text}</p>
+                <p className="table-text small">
+                  <span className="decision-plan">{planLine}</span>{decision.text}
+                  {decision.note && <span className="decision-begin"> {decision.note}</span>}
+                </p>
               </>
             )}
           </div>

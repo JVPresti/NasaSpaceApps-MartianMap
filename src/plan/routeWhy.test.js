@@ -70,6 +70,12 @@ describe('stops left out and plan reasons', () => {
     expect(planReasonLines([{ code: 'risk', risk: 'standard', reserveShare: 0.15 }])).toEqual([]);
   });
 
+  it('names the stops in its reasons, and says when the stops fit only on another profile (N23, P7)', () => {
+    expect(planReasonLines([{ code: 'stop-missing', stop: 'bright-angel', name: 'Bright Angel' }])).toEqual(['Bright Angel is not in the stop list.']);
+    expect(planReasonLines([{ code: 'profile-over', profile: 'gentlest', reference: 'fastest', limit: 'time', overSec: 180 }]))
+      .toEqual(['The Gentlest route: 3 min over your time; the stops fit on the Fastest route.']);
+  });
+
   it('speaks Spanish', () => {
     setLanguage('es');
     expect(stopLine({ workSec: 300, explain: leg({ block: 'slope', extraM: 62, extraSec: 75 }) })).toBe('5 min de trabajo · rodea terreno de más de 20°: +62 m, +75 s');
