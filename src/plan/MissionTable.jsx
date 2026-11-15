@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { t, translateText } from '../i18n/index.js';
 import { useShallow } from 'zustand/react/shallow';
-import { loadDataFile } from '../data/dataFiles.js';
 import { HAZARDS_PATH } from '../data/provenance.js';
 import { imageUrl, stopForWaypoint } from '../data/stops.js';
 import EventBanner from '../events/EventBanner.jsx';
@@ -24,6 +23,10 @@ import LayerLegend from './LayerLegend.jsx';
 import LayerPreview from './LayerPreview.jsx';
 import MissionMap from './MissionMap.jsx';
 import { layerButtonText, layerMapTitle } from './tableLayers.js';
+import { decisionFor } from './decision.js';
+import NeedsPanel from './NeedsPanel.jsx';
+import { droppedWhy, planReasonLines, stopLine } from './routeWhy.js';
+import { useDataFile, useDustAgainstLimit } from './useConditions.js';
 import RouteProfiles from './RouteProfiles.jsx';
 import SourceTag from './SourceTag.jsx';
 import SuitFigure from './SuitFigure.jsx';
@@ -100,22 +103,11 @@ const HAZARDS = [
 
 const sentence = (text) => (text ? text.charAt(0).toUpperCase() + text.slice(1) : '');
 
-/** A data file under public/, through the shared loader (#217): one request per file per page, shared and read-only. */
-function useDataFile(path) {
-  const [value, setValue] = useState(null);
-  useEffect(() => {
-    let cancelled = false;
-    loadDataFile(path).then((json) => !cancelled && setValue(json)).catch(() => {});
-    return () => { cancelled = true; };
-  }, [path]);
-  return value;
-}
-
 /** "WP1 · channel floor" → ["WP1", "Channel floor"]; the start is the habitat and the last stop is the end. */
 function stopLabel(name, index, count) {
   if (index === 0) return ['HAB', t('table.habitat')];
   const [code, rest] = name.includes(' · ') ? name.split(' · ') : [index === count - 1 ? 'END' : `WP${index}`, name];
-  return [index === count - 1 ? 'END' : code, sentence(rest)];
+  return [index === count - 1 ? 'END' : code, sentence(translateText(rest))];
 }
 
 function Big({ value, unit, label, tone }) {
@@ -127,22 +119,14 @@ function Big({ value, unit, label, tone }) {
   );
 }
 
-// The event runner reads hazards.off once, when the EVA starts (src/state/events.js). After Begin EVA a switch would
-// change nothing, so the switches lock and show the choice the run started with.
-function Hazards({ compact = false, locked = false }) {
-  const off = useMissionStore(useShallow((s) => s.hazards.off ?? []));
-  return HAZARDS.map((hazard) => {
-    const on = !hazard.events.some((id) => off.includes(id));
-    return (
-      <label key={hazard.id} className="table-check">
-        <input type="checkbox" checked={on} disabled={locked} onChange={(event) => hazard.events.forEach((id) => setHazardEnabled(id, event.target.checked))} />
-        <span>{compact ? hazard.name : t('table.hazard.can.happen')}</span>
-      </label>
-    );
-  });
-}
-
-function Stops({ waypoints, legs }) {
+/**
+ * The stops in walking order, each with the distance of the leg that reaches it. While the route on the table is the
+ * planned one, each stop also says the work planned there (#247) and why its leg runs where it does (#246), and the
+ * stops the objective allows but the plan left out follow, with the reason.
+ * @param {{ waypoints: Array<object>, legs: Array<object>, explain?: Array<object>, dropped?: Array<object> }} props
+ *   explain and dropped: route.explain and route.dropped, empty when an event re-plan replaced the planned route
+ */
+function Stops({ waypoints, legs, explain = [], dropped = [] }) {
   const stops = useStops();
   return (
     <ol className="table-stops">
@@ -150,7 +134,9 @@ function Stops({ waypoints, legs }) {
         const [code, label] = stopLabel(waypoint.name, k, waypoints.length);
         const stop = stopForWaypoint(stops, waypoint.name);
         const science = stopHasContent(stop);
-        const distance = k === 0 ? t('table.stop.start') : Number.isFinite(legs[k - 1]?.distanceM) ? `${Math.round(legs[k - 1].distanceM)} m` : '';
+        const leg = k > 0 ? legs[k - 1] : null;
+        const distance = k === 0 ? t('table.stop.start') : Number.isFinite(leg?.distanceM) ? `${Math.round(leg.distanceM)} m` : '';
+        const line = k > 0 ? stopLine({ workSec: leg?.workSec ?? waypoint.workSec, explain: explain[k - 1] }) : null;
         return (
           <li key={k} className={science ? 'science' : undefined}>
             <code>{code}</code>
@@ -160,19 +146,31 @@ function Stops({ waypoints, legs }) {
               <span className="table-stop-name">{label}</span>
             )}
             <span className="table-stop-dist">{distance}</span>
+            {line && <small className="table-stop-why">{line}</small>}
           </li>
         );
       })}
+      {dropped.map((stop) => (
+        <li key={'dropped-' + stop.id} className="dropped">
+          <code>–</code>
+          <span className="table-stop-name">{translateText(stop.name)}</span>
+          <span className="table-stop-dist">{t('table.stop.left.out')}</span>
+          <small className="table-stop-why">{droppedWhy(stop)}</small>
+        </li>
+      ))}
     </ol>
   );
 }
 
 function SuitNow() {
-  const suit = useMissionStore(useShallow((s) => ({ o2: s.suit.oxygenPct, battery: s.suit.batteryPct, pressure: s.suit.pressurePsi })));
+  const suit = useMissionStore(useShallow((s) => ({
+    o2: s.suit.oxygenPct, battery: s.suit.batteryPct, pressure: s.suit.pressurePsi, o2Start: s.needs.o2Pct, batteryStart: s.needs.batteryPct,
+  })));
   const hazards = useDataFile(HAZARDS_PATH);
-  // Before the EVA the suit runner has not started: the suit is full, at its nominal pressure (hazards.json).
-  const o2 = Number.isFinite(suit.o2) ? suit.o2 : 100;
-  const battery = Number.isFinite(suit.battery) ? suit.battery : 100;
+  // Before the EVA the suit runner has not started: the suit holds what the crew set in their needs (a full tank and
+  // battery by default), at its nominal pressure (hazards.json). The plan's budget starts from the same values.
+  const o2 = Number.isFinite(suit.o2) ? suit.o2 : Number.isFinite(suit.o2Start) ? suit.o2Start : 100;
+  const battery = Number.isFinite(suit.battery) ? suit.battery : Number.isFinite(suit.batteryStart) ? suit.batteryStart : 100;
   const pressure = Number.isFinite(suit.pressure) ? suit.pressure : hazards?.values?.['suit.pressure.nominal']?.value;
   const bar = (pct) => <span className="table-bar"><span style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} /></span>;
   return (
@@ -287,26 +285,15 @@ function ReturnPanel({ totals }) {
   );
 }
 
-function decisionFor(planner, totals) {
-  if (planner.status === 'error') {
-    return { tone: 'warning', title: t('table.decision.no.go'), text: planner.error ? translateText(planner.error) : t('table.decision.no.route'), go: false };
-  }
-  if (!totals) return { tone: null, title: t('table.decision.planning'), text: t('table.decision.waiting'), go: false };
-  if (totals.status === 'warning') return { tone: 'warning', title: t('table.decision.no.go'), text: t('table.decision.reserve'), go: false };
-  if (totals.status === 'caution') return { tone: 'caution', title: t('table.decision.go.with.care'), text: t('table.decision.small.margin'), go: true };
-  return { tone: 'ok', title: t('table.decision.go'), text: t('table.decision.wide.margin'), go: true };
-}
-
 function Actions({ children }) {
   return <div className="table-actions">{children}</div>;
 }
 
-function BeginButton({ planner, totals, evaBegun, onBeginEva }) {
-  const route = useMissionStore((s) => s.route);
-  const decision = decisionFor(planner, totals);
+function BeginButton({ decision, evaBegun, onBeginEva }) {
+  const path = useMissionStore((s) => s.route.path);
   // Go / No-go gates the start only. Once the EVA is under way the astronaut is already outside and the clock runs,
-  // so a route that now reads No-go (oxygen spent, a failed re-plan) must not keep them at the table.
-  const blocked = evaBegun ? false : !route.path || !decision.go;
+  // so a route that now reads No-go (oxygen spent, a failed re-plan, the storm's dust) must not keep them at the table.
+  const blocked = evaBegun ? false : !path || !decision.go;
   return (
     <button
       type="button"
@@ -320,7 +307,7 @@ function BeginButton({ planner, totals, evaBegun, onBeginEva }) {
 }
 
 /** A tab id the table has, or the first step. */
-const tabOrSite =(id) => (TABS.some((item) => item.id === id) ? id : TABS[0].id);
+const tabOrSite = (id) => (TABS.some((item) => item.id === id) ? id : TABS[0].id);
 
 /**
  * @param {{ planner: { status: string, error: string | null, replan: () => void },
@@ -354,6 +341,14 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
     () => (inUse && !evaBegun ? PROFILE_IDS.filter((id) => id !== inUse && profiles[id]?.ok).map((id) => ({ id, path: profiles[id].path })) : []),
     [profiles, inUse, evaBegun],
   );
+  // The plan's own fields (the crew's budget, why each leg bends, the stops left out) describe the planned route. An
+  // event re-plan to a shelter replaces route.path and leaves them as they were, so they show only while the route on
+  // the table is one of the planned profiles.
+  const planCurrent = inUse !== null;
+  const objective = useMissionStore((s) => s.needs.objective);
+  const dust = useDustAgainstLimit();
+  const decision = decisionFor({ planner, totals, budget: planCurrent ? route.budget : null, dust });
+  const whyLines = planCurrent ? planReasonLines(route.planReasons) : [];
 
   const onTabKey = (event) => {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
@@ -419,18 +414,24 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
     body = (
       <>
         <section className="table-left">
-          <h2 className="table-h">{t('table.route.title')}</h2>
-          <p className="table-text">{t('table.route.text')}</p>
+          <h2 className="table-h">{t(`needs.objective.${objective}`)}</h2>
+          <p className="table-text">{t(`needs.objective.${objective}.text`)}</p>
+          {/* The crew's needs take the place of the compact hazard switches, which the Hazards step has in full. */}
+          <NeedsPanel locked={evaBegun} />
           <div className="table-panel table-fill">
             <p className="table-label">{t('table.stops')}</p>
-            <Stops waypoints={waypoints} legs={route.legs ?? []} />
-          </div>
-          <div className="table-panel table-fill">
-            <p className="table-label">{t('table.hazards.in.run')}</p>
-            <div className="table-checks"><Hazards compact locked={evaBegun} /></div>
+            <Stops waypoints={waypoints} legs={route.legs ?? []} explain={planCurrent ? route.explain ?? [] : []} dropped={planCurrent ? route.dropped ?? [] : []} />
           </div>
           <div className="table-panel">
-            <p className="table-label" title={t('table.map.help')}>{t('table.map.layer.hint')}</p>
+            {/* Perseverance's drives on or off (#249): an overlay, so it sits by the heading, apart from the layer grid
+                (layers.js now has six layers, which fill two rows). How to zoom and pan is the heading's tooltip. */}
+            <div className="table-panel-head table-layers-head">
+              <p className="table-label" title={t('table.map.help')}>{t('table.map.layer')}</p>
+              <button type="button" className={traverse ? 'table-overlay-toggle on' : 'table-overlay-toggle'} aria-pressed={traverse}
+                title={t('map.traverse.toggle.title')} onClick={() => setTraverse((value) => !value)}>
+                <i aria-hidden="true" />{t('map.traverse.toggle')}
+              </button>
+            </div>
             <div className="table-layers" role="group" aria-label={t('table.map.layer')}>
             {LAYERS.map((item) => (
               <button
@@ -445,11 +446,6 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
                 <LayerPreview layer={item} />
               </button>
             ))}
-            {/* Perseverance's drives on or off (#249): an overlay, in the grid's free sixth cell so the panel keeps its height */}
-            <button type="button" className={traverse ? 'table-overlay-toggle on' : 'table-overlay-toggle'} aria-pressed={traverse}
-              title={t('map.traverse.toggle.title')} onClick={() => setTraverse((value) => !value)}>
-              <i aria-hidden="true" />{t('map.traverse.toggle')}
-            </button>
             </div>
           </div>
         </section>
@@ -469,13 +465,17 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
               <Big value={metrics.steepest.value} unit="°" label={t('table.steepest.slope')} tone={steepTone} />
             </div>
             {route.skipped?.length > 0 && <p className="table-note tone-caution">{t('table.replanned.skipped', { stops: route.skipped.join(' · ') })}</p>}
+            {/* Why this route (#246), plan level: the crew rules, the risk and the budget; each leg's reason is in the stop
+                list. A no-go reason comes first, so a locked Begin EVA always says why. */}
+            {!decision.go && decision.tone && <p className={'table-note tone-' + decision.tone}>{decision.text}</p>}
+            {whyLines.length > 0 && <p className="table-note route-why">{whyLines.join(' ')}</p>}
           </div>
           {/* The comparison takes the place of the suit readout, which the Suit step shows in full (#245). */}
           <div className="table-panel table-fill profiles-panel">
             <RouteProfiles locked={evaBegun} />
           </div>
           <Actions>
-            <BeginButton planner={planner} totals={totals} evaBegun={evaBegun} onBeginEva={onBeginEva} />
+            <BeginButton decision={decision} evaBegun={evaBegun} onBeginEva={onBeginEva} />
             <div className="table-pair">
               <button type="button" className="table-secondary" onClick={onControls}>{t('menu.controls')}</button>
               <button type="button" className="table-secondary" onClick={openSources}>{t('ui.sources.188')}</button>
@@ -521,7 +521,6 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
       </div>
     );
   } else {
-    const decision = decisionFor(planner, totals);
     body = (
       <>
         <section className="table-left">
@@ -543,7 +542,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           </div>
           <ReturnPanel totals={totals} />
           <Actions>
-            <BeginButton planner={planner} totals={totals} evaBegun={evaBegun} onBeginEva={onBeginEva} />
+            <BeginButton decision={decision} evaBegun={evaBegun} onBeginEva={onBeginEva} />
             <div className="table-pair">
               <button type="button" className="table-secondary" onClick={() => setTab('route')}>{t('table.back.to.route')}</button>
               <button type="button" className="table-secondary" onClick={onControls}>{t('menu.controls')}</button>
