@@ -1,0 +1,40 @@
+{
+  "prefer": "B",
+  "why": "B poses a question in the first 20 seconds (160 g of oxygen left, 54 g to get home, a radiation alert: can she get back?) and answers it in beat 5 with a number (13 minutes of margin, go home now). A opens on a dust storm and never comes back to her. B also hangs each NASA source on a moment of that story (the slope she walks around, the rock Perseverance photographed, the storm opacity, the 2017 doses), where A reads the sources out as a list. B ends on 97 of 100 slope points matching NASA Mars Trek with 20 seconds to spare, and its title slide is clean where A's has app HUD text running into the team names.",
+  "better": [
+    "Opening gives the stakes as numbers a newcomer can follow: oxygen left, cost to get home, reserve untouched, then the alert",
+    "Beat 5 returns to the astronaut at Cheyava Falls and answers the opening question with one number, 13 min margin",
+    "Each data source is tied to the story moment it decides, so the open data reads as plot, not as a bibliography",
+    "Explains why a dust storm matters (it takes the horizon, so no position fix), which a no-context judge would never guess",
+    "Says who uses it in concrete terms (compare three routes before approving one, a class in Ensenada)",
+    "Title slide is legible, with the challenge name on its own line and a lone astronaut in the frame",
+    "Slide 2 shows 160 g left and footnotes it as a SIM scenario; the zone animation in beat 3 carries a permanent caption saying it is a presentation view",
+    "Runs to 4:40, leaving 20 s of slack against the blocker for running over time",
+    "Slide 7 leads with the validation number, so the deck also ends on a hard fact"
+  ],
+  "worse": [
+    "B lost the spoken and on-screen 'Gale crater, not Jezero' caveat in beat 6. Spoken beat 5 says the radiation 'replays real doses from 2017' without saying where. A says it aloud and puts it on screen; in B it survives only on slide 6",
+    "B dropped MEDA (the weather data) from the spoken script; A names it",
+    "B's spoken opening drops the 18 minutes walk time that A has, so the walk home has a gram cost but no time attached",
+    "B's '97 of every 100 slope points' needs 'slope class' explained; A's '14 centimetres typical difference' is easier for a newcomer to picture",
+    "B's slide 5 adds jargon (xEMU tank, 202 kg suited mass, Minetti's walking model, +20 % walkback) that a no-context reader cannot parse; A's slide 5 is lighter"
+  ],
+  "next": "Put the payoff in the deck. Replace the +399 min visor on slide 3 with the beat 5 frame at Cheyava Falls ('Margin 13 min · head home now', tagged SIM scenario). Then slide 2's 'Can she get back?' gets an answer, and the deck stops contradicting the script's 13 minutes.",
+  "remaining_blockers_or_majors": [
+    {
+      "problem": "The margin numbers disagree. The script and beats give 13 min at Cheyava Falls when the alert hits. Slides 3 and 6 show +399 min 'during the radiation alert'. Demo line D4 says 'I leave with 20 % oxygen', yet every visor shot shows O2 at 100 %. A newcomer cannot tell which number is the real margin.",
+      "severity": "major",
+      "criterion": "Presentation / Validity"
+    },
+    {
+      "problem": "The global deck asks 'Can she get back?' on slide 2 and never answers it. The 13-minute answer lives only in the spoken beat 5, so judges who see only the PDF get a setup with no resolution.",
+      "severity": "major",
+      "criterion": "Presentation"
+    },
+    {
+      "problem": "Beat 6 shrank to 10 seconds and lost 'Gale crater, not Jezero' both from the screen and from the spoken line. Meanwhile beat 5 says the radiation is real 2017 doses, which a judge will take to mean Jezero.",
+      "severity": "major",
+      "criterion": "Validity (team honesty rule)"
+    }
+  ]
+}

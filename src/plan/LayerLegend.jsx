@@ -5,6 +5,7 @@ import { useSkyView } from './routeExposure.js';
 import SourceTag from './SourceTag.jsx';
 import { layerDecides, layerLegendTitle, legendRows } from './tableLayers.js';
 import { useLayerPlaces } from './useLayerPlaces.js';
+import ZoneLegendLine from '../zone/ZoneLegendLine.jsx';
 
 // Every layer's DATA / DERIVED / SIM tag beside its legend title (the realism rule): the provenance layers.js keeps
 // and registers for each layer (layerProvenancePath).
@@ -41,6 +42,7 @@ export default function LayerLegend({ layer }) {
           ))}
         </ul>
       )}
+      {layer.id === 'zone' && <ZoneLegendLine />}
       {decides && <p className="table-map-decides">{decides}</p>}
     </div>
   );

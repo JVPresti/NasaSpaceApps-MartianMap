@@ -38,6 +38,7 @@
  */
 import { truePosition } from '../sim/navigation.js';
 import { taskProgress } from '../sim/taskProgress.js';
+import { recordRouteRun, routeSignature } from '../plan/routeLibrary.js';
 
 /** Arrival radius at the habitat, in metres. The same radius as a non-science waypoint (#61). */
 export const HAB_ARRIVAL_RADIUS_M = 5;
@@ -433,6 +434,8 @@ export function startEvaRunner({
   // Capture it once, so a later re-plan still has a before/after pair.
   const initialState = store.getState();
   const initialEva = evaOf(initialState);
+  // The route the crew departed on, matched against the saved routes when the EVA ends (#357).
+  const initialRouteSignature = routeSignature(initialState.route);
   if (initialEva.phase !== 'ended' && isPath(initialState.route?.path)) {
     lastRoute = routeSnapshot(initialState.route);
     hasInitialRoute = true;
@@ -508,6 +511,12 @@ export function startEvaRunner({
         },
       };
     });
+
+    // The saved routes (#357): if the crew departed on one, this run joins its success record.
+    const waypoints = finalState.route?.waypoints;
+    const completed = Array.isArray(waypoints) && waypoints.length > 0
+      && (finalState.route?.visited?.length ?? 0) >= waypoints.length;
+    recordRouteRun(store, initialRouteSignature, summary, { completed });
   }
 
   function tick() {

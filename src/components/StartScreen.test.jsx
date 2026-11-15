@@ -43,12 +43,12 @@ describe('StartScreen while the scene loads (#266)', () => {
     expect(html.match(/disabled/g)).toHaveLength(1);
   });
 
-  it('opens the mission table once the scene is ready', () => {
+  it('enters the habitat once the scene is ready', () => {
     const html = render({ scene: { ...loading, status: 'ready', progress: 1 } });
     const button = primary(html);
 
     expect(button).not.toContain('disabled');
-    expect(button).toContain('Open the mission table');
+    expect(button).toContain('Enter the habitat');
     expect(html).not.toContain('start-progress');
     expect(html).not.toContain('start-status');
     expect(html).not.toContain('Starting the engine…');
@@ -59,14 +59,20 @@ describe('StartScreen while the scene loads (#266)', () => {
     const button = primary(html);
 
     expect(button).toContain('disabled');
-    expect(button).toContain('Opening…');
+    expect(button).toContain('Capturing the mouse…');   // the start click asks for the mouse: walking in the habitat needs it
+    expect(primary(render({ busy: true, freeLook: true, scene: { ...loading, status: 'ready', progress: 1 } }))).toContain('Opening…');
+  });
+
+  it('offers drag-to-look after a refused capture', () => {
+    const html = render({ lockFailed: true, onStartWithoutCapture: () => {}, scene: { ...loading, status: 'ready', progress: 1 } });
+    expect(html).toContain('without mouse capture');
   });
 
   it('treats a missing scene as ready, for a caller that already has the engine', () => {
     const button = primary(render());
 
     expect(button).not.toContain('disabled');
-    expect(button).toContain('Open the mission table');
+    expect(button).toContain('Enter the habitat');
   });
 });
 
@@ -76,7 +82,32 @@ describe('StartScreen mission choice (#265)', () => {
 
   it('keeps one main action, which opens the first mission, and adds the full EVA as a secondary button', () => {
     const html = render({ scene: ready, onFullEva: noop });
-    expect(primary(html)).toContain('Open the mission table');
+    expect(primary(html)).toContain('Enter the habitat');   // the first mission starts in the habitat (#260)
+    expect(fullButton(html)).toContain('Full EVA · Sample Cheyava Falls');
+    expect(fullButton(html)).not.toContain('disabled');
+  });
+
+  it('waits for the scene like the main action', () => {
+    expect(fullButton(render({ scene: loading, onFullEva: noop }))).toContain('disabled');
+  });
+
+  it('names it in Spanish', () => {
+    setLanguage('es');
+    expect(fullButton(render({ scene: ready, onFullEva: noop }))).toContain('EVA completa · Muestrear Cheyava Falls');
+  });
+
+  it('shows no mission choice without the handler', () => {
+    expect(render({ scene: ready })).not.toContain('start-full');
+  });
+});
+
+describe('StartScreen mission choice (#265)', () => {
+  const ready = { ...loading, status: 'ready', progress: 1 };
+  const fullButton = (html) => html.match(/<button[^>]*class="ui-button ghost start-full"[^>]*>[\s\S]*?<\/button>/)?.[0] ?? '';
+
+  it('keeps one main action, which opens the first mission, and adds the full EVA as a secondary button', () => {
+    const html = render({ scene: ready, onFullEva: noop });
+    expect(primary(html)).toContain('Enter the habitat');   // the first mission starts on foot in the habitat (#260)
     expect(fullButton(html)).toContain('Full EVA · Sample Cheyava Falls');
     expect(fullButton(html)).not.toContain('disabled');
   });

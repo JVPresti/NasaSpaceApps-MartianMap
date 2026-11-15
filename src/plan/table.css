@@ -77,6 +77,20 @@
   border-bottom-color: var(--accent);
 }
 
+/* Local time and "Back to the habitat" (habitat-first flow): the way out of the table, top right. */
+.table-end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+  justify-self: end;
+}
+
+.table-close {
+  min-height: 38px;
+  padding: 6px 14px;
+}
+
 .table-time {
   margin: 0;
   justify-self: end;
@@ -846,6 +860,7 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
   .table-screen { overflow-y: auto; }
   .table-top { grid-template-columns: 1fr; justify-items: start; }
   .table-time { justify-self: start; }
+  .table-end { justify-self: start; }
   .table-body,
   .table-hazard-cards,
   .table-hazards-head { grid-template-columns: 1fr; }
@@ -1241,4 +1256,44 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
   .table-hazard-cards { grid-template-rows: none; row-gap: 20px; }
   .table-hazard-cards > li { display: flex; grid-row: auto; }
   .table-hazard-cards > li > .table-hazard-art { height: 160px; }
+}
+
+/* Saved routes (#357): the crew's route library on the Route step. The form itself lives in saveRoute.css. */
+.saved-routes-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.saved-route {
+  padding: 8px 10px;
+  border: 1px solid var(--edge, rgba(255, 255, 255, 0.12));
+  border-radius: 6px;
+}
+.saved-route-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.saved-route-risk {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+.saved-route-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--ink);
+}
+.saved-route-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
 }

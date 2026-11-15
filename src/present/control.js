@@ -9,7 +9,7 @@ const BACK = new Set(['ArrowLeft', 'PageUp']);
 const BROWSER = new Set(['F5', 'F11', 'F12']);
 
 /** Query keys that belong to the presentation and go when it ends. ?tier and ?lang stay: the app reads them too. */
-export const PRESENT_KEYS = ['present', 'autoplay', 'record', 'seq', 'beat'];
+export const PRESENT_KEYS = ['present', 'autoplay', 'record', 'seq', 'beat', 'live'];
 
 /** The engine has this long to boot before the presentation drops to its caption fallback. */
 export const ENGINE_TIMEOUT_MS = 20_000;

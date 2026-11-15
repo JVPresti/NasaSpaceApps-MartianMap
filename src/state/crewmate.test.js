@@ -56,6 +56,7 @@ describe('stopCatalogue and crewmateSense', () => {
     s.alerts = { 'dust-storm': { active: true }, radiation: null };
     s.crew = [{ id: 'EV2', marginSec: 2400, status: 'nominal', rangeM: 6.2, link: true }];
     s.eva.phase = 'active';
+    s.stage = 'eva';   // the habitat-first flow (#260) says where the astronaut is
     const sense = crewmateSense(s, stopCatalogue(STOPS_282));
     expect(sense).toMatchObject({
       present: true, phase: 'eva', storm: true, radiation: false, rangeM: 6.2, link: true,
@@ -115,6 +116,7 @@ describe('startCrewmate', () => {
     expect(registry.lookup('crewmate.slopeAheadDeg').tag).toBe('DERIVED');
 
     useMissionStore.setState((s) => ({
+      stage: 'eva',
       eva: { ...s.eva, phase: 'active' },
       route: { ...s.route, path: [[0, 0], [60, 0]] },
       alerts: { 'dust-storm': { active: true, level: 'warning' } },

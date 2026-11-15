@@ -15,7 +15,7 @@ import { resolvePlace, TASK_KINDS } from '../sim/sampleTasks.js';
 import { sampleSkyView } from '../sim/skyView.js';
 
 /** Layer indices of src/plan/layers.js, as in the store's `view.layer` and the engine's `uLayer`. */
-export const LAYER = Object.freeze({ IMAGE: 0, TERRAIN: 1, ROCK: 2, OUTCROP: 3, RADIO: 4, EXPOSURE: 5 });
+export const LAYER = Object.freeze({ IMAGE: 0, TERRAIN: 1, ROCK: 2, OUTCROP: 3, RADIO: 4, EXPOSURE: 5, ZONE: 6 });
 /** Spacing of the Terrain layer's contour lines, as in the terrain shader. Metres. */
 export const CONTOUR_STEP_M = 5;
 /**

@@ -6,15 +6,24 @@ import { createInitialEvaState } from './eva.js';
 import { LOOK_DEFAULTS, clampLookSettings, readLookSettings, writeLookSettings } from '../engine/lookSettings.js';
 import { checkNeeds, DEFAULT_NEEDS, OBJECTIVE_DEFAULTS } from '../sim/missionNeeds.js';
 import { checkTasks, DEFAULT_TASKS, tasksKey } from '../sim/sampleTasks.js';
+import { deleteRoute, readRouteLibrary, recordRouteRun, routeSignature, saveRoute, writeRouteLibrary } from '../plan/routeLibrary.js';
 
 /** Plain data only. Units are in the field names. Coordinates: x east, z south, metres from Cheyava Falls. */
 export function createInitialState() {
   return {
-    mode: 'plan',                                   // 'walk' | 'plan'; the app opens at the planning table (#166)
+    // 'walk' (first person) or 'plan' (the mission table is open). The astronaut starts inside the habitat on foot.
+    mode: 'walk',
+    // Where the astronaut is in the flow: 'habitat' | 'egress' | 'eva' | 'debrief' (src/state/flow.js).
+    stage: 'habitat',
+    // Inside the habitat, written by the engine bridge 5 times per second while the stage is 'habitat': the walk
+    // zone the astronaut stands in ('main', 'airlock', ...), or null outside. The habitat HUD reads it.
+    habitat: { zone: null },
     // Clock fields: docs/STATE_AND_ENGINE.md. anchorMs is the wall timestamp elapsedSec is measured from;
     // startedAtMs is the first start. The mission clock fills anchorMs and the fields after it when it starts.
     mission: {
-      startedAtMs: null, elapsedSec: 0, paused: false, sol: null, lmst: null,
+      // held: the clock is stopped because the astronaut is in the habitat before the EVA, not because a menu is open
+      // (#260). Walking and the table's prompt go on while held; a pause menu clears it.
+      startedAtMs: null, elapsedSec: 0, paused: false, held: false, sol: null, lmst: null,
       anchorMs: null, timeScale: 1, initialSol: null, initialLmst: null, longitudeDeg: null, sky: null,
     },
     suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
@@ -25,12 +34,16 @@ export function createInitialState() {
     // entry. Codes and numbers only: the table writes the sentences.
     // tasks: the sampling tasks of the "Collect samples" plan (#352), kept and dropped, in list order, each with its
     // resolved place, work and drop reason (src/sim/missionNeeds.js); empty for the other goals.
-    route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [], profiles: null, profile: 'fastest', stops: [], dropped: [], planReasons: [], budget: null, weights: null, explain: [], tasks: [] },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js; profiles and profile: the routes the table compares and the one chosen (#245, src/sim/routeProfiles.js)
-    // The crew's needs at the mission table (#265, goal 2). setNeeds changes them until the EVA begins (locked: the first
-    // switch to Walk, the moment src/state/simulation.js starts the EVA); the route re-plans from them in Plan mode.
+    route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [], profiles: null, profile: 'fastest', stops: [], dropped: [], planReasons: [], budget: null, weights: null, explain: [], tasks: [], manual: false },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js; profiles and profile: the routes the table compares and the one chosen (#245, src/sim/routeProfiles.js); manual: a saved route was loaded (#357), so Plan mode plans its waypoints instead of the crew's needs
+    // The crew's needs at the mission table (#265, goal 2). setNeeds changes them until Begin EVA (locked: beginEgress in
+    // src/state/flow.js, at the start of the airlock cycle); the route re-plans from them in Plan mode.
     // tasks: the sampling tasks of the "Collect samples" goal (#352, src/sim/sampleTasks.js), changed with setTasks and
     // locked with the rest.
     needs: { ...DEFAULT_NEEDS, tasks: [], locked: false },
+    // #357, written by the saved-route actions below: routes the crew saved at the mission table, each with its risk
+    // and success record. Persisted in localStorage ('marswalk.routes'), read once at load like the look settings;
+    // a reset keeps the library (routes are crew property, not mission state).
+    routeLibrary: { list: [] },
     environment: { dustOpacity: 0, tempC: null, windMs: null, pressurePa: null, doseRateUgyH: null, doseUgy: null },
     // Active hazard areas for the minimap (#60): [{ id, x, z, radiusM, active }], metres. Empty means
     // "no zone known", not "safe". No writer yet; the event work (#24-#26) fills it. The minimap draws
@@ -63,11 +76,16 @@ export function createInitialState() {
 
 // Read once at load, like the saved language in src/i18n/index.js: a missing, blocked or corrupt entry leaves the defaults.
 const savedLook = readLookSettings();
+const savedRoutes = readRouteLibrary();
 
 /** React hook and store. Select slices: useMissionStore((s) => s.suit.oxygenPct). */
 export const useMissionStore = create(() => {
   const initial = createInitialState();
-  return { ...initial, settings: { ...initial.settings, look: savedLook } };
+  return {
+    ...initial,
+    settings: { ...initial.settings, look: savedLook },
+    routeLibrary: { list: savedRoutes },
+  };
 });
 
 const FORBIDDEN = new Set(['__proto__', 'constructor', 'prototype']);
@@ -108,10 +126,16 @@ export function createStoreAdapter(store = useMissionStore) {
 export const storeAdapter = createStoreAdapter();
 
 // Small actions for the interface.
-// The first switch to Walk begins the EVA (src/state/simulation.js starts it then), so it also locks the crew's needs.
+// Walking no longer begins the EVA: the astronaut walks in the habitat first (habitat-first flow, #260). Begin EVA
+// (beginEgress in src/state/flow.js) locks the crew's needs.
+// During the airlock cycle (stage 'egress') the mode stays 'walk' and every switch is refused: the engine moves the
+// player outside at the dark point, so a table opened now would leave store and engine disagreeing.
+// Returns false when the switch was refused.
 export const setMode = (mode) => {
   if (mode !== 'walk' && mode !== 'plan') throw new Error('mode must be walk or plan');
-  useMissionStore.setState((s) => (mode === 'walk' && !s.needs.locked ? { mode, needs: { ...s.needs, locked: true } } : { mode }));
+  if (useMissionStore.getState().stage === 'egress') return false;
+  useMissionStore.setState({ mode });
+  return true;
 };
 
 /**
@@ -134,7 +158,8 @@ export const setNeeds = (partial) => {
     if (s.needs.locked || Object.entries(update).every(([k, v]) => s.needs[k] === v)) return s;
     changed = true;
     const tasks = newObjective && checked.objective === 'samples' ? tasksOnChoosingSamples(s.needs.tasks) : s.needs.tasks;
-    return { needs: { ...s.needs, ...update, tasks } };
+    // A change of needs takes the plan back from a saved route (#357): the route comes from the crew's needs again.
+    return { needs: { ...s.needs, ...update, tasks }, route: { ...s.route, manual: false } };
   });
   return changed;
 };
@@ -218,6 +243,88 @@ export const setHazardEnabled = (eventId, enabled) => {
     return { hazards: { ...state.hazards, off: enabled ? off : [...off, eventId] } };
   });
 };
+
+/**
+ * Save the currently planned route under a name (#357). Needs a planned path and at least one waypoint; the route
+ * snapshot keeps its waypoints, path, distance, climb and risk, and starts an empty success record.
+ * @param {string} name
+ * @returns {object | null} the saved entry, or null when there was nothing to save (no name, no plan)
+ */
+export const saveCurrentRoute = (name) => {
+  const state = useMissionStore.getState();
+  const list = saveRoute(state.routeLibrary.list, { name, route: state.route, nowMs: Date.now() });
+  if (list === state.routeLibrary.list) return null;
+  writeRouteLibrary(list);
+  useMissionStore.setState((s) => ({ routeLibrary: { ...s.routeLibrary, list } }));
+  return list[0];
+};
+
+/**
+ * Save the route an EVA just ended on, from the debrief (#364): the plan as it stands, with the finds added during the
+ * walk, joins the library under a name, and this EVA becomes its first run — attempt, completion when every waypoint
+ * was reached, samples, distance and dose. @param {string} name @param {object | null} summary the frozen EVA summary
+ * @returns {object | null} the saved entry, or null when there was nothing to save
+ */
+export const saveEvaRoute = (name, summary) => {
+  const state = useMissionStore.getState();
+  const list = saveRoute(state.routeLibrary.list, { name, route: state.route, nowMs: Date.now() });
+  if (list === state.routeLibrary.list) return null;
+  const entry = list[0];
+  writeRouteLibrary(list);
+  useMissionStore.setState((s) => ({ routeLibrary: { ...s.routeLibrary, list } }));
+  const waypoints = state.route?.waypoints;
+  const completed = Array.isArray(waypoints) && waypoints.length > 0
+    && (state.route?.visited?.length ?? 0) >= waypoints.length;
+  // The new entry is the newest, so recordRouteRun finds it by signature before any older route with the same stops.
+  recordRouteRun(useMissionStore, routeSignature(entry), summary, { completed });
+  return entry;
+};
+
+/** Delete one saved route (#357). @returns {boolean} true when it was deleted */
+export const deleteSavedRoute = (id) => {
+  const state = useMissionStore.getState();
+  const list = deleteRoute(state.routeLibrary.list, id);
+  if (list === state.routeLibrary.list) return false;
+  writeRouteLibrary(list);
+  useMissionStore.setState((s) => ({ routeLibrary: { ...s.routeLibrary, list } }));
+  return true;
+};
+
+/**
+ * Put a saved route back on the table (#357): its waypoints and path become the current plan (the planner re-plans
+ * from the waypoints) and the decision goes back to pending. @returns {boolean} true when the route was applied
+ */
+export const applySavedRoute = (id) => {
+  const state = useMissionStore.getState();
+  const entry = state.routeLibrary.list.find((item) => item.id === id);
+  if (!entry) return false;
+  useMissionStore.setState((s) => ({
+    route: {
+      ...s.route,
+      // manual: the planner keeps these waypoints (src/plan/useRoutePlanner.js); a change of needs takes the plan back.
+      manual: true,
+      waypoints: entry.waypoints.map((w) => ({ ...w })),
+      path: entry.path.map((point) => [...point]),
+      distanceM: entry.distanceM,
+      climbM: entry.climbM,
+      steepestSlopeDeg: entry.risk?.maxSlopeDeg ?? null,
+      etaSec: null,
+      reason: null,
+      decision: 'pending',
+      nextIndex: 0,
+      visited: [],
+      skipped: [],
+      shelter: null,
+      // The needs plan's own output: the waypoint plan that runs next never writes these, so the table would keep
+      // showing the old plan's dropped stops and reasons on the loaded route.
+      stops: [],
+      dropped: [],
+      planReasons: [],
+      explain: [],
+    },
+  }));
+  return true;
+};
 // A restart must not lose the player's look settings (#102): the preference survives resetStore, and a new
 // page load re-reads it from 'marswalk.look'.
 /**
@@ -229,10 +336,11 @@ export const setHazardEnabled = (eventId, enabled) => {
  */
 export const resetStore = ({ keepNeeds = false } = {}) => useMissionStore.setState((s) => {
   const fresh = createInitialState();
-  if (!keepNeeds) return { ...fresh, settings: s.settings };
+  const kept = { settings: s.settings, routeLibrary: s.routeLibrary };
+  if (!keepNeeds) return { ...fresh, ...kept };
   return {
     ...fresh,
-    settings: s.settings,
+    ...kept,
     needs: { ...s.needs, locked: false },
     route: { ...fresh.route, profile: s.route.profile },
   };
@@ -269,10 +377,12 @@ export const setVisorFrame = (on) => {
 // happen. The clock never overwrites a pause with its own value.
 export const setMissionPaused = (paused) => {
   if (typeof paused !== 'boolean') throw new Error('mission.paused must be a boolean');
-  storeAdapter.set('mission.paused', paused);
+  useMissionStore.setState((s) => ({ mission: { ...s.mission, paused, held: false } }));
 };
 export const pauseMission = () => setMissionPaused(true);
 export const resumeMission = () => setMissionPaused(false);
+/** The habitat before the EVA (#260): the clock stays stopped while the astronaut walks and plans. */
+export const holdMission = () => useMissionStore.setState((s) => ({ mission: { ...s.mission, paused: true, held: true } }));
 export const setMissionTimeScale = (scale) => {
   if (typeof scale !== 'number' || !Number.isFinite(scale) || scale <= 0) throw new Error('mission.timeScale must be a finite number greater than 0');
   storeAdapter.set('mission.timeScale', scale);

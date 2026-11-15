@@ -36,3 +36,20 @@ export function partnerPatrol(exit) {
   const A = { x: exit.x + rx * PARTNER_SIDE_M, z: exit.z + rz * PARTNER_SIDE_M };
   return { A, B: { x: A.x + fx * PARTNER_PATROL_M, z: A.z + fz * PARTNER_PATROL_M } };
 }
+
+// Inside the habitat, before the EVA (habitat-first flow, src/state/flow.js). The mission table stands at the habitat
+// origin (habitat_furniture layout.json: planning_table at 0, 0 with a 0.7 m collision circle, plus the 0.25 m walker
+// margin). The main room is walkable out to 2.2 m from the centre (collide.js HAB_ZONES 'main').
+// The astronaut starts on the airlock side of the table, facing it, inside the cabin where the table's prompt shows.
+export const TABLE_SPAWN_M = 1.75;
+// Looking slightly down at the table top (view.js: positive pitch looks down).
+export const TABLE_SPAWN_PITCH = 0.18;
+/**
+ * Pose inside the habitat at the mission table: on the airlock side, facing the table.
+ * @param {{ x: number, z: number }} pos habitat origin, where the table stands (habitat.pos)
+ * @param {{ x: number, z: number }} dir unit vector toward the airlock end (habitat.dir)
+ * @returns {{ x: number, z: number, yaw: number, pitch: number }}
+ */
+export function tableSpawn(pos, dir) {
+  return { x: pos.x + dir.x * TABLE_SPAWN_M, z: pos.z + dir.z * TABLE_SPAWN_M, yaw: Math.atan2(-dir.x, dir.z), pitch: TABLE_SPAWN_PITCH };
+}

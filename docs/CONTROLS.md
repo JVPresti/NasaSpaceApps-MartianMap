@@ -6,6 +6,9 @@ gamepad keys and a keyboard player is not shown the on-screen stick.
 
 ## Keyboard and mouse
 
+The astronaut starts inside the habitat, next to the mission table (#260). Walking works the same inside and outside;
+sampling, finds, the wrist screen and the slope grid only work on the surface, after Begin EVA and the airlock cycle.
+
 ### Walk
 
 | Input | Action |
@@ -46,13 +49,15 @@ returns to Walk. The pause menu's End the EVA is a different action: it discards
 | --- | --- |
 | Right-drag | Pan the map |
 | Scroll | Zoom in and out |
+| Back to the habitat | Before the EVA, close the table and walk again by it. The click captures the mouse (#260) |
+| Begin EVA | Fix the route and the crew's needs, then go out through the airlock cycle (#260) |
 | Esc | Pause and open the menu |
 
 ### Both views
 
 | Input | Action |
 | --- | --- |
-| M | Switch between Walk and Plan. Entering Plan releases the pointer lock. |
+| M | Switch between Walk and Plan. Entering Plan releases the pointer lock. Before Begin EVA, M only opens the table (#282) and Back to the habitat closes it. During the airlock cycle M does nothing (#260). |
 | L | Next data layer |
 | Shift+L | Previous data layer |
 | 0 (top row or numeric keypad) | Turn the data layer off |

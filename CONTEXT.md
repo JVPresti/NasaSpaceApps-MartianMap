@@ -74,6 +74,7 @@ What exists today:
 
 - **`src/sim/costGrid.js`**: walkability grid from slope and rock density; cells over 25° are blocked.
 - **`src/sim/routePlanner.js`**, `routePlanner.worker.js`, `routePlannerClient.js`: A* in a Web Worker. Output is the `path` format of `route.json`: `[[x, z], ...]`.
+- **`src/sim/returnZone.js`**, `returnZone.worker.js`: the return zone, where the crew can go and still get home inside the plan's budget. Two Dijkstra passes over the height grid, priced by the suit model ([STATE_AND_ENGINE](docs/STATE_AND_ENGINE.md#return-zone-309)).
 - **`src/sim/eventEngine.js`**: data-driven events (trigger, timeline, alert, planner request). The contract is in [docs/EVENT_ENGINE.md](docs/EVENT_ENGINE.md).
 - **`src/engine/`** (PR #82): the test bench ported to a module. `createEngine(container, { assetBase, mode, onStatus, onError })` returns `{ ready, setMode('plan' | 'walk'), dispose() }`. Subsystems share one context object and reach each other through `ctx.sys`. Each file names the test bench lines it came from.
 - **Reference only**: `docs/marswalk-assets/testbench-reference/` is the original single-file test bench. It is not the app; do not import from it.

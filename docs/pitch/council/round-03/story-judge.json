@@ -1,0 +1,61 @@
+{
+  "comprehension": {
+    "problem": "An astronaut walking on Mars has limited oxygen, an 8 h suit limit and no GPS. Far from the habitat, she needs to know whether she can still walk back safely, especially when something goes wrong, like a radiation alert or a dust storm.",
+    "what_it_does": "Marswalk is a browser app with two parts. At a mission table the crew picks a goal and the app draws a route on real Jezero crater terrain that avoids slopes over 20 degrees. In a first-person helmet view the astronaut walks it while the visor shows one number, the margin. When a dust storm or radiation alert hits, the route home re-plans. Afterwards a review chart plots the margin over the reserve minute by minute.",
+    "nasa_data": "MRO HiRISE 1 m terrain model (resampled to a 2 m grid) for slope, route, walking cost, radio shadow and the ground you see. Perseverance Mastcam-Z and traverse for science stops, Cheyava Falls photos, rover drives and clear-sky dust opacity 0.45. Perseverance MEDA for the temperature, pressure and wind outlook before go/no-go. Curiosity RAD and Mastcam for radiation dose rates (September 2017 solar event) and peak storm opacity 8.0 (2018 storm, Gale crater). NASA suit documents (xEMU tank 771 g O2, Norcross suited walking tests, Apollo 15 and 17 rules) for oxygen use, the 30 min reserve, the +20 % walkback, the 20 degree limit and 8 h.",
+    "real_vs_simulated": "Every reading carries a tag. DATA is measured by a mission or set in a NASA document (terrain height, RAD dose rates, the 20 degree limit, suit pressure). DERIVED is calculated from DATA (slope, O2 left, battery, distance). SIM is the team's assumption (walking speed 1 m/s, storm timing and its 30 s rise, position error, and so the margin itself). The 160 g scenario is SIM. The radiation was measured in Gale crater, not Jezero, and the alert says so.",
+    "who_made_it": "Los Frijolitos Espaciales Refritos Nueva Generación from Ensenada, Mexico: Teresa Rivas Gómez, Andrea Rivas Gómez, Fernando Haro Calvo, Jorge Antonio Vazquez Guzmán, Antonio Ramos Gonzalez, Brayan Iván Pérez Ventura. NASA Space Apps 2026, challenge Interplanetary Survival Guide: Martian Map.",
+    "margin": "Oxygen left after paying for the walk home (priced along the route, plus 20 %) and keeping a 30 min reserve that is never touched, shown in minutes, or the 8 h suit clock if that runs out first, recomputed every metre. In the Cheyava Falls case: 160 g minus 54 g minus 72 g leaves 34 g, which is 13 minutes.",
+    "confused_by": "I never learned what EVA stands for. I could not tell why she must head home now if she has 13 minutes to spare, or what the radiation alert changes. Slide 3 tells her story at 13 min but shows a visor reading +399 min from a different moment. The bar switches from grams to minutes in its last segment. Slide 7's '0.14 m RMS over 564,001 points' meant nothing to me, and '16 problems listed' read like a list of bugs. The Apollo 15 and 17 rules, xEMU and Norcross are name-checks I could not unpack."
+  },
+  "findings": [
+    {
+      "where": "Script 1 (0:00 and 0:24), slide 2 headline, slide 3 title",
+      "problem": "The story's own question goes unanswered for a no-context listener. She has 13 minutes to spare, yet the app says 'head home now', and the radiation alert is never tied to that decision. Is she going home because of the alert, or because of the margin? The payoff line names a number and skips the reason.",
+      "severity": "major",
+      "criterion": "Presentation / Storytelling",
+      "proposal": "Make the cause explicit at 2:10 and on slide 3. 'A radiation alert means shelter. With 13 minutes of margin she can skip the last stop and still make it, so Marswalk sends her home now, around slopes over twenty degrees.'"
+    },
+    {
+      "where": "Demo cut B (B2 to B4) versus the cold open",
+      "problem": "The cold open sets up one astronaut at Cheyava Falls with 160 g and a radiation alert. The demo then plays a different scenario (20 % oxygen, first sortie, a hand-fired dust storm). The protagonist disappears for 75 seconds and comes back at 2:10 with a result the audience never watched. Two crises (radiation, dust) dilute one story.",
+      "severity": "major",
+      "criterion": "Presentation / Storytelling",
+      "proposal": "Have P2 bridge in one line at B2: 'Same question, live: twenty percent oxygen, and this time a dust storm.' Better, if the app allows, start the demo at Cheyava Falls and fire the radiation alert so the demo is her walk home."
+    },
+    {
+      "where": "Slide 3 (the margin)",
+      "problem": "The hero visual contradicts the headline. The headline says 13 minutes; the screenshot says +399 min, explained only in small print as a full tank 40 m from home. The bar is labelled in grams for two segments and in minutes for the third, with '34 g' hidden in the caption. A deck reader has to reconcile three numbers to get one idea.",
+      "severity": "major",
+      "criterion": "Presentation",
+      "proposal": "Label the third segment 'Margin 34 g = 13 min'. Capture the visor in her state (about +13 min) or crop the screenshot to the MARGIN NOW pill with a caption that states the visor's number and the scenario's number side by side."
+    },
+    {
+      "where": "Script 3-minute spoken text, slide 5",
+      "problem": "Open data is the award's subject, but the spoken pitch names only HiRISE, Perseverance (once, for the rock) and Curiosity. Mastcam-Z, MEDA and the suit tests never get said aloud, and slide 5 presents the data as a lookup table. The story never shows a dataset making a decision for her in the moment it matters.",
+      "severity": "major",
+      "criterion": "Best Storytelling: potential of open data / Relevance",
+      "proposal": "Thread the sources through her walk in one sentence at 0:38: 'The ground under her boots is a HiRISE model, the rock is where Perseverance's camera looked, her oxygen burn comes from NASA's suited walking tests, and the radiation dose is what Curiosity measured in 2017.'"
+    },
+    {
+      "where": "Slide 2 headline, slide 4 kicker, script 0:00",
+      "problem": "EVA is never defined, and the audience by rule knows nothing about EVAs. It is the second word a judge reads in the story ('the end of her EVA') and the label of the whole product loop on slide 4.",
+      "severity": "major",
+      "criterion": "Presentation (no-context audience)",
+      "proposal": "Say 'the end of her moonwalk-style walk outside, her EVA' once in speech, or write 'at the end of her walk outside (EVA)' on slide 2. Then EVA can stand alone."
+    },
+    {
+      "where": "Script 2:28 and slide 7",
+      "problem": "The close is a validation statistic. '0.14 m RMS over 564,001 points' carries no picture for a lay judge, and '16 problems listed' reads as a defect count. The last image in the judge's head is a number about a grid, not the astronaut.",
+      "severity": "minor",
+      "criterion": "Presentation / Storytelling",
+      "proposal": "Give the number a size and an owner: 'Our copy of NASA's HiRISE terrain matches the one on NASA Mars Trek to fourteen centimetres, about a hand's width. That is the ground she walked home on.' Rename '16 problems listed' to '16 known limits, published'."
+    }
+  ],
+  "retell": "An astronaut on Mars stands 913 m from her habitat at the end of a walk with 160 g of oxygen when a radiation alert comes in. Marswalk, a browser app built on NASA's HiRISE terrain, Perseverance and Curiosity data and NASA suit tests, plans walks around slopes too steep to climb and shows one number on her visor: how many minutes she has left after paying for the trip home and keeping a 30-minute reserve. For her, that number is 13 minutes, so it sends her home now, and every reading tells you whether NASA measured it or the team assumed it.",
+  "advance": {
+    "yes": true,
+    "why": "It has a person, a place, a clock and one number that answers the opening question, and every number has a source. The DATA, DERIVED and SIM tags are an honest way to show open data that most teams will not attempt. It falls short of a win on storytelling because the climax never explains why she turns back, the demo swaps in a different crisis, and the data shows up as a table instead of as moments in her walk.",
+    "change_my_mind": "I would rank it a contender for Best Storytelling if the demo were her walk home from Cheyava Falls, the alert's effect on the decision were stated in one line, and each NASA dataset showed up at the moment it changes what she does. I would drop it if the 'blue walkback zone' in beat 3 came across as an app feature when the video notes say it is presentation-only."
+  }
+}

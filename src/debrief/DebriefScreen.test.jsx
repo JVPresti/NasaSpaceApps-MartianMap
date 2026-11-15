@@ -70,6 +70,17 @@ describe('DebriefScreen', () => {
     expect(html).toContain('T+0:20:00');
   });
 
+  it('offers to save the route the EVA ended on (#364)', () => {
+    const html = render();
+    const body = text(html);
+    expect(body).toContain('Save this route');
+    expect(body).toContain('Keep the route as it ended, with the finds you added on the way');
+    expect(body).toContain('Save route');
+    expect(html).toContain('aria-label="Route name"');
+    // Without a planned path on the store the form is disabled, never throwing.
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>Save route<\/button>/);
+  });
+
   it('names the planned stop a sample was taken at in the Samples note (D10)', () => {
     const plan = {
       path: [[535.1, 574.1], [493, 539], [0, 0]],

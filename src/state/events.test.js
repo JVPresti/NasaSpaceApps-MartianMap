@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { recordEvaEvent } from './eva.js';
 import { eventEnvironmentSources, listEvents, plannedStops, startEventRunner, writeRoute } from './events.js';
-import { resetStore, setMode, setNeeds, useMissionStore } from './store.js';
+import { resetStore, setNeeds, useMissionStore } from './store.js';
 import { provenance } from '../data/provenance.js';
 import { MISSION_SOURCES } from '../sim/missions.js';
 import { nextTarget, startWaypointRunner } from '../sim/waypointRunner.js';
@@ -9,6 +9,7 @@ import { allStops } from '../data/stops.js';
 import { createArrivalTracker } from '../stops/content.js';
 import stopsJson from '../../public/data/stops.json';
 import { resetDataFiles } from '../data/dataFiles.js';
+import { beginEgress } from './flow.js';
 
 beforeEach(() => resetStore());
 
@@ -278,7 +279,7 @@ describe('event runner missions (#265)', () => {
   it('reads the mission once, from the objective locked at Begin EVA: a later change changes nothing', () => {
     setNeeds({ objective: 'sortie' });
     planSortie();
-    setMode('walk');                               // Begin EVA locks the needs
+    beginEgress();                                 // Begin EVA locks the needs
     expect(setNeeds({ objective: 'cheyava' })).toBe(false);
     const runner = quietRunner({ objective: useMissionStore.getState().needs.objective });
     // Even a direct write to the needs after the start leaves the running mission alone.

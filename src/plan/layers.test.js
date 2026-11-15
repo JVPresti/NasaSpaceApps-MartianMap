@@ -15,7 +15,7 @@ afterEach(() => { resetStore(); setLanguage('en'); });
 
 describe('map layers', () => {
   it('keeps one list in view.layer order', () => {
-    expect(LAYERS.map((layer) => layer.id)).toEqual(['none', 'slope', 'rock', 'outcrop', 'radio', 'exposure']);
+    expect(LAYERS.map((layer) => layer.id)).toEqual(['none', 'slope', 'rock', 'outcrop', 'radio', 'exposure', 'zone']);
     LAYERS.forEach((layer, index) => {
       expect(layer.index).toBe(index);
       expect(layerMeta(index)).toBe(layer);
@@ -44,15 +44,15 @@ describe('map layers', () => {
   });
 
   it('marks the table-only layers and keeps Walk to the layers the ground draws', () => {
-    expect(LAYERS.filter((layer) => !layer.walk).map((layer) => layer.id)).toEqual(['radio', 'exposure']);
+    expect(LAYERS.filter((layer) => !layer.walk).map((layer) => layer.id)).toEqual(['radio', 'exposure', 'zone']);
     expect(WALK_LAYERS.map((layer) => layer.id)).toEqual(['none', 'slope', 'rock', 'outcrop']);
-    expect([0, 1, 2, 3, 4, 5, 99].map(walkLayerIndex)).toEqual([0, 1, 2, 3, 0, 0, 0]);
-    expect([0, 1, 2, 3, 4, 5].map(walkRow)).toEqual([0, 1, 2, 3, 0, 0]);
+    expect([0, 1, 2, 3, 4, 5, 6, 99].map(walkLayerIndex)).toEqual([0, 1, 2, 3, 0, 0, 0, 0]);
+    expect([0, 1, 2, 3, 4, 5, 6].map(walkRow)).toEqual([0, 1, 2, 3, 0, 0, 0]);
   });
 
   it('steps through every layer at the table and only the ground layers in Walk, wrapping both ways', () => {
-    expect([0, 1, 2, 3, 4, 5].map((i) => nextLayerIndex(i, 1, 'plan'))).toEqual([1, 2, 3, 4, 5, 0]);
-    expect([0, 1, 2, 3, 4, 5].map((i) => nextLayerIndex(i, -1, 'plan'))).toEqual([5, 0, 1, 2, 3, 4]);
+    expect([0, 1, 2, 3, 4, 5, 6].map((i) => nextLayerIndex(i, 1, 'plan'))).toEqual([1, 2, 3, 4, 5, 6, 0]);
+    expect([0, 1, 2, 3, 4, 5, 6].map((i) => nextLayerIndex(i, -1, 'plan'))).toEqual([6, 0, 1, 2, 3, 4, 5]);
     expect([0, 1, 2, 3].map((i) => nextLayerIndex(i, 1, 'walk'))).toEqual([1, 2, 3, 0]);
     expect([0, 1, 2, 3].map((i) => nextLayerIndex(i, -1, 'walk'))).toEqual([3, 0, 1, 2]);
     // a table-only layer still chosen in the store counts as none in Walk

@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CLOCK_STORAGE_KEY, createClockSession, readClockSession, startMissionClock, writeClockSession } from '../sim/missionClock.js';
-import { resetStore, setMode, setNeeds, useMissionStore } from './store.js';
+import { resetStore, resumeMission, setNeeds, useMissionStore } from './store.js';
 import { pauseEva, resumeEva, restartEva } from './evaSession.js';
+import { beginEgress } from './flow.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -129,6 +130,20 @@ describe('EVA pause and resume', () => {
     expect(useMissionStore.getState().mission.paused).toBe(false);
   });
 
+  it('holds the mission clock in the habitat: input on, mission still paused', async () => {
+    const engine = fakeEngine({ lock: true });
+    pauseEva({ engine });
+
+    await expect(resumeEva({ engine, mode: 'walk', holdClock: true })).resolves.toMatchObject({ ok: true });
+    expect(engine.requested).toBe(1);
+    expect(engine.inputEnabled).toBe(true);
+    expect(useMissionStore.getState().mission).toMatchObject({ paused: true, held: true });
+    pauseEva({ engine });   // a menu over the habitat is a real pause, no longer a held clock
+    expect(useMissionStore.getState().mission).toMatchObject({ paused: true, held: false });
+    resumeMission();
+    expect(useMissionStore.getState().mission).toMatchObject({ paused: false, held: false });
+  });
+
   it('abandons a late lock grant instead of resuming behind the menu', async () => {
     const engine = fakeEngine({ lock: 'deferred' });
     pauseEva({ engine });
@@ -235,6 +250,8 @@ describe('EVA restart', () => {
     useMissionStore.setState((s) => ({
       ...s,
       mode: 'walk',
+      stage: 'debrief',
+      habitat: { zone: 'main' },
       navigation: { ...s.navigation, x: 42, z: -17 },
       suit: { ...s.suit, oxygenPct: 55 },
       route: { ...s.route, path: [[0, 0], [10, 10]], distanceM: 14.1 },
@@ -259,7 +276,9 @@ describe('EVA restart', () => {
     expect(result.message).toBeNull();
     expect(order).toEqual(['stop', 'start']);
     expect(engine.resets).toBe(1);
-    expect(engine.resetState.mode).toBe('plan');   // a new EVA starts at the planning table (#166)
+    expect(engine.resetState.mode).toBe('walk');   // a new EVA starts on foot inside the habitat
+    expect(engine.resetState.stage).toBe('habitat');
+    expect(engine.resetState.habitat).toEqual({ zone: null });
     expect(engine.resetState.navigation.x).toBeNull();
     expect(engine.resetState.suit.oxygenPct).toBeNull();
     expect(engine.resetState.route.path).toBeNull();
@@ -329,11 +348,11 @@ describe('EVA restart', () => {
   it('keeps the needs of the crew and the route profile for the next EVA, unlocked (D9)', () => {
     setNeeds({ objective: 'cheyava', crew: 1, risk: 'cautious' });
     useMissionStore.setState((state) => ({ route: { ...state.route, profile: 'gentlest' } }));
-    setMode('walk');   // Begin EVA locks them
+    beginEgress();   // Begin EVA locks them
     restartEva({ engine: fakeEngine(), storage: memoryStorage() });
     const { needs, route, mode } = useMissionStore.getState();
     expect(needs).toMatchObject({ objective: 'cheyava', crew: 1, risk: 'cautious', locked: false });
     expect(route.profile).toBe('gentlest');
-    expect(mode).toBe('plan');
+    expect(mode).toBe('walk');   // a new EVA starts on foot in the habitat (#260)
   });
 });

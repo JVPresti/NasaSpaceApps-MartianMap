@@ -1,0 +1,133 @@
+{
+  "findings": [
+    {
+      "where": "video-30s.md 0:05-0:10 and shot 3; beats.md beat 3; script-5min-en.md 0:52",
+      "problem": "The cyan walkback zone is the centre of the pitch and of the video, and the app does not have it. code-facts section 4 says nothing in src draws a reach area and the product shows only a margin number. The video narration says \"Marswalk shows where you can go and still get home\" over a zone that only the presentation mode draws, and a global judge who sees only the video and the deck cannot ask Q&A 9. The 205 g start and the 10 % corridor after the radiation alert are invented for the clip.",
+      "severity": "blocker",
+      "criterion": "Validity",
+      "proposal": "In the video, replace shot 3 with the real Route step and the real MARGIN NOW pill, and change the line to \"Marswalk tells you how far you can go and still get home\". In the live pitch keep beat 3 only with a caption that stays on screen the whole time: \"Presentation view, drawn with the app's planner and suit model. In the app this is the margin number. Scenario 205 g, SIM\". Better still, ship the zone as a table layer before submission, since walkback-zone.mjs already computes it."
+    },
+    {
+      "where": "script-5min-en.md D5 (\"the suit matches the terrain to the HiRISE map\"); slide 2 \"No GPS\"; slide 5 row 1 \"position fixes\"; pr282 beat line en.json:627",
+      "problem": "No terrain matching exists. navigationDrift.js grows an error at 2 % of distance and resets it to 0.4 m after 5 s standing with 5 of 8 horizon rays clear and tau <= 1. That is an error model tagged SIM, and Q&A 7 admits it, but the demo line and slide 5 state it as a working capability that HiRISE provides. The 2 % drift and the 0.4 m fix have no cited source.",
+      "severity": "major",
+      "criterion": "Validity",
+      "proposal": "D5: \"No GPS, so we model the position error. It grows as I walk and resets when the suit could take a terrain fix. That model is ours, tagged SIM.\" Slide 5 row 1: drop \"position fixes\" and write \"horizon visibility for the position model\". Cite a source for the 2 % and 0.4 m figures (for example Perseverance's localization accuracy on the HiRISE basemap) or say they are placeholders."
+    },
+    {
+      "where": "slide 5 row 3 \"Perseverance MEDA, sol 1187 -> Temperature, wind and dust\"; script-5min-en.md 3:41 \"The weather is MEDA's sol 1187\"",
+      "problem": "Two of the three things in that row do not come from MEDA sol 1187. meda_sol.json takes wind from sol 312, because MEDA's wind sensors were damaged early in the mission, and the tau 0.45 is a Mastcam-Z opacity. The mission clock starts on sol 1210. A judge who knows MEDA lost its wind booms will catch \"wind, sol 1187\" at once.",
+      "severity": "major",
+      "criterion": "Relevance",
+      "proposal": "Slide 5: \"Perseverance MEDA: temperature and pressure from sol 1187, wind from sol 312 (the wind sensor was damaged later)\" and move dust to its own source, \"clear-sky opacity 0.45, Mastcam-Z\". Script: \"The temperature is MEDA's sol 1187. The wind is from sol 312, the last good wind data.\" Saying this out loud reads as command of the data set."
+    },
+    {
+      "where": "slide 3 \"Recomputed every metre from the HiRISE slope and NASA suit tests\"; video 0:10-0:20 \"NASA suit tests set the oxygen per metre\"; script 0:52; slide 5 row 5",
+      "problem": "The oxygen per metre comes from Minetti's treadmill curve for unsuited walking on a gradient on Earth, scaled by the team to Mars gravity and a 202 kg suited mass (Q&A 3). NASA supplies the mass, the 771 g tank and the 20 % and 30 min rules. The scaling is the team's model, tagged DERIVED, and it is not validated against NASA/TP-2009-214796, which was a lunar-gravity offload test. Suited cost is dominated by suit stiffness, so linear gravity scaling is a real weakness, and the pitch credits NASA for it.",
+      "severity": "major",
+      "criterion": "Validity",
+      "proposal": "Say \"a published walking-energy model (Minetti 2002), scaled to Mars gravity and NASA's suited mass\". Then add one check that turns the weakness into a result: compare the model's 589 W at 1 m/s on the flat with the metabolic rates in the 2009 walkback test and print the ratio on slide 6 or in Q&A 3."
+    },
+    {
+      "where": "slide 2 headline and script 0:00 (\"a dust storm coming. Can she get back?\"); demo D7; dust-storm event (tau 0.45 to 8.0 in 30 s, 90 s in the full EVA)",
+      "problem": "The cold open implies the storm threatens the walk home the way it does in the film. In the app the storm changes two things only: the terrain fix is lost above tau 1 and the route re-plans to the habitat. Oxygen cost does not change, and the HUD keeps MEDA's 2 m/s wind at tau 2.34 (slide 4, frame 3). The 2018 event took weeks to reach tau 8 at Gale, and here it takes 30 s. The banner is honest (\"worst case, not Jezero\") but the spoken story never says what dust does to a walker on Mars.",
+      "severity": "major",
+      "criterion": "Validity",
+      "proposal": "Add one sentence at D7 or beat 2: \"Dust on Mars will not knock you over. It takes away the horizon, so the suit loses its position fix, and that is why we head home.\" Put \"onset compressed, SIM\" next to the tau on screen during the demo. Either hide wind during the event or tag it \"clear-day replay\"."
+    },
+    {
+      "where": "slide 3 mock HUD (+480 min); script D5 \"the margin: the oxygen I have left after walking home\"; slide 3 bar labelled Used / Walk home / Reserve / Margin",
+      "problem": "The number shown is not oxygen. Margin = min(O2 margin, EVA margin), in minutes, and at the start it is the 8 h suit clock: 771 g lasts 21.8 h at rest, so the +480 on slide 3 is the time cap, not the green slice of the bar beside it. The O2 term divides by a 30 s smoothed burn rate, so the debrief on slide 4 shows the margin falling to 229 min within 2:43 of a 55 m walk. A judge will ask how 55 m cost 250 minutes.",
+      "severity": "major",
+      "criterion": "Validity",
+      "proposal": "Slide 3 text: \"Minutes you can still spend, limited by oxygen or by the 8 h suit clock, whichever runs out first.\" D5: \"The margin is the time I have left after walking home and keeping the 30 minute reserve. It reads at my current pace, so it drops when I walk and climbs.\" Use a slide 3 screenshot from mid-walk where the oxygen term is the limiter, not +480."
+    },
+    {
+      "where": "slide 5 row 1 \"MRO HiRISE terrain model, 1 m\"; script 3:41 \"one metre per pixel: slope, route, radio shadow and position\"; slide 6 and beat 7 close \"0.14 m RMS ... 564,001 points\"",
+      "problem": "Slope, route and radio shadow run on a 751 x 751 grid at about 2 m, not 1 m, and the 25 cm image ships at about 0.5 m/px. The closing hard fact compares the team's grid with Mars Trek's copy of the same DTM at the team's own 751 x 751 nodes, so it proves the resampling and georeferencing, not terrain accuracy. Q&A 4 says so. The slide and the close do not, and a listener hears \"our terrain is right to 14 cm\".",
+      "severity": "major",
+      "criterion": "Validity",
+      "proposal": "Slide 5: \"MRO HiRISE terrain model, 1 m, used on a 2 m grid\". Slide 6 and close: \"0.14 m RMS between our 2 m grid and the same HiRISE model served by NASA Mars Trek, at all 564,001 grid points. It shows we did not distort the data.\" Add the 97.3 % slope-class agreement, which is the figure that matters for routing."
+    },
+    {
+      "where": "slide 6 headline \"Every number on screen says where it comes from\"; script 4:11 \"DATA is measured\"; slide 2 \"NASA rules\"; slide 7 \"nothing in the pipeline depends on Jezero\"",
+      "problem": "Four absolutes that the materials contradict. (1) Slide 1's own screenshot shows untagged numbers: ETA 1 min, slope 10 deg, 17:45 LMST, link 13 m, and the Site tab stats are hard-coded literals. (2) DATA also covers rules set in documents, which slide 6 says and the script does not. (3) The 8 h, 30 min and 20 deg figures are Apollo and Artemis lunar suit rules applied to Mars by the team, and 20 deg is a suit capability requirement in the xEVA con ops, not a ban. (4) Stops, images, traverse, shelters and Site stats are Jezero files, and HiRISE DTMs cover a small fraction of Mars.",
+      "severity": "minor",
+      "criterion": "Presentation",
+      "proposal": "Headline: \"Every suit and environment reading carries its source tag\". Script: \"DATA is measured by a mission or set in a NASA document.\" Slide 2: \"NASA's lunar suit rules, applied to Mars\". Slide 7: \"Any site with a HiRISE terrain model: the terrain, slope and route steps take any DTM; stops and photos are per site\"."
+    }
+  ],
+  "claims_checked": [
+    {
+      "claim": "Cheyava Falls is the rock where Perseverance found a potential biosignature (script 0:00)",
+      "verdict": "supported",
+      "evidence": "Matches the mission record (sols 1212-1217, Bright Angel, Neretva Vallis) and the app's stop card images PIA26368 and PIA26401. The wording \"potential\" is correct and should stay."
+    },
+    {
+      "claim": "913 m from the habitat, 18 min and 54 g O2 to walk home (slide 2, script 0:00, video)",
+      "verdict": "overstated",
+      "evidence": "The figures come from planRoute and walkCost through tools/walkback-zone.mjs and include the 20 % pad, so the arithmetic holds (about 145 g/h at 589 W). But 913 m is a route length, the Site tab says 785 m from the habitat, and the demo says the route is 930 m. Three distances for one rock. \"On the real slopes\" hides that speed and the metabolic scaling are SIM and DERIVED."
+    },
+    {
+      "claim": "The blue area is everywhere she can reach and still get back; the video says Marswalk shows it (script 0:52, video 0:05)",
+      "verdict": "overstated",
+      "evidence": "code-facts section 4: no Dijkstra, isochrone or reach area in src; the app shows only MARGIN NOW. The zone is drawn by the presentation tooling with the app's cost code. Q&A 9 admits it is the next step."
+    },
+    {
+      "claim": "No GPS, so the suit matches the terrain to the HiRISE map (D5, slide 2, slide 5)",
+      "verdict": "overstated",
+      "evidence": "navigationDrift.js: 2 % drift, reset to 0.4 m after 5 s standing with 5 of 8 horizon rays clear and tau <= 1. No matching is computed. All tagged SIM (provenance.js:69-110)."
+    },
+    {
+      "claim": "The weather is MEDA's sol 1187: temperature, wind and dust (slide 5, script 3:41)",
+      "verdict": "false",
+      "evidence": "code-facts section 5: meda_sol.json has sol 1187 pressure, temperature and RH plus sol 312 wind. Tau 0.45 is Mastcam-Z. The clock starts at sol 1210."
+    },
+    {
+      "claim": "Radiation is RAD's measured doses from September 2017, dated by DONKI, and the screen says Gale, not Jezero (script 3:41, 4:11)",
+      "verdict": "supported",
+      "evidence": "hazards.json sep_2017_profile is DATA, 10 to 29.92 uGy/h; the pr282 banner reads \"RAD · Curiosity · Gale crater, not Jezero\". Caveats: the timeline is a stepped compression to 1 min (SIM), rad.json's real SEP curve is never read at runtime, the event baseline is 10 uGy/h against the HUD's 8.75, and DONKI supplies a date in the credits only, so listing it beside the instruments on beat 5 is decoration."
+    },
+    {
+      "claim": "NASA suit tests set the oxygen per metre (video 0:10, slide 3, slide 5)",
+      "verdict": "overstated",
+      "evidence": "Q&A 3 and suitModel.js:106-111: Minetti's gradient walking curve scaled to Mars gravity and a 202.4 kg mass. walking_metabolic is tagged DERIVED. NASA documents supply the mass, the tank size and the reserve rules, not the cost curve."
+    },
+    {
+      "claim": "MRO HiRISE terrain model at one metre per pixel drives slope, route, radio shadow (slide 5, script 3:41)",
+      "verdict": "overstated",
+      "evidence": "terrain.json: JEZ_hirise_soc_006 resampled to 751 x 751 over 1422.5 x 1500 m, about 2 m. The data is real and it does drive the mesh, cost grid, A* planner, line of sight and shelters, which is the strongest part of the entry."
+    },
+    {
+      "claim": "0.14 m RMS against NASA Mars Trek over 564,001 points (slide 6, close)",
+      "verdict": "overstated",
+      "evidence": "564,001 = 751 squared, the team's own grid nodes, compared with the same DTM as Mars Trek serves it. Q&A 4 states it proves processing, not accuracy. The slide and the close leave that out. The 0.16 m check against Perseverance positions is partly circular, since the rover is localized on the HiRISE basemap."
+    },
+    {
+      "claim": "The route goes around yellow and never crosses red; no slope over twenty degrees (D2, script 0:35)",
+      "verdict": "supported",
+      "evidence": "costGrid.js:30-62 blocks cells over 20 deg and weights cost by 1 + (slope/9)^2 + 0.6 x rock. Note WP3 Bright Angel sits on a 28.7 deg slope and the planner stops up to 20 m short, and the 15 deg caution band is SIM."
+    },
+    {
+      "claim": "Dust storm with the opacity Curiosity measured in 2018 (D7)",
+      "verdict": "supported",
+      "evidence": "hazards.json tau 8.0 (Gale 2018) is DATA and the banner says \"worst case ... not Jezero\". The 30 s rise is SIM and the spoken line does not say so."
+    },
+    {
+      "claim": "Every number on screen says where it comes from (slide 6, video close)",
+      "verdict": "overstated",
+      "evidence": "Suit, environment, margin and nav readings carry tags, and hazards.json tags 75 values (57 DATA, 7 DERIVED, 11 SIM). ETA, waypoint slope, LMST, link range and the hard-coded Site stats (MissionTable.jsx:403-407) carry none, and slide 1 shows several of them."
+    },
+    {
+      "claim": "Any HiRISE site, nothing in the pipeline depends on Jezero (slide 7, close)",
+      "verdict": "overstated",
+      "evidence": "No second site has been run. route.json, stops.json, shelters.json, traverse.json and the Site tab literals are Jezero content. Heart rate is correctly presented as not built (code-facts section 7)."
+    }
+  ],
+  "advance": {
+    "yes": true,
+    "why": "The HiRISE terrain model does real work here. It sets the slope classes, the A* route, the per-leg oxygen cost, radio line of sight and the shelters, and the DATA / DERIVED / SIM tagging with the \"Gale, not Jezero\" banner is more honest than most entries I see. The walkback margin with the Apollo 15 pad and the 30 minute reserve is a correct EVA planning idea. I advance it as a local winner, with reservations: the pitch sells three things the build does not have or does not do (the reach zone, terrain matching, a NASA-measured oxygen cost) and mislabels the MEDA wind. A global panel that checks will mark Validity down for each.",
+    "change_my_mind": "If the submitted video still shows the cyan reach zone as an app feature with no label, I vote no, because the one thing the 30 seconds promises is not in the product. Shipping the zone as a real table layer would turn that into the entry's best argument."
+  },
+  "best_use_of_data_case": "Best Use of Data is a credible target on the terrain side: one HiRISE DTM drives six computed layers and every decision the route makes, and the provenance tags are a real differentiator. Best Use of Science is weaker until the metabolic model is checked against the 2009 suited walkback test, the MEDA and DONKI rows say exactly what each contributes (sol 312 wind, a date in the credits), the unused RAD SEP curve replaces the hand-stepped timeline, and the Mars Trek figure is presented as a processing check with the 97.3 % slope-class agreement beside it."
+}
