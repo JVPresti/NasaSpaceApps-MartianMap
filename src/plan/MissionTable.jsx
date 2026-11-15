@@ -612,7 +612,8 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           <div className="table-panel">
             <div className="table-panel-head">
               <p className="table-label">{t('table.tab.route')}</p>
-              <button type="button" className="table-link" onClick={planner.replan} disabled={planner.status === 'planning'}>
+              {/* no re-plan through the stops while an event's route leads to a shelter (B1) */}
+              <button type="button" className="table-link" onClick={planner.replan} disabled={planner.status === 'planning' || Boolean(route.shelter)}>
                 {planner.status === 'planning' ? t('table.planning') : t('table.replan')}
               </button>
             </div>
