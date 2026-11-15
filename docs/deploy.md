@@ -61,7 +61,7 @@ Two processes, so two browsers on one laptop can share a room:
 1. `npm run build` once, because `wrangler dev` serves `dist/` and stops if it is missing.
 2. `npm run dev:room` runs the Worker and the rooms in a local `workerd` on port 8787.
 3. `npm run dev` runs Vite. `vite.config.js` proxies `/api` to port 8787 with `ws: true` and leaves the browser's `Origin` (`http://localhost:5173`) as it is, which the Worker accepts as localhost.
-4. Open `http://localhost:5173/?room=TEST` in two windows. Use one normal and one private window, or two tabs: the player ID lives in `sessionStorage`, so every tab is its own player and a reload keeps the same one.
+4. Open `http://localhost:5173/?room=TEST` in two windows. Use one normal and one private window, or two tabs: the player ID lives in `sessionStorage`, so every tab is its own player and a reload keeps the same one. Each window shows the join panel: type a name, pick Surface crew or Habitat and press Join the room. Nothing connects before that. Without a code, Play online on the start screen takes a code or makes a new one.
 
 Phones or a second laptop on the same Wi-Fi: `npm run dev -- --host`, then open the laptop's address with `?room=TEST`.
 

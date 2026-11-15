@@ -3,8 +3,8 @@
 
 /* ------------------------------------------------------------------ join panel */
 
-.online-join { margin-top: 24px; width: min(440px, 100%); }
-.online-join .start-actions { margin-top: 20px; width: 100%; }
+.online-join { margin-top: 16px; width: min(440px, 100%); }
+.online-join .start-actions { margin-top: 14px; width: 100%; }
 .online-join .online-wide { grid-column: 1 / -1; }
 
 .online-kicker {
@@ -31,11 +31,11 @@
 
 .online-help { margin: 6px 0 0; font-size: 13px; line-height: 1.45; color: var(--dim); }
 
-.online-field { display: grid; gap: 6px; margin-top: 16px; font-size: 14px; color: var(--dim); }
+.online-field { display: grid; gap: 4px; margin-top: 10px; font-size: 14px; color: var(--dim); }
 
 .online-field input {
-  min-height: 42px;
-  padding: 8px 12px;
+  min-height: 38px;
+  padding: 6px 12px;
   font: 500 16px/1.2 var(--font-ui);
   color: var(--ink);
   background: rgba(10, 13, 17, 0.7);
@@ -50,7 +50,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin: 16px 0 0;
+  margin: 10px 0 0;
   padding: 0;
   border: 0;
 }
@@ -72,7 +72,7 @@
 .online-role:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 1px; }
 .online-role input { position: absolute; opacity: 0; pointer-events: none; }
 .online-role-name { font: 600 18px/1.2 var(--font-display); color: var(--ink); }
-.online-role-help { font-size: 13px; line-height: 1.35; color: var(--dim); }
+.online-role-help { font-size: 13px; line-height: 1.3; color: var(--dim); }
 .online-role-seats { margin-top: 4px; font-size: 13px; color: var(--unit); }
 
 .online-play { margin-top: 12px; width: min(360px, 100%); }
