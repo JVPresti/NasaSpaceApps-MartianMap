@@ -936,6 +936,8 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
 .return-margin b { font: 600 48px/1 var(--font-display); font-variant-numeric: tabular-nums; }
 .return-margin small { margin-left: 6px; font: 400 15px var(--font-ui); color: var(--text-2); }
 .return-margin span { font-size: 14px; color: var(--text-2); }
+/* the other limit's margin, under the name of the one that sets the figure (#323) */
+.return-margin .return-margin-note { font-size: 12px; color: var(--dim); }
 
 /* ------------------------------------------------------------------ panels that share the column height */
 

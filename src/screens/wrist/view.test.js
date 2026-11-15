@@ -19,6 +19,7 @@ function suitState(overrides = {}) {
     pressurePsi: 4.3,
     oxygenSec: 7_920,
     marginSec: 2_460,
+    marginLimit: 'eva',
     status: 'caution',
     ...overrides,
   };
@@ -86,20 +87,28 @@ describe('wristView', () => {
     const model = wristView(suitState(), 'suit');
     const rows = Object.fromEntries(model.rows.map((row) => [row.label, row]));
 
-    expect(model.rows.map((row) => row.label)).toEqual(['O2', 'BATTERY', 'PRESSURE', 'O2 TIME', 'MARGIN']);
+    expect(model.rows.map((row) => row.label)).toEqual(['O2', 'BATTERY', 'PRESSURE', 'O2 TIME', 'MARGIN · EVA CLOCK']);
     expect(rows.O2.value).toBe('82 %');
     expect(rows.BATTERY.value).toBe('61 %');
     expect(rows.PRESSURE.value).toBe('4.3 psi');
     expect(rows['O2 TIME'].value).toBe('132 min');
-    expect(rows.MARGIN.value).toBe('+41 min');
+    expect(rows['MARGIN · EVA CLOCK'].value).toBe('+41 min');
     expect(rows.O2.tag).toBe('DERIVED');
     expect(rows.BATTERY.tag).toBe('DERIVED');
     expect(rows.PRESSURE.tag).toBe('DATA');
     expect(rows['O2 TIME'].tag).toBe('DERIVED');
-    expect(rows.MARGIN.tag).toBe('DERIVED');
+    expect(rows['MARGIN · EVA CLOCK'].tag).toBe('DERIVED');
     expect(model.status).toBe('CAUTION');
     expect(model.level).toBe('caution');
     expect(model.confirmable).toBe(false);
+  });
+
+  it('names the limit that sets the margin, and leaves the label plain when the store has none (#323)', () => {
+    const label = (marginLimit) => wristView(suitState({ marginLimit }), 'suit').rows[4].label;
+    expect(label('eva')).toBe('MARGIN · EVA CLOCK');
+    expect(label('o2')).toBe('MARGIN · O2');
+    expect(label(null)).toBe('MARGIN');
+    expect(label(undefined)).toBe('MARGIN');
   });
 
   it('formats missing suit values as a dash and reacts to a real suit change', () => {
@@ -139,7 +148,7 @@ describe('wristView', () => {
     setLanguage('es');
     const suit = wristView(suitState(), 'suit');
     expect(suit.title).toBe('TRAJE');
-    expect(suit.rows.map((row) => row.label)).toEqual(['O2', 'BATERÍA', 'PRESIÓN', 'TIEMPO O2', 'MARGEN']);
+    expect(suit.rows.map((row) => row.label)).toEqual(['O2', 'BATERÍA', 'PRESIÓN', 'TIEMPO O2', 'MARGEN · RELOJ EVA']);
     expect(suit.status).toBe('PRECAUCIÓN');
 
     const layers = wristView(createInitialState(), 'layers');
