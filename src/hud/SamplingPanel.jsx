@@ -1,9 +1,11 @@
 import { t, translateText } from '../i18n/index.js';
 // Sampling on the helmet HUD (#36): the checklist with the sample count, the prompt under the crosshair, and a shutter
 // flash for the helmet camera. Reads only the store (`sampling`, written by src/state/sampling.js about 5 times per second).
+import { useSyncExternalStore } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useMissionStore } from '../state/store.js';
 import { CHECKLIST, samplingPrompt } from './samplingPrompt.js';
+import { subscribeWristKeyOwner, wristOwnsKeys } from '../screens/wrist/ownership.js';
 import './sampling.css';
 
 const S = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
@@ -44,6 +46,8 @@ export function SamplingChecklist() {
 
 function SamplingPrompt() {
   const status = useMissionStore((st) => st.sampling.status);   // a new object only when the status changed (the bridge compares)
+  const wristUp = useSyncExternalStore(subscribeWristKeyOwner, wristOwnsKeys, wristOwnsKeys);
+  if (wristUp) return null;   // sampling ignores its inputs while the wrist is up (#67), so nothing marks a target
   const p = samplingPrompt(status);
   return (
     <>

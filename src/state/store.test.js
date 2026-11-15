@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createEventEngine } from '../sim/eventEngine.js';
 import exampleEvent from '../sim/events/example-event.json';
 import { LOOK_DEFAULTS, LOOK_STORAGE_KEY } from '../engine/lookSettings.js';
-import { createInitialState, resetStore, setLookSettings, setMode, setRouteDecision, storeAdapter, useMissionStore } from './store.js';
+import { chooseRouteProfile, createInitialState, resetStore, setLookSettings, setMode, setRouteDecision, storeAdapter, useMissionStore, withRouteProfile } from './store.js';
 import { createMockState } from './mock.js';
 
 beforeEach(() => resetStore());
@@ -158,5 +158,40 @@ describe('look settings (#102)', () => {
     vi.stubGlobal('localStorage', { getItem: () => '{ not json' });
     vi.resetModules();
     expect((await import('./store.js')).useMissionStore.getState().settings.look).toEqual(LOOK_DEFAULTS);
+  });
+});
+
+describe('route profiles (#245)', () => {
+  const profile = (id, x) => ({ id, ok: true, path: [[0, 0], [x, 0]], distanceM: x, climbM: 1, steepestSlopeDeg: 10, overCautionM: 0, timeSec: x, o2G: 1, shadowShare: 0.5 });
+  const profiles = { fastest: profile('fastest', 100), gentlest: profile('gentlest', 120), radio: { id: 'radio', ok: false, reason: 'no-mast' } };
+
+  it('starts on the fastest profile with none planned', () => {
+    expect(createInitialState().route).toMatchObject({ profiles: null, profile: 'fastest' });
+  });
+
+  it('makes the chosen profile the route: path, numbers and a fresh start', () => {
+    useMissionStore.setState((s) => ({ route: { ...s.route, profiles, path: profiles.fastest.path, nextIndex: 2, visited: ['WP1'] } }));
+    chooseRouteProfile('gentlest');
+    const { route } = useMissionStore.getState();
+    expect(route.profile).toBe('gentlest');
+    expect(route.path).toBe(profiles.gentlest.path);
+    expect(route).toMatchObject({ distanceM: 120, climbM: 1, steepestSlopeDeg: 10, etaSec: 120, nextIndex: 0, visited: [] });
+  });
+
+  it('ignores a profile without a route', () => {
+    useMissionStore.setState((s) => ({ route: { ...s.route, profiles, path: profiles.fastest.path } }));
+    const before = useMissionStore.getState();
+    chooseRouteProfile('radio');
+    chooseRouteProfile('nonsense');
+    expect(useMissionStore.getState()).toBe(before);
+    expect(withRouteProfile({ profiles }, 'radio')).toBeNull();
+    expect(withRouteProfile({ profiles: null }, 'fastest')).toBeNull();
+  });
+
+  it('does not restart the walk when the profile in use is chosen again', () => {
+    useMissionStore.setState((s) => ({ route: { ...s.route, profiles, profile: 'fastest', path: profiles.fastest.path, nextIndex: 2 } }));
+    const before = useMissionStore.getState();
+    chooseRouteProfile('fastest');
+    expect(useMissionStore.getState()).toBe(before);
   });
 });

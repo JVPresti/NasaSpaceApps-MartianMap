@@ -189,4 +189,16 @@ describe('store coverage', () => {
     expect(paths.length).toBeGreaterThan(50);
     expect(paths.filter((p) => !r.has(p))).toEqual([]);
   });
+
+  it('tags Perseverance on the map as Mars 2020 data from the MMGIS traverse and waypoints (#249)', () => {
+    const r = loaded();
+    const drives = r.lookup('map.traverse');
+    expect(drives.tag).toBe('DATA');
+    expect(drives.mission).toBe('Mars 2020');
+    expect(drives.link).toBe('https://mars.nasa.gov/mars2020/mission/where-is-the-rover/');
+    expect(drives.dataLink).toMatch(/M20_traverse\.json$/);
+    const pin = r.resolve('map.imagePins', { tag: 'DERIVED', label: 'Mars 2020 waypoints · MMGIS', source: 'no drive that sol' });
+    expect(pin.tag).toBe('DERIVED');
+    expect(pin.mission).toBe('Mars 2020');
+  });
 });

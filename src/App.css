@@ -31,13 +31,6 @@
   place-items: safe center;
   padding: 20px;
   background: radial-gradient(ellipse at 50% 45%, rgba(10, 13, 17, 0.55), rgba(10, 13, 17, 0.9));
-  opacity: 1;
-  transition: opacity 420ms ease;
-}
-
-.loading-screen.leaving {
-  opacity: 0;
-  pointer-events: none;
 }
 
 .loading-panel {
@@ -75,42 +68,6 @@
   font-size: 12.5px;
   letter-spacing: 0.02em;
   color: var(--dim);
-}
-
-.loading-stage {
-  min-height: 1.4em;
-  margin: 0 0 10px;
-  font-size: 13.5px;
-  color: var(--ink);
-}
-
-.loading-track {
-  height: 4px;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 0;
-}
-
-.loading-fill {
-  height: 100%;
-  background: var(--accent);
-  border-radius: inherit;
-  transform-origin: left center;
-  transition: transform 260ms ease;
-}
-
-.loading-meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 8px;
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  color: var(--dim);
-}
-
-.loading-percent {
-  color: var(--ink);
 }
 
 .loading-error-title {
@@ -155,13 +112,6 @@
 .loading-retry:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 3px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .loading-screen,
-  .loading-fill {
-    transition: none;
-  }
 }
 
 .hint {
