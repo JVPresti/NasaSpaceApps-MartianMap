@@ -443,7 +443,12 @@ export default function App() {
   // Like the topbar: off while loading, on the start screen and in the pause menu. There is no mode button any
   // more (#11: the EVA begins on the mission table and returns to it from the pause menu), but M still goes
   // through the same handler, so it also captures the mouse in Walk (#174).
-  useShortcuts(showTopbar, handleModeChange);
+  // Before the EVA has begun, M must not leave the table: Begin EVA is the only way out, behind the Go / No-go check.
+  const handleShortcutMode = useCallback((next) => {
+    if (next === 'walk' && !evaBegunRef.current) return;
+    handleModeChange(next);
+  }, [handleModeChange]);
+  useShortcuts(showTopbar, handleShortcutMode);
 
   return (
     <div className={load.status === 'ready' && phase === EVA_PHASE.START ? 'app at-start' : 'app'}>
