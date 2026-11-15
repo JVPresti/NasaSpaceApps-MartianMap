@@ -2,7 +2,7 @@ import { t, formatNumber } from '../i18n/index.js';
 // Helmet HUD (issue #20): what the astronaut reads while walking. Every value comes from the mission store; the store
 // changes a few times per second (suit 4 Hz, position 5 Hz), so these components re-render at that rate, never per frame.
 // Layout follows the v3 "Caminar · Normal" mockup; final Figma measurements come later (#11).
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
@@ -14,12 +14,12 @@ import RadioLink from './RadioLink.jsx';
 import LayerChip from './LayerChip.jsx';
 import SlopeAhead from './SlopeAhead.jsx';
 import * as I from './icons.jsx';
+import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import NavLine from './NavLine.jsx';
 import Minimap from './Minimap.jsx';
 import './hud.css';
 import { SamplingChecklist, SamplingCrosshair } from './SamplingPanel.jsx';
 import PartnerPanel from './PartnerPanel.jsx';
-import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 
 // Shared source tag (#62). The HUD never takes the pointer, so the tag shows its tag text only and puts the full
 // source in the title and the screen reader text.
@@ -280,10 +280,27 @@ function useHudDetail() {
   return detail;
 }
 
-/** The two keys a first-time player needs to find everything else. */
-function KeyHint({ detail }) {
+/**
+ * The two keys a first-time player needs to find everything else. It also owns the visor's mode classes on the .hud
+ * element: hud-detail while I is on, hud-sampling-on while a rock or the soil is in view or a sample is under way (the
+ * checklist also shows while a science card is open, see hud.css).
+ */
+function KeyHint() {
+  const ref = useRef(null);
+  const detail = useHudDetail();
+  const sampling = useMissionStore((s) => {
+    const c = s.sampling.checklist;
+    return !!(s.sampling.status && s.sampling.status.target) || c.photo || c.texture || c.sample;
+  });
+  useLayoutEffect(() => {
+    const hud = ref.current && ref.current.closest('.hud');
+    if (!hud) return undefined;
+    hud.classList.toggle('hud-detail', detail);
+    hud.classList.toggle('hud-sampling-on', sampling);
+    return () => hud.classList.remove('hud-detail', 'hud-sampling-on');
+  }, [detail, sampling]);
   return (
-    <div className="hud-keys" aria-hidden="true">
+    <div className="hud-keys" aria-hidden="true" ref={ref}>
       <span><kbd>H</kbd>{t('ui.hud.keys.controls')}</span>
       <span><kbd>I</kbd>{t(detail ? 'ui.hud.keys.fewer' : 'ui.hud.keys.instruments')}</span>
     </div>
@@ -296,20 +313,13 @@ function KeyHint({ detail }) {
  * `minimapRoute` is App's route tracker: it outlives this component so Plan mode does not reset the walk.
  */
 export default function Hud({ engine, minimapRoute }) {
-  const detail = useHudDetail();
-  // the sampling checklist joins the default set while a rock or the soil is in view, a sample is under way, or a
-  // science stop card is open (hud.css)
-  const sampling = useMissionStore((s) => {
-    const c = s.sampling.checklist;
-    return !!(s.sampling.status && s.sampling.status.target) || c.photo || c.texture || c.sample;
-  });
   return (
-    <div className={'hud' + (detail ? ' hud-detail' : '') + (sampling ? ' hud-sampling-on' : '')} aria-label={t('ui.helmet.display')}>
+    <div className="hud" aria-label={t('ui.helmet.display')}>
       <HeadingTape />
       <WaypointMarker engine={engine} />
       <SlopeAhead engine={engine} />
       <Clocks />
-      <KeyHint detail={detail} />
+      <KeyHint />
       <SuitPanel />
       <PartnerPanel />
       <LayerChip />
