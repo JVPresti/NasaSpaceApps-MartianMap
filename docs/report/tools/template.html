@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marswalk technical report</title>
+<meta name="description" content="Technical report for the NASA Space Apps 2026 Ensenada local judges: Marswalk, Interplanetary Survival Guide: Martian Map.">
+<!-- Generated from REPORT.md by tools/build.py. Edit REPORT.md, then rebuild (see README.md). -->
+<style>
+  /* Fonts and colours from the app's design tokens (src/fonts.css, src/index.css, #232). */
+  @font-face { font-family: 'Barlow'; font-weight: 400; src: url('../../src/assets/fonts/barlow-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Barlow'; font-weight: 500; src: url('../../src/assets/fonts/barlow-latin-500-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Barlow'; font-weight: 600; src: url('../../src/assets/fonts/barlow-latin-600-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Barlow Condensed'; font-weight: 500; src: url('../../src/assets/fonts/barlow-condensed-latin-500-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Barlow Condensed'; font-weight: 600; src: url('../../src/assets/fonts/barlow-condensed-latin-600-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'IBM Plex Mono'; font-weight: 400; src: url('../../src/assets/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'IBM Plex Mono'; font-weight: 500; src: url('../../src/assets/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); }
+
+  :root {
+    --bg: #0a0d11;          /* app background, used on the cover */
+    --panel: #10151c;
+    --ink: #14181d;         /* print ink */
+    --ink-soft: #3a434d;
+    --dim: #66717d;
+    --line: #d6dbe1;
+    --paper: #ffffff;
+    --accent: #ff6a2b;      /* app accent: wordmark, section rule */
+    --accent-print: #d94f14;
+    --cyan: #2bffed;
+    --tag-data: #1f9a59;
+    --tag-derived: #3f7f99;
+    --tag-sim: #b87700;
+    --font-ui: 'Barlow', system-ui, sans-serif;
+    --font-display: 'Barlow Condensed', 'Barlow', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  }
+  @page { size: A4; margin: 18mm 17mm 18mm 17mm; }
+  @page :first { margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font-ui); color: var(--ink); background: var(--paper); font-size: 10.5pt; line-height: 1.5; }
+  @media screen {
+    html { background: #e8ebee; }
+    body { max-width: 210mm; margin: 24px auto; padding: 0 0 40px; box-shadow: 0 2px 18px rgba(0,0,0,0.12); }
+    .content { padding: 0 17mm; }
+    .sheet { min-height: 297mm; }
+  }
+  @media screen and (max-width: 820px) {
+    body { margin: 0; box-shadow: none; }
+    .content { padding: 0 16px; }
+    .cover { padding: 28px 16px !important; }
+    .members { grid-template-columns: 1fr !important; }
+    figure.pair .pair-grid { grid-template-columns: 1fr !important; }
+    table { display: block; overflow-x: auto; }
+  }
+
+  /* ------------------------------------------------------------- cover */
+  .cover { background: var(--bg); color: #e9edf2; height: 297mm; padding: 22mm 18mm 16mm; display: flex; flex-direction: column; page-break-after: always; break-after: page; position: relative; }
+  .cover .kicker { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); font-size: 11pt; }
+  .cover h1 { font-family: var(--font-display); font-weight: 600; font-size: 64pt; line-height: 0.9; margin: 6mm 0 3mm; letter-spacing: 0.06em; color: var(--accent); }
+  .cover .sub { font-size: 13pt; color: #c3ccd6; margin: 0; }
+  .cover .thesis { font-family: var(--font-display); font-weight: 500; font-size: 17pt; line-height: 1.2; color: #e9edf2; margin: 8mm 0 6mm; max-width: 150mm; }
+  .cover .hero { width: 100%; border: 1px solid rgba(255,255,255,0.18); border-radius: 3px; display: block; }
+  .cover .hero-cap { font-family: var(--font-mono); font-size: 7.5pt; color: #94a1af; margin-top: 2mm; }
+  .cover .team { margin-top: auto; }
+  .cover .team-name { font-family: var(--font-display); font-weight: 600; font-size: 15pt; margin: 0 0 1mm; }
+  .cover .dev { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; font-size: 9pt; color: #94a1af; margin: 0 0 3mm; }
+  .members { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3.5mm 6mm; }
+  .member { border-top: 1px solid rgba(255,255,255,0.16); padding-top: 2mm; }
+  .m-name { font-weight: 600; font-size: 10pt; }
+  .m-role { font-size: 9pt; color: #c3ccd6; }
+  .m-mail { font-family: var(--font-mono); font-size: 8pt; color: #ffb020; }
+  .cover .url { font-family: var(--font-mono); font-size: 8.5pt; color: var(--cyan); margin-top: 5mm; }
+  .confirm { font-family: var(--font-mono); font-size: 0.85em; color: #b87700; background: #fff3d6; padding: 0 3px; border-radius: 2px; }
+  .cover .confirm { background: transparent; color: #ffb020; }
+
+  /* ------------------------------------------------------------- index */
+  .index-page { page-break-after: always; break-after: page; padding-top: 4mm; }
+  .toc { list-style: none; padding: 0; margin: 6mm 0 0; font-size: 11.5pt; }
+  .toc li { display: flex; align-items: baseline; gap: 2mm; padding: 1.6mm 0; }
+  .toc .lvl1 { font-weight: 600; }
+  .toc .lvl2 { padding-left: 8mm; font-weight: 400; color: var(--ink-soft); font-size: 10.5pt; }
+  .toc .dots { flex: 1; border-bottom: 1px dotted #a9b1ba; transform: translateY(-3px); }
+  .toc .pg { font-family: var(--font-mono); font-size: 10pt; min-width: 6mm; text-align: right; }
+
+  /* ------------------------------------------------------------- body */
+  h2 { font-family: var(--font-display); font-weight: 600; font-size: 22pt; line-height: 1.05; margin: 0 0 4mm; padding-top: 2mm; border-top: 3px solid var(--accent); page-break-before: always; break-before: page; page-break-after: avoid; break-after: avoid; }
+  .index-page h2 { page-break-before: auto; break-before: auto; }
+  h3 { font-family: var(--font-display); font-weight: 600; font-size: 14pt; margin: 6mm 0 2mm; page-break-after: avoid; break-after: avoid; }
+  h4 { font-family: var(--font-display); font-weight: 600; font-size: 12pt; margin: 4mm 0 1mm; }
+  p { margin: 0 0 2.6mm; text-align: justify; hyphens: auto; }
+  ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+  li { margin-bottom: 1.2mm; }
+  strong { font-weight: 600; }
+  a { color: #1f5fa8; text-decoration: none; word-break: break-word; }
+  code { font-family: var(--font-mono); font-size: 0.86em; background: #f1f3f5; padding: 0 3px; border-radius: 2px; }
+  blockquote { margin: 0 0 3mm; padding: 2mm 0 2mm 5mm; border-left: 3px solid var(--line); color: var(--ink-soft); font-style: italic; }
+  blockquote p { margin-bottom: 2mm; }
+  table { width: 100%; border-collapse: collapse; margin: 2mm 0 4mm; font-size: 8.8pt; line-height: 1.35; page-break-inside: auto; }
+  tr { page-break-inside: avoid; break-inside: avoid; }
+  th { text-align: left; font-family: var(--font-display); font-weight: 600; font-size: 9.5pt; letter-spacing: 0.02em; border-bottom: 1.5px solid var(--ink); padding: 1.4mm 2mm; }
+  td { border-bottom: 1px solid var(--line); padding: 1.4mm 2mm; vertical-align: top; }
+  .tag { font-family: var(--font-mono); font-weight: 500; font-size: 7.5pt; padding: 0 4px; border: 1.2px solid currentColor; border-radius: 2px; white-space: nowrap; }
+  .t-DATA { color: var(--tag-data); } .t-DERIVED { color: var(--tag-derived); } .t-SIM { color: var(--tag-sim); }
+  figure { margin: 3mm 0 5mm; page-break-inside: avoid; break-inside: avoid; }
+  figure img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 2px; }
+  figure.pair .pair-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; }
+  figcaption { font-family: var(--font-mono); font-size: 8pt; color: var(--dim); text-align: center; margin-top: 1.8mm; }
+</style>
+</head>
+<body>
+<section class="cover">
+  <div class="kicker">NASA Space Apps Challenge 2026 · Ensenada</div>
+  <h1>MARSWALK</h1>
+  <p class="sub">Technical report for the local judges · Interplanetary Survival Guide: Martian Map</p>
+  <p class="thesis">On Mars, the question isn't where you can go. It's where you can go and still get home.</p>
+  <img class="hero" src="img/03-route-terrain.jpg" alt="The mission table with the Terrain layer and the route to Cheyava Falls">
+  <div class="hero-cap">The mission table: a 0.94 km route to Cheyava Falls on HiRISE terrain, bending around slopes over 20°.</div>
+  <div class="team">
+    <p class="team-name">Los Frijolitos Espaciales Refritos Nueva Generación</p>
+    <p class="dev">Development team</p>
+    <div class="members">%%MEMBERS%%</div>
+    <div class="url">%%URL%%</div>
+  </div>
+</section>
+<div class="content">
+  <section class="index-page">
+    <h2>Index</h2>
+    %%INDEX%%
+  </section>
+  %%BODY%%
+</div>
+</body>
+</html>
