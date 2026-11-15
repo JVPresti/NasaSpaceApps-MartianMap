@@ -21,8 +21,9 @@
  *   LMST = MT + east longitude / 15        (NASA Mars24, https://www.giss.nasa.gov/tools/mars24/help/notes.html)
  *
  * The demo sol number and start times are SIM values: a plausible EVA, not a historical measurement and
- * not a precise ephemeris. Nothing here changes the Sun or the sky (#73): the starting sky preset is
- * recorded only so the restored session opens in the same light.
+ * not a precise ephemeris. The clock itself never changes the sky: the engine bridge turns its time into
+ * the Sun's position (src/state/skyTime.js, #73). The starting sky preset is recorded so the restored
+ * session opens in the same light, and a dust_storm start keeps the storm look.
  *
  * Plain JavaScript. No React, no three.js, no store import: pass any object with getState / setState /
  * subscribe, as `src/state/store.js` provides.
@@ -48,7 +49,7 @@ export const SKY_PRESETS = Object.freeze(['clear_day', 'dust_storm', 'late_after
 
 /**
  * Coarse demo start times for the alternate sky presets. These are selectable starting configurations,
- * not sun-position calculations: the clock never drives the sky (#73). A caller-provided `initialLmst`
+ * not sun-position calculations (the Sun follows the clock time instead, #73). A caller-provided `initialLmst`
  * overrides the preset.
  */
 export const DEMO_START_LMST_BY_SKY = Object.freeze({
@@ -528,7 +529,7 @@ export function startMissionClock({
   }
 
   // Initial publication also applies the starting sky and source tags. Later ticks never touch view.sky:
-  // the clock does not drive the Sun or the atmosphere (#73).
+  // the Sun follows the published time through the engine bridge (#73), not through view.sky.
   const first = clockReading(session, now());
   published = readoutFields(first);
   store.setState((state) => ({
