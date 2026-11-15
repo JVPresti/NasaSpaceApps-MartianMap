@@ -395,6 +395,8 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       },
       sun: () => sys.sky.sun,   // the Sun while the mission clock drives the sky (#73), else null
       habitatY: () => sys.habitat.pos.y,
+      // the habitat origin and the unit vector toward its airlock end, so scripts/measure-demo.mjs can walk back into the cabin
+      habitat: () => ({ x: sys.habitat.pos.x, z: sys.habitat.pos.z, dirX: sys.habitat.dir.x, dirZ: sys.habitat.dir.z }),
       groundUnderHabitat: () => ctx.terrain.meshH(sys.habitat.pos.x, sys.habitat.pos.z),
       setTier: (name) => quality.request(name),
       walking: (on) => { ctx.view.keys.KeyW = !!on; },
