@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 // Waypoint name in the route panel (#66). A waypoint with a science stop is a button that opens its card; any other
 // waypoint stays plain text, so keyboard and screen reader users meet no control that does nothing.
 import { stopForWaypoint } from '../data/stops.js';
@@ -17,7 +18,7 @@ export default function WaypointName({ name, className = 'waypoint-name' }) {
     <button
       type="button"
       className={`${className} waypoint-select`}
-      title={`${name} · science stop`}
+      title={t('ui.p0.science.stop', { p0: name })}
       aria-expanded={open}
       aria-controls={open ? PLAN_CARD_ID : undefined}
       onClick={() => toggleWaypoint(name)}

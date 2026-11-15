@@ -1,3 +1,4 @@
+import { subscribeLanguage } from '../i18n/index.js';
 // Marswalk engine: the Cheyava Falls scene (Neretva Vallis, Jezero crater) as a module with its own render loop.
 // Ported from docs/marswalk-assets/testbench-reference/main.js. No React and no page DOM: the engine owns one
 // <canvas> inside the container it is given and removes it on dispose().
@@ -6,6 +7,8 @@
 //   await engine.ready;          // resolves after the first frame is actually rendered, rejects on failure
 //   engine.setMode('plan' | 'walk');
 //   engine.setLayer(0..4); engine.setSky('clear_day'); engine.setRoute([[x, z], ...]);
+//   engine.requestPointerLock(); engine.releasePointerLock(); engine.setInputEnabled(false);
+//   engine.setQuality('auto' | 'high' | 'low'); engine.getQuality(); engine.resetSession();
 //   engine.heightAt(x, z); engine.slopeAt(x, z); engine.lineOfSight(a, b); engine.getPlayer();
 //   // wrist screen app (#67), wrist.js: the interface draws the canvas, the engine shows it on the arm
 //   engine.setWristScreen(canvas | null); engine.invalidateWristScreen(); engine.setWristOpen(true | false);
@@ -26,9 +29,11 @@ import { validShelter } from './shelterRules.js';
 import { createSlopeZone } from './slopeZone.js';
 import { createRadioShadow } from './radioShadow.js';
 import { createWaypointMarkers } from './waypoints.js';
+import { createFindsApi } from './finds.js';
 import { metresPerPixel } from './planView.js';
 import { createUniforms } from './uniforms.js';
 import { TIERS, detectTier } from './tiers.js';
+import { createQualityController, QUALITY_OPTIONS } from './quality.js';
 import { createTerrain } from './terrain.js';
 import { buildSky, applyPreset, applySkyBlend } from './atmosphere.js';
 import { createRocks, buildCheyava, buildOutcrop } from './rocks.js';
@@ -41,8 +46,11 @@ import { createLegs } from './legs.js';
 import { createArms } from './arms.js';
 import { createProps } from './props.js';
 import { createSampling } from './sampling.js';
+import { createSampleDust } from './sampleDust.js';
+import { createSlopeGrid } from './slopeGrid.js';
 import { createHabitat } from './habitat.js';
-import { createView, createViewState } from './view.js';
+import { createView, createViewState, CHEYAVA_VIEW } from './view.js';
+import { airlockExit, partnerPatrol } from './spawn.js';
 import { canOpenWrist, wristRestoreState } from './wrist.js';
 import { createLoadLifecycle } from './lifecycle.js';
 import { createProgressTracker } from './progress.js';
@@ -53,23 +61,31 @@ export const SKIES = ['clear_day', 'dust_storm', 'late_afternoon', 'night'];
 
 /**
  * @param {HTMLElement} container element the canvas fills; its size drives the render size
- * @param {{ assetBase: string, mode?: 'plan' | 'walk', tier?: 'high' | 'low' | null, debug?: boolean,
- *   onStatus?: (text: string) => void, onProgress?: (progress: { loaded: number, failed: number, total: number, ratio: number }) => void, onError?: (err: Error) => void }} options
+ * @param {{ assetBase: string, mode?: 'plan' | 'walk', tier?: 'high' | 'low' | null, inputEnabled?: boolean,
+ *   debug?: boolean,
+ *   onStatus?: (text: string) => void, onProgress?: (progress: { loaded: number, failed: number, total: number, ratio: number }) => void,
+ *   onError?: (err: Error) => void, onLockChange?: (locked: boolean) => void }} options
  *   tier: force a quality tier and turn off the automatic choice (the app passes ?tier=high|low).
+ *   inputEnabled: false starts with gameplay input gated off, for a start screen or a menu.
  *   debug: expose window.__marswalk for measuring (development builds only).
  */
-export function createEngine(container, { assetBase, mode = 'walk', tier = null, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {}, onLockChange = () => {} } = {}) {
+export function createEngine(container, { assetBase, mode = 'plan', tier = null, inputEnabled: inputEnabledOption = true, debug = false, onStatus = () => {}, onProgress = () => {}, onError = () => {}, onLockChange = () => {} } = {}) {
   if (!assetBase) throw new Error('createEngine: assetBase is required');
   assertWebGL2();
 
-  let alive = true, started = false, firstFrame = false, requestedMode = mode, viewCtl = null, waypoints = null, wristPose = null;
-  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, wristScreen: null };   // set before boot ends, applied when ready
+  let alive = true, started = false, firstFrame = false, walked = false, requestedMode = mode, viewCtl = null, waypoints = null, wristPose = null;
+  let inputEnabled = inputEnabledOption !== false;
+  let pendingLock = null, pendingLockResolve = null;
+  let pendingReset = false;
+  const pending = { sky: null, skyBlend: null, route: null, shelter: null, waypoints: null, dust: 0, slopeZone: null, radioShadow: null, slopeGrid: false, wristScreen: null };   // set before boot ends, applied when ready
   const ac = new AbortController(), { signal } = ac;
 
   // `ready` resolves only once tick() has drawn a frame; bootstrap completion alone is not enough.
   let resolveReady, rejectReady;
   const ready = new Promise((resolve, reject) => { resolveReady = resolve; rejectReady = reject; });
   ready.catch(() => {});   // consumers may only attach later or dispose during boot
+  let resolveDisposed;
+  const disposed = new Promise((resolve) => { resolveDisposed = resolve; });
 
   const lifecycle = createLoadLifecycle({ onStatus, onProgress, onError });
   const status = (text) => lifecycle.status(text);
@@ -115,9 +131,22 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     U: createUniforms(), assets: createAssets(assetBase, { tracker, signal }),
     view: createViewState(), sys: {},
     T: null, RING: null, PRESETS: null, terrain: null,
-    tier: initialTier, tierAuto: !forcedTier, orthoCache: {}, presetName: 'clear_day', gpu: detected.gpu,
+    tier: initialTier, orthoCache: {}, presetName: 'clear_day', gpu: detected.gpu,
   };
   const { U, assets, sys } = ctx;
+  const unsubscribeLanguage = subscribeLanguage(() => {
+    if (started && alive) { sys.arms.draw(); sys.habitat.screens.draw(); }
+  });
+  signal.addEventListener('abort', unsubscribeLanguage, { once: true });
+
+  // Serialises UI and automatic quality changes. The actual work is applyTier below.
+  const quality = createQualityController({
+    apply: (name) => applyTier(name),
+    detect: () => detectTier(renderer).tier,
+    initialTier,
+    initialAuto: !forcedTier,
+    onError: (cause) => { if (alive) console.warn('Could not change scene quality', cause); },
+  });
 
   function resize() {
     const w = Math.max(1, container.clientWidth), h = Math.max(1, container.clientHeight);
@@ -126,7 +155,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
   const ro = new ResizeObserver(resize); ro.observe(container); resize();
 
   // ---------------------------------------------------------------- tiers (bench lines 810-822)
-  async function setTier(name) {
+  async function applyTier(name) {
     const t = TIERS[name];
     if (!ctx.orthoCache[name]) ctx.orthoCache[name] = await assets.tex(t.ortho, { aniso: t.aniso });
     if (!alive) return;
@@ -140,6 +169,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     if (sys.routeGlow) sys.routeGlow.rebuild();  // re-drape the route on the new mesh
     if (sys.shelter) sys.shelter.rebuild();
     if (sys.prints) sys.prints.setTier(name);
+    if (sys.slopeGrid) sys.slopeGrid.rebuild();
     if (sys.dust) sys.dust.setTier(name);
   }
 
@@ -162,12 +192,15 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     if (sys.arms.L) sys.arms.L.g.visible = sys.arms.R.g.visible = eyeMode;   // first-person arms only in Walk
     U.uTime.value += dt; sys.partner.update(dt); sys.arms.update(dt); sys.legs.update(dt, eyeMode ? ctx.view.moveSpeed : 0); sys.props.update(dt); sys.habitat.update(dt);
     sys.sampling.update(dt);   // after props: follows the clip and the scoop content (#36)
+    sys.sampleDust.update(dt);   // after sampling: the puff and the scrape when the scoop reaches the ground (#50)
+    sys.slopeGrid.update(dt);
     sys.routeGlow.update(dt, eyeMode ? ctx.view.eye : null);
     sys.shelter.update(dt, ctx.view.eye, camera);
     sys.prints.update(dt);
     sys.dust.update(dt);
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
+    if (waypoints?.group.visible) waypoints.update(camera, container.clientHeight);   // fixed-size labels (#198)
     renderer.render(scene, camera);
     if (!firstFrame) {
       firstFrame = true;
@@ -180,13 +213,15 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     if (acc > 1000) {
       const fps = Math.round(frames * 1000 / acc);
       lastStats = { fps, worstMs: Math.round(worst) };
-      // auto tier: three slow seconds in a row on High -> Low
-      if (ctx.tierAuto && ctx.tier === 'high' && now - booted > 3000) {
+      // auto tier: three slow seconds in a row on High -> Low. The controller serialises this with a
+      // user choice made from the pause menu, so the two can never interleave.
+      const q = quality.get();
+      if (q.auto && !q.pending && ctx.tier === 'high' && now - booted > 3000) {
         slowWindows = (fps < 40 && worst < 250 && !document.hidden) ? slowWindows + 1 : 0;
         if (slowWindows >= 3) {
-          // A failed optional quality download must leave the current scene running.
-          ctx.tierAuto = false;
-          setTier('low').catch((cause) => { if (alive) console.warn('Could not change scene quality', cause); });
+          slowWindows = 0;
+          // A failed optional quality download leaves the current scene running and reports through the controller.
+          quality.degrade('low');
         }
       }
       frames = 0; acc = 0; worst = 0;
@@ -205,9 +240,19 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     // subsystems: created now (terrain data is known), loaded below in the bench's order
     ctx.terrain = createTerrain(ctx);
     sys.rocks = createRocks(ctx); sys.route = createRoute(ctx); sys.cast = createCast(ctx);
-    sys.partner = createPartner(ctx); sys.partner.setSource(createScriptedPartner({ id: CREW[1].id, color: CREW[1].color })); sys.arms = createArms(ctx); sys.legs = createLegs(ctx); sys.props = createProps(ctx); sys.habitat = createHabitat(ctx);
+    sys.partner = createPartner(ctx); sys.arms = createArms(ctx); sys.legs = createLegs(ctx); sys.props = createProps(ctx); sys.habitat = createHabitat(ctx);
     sys.arms.setScreenCanvas(pending.wristScreen);   // the app's canvas may have arrived before boot reached the arms
-    viewCtl = createView(ctx, canvas, signal, { onLockChange: (locked) => { if (alive) onLockChange(locked); } });
+    viewCtl = createView(ctx, canvas, signal, {
+      inputEnabled,
+      onLockChange: (locked) => { if (alive) onLockChange(locked); },
+    });
+    if (pendingLockResolve) {
+      // A request made before ready has no live user gesture left by now; report the browser's real outcome.
+      const resolvePending = pendingLockResolve;
+      pendingLockResolve = null;
+      pendingLock = null;
+      viewCtl.requestPointerLock().then(resolvePending);
+    }
 
     status('Loading textures…');
     const tr = TIERS[ctx.tier];
@@ -239,10 +284,13 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     await sys.legs.init(); if (!alive) return;
     await sys.props.init(); if (!alive) return;
     sys.sampling = createSampling(ctx, canvas, signal);
+    sys.sampleDust = createSampleDust(ctx);
+    sys.slopeGrid = createSlopeGrid(ctx); sys.slopeGrid.set(pending.slopeGrid);
 
     status('Loading the habitat…');
     U.uRelief.value = tj.range_m; sys.route.data = await assets.json('route.json'); if (!alive) return;
     await sys.habitat.init(); if (!alive) return;
+    placeAtAirlock();   // the player shows at the airlock on the Plan map too
 
     if (!alive) return;
     sys.routeGlow = createRouteGlow(ctx);
@@ -260,7 +308,11 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     if (pending.skyBlend) applySkyBlend(ctx, pending.skyBlend.from, pending.skyBlend.to, pending.skyBlend.t);
     waypoints.set(pending.waypoints);
     waypoints.group.visible = requestedMode === 'plan';
-    viewCtl.setMode(requestedMode); started = true;
+    viewCtl.setMode(requestedMode); started = true; walked = requestedMode === 'walk';
+    if (pendingReset) {
+      pendingReset = false;
+      resetToAirlock();
+    }
     booted = last = performance.now();
     renderer.setAnimationLoop(tick);
   })();
@@ -273,14 +325,33 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
   /** Last one-second measurement. Plain data, safe to poll; the engine never calls back from its frame loop. */
   function stats() {
     const r = renderer.info.render;
-    return { ...lastStats, tier: ctx.tier, auto: ctx.tierAuto, gpu: ctx.gpu, triangles: r.triangles, drawCalls: r.calls };
+    return { ...lastStats, tier: ctx.tier, auto: quality.get().auto, gpu: ctx.gpu, triangles: r.triangles, drawCalls: r.calls };
+  }
+
+  function setPose(x, z, yaw, pitch = 0) { ctx.view.eye.set(x, 0, z); ctx.view.yaw = yaw; ctx.view.pitch = pitch; }
+  // The EVA start (#166): outside the airlock facing the first waypoint (spawn.js), the partner beside the player.
+  function placeAtAirlock() {
+    const exit = airlockExit(sys.habitat.pos, sys.habitat.dir, sys.route.data.waypoints[1]);
+    setPose(exit.x, exit.z, exit.yaw);
+    sys.partner.setSource(createScriptedPartner({ id: CREW[1].id, color: CREW[1].color, ...partnerPatrol(exit) }));
+    return exit;
+  }
+  // Restart (#64): back to the airlock in Plan, and the next Walk starts the EVA again.
+  function resetToAirlock() {
+    walked = false;
+    requestedMode = 'plan';
+    viewCtl.reset(placeAtAirlock(), 'plan');
+    if (waypoints) waypoints.group.visible = true;
   }
 
   // Development hook for scripts/measure-fps.mjs: put the camera at a known spot and read stats().
   if (debug) {
-    const place = (x, z, yaw, pitch = 0) => { viewCtl.setMode('walk'); requestedMode = 'walk'; ctx.view.eye.set(x, 0, z); ctx.view.yaw = yaw; ctx.view.pitch = pitch; };
+    const place = (x, z, yaw, pitch = 0) => { viewCtl.setMode('walk'); requestedMode = 'walk'; walked = true; setPose(x, z, yaw, pitch); };
     window.__marswalk = {
       stats, place,
+      // the EVA start (spawn.js) and the test bench's old start near Cheyava Falls
+      airlock() { const e = placeAtAirlock(); place(e.x, e.z, e.yaw); },
+      cheyavaView() { place(CHEYAVA_VIEW.x, CHEYAVA_VIEW.z, CHEYAVA_VIEW.yaw); },
       setMode: (m) => { requestedMode = m; viewCtl.setMode(m); },
       // the bench's 'habin' and 'hab' views (testbench main.js lines 802-803)
       insideHabitat() { const h = sys.habitat; place(h.pos.x + h.dir.x * 1.45, h.pos.z + h.dir.z * 1.45, Math.atan2(-h.dir.x, h.dir.z), 0.12); },
@@ -290,7 +361,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       },
       habitatY: () => sys.habitat.pos.y,
       groundUnderHabitat: () => ctx.terrain.meshH(sys.habitat.pos.x, sys.habitat.pos.z),
-      setTier: (name) => { ctx.tierAuto = false; return setTier(name); },
+      setTier: (name) => quality.request(name),
       walking: (on) => { ctx.view.keys.KeyW = !!on; },
       partnerCommand: (name) => sys.partner.command(name),
       setPartnerSource: (source) => sys.partner.setSource(source),
@@ -300,6 +371,9 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       pose: () => ({ camY: camera.position.y, x: ctx.view.eye.x, z: ctx.view.eye.z, yaw: ctx.view.yaw, pitch: ctx.view.pitch, mode: ctx.view.mode, moveSpeed: ctx.view.moveSpeed }),
     };
   }
+
+  // unexpected finds (#71): setFinds, aimGround and setPointing in the API below
+  const finds = createFindsApi(ctx, { isStarted: () => started && alive });
 
   function terrainQueries() {
     if (!ctx.terrain) throw new Error('engine is not ready: wait for engine.ready before querying the terrain');
@@ -336,15 +410,92 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
   return {
     ready,
     stats,
+    setFinds: finds.setFinds,
+    aimGround: finds.aimGround,
+    setPointing: finds.setPointing,
     /** @param {'plan' | 'walk'} m */
     setMode(m) {
       if (m !== 'plan' && m !== 'walk') throw new Error('setMode: expected "plan" or "walk", got ' + m);
       requestedMode = m;
       if (m === 'plan') setWrist(false);   // the wrist screen cannot stay up in Plan (#67)
       if (started) {
+        // The first Walk starts the EVA at the airlock (#166). The partner patrolled during Plan, so it is placed again
+        // beside the player. Later switches keep both where they are.
+        if (m === 'walk' && !walked) { walked = true; placeAtAirlock(); }
         viewCtl.setMode(m);   // before boot ends, the mode is applied when ready
         if (waypoints) waypoints.group.visible = m === 'plan';
       }
+    },
+    /**
+     * Freeze or allow gameplay input. Menus disable it so WASD, arrows and mouse look cannot act behind them;
+     * disabling also clears every held key, so no key stays stuck while paused.
+     */
+    setInputEnabled(enabled) {
+      inputEnabled = enabled === true;
+      if (viewCtl) viewCtl.setInputEnabled(inputEnabled);
+    },
+    /**
+     * Ask the browser for pointer lock on the engine canvas. Supports the legacy void form and the promise
+     * form, and resolves false on refusal, on an unsupported browser, on the watchdog timeout, on release
+     * or on dispose. Concurrent calls share one request. A call before `ready` is queued and reported when
+     * the canvas exists.
+     * @returns {Promise<boolean>}
+     */
+    requestPointerLock() {
+      if (viewCtl) return viewCtl.requestPointerLock();
+      if (pendingLock) return pendingLock;
+      pendingLock = new Promise((resolve) => { pendingLockResolve = resolve; });
+      return pendingLock;
+    },
+    /** Release the pointer lock now, if any. A queued pre-ready request resolves false. */
+    releasePointerLock() {
+      if (pendingLockResolve) {
+        const resolvePending = pendingLockResolve;
+        pendingLockResolve = null;
+        pendingLock = null;
+        resolvePending(false);
+      }
+      if (viewCtl) viewCtl.releasePointerLock();
+    },
+    isPointerLocked() { return viewCtl ? viewCtl.isPointerLocked() : false; },
+    /**
+     * Quality choice: 'auto' uses the tier detected from the GPU and re-enables the slow-frame downgrade;
+     * 'high' and 'low' force a tier and turn the automatic downgrade off. Changes are serialised, so rapid
+     * clicks cannot interleave two terrain rebuilds.
+     * @param {'auto' | 'high' | 'low'} option
+     * @returns {Promise<{ tier: string, auto: boolean, pending: boolean, error: string | null, gpu: string }>}
+     */
+    setQuality(option) {
+      if (!QUALITY_OPTIONS.includes(option)) throw new Error('setQuality: expected one of ' + QUALITY_OPTIONS.join(', ') + ', got ' + option);
+      const finish = (result) => ({ ...result, gpu: detected.gpu });
+      if (started) return quality.request(option).then(finish);
+      if (!alive) return Promise.resolve(finish({ ...quality.get(), pending: false, error: 'engine disposed' }));
+      return Promise.race([
+        ready.then(
+          () => quality.request(option).then(finish),
+          (cause) => finish({ ...quality.get(), pending: false, error: (cause && cause.message) || 'engine not ready' }),
+        ),
+        disposed.then(() => finish({ ...quality.get(), pending: false, error: 'engine disposed' })),
+      ]);
+    },
+    /** Current real quality state, without going through the development-only window hook. */
+    getQuality() { return { ...quality.get(), gpu: detected.gpu }; },
+    /**
+     * Return the scene to the EVA spawn: clear input, release the lock, drop the route/shelter markers and
+     * put the player back at the airlock in Plan (#166); the next Walk starts the EVA again. The store reset and simulation restart are the caller's job
+     * (src/state/evaSession.js) because the engine owns no simulation. Quality is deliberately untouched.
+     * @returns {boolean} false when called before ready (the reset is applied at the end of boot)
+     */
+    resetSession() {
+      if (!alive) return false;
+      requestedMode = 'plan';   // a new EVA starts at the planning table, like the reset store (#166)
+      if (!started) { pendingReset = true; return false; }
+      viewCtl.setInputEnabled(false);
+      resetToAirlock();
+      if (sys.routeGlow) sys.routeGlow.setPath(null);
+      if (sys.shelter) sys.shelter.set(null);
+      if (waypoints) waypoints.set(null);
+      return true;
     },
     /** Data layer drawn on the terrain: 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop. */
     setLayer(n) {
@@ -412,6 +563,10 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       const clamped = Math.max(0, Math.min(1, t));
       if (started) applySkyBlend(ctx, from, to, clamped);
       else pending.skyBlend = { from, to, t: clamped };
+    },
+    /** Slope grid in Walk mode (slopeGrid.js, #50): lines on the ground around the player coloured by slope. */
+    setSlopeGrid(on) {
+      if (started) sys.slopeGrid.set(!!on); else pending.slopeGrid = !!on;
     },
     /**
      * Storm dust (dust.js, #27), 0 = clear (the scene as before) to 1 = global storm: thicker, drifting haze on everything
@@ -519,6 +674,14 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
     /** Scripted actions of the current source: 'toggleCase', 'visitHabitat'. Returns false if the source ignores it. */
     partnerCommand(name) { return sys.partner ? sys.partner.command(name) : false; },
     /**
+     * The partner as its source reported it on the last frame: { id, color, state } with the PartnerState
+     * (docs/PARTNER.md), or null without a source. state is null until the first frame. Read by the partner runner (#70).
+     */
+    getPartner() {
+      const p = sys.partner;
+      return p && p.source ? { id: p.source.id, color: p.source.color, state: p.state } : null;
+    },
+    /**
      * Sampling (sampling.js, #36): what the crosshair is on, the clip phase, the partner's case and what each input does now.
      * Plain data for the store bridge; null before the scene is ready.
      */
@@ -538,6 +701,15 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       lifecycle.close();
       if (debug && window.__marswalk && window.__marswalk.stats === stats) delete window.__marswalk;
       renderer.setAnimationLoop(null);
+      if (pendingLockResolve) {
+        const resolvePending = pendingLockResolve;
+        pendingLockResolve = null;
+        pendingLock = null;
+        resolvePending(false);
+      }
+      resolveDisposed();
+      if (viewCtl) viewCtl.dispose();
+      quality.dispose();
       ac.abort(); ro.disconnect(); controls.dispose();
       if (sys.prints) sys.prints.dispose();
       if (sys.arms) sys.arms.dispose();   // wrist screen textures once: the material sweep below no longer sees them (#67)
@@ -555,6 +727,7 @@ export function createEngine(container, { assetBase, mode = 'walk', tier = null,
       for (const t of textures) t.dispose();
       if (sys.cast) sys.cast.rt.dispose();
       if (waypoints) waypoints.dispose();
+      finds.dispose();
       if (sys.slopeZone) sys.slopeZone.dispose();
       if (sys.radioShadow) sys.radioShadow.dispose();
       if (ctx.terrain && ctx.terrain.shadowTex) ctx.terrain.shadowTex.dispose();

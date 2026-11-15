@@ -1,3 +1,4 @@
+import { t, formatNumber } from '../i18n/index.js';
 /**
  * Pure helpers for the Plan route panel.
  *
@@ -25,10 +26,10 @@ export function waypointKey(waypoints) {
 export function formatDuration(seconds) {
   if (!Number.isFinite(seconds) || seconds <= 0) return '—';
   const minutes = Math.ceil(seconds / 60);
-  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 60) return t('ui.p0.min', { p0: minutes });
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  return rest ? `${hours} h ${rest} min` : `${hours} h`;
+  return rest ? t('ui.p0.h.p1.min', { p0: hours, p1: rest }) : `${hours} h`;
 }
 
 /**
@@ -39,7 +40,7 @@ export function formatDuration(seconds) {
  */
 export function planSummary(route) {
   return {
-    distance: Number.isFinite(route?.distanceM) ? `${(route.distanceM / 1000).toFixed(2)} km` : '—',
+    distance: Number.isFinite(route?.distanceM) ? t('ui.p0.km', { p0: formatNumber(route.distanceM / 1000, 2) }) : '—',
     climb: Number.isFinite(route?.climbM) ? `+${Math.round(route.climbM)} m` : '—',
     steepest: Number.isFinite(route?.steepestSlopeDeg) ? `${Math.round(route.steepestSlopeDeg)}°` : '—',
     eta: formatDuration(route?.etaSec),
@@ -51,11 +52,11 @@ export function planSummary(route) {
  * the panel resolves to one of these.
  */
 export const ROUTE_SOURCES = Object.freeze({
-  'route.path': { tag: 'DERIVED', source: 'A* planner · HiRISE DTM' },
-  'route.distanceM': { tag: 'DERIVED', source: 'A* planner · HiRISE DTM' },
-  'route.climbM': { tag: 'DERIVED', source: 'A* planner · HiRISE DTM' },
-  'route.steepestSlopeDeg': { tag: 'DERIVED', source: 'A* planner · HiRISE DTM' },
-  'route.etaSec': { tag: 'DERIVED', source: 'suit model · hazards.json walking speed' },
+  'route.path': { tag: 'DERIVED', get source() { return t('ui.a.planner.hirise.dtm'); } },
+  'route.distanceM': { tag: 'DERIVED', get source() { return t('ui.a.planner.hirise.dtm'); } },
+  'route.climbM': { tag: 'DERIVED', get source() { return t('ui.a.planner.hirise.dtm'); } },
+  'route.steepestSlopeDeg': { tag: 'DERIVED', get source() { return t('ui.a.planner.hirise.dtm'); } },
+  'route.etaSec': { tag: 'DERIVED', get source() { return t('ui.suit.model.hazards.json.walking.speed'); } },
 });
 
 const finite = (value) => typeof value === 'number' && Number.isFinite(value);
@@ -75,30 +76,30 @@ export function routeMetrics(route) {
   const dash = '—';
   return [
     {
-      key: 'distance', label: 'Distance', unit: 'km', path: 'route.distanceM',
-      value: finite(route?.distanceM) ? (route.distanceM / 1000).toFixed(2) : dash,
+      key: 'distance', get label() { return t('ui.distance'); }, unit: 'km', path: 'route.distanceM',
+      value: finite(route?.distanceM) ? formatNumber(route.distanceM / 1000, 2) : dash,
     },
     {
-      key: 'climb', label: 'Climb', unit: 'm', path: 'route.climbM',
+      key: 'climb', get label() { return t('ui.climb'); }, unit: 'm', path: 'route.climbM',
       value: finite(route?.climbM) ? `+${Math.round(route.climbM)}` : dash,
     },
     {
-      key: 'steepest', label: 'Steepest', unit: '°', path: 'route.steepestSlopeDeg',
+      key: 'steepest', get label() { return t('ui.steepest'); }, unit: '°', path: 'route.steepestSlopeDeg',
       value: finite(route?.steepestSlopeDeg) ? String(Math.round(route.steepestSlopeDeg)) : dash,
     },
     {
-      key: 'time', label: 'Walk out', unit: 'min', path: 'route.etaSec',
+      key: 'time', get label() { return t('ui.walk.out'); }, unit: 'min', path: 'route.etaSec',
       value: finite(route?.etaSec) && route.etaSec > 0 ? String(Math.ceil(route.etaSec / 60)) : dash,
     },
     {
-      key: 'o2', label: 'O2 out', unit: 'g', path: 'route.totals.o2G',
+      key: 'o2', get label() { return t('ui.o2.out'); }, unit: 'g', path: 'route.totals.o2G',
       value: finite(totals?.o2G) ? String(Math.round(totals.o2G)) : dash,
-      detail: finite(totals?.o2Pct) ? `${totals.o2Pct.toFixed(1)} %` : undefined,
+      detail: finite(totals?.o2Pct) ? `${formatNumber(totals.o2Pct, 1)} %` : undefined,
     },
     {
-      key: 'battery', label: 'Battery out', unit: 'Wh', path: 'route.totals.batteryWh',
+      key: 'battery', get label() { return t('ui.battery.out'); }, unit: 'Wh', path: 'route.totals.batteryWh',
       value: finite(totals?.batteryWh) ? String(Math.round(totals.batteryWh)) : dash,
-      detail: finite(totals?.batteryPct) ? `${totals.batteryPct.toFixed(1)} %` : undefined,
+      detail: finite(totals?.batteryPct) ? `${formatNumber(totals.batteryPct, 1)} %` : undefined,
     },
   ];
 }
@@ -109,7 +110,7 @@ export function routeMetrics(route) {
  * @param {number} [digits]
  */
 export function fixed(value, digits = 0) {
-  return finite(value) ? value.toFixed(digits) : '–';
+  return finite(value) ? formatNumber(value, digits) : '–';
 }
 
 /**
@@ -117,5 +118,5 @@ export function fixed(value, digits = 0) {
  * @param {number | null | undefined} seconds
  */
 export function minutesFixed(seconds) {
-  return finite(seconds) ? (seconds / 60).toFixed(1) : '–';
+  return finite(seconds) ? formatNumber(seconds / 60, 1) : '–';
 }

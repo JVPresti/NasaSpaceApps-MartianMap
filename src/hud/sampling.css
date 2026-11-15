@@ -1,8 +1,8 @@
 /* Sampling on the helmet HUD (#36). Uses the variables of .hud (hud.css): --u, --ink, --dim, --unit, --glass, --edge, --ok. */
 
-/* checklist: right side, mirroring the suit panel */
+/* checklist: in the HUD's right column (hud.css .hud-right), under the minimap, as wide as the suit panel */
 .hud-sampling {
-  position: absolute; right: 7.8vw; top: 27vh; width: calc(var(--u) * 14.5);
+  width: calc(var(--u) * 14.5);
   padding: 0.9em 1.2em 0.8em; border-radius: 0.9em;
 }
 .hud-sampling-head { display: flex; align-items: baseline; gap: 0.45em; margin-bottom: 0.55em; }
@@ -42,7 +42,3 @@
 .hud-photo-flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: hud-shutter 0.35s ease-out; }
 @keyframes hud-shutter { 0% { opacity: 0.45; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .hud-photo-flash { animation-duration: 0.12s; } }
-
-@media (max-width: 900px) {
-  .hud-sampling { right: 3vw; }
-}

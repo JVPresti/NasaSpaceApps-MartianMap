@@ -1,3 +1,4 @@
+import { t, translateText } from '../i18n/index.js';
 /**
  * Provenance registry (#62): where each value on screen comes from.
  *
@@ -85,6 +86,15 @@ export const STORE_PATHS = Object.freeze({
   'suit.marginSec': suitModel('suit model: Apollo 30 min reserve + 20 % pad; thresholds SIM', SUIT_MARGIN),
   'suit.status': suitModel('suit model: margin against the caution and warning thresholds (SIM)', SUIT_MARGIN),
 
+  // partner (src/sim/partnerRunner.js, #70): the same suit model as the player, fed by the partner's movement
+  'crew.0.rangeM': sim('range from the player to the partner source position; no GPS on Mars'),
+  'crew.0.bearingDeg': sim('bearing from the player to the partner source position; no GPS on Mars'),
+  'crew.0.oxygenPct': suitModel('suit model fed by the partner\'s movement: xEMU primary O2 minus walking use', SUIT_O2),
+  'crew.0.batteryPct': suitModel('suit model fed by the partner\'s movement: xEMU battery, the effort share of the draw is SIM', SUIT_BATTERY),
+  'crew.0.status': suitModel('partner suit margin against the caution and warning thresholds (SIM)', SUIT_MARGIN),
+  'crew.0.link': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'radio line of sight between the two suits on the HiRISE height map', from: HIRISE },
+  'crew.0.separationLimitM': sim('our rule: 100 m from the pair-walk mockup, caution from 80 m; hazards.json has no separation value'),
+
   // navigation: the engine writes the true position until the navigation model (#42) estimates it
   'navigation.x': sim('player position from the engine; no GPS on Mars, the estimate comes with #42'),
   'navigation.z': sim('player position from the engine; no GPS on Mars, the estimate comes with #42'),
@@ -111,6 +121,11 @@ export const STORE_PATHS = Object.freeze({
   'route.skipped': sim('waypoints the event route leaves out'),
   ...prefixed('route.legs.', LEG_FIELDS),
   ...prefixed('route.totals.', TOTAL_FIELDS),
+
+  // EVA history and debrief (#43): the frozen summary copied from the store when the astronaut re-entered the HAB
+  'eva.distanceM': { tag: 'DERIVED', source: 'sum of horizontal steps between navigation readings in Walk mode while the mission ran' },
+  'eva.elapsedOutsideSec': { tag: 'DERIVED', source: 'mission clock time between leaving and re-entering the habitat arrival area' },
+  'eva.sampleCount': sim('samples secured in a container this EVA (engine sampling bridge)'),
 
   // environment: MEDA replay, RAD curve and the dust event
   'environment.pressurePa': { ...MEDA, source: 'MEDA pressure, replayed sol', from: { meda: 'pressure' } },
@@ -269,7 +284,7 @@ export function createProvenanceRegistry({ dev = defaultDev(), warn = (...a) => 
 export function describeEntry(entry) {
   if (!entry) return [];
   const lines = [
-    ['Tag', `${entry.tag}: ${TAG_MEANING[entry.tag]}`],
+    ['Tag', `${entry.tag}: ${translateText(TAG_MEANING[entry.tag])}`],
     ['Value', entry.source],
     ['Mission', entry.mission],
     ['Instrument', entry.instrument],
@@ -279,14 +294,14 @@ export function describeEntry(entry) {
     ['Data', entry.dataLink ? 'archive' : null, entry.dataLink],
     ['Note', entry.note],
   ];
-  return lines.filter(([, v]) => v);
+  return lines.filter(([, v]) => v).map(([label, value, href]) => [translateText(label), value, href]);
 }
 
 /** One sentence for screen readers: "Source: MEDA · Perseverance · sol 1187, DATA. Mission Mars 2020. ..." */
 export function textAlternative(entry) {
   if (!entry) return '';
-  const parts = [`Source: ${entry.label === entry.tag ? entry.tag : `${entry.label}, ${entry.tag}`}`];
-  for (const [k, v] of describeEntry(entry).slice(1)) if (k !== 'Data') parts.push(`${k} ${v}`);
+  const parts = [t('ui.source.label', { label: entry.label === entry.tag ? entry.tag : `${entry.label}, ${entry.tag}` })];
+  for (const [k, v] of describeEntry(entry).slice(1)) if (k !== translateText('Data')) parts.push(`${k} ${v}`);
   return parts.join('. ') + '.';
 }
 

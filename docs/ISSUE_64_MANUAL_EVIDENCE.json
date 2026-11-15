@@ -1,0 +1,245 @@
+{
+  "issue": 64,
+  "title": "Manual browser evidence for the start screen, controls help and pause menu",
+  "tester": "test sub-agent, manual interaction through the shared T3 preview browser",
+  "date": "2026-11-14",
+  "branch": "feat/issue-64-start-controls-pause",
+  "head": "0518244",
+  "url": "http://localhost:5176/",
+  "environment": {
+    "browser": "T3 Code Beta 0.1.9, Electron 44.10.1, Chrome/152.0.7977.169",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) T3CodeBeta/0.1.9 Chrome/152.0.7977.169 Electron/44.10.1 Safari/537.36",
+    "platform": "Win32",
+    "viewport": "1280x800 CSS px, devicePixelRatio 1.25",
+    "devServer": "npm run dev -- --host 127.0.0.1 --port 5176 (started by the tester in this worktree)",
+    "testedCodeState": "Worktree files as last written 13:52-13:54 local time (App.jsx, PauseMenu.jsx, StartScreen.jsx, Modal.jsx, evaSession.js, view.js, index.js). No commit was made.",
+    "laterEditWarning": "The implementer saved App.jsx, PauseMenu.jsx, pointerLock.js, pointerLock.test.js and view.js again at 14:07-14:09 local time, after the interactions below. Those edits are not covered by this evidence."
+  },
+  "summary": {
+    "essentialPath": "completed",
+    "pass": 14,
+    "partial": 2,
+    "blocked": 1,
+    "limitations": 4
+  },
+  "followUp": {
+    "run": "docs/ISSUE_64_PARENT_BROWSER_EVIDENCE.json",
+    "date": "2026-11-14",
+    "environment": "Headed Microsoft Edge 157 driven by Puppeteer over CDP: real keys, clicks, pointer lock and reload",
+    "codeState": "Settled working tree after all review corrections",
+    "result": "19/19 cases passed, no page errors",
+    "findingStatus": {
+      "F1": "not reproducible with real keyboard events; no code change",
+      "F2": "verified: yaw changed with relative mouse movement under a real lock",
+      "F3": "environmental, preview-tool selector limitation",
+      "F4": "environmental, preview browser lost requestAnimationFrame; reload verified in the headed run",
+      "F5": "superseded by the run on the settled tree",
+      "F6": "verified: route path null and alerts empty after restart"
+    }
+  },
+  "cases": [
+    {
+      "id": "start-screen-open-and-focus",
+      "status": "partial",
+      "steps": "Normal load; wait for the loading panel to fade; read the open dialog and document.activeElement.",
+      "observed": "The 39/39-file loading panel faded, then dialog.modal.start-dialog opened with title 'Cheyava Falls'. document.activeElement was the Start EVA button. header.topbar had the inert attribute. Escape kept the dialog open and did not start.",
+      "evidence": "docs/ISSUE_64_start_screen.png; see finding F1 for the Tab wrap."
+    },
+    {
+      "id": "clock-and-suit-frozen-behind-start",
+      "status": "pass",
+      "steps": "Read __missionStore, wait 10 s without starting, read again.",
+      "observed": "Only evidence read, nothing was forced. mission.elapsedSec 0.001 -> 0.001; mission.paused true; suit.oxygenG 771.107029 -> 771.107029; nav x/z 8/70 -> 8/70; startedAtMs unchanged.",
+      "evidence": "10 000 ms wall wait between the two reads."
+    },
+    {
+      "id": "keyboard-input-behind-start",
+      "status": "pass",
+      "steps": "Press W, A, S, D, ArrowUp/Down/Left/Right, H and Escape while the start dialog is focused.",
+      "observed": "Pose unchanged (x 8, z 70, yaw -0.11, moveSpeed 0); elapsed 0.001; paused true; dialog stayed open; focus stayed on Start EVA. H did not open help from the start phase; Escape did nothing.",
+      "evidence": "preview_act key presses followed by __missionStore and __marswalk.pose() reads."
+    },
+    {
+      "id": "start-with-keyboard-enter",
+      "status": "pass",
+      "steps": "Focus was already on Start EVA; press Enter; wait 2 s.",
+      "observed": "Dialog closed, phase playing (hint 'Esc to pause - WASD to walk - Shift to jog - H for controls'), document.pointerLockElement was the engine CANVAS, mission.paused false, elapsed 0 -> 1.04 s, suit oxygen started decreasing.",
+      "evidence": "Second session, tab reopened after the T3 restart."
+    },
+    {
+      "id": "start-with-mouse-click",
+      "status": "pass",
+      "steps": "Click the Start EVA button with a real browser click; wait 1.2 s.",
+      "observed": "Same result as Enter: lock granted on the canvas, dialog closed, mission playing, elapsed 1.21 s, hint visible, topbar no longer inert.",
+      "evidence": "First session, agent-owned preview tab."
+    },
+    {
+      "id": "mouse-look-while-locked",
+      "status": "limitation",
+      "steps": "With the pointer locked, move the preview mouse to two positions.",
+      "observed": "document.pointerLockElement remained the canvas, but __marswalk.pose().yaw and pitch did not change. preview_act hover does not deliver pointer-lock movementX/Y in this Electron preview. This is a tool limitation, not evidence that mouse look fails in a real desktop browser.",
+      "evidence": "yaw -0.11 and pitch 0 before and after two hover moves at (640,400) and (900,300)."
+    },
+    {
+      "id": "escape-pauses-and-freezes-clock",
+      "status": "pass",
+      "steps": "While walking and locked, press Escape; read immediately and after 3 s.",
+      "observed": "Escape released the lock, opened dialog.modal.pause-dialog titled 'EVA paused' with focus on Resume and the notice 'The mouse was released, so the EVA is paused. Choose Resume to capture it again.' mission.paused true; elapsed 15.407 -> 15.407 over 3 s; oxygenG unchanged.",
+      "evidence": "Clock delta 0.000 s while paused."
+    },
+    {
+      "id": "resume-via-keyboard-recaptures-lock-and-continues-clock",
+      "status": "pass",
+      "steps": "With Resume focused, press Enter; wait 2.2 s.",
+      "observed": "Lock granted on the canvas; dialog closed; paused false; elapsed 13.110 -> 14.681. Only 1.571 s of the 2.2 s wait was counted, consistent with the lock being requested before time resumes. oxygenG decreased.",
+      "evidence": "Lock element CANVAS, mission.paused false."
+    },
+    {
+      "id": "safe-pause-on-browser-lock-loss",
+      "status": "pass",
+      "steps": "The preview lost pointer lock by itself twice (focus change while the agent inspected the page); no app action was simulated.",
+      "observed": "Both times the app opened the pause dialog with the same notice and stopped the clock (paused at 13.049 s and 39.595 s). The mission was not left running without a lock.",
+      "evidence": "Incidental but real browser-initiated lock loss."
+    },
+    {
+      "id": "h-opens-controls-and-pauses",
+      "status": "pass",
+      "steps": "While playing and locked, press H; wait 2 s.",
+      "observed": "dialog.pause-dialog opened with title 'Controls', focus on 'Back to pause menu', two controls groups (Walk and Plan). mission.paused true; elapsed 16.968 -> 16.968 over 2 s; lock released.",
+      "evidence": "docs/ISSUE_64_controls_help.png"
+    },
+    {
+      "id": "escape-inside-controls-returns-to-menu",
+      "status": "pass",
+      "steps": "Press Escape in the Controls view.",
+      "observed": "The same dialog returned to the 'EVA paused' menu with focus on Resume; the clock stayed paused at 16.968 s.",
+      "evidence": "Focus returned to Resume, not to the page behind."
+    },
+    {
+      "id": "enter-activates-menu-action",
+      "status": "pass",
+      "steps": "Tab focus to Controls, press Enter; then Escape back.",
+      "observed": "Enter opened the Controls view; Escape returned to the pause menu. Keyboard activation works.",
+      "evidence": "Dialog title changed Controls -> EVA paused."
+    },
+    {
+      "id": "tab-and-shift-tab-focus-and-inert-background",
+      "status": "partial",
+      "steps": "In the pause menu, Tab through all focusable controls; then Shift+Tab once. Also click the background topbar while the modal is open.",
+      "observed": "Focus order inside the dialog: Plan, Walk, Resume, Restart EVA, Controls, Auto, High, Low (nine focusables; Sources is disabled). Pressing Tab after Low moved focus to document.body (document.hasFocus() false) for one stop, then the next Tab went back to Plan. In the start dialog the same happened: Start EVA -> body -> Start EVA. Shift+Tab stayed inside. The focused control had a visible ring (outline 1.6px solid rgb(143,211,238)). The topbar is inert and a background click did not change the mode or close the dialog.",
+      "evidence": "See finding F1. docs/ISSUE_64_controls_help.png shows the visible focus ring."
+    },
+    {
+      "id": "sources-disabled",
+      "status": "pass",
+      "steps": "Inspect the Sources control and its note.",
+      "observed": "button disabled=true, aria-describedby='sources-note'; note 'Sources opens with the data-source screen (#63). Not available yet.' No sources screen opened.",
+      "evidence": "docs/ISSUE_64_pause_menu.png"
+    },
+    {
+      "id": "quality-auto-high-low",
+      "status": "pass",
+      "steps": "In the pause menu choose High, then Low, then Auto; then click High and Low in quick succession.",
+      "observed": "Initial Auto (low) with GPU 'ANGLE (AMD, AMD Radeon(TM) Graphics ... D3D11)'. High -> aria-pressed High, status 'high', engine tier high, auto false. Low -> status 'low', tier low. Auto -> 'Auto (low)', auto true. Rapid High then Low ended on Low with no inline error and no interleaved status. The clock stayed frozen at 16.968 s throughout.",
+      "evidence": "Reads of aria-pressed, quality-status, and window.__marswalk.stats().tier/auto."
+    },
+    {
+      "id": "plan-resume-without-lock",
+      "status": "pass",
+      "steps": "From the pause menu switch View to Plan; read; click Resume in Plan; wait 1.9 s.",
+      "observed": "While paused: mode plan, site 'Plan view - mission clock paused', footnote 'Plan resumes without capturing the mouse.', lock null. After Resume: dialog closed, mode plan, paused false, pointer lock still null, elapsed 16.968 -> 18.854 (1.886 s), Plan hint shown.",
+      "evidence": "document.pointerLockElement null before and after the Plan resume."
+    },
+    {
+      "id": "walk-plan-switch-while-playing",
+      "status": "pass",
+      "steps": "While playing, activate the topbar Plan button with Tab+Enter, then the topbar Walk button with Tab+Enter.",
+      "observed": "Walk -> Plan: lock released, mode plan, still playing, no pause menu and no notice. Plan -> Walk: a new lock was granted on the canvas, mode walk, still playing. Mouse clicks on the topbar are not usable while the pointer is locked (the click goes to the locked canvas); keyboard activation was used.",
+      "evidence": "Lock CANVAS before, null after Plan, CANVAS again after Walk."
+    },
+    {
+      "id": "restart-cancel-changes-nothing",
+      "status": "pass",
+      "steps": "Open Restart EVA, read the confirmation, click Cancel.",
+      "observed": "Confirmation titled 'Restart EVA?' with both warning text and focus on Cancel. Cancel returned to 'EVA paused'; elapsed still 45.588 s, mode plan, nav 8/70, route waypoints still 5; nothing reset.",
+      "evidence": "No store fields changed."
+    },
+    {
+      "id": "restart-confirm-resets-mission",
+      "status": "pass",
+      "steps": "With quality High selected and elapsed 45.588 s, click Restart EVA and confirm.",
+      "observed": "The start dialog returned with focus on Start EVA; mode walk; paused true; elapsed 0.001 s with a new startedAtMs; nav x 8, z 70; suit oxygen 771.107029 g / 100%; sessionStorage marswalk.missionClock.v1 held the new session (elapsedSec 0.001, paused true) instead of the old 45.588 s EVA; quality stayed High (auto false, tier high). The start screen then stayed frozen for 5 s (elapsed 0.001 -> 0.001).",
+      "evidence": "Route check is qualified in finding F6."
+    },
+    {
+      "id": "reload-restores-paused-clock",
+      "status": "blocked",
+      "steps": "Reload the tab while the start screen is open and the new paused clock is stored.",
+      "observed": "After the reload sessionStorage still held the new paused session, but the page stopped at 'Loading the habitat...' with fps 0 and triangles 0 because the preview browser delivered no requestAnimationFrame callbacks (0 ticks in 3 s). The same happened in a freshly opened tab. The restore in the UI therefore could not be observed.",
+      "evidence": "See findings F3 and F4."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "minor",
+      "status": "not reproducible with real keyboard events",
+      "title": "Tab past the last dialog control leaves the document for one stop",
+      "detail": "With a native modal open, Tab from the last focusable control moves focus out of the dialog to document.body (document.hasFocus() is false) for one press; the next Tab returns to the first control. This happens in both dialogs: Start EVA -> body -> Start EVA, and Low -> body -> Plan in the pause menu. Shift+Tab stays inside. The inert background cannot be reached, so no background action can be triggered, but a keyboard user loses the visible focus ring for one stop. docs/ISSUE_64_VALIDATION.md:24-25 and :116-117 say Tab and Shift+Tab stay inside the dialog, which is only true for Shift+Tab and for the forward path until the last control.",
+      "files": ["src/components/Modal.jsx:13-21", "docs/ISSUE_64_VALIDATION.md:24", "docs/ISSUE_64_VALIDATION.md:116"],
+      "repro": "Open the pause menu, Tab from the last enabled control (Low), inspect document.activeElement -> BODY."
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "title": "Mouse-look cannot be exercised by the preview tool while pointer lock is granted",
+      "detail": "Pointer lock itself is real (document.pointerLockElement is the engine canvas), but preview_act hover sent no relative movement under lock; yaw/pitch stayed identical. This is a tool limitation. Mouse look was not claimed as verified.",
+      "files": [],
+      "repro": "Start EVA, hover at two coordinates, read __marswalk.pose()."
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "title": "Preview selector clicks can time out on the pause view switch",
+      "detail": "preview_act click with a CSS selector on the pause menu Plan/Walk switch timed out twice with 'still matches an element after the timeout'. The element was hit-testable at its centre and a coordinate click at the same point worked. This is a preview automation actionability limitation, not an app failure.",
+      "files": [],
+      "repro": "Pause menu, click selector 'dialog[open] .pause-view-switch button:first-of-type' vs click x/y of that button."
+    },
+    {
+      "id": "F4",
+      "severity": "blocker-for-testing",
+      "title": "The preview tab stopped receiving animation frames after the T3 server restart",
+      "detail": "After the T3 server restarted, requestAnimationFrame stopped firing in the preview tab (0 callbacks in 3 s in two tabs) and the engine stayed at 'Loading the habitat...' with fps 0/triangles 0. The dev server also exited once and was restarted. Reload/new-tab checks could not be completed in that state. Earlier interactions in this same environment rendered normally and are recorded above.",
+      "files": [],
+      "repro": "requestAnimationFrame probe in the preview page after the server restart."
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "title": "The implementer edited the tracked code during the test run",
+      "detail": "App.jsx (14:08:48), PauseMenu.jsx (14:08:52), view.js (14:07:59), pointerLock.js and pointerLock.test.js (14:07:56-14:09:12) changed after the interactions above. Those changes (focusToken, locking pending requests on Plan, input-gated update) are not covered by this evidence; a final pass should be repeated on the settled code.",
+      "files": ["src/App.jsx", "src/components/PauseMenu.jsx", "src/engine/view.js", "src/engine/pointerLock.js"],
+      "repro": "Compare file mtimes with the interaction times."
+    },
+    {
+      "id": "F6",
+      "severity": "info",
+      "title": "Restart route reset was not discriminable",
+      "detail": "The route had 5 waypoints before Cancel and 5 after Restart; no custom route had been created, so the test cannot distinguish 'kept the old route' from 'reset and re-planned the initial route'. Route path was null both times. Route reset is therefore not positively proven by this run.",
+      "files": ["src/state/evaSession.js:96-110"],
+      "repro": "No custom route was created during the run."
+    }
+  ],
+  "limitations": [
+    "No mouse-look verification while locked (F2).",
+    "No reload/remount verification after the preview lost animation frames (F4).",
+    "No narrow-window/mobile or prefers-reduced-motion pass; they were outside the essential path requested.",
+    "Quality error path (texture failure/offline) was not forced; only the normal Auto/High/Low path was checked.",
+    "The precise pointer-lock refusal path (permission denied) was not forced; real lock grant, real Escape release and browser-initiated lock loss were observed."
+  ],
+  "artifacts": [
+    "docs/ISSUE_64_start_screen.png",
+    "docs/ISSUE_64_pause_menu.png",
+    "docs/ISSUE_64_controls_help.png"
+  ]
+}

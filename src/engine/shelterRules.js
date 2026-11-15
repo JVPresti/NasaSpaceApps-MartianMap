@@ -1,3 +1,4 @@
+import { formatUnit } from '../i18n/index.js';
 // Shelter marker rules, kept free of three.js so they can be tested quickly (shelterHighlight.js, shelterLabel.js).
 
 export const FULL_WITHIN_M = 80;     // full label ("SHELTER · 60 m") within this distance
@@ -12,8 +13,8 @@ export function validShelter(s) {
 /** Distance as the label shows it: 5 m steps up to 1 km, then km with one decimal. */
 export function formatDistance(m) {
   if (!Number.isFinite(m)) return '';
-  if (m < 1000) return Math.max(0, Math.round(m / 5) * 5) + ' m';
-  return (m / 1000).toFixed(1) + ' km';
+  if (m < 1000) return formatUnit(Math.max(0, Math.round(m / 5) * 5), 'm');
+  return formatUnit(m / 1000, 'km', 1);
 }
 
 /** Which version of the label to show. @returns {'hidden' | 'compact' | 'full'} */

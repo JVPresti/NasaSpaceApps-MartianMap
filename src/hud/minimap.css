@@ -1,11 +1,8 @@
-/* Helmet minimap (#60). Same glass and type as the rest of the HUD. The circle keeps the reference
-   size and position: about 27.5 vh across, top 23.5 vh, right 7.8 vw. The legend sits in the gap
-   above the environment strip (top 54 vh), so the two never overlap. */
+/* Helmet minimap (#60). Same glass and type as the rest of the HUD. The circle is about 27.5 vh across and
+   heads the HUD's right column (hud.css .hud-right), which places it. The legend is in the flow under the
+   circle, so the panels below it in the column start after it. */
 .hud-map-wrap {
   --map-size: clamp(120px, 27.5vh, 480px);
-  position: absolute;
-  top: 23.5vh;
-  right: 7.8vw;
   width: var(--map-size);
   pointer-events: none;
 }
@@ -37,16 +34,13 @@
 }
 
 .hud-map-legend {
-  position: absolute;
-  top: calc(100% + 0.35vh);
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 0.7em;
+  gap: 0.1em 0.7em;
+  margin-top: 0.35vh;
   padding: 0.24em 0.58em;
-  white-space: nowrap;
   font: 600 clamp(9px, calc(var(--map-size) * 0.034), 14px) / 1.45 system-ui, 'Segoe UI', sans-serif;
   font-style: normal;
   letter-spacing: 0.02em;
@@ -60,6 +54,7 @@
 
 .hud-map-legend span {
   display: inline-flex;
+  white-space: nowrap;
   align-items: center;
   gap: 0.34em;
 }
@@ -111,10 +106,6 @@
   clip-path: polygon(50% 0, 100% 38%, 100% 100%, 0 100%, 0 38%);
 }
 
-@media (max-width: 900px) {
-  .hud-map-wrap { right: 3vw; }
-}
-
 @media (max-height: 760px) {
-  .hud-map-wrap { top: 22vh; }
+  .hud-right { top: 22vh; }
 }

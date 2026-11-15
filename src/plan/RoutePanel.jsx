@@ -1,3 +1,4 @@
+import { t, translateText } from '../i18n/index.js';
 import { useState } from 'react';
 import { setRouteDecision, useMissionStore } from '../state/store.js';
 import ElevationProfile from '../hud/ElevationProfile.jsx';
@@ -5,6 +6,7 @@ import RouteLegs from './RouteLegs.jsx';
 import { fixed as num, minutesFixed as min, routeMetrics } from './routePlan.js';
 import SourceTag from './SourceTag.jsx';
 import WaypointName from '../stops/WaypointName.jsx';
+import { waypointNumber } from '../sim/waypointNumber.js';
 
 function WaypointRow({ waypoint, index, onCommit }) {
   const [x, setX] = useState(String(Math.round(waypoint.x)));
@@ -34,30 +36,30 @@ function WaypointRow({ waypoint, index, onCommit }) {
 
   return (
     <li className="route-waypoint">
-      <span className="waypoint-number">{index + 1}</span>
+      <span className="waypoint-number">{waypointNumber(index)}</span>
       {/* A waypoint with a science stop opens its card (#66). */}
       <WaypointName name={waypoint.name} />
       <label>
-        <span>x</span>
+        <span>{t('ui.x')}</span>
         <input
           type="number"
           step="1"
           inputMode="numeric"
           value={x}
-          aria-label={`${waypoint.name} x metres`}
+          aria-label={t('ui.p0.x.metres', { p0: waypoint.name })}
           onChange={(event) => setX(event.target.value)}
           onBlur={commit}
           onKeyDown={onKeyDown}
         />
       </label>
       <label>
-        <span>z</span>
+        <span>{t('ui.z')}</span>
         <input
           type="number"
           step="1"
           inputMode="numeric"
           value={z}
-          aria-label={`${waypoint.name} z metres`}
+          aria-label={t('ui.p0.z.metres', { p0: waypoint.name })}
           onChange={(event) => setZ(event.target.value)}
           onBlur={commit}
           onKeyDown={onKeyDown}
@@ -86,37 +88,32 @@ function Metric({ metric }) {
 /** The reason under the go / no-go buttons: planner state first, then the oxygen margin from route.totals. */
 function DecisionReason({ planner, route }) {
   const totals = route.totals;
-  if (planner.status === 'loading') return <p className="decision-reason">Loading terrain and hazard data…</p>;
-  if (planner.status === 'planning') return <p className="decision-reason planning" role="status">Planning route…</p>;
-  if (planner.status === 'error') return <p className="decision-reason error" role="status">{planner.error}</p>;
-  if (!route.path || !totals) return <p className="decision-reason">Waiting for the first plan…</p>;
+  if (planner.status === 'loading') return <p className="decision-reason">{t('ui.loading.terrain.and.hazard.data')}</p>;
+  if (planner.status === 'planning') return <p className="decision-reason planning" role="status">{t('ui.planning.route')}</p>;
+  if (planner.status === 'error') return <p className="decision-reason error" role="status">{translateText(planner.error)}</p>;
+  if (!route.path || !totals) return <p className="decision-reason">{t('ui.waiting.for.the.first.plan')}</p>;
 
   return (
     <div className={'decision-reason margin-' + totals.status}>
-      <p className="decision-margin">
-        Margin <b>{min(totals.marginSec)}</b>
-        <span className="unit">min</span> over the 30 min reserve
-        <SourceTag path="route.totals.marginSec" />
+      <p className="decision-margin">{t('ui.margin')}<b>{min(totals.marginSec)}</b>
+        <span className="unit">{t('ui.min')}</span>{t('ui.over.the.30.min.reserve')}<SourceTag path="route.totals.marginSec" />
       </p>
-      <p className="decision-detail">
-        Back at the habitat: O2 <b>{num(totals.arrivalO2Pct)}</b>
-        <span className="unit">%</span>, battery <b>{num(totals.arrivalBatteryPct)}</b>
+      <p className="decision-detail">{t('ui.back.at.the.habitat.o2')}<b>{num(totals.arrivalO2Pct)}</b>
+        <span className="unit">%</span>{t('ui.battery')}<b>{num(totals.arrivalBatteryPct)}</b>
         <span className="unit">%</span>.{' '}
         {totals.roundTrip ? (
-          'Round trip.'
+          t('ui.round.trip')
         ) : (
-          <>
-            Walk home <b>{min(totals.returnTimeSec)}</b>
-            <span className="unit">min</span>, <b>{num(totals.returnO2G)}</b>
-            <span className="unit">g</span> O2 with the 20 % pad.
-          </>
+          <>{t('ui.walk.home')}<b>{min(totals.returnTimeSec)}</b>
+            <span className="unit">{t('ui.min')}</span>, <b>{num(totals.returnO2G)}</b>
+            <span className="unit">{t('ui.g')}</span>{t('ui.o2.with.the.20.pad')}</>
         )}
       </p>
     </div>
   );
 }
 
-const DECISION_LABEL = { pending: 'Pending', go: 'Go', 'no-go': 'No-go' };
+const DECISION_LABEL = { pending: 'pending', go: 'ui.go', 'no-go': 'ui.no.go' };
 
 /**
  * One route panel for Plan mode: summary, elevation profile, go / no-go with its reason, cost per leg and the waypoint editor.
@@ -138,10 +135,10 @@ export default function RoutePanel({ planner, waypoints, onWaypointsChange, engi
   };
 
   return (
-    <aside className="plan-panel route-panel" aria-label="Planned route and cost">
+    <aside className="plan-panel route-panel" aria-label={t('ui.planned.route.and.cost')}>
       <header className="plan-panel-head">
-        <h2>Route</h2>
-        <p className="plan-panel-source">A* planner · HiRISE DTM</p>
+        <h2>{t('ui.route')}</h2>
+        <p className="plan-panel-source">{t('ui.a.planner.hirise.dtm')}</p>
       </header>
 
       <dl className="route-metrics">
@@ -157,49 +154,41 @@ export default function RoutePanel({ planner, waypoints, onWaypointsChange, engi
         slopeAt={engine?.slopeAt}
       />
 
-      <section className="route-decision-block" aria-label="Go or no-go">
+      <section className="route-decision-block" aria-label={t('ui.go.or.no.go')}>
         <div className="decision-head">
-          <h3>Go / no-go</h3>
-          <span className={'decision-state ' + decision}>{DECISION_LABEL[decision] ?? decision}</span>
+          <h3>{t('noGoHeading')}</h3>
+          <span className={'decision-state ' + decision}>{t(DECISION_LABEL[decision] ?? decision)}</span>
         </div>
         <DecisionReason planner={planner} route={route} />
         {skipped.length > 0 && (
-          <p className="route-skipped">
-            Re-planned for the event. Skipped: {skipped.join(' · ')}
+          <p className="route-skipped">{t('ui.re.planned.for.the.event.skipped')}{skipped.join(' · ')}
           </p>
         )}
         <div className="route-actions">
-          <button type="button" className="route-replan" onClick={planner.replan} disabled={planning}>
-            Re-plan
-          </button>
+          <button type="button" className="route-replan" onClick={planner.replan} disabled={planning}>{t('ui.re.plan')}</button>
           <button
             type="button"
             className={decision === 'go' ? 'route-go on' : 'route-go'}
             aria-pressed={decision === 'go'}
             disabled={!route.path}
             onClick={() => setRouteDecision('go')}
-          >
-            Go
-          </button>
+          >{t('ui.go')}</button>
           <button
             type="button"
             className={decision === 'no-go' ? 'route-nogo on' : 'route-nogo'}
             aria-pressed={decision === 'no-go'}
             onClick={() => setRouteDecision('no-go')}
-          >
-            No-go
-          </button>
+          >{t('ui.no.go')}</button>
         </div>
       </section>
 
       <details className="plan-disclosure" open>
-        <summary>Cost per leg</summary>
+        <summary>{t('ui.cost.per.leg')}</summary>
         <RouteLegs />
       </details>
 
       <details className="plan-disclosure">
-        <summary>
-          Waypoints <span className="disclosure-meta">{waypoints.length} · x / z in m</span>
+        <summary>{t('ui.waypoints')}<span className="disclosure-meta">{waypoints.length}{t('ui.x.z.in.m')}</span>
         </summary>
         <ol className="route-waypoints">
           {waypoints.map((waypoint, index) => (

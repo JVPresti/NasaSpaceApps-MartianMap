@@ -79,7 +79,7 @@ describe('consumables', () => {
 });
 
 describe('walkback and margin', () => {
-  const route = [[520, 600], [330, 300], [150, 120], [-40, -60], [0, 0]];   // route.json waypoints, habitat first
+  const route = [[520, 600], [330, 300], [150, 120], [-11, -50], [0, 0]];   // route.json waypoints, habitat first
 
   it('goes back along the route to the habitat from the nearest point on it', () => {
     const home = pathHome({ x: 150, z: 130 }, route, { x: 520, z: 600 });

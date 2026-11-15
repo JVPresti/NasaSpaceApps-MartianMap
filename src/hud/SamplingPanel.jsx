@@ -1,3 +1,4 @@
+import { t, translateText } from '../i18n/index.js';
 // Sampling on the helmet HUD (#36): the checklist with the sample count, the prompt under the crosshair, and a shutter
 // flash for the helmet camera. Reads only the store (`sampling`, written by src/state/sampling.js about 5 times per second).
 import { useShallow } from 'zustand/react/shallow';
@@ -14,29 +15,29 @@ const Check = ({ on }) => (
 );
 
 const MATERIAL = { rock: 'chips', ground: 'soil' };
-const INTO = { pouch: 'in the bag', case: 'in the case' };
+const INTO = { get pouch() { return t('ui.in.the.bag'); }, get case() { return t('ui.in.the.case'); } };
 function describe(x) {
   if (!x) return null;
-  const what = x.site ? x.site + ' ' + MATERIAL[x.kind] : x.kind === 'rock' ? 'Rock chips' : 'Soil';
-  return what + ' · ' + (INTO[x.into] || '') + (x.sealed ? ', sealed' : '');
+  const what = x.site ? x.site + ' ' + translateText(MATERIAL[x.kind]) : x.kind === 'rock' ? t('ui.rock.chips') : t('ui.soil');
+  return what + ' · ' + (INTO[x.into] || '') + (x.sealed ? t('ui.sealed') : '');
 }
 
-function SamplingChecklist() {
+export function SamplingChecklist() {
   const s = useMissionStore(useShallow((st) => {
     const sp = st.sampling, c = sp.checklist;
     return { count: sp.count, photo: c.photo, texture: c.texture, sample: c.sample, seal: c.seal, last: describe(sp.samples[sp.samples.length - 1]) };
   }));
   return (
-    <section className="hud-panel hud-sampling" aria-label="Sampling checklist">
-      <div className="hud-sampling-head"><span>SAMPLING</span><b>{s.count}</b><small>{s.count === 1 ? 'sample' : 'samples'}</small></div>
+    <section className="hud-panel hud-sampling" aria-label={t('ui.sampling.checklist')}>
+      <div className="hud-sampling-head"><span>{t('ui.sampling')}</span><b>{s.count}</b><small>{s.count === 1 ? t('ui.sample') : t('ui.samples')}</small></div>
       <ul className="hud-checklist">
         {CHECKLIST.map((row) => (
-          <li key={row.id} className={s[row.id] ? 'hud-done' : undefined} aria-label={row.label + (s[row.id] ? ' done' : ' to do')}>
+          <li key={row.id} className={s[row.id] ? 'hud-done' : undefined} aria-label={row.label + (s[row.id] ? t('ui.done') : t('ui.to.do'))}>
             <Check on={s[row.id]} /><span>{row.label}</span><em>{row.how}</em>
           </li>
         ))}
       </ul>
-      {s.last && <div className="hud-caption hud-sampling-last">LAST · {s.last}</div>}
+      {s.last && <div className="hud-caption hud-sampling-last">{t('ui.last')}{s.last}</div>}
     </section>
   );
 }
@@ -61,6 +62,16 @@ function SamplingPrompt() {
 function PhotoFlash() {
   const photos = useMissionStore((st) => st.sampling.photos);
   return photos ? <div key={photos} className="hud-photo-flash" aria-hidden="true" /> : null;
+}
+
+/** The crosshair, its prompt and the shutter flash: centred on the view, outside the HUD's right column. */
+export function SamplingCrosshair() {
+  return (
+    <>
+      <PhotoFlash />
+      <SamplingPrompt />
+    </>
+  );
 }
 
 export default function SamplingPanel() {

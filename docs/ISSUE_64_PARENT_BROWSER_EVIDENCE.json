@@ -1,0 +1,250 @@
+{
+  "date": "2026-11-14T22:47:18.451Z",
+  "method": "Headed Edge via Puppeteer, real key/mouse events, real pointer lock, no application mocks. The only injection is a forced SecurityError from Element.prototype.requestPointerLock to exercise the refusal message.",
+  "cases": [
+    {
+      "name": "Start screen is frozen and Tab/Shift+Tab stay inside",
+      "pass": true,
+      "detail": {
+        "start": {
+          "dialogClass": "modal start-dialog",
+          "title": "Cheyava Falls",
+          "focus": "Start EVA",
+          "focusTag": "BUTTON",
+          "inside": true,
+          "bodyFocus": false,
+          "paused": true,
+          "elapsed": 0.001,
+          "started": 1794696441994,
+          "oxygen": 771.107029,
+          "mode": "walk",
+          "x": 8,
+          "z": 70,
+          "lock": false,
+          "pose": {
+            "camY": 33.49927248280274,
+            "x": 8,
+            "z": 70,
+            "yaw": -0.11,
+            "pitch": 0,
+            "mode": "eye",
+            "moveSpeed": 0
+          },
+          "quality": {
+            "tier": "low",
+            "auto": true
+          },
+          "notice": null,
+          "error": null,
+          "sourcesOpen": false
+        },
+        "tabs": [
+          {
+            "dialogClass": "modal start-dialog",
+            "title": "Cheyava Falls",
+            "focus": "Start EVA",
+            "focusTag": "BUTTON",
+            "inside": true,
+            "bodyFocus": false,
+            "paused": true,
+            "elapsed": 0.001,
+            "started": 1794696441994,
+            "oxygen": 771.107029,
+            "mode": "walk",
+            "x": 8,
+            "z": 70,
+            "lock": false,
+            "pose": {
+              "camY": 33.49927248280274,
+              "x": 8,
+              "z": 70,
+              "yaw": -0.11,
+              "pitch": 0,
+              "mode": "eye",
+              "moveSpeed": 0
+            },
+            "quality": {
+              "tier": "low",
+              "auto": true
+            },
+            "notice": null,
+            "error": null,
+            "sourcesOpen": false
+          },
+          {
+            "dialogClass": "modal start-dialog",
+            "title": "Cheyava Falls",
+            "focus": "Start EVA",
+            "focusTag": "BUTTON",
+            "inside": true,
+            "bodyFocus": false,
+            "paused": true,
+            "elapsed": 0.001,
+            "started": 1794696441994,
+            "oxygen": 771.107029,
+            "mode": "walk",
+            "x": 8,
+            "z": 70,
+            "lock": false,
+            "pose": {
+              "camY": 33.49927248280274,
+              "x": 8,
+              "z": 70,
+              "yaw": -0.11,
+              "pitch": 0,
+              "mode": "eye",
+              "moveSpeed": 0
+            },
+            "quality": {
+              "tier": "low",
+              "auto": true
+            },
+            "notice": null,
+            "error": null,
+            "sourcesOpen": false
+          },
+          {
+            "dialogClass": "modal start-dialog",
+            "title": "Cheyava Falls",
+            "focus": "Start EVA",
+            "focusTag": "BUTTON",
+            "inside": true,
+            "bodyFocus": false,
+            "paused": true,
+            "elapsed": 0.001,
+            "started": 1794696441994,
+            "oxygen": 771.107029,
+            "mode": "walk",
+            "x": 8,
+            "z": 70,
+            "lock": false,
+            "pose": {
+              "camY": 33.49927248280274,
+              "x": 8,
+              "z": 70,
+              "yaw": -0.11,
+              "pitch": 0,
+              "mode": "eye",
+              "moveSpeed": 0
+            },
+            "quality": {
+              "tier": "low",
+              "auto": true
+            },
+            "notice": null,
+            "error": null,
+            "sourcesOpen": false
+          },
+          {
+            "dialogClass": "modal start-dialog",
+            "title": "Cheyava Falls",
+            "focus": "Start EVA",
+            "focusTag": "BUTTON",
+            "inside": true,
+            "bodyFocus": false,
+            "paused": true,
+            "elapsed": 0.001,
+            "started": 1794696441994,
+            "oxygen": 771.107029,
+            "mode": "walk",
+            "x": 8,
+            "z": 70,
+            "lock": false,
+            "pose": {
+              "camY": 33.49927248280274,
+              "x": 8,
+              "z": 70,
+              "yaw": -0.11,
+              "pitch": 0,
+              "mode": "eye",
+              "moveSpeed": 0
+            },
+            "quality": {
+              "tier": "low",
+              "auto": true
+            },
+            "notice": null,
+            "error": null,
+            "sourcesOpen": false
+          }
+        ],
+        "back": {
+          "dialogClass": "modal start-dialog",
+          "title": "Cheyava Falls",
+          "focus": "Start EVA",
+          "focusTag": "BUTTON",
+          "inside": true,
+          "bodyFocus": false,
+          "paused": true,
+          "elapsed": 0.001,
+          "started": 1794696441994,
+          "oxygen": 771.107029,
+          "mode": "walk",
+          "x": 8,
+          "z": 70,
+          "lock": false,
+          "pose": {
+            "camY": 33.49927248280274,
+            "x": 8,
+            "z": 70,
+            "yaw": -0.11,
+            "pitch": 0,
+            "mode": "eye",
+            "moveSpeed": 0
+          },
+          "quality": {
+            "tier": "low",
+            "auto": true
+          },
+          "notice": null,
+          "error": null,
+          "sourcesOpen": false
+        },
+        "frozen": {
+          "dialogClass": "modal start-dialog",
+          "title": "Cheyava Falls",
+          "focus": "Start EVA",
+          "focusTag": "BUTTON",
+          "inside": true,
+          "bodyFocus": false,
+          "paused": true,
+          "elapsed": 0.001,
+          "started": 1794696441994,
+          "oxygen": 771.107029,
+          "mode": "walk",
+          "x": 8,
+          "z": 70,
+          "lock": false,
+          "pose": {
+            "camY": 33.49927248280274,
+            "x": 8,
+            "z": 70,
+            "yaw": -0.11,
+            "pitch": 0,
+            "mode": "eye",
+            "moveSpeed": 0
+          },
+          "quality": {
+            "tier": "low",
+            "auto": true
+          },
+          "notice": null,
+          "error": null,
+          "sourcesOpen": false
+        },
+        "tabLog": [
+          "doc:BUTTON",
+          "doc:BUTTON",
+          "doc:BUTTON",
+          "doc:BUTTON",
+          "doc:BUTTON"
+        ]
+      }
+    }
+  ],
+  "findings": [],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "browser": "Edg/157.0.4341.42",
+  "fatal": "TimeoutError: Waiting failed: 8000ms exceeded\n    at new WaitTask (file:///C:/Users/roky0/.t3/worktrees/NasaSpaceApps-MartianMap/feat-issue-64-start-con-3c36747059876666/node_modules/puppeteer-core/lib/esm/puppeteer/common/WaitTask.js:46:34)\n    at IsolatedWorld.waitForFunction (file:///C:/Users/roky0/.t3/worktrees/NasaSpaceApps-MartianMap/feat-issue-64-start-con-3c36747059876666/node_modules/puppeteer-core/lib/esm/puppeteer/api/Realm.js:49:26)\n    at CdpFrame.waitForFunction (file:///C:/Users/roky0/.t3/worktrees/NasaSpaceApps-MartianMap/feat-issue-64-start-con-3c36747059876666/node_modules/puppeteer-core/lib/esm/puppeteer/api/Frame.js:580:43)\n    at CdpFrame.<anonymous> (file:///C:/Users/roky0/.t3/worktrees/NasaSpaceApps-MartianMap/feat-issue-64-start-con-3c36747059876666/node_modules/puppeteer-core/lib/esm/puppeteer/util/decorators.js:101:27)\n    at CdpPage.waitForFunction (file:///C:/Users/roky0/.t3/worktrees/NasaSpaceApps-MartianMap/feat-issue-64-start-con-3c36747059876666/node_modules/puppeteer-core/lib/esm/puppeteer/api/Page.js:1447:37)\n    at file:///C:/Users/roky0/.t3/worktrees/NasaSpaceApps-MartianMap/feat-issue-64-start-con-3c36747059876666/.tmp-issue64-browser.mjs:100:14"
+}

@@ -1,9 +1,10 @@
+import { t } from '../i18n/index.js';
 import { useEffect, useState } from 'react';
 import { useMissionStore } from '../state/store.js';
 import { radioLinkState } from '../sim/radio.js';
 import * as I from './icons.jsx';
 
-const LABEL = { linked: 'LINK', weak: 'WEAK', lost: 'NO LINK' };
+const LABEL = { get linked() { return t('linked'); }, get weak() { return t('weak'); }, get lost() { return t('ui.no.link'); } };
 
 /**
  * Direct radio link to the habitat mast (#74): line of sight through the
@@ -30,10 +31,10 @@ export default function RadioLink({ engine }) {
 
   if (!link) return null;
   return (
-    <div className={`hud-radio hud-radio-${link.state}`} role="status" aria-label={`Radio link ${LABEL[link.state]}, habitat ${Math.round(link.rangeM)} metres`}>
+    <div className={`hud-radio hud-radio-${link.state}`} role="status" aria-label={t('ui.radio.link.p0.habitat.p1.metres', { p0: LABEL[link.state], p1: Math.round(link.rangeM) })}>
       <I.Radio />
       <b>{LABEL[link.state]}</b>
-      <small>{Math.round(link.rangeM)} m</small>
+      <small>{Math.round(link.rangeM)}{t('units.metresSuffix')}</small>
     </div>
   );
 }

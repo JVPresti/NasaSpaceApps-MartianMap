@@ -124,7 +124,9 @@ describe('createArrivalTracker', () => {
   it('opens the Cheyava Falls card from the waypoint runner (#139) only within 2 m', () => {
     const store = createStore(() => createInitialState());
     store.setState((s) => ({ mode: 'walk', route: { ...s.route, waypoints: route.waypoints, nextIndex: 4, visited: [hab, wp1, wp2, wp3] } }));
-    const runner = startWaypointRunner({ store, setInterval: () => 0, clearInterval: () => {} });
+    // The runner takes the 2 m stop radius from the stops list, as the app does via setStops (simulation.js);
+    // without it every waypoint uses 5 m.
+    const runner = startWaypointRunner({ store, stops, setInterval: () => 0, clearInterval: () => {} });
     const tracker = createArrivalTracker();
     tracker.update(stops, store.getState().route.visited);                // Bright Angel, already passed
     const at = (x, z) => {

@@ -1,3 +1,4 @@
+import { t, formatNumber } from '../i18n/index.js';
 // Helmet HUD (issue #20): what the astronaut reads while walking. Every value comes from the mission store; the store
 // changes a few times per second (suit 4 Hz, position 5 Hz), so these components re-render at that rate, never per frame.
 // Layout follows the v3 "Caminar · Normal" mockup; final Figma measurements come later (#11).
@@ -7,7 +8,7 @@ import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
 import { bearingDeg } from '../sim/bearing.js';
 import { nextTarget } from '../sim/waypointRunner.js';
-import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, pickAlert, wrapDeg } from './format.js';
+import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, wrapDeg } from './format.js';
 import ElevationProfile from './ElevationProfile.jsx';
 import RadioLink from './RadioLink.jsx';
 import SlopeAhead from './SlopeAhead.jsx';
@@ -15,7 +16,8 @@ import * as I from './icons.jsx';
 import NavLine from './NavLine.jsx';
 import Minimap from './Minimap.jsx';
 import './hud.css';
-import SamplingPanel from './SamplingPanel.jsx';
+import { SamplingChecklist, SamplingCrosshair } from './SamplingPanel.jsx';
+import PartnerPanel from './PartnerPanel.jsx';
 
 // Shared source tag (#62). The HUD never takes the pointer, so the tag shows its tag text only and puts the full
 // source in the title and the screen reader text.
@@ -30,8 +32,8 @@ function Clocks() {
   const { elapsedSec, lmst } = useMissionStore(useShallow((s) => ({ elapsedSec: s.mission.elapsedSec, lmst: s.mission.lmst })));
   return (
     <>
-      <div className="hud-eva"><Pill icon={<I.Stopwatch />} label="EVA time"><b>EVA {formatEva(elapsedSec)}</b></Pill></div>
-      <div className="hud-lmst"><Pill icon={<I.Horizon />} label="Local mean solar time"><b>{lmst || '––:––'}</b> <small>LMST</small></Pill></div>
+      <div className="hud-eva"><Pill icon={<I.Stopwatch />} label={t('ui.eva.time')}><b>{t('ui.eva')}{formatEva(elapsedSec)}</b></Pill></div>
+      <div className="hud-lmst"><Pill icon={<I.Horizon />} label={t('ui.local.mean.solar.time')}><b>{lmst || '––:––'}</b> <small>{t('ui.lmst')}</small></Pill></div>
     </>
   );
 }
@@ -60,7 +62,7 @@ function HeadingTape() {
   }
   const path = `M${arc(-SPAN).x} ${arc(-SPAN).y} A${R} ${R} 0 0 1 ${arc(SPAN).x} ${arc(SPAN).y}`;
   return (
-    <div className="hud-heading" aria-label={h === null ? 'Heading unknown' : `Heading ${Math.round(h)} degrees`}>
+    <div className="hud-heading" aria-label={h === null ? t('ui.heading.unknown') : t('ui.heading.p0.degrees', { p0: Math.round(h) })}>
       <svg viewBox={`0 0 ${W} 120`} className="hud-tape" aria-hidden="true">
         <path d={path} className="hud-tape-arc" />
         {ticks}{marker}
@@ -83,9 +85,9 @@ function SuitPanel() {
   })));
   const battLevel = batteryLevel(s.batt);
   return (
-    <section className="hud-panel hud-suit" aria-label="Suit">
+    <section className="hud-panel hud-suit" aria-label={t('ui.suit')}>
       <div className="hud-row">
-        <div className="hud-row-head"><span className="hud-o2">O<sub>2</sub></span><b>{formatValue(s.o2)}</b><small>%</small><SourceTag path="suit.oxygenPct" /></div>
+        <div className="hud-row-head"><span className="hud-o2">{t('ui.o')}<sub>2</sub></span><b>{formatValue(s.o2)}</b><small>%</small><SourceTag path="suit.oxygenPct" /></div>
         <Bar frac={s.o2 / 100} level={s.status} />
       </div>
       <div className="hud-row">
@@ -93,12 +95,12 @@ function SuitPanel() {
         <Bar frac={s.batt / 100} level={battLevel} />
       </div>
       <div className="hud-row">
-        <div className="hud-row-head"><I.Gauge /><b>{formatValue(s.psi, 1)}</b><small>psi</small><SourceTag path="suit.pressurePsi" /></div>
+        <div className="hud-row-head"><I.Gauge /><b>{formatValue(s.psi, 1)}</b><small>{t('ui.psi')}</small><SourceTag path="suit.pressurePsi" /></div>
         <Bar frac={s.psi / 4.3} level="nominal" />
       </div>
-      <div className={'hud-walkback hud-' + s.status} title="Oxygen margin after walking back to the habitat and keeping the 30 min reserve">
-        <div className="hud-row-head"><I.Return /><b>{formatMinutes(s.marginSec, { signed: true })}</b><small>min</small><SourceTag path="suit.marginSec" /></div>
-        <div className="hud-caption">WALKBACK MARGIN · home in {formatMinutes(s.walkbackSec)} min</div>
+      <div className={'hud-walkback hud-' + s.status} title={t('ui.oxygen.margin.after.walking.back.to.the.habitat')}>
+        <div className="hud-row-head"><I.Return /><b>{formatMinutes(s.marginSec, { signed: true })}</b><small>{t('ui.min')}</small><SourceTag path="suit.marginSec" /></div>
+        <div className="hud-caption">{t('ui.walkback.margin.home.in')}{formatMinutes(s.walkbackSec)}{t('units.minutesSuffix')}</div>
       </div>
     </section>
   );
@@ -118,11 +120,11 @@ function EnvValue({ icon, path, value, unit, title }) {
 function EnvStrip() {
   const e = useMissionStore(useShallow((s) => ({ t: s.environment.tempC, w: s.environment.windMs, tau: s.environment.dustOpacity, dose: s.environment.doseUgy, rate: s.environment.doseRateUgyH })));
   return (
-    <section className="hud-panel hud-env" aria-label="Environment">
-      <EnvValue icon={<I.Thermometer />} path="environment.tempC" value={formatValue(e.t)} unit="°C" title="Air temperature" />
-      <EnvValue icon={<I.Wind />} path="environment.windMs" value={formatValue(e.w)} unit="m/s" title="Wind speed" />
-      <EnvValue icon={<span className="hud-tau">τ</span>} path="environment.dustOpacity" value={formatValue(e.tau, 2)} title="Dust opacity (tau)" />
-      <EnvValue icon={<I.Radiation />} path="environment.doseUgy" value={formatValue(e.dose)} unit="µGy" title={'Radiation dose this EVA' + (typeof e.rate === 'number' ? ` · rate ${e.rate.toFixed(1)} µGy/h` : '')} />
+    <section className="hud-panel hud-env" aria-label={t('ui.environment')}>
+      <EnvValue icon={<I.Thermometer />} path="environment.tempC" value={formatValue(e.t)} unit={t('ui.c')} title={t('ui.air.temperature')} />
+      <EnvValue icon={<I.Wind />} path="environment.windMs" value={formatValue(e.w)} unit={t('ui.m.s')} title={t('ui.wind.speed')} />
+      <EnvValue icon={<span className="hud-tau">τ</span>} path="environment.dustOpacity" value={formatValue(e.tau, 2)} title={t('ui.dust.opacity.tau')} />
+      <EnvValue icon={<I.Radiation />} path="environment.doseUgy" value={formatValue(e.dose)} unit={t('ui.gy')} title={t('ui.radiation.dose.this.eva') + (typeof e.rate === 'number' ? t('ui.rate.rate.gy.h', { rate: formatNumber(e.rate, 1) }) : '')} />
     </section>
   );
 }
@@ -153,24 +155,24 @@ function WaypointPanel({ heightAt, slopeAt }) {
   }));
   const px = w?.px, pz = w?.pz;
   const position = useMemo(() => (Number.isFinite(px) && Number.isFinite(pz) ? { x: px, z: pz } : null), [px, pz]);
-  if (!w) return <section className="hud-panel hud-waypoint hud-waypoint-empty" aria-label="Next waypoint">No route yet · plan one in Plan mode</section>;
+  if (!w) return <section className="hud-panel hud-waypoint hud-waypoint-empty" aria-label={t('ui.next.waypoint')}>{t('ui.no.route.yet.plan.one.in.plan.mode')}</section>;
   return (
-    <section className="hud-panel hud-waypoint" aria-label={w.complete ? 'Route complete' : w.shelter ? 'Shelter' : 'Next waypoint'} title={w.complete ? undefined : w.full}>
+    <section className="hud-panel hud-waypoint" aria-label={w.complete ? t('ui.route.complete') : w.shelter ? t('ui.shelter') : t('ui.next.waypoint')} title={w.complete ? undefined : w.full}>
       <div className="hud-waypoint-row">
         {w.complete ? (
           <>
-            <div className="hud-wp-name"><I.Pointer /><b>Route complete</b></div>
-            <div className="hud-wp-cell"><div><b>{w.reached}</b><small>of {w.total}</small></div><span>REACHED</span></div>
+            <div className="hud-wp-name"><I.Pointer /><b>{t('ui.route.complete')}</b></div>
+            <div className="hud-wp-cell"><div><b>{w.reached}</b><small>{t('ui.of')}{w.total}</small></div><span>{t('ui.reached')}</span></div>
           </>
         ) : (
           <>
-            <div className="hud-wp-name"><I.Pointer /><b>{w.name}</b>{w.shelter && <small>SHELTER</small>}</div>
-            <div className="hud-wp-cell"><div><b>{w.range}</b><small>m</small><SourceTag path="navigation.waypointRangeM" /></div><span>RNG</span></div>
-            <div className="hud-wp-cell"><div><b>{String(w.brg).padStart(3, '0')}</b><small>°</small><SourceTag path="navigation.waypointBearingDeg" /></div><span>BRG</span></div>
-            <div className="hud-wp-cell"><div><b>{w.eta}</b><small>min</small></div><span>ETA</span></div>
+            <div className="hud-wp-name"><I.Pointer /><b>{w.name}</b>{w.shelter && <small>{t('ui.shelter.89')}</small>}</div>
+            <div className="hud-wp-cell"><div><b>{w.range}</b><small>{t('units.metres')}</small><SourceTag path="navigation.waypointRangeM" /></div><span>{t('ui.rng')}</span></div>
+            <div className="hud-wp-cell"><div><b>{String(w.brg).padStart(3, '0')}</b><small>°</small><SourceTag path="navigation.waypointBearingDeg" /></div><span>{t('ui.brg')}</span></div>
+            <div className="hud-wp-cell"><div><b>{w.eta}</b><small>{t('ui.min')}</small></div><span>{t('ui.eta')}</span></div>
           </>
         )}
-        <div className="hud-wp-cell"><div><b>{formatValue(w.slope)}</b><small>°</small></div><span>SLOPE</span></div>
+        <div className="hud-wp-cell"><div><b>{formatValue(w.slope)}</b><small>°</small></div><span>{t('ui.slope')}</span></div>
       </div>
       <ElevationProfile
         path={w.path}
@@ -241,14 +243,14 @@ function WaypointMarker({ engine }) {
     <>
       <div ref={marker} className="hud-wp-marker" style={{ left: 0, top: 0, visibility: 'hidden' }} title={info.full}>
         <span className="hud-wp-marker-name">{info.name}</span>
-        <span className="hud-wp-marker-range">{info.rangeM} m<SourceTag path="navigation.waypointRangeM" /></span>
+        <span className="hud-wp-marker-range">{info.rangeM}{t('units.metresSuffix')}<SourceTag path="navigation.waypointRangeM" /></span>
       </div>
       <div
         ref={arrow}
         className="hud-wp-arrow"
         style={{ left: 0, top: 0, visibility: 'hidden' }}
         title={`${info.full} · ${info.rangeM} m`}
-        aria-label={`Waypoint ${info.full}, ${info.rangeM} metres, off screen`}
+        aria-label={t('ui.waypoint.p0.p1.metres.off.screen', { p0: info.full, p1: info.rangeM })}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 21 21 12 16 3 21Z" /></svg>
       </div>
@@ -256,35 +258,30 @@ function WaypointMarker({ engine }) {
   );
 }
 
-function AlertBanner() {
-  const alert = useMissionStore(useShallow((s) => { const a = pickAlert(s.alerts); return a ? { id: a.id, level: a.level, text: a.text } : null; }));
-  if (!alert) return null;
-  return (
-    <div className={'hud-alert hud-alert-' + alert.level} role={alert.level === 'info' ? 'status' : 'alert'}>
-      <I.Alert /><span>{alert.text}</span>
-    </div>
-  );
-}
-
 /**
- * The whole visor HUD. Rendered by App in Walk mode once the scene is ready.
+ * The whole visor HUD. Rendered by App in Walk mode once the scene is ready. Alerts show in App's event banner, under
+ * the heading box (src/events/events.css), so the HUD has no alert strip of its own.
  * `minimapRoute` is App's route tracker: it outlives this component so Plan mode does not reset the walk.
  */
 export default function Hud({ engine, minimapRoute }) {
   return (
-    <div className="hud" aria-label="Helmet display">
+    <div className="hud" aria-label={t('ui.helmet.display')}>
       <HeadingTape />
       <WaypointMarker engine={engine} />
       <SlopeAhead engine={engine} />
-      <AlertBanner />
       <Clocks />
       <SuitPanel />
-      <Minimap tracker={minimapRoute} />
-      <EnvStrip />
-      <RadioLink engine={engine} />
-      <NavLine><SourceTag path="navigation.errorM" /></NavLine>
+      <PartnerPanel />
+      {/* One flex column on the right (#191): each panel sits under the one above, so none can cover another. */}
+      <div className="hud-right">
+        <Minimap tracker={minimapRoute} />
+        <SamplingChecklist />
+        <EnvStrip />
+        <NavLine><SourceTag path="navigation.errorM" /></NavLine>
+        <RadioLink engine={engine} />
+      </div>
       <WaypointPanel heightAt={engine?.heightAt} slopeAt={engine?.slopeAt} />
-      <SamplingPanel />
+      <SamplingCrosshair />
     </div>
   );
 }

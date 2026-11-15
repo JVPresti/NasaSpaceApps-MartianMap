@@ -46,7 +46,7 @@ A partner source is any object with:
 
 | Source | File | What it does |
 |---|---|---|
-| `createScriptedPartner()` | `src/engine/partnerSource.js` | **The test bench's partner, now the default.** It patrols between (14, 58) and (5, 12) with 3 s pauses. The commands `'toggleCase'` and `'visitHabitat'` run the hand-over and the walk into the habitat and back. The case clip is timed from its data: 2.07 s, release or grab at 0.9 s (`astronaut.json`). |
+| `createScriptedPartner()` | `src/engine/partnerSource.js` | **The test bench's partner, now the default.** It patrols between (14, 58) and (5, 12) with 3 s pauses. The commands `'toggleCase'` and `'visitHabitat'` run the hand-over and the walk into the habitat and back. The case clip is timed from its data: 2.07 s, release or grab at 0.9 s (`astronaut.json`). For `'toggleCase'` it walks toward where the player is now, re-aimed every frame, and stops 1.6 m from them (`HANDOVER_M`), or at once if the player walks up closer. |
 | `createStaticPartner()` | `src/engine/partnerSource.js` | Holds one pose; `set(patch)` changes it. It is the shape of a network source: the latest received state. |
 
 ## Using it
@@ -61,6 +61,10 @@ engine.partnerCommand('toggleCase');                              // forwarded t
 - **`gait` and `action`:** take them from the remote player's state.
 - **`color`:** take it from the player's slot in `PLAYER_COLORS` (`src/engine/crew.js`).
 - **Height:** never send it, because each client reads it from its own terrain.
+
+## Partner status on the HUD (#70)
+
+`engine.getPartner()` returns `{ id, color, state }`, the source's id and colour and the PartnerState it returned on the last frame. The partner runner (`src/sim/partnerRunner.js`) reads only that, so a network source feeds the HUD chip, the partner's suit and the separation alert with no other change. The partner's O2 and battery come from the suit model, fed by the movement between its reported positions.
 
 ## Crew colours
 

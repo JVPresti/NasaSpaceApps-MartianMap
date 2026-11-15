@@ -15,7 +15,8 @@
     "bench": "node scripts/bench-replan.mjs",
     "prints:eva": "node scripts/eva-prints.mjs",
     "preview": "vite preview",
-    "credits": "node scripts/build-credits.mjs"
+    "credits": "node scripts/build-credits.mjs",
+    "previews": "node scripts/build-layer-previews.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

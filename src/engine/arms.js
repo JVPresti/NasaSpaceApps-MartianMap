@@ -1,3 +1,4 @@
+import { t, translateText } from '../i18n/index.js';
 // Ported from docs/marswalk-assets/testbench-reference/main.js (lines 505-604).
 import * as THREE from 'three';
 import * as SH from './shaders.js';
@@ -162,9 +163,9 @@ export function createArms(ctx) {
     draw() {
       const c = this.canvas.getContext('2d'), W = 512, H = 352, cur = U.uLayer.value | 0;
       c.fillStyle = '#06181d'; c.fillRect(0, 0, W, H); c.strokeStyle = '#8fd3ee'; c.lineWidth = 3; c.strokeRect(8, 8, W - 16, H - 16);
-      c.fillStyle = '#8fd3ee'; c.font = '600 22px sans-serif'; c.fillText('VISION LAYER', 28, 46);
+      c.fillStyle = '#8fd3ee'; c.font = '600 22px sans-serif'; c.fillText(t('ui.vision.layer'), 28, 46);
       LAYER_NAMES.forEach((n, i) => { const y = 74 + i * 52; c.fillStyle = i === cur ? '#8fd3ee' : 'rgba(143,211,238,.14)'; c.fillRect(28, y, W - 56, 40);
-        c.fillStyle = i === cur ? '#06181d' : '#cfeaf5'; c.font = '600 24px sans-serif'; c.fillText(n, 44, y + 28); });
+        c.fillStyle = i === cur ? '#06181d' : '#cfeaf5'; c.font = '600 24px sans-serif'; c.fillText(translateText(n), 44, y + 28); });
       if (!this.screenCanvas) this.tex.needsUpdate = true;   // with an app canvas the interface owns the uploads
     },
     /** Frees the screen textures (app and fallback) once; the engine's material sweep sees map === null afterwards. */

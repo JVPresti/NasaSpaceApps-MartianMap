@@ -4,7 +4,7 @@ import { resetStore, useMissionStore } from './store.js';
 
 function fakeEngine() {
   return {
-    setMode: vi.fn(), setLayer: vi.fn(), setSky: vi.fn(), setSkyBlend: vi.fn(),
+    setMode: vi.fn(), setSlopeGrid: vi.fn(), setLayer: vi.fn(), setSky: vi.fn(), setSkyBlend: vi.fn(),
     setRoute: vi.fn(), setShelter: vi.fn(), setDust: vi.fn(), clearPrints: vi.fn(),
     getPlayer: () => ({ x: 0, z: 0, headingDeg: 0 }),
   };
