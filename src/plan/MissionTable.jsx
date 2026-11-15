@@ -24,6 +24,8 @@ import dustArt from '../assets/ui/hazard_dust.webp';
 import oxygenArt from '../assets/ui/hazard_oxygen.webp';
 import radiationArt from '../assets/ui/hazard_radiation.webp';
 import { fixed as num, routeMetrics } from './routePlan.js';
+import HabitatSeat from '../online/HabitatSeat.jsx';
+import { HABITAT_TAB } from '../online/crewMap.js';
 import './table.css';
 
 // The mission table (#11): the screen in the habitat where the EVA is planned, before the helmet view. Four steps
@@ -302,13 +304,18 @@ function BeginButton({ planner, totals, evaBegun, onBeginEva }) {
  *   onControls?: () => void }} props
  */
 export default function MissionTable({ planner, waypoints, evaBegun = false, onBeginEva, onControls }) {
-  const [tab, setTab] = useState('site');   // the table opens on step 1
+  // The habitat seat (#55) gets a Crew step first and opens on it.
+  const habitatSeat = useMissionStore((s) => s.online?.me?.role === 'habitat');
+  const [tab, setTab] = useState(() => (habitatSeat ? 'crew' : 'site'));   // the table opens on step 1
+  const [seat, setSeat] = useState(habitatSeat);
+  if (seat !== habitatSeat) { setSeat(habitatSeat); setTab(habitatSeat ? 'crew' : 'site'); }
+  const tabs = habitatSeat ? [HABITAT_TAB(), ...TABS] : TABS;
   const route = useMissionStore((s) => s.route);
   const layer = useMissionStore((s) => s.view.layer);
   const clock = useMissionStore(useShallow((s) => ({ lmst: s.mission.lmst, elapsedSec: s.mission.elapsedSec })));
   const stops = useStops();
   const science = useMemo(() => new Set(waypoints.filter((w) => stopHasContent(stopForWaypoint(stops, w.name))).map((w) => w.name)), [waypoints, stops]);
-  const index = TABS.findIndex((item) => item.id === tab);
+  const index = tabs.findIndex((item) => item.id === tab);
   const totals = route.totals;
   const metrics = Object.fromEntries(routeMetrics(route).map((m) => [m.key, m]));
   const steepTone = route.steepestSlopeDeg > SLOPE_LIMITS.noGo ? 'warning' : route.steepestSlopeDeg > SLOPE_LIMITS.caution ? 'caution' : null;
@@ -317,7 +324,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
     if (!step) return;
     event.preventDefault();
-    const next = TABS[(index + step + TABS.length) % TABS.length];
+    const next = tabs[(index + step + tabs.length) % tabs.length];
     setTab(next.id);
     document.getElementById(`table-tab-${next.id}`)?.focus();
   };
@@ -344,7 +351,9 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
   );
 
   let body;
-  if (tab === 'site') {
+  if (tab === 'crew') {
+    body = <HabitatSeat renderMap={map} />;
+  } else if (tab === 'site') {
     const target = stopForWaypoint(stops, waypoints.at(-1)?.name ?? 'Cheyava Falls');
     // The close-up of the leopard spots (PIA26368) fills a tall panel better than the wide overhead mosaic.
     const image = target ? (target.images?.find((i) => i?.file && i?.credit && !i.reference_match) ?? cardImage(target)) : null;
@@ -529,7 +538,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
       <header className="table-top">
         <p className="table-brand">Marswalk</p>
         <div className="table-tabs" role="tablist" aria-label="Planning steps" onKeyDown={onTabKey}>
-          {TABS.map((item) => (
+          {tabs.map((item) => (
             <button
               key={item.id}
               id={`table-tab-${item.id}`}
