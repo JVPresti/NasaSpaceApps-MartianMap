@@ -14,6 +14,8 @@ import RadioLink from './RadioLink.jsx';
 import LayerChip from './LayerChip.jsx';
 import SlopeAhead from './SlopeAhead.jsx';
 import * as I from './icons.jsx';
+import { clearOfRects, createPanelRects } from './labelClear.js';
+import { applyVisorClasses, isDetailToggle, samplingInProgress } from './visorMode.js';
 import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import { setLiveEngine, usePoseFrame } from './livePose.js';
 import NavLine from './NavLine.jsx';
@@ -237,26 +239,6 @@ function placeMarker(engine, target, width, height) {
   return { mode: 'edge', x: width / 2 + dx * t, y: height / 2 + dy * t, angle: relative };
 }
 
-// A world label that falls behind a HUD panel shows through it and reads as a glitch (#283): push the label out of the
-// panel along the shorter way, so it stays next to the panel instead of under it.
-function clearOfPanels(place, label, hud) {
-  const w = label.offsetWidth, h = label.offsetHeight, origin = hud.getBoundingClientRect();
-  // the science card and the Walk alert sit outside the HUD element but over the same view
-  const boxes = [...document.querySelectorAll('.hud .hud-panel, .stop-card-walk, .event-banner-walk')].map((panel) => {
-    const r = panel.getBoundingClientRect();
-    return r.width ? { left: r.left - origin.left - w / 2 - 4, right: r.right - origin.left + w / 2 + 4, top: r.top - origin.top - h / 2 - 4, bottom: r.bottom - origin.top + h / 2 + 4 } : null;
-  }).filter(Boolean);
-  const inside = (b) => place.x > b.left && place.x < b.right && place.y > b.top && place.y < b.bottom;
-  for (const b of boxes) {
-    if (!inside(b)) continue;
-    const moves = [[place.x - b.left, 'x', b.left], [b.right - place.x, 'x', b.right], [place.y - b.top, 'y', b.top], [b.bottom - place.y, 'y', b.bottom]];
-    const [, axis, to] = moves.reduce((a, c) => (c[0] < a[0] ? c : a));
-    place[axis] = to;
-  }
-  // no clear spot next to the panels: hide the label, the panel below already names the waypoint and its range
-  return !boxes.some(inside);
-}
-
 // Projects every frame and writes style.transform through refs, so the marker follows head turns without a React
 // render. The store only changes the text (name and range) at its own rate.
 function WaypointMarker({ engine }) {
@@ -272,14 +254,18 @@ function WaypointMarker({ engine }) {
 
   useEffect(() => {
     if (!engine || !hasTarget) return undefined;
-    let frame = 0;
+    let frame = 0, panels = null;
     const draw = () => {
       frame = requestAnimationFrame(draw);
       const m = marker.current, a = arrow.current, t = target.current;
       if (!m || !a) return;
       const box = m.parentElement;   // the .hud overlay, inset 0 over the engine container
       const place = t && box ? placeMarker(engine, t, box.clientWidth, box.clientHeight) : null;
-      const clear = place?.mode === 'marker' ? clearOfPanels(place, m, box) : true;
+      // a world label behind a HUD panel shows through it and reads as a glitch (#283). Move it beside the panel, or hide
+      // it when there is no clear spot, since the panel below already names the waypoint and its range
+      if (place?.mode === 'marker' && box && !panels) panels = createPanelRects(box);
+      const p = place?.mode === 'marker' ? panels.get(m) : null;
+      const clear = p ? clearOfRects(place, p.w, p.h, p.rects) : true;
       m.style.visibility = place?.mode === 'marker' && clear ? 'visible' : 'hidden';
       a.style.visibility = place?.mode === 'edge' ? 'visible' : 'hidden';
       if (!place) return;
@@ -287,7 +273,7 @@ function WaypointMarker({ engine }) {
       el.style.transform = `translate(${place.x}px, ${place.y}px) translate(-50%, -50%)` + (place.mode === 'edge' ? ` rotate(${place.angle}deg)` : '');
     };
     draw();
-    return () => cancelAnimationFrame(frame);
+    return () => { cancelAnimationFrame(frame); if (panels) panels.dispose(); };
   }, [engine, hasTarget]);
 
   if (!info) return null;
@@ -313,16 +299,11 @@ function WaypointMarker({ engine }) {
 // I shows every instrument (#283). By default the visor keeps what a walk needs: heading, EVA clock, suit and margin,
 // next waypoint, partner and minimap. The full set adds the environment strip, the navigation and radio lines, the
 // sampling checklist, local solar time and the source tag of each reading. A panel that is warning stays visible.
-const DETAIL_CODE = 'KeyI';
 function useHudDetail() {
   const [detail, setDetail] = useState(false);
   useEffect(() => {
     const onKey = (e) => {
-      if (e.code !== DETAIL_CODE || e.repeat || e.ctrlKey || e.metaKey || e.altKey || wristOwnsKeys()) return;
-      const el = e.target;
-      if (el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName))) return;
-      if (document.querySelector('dialog[open]')) return;
-      setDetail((v) => !v);
+      if (isDetailToggle(e, { wristOwnsKeys: wristOwnsKeys(), dialogOpen: !!document.querySelector('dialog[open]') })) setDetail((v) => !v);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -337,7 +318,7 @@ function useHudDetail() {
  */
 function KeyHint({ engine }) {
   const ref = useRef(null);
-  useEffect(() => { setLiveEngine(engine ?? null); return () => setLiveEngine(null); }, [engine]);
+  useEffect(() => { setLiveEngine(engine ?? null); return () => setLiveEngine(null); }, [engine]);   // the per-frame pose feed (#307)
   // hud-wrist while the wrist screen is up (#286): the waypoint panel folds to its header row (hud.css)
   useEffect(() => {
     const hud = ref.current && ref.current.closest('.hud');
@@ -346,15 +327,11 @@ function KeyHint({ engine }) {
     return () => { if (typeof off === 'function') off(); hud.classList.remove('hud-wrist'); };
   }, [engine]);
   const detail = useHudDetail();
-  const sampling = useMissionStore((s) => {
-    const c = s.sampling.checklist;
-    return !!(s.sampling.status && s.sampling.status.target) || c.photo || c.texture || c.sample;
-  });
+  const sampling = useMissionStore(samplingInProgress);
   useLayoutEffect(() => {
     const hud = ref.current && ref.current.closest('.hud');
     if (!hud) return undefined;
-    hud.classList.toggle('hud-detail', detail);
-    hud.classList.toggle('hud-sampling-on', sampling);
+    applyVisorClasses(hud.classList, { detail, sampling });
     return () => hud.classList.remove('hud-detail', 'hud-sampling-on');
   }, [detail, sampling]);
   return (
