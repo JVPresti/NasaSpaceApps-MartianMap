@@ -12,6 +12,37 @@
 const BTU_H_TO_W = 0.29307107;
 const LBM_TO_G = 453.59237;
 
+const TAG_RANK = { SIM: 0, DERIVED: 1, DATA: 2 };
+
+/**
+ * hazards.json inputs of each suit value. The walk HUD (suit.*) and the Plan panel (route.totals.*) take their tags
+ * from these same lists, so a margin or a walk time carries one tag in both places.
+ */
+const SPEED_IDS = ['mobility.speed_rule', 'mobility.speed.flat', 'mobility.speed.min', 'mobility.speed.jog', 'model:walking_metabolic'];
+const O2_IDS = [...SPEED_IDS, 'metabolic.model_mass', 'suit.o2.primary_usable'];
+export const SUIT_INPUTS = Object.freeze({
+  speed: SPEED_IDS,
+  o2: O2_IDS,
+  battery: [...SPEED_IDS, 'suit.battery.primary_capacity', 'suit.battery.average_draw', 'suit.battery.effort_share', 'suit.metabolic.design_average'],
+  margin: [...O2_IDS, 'suit.reserve.time', 'suit.reserve.walkback_pad', 'suit.alert.caution_margin', 'suit.alert.warning_margin', 'suit.eva_duration_max'],
+});
+
+/**
+ * Tag of a value computed from several inputs: the weakest of their tags (SIM < DERIVED < DATA), and never better
+ * than DERIVED because we did the computing (plan section 4.1).
+ * @param {object} hazards parsed hazards.json
+ * @param {string[]} ids keys of hazards.values; 'model:<name>' for hazards.models
+ */
+export function combinedTag(hazards, ids) {
+  let rank = TAG_RANK.DERIVED;
+  for (const id of ids) {
+    const e = id.startsWith('model:') ? hazards.models[id.slice(6)] : hazards.values[id];
+    if (!e || !(e.tag in TAG_RANK)) throw new Error('hazards.json has no tag for ' + id);
+    rank = Math.min(rank, TAG_RANK[e.tag]);
+  }
+  return Object.keys(TAG_RANK).find((k) => TAG_RANK[k] === rank);
+}
+
 /** @param {object} hazards parsed public/data/hazards.json */
 export function suitConstantsFromHazards(hazards) {
   const v = hazards.values, m = hazards.models.walking_metabolic.constants;
@@ -36,6 +67,7 @@ export function suitConstantsFromHazards(hazards) {
     designAvgW: num('suit.metabolic.design_average') * BTU_H_TO_W,
     designPeakW: num('suit.metabolic.design_peak') * BTU_H_TO_W,
     reserveSec: num('suit.reserve.time') * 60,
+    evaMaxSec: num('suit.eva_duration_max') * 3600,
     walkbackPad: num('suit.reserve.walkback_pad') / 100,
     cautionSec: num('suit.alert.caution_margin') * 60,
     warningSec: num('suit.alert.warning_margin') * 60,
@@ -44,14 +76,17 @@ export function suitConstantsFromHazards(hazards) {
     speedJog: num('mobility.speed.jog'),
     speedMin: num('mobility.speed.min'),
   };
-  // where each displayed suit value comes from (tags as in hazards.json; our combinations are DERIVED)
+  // where each displayed suit value comes from (tags as in hazards.json; our combinations are DERIVED). The margin
+  // and the walkback take the weakest tag of their inputs, as route.totals does (src/sim/legCosts.js).
+  const marginTag = combinedTag(hazards, SUIT_INPUTS.margin);
   c.sources = {
     'suit.pressurePsi': { tag: v['suit.pressure.nominal'].tag, source: v['suit.pressure.nominal'].label },
     'suit.oxygenPct': { tag: 'DERIVED', source: 'suit model (src/sim/suitModel.js) from hazards.json: xEMU O2, walking_metabolic' },
     'suit.oxygenSec': { tag: 'DERIVED', source: 'suit model: O2 left / current O2 rate' },
     'suit.batteryPct': { tag: 'DERIVED', source: 'suit model: xEMU battery, draw split is SIM' },
-    'suit.walkbackSec': { tag: 'DERIVED', source: 'suit model: route home at constant effort (SIM rule)' },
-    'suit.marginSec': { tag: 'DERIVED', source: 'suit model: Apollo 30 min reserve + 20 % pad; thresholds SIM' },
+    'suit.walkbackSec': { tag: combinedTag(hazards, SUIT_INPUTS.speed), label: 'Suit model', source: 'suit model: walk to the habitat, or to the shelter during an event, at constant effort (SIM rule)' },
+    'suit.marginSec': { tag: marginTag, label: 'Suit model', source: 'suit model: margin now, the O2 left after the padded walkback and the Apollo 30 min reserve, capped at the 8 h EVA limit minus the walkback; thresholds SIM' },
+    'suit.status': { tag: marginTag, label: 'Suit model', source: 'suit model: margin now against the caution and warning thresholds (SIM)' },
     'suit.effort': { tag: 'DERIVED', source: 'suit model: metabolic power between rest and design peak' },
   };
   return c;
@@ -132,6 +167,18 @@ export function walkCost(path, heightAt, c, { stepM = 10, pad = c.walkbackPad } 
   return { distanceM, timeSec, o2G, batteryWh, climbM, descentM, maxSlopeDeg: Math.atan(maxGrade) * 180 / Math.PI };
 }
 
+/** Nearest point on a polyline to a position: the segment index and the foot of the perpendicular. */
+function nearestOnPath(from, path) {
+  let best = { d2: Infinity, seg: 0, px: path[0][0], pz: path[0][1] };
+  for (let k = 0; k < path.length - 1; k++) {
+    const [ax, az] = path[k], [bx, bz] = path[k + 1], dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz;
+    const t = l2 > 0 ? Math.max(0, Math.min(1, ((from.x - ax) * dx + (from.z - az) * dz) / l2)) : 0;
+    const px = ax + dx * t, pz = az + dz * t, d2 = (from.x - px) ** 2 + (from.z - pz) ** 2;
+    if (d2 < best.d2) best = { d2, seg: k, px, pz };
+  }
+  return best;
+}
+
 /**
  * The path home from a position: back along the planned route to its start (the habitat), or straight to the
  * habitat when there is no route. The route is walked from the nearest point on it.
@@ -142,16 +189,27 @@ export function walkCost(path, heightAt, c, { stepM = 10, pad = c.walkbackPad } 
  */
 export function pathHome(from, routePath, habitat) {
   if (!routePath || routePath.length < 2) return [[from.x, from.z], [habitat.x, habitat.z]];
-  let best = { d2: Infinity, seg: 0, px: routePath[0][0], pz: routePath[0][1] };
-  for (let k = 0; k < routePath.length - 1; k++) {
-    const [ax, az] = routePath[k], [bx, bz] = routePath[k + 1], dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz;
-    const t = l2 > 0 ? Math.max(0, Math.min(1, ((from.x - ax) * dx + (from.z - az) * dz) / l2)) : 0;
-    const px = ax + dx * t, pz = az + dz * t, d2 = (from.x - px) ** 2 + (from.z - pz) ** 2;
-    if (d2 < best.d2) best = { d2, seg: k, px, pz };
-  }
+  const best = nearestOnPath(from, routePath);
   const home = [[from.x, from.z], [best.px, best.pz]];
   for (let k = best.seg; k >= 0; k--) home.push(routePath[k]);
   return home;
+}
+
+/**
+ * The path to an event shelter: forward along the shelter route to its end, from the nearest point on it, or
+ * straight to the shelter when there is no route. The re-planner starts that route at the player and ends it at
+ * the shelter (src/state/events.js), so walking it backwards, as pathHome does, would give a walk of 0 m.
+ * @param {{ x: number, z: number }} from
+ * @param {Array<[number, number]> | null} routePath shelter route, ending at the shelter
+ * @param {{ x: number, z: number }} shelter
+ * @returns {Array<[number, number]>}
+ */
+export function pathToShelter(from, routePath, shelter) {
+  if (!routePath || routePath.length < 2) return [[from.x, from.z], [shelter.x, shelter.z]];
+  const best = nearestOnPath(from, routePath);
+  const out = [[from.x, from.z], [best.px, best.pz]];
+  for (let k = best.seg + 1; k < routePath.length; k++) out.push(routePath[k]);
+  return out;
 }
 
 /** Fresh suit consumables: full primary O2 and battery. */
@@ -178,12 +236,18 @@ export function stepSuit(state, { dtSec, speedMs, gradient }, c) {
 
 /**
  * Values for the store's suit section.
- * margin = O2 time left - (walkback O2 with the pad, as time at the current rate) - 30 min reserve (suit.alert.caution_margin note).
+ * O2 margin = O2 time left - (walkback O2 with the pad, as time at the current rate) - 30 min reserve
+ * (suit.alert.caution_margin note). EVA margin = suit.eva_duration_max - EVA time so far - walkback time.
+ * The margin shown is the smaller of the two: at rest the O2 alone would last far past the 8 h EVA limit.
+ * @param {{ elapsedSec?: number | null }} [options] elapsedSec: EVA time so far (mission.elapsedSec)
  */
-export function suitReadout(state, walkback, c) {
+export function suitReadout(state, walkback, c, { elapsedSec = 0 } = {}) {
   const rate = Math.max(state.o2RateSmoothGs, o2RateGs(c.pBaseW, c));
   const oxygenSec = state.o2G / rate;
-  const marginSec = oxygenSec - walkback.o2G / rate - c.reserveSec;
+  const o2MarginSec = oxygenSec - walkback.o2G / rate - c.reserveSec;
+  const elapsed = Number.isFinite(elapsedSec) ? Math.max(0, elapsedSec) : 0;
+  const evaMarginSec = c.evaMaxSec - elapsed - walkback.timeSec;
+  const marginSec = Math.min(o2MarginSec, evaMarginSec);
   const status = marginSec <= c.warningSec ? 'warning' : marginSec < c.cautionSec ? 'caution' : 'nominal';
   return {
     oxygenG: state.o2G,
@@ -196,6 +260,9 @@ export function suitReadout(state, walkback, c) {
     walkbackSec: walkback.timeSec,
     walkbackO2G: walkback.o2G,
     marginSec,
+    o2MarginSec,
+    evaMarginSec,
+    marginLimit: evaMarginSec < o2MarginSec ? 'eva' : 'o2',
     status,
   };
 }

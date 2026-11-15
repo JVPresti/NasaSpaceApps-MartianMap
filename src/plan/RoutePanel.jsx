@@ -95,7 +95,7 @@ function DecisionReason({ planner, route }) {
 
   return (
     <div className={'decision-reason margin-' + totals.status}>
-      <p className="decision-margin">{t('ui.margin')}<b>{min(totals.marginSec)}</b>
+      <p className="decision-margin">{t('ui.margin.at.end.of.plan')}<b>{min(totals.marginSec)}</b>
         <span className="unit">{t('ui.min')}</span>{t('ui.over.the.30.min.reserve')}<SourceTag path="route.totals.marginSec" />
       </p>
       <p className="decision-detail">{t('ui.back.at.the.habitat.o2')}<b>{num(totals.arrivalO2Pct)}</b>

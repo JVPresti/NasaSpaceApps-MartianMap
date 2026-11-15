@@ -85,7 +85,7 @@ export function startPartnerRunner({
     // the partner walks home straight to the habitat: it does not follow the player's route
     const key = Math.round(st.x) + ',' + Math.round(st.z);
     if (key !== walkbackKey) { walkbackKey = key; walkback = walkCost(pathHome(st, null, habitat), heightAt, c); }
-    const r = suitReadout(suit, walkback, c);
+    const r = suitReadout(suit, walkback, c, { elapsedSec: s.mission.elapsedSec });
 
     const nav = s.navigation, hasNav = finite(nav.x) && finite(nav.z);
     const link = !lineOfSight || !hasNav || radioLinkState({ point: nav, mast: { x: st.x, z: st.z }, lineOfSight }).clear;

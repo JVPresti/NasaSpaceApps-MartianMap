@@ -62,8 +62,8 @@ setMode('plan');
 | `suit.batteryPct` | 0 to 100 (xEMU 756 Wh) | suit model | #19 |
 | `suit.pressurePsi` | suit pressure, 4.3 psid nominal | suit model | #19 |
 | `suit.metabolicW`, `effort` | metabolic power in W; effort 0 at rest, 1 at the design peak (879 W) | suit model | #19 |
-| `suit.walkbackSec`, `walkbackO2G` | time and O2 (with the 20 % pad) to walk back to the habitat entry in `public/data/shelters.json` along the route | suit model | #19, #129 |
-| `suit.marginSec` | O2 time left minus walkback minus the 30 min reserve | suit model | #19 |
+| `suit.walkbackSec`, `walkbackO2G`, `walkbackTo` | time and O2 (with the 20 % pad) to walk back to the habitat entry in `public/data/shelters.json` along the route. While `route.shelter` is set the walk follows the shelter route forward to the shelter instead. `walkbackTo` is `'habitat'` or `'shelter'` | suit model | #19, #129, #195 |
+| `suit.marginSec`, `o2MarginSec`, `evaMarginSec`, `marginLimit` | margin now: the smaller of the O2 margin (O2 time left minus walkback minus the 30 min reserve) and the EVA margin (`suit.eva_duration_max` minus `mission.elapsedSec` minus the walkback time). `marginLimit` names the smaller one, `'o2'` or `'eva'` | suit model | #19, #195 |
 | `suit.status` | `'nominal'`, `'caution'` (margin under 15 min) or `'warning'` (margin at or under 0) | suit model | #19, used by #26 |
 | `navigation.x`, `z`, `headingDeg` | position estimate; heading clockwise from north | engine bridge now; navigation model later | #6, #21, #42 |
 | `navigation.waypointRangeM`, `waypointBearingDeg` | distance and bearing to the next unvisited waypoint, written in Walk mode | waypoint runner | #61 |
@@ -77,7 +77,7 @@ setMode('plan');
 | `route.reason` | why the route changed, for example after an event | re-planner | #23 |
 | `route.shelter` | `{ id, name, x, z, type, protection }` from `public/data/shelters.json`: the shelter the re-planner chose, highlighted in green; `null` when no event is active | re-planner, events | #23, #24 to #26, #30 |
 | `route.legs` | `[{ from, to, distanceM, climbM, descentM, maxSlopeDeg, timeSec, o2G, o2Pct, batteryWh, batteryPct }]`, one per leg between consecutive `route.waypoints`, walked out at nominal effort. `maxSlopeDeg` is the steepest grade along the walking direction. `[]` without a route | per-leg costs (`src/sim/legCosts.js`) | #41 |
-| `route.totals` | the same fields summed over the legs (the maximum for `maxSlopeDeg`), plus the walk home along the same path with the 20 % pad (`returnTimeSec`, `returnO2G`, `returnBatteryWh`), what is left at the habitat (`arrivalO2G`, `arrivalO2Pct`, `arrivalBatteryWh`, `arrivalBatteryPct`), `marginSec` (O2 left at the habitat as time at the flat walking rate, minus the 30 min reserve) and `status` as for `suit.status`. `null` without a route | per-leg costs | #41 |
+| `route.totals` | the same fields summed over the legs (the maximum for `maxSlopeDeg`), plus the walk home along the same path with the 20 % pad (`returnTimeSec`, `returnO2G`, `returnBatteryWh`), what is left at the habitat (`arrivalO2G`, `arrivalO2Pct`, `arrivalBatteryWh`, `arrivalBatteryPct`), `marginSec` (margin at the end of the plan: O2 left at the habitat as time at the flat walking rate, minus the 30 min reserve, capped at `suit.eva_duration_max` minus the walk out and back) and `status` as for `suit.status`. `null` without a route | per-leg costs | #41 |
 | `route.decision` | `'pending'`, `'go'` or `'no-go'`, set by the crew in Plan mode | interface | #17 |
 | `route.skipped` | waypoint names the event route leaves out, for example after a dust storm | events | #24 |
 | `environment.dustOpacity` | tau. **The event engine writes this path.** The bridge turns it into the engine's storm-dust level (`src/state/dustLevel.js`): tau 0.45 (clear Jezero) is 0, tau 8 (global storm, Gale 2018) is 1. | events, MEDA replay | #22, #24, #27, #31 |
