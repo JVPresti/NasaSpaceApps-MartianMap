@@ -865,6 +865,12 @@ button.table-stop-name {
 .table-check input:hover { border-color: rgba(255, 255, 255, 0.75); }
 .table-check input:checked:hover { background-color: #ff8148; border-color: #ff8148; }
 
+/* Locked once the EVA has begun: the run keeps the events it started with. */
+.table-check:has(input:disabled) { cursor: default; opacity: 0.55; }
+.table-check input:disabled { cursor: default; }
+.table-check input:disabled:hover { border-color: rgba(255, 255, 255, 0.45); }
+.table-check input:checked:disabled:hover { background-color: var(--accent); border-color: var(--accent); }
+
 /* Route step: the four numbers centred in their quarter of the panel */
 .table-fill > .table-grid2 { justify-items: center; text-align: center; }
 

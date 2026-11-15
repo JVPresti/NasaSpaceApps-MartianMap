@@ -6,6 +6,7 @@
 // The colours repeat the terrain shader (src/engine/shaders.js, TERRAIN_FRAG) so a layer looks the same in both.
 
 import { SLOPE_LIMITS } from './layers.js';
+import { t } from '../i18n/index.js';
 
 /**
  * The square of ground the map shows: every point (route and stops) with a margin, clamped inside the tile.
@@ -59,7 +60,7 @@ export function toMap(x, z, crop) {
 /** Round a map width to a readable number of metres for the caption. */
 export function acrossLabel(size) {
   const step = size >= 1000 ? 50 : 10;
-  return `${Math.round(size / step) * step} m across`;
+  return t('map.across', { m: Math.round(size / step) * step });
 }
 
 // Mars colour ramp of the terrain shader (linear RGB). HiRISE is grayscale; the colour is artistic (credits statement).
