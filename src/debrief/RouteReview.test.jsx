@@ -174,6 +174,31 @@ describe('route review in the debrief', () => {
     expect(ruleNotes(null).find((n) => n.term === 'Risky').text).toContain('went under the reserve');
   });
 
+  it('states the whole verdict order in "How to read these numbers", in English and Spanish', () => {
+    const order = (notes) => notes.find((n) => n.term === 'Which verdict wins' || n.term === 'Qué veredicto gana').text;
+    const english = order(ruleNotes(1800));
+    expect(english).toContain(`ground at or above ${REVIEW_RULES.slopeLimitDeg}° (risky); an alert or a system re-plan when it started (forced); the margin under the reserve, or an alert that started while you were off the route (risky); a find or a sample (worth it); otherwise costly.`);
+    expect(english).toContain('a forced detour stays forced when the margin drops under the reserve or a second alert starts during it');
+    expect(text(renderDebrief(FOLLOWED))).toContain('Which verdict wins');
+    setLanguage('es');
+    const spanish = order(ruleNotes(1800));
+    expect(spanish).toContain(`terreno de ${REVIEW_RULES.slopeLimitDeg}° o más (arriesgado); una alerta o una nueva ruta del sistema al empezar (forzado); el margen bajo la reserva, o una alerta que empezó mientras estabas fuera de la ruta (arriesgado); un hallazgo o una muestra (valió la pena); si no, costoso.`);
+    expect(spanish).toContain('un desvío forzado sigue siendo forzado si el margen baja de la reserva o empieza una segunda alerta durante él');
+    expect(text(renderDebrief(FOLLOWED))).toContain('Qué veredicto gana');
+  });
+
+  it('keeps the lowest margin on a forced row', () => {
+    const track = walk([[0, 0], [150, 0], [200, 60], [250, 0], [400, 0]], (p, s) => (
+      s >= 200 ? { eventId: 'radiation', marginSec: -180 } : s >= 100 ? { eventId: 'dust-storm' } : {}
+    ));
+    const summary = summaryWith(track, { events: [{ type: 'start', eventId: 'dust-storm', label: 'Dust storm', atSec: 100 }, { type: 'start', eventId: 'radiation', label: 'Radiation alert', atSec: 200 }] });
+    expect(reviewRoute(summary).deviations.map((d) => d.verdict)).toEqual(['forced']);
+    const body = text(renderView(summary));
+    expect(body).toContain('Forced');
+    expect(body).toContain('Alert active when you left the route: Dust storm');
+    expect(body).toContain('Lowest margin -3 min');
+  });
+
   it('speaks Spanish', () => {
     setLanguage('es');
     const body = text(renderDebrief(DETOURS));

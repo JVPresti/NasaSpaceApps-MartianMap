@@ -89,5 +89,7 @@ export function ruleNotes(reserveSec = null, rules = REVIEW_RULES) {
     { term: verdictLabel('forced'), text: t('review.notes.forced') },
     { term: verdictLabel('risky'), text: reserve === null ? t('review.notes.risky.short', { slope: rules.slopeLimitDeg }) : t('review.notes.risky', { slope: rules.slopeLimitDeg, reserve }) },
     { term: verdictLabel('costly'), text: t('review.notes.costly') },
+    // The order judge() in src/sim/routeReview.js applies, accepted by the product owner as built.
+    { term: t('review.notes.order.term'), text: t('review.notes.order', { slope: rules.slopeLimitDeg }) },
   ];
 }

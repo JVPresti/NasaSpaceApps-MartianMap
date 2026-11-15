@@ -207,6 +207,20 @@ describe('judging a deviation', () => {
     expect(review(steep).deviations[0]).toMatchObject({ verdict: 'risky', reason: { code: 'slope' } });
   });
 
+  it('keeps a forced detour forced when a second alert starts during it, with its lowest margin', () => {
+    // A dust storm runs from before the departure; an SPE starts while the crew is off the route. The track keeps the
+    // event that started last (src/state/eva.js), so the second alert shows up as a new event id mid-stretch.
+    const track = walk(detour, (p, s) => (s >= 200 ? { eventId: 'radiation' } : s >= 100 ? { eventId: 'dust-storm' } : {}));
+    const [d] = review(track).deviations;
+    expect(track[d.crossIndex].atSec).toBeLessThan(200);
+    expect(track.slice(d.crossIndex + 1, d.endIndex + 1).some((p) => p.eventId === 'radiation')).toBe(true);
+    expect(d).toMatchObject({ verdict: 'forced', reason: { code: 'event', eventId: 'dust-storm' } });
+    expect(d.cost.minMarginSec).toBeCloseTo(3000 - track[d.endIndex].atSec, 6);
+    // Without the storm at the start, the same SPE makes it risky: still off the route when an alert started.
+    const late = walk(detour, (p, s) => (s >= 200 ? { eventId: 'radiation' } : {}));
+    expect(review(late).deviations[0]).toMatchObject({ verdict: 'risky', reason: { code: 'late-event' } });
+  });
+
   it('calls a detour that follows a slope detour the system planned forced, and an off-route re-plan not', () => {
     const track = walk(detour);
     const detourPath = [[150, 0], [200, 60], [250, 0], [400, 0]];
