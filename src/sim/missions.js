@@ -24,8 +24,12 @@ export const FIRST_STOP = 'sortie';
 // Requirement data for the first mission. `{ stop, forSec }` is resolved by missionEventDefinitions into a place
 // requirement around the stop's planned waypoint ({ area: { x, z, radius }, forSec }, src/sim/eventEngine.js): reached
 // once is reached for good, so an accepted find on the way or a re-plan at the table cannot stand in for the stop (R5).
+// `{ samplesAt }` counts the samples secured at the stop (sampling.samples within its radius, plus the scoop's reach):
+// a sample taken on the way, at a find, does not count (N1).
 const AT_STOP = Object.freeze({ stop: FIRST_STOP });
-const SAMPLE_SECURED = Object.freeze({ path: 'sampling.count', op: 'gte', value: 1, forSec: 3 });
+const SAMPLE_SECURED = Object.freeze({ samplesAt: FIRST_STOP, atLeast: 1, forSec: 3 });
+/** How far past the stop's radius a sample still counts as taken there: the scoop reaches about 1.5 m ahead. Metres. */
+const SAMPLE_REACH_M = 2;
 // Within 10 m of the end area (25 m around the airlock): a crew on its way home, about 7 to 10 s before the area.
 const NEAR_HOME = Object.freeze({ nearEndM: 10 });
 const SCIENCE_DONE = Object.freeze({ anyOf: Object.freeze([SAMPLE_SECURED, Object.freeze({ stop: FIRST_STOP, forSec: 90 }), NEAR_HOME]) });
@@ -34,8 +38,8 @@ const SCIENCE_DONE = Object.freeze({ anyOf: Object.freeze([SAMPLE_SECURED, Objec
  * The first mission's event schedule (SIM, our choice for #265). The sortie stop is about 55 s from the airlock at
  * 1.0 m/s (stops.json route_stops). The storm waits for the science at the stop, so a presenter is never interrupted
  * mid-sample, and the radiation alert follows it:
- * - requires: the crew has reached the stop (within the waypoint runner's arrival radius) and has secured a sample
- *   3 s ago, or has been at the stop 90 s without one, or is already on its way home (within 10 m of the end area);
+ * - requires: the crew has reached the stop (within the waypoint runner's arrival radius) and has secured a sample at
+ *   the stop 3 s ago, or reached it 90 s ago without one, or is already on its way home (within 10 m of the end area);
  * - atSec: not before T+45 s, a little under the fastest jog to the stop and back toward the habitat;
  * - the radiation alert follows the storm by 15 s, or at once when the crew comes within 10 m of the end area first, so
  *   a crew that heads straight home still meets it before it is back (N14);
@@ -145,7 +149,7 @@ export function eventStartSec(objective, eventId) {
  * - earliestSec: not before this mission time (null for an event the mission does not schedule);
  * - latestSec: by this mission time at the latest, or null;
  * - afterStop: `{ stop, afterSampleSec, orAtStopSec }` when the event waits for the science at a stop: a sample
- *   secured there `afterSampleSec` ago, or `orAtStopSec` at the stop without one; null otherwise;
+ *   secured there `afterSampleSec` ago, or `orAtStopSec` after first reaching the stop without one; null otherwise;
  * - afterEvent: `{ event, afterSec }` when it follows another event, or null;
  * - orNearHomeM: it starts sooner when the crew comes within this many metres of its end area on the way home, or null;
  * - holdsOutsideEnd: it waits until the crew is out of its end area (until latestSec);
@@ -161,7 +165,7 @@ export function eventTiming(objective, eventId) {
   const requires = trigger.requires ?? [];
   const stop = requires.find((r) => r.stop !== undefined && !r.forSec)?.stop ?? null;
   const anyOf = requires.filter((r) => Array.isArray(r.anyOf)).flatMap((r) => r.anyOf);
-  const sample = anyOf.find((r) => r.path === 'sampling.count');
+  const sample = anyOf.find((r) => r.samplesAt !== undefined);
   const atStop = anyOf.find((r) => r.stop !== undefined);
   const near = anyOf.find((r) => r.nearEndM !== undefined);
   const after = [...requires, ...anyOf].filter((r) => r.event !== undefined).sort((a, b) => b.afterSec - a.afterSec)[0];
@@ -178,6 +182,7 @@ export function eventTiming(objective, eventId) {
 
 /** Whether a requirement, or one inside its anyOf, names a stop that `stops` does not place. */
 const missesStop = (requirement, stops) => (requirement.stop !== undefined && !stops?.[requirement.stop])
+  || (requirement.samplesAt !== undefined && !stops?.[requirement.samplesAt])
   || (Array.isArray(requirement.anyOf) && requirement.anyOf.some((inner) => missesStop(inner, stops)));
 
 /**
@@ -189,6 +194,13 @@ function resolveRequirements(requires, stops) {
     if (requirement.stop !== undefined) {
       const place = stops[requirement.stop];
       return { area: { x: place.x, z: place.z, radius: place.radius }, ...(requirement.forSec ? { forSec: requirement.forSec } : {}) };
+    }
+    if (requirement.samplesAt !== undefined) {
+      const place = stops[requirement.samplesAt];
+      return {
+        path: 'sampling.samples', inArea: { x: place.x, z: place.z, radius: place.radius + SAMPLE_REACH_M },
+        atLeast: requirement.atLeast ?? 1, ...(requirement.forSec ? { forSec: requirement.forSec } : {}),
+      };
     }
     if (Array.isArray(requirement.anyOf)) return { anyOf: resolveRequirements(requirement.anyOf, stops) };
     return requirement;
@@ -281,7 +293,7 @@ export const missionSourcePath = (missionId, eventId) => `missions.${missionId}.
 export const MISSION_SOURCES = Object.freeze({
   [missionSourcePath('first', 'dust-storm')]: Object.freeze({
     tag: 'SIM', label: 'First mission timing', short: 'SIM · first mission',
-    source: 'first mission: the storm starts once the crew has secured a sample at the sortie stop (or spent 90 s there, or turned home), not before T+45 s and by T+240 s at the latest, outside 25 m of the airlock; ramp compressed from 90 s to 30 s; plays at least 20 s. Tau values from hazards.json',
+    source: 'first mission: the storm starts 3 s after the crew secures a sample at the sortie stop (or 90 s after first reaching the stop without one, or as it turns home), not before T+45 s and by T+240 s at the latest, outside 25 m of the airlock; ramp compressed from 90 s to 30 s; plays at least 20 s. Tau values from hazards.json',
   }),
   [missionSourcePath('first', 'radiation')]: Object.freeze({
     tag: 'SIM', label: 'First mission timing', short: 'SIM · first mission',

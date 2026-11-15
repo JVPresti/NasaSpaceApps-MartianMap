@@ -86,11 +86,18 @@ function quietRunner(options = {}) {
   return startEventRunner({ store: useMissionStore, setInterval: () => 0, clearInterval: () => {}, ...options });
 }
 
-function at(elapsedSec, position, { samples, route } = {}) {
+/** Move the clock and the crew; `sample: true` secures a sample where the crew stands (sampling.samples keeps x, z). */
+function at(elapsedSec, position, { sample = false, route } = {}) {
   useMissionStore.setState((state) => ({
     mission: { ...state.mission, elapsedSec },
     navigation: { ...state.navigation, x: position.x, z: position.z },
-    ...(samples === undefined ? {} : { sampling: { ...state.sampling, count: samples } }),
+    ...(sample ? {
+      sampling: {
+        ...state.sampling,
+        count: state.sampling.count + 1,
+        samples: [...state.sampling.samples, { id: `s${state.sampling.count + 1}`, kind: 'soil', x: position.x + 1, z: position.z, atSec: elapsedSec }],
+      },
+    } : {}),
     ...(route ? { route: { ...state.route, ...route } } : {}),
   }));
 }
@@ -112,7 +119,7 @@ describe('event runner missions (#265)', () => {
     at(55, STOP); runner.tick();                     // at the stop at T+55 s
     at(70, STOP); runner.tick();
     expect(activeAlerts()).toEqual([]);              // sampling: the storm waits
-    at(74, STOP, { samples: 1 }); runner.tick();    // sample secured at T+74 s
+    at(74, STOP, { sample: true }); runner.tick();    // sample secured at T+74 s
     at(76, STOP); runner.tick();
     expect(activeAlerts()).toEqual([]);
     at(77, STOP); runner.tick();                     // 3 s later
@@ -134,7 +141,7 @@ describe('event runner missions (#265)', () => {
   it('never interrupts a presenter mid-sample: the storm waits for the sample, or 90 s at the stop (N2)', () => {
     planSortie();
     const talking = quietRunner();
-    at(55, STOP, { samples: 0 }); talking.tick();
+    at(55, STOP); talking.tick();
     at(140, STOP); talking.tick();
     expect(activeAlerts()).toEqual([]);              // 85 s at the stop, still no sample
     at(144, STOP); talking.tick();
@@ -149,10 +156,15 @@ describe('event runner missions (#265)', () => {
     planSortie([HAB_WAYPOINT, find, S1]);            // a find accepted on the way out sits at index 1
     const runner = quietRunner();
     at(40, find, { route: { nextIndex: 2, visited: ['HAB', 'M01'] } }); runner.tick();   // the find reached
-    at(60, find, { samples: 1 }); runner.tick();     // a sample at the find
+    at(60, find, { sample: true }); runner.tick();     // a sample at the find
     at(100, find); runner.tick();
     expect(activeAlerts()).toEqual([]);
-    at(110, STOP); runner.tick();                    // the stop reached at T+110 s, the sample already secured
+    at(110, STOP); runner.tick();                    // the stop reached at T+110 s
+    // the sample at the find does not count for the stop (N1): the stop beat keeps its time
+    at(125, STOP); runner.tick();
+    expect(activeAlerts()).toEqual([]);
+    at(126, STOP, { sample: true }); runner.tick();  // a sample at the stop
+    at(129, STOP); runner.tick();
     expect(activeAlerts()).toEqual(['dust-storm']);
     runner.stop();
   });
@@ -162,7 +174,7 @@ describe('event runner missions (#265)', () => {
     const runner = quietRunner();
     at(55, STOP); runner.tick();
     at(60, STOP, { route: { nextIndex: 0, visited: [] } }); runner.tick();   // Re-plan at the table during the EVA
-    at(70, STOP, { samples: 1 }); runner.tick();
+    at(70, STOP, { sample: true }); runner.tick();
     at(73, STOP); runner.tick();
     expect(activeAlerts()).toEqual(['dust-storm']);
     runner.stop();
@@ -172,7 +184,7 @@ describe('event runner missions (#265)', () => {
     planSortie();
     const runner = loggedRunner();
     at(37, STOP); runner.tick();                     // the stop at a jog
-    at(45, STOP, { samples: 1 }); runner.tick();
+    at(45, STOP, { sample: true }); runner.tick();
     // home at 1.5 m/s along the 55 m line, one tick per second
     let radiationFrom = null;
     for (let t = 48; t <= 90; t += 1) {
@@ -188,7 +200,7 @@ describe('event runner missions (#265)', () => {
   it('meets both events before the end area when the crew turns home without sampling (N14)', () => {
     planSortie();
     const runner = loggedRunner();
-    at(50, STOP, { samples: 0 }); runner.tick();
+    at(50, STOP); runner.tick();
     let stormFrom = null, radiationFrom = null;
     for (let t = 51; t <= 100; t += 1) {
       const p = toward(Math.min(1, (t - 51) / 55));  // walking home at 1.0 m/s
@@ -267,7 +279,7 @@ describe('event runner missions (#265)', () => {
     const runner = quietRunner({ objective: useMissionStore.getState().needs.objective });
     // Even a direct write to the needs after the start leaves the running mission alone.
     useMissionStore.setState((state) => ({ needs: { ...state.needs, objective: 'cheyava' } }));
-    at(55, STOP, { samples: 1 }); runner.tick();
+    at(55, STOP, { sample: true }); runner.tick();
     at(58, STOP); runner.tick();
     expect(runner.mission).toBe('first');
     expect(activeAlerts()).toEqual(['dust-storm']);
