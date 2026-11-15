@@ -92,8 +92,9 @@ describe('validators', () => {
     expect(validate({ type: 'p', x: 1, z: 2, h: 3, pt: 0, a: 1, hp: 0, ct: 9, id: 'b' }).id).toBe('b');
     expect(validate({ type: 'p', x: 1, z: 2, h: 3, pt: 0, a: 1, hp: 0 })).toBeNull();
     expect(validate({ type: 'tel', o2: 80, bat: 70 })).toEqual({ type: 'tel', o2: 80, bat: 70 });
-    expect(validate({ type: 'mk', cid: 'c1', kind: 'rock', x: 1, z: 2, label: 'x' })).toEqual({ type: 'mk', cid: 'c1', kind: 'rock', x: 1, z: 2, label: 'x' });
-    expect(validate({ type: 'mk', cid: 'c1', kind: 'rock', x: 1, z: 2, id: 3, author: 'a', at: 5 })).toMatchObject({ id: 3, author: 'a', at: 5, label: '' });
+    expect(validate({ type: 'mk', cid: 'c1', kind: 'find', x: 1, z: 2, label: 'x' })).toEqual({ type: 'mk', cid: 'c1', kind: 'find', x: 1, z: 2, label: 'x' });
+    expect(validate({ type: 'mk', cid: 'c1', kind: 'find', x: 1, z: 2, id: 3, author: 'a', at: 5 })).toMatchObject({ id: 3, author: 'a', at: 5, label: '' });
+    expect(validate({ type: 'mk', cid: 'c1', kind: 'rock', x: 1, z: 2 })).toBeNull();
     expect(validate({ type: 'smp', sid: 's1' })).toEqual({ type: 'smp', sid: 's1' });
     expect(validate({ type: 'smp', sid: 's1', by: 'a', at: 1, ok: false })).toEqual({ type: 'smp', sid: 's1', by: 'a', at: 1, ok: false });
     expect(validate({ type: 'case', holder: null })).toEqual({ type: 'case', holder: null });

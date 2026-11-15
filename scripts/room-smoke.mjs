@@ -7,7 +7,10 @@
 //
 // base defaults to http://localhost:8787. Use http://localhost:5173 to go through the Vite proxy (npm run dev).
 // origin defaults to http://localhost:5173, the Origin a browser on the Vite dev server sends.
-// Results: docs/qa/online-m1.md, and docs/qa/online-m2.md for the pose groups (poses, poseflood, standing, rtt).
+// Results: docs/qa/online-m1.md, docs/qa/online-m2.md for the pose groups (poses, poseflood, standing, rtt) and
+// docs/qa/online-m3.md for the shared state checks (ONLY=shared, ONLY=separate).
+// ONLY=separate ROOM=ABCD TAG=x places one marker labelled with TAG in room ABCD and prints the room's marker labels,
+// so the same code on two hosts can be compared.
 import http from 'node:http';
 import { createPoseSender } from '../src/net/poseSync.js';
 
@@ -206,7 +209,8 @@ async function hibernation(idleMs) {
   console.log('waking room ' + room + ' at ' + new Date().toISOString());
   const c = client(room);
   const w = await c.ready;
-  check('after the idle period the crew list is intact', w.crew.map((e) => e.id).join() === [a.id, b.id, c.id].join(), w.crew.map((e) => `${e.role}/${e.color}`).join(', '));
+  // a and b join at the same moment, so either can come first: compare the sets
+  check('after the idle period the crew list is intact', w.crew.map((e) => e.id).sort().join() === [a.id, b.id, c.id].sort().join(), w.crew.map((e) => `${e.role}/${e.color}`).join(', '));
   check('and the mission start survived', w.startedAt === started.startedAt && w.seed === started.seed, `startedAt ${w.startedAt}, seed ${w.seed}`);
   for (const x of [a, b, c]) x.ws.close();
 }
@@ -294,6 +298,85 @@ async function rtt(samples = 20) {
   a.ws.close();
 }
 
+async function sharedState() {
+  const room = code();
+  const a = client(room), b = client(room);
+  await Promise.all([a.ready, b.ready]);
+
+  // marker: one broadcast to both, with the room's id and author
+  const seen = b.wait('mk', (m) => m.cid === 'smoke-1');
+  const t0 = performance.now();
+  a.send({ type: 'mk', cid: 'smoke-1', kind: 'find', x: 12.5, z: -3.25, label: 'M01' });
+  const m = await seen;
+  const tMarker = m.at - t0;
+  check('a marker reaches the other player within 1 s', tMarker < 1000 && m.author === a.id && m.id > 0, `${tMarker.toFixed(1)} ms, id ${m.id}`);
+  const before = b.msgs.filter((x) => x.type === 'mk').length;
+  const echo = a.wait('mk', (x) => x.cid === 'smoke-1' && x.at > t0 + 1);
+  a.send({ type: 'mk', cid: 'smoke-1', kind: 'find', x: 99, z: 99, label: 'again' });
+  const back = await echo;
+  await sleep(300);
+  check('a resend with the same cid is ignored: the sender gets the stored row, the other player nothing',
+    back.x === 12.5 && b.msgs.filter((x) => x.type === 'mk').length === before, `stored x ${back.x}`);
+
+  // the sample race, 20 times: two claims of the same sample sent at the same moment
+  const RACES = Number(process.env.RACES || 20);
+  let clean = 0;
+  const lines = [];
+  for (let i = 0; i < RACES; i++) {
+    const sid = 'race_' + i;
+    const won = [a.wait('smp', (x) => x.sid === sid && x.ok), b.wait('smp', (x) => x.sid === sid && x.ok)];
+    a.send({ type: 'smp', sid });
+    b.send({ type: 'smp', sid });
+    const [wa] = await Promise.all(won);
+    const loser = wa.by === a.id ? b : a;
+    // the loser's ok:false can arrive right behind the broadcast, before a new wait() would see it: read what came in
+    const lostIn = () => loser.msgs.find((x) => x.type === 'smp' && x.sid === sid && x.ok === false);
+    for (let t = 0; t < 100 && !lostIn(); t++) await sleep(30);
+    const lost = lostIn() || null;
+    await sleep(80);
+    const oks = [a, b].map((c) => c.msgs.filter((x) => x.type === 'smp' && x.sid === sid && x.ok).length);
+    const ok = oks[0] === 1 && oks[1] === 1 && lost && lost.by === wa.by;
+    if (ok) clean++;
+    lines.push(wa.by === a.id ? 'A' : 'B');
+  }
+  check(`${RACES} simultaneous claims of the same sample: exactly one winner each time, the loser told who`, clean === RACES, `${clean}/${RACES} clean; winners ${lines.join('')}`);
+
+  // tool case
+  const ca = Promise.all([a.wait('case'), b.wait('case')]);
+  a.send({ type: 'case', holder: a.id });
+  await ca;
+  const refused = b.wait('case');
+  b.send({ type: 'case', holder: b.id });
+  check('the case holder is kept; another player is told who has it', (await refused).holder === a.id);
+
+  // reload: a new socket for b with the same id restores markers, samples and the case holder
+  const b2 = client(room, { id: b.id });
+  const w = await b2.ready;
+  check('a reload restores markers, samples and the case holder',
+    w.markers.length === 1 && w.markers[0].cid === 'smoke-1' && w.samples.length === RACES && w.caseHolder === a.id,
+    `${w.markers.length} marker, ${w.samples.length} samples, case with ${w.caseHolder === a.id ? 'A' : w.caseHolder}; welcome ${JSON.stringify(w).length} B`);
+  for (const c of [a, b, b2]) c.ws.close();
+  return { tMarker, clean };
+}
+
+async function separation() {
+  const room = process.env.ROOM || 'TEST';
+  const tag = process.env.TAG || 'smoke';
+  const a = client(room);
+  await a.ready;
+  const cid = 'sep-' + tag.replace(/[^A-Za-z0-9_-]/g, '') + '-' + Date.now().toString(36);
+  const mine = a.wait('mk', (m) => m.cid === cid);
+  a.send({ type: 'mk', cid, kind: 'note', x: 0, z: 0, label: tag });
+  await mine;
+  const c = client(room);
+  const w = await c.ready;
+  const labels = w.markers.map((m) => m.label);
+  console.log(`room ${room} on ${BASE.host}: ${labels.length} markers: ${labels.join(', ')}`);
+  check(`room ${room} on ${BASE.host} has the marker just placed`, labels.includes(tag));
+  if (process.env.ABSENT) check(`and none labelled ${process.env.ABSENT}`, !labels.includes(process.env.ABSENT), labels.join(', '));
+  a.ws.close(); c.ws.close();
+}
+
 const only = process.env.ONLY;
 const idle = Number(process.env.IDLE_MS || 15_000);
 console.log(`room smoke test against ${WS_BASE} with Origin ${ORIGIN}`);
@@ -301,6 +384,8 @@ if (!only || only === 'join') await joinAndLeave();
 if (!only || only === 'seats') await seats();
 if (!only || only === 'refuse') await refusals();
 if (!only || only === 'flood') await flood();
+if (!only || only === 'shared') await sharedState();
+if (only === 'separate') await separation();
 if (!only || only === 'hibernate') await hibernation(idle);
 if (!only || only === 'poses') await poses();
 if (!only || only === 'poseflood') await poseFlood();

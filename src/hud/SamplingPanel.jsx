@@ -4,6 +4,7 @@ import { t, translateText } from '../i18n/index.js';
 import { useShallow } from 'zustand/react/shallow';
 import { useMissionStore } from '../state/store.js';
 import { CHECKLIST, samplingPrompt } from './samplingPrompt.js';
+import { crewName } from './sharedMarkers.js';
 import './sampling.css';
 
 const S = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
@@ -42,9 +43,27 @@ export function SamplingChecklist() {
   );
 }
 
+const NOTICES = { 'sample-taken': 'online.sample.taken.by', 'case-held': 'online.case.with' };
+
+// Online (#54): who took the sample in the crosshair, who holds the case, and the last refusal. Strings, so the
+// shallow compare keeps the prompt from re-rendering when nothing it shows changed. All null offline.
+function onlineNames(st) {
+  const sh = st.shared, me = st.online?.me?.id ?? null;
+  if (!sh || st.online?.status === 'off') return { takenBy: null, caseWith: null, notice: null };
+  const sid = st.sampling.status?.target?.sid, held = sid ? sh.samples[sid] : null;
+  const n = sh.notice;
+  return {
+    takenBy: held && held.by !== me ? crewName(st, held.by) : null,
+    caseWith: sh.caseHolder && sh.caseHolder !== me ? crewName(st, sh.caseHolder) : null,
+    notice: n && NOTICES[n.key] ? t(NOTICES[n.key], { name: crewName(st, n.by) }) : null,
+  };
+}
+
 function SamplingPrompt() {
   const status = useMissionStore((st) => st.sampling.status);   // a new object only when the status changed (the bridge compares)
-  const p = samplingPrompt(status);
+  const online = useMissionStore(useShallow(onlineNames));
+  const p = samplingPrompt(status, online);
+  if (online.notice) p.note = online.notice;
   return (
     <>
       <div className={'hud-reticle hud-reticle-' + p.reticle} aria-hidden="true" />

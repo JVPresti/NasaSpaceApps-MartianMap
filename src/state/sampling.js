@@ -9,6 +9,7 @@
 //   sample   the sample is in a container: in the sample bag (stow_sample, at 1.1 s) or landed in the partner's open case
 //   seal     the container is closed: the stow clip ended with the bag put away, or the partner closed the lid and took the case
 // A sample is counted when it is in a container (`sample`). A sealed checklist stays ticked until the next photo or scoop.
+import { claimSample, mayCallCase } from './sharedHooks.js';
 import { useMissionStore } from './store.js';
 
 export const SAMPLING_POLL_MS = 200;
@@ -76,11 +77,14 @@ export function connectSampling(engine, store = useMissionStore) {
     last = key;
     store.setState((s) => ({ sampling: { ...s.sampling, status } }));
   };
+  // online (#54): the engine asks src/state/sharedHooks.js before a scoop and before calling for the case; offline the
+  // hooks answer "go ahead" (claimSample returns null), so nothing changes
+  if (typeof engine.setSampleGate === 'function') engine.setSampleGate({ claim: claimSample, mayCallCase });
   const off = engine.onSampling((e) => {
     store.setState((s) => ({ sampling: applySamplingEvent(s.sampling, e, s.mission.elapsedSec) }));
     poll();   // the prompt follows the action at once, not at the next poll
   });
   poll();
   const timer = setInterval(poll, SAMPLING_POLL_MS);
-  return () => { off(); clearInterval(timer); };
+  return () => { off(); clearInterval(timer); if (typeof engine.setSampleGate === 'function') engine.setSampleGate(null); };
 }

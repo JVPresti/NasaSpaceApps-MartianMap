@@ -800,7 +800,12 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
      * Plain data for the store bridge; null before the scene is ready.
      */
     getSampling() { return sys.sampling ? sys.sampling.status() : null; },
-    /** Sampling events ({ type: 'photo' | 'collect' | 'texture' | 'secured' | 'sealed' | 'input', ... }). Returns an unsubscribe function. Available once ready. */
+    /**
+     * Online sampling gates (#54): { claim, mayCallCase } (sampling.js setGate), or null. Offline nobody sets them.
+     * Returns false before the scene is ready.
+     */
+    setSampleGate(gate) { if (!sys.sampling) return false; sys.sampling.setGate(gate); return true; },
+    /** Sampling events ({ type: 'photo' | 'collect' | 'texture' | 'secured' | 'sealed' | 'input' | 'refused', ... }). Returns an unsubscribe function. Available once ready. */
     onSampling(listener) {
       if (!sys.sampling) throw new Error('engine is not ready: wait for engine.ready');
       return sys.sampling.subscribe(listener);

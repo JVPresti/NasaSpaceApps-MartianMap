@@ -584,5 +584,11 @@
   "menu.start.intro": "Neretva Vallis, cráter Jezero, Marte. Planifica una caminata por terreno marciano real hasta la roca donde Perseverance encontró una posible biofirma y luego recórrela con un traje que se queda sin oxígeno.",
   "menu.open.mission.table": "Abrir la mesa de misión",
   "menu.drag.to.look.table": "La captura del ratón está desactivada: en Modo Caminar, arrastra sobre la escena para mirar.",
-  "menu.start.credit": "Vídeo: ilustración de una EVA generada con IA · Datos del terreno: HiRISE, NASA/JPL-Caltech/University of Arizona · NASA Space Apps 2026"
+  "menu.start.credit": "Vídeo: ilustración de una EVA generada con IA · Datos del terreno: HiRISE, NASA/JPL-Caltech/University of Arizona · NASA Space Apps 2026",
+  "online.sample.taken.by": "Muestra ya tomada por {name}",
+  "online.case.with": "El maletín lo tiene {name}",
+  "online.sample.claiming": "Consultando el registro de muestras…",
+  "online.another.player": "otro jugador",
+  "online.marker.note": "Nota",
+  "online.marker.go": "Ir"
 }

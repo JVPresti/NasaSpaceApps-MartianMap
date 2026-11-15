@@ -116,6 +116,16 @@ export const MAX_LABEL_LENGTH = 64;
 export const MAX_REASON_LENGTH = 80;
 export const MAX_ROUTE_POINTS = 200;
 
+/**
+ * Marker kinds (#54). 'find': a point a surface player marked by pointing (src/state/finds.js). 'note' and 'go': a
+ * note and a "go here" point, for the habitat seat (#55). The room refuses 'find' from the habitat.
+ */
+export const MARKER_KINDS = Object.freeze(['find', 'note', 'go']);
+/** Markers a room keeps. Past this the room ignores new ones. 200 markers make a welcome of about 25 KB. */
+export const MAX_MARKERS = 200;
+/** How long a sample claim waits for the room before the scoop goes ahead locally and the claim is queued. */
+export const SAMPLE_CLAIM_TIMEOUT_MS = 1500;
+
 /** Byte length of a string in UTF-8, without TextEncoder so the module stays plain JS. */
 export function utf8ByteLength(text) {
   let bytes = 0;
@@ -224,7 +234,7 @@ export const VALIDATORS = Object.freeze({
     return { type: MSG.START, startedAt: m.startedAt, seed: m.seed };
   },
   [MSG.MARKER](m) {
-    if (!isId(m.cid) || !isStr(m.kind, 16) || !m.kind || !isNum(m.x) || !isNum(m.z) || !isOpt(m.label, (l) => isStr(l, MAX_LABEL_LENGTH))) return null;
+    if (!isId(m.cid) || !MARKER_KINDS.includes(m.kind) || !isNum(m.x) || !isNum(m.z) || !isOpt(m.label, (l) => isStr(l, MAX_LABEL_LENGTH))) return null;
     if (!isOpt(m.id, (v) => isInt(v, 1, Number.MAX_SAFE_INTEGER)) || !isOpt(m.author, isId) || !isOpt(m.at, isTime)) return null;
     return copyOptional({ type: MSG.MARKER, cid: m.cid, kind: m.kind, x: m.x, z: m.z, label: m.label ?? '' }, m, ['id', 'author', 'at']);
   },

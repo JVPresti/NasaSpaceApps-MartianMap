@@ -11,6 +11,7 @@ import {
 } from '../src/net/protocol.js';
 import { createTokenBucket } from '../src/net/rateLimit.js';
 import { POSE_HANDLERS } from './handlers/poses.js';
+import { SHARED_HANDLERS, releaseCaseOf, sharedWelcome } from './handlers/shared.js';
 
 const SCHEMA = [
   'CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)',
@@ -24,9 +25,9 @@ function randomUint32() {
 
 /**
  * Handlers for seated sockets, by message type. Each gets (room, ws, msg, me, now) where msg has passed the
- * protocol validator and me is the sender's crew entry. M2 `p` and `tel` live in handlers/poses.js. Later
- * pieces add M3 `mk`, `smp` and `case` (SQLite, then broadcast) and M4 `rt` and `go`. A type without a
- * handler is ignored.
+ * protocol validator and me is the sender's crew entry. M2 `p` and `tel` (relay to the others with the sender's id)
+ * are in handlers/poses.js, M3 `mk`, `smp` and `case` (SQLite, then broadcast) in handlers/shared.js. M4 adds `rt`
+ * and `go`. A type without a handler is ignored.
  */
 export const HANDLERS = {
   ...POSE_HANDLERS,
@@ -36,6 +37,7 @@ export const HANDLERS = {
   [MSG.TIME](room, ws, msg, _me, now) {
     room.sendTo(ws, { type: MSG.TIME, c: msg.c, s: now });
   },
+  ...SHARED_HANDLERS,
 };
 
 export class Room extends DurableObject {
@@ -135,7 +137,10 @@ export class Room extends DurableObject {
     const att = this.attachment(ws);
     if (!att || att.left) return;
     try { ws.serializeAttachment({ ...att, left: true }); } catch { /* already closed */ }
-    if (announce && att.entry) this.broadcast({ type: MSG.CREW, op: 'leave', p: att.entry }, ws);
+    if (announce && att.entry) {
+      this.broadcast({ type: MSG.CREW, op: 'leave', p: att.entry }, ws);
+      releaseCaseOf(this, att.entry.id);
+    }
   }
 
   closeSocket(ws, code, options) {
@@ -204,7 +209,7 @@ export class Room extends DurableObject {
     const { startedAt, seed } = this.mission();
     this.sendTo(ws, {
       type: MSG.WELCOME, you: { id: entry.id, color, role: entry.role }, crew: this.crew(),
-      startedAt, seed, now, markers: [], samples: [], caseHolder: null, route: null,
+      startedAt, seed, now, ...sharedWelcome(this), route: null,
     });
     this.broadcast({ type: MSG.CREW, op: 'join', p: entry }, ws);
   }
