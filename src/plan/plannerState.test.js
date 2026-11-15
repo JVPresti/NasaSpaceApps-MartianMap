@@ -3,7 +3,7 @@ import { waypointsForCosts } from '../sim/legCosts.js';
 import { DEFAULT_NEEDS } from '../sim/missionNeeds.js';
 import { nextTarget } from '../sim/waypointRunner.js';
 import {
-  afterNeedsPlan, afterWaypointPlan, alertRouteActive, createLatestOnly, decidePlan, emptyPlannerMemory, needsPlanKey,
+  afterNeedsPlan, afterWaypointPlan, alertRouteActive, createLatestOnly, decidePlan, emptyPlannerMemory, failedNeedsRoute, needsPlanKey,
   needsPlanPending, plansFromNeeds, resumeStops,
 } from './plannerState.js';
 import { keepWalkProgress } from './useRoutePlanner.js';
@@ -42,6 +42,20 @@ describe('planning from the needs', () => {
     expect(decidePlan(input({ mastId: '544.9,-,581.5' }), memory).action).toBe('plan-needs');
   });
 
+  it('plans again for any edit of a sampling task, and never for tasks the goal does not use (#352)', () => {
+    const rock = { id: 't1', what: 'rock', count: 1, place: { type: 'stop', stopId: 'bright-angel' } };
+    const samples = (tasks) => needs({ objective: 'samples', tasks });
+    const key = needsPlanKey({ needs: samples([rock]), profile: 'fastest', nonce: 0, mastId: '' });
+    const memory = afterNeedsPlan(emptyPlannerMemory(), { key, waypointsKey: input().waypointsKey, nonce: 0, mastId: '' });
+    expect(decidePlan(input({ needs: samples([{ ...rock }]) }), memory).action).toBe('none');
+    for (const edit of [{ count: 2 }, { what: 'soil' }, { place: { type: 'point', id: 'P1', x: 500, z: 560 } }]) {
+      expect(decidePlan(input({ needs: samples([{ ...rock, ...edit }]) }), memory).action).toBe('plan-needs');
+    }
+    expect(decidePlan(input({ needs: samples([]) }), memory).action).toBe('plan-needs');
+    const sortie = needsPlanKey({ needs: needs(), profile: 'fastest', nonce: 0, mastId: '' });
+    expect(needsPlanKey({ needs: needs({ tasks: [rock] }), profile: 'fastest', nonce: 0, mastId: '' })).toBe(sortie);
+  });
+
   it('puts the planned stops back when something else wrote route.waypoints', () => {
     const key = needsPlanKey({ needs: needs(), profile: 'fastest', nonce: 0, mastId: '' });
     const memory = afterNeedsPlan(emptyPlannerMemory(), { key, waypointsKey: input().waypointsKey, nonce: 0, mastId: '' });
@@ -54,6 +68,23 @@ describe('planning from the needs', () => {
     expect(needsPlanPending({ fromNeeds: true, key: changed }, { needsKey: key })).toBe(true);
     expect(needsPlanPending({ fromNeeds: true, key }, { needsKey: key })).toBe(false);
     expect(needsPlanPending({ fromNeeds: false, key: changed }, { needsKey: key })).toBe(false);   // EVA under way
+  });
+});
+
+describe('a needs plan with no route', () => {
+  const before = { path: [[0, 0], [10, 10]], distanceM: 870, climbM: 24, steepestSlopeDeg: 20, etaSec: 1260, explain: [{ clear: true }], profile: 'fastest', visited: [] };
+  const fields = { waypoints: [{ name: 'HAB', x: 0, z: 0 }], stops: [], dropped: [], planReasons: [{ code: 'no-tasks' }], budget: null, weights: {}, profiles: null, tasks: [] };
+
+  it('blanks the figures of the last route for an empty or unreachable sampling task list (#352)', () => {
+    const route = failedNeedsRoute(before, fields, { reason: 'No route found', objective: 'samples' });
+    expect(route).toMatchObject({ ...fields, path: null, explain: [], reason: 'No route found', distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, profile: 'fastest' });
+  });
+
+  it('keeps them for the three other goals, as before', () => {
+    for (const objective of ['sortie', 'cheyava', 'bright-angel']) {
+      const route = failedNeedsRoute(before, fields, { reason: 'No route found', objective });
+      expect(route).toMatchObject({ path: null, explain: [], distanceM: 870, climbM: 24, steepestSlopeDeg: 20, etaSec: 1260 });
+    }
   });
 });
 

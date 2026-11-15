@@ -102,6 +102,9 @@ export const ACTIONS = Object.freeze([
     touch: 'dialog', control: { file: 'src/stops/StopCard.jsx', has: 'className="stop-close" onClick={onClose}' }, label: 'touch.dialog.focus' },
   { id: 'map-popup-close', codes: ['Escape'], keys: ['Escape'], files: ['src/plan/MissionMap.jsx', 'src/plan/TraverseLayer.jsx'],
     touch: 'dialog', control: { file: 'src/plan/MissionMap.jsx', has: 'className="map-pop-close"' }, label: 'touch.dialog.focus' },
+  // Placing a sampling task on the map (#352): Esc cancels the pick; the task list draws a Cancel link for it
+  { id: 'task-pick-cancel', codes: ['Escape'], keys: ['Escape'], files: ['src/plan/useTaskPlace.js'],
+    touch: 'dialog', control: { file: 'src/plan/TaskList.jsx', has: 'onClick={cancelPick}' }, label: 'touch.dialog.focus' },
   { id: 'tooltip-close', codes: ['Escape'], keys: ['Escape'], files: ['src/components/SourceTag.jsx'],
     touch: 'gesture', control: { file: 'src/components/SourceTag.jsx', has: 'a tap opens and closes the details' }, label: 'touch.dialog.focus' },
   // A waypoint's x or z field: Enter commits, Esc restores. The on-screen keyboard's Done key and a tap outside both blur

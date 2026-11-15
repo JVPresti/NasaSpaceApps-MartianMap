@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildProfile, positionAlongPath, slopeClass } from './profile.js';
+import { COST_CONSTANTS } from '../sim/costGrid.js';
+import { slopeClass as slopeGridClass } from '../engine/slopeGridRules.js';
+import { SLOPE_CAUTION_DEG, SLOPE_NO_GO_DEG, buildProfile, positionAlongPath, slopeClass } from './profile.js';
 
 const PATH = [[0, 0], [100, 0]];
 const heightRamp = (x) => x / 10;
@@ -39,8 +41,18 @@ describe('elevation profile', () => {
     expect(slopeClass(10)).toBe('ok');
     expect(slopeClass(15)).toBe('ok');
     expect(slopeClass(20)).toBe('caution');
-    expect(slopeClass(25)).toBe('caution');
-    expect(slopeClass(26)).toBe('nogo');
+    expect(slopeClass(22)).toBe('nogo');
+    expect(slopeClass(25)).toBe('nogo');
+  });
+
+  it('turns amber and red at the planner\'s limits, like the slope layer (#293)', () => {
+    expect(SLOPE_NO_GO_DEG).toBe(COST_CONSTANTS.SLOPE_LIMIT_DEG);
+    expect(SLOPE_CAUTION_DEG).toBe(COST_CONSTANTS.SLOPE_CAUTION_DEG);
+    expect(slopeClass(COST_CONSTANTS.SLOPE_LIMIT_DEG)).toBe('caution');
+    expect(slopeClass(COST_CONSTANTS.SLOPE_LIMIT_DEG + 0.1)).toBe('nogo');
+    expect(slopeClass(COST_CONSTANTS.SLOPE_CAUTION_DEG)).toBe('ok');
+    expect(slopeClass(COST_CONSTANTS.SLOPE_CAUTION_DEG + 0.1)).toBe('caution');
+    for (let deg = 0; deg <= 40; deg += 0.5) expect(slopeClass(deg)).toBe(slopeGridClass(deg));
   });
 
   it('returns null without a usable path', () => {

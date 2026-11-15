@@ -25,7 +25,7 @@ describe('mission needs panel', () => {
     const html = render();
     for (const label of ['Goal', 'Crew', 'Time', 'O2', 'Battery', 'Risk']) expect(text(html)).toContain(label);
     expect(html).toContain('<select id="needs-objective"');
-    expect(html.match(/<option/g)).toHaveLength(3);
+    expect(html.match(/<option/g)).toHaveLength(4);
     expect(html.match(/type="range"/g)).toHaveLength(3);
     expect(html).toContain('src-tag-sim');
   });

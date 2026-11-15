@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createEventEngine } from '../sim/eventEngine.js';
 import exampleEvent from '../sim/events/example-event.json';
 import { LOOK_DEFAULTS, LOOK_STORAGE_KEY } from '../engine/lookSettings.js';
-import { applySavedRoute, chooseRouteProfile, createInitialState, deleteSavedRoute, resetStore, saveCurrentRoute, setLookSettings, setMode, setNeeds, setRouteDecision, storeAdapter, useMissionStore, withRouteProfile } from './store.js';
+import { applySavedRoute, chooseRouteProfile, createInitialState, deleteSavedRoute, resetStore, saveCurrentRoute, saveEvaRoute, setLookSettings, setMode, setNeeds, setRouteDecision, setTasks, storeAdapter, useMissionStore, withRouteProfile } from './store.js';
 import { createMockState } from './mock.js';
 import { beginEgress } from './flow.js';
 
@@ -200,8 +200,9 @@ describe('route profiles (#245)', () => {
 
 describe('the needs of the crew (#265)', () => {
   it('starts on the first sortie for a pair, unlocked', () => {
-    expect(createInitialState().needs).toEqual({ objective: 'sortie', crew: 2, timeMin: 30, o2Pct: 100, batteryPct: 100, risk: 'standard', locked: false });
-    expect(createInitialState().route).toMatchObject({ stops: [], dropped: [], planReasons: [], budget: null, weights: null, explain: [] });
+    expect(createInitialState().needs).toEqual({ objective: 'sortie', crew: 2, timeMin: 30, o2Pct: 100, batteryPct: 100, risk: 'standard', tasks: [], locked: false });
+    expect(createInitialState().route).toMatchObject({ stops: [], dropped: [], planReasons: [], budget: null, weights: null, explain: [], tasks: [] });
+    expect(createInitialState().sampling.photoLog).toEqual([]);
   });
 
   it('applies a partial update, clamps numbers and refuses unknown values', () => {
@@ -264,7 +265,7 @@ describe('the needs of the crew (#265)', () => {
     setMode('walk');
     resetStore({ keepNeeds: true });
     const state = useMissionStore.getState();
-    expect(state.needs).toEqual({ objective: 'cheyava', crew: 1, timeMin: 90, o2Pct: 80, batteryPct: 70, risk: 'cautious', locked: false });
+    expect(state.needs).toEqual({ objective: 'cheyava', crew: 1, timeMin: 90, o2Pct: 80, batteryPct: 70, risk: 'cautious', tasks: [], locked: false });
     expect(state.route).toMatchObject({ profile: 'gentlest', path: null, stops: [] });
     expect(state.hazards.off).toEqual([]);   // the hazard switches start over, as on main
     expect(state.mode).toBe('walk');   // a new EVA starts on foot in the habitat (#260)
@@ -292,6 +293,58 @@ describe('the needs of the crew (#265)', () => {
   });
 });
 
+describe('the sampling tasks (#352)', () => {
+  const rock = { id: 't1', what: 'rock', count: 1, place: { type: 'stop', stopId: 'bright-angel' } };
+  const photo = { id: 't2', what: 'photo', count: 2, place: { type: 'point', id: 'P1', x: 500.123, z: 560 } };
+
+  it('stores a checked copy of the list, and says when nothing changed', () => {
+    expect(setTasks([rock, { ...photo, count: 7 }])).toBe(true);
+    const { tasks } = useMissionStore.getState().needs;
+    expect(tasks).toEqual([rock, { ...photo, count: 3, place: { ...photo.place, x: 500.12 } }]);
+    expect(tasks[0]).not.toBe(rock);
+    const before = useMissionStore.getState().needs;
+    expect(setTasks([rock, { ...photo, count: 3 }])).toBe(false);
+    expect(useMissionStore.getState().needs).toBe(before);
+    expect(setTasks([])).toBe(true);
+    expect(useMissionStore.getState().needs.tasks).toEqual([]);
+  });
+
+  it('refuses a bad list, and changes nothing once the EVA has begun', () => {
+    expect(() => setTasks([rock, rock])).toThrow(/duplicate/);
+    expect(() => setTasks('rock')).toThrow(/array/);
+    setTasks([rock]);
+    setMode('walk');   // on foot in the habitat: still editable (#260)
+    expect(setTasks([rock, photo])).toBe(true);
+    setTasks([rock]);
+    setMode('plan');
+    beginEgress();   // Begin EVA locks the tasks with the needs
+    expect(setTasks([photo])).toBe(false);
+    expect(useMissionStore.getState().needs.tasks).toEqual([rock]);
+  });
+
+  it('gives "Collect samples" one rock sample at Bright Angel when chosen with no task, and 2 h (PO Q1)', () => {
+    expect(setNeeds({ objective: 'samples' })).toBe(true);
+    expect(useMissionStore.getState().needs).toMatchObject({ objective: 'samples', timeMin: 120, tasks: [rock] });
+    expect(Object.isFrozen(useMissionStore.getState().needs.tasks[0])).toBe(false);
+    setTasks([rock, photo]);
+    setNeeds({ objective: 'cheyava' });
+    setNeeds({ objective: 'samples' });
+    expect(useMissionStore.getState().needs.tasks.map((t) => t.id)).toEqual(['t1', 't2']);   // the crew's own list stays
+    setTasks([]);
+    setNeeds({ crew: 1 });
+    expect(useMissionStore.getState().needs.tasks).toEqual([]);   // only choosing the goal pre-fills
+  });
+
+  it('keeps the tasks across a Restart, and a page load starts with none', () => {
+    setTasks([rock, photo]);
+    beginEgress();
+    resetStore({ keepNeeds: true });
+    expect(useMissionStore.getState().needs).toMatchObject({ locked: false, tasks: [rock, { ...photo, place: { ...photo.place, x: 500.12 } }] });
+    resetStore();
+    expect(useMissionStore.getState().needs.tasks).toEqual([]);
+  });
+});
+
 describe('saved routes (#357)', () => {
   const waypoints = [{ name: 'HAB', x: 0, z: 0 }, { name: 'S1', x: 100, z: 0, workSec: 600, stopId: 's1', required: true }];
   const path = [[0, 0], [50, 0], [100, 0]];
@@ -301,7 +354,7 @@ describe('saved routes (#357)', () => {
   it('saves the plan under a name, with the work at the stops and an empty record', () => {
     empty();
     useMissionStore.setState(plan);
-    expect(saveCurrentRoute('  Ridge ')).toBe(true);
+    expect(saveCurrentRoute('  Ridge ')).toEqual(expect.objectContaining({ name: 'Ridge' }));
     const [entry] = useMissionStore.getState().routeLibrary.list;
     expect(entry).toMatchObject({ name: 'Ridge', distanceM: 100, climbM: 2, waypoints, path });
     expect(entry.risk).toEqual({ maxSlopeDeg: 17, climbM: 2, level: 'caution' });
@@ -310,9 +363,38 @@ describe('saved routes (#357)', () => {
 
   it('refuses a save without a name or without a plan', () => {
     empty();
-    expect(saveCurrentRoute('Ridge')).toBe(false);
+    expect(saveCurrentRoute('Ridge')).toBeNull();
     useMissionStore.setState(plan);
-    expect(saveCurrentRoute('   ')).toBe(false);
+    expect(saveCurrentRoute('   ')).toBeNull();
+    expect(useMissionStore.getState().routeLibrary.list).toEqual([]);
+  });
+
+  it('saves the route an EVA ended on and counts that EVA as its first run (#364)', () => {
+    empty();
+    const find = { name: 'Find · shiny rock', x: 100, z: 20 };
+    const walked = [...waypoints, find];
+    useMissionStore.setState((s) => ({
+      route: { ...s.route, waypoints: walked, path, distanceM: 100, climbM: 2, steepestSlopeDeg: 17, visited: walked.map((w) => w.name) },
+    }));
+    const entry = saveEvaRoute('EVA ridge', { sampleCount: 2, distanceM: 870.5, doseUgy: 6.2 });
+    expect(entry).toEqual(expect.objectContaining({ name: 'EVA ridge' }));
+    const [saved] = useMissionStore.getState().routeLibrary.list;
+    expect(saved.waypoints).toEqual(walked);
+    expect(saved.record).toEqual({ attempts: 1, completed: 1, samples: 2, distanceM: 870.5, doseUgy: 6.2, lastRunAtMs: expect.any(Number) });
+  });
+
+  it('flags the run as not completed when a waypoint was left out, and still saves', () => {
+    empty();
+    useMissionStore.setState((s) => ({
+      route: { ...s.route, waypoints, path, distanceM: 100, climbM: 2, steepestSlopeDeg: 17, visited: ['HAB'] },
+    }));
+    expect(saveEvaRoute('Ridge', { sampleCount: 0, distanceM: 120, doseUgy: null })).toEqual(expect.objectContaining({ name: 'Ridge' }));
+    expect(useMissionStore.getState().routeLibrary.list[0].record).toMatchObject({ attempts: 1, completed: 0, samples: 0, distanceM: 120, doseUgy: null });
+  });
+
+  it('refuses a debrief save without a plan and never records a run', () => {
+    empty();
+    expect(saveEvaRoute('Ridge', { sampleCount: 1, distanceM: 50, doseUgy: 1 })).toBeNull();
     expect(useMissionStore.getState().routeLibrary.list).toEqual([]);
   });
 
@@ -333,6 +415,25 @@ describe('saved routes (#357)', () => {
     expect(useMissionStore.getState().route.manual).toBe(false);
   });
 
+  it("clears the old needs plan's stops, dropped stops, reasons and leg explanations when a saved route loads", () => {
+    empty();
+    useMissionStore.setState(plan);
+    saveCurrentRoute('Ridge');
+    const id = useMissionStore.getState().routeLibrary.list[0].id;
+    // The needs plan that was on the table before: it dropped Bright Angel for lack of time.
+    useMissionStore.setState((s) => ({
+      route: {
+        ...s.route,
+        stops: [{ id: 'cheyava-falls' }],
+        dropped: [{ id: 'bright-angel', reason: 'time' }],
+        planReasons: [{ kind: 'dropped', stop: 'bright-angel', reason: 'time' }],
+        explain: [{ leg: 0, why: 'slope' }],
+      },
+    }));
+    expect(applySavedRoute(id)).toBe(true);
+    expect(useMissionStore.getState().route).toMatchObject({ stops: [], dropped: [], planReasons: [], explain: [] });
+  });
+
   it('deletes one saved route and keeps the library across a restart', () => {
     empty();
     useMissionStore.setState(plan);
@@ -346,5 +447,54 @@ describe('saved routes (#357)', () => {
     expect(deleteSavedRoute(oldest.id)).toBe(true);
     expect(useMissionStore.getState().routeLibrary.list.map((e) => e.name)).toEqual(['Valley']);
     expect(deleteSavedRoute('nope')).toBe(false);
+  });
+
+  describe('with sampling tasks (#352)', () => {
+    const place = { key: 'P1', type: 'point', stopId: null, x: 100, z: 0, radiusM: 8, label: 'P1', waypoint: 'P1 · task point', reason: null };
+    const planTasks = [{ id: 't1', what: 'soil', count: 1, place, workSec: 240, kept: true, drop: null }];
+    const taskWaypoints = [waypoints[0], { name: 'P1 · task point', label: 'P1', x: 100, z: 0, workSec: 240, stopId: null, required: true, place: 'P1', tasks: ['t1'], arrivalRadiusM: 8 }];
+    const soil = { id: 't1', what: 'soil', count: 1, place: { type: 'point', id: 'P1', x: 100, z: 0 } };
+    const rock = { id: 't1', what: 'rock', count: 1, place: { type: 'stop', stopId: 'bright-angel' } };
+    const saveTasksRoute = () => {
+      empty();
+      setNeeds({ objective: 'samples' });
+      useMissionStore.setState((s) => ({ route: { ...s.route, waypoints: taskWaypoints, path, distanceM: 100, tasks: planTasks } }));
+      saveCurrentRoute('Soil');
+      const tasksRouteId = useMissionStore.getState().routeLibrary.list[0].id;
+      useMissionStore.setState((s) => ({ route: { ...s.route, tasks: [], waypoints } }));
+      saveCurrentRoute('Ridge');
+      return { tasksRouteId, plainId: useMissionStore.getState().routeLibrary.list[0].id };
+    };
+
+    it('brings a route\'s tasks back under "Collect samples", into the crew list and the plan', () => {
+      const { tasksRouteId } = saveTasksRoute();
+      setTasks([rock]);
+      expect(applySavedRoute(tasksRouteId)).toBe(true);
+      const { needs, route } = useMissionStore.getState();
+      expect(needs.tasks).toEqual([soil]);
+      expect(route.tasks).toEqual(planTasks);
+      expect(route.waypoints[1]).toMatchObject({ place: 'P1', tasks: ['t1'], arrivalRadiusM: 8 });
+      expect(route.manual).toBe(true);
+    });
+
+    it('empties the task list for a route saved without tasks, and a task edit plans from the needs again', () => {
+      const { plainId } = saveTasksRoute();
+      setTasks([rock]);
+      applySavedRoute(plainId);
+      expect(useMissionStore.getState().needs.tasks).toEqual([]);
+      expect(useMissionStore.getState().route.tasks).toEqual([]);
+      expect(setTasks([rock])).toBe(true);
+      expect(useMissionStore.getState().route.manual).toBe(false);
+    });
+
+    it('puts no tasks on the plan under the other goals and keeps the crew list for later', () => {
+      const { tasksRouteId } = saveTasksRoute();
+      setTasks([rock]);
+      setNeeds({ objective: 'cheyava' });
+      const before = useMissionStore.getState().needs;
+      applySavedRoute(tasksRouteId);
+      expect(useMissionStore.getState().needs).toBe(before);
+      expect(useMissionStore.getState().route.tasks).toEqual([]);
+    });
   });
 });

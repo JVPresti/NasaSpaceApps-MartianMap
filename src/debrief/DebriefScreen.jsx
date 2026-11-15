@@ -16,7 +16,9 @@ import {
   routeReasonText,
 } from './format.js';
 import RouteReview, { ReviewNotes } from './RouteReview.jsx';
+import TaskRows from './TaskRows.jsx';
 import { MissionRecap } from '../mission/MissionBeat.jsx';
+import SaveRouteForm from '../plan/SaveRouteForm.jsx';
 import { useReserveSec } from './useReserveSec.js';
 import './debrief.css';
 import './debriefMobile.css';
@@ -167,6 +169,9 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
           </div>
         </dl>
 
+        {/* The sampling tasks of the plan (#352, TaskRows.jsx): done, done elsewhere or not done; nothing without tasks. */}
+        <TaskRows tasks={summary.tasks} />
+
         <RouteReview summary={summary} />
 
         {/* The first mission's recap (#265, src/mission/MissionBeat.jsx): one line per beat; nothing for the full EVA. */}
@@ -185,9 +190,17 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
           )}
         </section>
 
+        {/* Save the route as it ended, with the finds added during the walk (#364): Restart would start a fresh plan. */}
+        <section className="debrief-save" aria-labelledby="debrief-save-title">
+          <h3 id="debrief-save-title" className="debrief-section-title">{t('debrief.save.title')}</h3>
+          <p className="debrief-save-text">{t('debrief.save.text')}</p>
+          <SaveRouteForm summary={summary} buttonClass="ui-button primary" className="debrief-save-form" />
+        </section>
+
         <section className="debrief-notes" aria-labelledby="debrief-notes-title">
           <h3 id="debrief-notes-title" className="debrief-section-title">{t('debrief.notes.title')}</h3>
-          <p>{t('debrief.notes.dose')}</p>
+          {/* ends on the real 2017 event's dose, a RAD measurement, so its tag is DATA (#295) */}
+          <p>{t('debrief.notes.dose')}<SourceTag path="events.radiation.eventDoseUgy" variant="tag" interactive={false} /></p>
           <p>{t('debrief.notes.battery')}</p>
           <ReviewNotes reserveSec={reserveSec} />
         </section>

@@ -113,6 +113,19 @@
   letter-spacing: 0.03em;
 }
 
+/* Save the EVA's route (#364): the shared form from src/plan/saveRoute.css, sized for the dialog. */
+.debrief-save-text {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--dim);
+}
+
+.debrief-save-form {
+  margin-top: 10px;
+  max-width: 460px;
+}
+
 .debrief-route-distance {
   font-variant-numeric: tabular-nums;
   color: var(--ink);

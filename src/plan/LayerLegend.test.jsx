@@ -1,8 +1,17 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { t } from '../i18n/index.js';
+import { resetStore, useMissionStore } from '../state/store.js';
 import LayerLegend from './LayerLegend.jsx';
 import { LAYERS } from './layers.js';
+
+// Render the store as a test sets it (Zustand's server render otherwise uses the creation-time state).
+vi.mock('../state/store.js', async (importOriginal) => {
+  const original = await importOriginal();
+  return { ...original, useMissionStore: Object.assign((selector) => selector(original.useMissionStore.getState()), original.useMissionStore) };
+});
+
+afterEach(() => resetStore());
 
 const render = (layer) => renderToStaticMarkup(<LayerLegend layer={layer} />);
 const text = (html) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -18,6 +27,22 @@ describe('layer legend on the mission table map', () => {
 
   it('renders nothing for a layer with no swatches and nothing it decides', () => {
     expect(render({ id: 'none', name: 'None', summary: 'Photo' })).toBe('');
+  });
+
+  it('names a task place off the route on Rocks and Outcrop, only while the goal is Collect samples (#352)', () => {
+    const rock = LAYERS.find((layer) => layer.id === 'rock');
+    const outcrop = LAYERS.find((layer) => layer.id === 'outcrop');
+    const tasks = [{ id: 't1', what: 'rock', count: 1, place: { type: 'point', id: 'P1', x: 560, z: 574 } }];
+    expect(render(rock)).not.toContain('Task place');
+    useMissionStore.setState((s) => ({ needs: { ...s.needs, objective: 'samples', tasks } }));
+    expect(text(render(rock))).toContain('Task place · what the crew collects there');
+    expect(render(outcrop)).toContain('background:#ff6a2b');
+    expect(render(LAYERS.find((layer) => layer.id === 'slope'))).not.toContain('Task place');
+    // once the plan's route reaches the place, its stop marker names the task and the legend has no dot to explain
+    useMissionStore.setState((s) => ({ route: { ...s.route, waypoints: [{ name: 'HAB', x: 535, z: 574 }, { name: 'P1 · task point', place: 'P1', tasks: ['t1'], x: 560, z: 574 }] } }));
+    expect(render(rock)).not.toContain('Task place');
+    useMissionStore.setState((s) => ({ needs: { ...s.needs, objective: 'sortie' }, route: { ...s.route, waypoints: [] } }));
+    expect(render(rock)).not.toContain('Task place');
   });
 
   it('adds what the layer decides as one caption line', () => {

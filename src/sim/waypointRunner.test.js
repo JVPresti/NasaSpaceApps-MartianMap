@@ -53,6 +53,28 @@ describe('arrival radius', () => {
     expect(arrivalRadiusM(STOPS, null)).toBe(5);
     expect(arrivalRadiusM([], { name: 'Cheyava Falls' })).toBe(5);   // before stops.json loads
   });
+
+  it('is the waypoint\'s own arrivalRadiusM when it carries one: a sampling task point (#352)', () => {
+    expect(arrivalRadiusM(STOPS, { name: 'P1 · task point', arrivalRadiusM: 8 })).toBe(8);
+    expect(arrivalRadiusM([], { name: 'P1 · task point', arrivalRadiusM: 8 })).toBe(8);
+    // a task at a known stop keeps the stops.json radius; a missing or bad value falls back as before
+    expect(arrivalRadiusM(STOPS, { name: 'WP3 · Bright Angel outcrop', arrivalRadiusM: undefined })).toBe(2);
+    expect(arrivalRadiusM(STOPS, { name: 'P2 · task point', arrivalRadiusM: Number.NaN })).toBe(5);
+    expect(arrivalRadiusM(STOPS, { name: 'P2 · task point', arrivalRadiusM: 0 })).toBe(5);
+  });
+
+  it('arrives at a task point within its 8 m', () => {
+    const store = memoryStore();
+    store.getState().route.waypoints[1] = { name: 'P1 · task point', label: 'P1', x: 0, z: 20, place: 'P1', tasks: ['t1'], arrivalRadiusM: 8 };
+    store.getState().route.nextIndex = 1;
+    moveTo(store, 0, 11.9);
+    const runner = start(store);
+    expect(store.getState().route.nextIndex).toBe(1);
+    moveTo(store, 0, 12.1);
+    runner.tick();
+    expect(store.getState().route.visited).toEqual(['P1 · task point']);
+    runner.stop();
+  });
 });
 
 describe('next target', () => {

@@ -7,7 +7,7 @@
  *
  * Plain JavaScript with no React and no three.js. Coordinates: x east, z south, metres from Cheyava Falls.
  */
-import { batteryDrawW, combinedTag, metabolicPowerW, o2RateGs, SUIT_INPUTS, walkCost } from './suitModel.js';
+import { batteryDrawW, combinedTag, marginLimitOf, metabolicPowerW, o2RateGs, SUIT_INPUTS, walkCost } from './suitModel.js';
 
 export { combinedTag };
 
@@ -82,6 +82,8 @@ const sum = (legs, key) => legs.reduce((a, l) => a + l[key], 0);
  * Legs use the nominal metabolic rate (no pad): they are the plan. The walk home back along the same path uses the
  * walkback pad, as the HUD walkback does. The margin is the HUD margin at the turnaround point:
  * O2 left after the walk out, minus the padded walk home, as time at the flat walking rate, minus the 30 min reserve.
+ * totals keeps that O2 margin and the 8 h EVA clock's margin (suit.eva_duration_max less the whole EVA) apart, and
+ * marginLimit names the smaller one (#323), as suitReadout does for the live readout.
  *
  * Work at the stops (#247): a waypoint with `workSec` adds that work ({@link workCost}) to the leg that reaches it.
  * A leg's timeSec, o2G and batteryWh are walking plus work; walkSec and the work* fields keep the two apart. The walk
@@ -130,10 +132,12 @@ export function routeLegCosts(path, waypoints, heightAt, c, { stepM = 10, o2Star
   const walkRate = o2RateGs(metabolicPowerW(c.speedFlat, 0, c), c);
   const arrivalO2G = o2StartG - out.o2G - back.o2G;
   const arrivalBatteryWh = batteryStartWh - out.batteryWh - back.batteryWh;
-  // Margin at the end of the plan: the O2 left on arrival as walking time, minus the reserve, capped at the
-  // suit.eva_duration_max time left after the walk out and back, as the HUD's margin now (suitReadout).
+  // Margin at the end of the plan: the O2 left on arrival as walking time, minus the reserve, and the
+  // suit.eva_duration_max time left after the walk out and back, as the HUD's margin now (suitReadout). Both are kept
+  // so the table can name the limit that sets the figure (#323); the margin is the smaller of the two.
+  const o2MarginSec = arrivalO2G / walkRate - c.reserveSec;
   const evaMarginSec = c.evaMaxSec - out.timeSec - back.timeSec;
-  const marginSec = Math.min(arrivalO2G / walkRate - c.reserveSec, evaMarginSec);
+  const marginSec = Math.min(o2MarginSec, evaMarginSec);
   const status = marginSec <= c.warningSec ? 'warning' : marginSec < c.cautionSec ? 'caution' : 'nominal';
 
   return {
@@ -144,7 +148,7 @@ export function routeLegCosts(path, waypoints, heightAt, c, { stepM = 10, o2Star
       returnDistanceM: back.distanceM, returnTimeSec: back.timeSec, returnO2G: back.o2G, returnBatteryWh: back.batteryWh,
       arrivalO2G, arrivalO2Pct: 100 * arrivalO2G / c.o2UsableG,
       arrivalBatteryWh, arrivalBatteryPct: 100 * arrivalBatteryWh / c.batteryWh,
-      marginSec, status,
+      marginSec, o2MarginSec, evaMarginSec, marginLimit: marginLimitOf(o2MarginSec, evaMarginSec), status,
     },
   };
 }
@@ -161,7 +165,7 @@ export function legCostSources(hazards) {
   const time = entry(SPEED, 'suit model: walking_metabolic at constant effort (mobility.speed_rule), plus the work time at each stop (stops.json, SIM)');
   const o2 = entry(O2, 'suit model: walking_metabolic O2 plus the work at the stops, share of the xEMU primary tank');
   const battery = entry(BATTERY, 'suit model: xEMU battery, the effort share of the draw is SIM');
-  const margin = { ...entry(MARGIN, 'suit model: margin at the end of the plan, the O2 after the walk out, the work at the stops and the padded walk home minus the 30 min reserve, capped at the 8 h EVA limit'), label: 'Suit model' };
+  const margin = { ...entry(MARGIN, 'suit model: margin at the end of the plan, the O2 after the walk out, the work at the stops and the padded walk home minus the 30 min reserve, or the 8 h EVA limit less the whole EVA when that is tighter'), label: 'Suit model' };
   const walk = entry(SPEED, 'suit model: walking_metabolic at constant effort (mobility.speed_rule), no stops');
   // The work time is our estimate (stops.json work_time_s), so everything computed from it is SIM.
   const work = { tag: 'SIM', source: 'work time at the stops: stops.json work_time_s (SIM), longer for a solo crew' };

@@ -117,6 +117,8 @@ function SuitPanel() {
   const s = useMissionStore(useShallow((st) => ({
     o2: st.suit.oxygenPct, batt: st.suit.batteryPct, psi: st.suit.pressurePsi,
     walkbackSec: st.suit.walkbackSec, walkbackTo: st.suit.walkbackTo, marginSec: st.suit.marginSec, status: st.suit.status || 'nominal',
+    // Which limit sets the margin now (#323): the O2 or the 8 h EVA clock. The figure alone cannot say it.
+    limit: st.suit.marginLimit === 'eva' ? 'eva' : st.suit.marginLimit === 'o2' ? 'o2' : null,
   })));
   const battLevel = batteryLevel(s.batt);
   return (
@@ -135,6 +137,8 @@ function SuitPanel() {
       </div>
       <div className={'hud-walkback hud-' + s.status} title={t('ui.margin.now.title')}>
         <div className="hud-row-head"><I.Return /><b>{formatMinutes(s.marginSec, { signed: true })}</b><small>{t('ui.min')}</small><SourceTag path="suit.marginSec" /></div>
+        {/* The name of the number and the limit that sets it, then what the walk home takes (#323). */}
+        <div className="hud-caption">{s.limit ? <>{t('ui.margin.now')} · <span className="hud-limit">{t('limit.' + s.limit)}</span></> : t('ui.margin.now')}</div>
         <div className="hud-caption">{t(s.walkbackTo === 'shelter' ? 'ui.margin.now.shelter.in' : 'ui.margin.now.home.in')}{formatMinutes(s.walkbackSec)}{t('units.minutesSuffix')}</div>
       </div>
     </section>

@@ -152,11 +152,11 @@
 
   /* While the saved-routes name has the keyboard, the screen is half its height: the map steps aside and the actions
      stop sticking, so the field and its Save button stay in the space left. */
-  .table-body:has(.saved-routes-form input:focus) > .table-centre { display: none; }
-  .table-body:has(.saved-routes-form input:focus) .table-actions { position: static; }
+  .table-body:has(.save-route-form input:focus) > .table-centre { display: none; }
+  .table-body:has(.save-route-form input:focus) .table-actions { position: static; }
 
   /* the saved-routes name keeps clear of the sticky actions and the keyboard (SavedRoutes.jsx scrolls it into view) */
-  .saved-routes-form input { scroll-margin: 72px 0 96px; font-size: 16px; }   /* 16 px: iOS does not zoom the page */
+  .save-route-form input { scroll-margin: 72px 0 96px; font-size: 16px; }   /* 16 px: iOS does not zoom the page */
 }
 
 /* Landscape phone: header in one row, the map left at full height, the panels right. */

@@ -10,6 +10,7 @@ import lowOxygenCaution from '../sim/events/low-oxygen-caution.json';
 import lowOxygenWarning from '../sim/events/low-oxygen-warning.json';
 import radiation from '../sim/events/radiation.json';
 import { needsKey } from '../sim/missionNeeds.js';
+import { tasksKey } from '../sim/sampleTasks.js';
 
 /** The events that send the crew on a route of their own (a planner block): the storm, radiation, low O2 warning. */
 const ROUTE_EVENTS = new Set([dustStorm, radiation, lowOxygenCaution, lowOxygenWarning].filter((event) => event.planner).map((event) => event.id));
@@ -42,6 +43,22 @@ export function resumeStops(route, resume) {
 }
 
 /**
+ * The route a needs plan writes when it has no route in use: the plan's fields (its waypoints, stops, reasons, budget,
+ * profiles, tasks), no path and no leg reasons, and why. For "Collect samples" (#352) the figures of the route before
+ * it go too (distance, climb, steepest slope, time out), so an empty or unreachable task list reads blank, not the last
+ * route's numbers (route.legs and route.totals follow route.path, legCosts.js). The three other goals keep them, as
+ * before.
+ * @param {object} route the store's route
+ * @param {object} fields the plan's fields (useRoutePlanner needsJob)
+ * @param {{ reason: string, objective?: string }} plan reason: why there is no route; objective: needs.objective
+ * @returns {object}
+ */
+export function failedNeedsRoute(route, fields, { reason, objective }) {
+  const failed = { ...route, ...fields, path: null, explain: [], reason };
+  return objective === 'samples' ? { ...failed, distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null } : failed;
+}
+
+/**
  * What the hook remembers between renders.
  * - needsKey: the key of the needs plan on the table; plannedWaypointsKey: its waypoints
  * - lastKey, lastNonce, lastMast: the waypoints, Re-plan count and mast the waypoint planner last planned for
@@ -51,9 +68,12 @@ export function emptyPlannerMemory() {
   return { needsKey: '', plannedWaypointsKey: '', lastKey: '', lastNonce: -1, lastMast: '', appliedPlanId: '' };
 }
 
-/** Key of a needs plan: the six needs, the profile chosen at the table, Re-plan and the habitat mast. */
+/**
+ * Key of a needs plan: the six needs, the sampling tasks of the "Collect samples" goal (#352, empty for the other goals),
+ * the profile chosen at the table, Re-plan and the habitat mast. Any task edit plans again.
+ */
 export function needsPlanKey({ needs, profile, nonce, mastId }) {
-  return `${needsKey(needs)}|${profile}|${nonce}|${mastId}`;
+  return `${needsKey(needs)}|${tasksKey(needs)}|${profile}|${nonce}|${mastId}`;
 }
 
 /**

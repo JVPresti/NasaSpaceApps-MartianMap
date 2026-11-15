@@ -3,7 +3,7 @@ import medaJson from '../../public/data/meda_sol.json';
 import radJson from '../../public/data/rad.json';
 import { medaAt, parseMedaSol, parseRad } from '../data/medaRad.js';
 import { provenance } from '../data/provenance.js';
-import { EVENT_ENVIRONMENT_SOURCES, startEventRunner } from '../state/events.js';
+import { EVENT_ENVIRONMENT_SOURCES, EVENT_STEP_SOURCES, startEventRunner } from '../state/events.js';
 import { resetStore, useMissionStore } from '../state/store.js';
 import { CLEAR_TAU_SOURCE, DOSE_SOURCE, missionLmstSec, startEnvironmentRunner } from './environmentRunner.js';
 import { MARS_SEC_PER_EARTH_SEC } from './missionClock.js';
@@ -155,10 +155,15 @@ describe('environment strip values during the events (#189)', () => {
 
     const before = environment().doseUgy;
     at(720);         // the radiation alert starts
-    at(720 + 150);   // 150 s in
+    expect(sources()['environment.doseRateUgyH']).toBe(EVENT_ENVIRONMENT_SOURCES['environment.doseRateUgyH']);   // 10, measured
+    at(720 + 150);   // 150 s in: our step between the two measured rates, tagged SIM (#295)
     expect(environment().doseRateUgyH).toBe(20);
-    expect(sources()['environment.doseRateUgyH']).toBe(EVENT_ENVIRONMENT_SOURCES['environment.doseRateUgyH']);
+    expect(sources()['environment.doseRateUgyH']).toBe(EVENT_STEP_SOURCES['environment.doseRateUgyH']);
+    expect(sources()['environment.doseRateUgyH'].tag).toBe('SIM');
     expect(environment().doseUgy).toBeGreaterThan(before);
+    at(720 + 210);   // the measured peak
+    expect(environment().doseRateUgyH).toBe(29.92);
+    expect(sources()['environment.doseRateUgyH']).toBe(EVENT_ENVIRONMENT_SOURCES['environment.doseRateUgyH']);
     for (const path of paths) expect(shown(path)).toBe(true);
 
     events.stop();

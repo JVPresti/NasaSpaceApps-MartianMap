@@ -8,20 +8,24 @@ import { LAYER, layerPlaces } from './mapLayers.js';
 
 // The places some layers mark on the table map (mapLayers.layerPlaces), for MissionMap to frame and LayerPlaces.jsx to
 // draw. Data: public/data/stops.json and shelters.json through the shared loader, so they are the copies the planner
-// and the minimap already have; the store gives the stops the plan kept and dropped.
+// and the minimap already have; the store gives the stops the plan kept and dropped, and, for "Collect samples", the
+// crew's sampling tasks and the plan's word on each (#352).
 
 const optional = (path) => loadDataFile(path).catch(() => null);
 const NONE = [];
 
 /**
- * The places the layer marks: candidate stops on Outcrop, natural shelters on Exposure; none on the other layers.
+ * The places the layer marks: candidate stops on Outcrop, natural shelters on Exposure, the sampling task places on
+ * Rocks and Outcrop while the goal is "Collect samples"; none on the other layers.
  * @param {number} layer
  * @returns {Array<{ id: string, kind: string, x: number, z: number, label: string, detail: string, title: string }>}
  */
 export function useLayerPlaces(layer) {
-  const wanted = layer === LAYER.OUTCROP || layer === LAYER.EXPOSURE;
+  const samples = useMissionStore((s) => s.needs?.objective === 'samples');
+  const wanted = layer === LAYER.OUTCROP || layer === LAYER.EXPOSURE || (samples && layer === LAYER.ROCK);
   const [files, setFiles] = useState({ stops: null, shelters: null });
-  const route = useMissionStore(useShallow((s) => ({ stops: s.route.stops, dropped: s.route.dropped, waypoints: s.route.waypoints })));
+  const route = useMissionStore(useShallow((s) => ({ stops: s.route.stops, dropped: s.route.dropped, waypoints: s.route.waypoints, tasks: s.route.tasks })));
+  const tasks = useMissionStore((s) => (samples ? s.needs?.tasks ?? NONE : NONE));
 
   useEffect(() => {
     if (!wanted) return undefined;
@@ -36,6 +40,9 @@ export function useLayerPlaces(layer) {
     if (!wanted) return NONE;
     let candidates = [];
     try { candidates = files.stops ? routeStopCandidates(files.stops) : []; } catch { candidates = []; }
-    return layerPlaces(layer, { candidates, stops: route.stops ?? [], dropped: route.dropped ?? [], waypoints: route.waypoints ?? [], shelters: files.shelters?.shelters ?? [] });
-  }, [wanted, layer, files, route]);
+    return layerPlaces(layer, {
+      candidates, stops: route.stops ?? [], dropped: route.dropped ?? [], waypoints: route.waypoints ?? [], shelters: files.shelters?.shelters ?? [],
+      tasks, planTasks: route.tasks ?? [],
+    });
+  }, [wanted, layer, files, route, tasks]);
 }

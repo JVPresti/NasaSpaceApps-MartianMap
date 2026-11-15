@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import { formatNumber, t } from '../i18n/index.js';
-import { applySavedRoute, deleteSavedRoute, saveCurrentRoute, useMissionStore } from '../state/store.js';
+import { applySavedRoute, deleteSavedRoute, useMissionStore } from '../state/store.js';
+import SaveRouteForm from './SaveRouteForm.jsx';
 import SourceTag from './SourceTag.jsx';
-import { keepInView } from './keepInView.js';
 
 // Saved routes (#357): the crew's route library at the mission table. Each entry shows the plan (waypoints,
 // distance, climb, steepest grade) and its success record (runs, completions, samples, distance walked).
@@ -38,24 +37,10 @@ function SavedRoute({ entry }) {
 /** The saved-routes panel of the Route step. */
 export default function SavedRoutes() {
   const list = useMissionStore((s) => s.routeLibrary.list);
-  const canSave = useMissionStore((s) => Array.isArray(s.route?.path) && s.route.path.length >= 2);
   const manual = useMissionStore((s) => s.route.manual === true);
-  const [name, setName] = useState('');
-  const save = () => { if (saveCurrentRoute(name)) setName(''); };
   return (
     <div className="saved-routes">
-      <form className="saved-routes-form" onSubmit={(event) => { event.preventDefault(); save(); }}>
-        <input
-          value={name}
-          maxLength={40}
-          placeholder={t('savedRoutes.name.placeholder')}
-          aria-label={t('savedRoutes.name')}
-          onChange={(event) => setName(event.target.value)}
-          onFocus={(event) => keepInView(event.currentTarget)}
-          enterKeyHint="done"
-        />
-        <button type="submit" className="table-secondary" disabled={!canSave || name.trim() === ''}>{t('savedRoutes.save')}</button>
-      </form>
+      <SaveRouteForm />
       {manual && <p className="table-note">{t('savedRoutes.manual')}</p>}
       {list.length === 0 ? (
         <p className="table-note">{t('savedRoutes.empty')}</p>

@@ -142,6 +142,19 @@ export function yawFlips(frames, { minDegS = 30, stepSec = 0.1 } = {}) {
   return flips;
 }
 
+/**
+ * The track without EV2's steps aside out of the player's way (#377): every move made on a frame with `yielding` set
+ * is taken back out of the positions after it, as if the step never happened. What is left is EV2's own walking,
+ * for reversals(): a step aside is the player's doing.
+ */
+export function withoutSteps(frames) {
+  let ox = 0, oz = 0;
+  return frames.map((f, i) => {
+    if (i > 0 && f.yielding) { ox += f.x - frames[i - 1].x; oz += f.z - frames[i - 1].z; }
+    return { ...f, x: f.x - ox, z: f.z - oz };
+  });
+}
+
 /** Walk and idle toggles: how often the gait changes. */
 export const gaitToggles = (frames) => frames.reduce((n, f, i) => n + (i > 0 && f.gait !== frames[i - 1].gait ? 1 : 0), 0);
 

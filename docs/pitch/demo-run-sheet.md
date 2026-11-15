@@ -1,98 +1,85 @@
 # Presentation run sheet
 
-> **Format.** At most 4 minutes, video included, with a 3:40 target (Fernando, 15 November). The organisers' page (`docs/SUBMISSION.md`, PR #316) says 3 minutes at most, so confirm the 4 with them. There is no live demo. A recorded app video of 75 to 90 s, the `demo` beat, shows the app in this order: planning at the mission table with routes from the crew's needs, the orange return zone, egress, crewmate EV2 reacting to an event, and the route review.
+> **Format.** The organisers' official guidelines: at most 4 minutes, 5 to 6 slides. The talk is `script-en.md`, in English (`script-es.md` if they ask for Spanish), six beats, one per slide, and ends at 3:00. Then the judges ask questions (`qa.md`). There is no live demo. The `demo` beat plays an 85 s video of the real app, with no sound.
 
-The talk is `script-4min-en.md`, or `script-4min-es.md` in Spanish. P2 stands at the laptop and presses **Right** once per beat, on the cue in the table below. The keys are from `src/present/control.js` on `main`.
+**Autoplay is on.** The presentation plays its six beats, one per slide, by itself, and nobody needs to press anything. The speakers follow the screen. If the timing slips, take over with **Right** or **Left**. The first press only stops autoplay and moves nothing, so a video mid-beat keeps playing. Each press after it moves one beat (`src/present/control.js`, `createPilot`). Autoplay, the six beats and the QR code come from the presentation thread's PR #373 (`feat/present-story-cut`); step 7 below checks that the live site has them.
 
-**Which build.** The table follows the beats on `main` plus the `demo` beat of draft PR #356. Step 7 below tells you which build the site serves. If it differs from the table, read "After #356 merges" or "If the build has no demo beat".
+Two versions of the talk are in `script-en.md`. **A**: P1 tells the story and says the last lines, P2 gives the video cues and the data part of the close. **B**: one presenter says everything. A third person, or P2 in version A, stands by the laptop only to take over if needed.
 
-## Keys
+## Keys, for taking over
 
 | Key | Does |
 |---|---|
-| **Right**, **Space**, **PageDown** or **Enter** | Next beat. A presentation clicker sends these |
-| **Left** or **PageUp** | Previous beat |
+| **Right**, **Space**, **PageDown** or **Enter** | The first press takes over and moves nothing. After that, next beat |
+| **Left** or **PageUp** | The first press takes over and moves nothing. After that, previous beat |
 | **L** | Switch the captions between English and Spanish |
-| **Esc** | Leave the presentation for the app's start screen. Do not press it during the talk |
+| **Esc** | Leave the presentation for the app. Do not press it during the talk |
 
 ## Before the talk (10 minutes before)
 
 | Step | Do | Check |
 |---|---|---|
 | 1 | Plug the laptop into power and the projector. Display duplicated, 1920 x 1080. | The projector shows the desktop |
-| 2 | Chrome, tab 1: `https://martian-map.fernando-haro-c.workers.dev/?present=1`. Wait for the globe and the caption "Plan a Mars walk you can return from." Press nothing. | About 20 s on the GPU laptop. If it shows "3D view unavailable. Captions only", WebGL failed, so run the talk from the PDF (below) |
+| 2 | Chrome, tab 1: `https://martian-map.fernando-haro-c.workers.dev/?present=1`. Let it load, then reload just before the talk so it starts at 0:00 when the speaker is ready. | About 20 s on the GPU laptop. "3D view unavailable. Captions only" means WebGL failed, so run the talk from the PDF (below) |
 | 3 | Captions in English. If they show Spanish, press **L** once. | The first caption is in English |
-| 4 | Tab 2: `docs/pitch/out/deck-global.pdf`, full screen, on slide 1. Tab 3: the demo video as a plain file (#356's draft keeps it at `public/present/demo.mp4`), paused at 0:00. Open `docs/pitch/fallback/stills/` in an image viewer. Go back to tab 1. | One click plays the video file |
-| 5 | **F11** for full screen. Sound at about 30 % if the video has sound. | |
+| 4 | Tab 2: `docs/pitch/out/deck-global.pdf`, full screen, on slide 1. Tab 3: the backup video file the presentation thread records (the same cut as an mp4), paused at 0:00. | One click plays it |
+| 5 | **F11** for full screen. The presentation's video is muted (`Present.jsx`), so no sound is needed for it. | |
 | 6 | Close every other app, notification and chat. | |
-| 7 | Step through the whole presentation once with **Right** and write down the beat order, then reload tab 1. | Every beat draws and the video plays with picture. Note whether `radiation`, `storm`, `demo` and `credits` are there |
+| 7 | Let the whole presentation autoplay once against a stopwatch. | It runs open, stakes, zone, radiation, demo, close and stops at 3:00 without a key, with the QR code on the close. If it waits on the first beat, autoplay is not deployed: step it with **Right** on the times below. If it shows `plan`, `sources` and `credits`, the story cut is not deployed: tell Fernando and run from the PDF |
 
 **No network.** The site makes no live calls to NASA. As a backup the night before: check out `main`, `npm ci`, `npm run build`, `npm run preview`, and keep `http://localhost:4173/?present=1`.
 
-## The talk, one Right per beat
+## The talk
 
-| Talk time | Beat | Press | Cue (first words of the line) | If it fails |
-|---|---|---|---|---|
-| 0:00 | `mars` | Nothing, it is already there | "On Mars, nobody can come and get you…" | Black screen or captions only: switch to tab 2, the PDF, and follow the slide table below |
-| 0:10 | `jezero` | **Right** | "This is Jezero crater…" | |
-| 0:18 | `cheyava` | **Right** | "Her goal is Cheyava Falls…" | |
-| 0:30 | `danger` | **Right** | "If something goes wrong out here…" | |
-| 0:38 | `plan` | **Right** | "Marswalk plans that walk…" | |
-| 0:52 | `zone` | **Right** | "On Mars, the question isn't…" P1 ends this beat with "Then a radiation alert. Watch the zone." | The zone does not draw: P1 says the line, and slide 3 shows the same budget |
-| 1:15 | `radiation` | **Right** on the word "zone" | Nobody speaks for two seconds while the zone closes. Then "Only the way home is left…" | |
-| 1:23 | `storm` | **Right** | "Then a dust storm…" | |
-| 1:32 | `demo` | **Right** on "recorded" | The video starts. P2 says the five cues as each scene starts | See "If the video fails" |
-| 2:57 | `sources` | **Right** when the video ends | "Every number on screen says…" | |
-| 3:15 | `credits` | **Right**, only if the build has a `credits` beat | "The challenge asked for a survival guide…" | No `credits` beat: stay on `sources` and say the line |
-| 3:35 | end | **Nothing.** One more Right opens the `live` beat and then the app | "Thank you." | |
+Speakers in version A. In version B the one presenter says every line.
 
-The times assume an 85 s video, the length in #356's draft. If the real video is shorter or longer, every time from `sources` on moves by the same amount. A 90 s video ends the talk at 3:40.
-
-The silence is the part to rehearse. The zone closes between 1.2 and 2.4 s after the Right into `radiation`. If P1 is still talking then, the judges look at P1 and miss it.
+| Time | Beat on screen | Speaker and first words | If it slips or fails |
+|---|---|---|---|
+| 0:00 | `open` | P1: "The first people on Mars…" | Black screen or captions only: switch to tab 2 and follow the PDF column below |
+| 0:16 | `stakes` | P1: "Two astronauts walk out…" | If the screen is still on `open`, press **Right** twice: once to take over, once to move |
+| 0:30 | `zone` | P1: "So the question is not…" | If the zone does not draw, say the line anyway |
+| 0:47 | (end of `zone`) | P1: "Watch a radiation alert." Start 1 s before the beat changes, so "alert" lands with the alert at 0:48 | |
+| 0:48 | `radiation` | P1: silence while the zone closes (0:50.5 to 0:57.5) | |
+| 0:56 | `radiation` | P1: "Only the way home is left." **Handover to P2** | |
+| 1:00 | `demo` | P2: one cue per chapter, at the times in `script-en.md` (placeholders until #373 posts the re-recorded video's chapters) | See "If the video fails" |
+| 2:25 | `close`, sources list | P2: "Marswalk combines NASA images, terrain, weather and radiation…", ending "Scan the code and try it." | |
+| 2:47 | `close`, the names | **Handover to P1.** P1: "On Mars, the question is where you can still get home…" | If the names are not up yet, wait for them |
+| 3:00 | end | P1: "Thank you." Then questions | Nobody presses anything |
 
 ## If the video fails
 
-The `demo` beat shows no picture, freezes, or has no sound when it should.
+The `demo` beat shows no picture or freezes.
 
-1. Press **Alt+Tab** (or click tab 3) and play the video file full screen. P2 says the cues over it. When it ends, go back to tab 1 and press **Right** for `sources`.
-2. No video file either: step through the stills in the image viewer, about 12 s each, and say the cue on each one. Planning is `D3-goal-cheyava.jpg`. The return zone is PDF slide 3, because the app's zone has no still yet. Egress is `D5-walk-hud.jpg`. EV2 and the event is `S8-radiation-walk.jpg`. The review is `S10-debrief-review.jpg`. Then go back to tab 1 and press **Right**. This takes about 60 s, so the talk ends earlier.
-3. No time for either: say "The video shows the crew planning, the walk and the review. The slides have the same screens", show PDF slide 4 for 10 s, and go on to `sources`.
-
-## If the build has no demo beat
-
-#356 has not merged and the site goes from `storm` straight to `sources`. After the `storm` line, press **Alt+Tab** to tab 3 and play the video file full screen. P2 says the cues. When it ends, go back to tab 1 and press **Right** for `sources`. With no video file, use steps 2 or 3 above.
-
-## After #356 merges
-
-Its draft at 85067fd changes three things. None of them is final, so check them in step 7.
-
-- `radiation` is part of `zone`. The zone closes by itself about 15 s into the beat, with no Right. P1 says "Watch the zone" just before it and holds the same two seconds. Skip the `radiation` row's Right.
-- `storm` is gone. P1 says "That is the idea. Now the real app, recorded." at the end of `zone`, then P2 presses **Right** into `demo`. The talk gets a few seconds shorter.
-- `credits` follows `sources`, and `live` still follows `credits`.
-
-Then run `node docs/pitch/tools/sync-present.mjs`, put the real video length in both scripts, and run `node docs/pitch/tools/timing.mjs`.
+1. Click tab 3 and play the backup mp4 full screen. P2 says the cues over it. When it ends, click tab 1 and press **Right** twice for `close`: the first press takes over, the second moves on. Autoplay is now off.
+2. No backup file: show PDF slide 4 (the walk in four screens) and say the six cues over it in about 30 s, then go to `close`. The talk ends about 55 s early, which leaves more time for questions.
 
 ## If the whole presentation fails: the PDF
 
-`out/deck-global.pdf` is the file sent to the organisers and the backup. The deck has no speaker notes, so say the script's lines over these slides:
+`out/deck-global.pdf` is the file sent to the organisers and the backup. Say the script's lines over these slides.
 
 | Beats | Slide |
 |---|---|
-| `mars` | 1 (team, challenge, thesis) |
-| `jezero`, `cheyava`, `danger`, `plan` | 2 (Cheyava Falls, 913 m, the limits) |
-| `zone`, `radiation`, `storm` | 3 (the margin) |
-| `demo` | 4 (the walk in four screens), about 20 s instead of 85. P2 says the five cues over it |
-| `sources` | 6 (measured or simulated), then 7 for the last sentence (0.14 m) |
-| `credits` | 1 again (the thesis, the team name and the six names). Slide 7 lists next steps, which the talk leaves out |
+| `open` | 2 (Cheyava Falls, Jezero) |
+| `stakes` | 2 (the limits: 8 h, 20°, no GPS) |
+| `zone`, `radiation` | 3 (the margin). Do not read its 11 minutes aloud |
+| `demo` | 4 (the walk in four screens), with the six cues |
+| `close` | 5 (NASA sources, "listed by name"), then 7 (0.14 m), then 1 (team and thesis) at "We are" |
 
-The PDF run is about a minute shorter, because slide 4 replaces the video. Do not read slide 3's 11 minutes aloud. The talk speaks no margin figure.
+## Rehearsal checklist
 
-## Re-check after these merge
+- [ ] Pick version A or B.
+- [ ] Run the whole talk twice on the laptop with autoplay, against a stopwatch. It should end at 3:00 and must end by 4:00.
+- [ ] Practise "Watch a radiation alert" so it starts about 1 s before the beat changes, then hold the silence until about 0:56.
+- [ ] Practise the handovers in version A: P1 to P2 after "Only the way home is left", P2 to P1 when the names appear.
+- [ ] The video cues: say each one as its card appears, then stop talking.
+- [ ] Only three numbers spoken: eight hours, twenty degrees, fourteen centimetres.
+- [ ] The thesis is said twice, on `zone` and at the end.
+- [ ] Practise one take-over: press **Right** mid-talk (nothing moves), then finish the talk on keys.
+- [ ] Open tabs 2 and 3 and check each fallback once.
+- [ ] Confirm with the organisers: the language, whether Q&A follows, and whether we use our own laptop.
+- [ ] Read `qa.md` aloud once and fill in the "Who answers" column.
 
-- **#356** (`feat/present-demo-video`): the beat list, the video length, the scene order and which event EV2 reacts to. See "After #356 merges". Change the cues if the scenes moved.
-- **#353** (`fix/present-polish`): if it changes captions, rerun `sync-present.mjs`. The script lines do not quote captions, so they should not need to change.
-- **#335** (`feat/return-zone`): once the app draws the return zone, the zone beat's source line will change ("Not in the walk HUD yet"), and a still of it can join the video fallback.
-- **HUD restyle (`exp/hill-climb-quality`)**: retake the stills in `fallback/stills/` and the deck screenshots.
-- **#298 and #312** (the reserve held at a fixed 37.9 g; the margin priced at a planning rate): the 11 minutes on slide 3 change. Rerun `node docs/pitch/tools/walkback-zone.mjs` and update slide 3.
+## Re-check later
 
-The stills in `fallback/stills/` were captured from #282 at 989970f with `npm run measure:demo` on an RTX 3070, 1920 × 1080, English. `S1-start-AI-video.jpg` shows the AI-generated start video, so do not use it.
+- **#373's final chapter times**: replace the video times in `script-en.md` and `script-es.md`, and rerun `node docs/pitch/tools/timing.mjs`.
+- **Any change to `src/present/beats.js`**: rerun `node docs/pitch/tools/sync-present.mjs` and fix the times in both scripts.

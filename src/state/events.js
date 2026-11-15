@@ -10,7 +10,7 @@ import radiation from '../sim/events/radiation.json';
 import { createEventEngine } from '../sim/eventEngine.js';
 import { missionEventDefinitions, missionForObjective } from '../sim/missions.js';
 import { HAZARDS_PATH } from '../data/provenance.js';
-import '../mission/sources.js';   // the SIM notes of the missions' event times (#265)
+import { isRadiationStep } from '../mission/sources.js';   // also registers the SIM notes of the missions' event times (#265)
 import { loadCostGrid, loadDataFile } from '../data/dataFiles.js';
 import { SHELTERS_PATH } from '../sim/shelters.js';
 import { heightAt } from '../sim/costGrid.js';
@@ -43,37 +43,55 @@ export const EVENT_ENVIRONMENT_SOURCES = Object.freeze({
   'environment.doseRateUgyH': Object.freeze({
     tag: 'DATA',
     label: 'RAD · Curiosity (Gale)',
-    source: 'radiation event: RAD B dose rate of the September 2017 solar particle event, hazards.json models.sep_2017_profile',
+    source: 'radiation event: a dose rate RAD measured in the September 2017 solar particle event (B detector, dose in water), hazards.json models.sep_2017_profile',
+  }),
+});
+
+// The radiation rates the event file tags SIM (#295): our steps between the two rates RAD measured. The writer knows
+// which value it wrote, so the store's source says which of the two this one is.
+export const EVENT_STEP_SOURCES = Object.freeze({
+  'environment.doseRateUgyH': Object.freeze({
+    tag: 'SIM',
+    label: 'Radiation event step',
+    source: 'radiation event: our step between the two rates RAD measured in September 2017, 10 and 29.92 µGy/h (Zeitlin et al. 2018)',
   }),
 });
 
 /**
- * The event engine's store adapter, with a source written next to every environment value an event sets.
- * @param {typeof useMissionStore} store
- * @param {Record<string, object>} [sourcesByPath]
- */
-/**
  * The environment sources for one mission. The first mission runs the same values on a shorter clock, and says so.
+ * The radiation rate's source depends on the value written: a step the event file tags SIM gets its own (#295).
  * @param {'first' | 'full'} missionId
+ * @returns {Record<string, object | ((value: unknown) => object)>}
  */
 export function eventEnvironmentSources(missionId) {
-  if (missionId !== 'first') return EVENT_ENVIRONMENT_SOURCES;
+  const first = missionId === 'first';
   const dust = EVENT_ENVIRONMENT_SOURCES['environment.dustOpacity'];
-  const dose = EVENT_ENVIRONMENT_SOURCES['environment.doseRateUgyH'];
+  const shortened = (rate) => (first ? Object.freeze({ ...rate, source: rate.source + '; first mission: the profile compressed to 1 minute (SIM)' }) : rate);
+  const measured = shortened(EVENT_ENVIRONMENT_SOURCES['environment.doseRateUgyH']);
+  const step = shortened(EVENT_STEP_SOURCES['environment.doseRateUgyH']);
   return Object.freeze({
     // The shortened ramp makes the storm's opacity SIM in the first mission (P19); the values stay hazards.json's.
-    'environment.dustOpacity': Object.freeze({ ...dust, tag: 'SIM', label: 'Dust storm model · first mission', source: dust.source + '; first mission: ramp compressed from 90 s to 30 s (SIM)' }),
-    'environment.doseRateUgyH': Object.freeze({ ...dose, source: dose.source + '; first mission: the profile compressed to 1 minute (SIM)' }),
+    'environment.dustOpacity': first
+      ? Object.freeze({ ...dust, tag: 'SIM', label: 'Dust storm model · first mission', source: dust.source + '; first mission: ramp compressed from 90 s to 30 s (SIM)' })
+      : dust,
+    'environment.doseRateUgyH': (rate) => (isRadiationStep(rate) ? step : measured),
   });
 }
 
-export function createEventStoreAdapter(store, sourcesByPath = EVENT_ENVIRONMENT_SOURCES) {
+/**
+ * The event engine's store adapter, with a source written next to every environment value an event sets.
+ * @param {typeof useMissionStore} store
+ * @param {Record<string, object | ((value: unknown) => object)>} [sourcesByPath] a source per path, or a function of
+ *   the value written that returns one
+ */
+export function createEventStoreAdapter(store, sourcesByPath = eventEnvironmentSources('full')) {
   const adapter = createStoreAdapter(store);
   return {
     ...adapter,
     set(path, value) {
       adapter.set(path, value);
-      const source = sourcesByPath[path];
+      const entry = sourcesByPath[path];
+      const source = typeof entry === 'function' ? entry(value) : entry;
       if (source && store.getState().sources[path] !== source) {
         store.setState((state) => ({ sources: { ...state.sources, [path]: source } }));
       }
