@@ -1,11 +1,15 @@
 // The walkback zone clip for the presentation's hero beat (#291), computed by the app's own module,
-// src/sim/returnZone.js (#309), so the presentation and the mission table draw the same zone.
+// src/sim/returnZone.js (#335), so the presentation and the mission table draw the same zone.
+//
+// Only scripts/present/build-plan.mjs imports this file, offline; the browser reads the result from plan.json. The
+// module lands with #335, so until then run the script in a checkout that has merged feat/return-zone.
 //
 // The scenario is the first mission (#282): the first sortie plans 30 min, and 25.5 min is usable after the standard
 // 15 % reserve (route.budget.usableSec). That planned time, not the 8 h suit limit, bounds the zone. The crew walks
-// 55 m to the sortie stop and works there while the clock runs; then the radiation alert sends them home
-// (modifiers.homeward, as the event's planner request does) and the zone keeps only ground no farther from home than
-// the astronaut. Frame times are our scenario (SIM): the clock is compressed so the zone visibly tightens.
+// 55 m to the sortie stop and works there while the clock runs; then the radiation alert sends them home. From then on
+// the modifiers are the ones zoneModifiers builds for the alert: homeward, and the shelter window (the time to the
+// event's dose peak, shelterWindowSec) shrinking as the alert runs. Frame times are our scenario (SIM): the clock is
+// compressed so the zone visibly tightens.
 //
 // Each frame is one computeReturnZone call. The clip is stored as one byte per zone node, `last`: the last frame
 // (1-based) the node is inside or on the edge. A node that leaves never comes back, so the browser draws frame f as
@@ -22,7 +26,8 @@ export const SORTIE = Object.freeze({ timeMin: 30, reserveShare: 0.15, stop: Obj
 /**
  * @param {{ grid: object, hab: {x: number, z: number}, constants: object,
  *   scenario: { framesOut: number, framesHome: number, speFrame: number, arriveFrame: number, alertAtSec: number,
- *     o2G: number } }} input
+ *     o2G: number, windowSec: number | null } }} input
+ *   windowSec: the radiation event's shelter window, shelterWindowSec(src/sim/events/radiation.json)
  */
 export function buildZoneFrames({ grid, hab, constants: c, scenario: s, compute = computeReturnZone }) {
   const usableSec = SORTIE.timeMin * 60 * (1 - SORTIE.reserveShare);
@@ -43,7 +48,10 @@ export function buildZoneFrames({ grid, hab, constants: c, scenario: s, compute 
       elapsedSec = s.alertAtSec + walkSec * u;
       pos = { x: stop.x + (hab.x - stop.x) * u, z: stop.z + (hab.z - stop.z) * u };
     }
-    const z = compute({ grid, home: hab, from: pos, suit: { o2G: s.o2G, elapsedSec }, constants: c, evaLimitSec: usableSec, modifiers: { homeward: spe } });
+    const modifiers = spe
+      ? { homeward: true, shelterWithinSec: Number.isFinite(s.windowSec) ? Math.max(0, s.windowSec - (elapsedSec - s.alertAtSec)) : undefined }
+      : {};
+    const z = compute({ grid, home: hab, from: pos, suit: { o2G: s.o2G, elapsedSec }, constants: c, evaLimitSec: usableSec, modifiers });
     if (!last) { last = new Uint8Array(z.cols * z.rows); alive = new Uint8Array(z.cols * z.rows).fill(1); shape = z; }
     let count = 0;
     for (let x = 0; x < last.length; x++) {

@@ -9,7 +9,7 @@
 //     on its real slope, the 20 % walkback pad and the 30 min reserve.
 //
 // The walkback zone (every place the astronaut can reach and still get home) is not computed here: it comes from
-// src/sim/returnZone.js (#309), the module the app uses, through src/present/zoneFrames.js. Each frame of the clip is one
+// src/sim/returnZone.js (#335), the module the app uses, through src/present/zoneFrames.js. Each frame of the clip is one
 // call with the elapsed time, the astronaut's position on the first sortie and the crew's planned time. The file stores
 // the zone as one byte per node, `last`:
 // the last frame (1-based) in which the cell is still inside, so the browser draws frame f as last > f.
@@ -20,6 +20,7 @@ import { planRoute } from '../../src/sim/routePlanner.js';
 import { splitAtWaypoints } from '../../src/sim/legCosts.js';
 import { suitConstantsFromHazards, metabolicPowerW, o2RateGs, walkCost } from '../../src/sim/suitModel.js';
 import { buildZoneFrames } from '../../src/present/zoneFrames.js';
+import { shelterWindowSec } from '../../src/sim/returnZone.js';   // lands with #335
 
 const root = (p) => fileURLToPath(new URL(`../../${p}`, import.meta.url));
 const readJson = (p) => JSON.parse(readFileSync(root(p), 'utf8'));
@@ -38,7 +39,8 @@ const hab = (shelters.shelters || shelters).find((s) => s.id === 'HAB');
 // The first sortie's clip (SIM, our scenario): 30 frames out to the stop and working there while the clock runs to
 // alertAtSec, the radiation alert at frame 30, then 24 frames walking home. O2 is a full primary tank less a little;
 // the crew's planned time binds first, as it does in the app.
-const SCENARIO = { framesOut: 30, framesHome: 24, speFrame: 30, arriveFrame: 4, alertAtSec: 13 * 60, o2G: 700 };
+const SCENARIO = { framesOut: 30, framesHome: 24, speFrame: 30, arriveFrame: 4, alertAtSec: 13 * 60, o2G: 700,
+  windowSec: shelterWindowSec(readJson('src/sim/events/radiation.json')) };
 
 // ---------------------------------------------------------------- height and slope from the cost grid
 const hAt = (x, z) => {
