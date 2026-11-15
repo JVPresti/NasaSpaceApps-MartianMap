@@ -15,7 +15,7 @@ Ritmo: 140 palabras por minuto. Los números salen de la app y de sus fuentes (v
 | 0:38 | 2 · Los límites | P1 | Tres límites de los trajes lunares de la NASA: ocho horas de caminata, treinta minutos de reserva, nada de más de veinte grados de pendiente. Y sin GPS: el camino a casa hay que leerlo en el terreno. |
 | 0:55 | 3 · La zona de regreso | P1 | Lo azul es todo lo que ella alcanza y todavía regresa con su reserva, calculado con el planificador y el modelo de traje de la app. Cada subida lo encoge. Con la alerta, se cierra al camino de vuelta. En la app, eso es un número en el visor: el margen. |
 | 1:19 | 4 · Demo | P2 | (Demo, corte A, 2:25. Líneas abajo.) |
-| 3:44 | 5 · La respuesta y los datos | P3 | ¿Y la astronauta de Cheyava Falls? Con la alerta, le sobran trece minutos de margen. Marswalk la manda de vuelta ya, por la ruta que rodea las pendientes. Esa pendiente es el modelo HiRISE de un metro. La roca es la que fotografió Perseverance. La tormenta llega a la opacidad que midió Curiosity en 2018, y la radiación repite dosis reales de 2017. |
+| 3:44 | 5 · La respuesta y los datos | P3 | ¿Y la astronauta de Cheyava Falls? Con la alerta, le sobran catorce minutos de margen. Marswalk la manda de vuelta ya, por la ruta que rodea las pendientes. Esa pendiente es el modelo HiRISE. La roca es la que fotografió Perseverance. La tormenta llega a la opacidad que midió Curiosity en 2018, y la radiación repite tasas de dosis reales de 2017. |
 | 4:11 | 6 · Medido o simulado | P3 | Cada lectura dice si es medida, calculada o supuesta: caminar a un metro por segundo es supuesto. La tormenta y la radiación las midió Curiosity en Gale, no en Jezero, y la alerta lo dice. El clima de Jezero es la estación MEDA de Perseverance. |
 | 4:30 | 7 · Quién y un dato | P3 | Sirve para quien planea una caminata, que compara tres rutas antes de aprobar una, y para una clase en Ensenada, en el navegador. Un último dato: procesamos el mismo modelo HiRISE que sirve NASA Mars Trek, y la diferencia típica es de catorce centímetros. |
 | 4:51 | | | (Fin. 9 segundos de margen.) |
@@ -49,7 +49,7 @@ Solo si el equipo la elige en el ensayo. Va antes del beat 1 y usa los 20 segund
 | Número | Fuente |
 |---|---|
 | 913 m por la ruta, 54 g de O2 para volver, 18 min | Ruta del planeador de la app (`planRoute`, esclusa del hábitat, WP1, WP2, WP3, Cheyava Falls) y modelo del traje (`walkCost`, con el 20 % extra de Apolo 15 para el regreso). `tools/walkback-zone.mjs`, `data/walkback-zone.json`. La línea recta es 785 m (pestaña Sitio) |
-| 160 g al llegar a Cheyava Falls, 13 min de margen | Escenario nuestro (SIM): sale con 205 g y gasta 45 g de ida, según el modelo del traje. Margen = (160 − 54 − 72.5 g de reserva) ÷ 145 g/h. `data/walkback-zone.json`, cuadro 40 |
+| 160 g al llegar a Cheyava Falls, 14 min de margen | Escenario nuestro (SIM): final de una EVA larga, 21 % del tanque de 771 g. Margen = (160 − 54 − 72.5 g de reserva) ÷ 2.42 g/min (145 g/h, caminar en plano) = 13.9 min |
 | Reserva de 30 min = 72.5 g | `suit.reserve.time` (Apollo 17) al ritmo de caminar en plano, 145 g/h |
 | 8 h | `suit.eva_duration_max`, NASA EVA-EXP-0042 Rev B (xEVA Concept of Operations) |
 | 20° | `slope.no_go`, NASA EVA-EXP-0042 Rev B (requisito del traje xEVA) |

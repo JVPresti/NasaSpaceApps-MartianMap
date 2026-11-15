@@ -4,9 +4,9 @@ Short, honest answers. Say the number, name the source, stop. If you don't know,
 
 ## 1. What is measured and what is simulated?
 
-**ES.** El terreno es medido: el modelo HiRISE de 1 m y su imagen de 25 cm. Las dosis de radiación son medidas por RAD en Curiosity, en Gale, no en Jezero. El clima es MEDA: temperatura y presión del sol 1187, viento del sol 312. Las reglas del traje (8 h, 30 min de reserva, 20°) son documentos de la NASA. Simulado: la velocidad al caminar (1 m/s), cuándo llegan los eventos, las rocas individuales (un modelo estadístico) y el compañero EV2. En `hazards.json` hay 75 valores: 57 DATA, 7 DERIVED y 11 SIM, y la pantalla muestra la etiqueta junto a cada número.
+**ES.** El terreno es medido: el modelo HiRISE de 1 m, remuestreado a 2 m, y su imagen de 25 cm, mostrada a 0.5 m. Las tasas de dosis de radiación son medidas por RAD en Curiosity, en Gale, no en Jezero. El clima es MEDA: temperatura y presión del sol 1187, viento del sol 312. Las reglas del traje (8 h, 30 min de reserva, 20°) son documentos de la NASA. Simulado: la velocidad al caminar (1 m/s), cuándo llegan los eventos, las rocas individuales (un modelo estadístico) y el compañero EV2. En `hazards.json` hay 75 valores: 57 DATA, 7 DERIVED y 11 SIM, y la pantalla muestra la etiqueta junto a cada número.
 
-**EN.** Measured: the terrain (HiRISE 1 m DTM and 25 cm image), the radiation doses (RAD on Curiosity, in Gale crater, not Jezero), MEDA temperature and pressure from sol 1187 and wind from sol 312, and the suit rules (8 h, 30 min reserve, 20°) from NASA documents. Simulated: walking speed (1 m/s), when the events arrive, individual rock positions (a statistical model) and the partner EV2. `hazards.json` has 75 values: 57 DATA, 7 DERIVED, 11 SIM, and the tag shows next to each number on screen.
+**EN.** Measured: the terrain (HiRISE 1 m DTM resampled to a 2 m grid, and its 25 cm image shown at 0.5 m), the radiation dose rates (RAD on Curiosity, in Gale crater, not Jezero), MEDA temperature and pressure from sol 1187 and wind from sol 312, and the suit rules (8 h, 30 min reserve, 20°) from NASA documents. Simulated: walking speed (1 m/s), when the events arrive, individual rock positions (a statistical model) and the partner EV2. `hazards.json` has 75 values: 57 DATA, 7 DERIVED, 11 SIM, and the tag shows next to each number on screen.
 
 ## 2. Why walkback? Why not just show the oxygen left?
 
@@ -22,15 +22,27 @@ Short, honest answers. Say the number, name the source, stop. If you don't know,
 
 ## 4. How do you know the terrain is right?
 
-**ES.** Lo comparamos con NASA Mars Trek, que sirve el mismo DTM: 0.14 m RMS en los 564,001 nodos, 97.3 % de acuerdo en las clases de pendiente. Contra las posiciones de Perseverance, 0.16 m RMS. Eso prueba que lo procesamos bien, no que el DTM sea perfecto: su precisión es la de HiRISE.
+**ES.** Lo comparamos con NASA Mars Trek, que sirve el mismo DTM: 0.14 m RMS en los 564,001 nodos, 97.3 % de acuerdo en las clases de pendiente. Eso prueba que lo procesamos bien, no que el DTM sea perfecto: su precisión es la de HiRISE.
 
-**EN.** We checked it against NASA Mars Trek, which serves the same DTM: 0.14 m RMS over 564,001 nodes, 97.3 % agreement on slope classes, and 0.16 m RMS against Perseverance's own position fixes. That proves our processing, not the DTM itself; its accuracy is HiRISE's.
+**EN.** We checked it against NASA Mars Trek, which serves the same DTM: 0.14 m RMS over 564,001 nodes, 97.3 % agreement on slope classes. That proves our processing, not the DTM itself; its accuracy is HiRISE's.
 
 ## 5. Your radiation is from Gale crater. Isn't that wrong for Jezero?
 
-**ES.** Es una medición real en la superficie de Marte: RAD, en Curiosity, midió este evento solar desde el suelo. Perseverance no lleva dosímetro. Usamos las dosis del evento de septiembre de 2017, con la fecha del registro DONKI de la NASA. La pantalla dice "cráter Gale, no Jezero". Lo que comprimimos es el tiempo: 12 minutos del evento en la EVA completa, uno en la primera salida, y eso está marcado SIM.
+**ES.** Es una medición real en la superficie de Marte: RAD, en Curiosity, midió este evento solar desde el suelo. Perseverance no lleva dosímetro. Usamos las tasas de dosis del evento de septiembre de 2017, con la fecha del registro DONKI de la NASA. La pantalla dice "cráter Gale, no Jezero". Lo que comprimimos es el tiempo: 12 minutos del evento en la EVA completa, uno en la primera salida, y eso está marcado SIM.
 
-**EN.** It is a real measurement on the surface of Mars: RAD, on Curiosity, measured this solar event from the ground. Perseverance carries no dosimeter. We use the September 2017 event doses, dated by NASA's DONKI record. The screen says "Gale crater, not Jezero". What we compress is time: the event runs 12 minutes in the full EVA and 1 minute in the first sortie, tagged SIM.
+**EN.** It is a real measurement on the surface of Mars: RAD, on Curiosity, measured this solar event from the ground. Perseverance carries no dosimeter. We use the September 2017 event dose rates, dated by NASA's DONKI record. The screen says "Gale crater, not Jezero". What we compress is time: the event runs 12 minutes in the full EVA and 1 minute in the first sortie, tagged SIM.
+
+## 5b. That dose is small. Why does the alert send her home?
+
+**ES.** Porque es un aviso temprano. Cuando se ve la llamarada nadie sabe qué tan grande será el evento, así que la regla es refugiarse temprano (ALARA, tan bajo como sea razonable). El evento de septiembre de 2017 fue moderado: sumó 544 µGy en total, unas dos sols y media de dosis normal. Nosotros comprimimos sus 57 horas en 12 minutos y mantenemos las tasas medidas, así que la dosis del visor no es la del evento real (#295).
+
+**EN.** Because it is an early warning. When the flare is seen nobody knows how large the event will be, so the rule is shelter early (ALARA). The September 2017 event was moderate: it added 544 µGy in total, about two and a half sols of normal dose. We squeeze its 57 hours into 12 minutes and keep the measured rates, so the visor's dose is not what the real event delivered (#295).
+
+## 5c. Your margin reads +480 or +399 with a full tank. Does resting inflate it?
+
+**ES.** Sí. El margen divide el oxígeno por el ritmo actual, suavizado en 30 segundos, así que sube cuando ella se detiene. Lo reportamos como problema (#312) y el arreglo es usar un ritmo de planeación fijo. El 14 de la astronauta de Cheyava Falls usa el ritmo de caminar en plano, 2.4 g/min. Y con el tanque lleno cerca de casa manda el reloj de 8 horas, por eso se ve +480.
+
+**EN.** Yes. The margin divides O2 by the current rate, smoothed over 30 s, so it rises when she stops. We filed it (#312); the fix is a fixed planning rate. The 14 minutes for the astronaut at Cheyava Falls use the flat walking rate, 2.4 g/min. With a full tank near home the 8 h clock is the limit, which is why it reads +480.
 
 ## 6. Is the dust storm real?
 
@@ -60,15 +72,15 @@ Short, honest answers. Say the number, name the source, stop. If you don't know,
 
 ## 10. How did you use AI?
 
-**ES.** (Confirmar con el equipo antes de decirlo.) Usamos asistentes de programación con IA para escribir y revisar código y documentos; cada cambio pasó por un issue y un pull request revisado. Las imágenes generadas por IA son solo el video de inicio y las ilustraciones de peligros, y dicen que son IA. Ningún número de la app sale de una IA: cada uno cita su fuente.
+**ES.** (Confirmar con el equipo antes de decirlo, y nombrar la herramienta.) Usamos asistentes de programación con IA (SI, en el término de 2026) para escribir y revisar código y documentos; cada cambio pasó por un issue y un pull request revisado. Las imágenes generadas por IA son solo el video de inicio y las ilustraciones de peligros, y dicen que son IA. Ningún número de la app sale de una IA: cada uno cita su fuente.
 
-**EN.** (Team to confirm before saying it.) We used AI coding assistants to write and review code and documents; every change went through an issue and a reviewed pull request. The only AI-generated images are the start screen video and the hazard illustrations, and they are labelled as AI. No number in the app comes from an AI; each one cites its source.
+**EN.** (Team to confirm before saying it, and name the tool.) We used AI (SI, the 2026 term) coding assistants to write and review code and documents; every change went through an issue and a reviewed pull request. The only AI-generated images are the start screen video and the hazard illustrations, and they are labelled as AI. No number in the app comes from an AI; each one cites its source.
 
 ## 11. What did you build during the hackathon, and what existed before?
 
-**ES.** (Confirmar con el equipo.) Antes del evento existía el motor 3D: terreno, cielo, astronautas, hábitat y animaciones. Durante el evento hicimos la app: la mesa de misión, el planificador sobre el terreno real, el modelo del traje y el margen, los eventos con datos de la NASA, la navegación sin GPS, las fuentes, el resumen y la primera misión. El historial está en GitHub: cada cambio tiene su issue y su pull request.
+**ES.** (Confirmar con el equipo; ver `docs/RULES.md`, PR #315.) El repositorio se creó el 14 de noviembre a las 8:47 am, 13 minutos antes del inicio, vacío. Los recursos del banco de pruebas anterior (terreno, traje, hábitat) tienen fecha del 12 y 13 de noviembre, y lo declaramos a los organizadores. Durante el evento hicimos la app: la mesa de misión, el planificador sobre el terreno real, el modelo del traje y el margen, los eventos con datos de la NASA, la navegación sin GPS, las fuentes, el resumen y la primera misión. El historial está en GitHub: cada cambio tiene su issue y su pull request.
 
-**EN.** (Team to confirm.) Before the event, the 3D engine existed: terrain, sky, astronauts, habitat and animations. During the event we built the app: the mission table, the planner on real terrain, the suit model and the margin, the NASA-data events, navigation without GPS, the sources screen, the debrief and the first mission. The history is on GitHub: every change has its issue and pull request.
+**EN.** (Team to confirm; see `docs/RULES.md`, PR #315.) The repo was created on 14 November at 8:47 am, 13 minutes before the start, empty. Assets from the earlier test bench (terrain tile, suit rig, habitat) are dated 12 and 13 November, and we disclose that to the organisers. During the event we built the app: the mission table, the planner on real terrain, the suit model and the margin, the NASA-data events, navigation without GPS, the sources screen, the debrief and the first mission. The history is on GitHub: every change has its issue and pull request.
 
 ## 12. What's next, and who would use it?
 

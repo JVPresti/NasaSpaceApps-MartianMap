@@ -23,7 +23,7 @@ The demo is all of `docs/DEMO.md`, segments 1 to 11, with the times keiwv measur
 | 6:03 | Demo 9 · Habitat table | P2 | In the cabin, E opens the plan, X ends the EVA. |
 | 6:11 | Demo 10 · Debrief | P2 | The debrief compares the approved route with the walked one. The detour to the pale rock was worth it, because we marked a find with margin to spare. And every number says if it is DATA, DERIVED or SIM. |
 | 6:46 | Demo 11 · Sources | P2 | And here, every dataset and every model we used. |
-| 6:56 | The answer | P3 | And the astronaut at Cheyava Falls? With the alert, she has thirteen minutes of margin, and Marswalk sends her back now. Her route comes from the HiRISE model. Oxygen per metre is a published walking model, scaled to Mars and NASA's suit, plus Apollo 15's 20 %. |
+| 6:56 | The answer | P3 | And the astronaut at Cheyava Falls? With the alert, she has fourteen minutes of margin, and Marswalk sends her back now. Her route comes from the HiRISE model. Oxygen per metre is a published walking model, scaled to Mars and NASA's suit, plus Apollo 15's 20 %. |
 | 7:22 | Close | P3 | It is for whoever plans a walk, and for a class in Ensenada. Next: the real heart rate. One last number: we process the same HiRISE model as NASA Mars Trek; the typical difference is fourteen centimetres. |
 | 7:46 | | | (End. 14 seconds to spare.) |
 

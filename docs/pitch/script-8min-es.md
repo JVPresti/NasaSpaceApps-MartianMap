@@ -21,7 +21,7 @@ La demo es `docs/DEMO.md` completo, segmentos 1 a 11, con los tiempos medidos po
 | 6:03 | Demo 9 · Mesa del hábitat | P2 | En la cabina: E abre el plan, X termina la EVA. |
 | 6:11 | Demo 10 · Resumen | P2 | El resumen compara la ruta aprobada con la caminada. El desvío a la roca clara: valió la pena, porque marcamos un hallazgo con margen. Y cada número dice si es DATA, DERIVED o SIM. |
 | 6:46 | Demo 11 · Fuentes | P2 | Y aquí, cada dato y cada modelo que usamos. |
-| 6:56 | La respuesta | P3 | ¿Y la astronauta de Cheyava Falls? Con la alerta, le sobran trece minutos de margen, y Marswalk la manda de vuelta ya. Su ruta sale del modelo HiRISE. El oxígeno por metro es un modelo publicado de caminata, escalado a Marte y al traje de la NASA, más el 20 % de Apolo 15. |
+| 6:56 | La respuesta | P3 | ¿Y la astronauta de Cheyava Falls? Con la alerta, le sobran catorce minutos de margen, y Marswalk la manda de vuelta ya. Su ruta sale del modelo HiRISE. El oxígeno por metro es un modelo publicado de caminata, escalado a Marte y al traje de la NASA, más el 20 % de Apolo 15. |
 | 7:22 | Cierre | P3 | Sirve para quien planea una caminata y para una clase en Ensenada. Siguiente: el ritmo cardiaco real. Un último dato: procesamos el mismo modelo HiRISE que NASA Mars Trek; la diferencia típica es de catorce centímetros. |
 | 7:46 | | | (Fin. Quedan 14 segundos de margen.) |
 
