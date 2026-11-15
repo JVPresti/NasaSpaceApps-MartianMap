@@ -195,6 +195,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     sys.dust.update(dt);
     sys.rocks.update(camera.position, TIERS[ctx.tier], false);
     sys.cast.render();
+    if (waypoints?.group.visible) waypoints.update(camera, container.clientHeight);   // fixed-size labels (#198)
     renderer.render(scene, camera);
     if (!firstFrame) {
       firstFrame = true;

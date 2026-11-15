@@ -9,6 +9,7 @@ import {
   cardinalPoints, niceScaleBar, projectToMap, splitShelters,
 } from './minimapGeometry.js';
 import { resampleRoute } from './minimapRoute.js';
+import { waypointNumber } from '../sim/waypointNumber.js';
 import { drawPartner } from './minimapPartner.js';
 
 const TAU = Math.PI * 2;
@@ -247,7 +248,7 @@ function drawWaypoints(g, view, project, radius) {
     g.font = `700 ${Math.max(8, r * 1.15)}px system-ui, 'Segoe UI', sans-serif`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText(String(index + 1), p.x, p.y + 0.5);
+    g.fillText(waypointNumber(index), p.x, p.y + 0.5);
   });
 }
 
