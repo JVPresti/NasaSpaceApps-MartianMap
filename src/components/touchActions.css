@@ -15,6 +15,7 @@
 }
 
 .touch-actions-main,
+.touch-actions-sampling,
 .touch-actions-more {
   display: flex;
   flex-wrap: wrap-reverse;

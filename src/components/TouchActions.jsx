@@ -9,6 +9,7 @@ import { useMissionStore } from '../state/store.js';
 import './touchActions.css';
 
 const COARSE = '(pointer: coarse)';
+const SAMPLING_IDS = new Set(['sample', 'photo', 'stow', 'case']);
 
 function subscribeCoarse(onChange) {
   const mq = globalThis.matchMedia?.(COARSE);
@@ -19,7 +20,7 @@ function subscribeCoarse(onChange) {
 
 /** True on a coarse primary pointer, or once the engine saw a touch on the scene (a touchscreen laptop). */
 function useTouchBar(engine) {
-  const coarse = useSyncExternalStore(subscribeCoarse, () => coarsePointer(), () => false);
+  const coarse = useSyncExternalStore(subscribeCoarse, () => coarsePointer(), () => coarsePointer());
   const [touched, setTouched] = useState(false);
   useEffect(() => {
     if (coarse || touched || typeof engine?.subscribeTouch !== 'function') return undefined;
@@ -51,16 +52,21 @@ export default function TouchActions({ engine, wristOpen }) {
   }, [fs]);
 
   if (!show) return null;
-  const { main, more: extra } = touchBarActions({ mode: now.mode, stage: now.stage, inCabin, wristOpen, sampling: { actions: now.actions } });
+  const { main: all, more: extra } = touchBarActions({ mode: now.mode, stage: now.stage, inCabin, wristOpen, sampling: { actions: now.actions } });
+  // The sampling buttons come and go as the crosshair moves; they get their own row above the main one, so the buttons
+  // under the thumb (Wrist, More) never shift when one appears.
+  const sampling = all.filter((a) => SAMPLING_IDS.has(a.id));
+  const main = all.filter((a) => !SAMPLING_IDS.has(a.id));
 
   const button = (a) => {
     const press = (e) => {
       e.preventDefault();
       if (a.id === 'sample') { engine?.sampleAct?.('click'); return; }
       sendKey(a.id, 'keydown');
-      if (!a.hold) sendKey(a.id, 'keyup');
+      if (!a.hold) { sendKey(a.id, 'keyup'); if (a.more) setMore(false); }
     };
-    const release = () => { if (a.hold) sendKey(a.id, 'keyup'); };
+    // the More menu closes after one of its actions, so it never covers the card or the view the action opened
+    const release = () => { if (a.hold) { sendKey(a.id, 'keyup'); if (a.more) setMore(false); } };
     // A hold action (Q, 2 s) presses on pointerdown and lets go on pointerup; the rest act on a click, so a finger
     // that slides off the button does nothing.
     const handlers = a.hold
@@ -86,11 +92,12 @@ export default function TouchActions({ engine, wristOpen }) {
           </button>
         )}
       </div>
+      {sampling.length > 0 && <div className="touch-actions-sampling">{sampling.map(button)}</div>}
       {more && (
         <div className="touch-actions-more">
           {extra.map(button)}
           {fs.available && (
-            <button type="button" className="touch-action touch-action-fullscreen" onClick={() => fs.toggle().then(setFull)}>
+            <button type="button" className="touch-action touch-action-fullscreen" onClick={() => { setMore(false); fs.toggle().then(setFull); }}>
               {t(isFull ? 'touch.fullscreen.exit' : 'touch.fullscreen')}
             </button>
           )}

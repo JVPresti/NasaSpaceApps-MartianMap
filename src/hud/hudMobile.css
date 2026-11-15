@@ -69,3 +69,23 @@
   .hud .hud-partner { display: none; }   /* the minimap shows the partner; T in the bar's More menu opens the detail */
   .hud .hud-partner:has(.hud-partner-detail) { display: flex; left: calc(var(--side-l) + 160px); top: calc(52px + var(--top)); }
 }
+
+/* The find card (src/finds/finds.css): touch-sized Add and Dismiss without their key caps, clear of the stick and the bar. */
+@media (pointer: coarse) {
+  .find-actions button { min-height: 44px; font-size: 14px; }
+  .find-actions kbd { display: none; }
+}
+@media (pointer: coarse) and (max-width: 600px) {
+  .find-card { width: calc(100vw - 24px); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+  /* an alert sits above the stick, in the beat line's place, so the waypoint row and the suit panel stay readable;
+     the beat line waits until the alert clears */
+  .event-banner.event-banner-walk { top: auto; bottom: calc(150px + env(safe-area-inset-bottom, 0px)); width: calc(100vw - 20px); padding: 8px 12px; }
+  .event-banner-walk .event-text { font-size: 16px; }
+  .app:has(.event-banner-walk) .mission-beat { display: none; }
+}
+@media (pointer: coarse) and (max-height: 500px) {
+  .find-card { width: min(44vw, 360px); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .event-banner.event-banner-walk { top: auto; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: min(44vw, 400px); padding: 6px 10px; }
+  .event-banner-walk .event-text { font-size: 14px; }
+  .app:has(.event-banner-walk) .mission-beat { display: none; }
+}

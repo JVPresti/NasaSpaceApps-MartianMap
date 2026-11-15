@@ -20,6 +20,7 @@ import { inCabin } from '../state/tableActions.js';
 import { canPointFind, findMarkers } from './markers.js';
 import { formatNumber, t, translateText } from '../i18n/index.js';
 import '../hud/hud.css';
+import '../hud/hudMobile.css';
 import './finds.css';
 
 /** Hold to point. Q sits next to WASD and is free: the engine uses WASD, arrows, Shift, P, E and F, the interface M, L, 0, H,
