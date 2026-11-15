@@ -17,6 +17,9 @@ export const HANDOVER_M = 1.6;
 /** ...and bends at once, without walking, when the player is already this close (m). */
 export const HANDOVER_REACH_M = 1.7;
 
+/** The position ramps toward the walking speed over this long (#228), together with the walk weight in partner.js. */
+export const SPEED_RAMP_SEC = 0.3;
+
 /** Throws if a state does not match the PartnerState contract. Network sources can use it in their tests. */
 export function assertPartnerState(s) {
   const fail = (m) => { throw new Error('invalid PartnerState: ' + m); };
@@ -51,7 +54,7 @@ export function createScriptedPartner({ id = 'EV2', color = [1, 0.32, 0.03], A =
   let yaw = Math.atan2(B.x - A.x, B.z - A.z);
   let carrying = true, wantCarry = true;  // wantCarry: what carrying becomes at the release point of the bend
   let bendTime = null;                    // seconds into the case clip while bending
-  let inside = false, stoop = 0, moving = true;
+  let inside = false, stoop = 0, moving = true, ramp = 0;   // ramp: the speed eases in and out (#228)
   let last = null;
   const patrolPoint = () => ({ x: A.x + (B.x - A.x) * t, z: A.z + (B.z - A.z) * t });
   const startBend = () => { bendTime = 0; };
@@ -96,6 +99,10 @@ export function createScriptedPartner({ id = 'EV2', color = [1, 0.32, 0.03], A =
     }
     const duck = world && world.duck ? world.duck : () => 0;
     const speed = (1.0 / 1.2) * (1 - 0.45 * stoop);   // one 1 m stride per 1.2 s walk loop; slower when stooped
+    // The position ramps toward the walk speed over SPEED_RAMP_SEC (#228), so a start or a stop moves together with
+    // the walk weight the renderer eases (dt * 4): no glide in a part-idle pose, no walking on the spot. `ramp` is the
+    // previous frame's value (one frame of lag, imperceptible); it eases toward this frame's state at the end.
+    const moveSpeed = speed * ramp;
     let walking = true, x, z, target = null, turn = 6;
     if (free) {   // off the patrol: walk to a goal, then face a point, then act
       const f = free;
@@ -107,7 +114,7 @@ export function createScriptedPartner({ id = 'EV2', color = [1, 0.32, 0.03], A =
         if (f.goal) f.goal = d > HANDOVER_M ? { x: px + dx / d * HANDOVER_M, z: pz + dz / d * HANDOVER_M } : null;
       }
       if (f.goal) {
-        const gx = f.goal.x - f.x, gz = f.goal.z - f.z, gd = Math.hypot(gx, gz), st = speed * dt;
+        const gx = f.goal.x - f.x, gz = f.goal.z - f.z, gd = Math.hypot(gx, gz), st = moveSpeed * dt;
         if (gd <= st) { f.x = f.goal.x; f.z = f.goal.z; f.goal = f.queue && f.queue.length ? f.queue.shift() : null; if (!f.goal && f.leave) free = null; }
         else { f.x += gx / gd * st; f.z += gz / gd * st; target = Math.atan2(gx, gz); }
       } else { walking = false; if (f.face) { target = Math.atan2(f.face.x - f.x, f.face.z - f.z); turn = 4; } }
@@ -115,7 +122,8 @@ export function createScriptedPartner({ id = 'EV2', color = [1, 0.32, 0.03], A =
     }
     if (!free) {
       if (pause > 0) { pause -= dt; walking = false; if (pause <= 0) dir *= -1; }
-      else { t += dir * speed * dt / len; if (t >= 1 || t <= 0) { t = Math.max(0, Math.min(1, t)); pause = 3; } }
+      // while the ramp holds the speed at 0 (a fresh start), do not advance: t = 0 must not read as "reached the end".
+      else if (moveSpeed > 0) { t += dir * moveSpeed * dt / len; if (t >= 1 || t <= 0) { t = Math.max(0, Math.min(1, t)); pause = 3; } }
       ({ x, z } = patrolPoint());
       const d = pause > 0 ? -dir : dir; target = Math.atan2((B.x - A.x) * d, (B.z - A.z) * d); if (pause > 0) turn = 1.2;
     }
@@ -125,11 +133,12 @@ export function createScriptedPartner({ id = 'EV2', color = [1, 0.32, 0.03], A =
     if (target !== null && bendTime === null) { const df = ((target - yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI; yaw += df * Math.min(1, dt * turn); aligned = Math.abs(df) < 0.12; }
     if (free && !free.goal && aligned && free.then) { const fn = free.then; free.then = null; fn(); }
     moving = walking;
+    ramp += ((walking ? 1 : 0) - ramp) * Math.min(1, dt / SPEED_RAMP_SEC);   // ease toward this frame's gait (#228)
     last = { x, z };
     return {
       visible: true, x, z, yaw,
       gait: moving ? 'walk' : 'idle',
-      speedMs: moving ? speed : 0,
+      speedMs: moving ? moveSpeed : 0,   // the actual, ramped ground speed: the renderer retimes the clips from it (#228)
       action: bendTime !== null ? { name: CASE_CLIP.name, timeSec: bendTime, carryingAfter: wantCarry } : null,
       carrying,
       lampOn: undefined,

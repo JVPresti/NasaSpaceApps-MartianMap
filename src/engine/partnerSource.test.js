@@ -38,6 +38,16 @@ describe('scripted partner: patrol', () => {
     expect(back.gait).toBe('walk');
     expect(back.z).toBeLessThan(5);
   });
+
+  it('ramps the ground speed in and out with the walk weight (#228)', () => {
+    const p = createScriptedPartner();
+    const first = p.update(DT, world());
+    expect(first.speedMs).toBeLessThan(0.05);   // starts from rest, no full-speed first frame
+    const half = run(p, 0.2);
+    expect(half.speedMs).toBeLessThan(1 / 1.2);
+    const full = run(p, 2);
+    expect(full.speedMs).toBeCloseTo(1 / 1.2, 3);
+  });
 });
 
 describe('scripted partner: case hand-over', () => {
