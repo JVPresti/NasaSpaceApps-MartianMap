@@ -39,7 +39,7 @@
 
   .hud-right { --hud-right-w: min(40vw, 160px); right: var(--side-r); top: calc(170px + var(--top)); }
   .hud-map-wrap { --map-size: min(40vw, 160px); }
-  .hud-map-legend { display: none; }
+  .hud .hud-right .hud-map-legend { display: none; }
   .hud-nav { max-width: 100%; }
 
   .hud-partner { left: var(--side-l); top: calc(170px + var(--top) + 15.5em); width: min(44vw, 170px); }
@@ -65,7 +65,7 @@
   .hud-row-head b { font-size: 1.45em; }
   .hud-right { --hud-right-w: 120px; right: var(--side-r); top: calc(64px + var(--top)); }
   .hud-map-wrap { --map-size: 120px; }
-  .hud-map-legend { display: none; }
+  .hud .hud-right .hud-map-legend { display: none; }
   .hud .hud-partner { display: none; }   /* the minimap shows the partner; T in the bar's More menu opens the detail */
   .hud .hud-partner:has(.hud-partner-detail) { display: flex; left: calc(var(--side-l) + 160px); top: calc(52px + var(--top)); }
 }
@@ -112,5 +112,4 @@
 }
 @media (pointer: coarse) and (max-height: 500px) {
   .hud .hud-layer { left: calc(var(--side-l) + 160px); bottom: auto; top: calc(110px + var(--top)); max-width: 30vw; }
-  .hud .hud-map-legend { display: none; }
 }
