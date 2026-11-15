@@ -4,6 +4,7 @@ import { decodeTerrain } from '../sim/costGrid.js';
 import { waypointNumber } from '../sim/waypointNumber.js';
 import { acrossLabel, clampCrop, mapCrop, paintMap, slopeGrid, toMap, zoomCrop } from './mapLayers.js';
 import { SLOPE_LIMITS } from './layers.js';
+import TraverseLayer from './TraverseLayer.jsx';
 
 // Flat map of the mission table (#11). The picture is painted once per layer from the HiRISE image, the outcrop mask
 // and the height grid the 3D terrain uses (terrain.json comes through the shared loader, #217, so it is the copy the
@@ -64,9 +65,10 @@ function markerLabel(name, index) {
  *   science: waypoint names with a science stop, their markers drawn in the route colour
  *   route: false shows only the start and the target (the Site step), without the route or the stops between
  *   legs: route.legs, for the distance and time to each stop; onScience: opens a stop's science card
+ *   traverse: draw Perseverance's drives and the pin of its stop images under the route (#249, TraverseLayer.jsx)
  * Clicking a stop opens a small window with its height, slope and the leg that reaches it.
  */
-export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null }) {
+export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, traverse = false }) {
   const canvasRef = useRef(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -148,6 +150,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
       onContextMenu={(event) => event.preventDefault()}
     >
       <canvas ref={canvasRef} width={PIXELS} height={PIXELS} role="img" aria-label={title} />
+      {traverse && <TraverseLayer crop={crop} />}
       <svg className="table-map-marks" viewBox="0 0 100 100" aria-hidden="true">
         {route && line && <polyline points={line} className="map-route-shadow" />}
         {route && line && <polyline points={line} className="map-route" />}

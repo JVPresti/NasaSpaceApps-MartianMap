@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { t } from '../i18n/index.js';
 import { useShallow } from 'zustand/react/shallow';
 import { loadDataFile } from '../data/dataFiles.js';
 import { HAZARDS_PATH } from '../data/provenance.js';
@@ -303,6 +304,7 @@ function BeginButton({ planner, totals, evaBegun, onBeginEva }) {
  */
 export default function MissionTable({ planner, waypoints, evaBegun = false, onBeginEva, onControls }) {
   const [tab, setTab] = useState('site');   // the table opens on step 1
+  const [traverse, setTraverse] = useState(true);   // Perseverance's drives on the map (#249), on both map steps
   const route = useMissionStore((s) => s.route);
   const layer = useMissionStore((s) => s.view.layer);
   const clock = useMissionStore(useShallow((s) => ({ lmst: s.mission.lmst, elapsedSec: s.mission.elapsedSec })));
@@ -324,7 +326,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
 
   const map = (props) => (
     <div className="table-centre">
-      <MissionMap path={route.path} waypoints={waypoints} science={science} legs={route.legs ?? []} onScience={toggleWaypoint} {...props} />
+      <MissionMap path={route.path} waypoints={waypoints} science={science} legs={route.legs ?? []} onScience={toggleWaypoint} traverse={traverse} {...props} />
       <div className="table-overlay">
         <EventBanner />
         <PlanStopCard />
@@ -417,6 +419,11 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
                 {LAYERS.some((entry) => entry.index === item.index) && <LayerPreview layer={LAYERS.find((entry) => entry.index === item.index)} />}
               </button>
             ))}
+            {/* Perseverance's drives on or off (#249): an overlay, in the grid's free sixth cell so the panel keeps its height */}
+            <button type="button" className={traverse ? 'table-overlay-toggle on' : 'table-overlay-toggle'} aria-pressed={traverse}
+              title={t('map.traverse.toggle.title')} onClick={() => setTraverse((value) => !value)}>
+              <i aria-hidden="true" />{t('map.traverse.toggle')}
+            </button>
             </div>
           </div>
         </section>

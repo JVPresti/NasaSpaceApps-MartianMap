@@ -51,6 +51,7 @@ export const KIND_RULES = [
   [/^rad/, 'radiation'],
   [/^stops\.json:/, 'surface_images'],
   [/^shelters\.json:/, 'terrain_imagery'],
+  [/^traverse\.json:/, 'terrain_imagery'],
 ];
 
 const polyhaven = (id, name, author, usedIn) => ({
@@ -181,7 +182,7 @@ export const CURATED = [
   },
   {
     id: 'm2020-rover-waypoint',
-    name: 'Mars 2020 rover waypoints, sol 1210 at Cheyava Falls (MMGIS M20_waypoints)',
+    name: 'Mars 2020 rover traverse and waypoints (MMGIS M20_traverse, M20_waypoints)',
     kind: 'terrain_imagery',
     provider: 'NASA/JPL, Where is the rover map',
     mission: 'Mars 2020',
@@ -189,7 +190,10 @@ export const CURATED = [
     credit_line: 'NASA/JPL-Caltech',
     license: NASA_MEDIA,
     license_url: NASA_MEDIA_URL,
-    used_in: ['Origin of the terrain tile and the Cheyava Falls stop (blender/data/jezero_cheyava_meta.json)'],
+    used_in: [
+      'Origin of the terrain tile and the Cheyava Falls stop: the sol 1210 waypoint (blender/data/jezero_cheyava_meta.json)',
+      "Perseverance's drives and the image pin on the mission table map, and the drives on the minimap (public/data/traverse.json)",
+    ],
     match: ['https://mars.nasa.gov/mars2020/mission/where-is-the-rover/'],
   },
   {
