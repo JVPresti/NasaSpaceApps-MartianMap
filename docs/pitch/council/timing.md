@@ -18,13 +18,13 @@ Table ends at 2:52. Spoken words take 1:24 of it.
 
 | Row | Slot | Words | Spoken | Status |
 |---|---|---|---|---|
-| B1 · 0:00 | 0:15 | 27 | 0:12 | ok |
+| B1 · 0:00 | 0:15 | 29 | 0:12 | ok |
 | B2 · 0:15 | 0:10 | 15 | 0:06 | ok |
 | B3 · 0:25 | 0:20 | 16 | 0:07 | ok |
 | B4 · 0:45 | 0:30 | 23 | 0:10 | ok |
 |  · 1:15 | end | 0 | 0:00 | ok |
 
-Table ends at 1:15. Spoken words take 0:35 of it.
+Table ends at 1:15. Spoken words take 0:36 of it.
 
 ## script-3min-es.md
 
@@ -42,13 +42,13 @@ Table ends at 2:52. Spoken words take 1:28 of it.
 
 | Row | Slot | Words | Spoken | Status |
 |---|---|---|---|---|
-| B1 · 0:00 | 0:15 | 29 | 0:12 | ok |
+| B1 · 0:00 | 0:15 | 31 | 0:13 | ok |
 | B2 · 0:15 | 0:10 | 17 | 0:07 | ok |
 | B3 · 0:25 | 0:20 | 17 | 0:07 | ok |
 | B4 · 0:45 | 0:30 | 25 | 0:11 | ok |
 |  · 1:15 | end | 0 | 0:00 | ok |
 
-Table ends at 1:15. Spoken words take 0:38 of it.
+Table ends at 1:15. Spoken words take 0:39 of it.
 
 ## script-5min-en.md
 
@@ -130,46 +130,46 @@ Table ends at 0:20. Spoken words take 0:11 of it.
 
 | Row | Slot | Words | Spoken | Status |
 |---|---|---|---|---|
-| 0:00 · Opening | 0:22 | 52 | 0:22 | ok |
-| 0:22 · Thesis | 0:14 | 31 | 0:13 | ok |
-| 0:36 · Demo 1 · Start | 0:12 | 19 | 0:08 | ok |
-| 0:48 · Demo 2 · Site and layers | 0:55 | 73 | 0:31 | ok |
-| 1:43 · Demo 3 · Needs and route | 1:00 | 70 | 0:30 | ok |
-| 2:43 · Demo 4 · Go or no go | 0:23 | 21 | 0:09 | ok |
-| 3:06 · Demo 5 · Walk | 1:19 | 80 | 0:34 | ok |
-| 4:25 · Demo 6 · Sample | 0:18 | 12 | 0:05 | ok |
-| 4:43 · Demo 7 · Storm | 0:20 | 41 | 0:18 | ok |
-| 5:03 · Demo 8 · Radiation and return | 1:00 | 33 | 0:14 | ok |
-| 6:03 · Demo 9 · Habitat table | 0:08 | 11 | 0:05 | ok |
-| 6:11 · Demo 10 · Debrief | 0:35 | 39 | 0:17 | ok |
-| 6:46 · Demo 11 · Sources | 0:10 | 9 | 0:04 | ok |
-| 6:56 · The answer | 0:26 | 46 | 0:20 | ok |
-| 7:22 · Close | 0:24 | 36 | 0:15 | ok |
-| 7:46 ·  | end | 0 | 0:00 | ok |
+| 0:00 · Opening | 0:19 | 41 | 0:18 | ok |
+| 0:19 · Thesis | 0:13 | 29 | 0:12 | ok |
+| 0:32 · Demo 1 · Start | 0:13 | 19 | 0:08 | ok |
+| 0:45 · Demo 2 · Site and layers | 0:52 | 75 | 0:32 | ok |
+| 1:37 · Demo 3 · Needs and route | 0:44 | 70 | 0:30 | ok |
+| 2:21 · Demo 4 · Go or no go | 0:31 | 21 | 0:09 | ok |
+| 2:52 · Demo 5 · Walk | 1:35 | 80 | 0:34 | ok |
+| 4:27 · Demo 6 · Sample | 0:16 | 12 | 0:05 | ok |
+| 4:43 · Demo 7 · Storm | 0:15 | 29 | 0:12 | ok |
+| 4:58 · Demo 8 · Radiation and return | 1:12 | 33 | 0:14 | ok |
+| 6:10 · Demo 9 · Habitat table | 0:12 | 11 | 0:05 | ok |
+| 6:22 · Demo 10 · Debrief | 0:41 | 39 | 0:17 | ok |
+| 7:03 · Demo 11 · Sources | 0:08 | 9 | 0:04 | ok |
+| 7:11 · The answer | 0:20 | 43 | 0:18 | ok |
+| 7:31 · Close | 0:19 | 36 | 0:15 | ok |
+| 7:50 ·  | end | 0 | 0:00 | ok |
 
-Table ends at 7:46. Spoken words take 4:06 of it.
+Table ends at 7:50. Spoken words take 3:54 of it.
 
 ## script-8min-es.md
 
 | Row | Slot | Words | Spoken | Status |
 |---|---|---|---|---|
-| 0:00 · Apertura | 0:22 | 51 | 0:22 | ok |
-| 0:22 · Tesis | 0:14 | 30 | 0:13 | ok |
-| 0:36 · Demo 1 · Inicio | 0:12 | 20 | 0:09 | ok |
-| 0:48 · Demo 2 · Sitio y capas | 0:55 | 80 | 0:34 | ok |
-| 1:43 · Demo 3 · Necesidades y ruta | 1:00 | 74 | 0:32 | ok |
-| 2:43 · Demo 4 · Salir o no salir | 0:23 | 23 | 0:10 | ok |
-| 3:06 · Demo 5 · Caminata | 1:19 | 75 | 0:32 | ok |
-| 4:25 · Demo 6 · Muestra | 0:18 | 12 | 0:05 | ok |
-| 4:43 · Demo 7 · Tormenta | 0:20 | 35 | 0:15 | ok |
-| 5:03 · Demo 8 · Radiación y regreso | 1:00 | 38 | 0:16 | ok |
-| 6:03 · Demo 9 · Mesa del hábitat | 0:08 | 11 | 0:05 | ok |
-| 6:11 · Demo 10 · Resumen | 0:35 | 34 | 0:15 | ok |
-| 6:46 · Demo 11 · Fuentes | 0:10 | 9 | 0:04 | ok |
-| 6:56 · La respuesta | 0:26 | 53 | 0:23 | ok |
-| 7:22 · Cierre | 0:24 | 37 | 0:16 | ok |
-| 7:46 ·  | end | 0 | 0:00 | ok |
+| 0:00 · Apertura | 0:19 | 42 | 0:18 | ok |
+| 0:19 · Tesis | 0:13 | 28 | 0:12 | ok |
+| 0:32 · Demo 1 · Inicio | 0:13 | 20 | 0:09 | ok |
+| 0:45 · Demo 2 · Sitio y capas | 0:52 | 82 | 0:35 | ok |
+| 1:37 · Demo 3 · Necesidades y ruta | 0:44 | 74 | 0:32 | ok |
+| 2:21 · Demo 4 · Salir o no salir | 0:31 | 23 | 0:10 | ok |
+| 2:52 · Demo 5 · Caminata | 1:35 | 75 | 0:32 | ok |
+| 4:27 · Demo 6 · Muestra | 0:16 | 12 | 0:05 | ok |
+| 4:43 · Demo 7 · Tormenta | 0:15 | 29 | 0:12 | ok |
+| 4:58 · Demo 8 · Radiación y regreso | 1:12 | 38 | 0:16 | ok |
+| 6:10 · Demo 9 · Mesa del hábitat | 0:12 | 11 | 0:05 | ok |
+| 6:22 · Demo 10 · Resumen | 0:41 | 34 | 0:15 | ok |
+| 7:03 · Demo 11 · Fuentes | 0:08 | 9 | 0:04 | ok |
+| 7:11 · La respuesta | 0:20 | 45 | 0:19 | ok |
+| 7:31 · Cierre | 0:19 | 37 | 0:16 | ok |
+| 7:50 ·  | end | 0 | 0:00 | ok |
 
-Table ends at 7:46. Spoken words take 4:09 of it.
+Table ends at 7:50. Spoken words take 4:00 of it.
 
 No row is over time.

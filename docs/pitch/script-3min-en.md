@@ -22,7 +22,7 @@ Pace: written for 125 words per minute, the speed of Spanish speakers presenting
 
 | Beat | Demo time | Text |
 |---|---|---|
-| B1 | 0:00 | Cheyava Falls is an eighteen minute walk, so live we take the first 55 metres. The planner treats the red ground, slopes over twenty degrees, as blocked. |
+| B1 | 0:00 | Cheyava Falls is almost an hour out, with the work at its stops, so live we walk the first 55 metres. The planner blocks red, slopes over twenty degrees. |
 | B2 | 0:15 | I play the end of an EVA, with twenty percent oxygen. The plan says go. |
 | B3 | 0:25 | On the left is the margin, the minutes left after walking home and keeping the reserve. (Walk.) |
 | B4 | 0:45 | I fire the same radiation alert by hand. The target becomes the habitat as shelter, and the margin now counts the walk there. |

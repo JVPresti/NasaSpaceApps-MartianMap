@@ -36,7 +36,7 @@ Ritmo: 140 palabras por minuto. Los números salen de la app y de sus fuentes (v
 
 ## Apertura opcional, 20 segundos
 
-Solo si el equipo la elige en el ensayo. Va antes del beat 1 y usa los 20 segundos de margen. Un revisor de IA con el papel de jurado local, en nuestro consejo (`council/`), recomendó no usarla: el premio del año pasado no califica el proyecto de este año.
+Solo si el equipo la elige en el ensayo. Va antes del beat 1 y usa los 20 segundos de margen. Cuesta 20 segundos, y el premio del año pasado no califica el proyecto de este año. En la ronda 1 del consejo (`council/`), el revisor de IA con el papel de jurado local advirtió que puede hacer que el pitch se pase de tiempo.
 
 | Tiempo | Quién | Texto |
 |---|---|---|

@@ -20,7 +20,7 @@ Mismos beats (`beats.md`, tabla de 3 minutos) y la demo corta (`demo-run-sheet.m
 
 | Beat | Tiempo de la demo | Texto |
 |---|---|---|
-| B1 | 0:00 | Cheyava Falls está a dieciocho minutos caminando, así que en vivo hacemos los primeros 55 metros. El planificador trata lo rojo, pendientes de más de veinte grados, como bloqueado. |
+| B1 | 0:00 | Cheyava Falls está a casi una hora, con el trabajo en sus paradas, así que en vivo caminamos los primeros 55 metros. El planificador bloquea lo rojo, más de veinte grados. |
 | B2 | 0:15 | Simulo el final de una EVA, con veinte por ciento de oxígeno. El plan dice que sí. |
 | B3 | 0:25 | A la izquierda está el margen, los minutos que quedan después de volver y guardar la reserva. (Caminar.) |
 | B4 | 0:45 | Disparo la misma alerta de radiación a mano. El destino pasa a ser el hábitat como refugio, y el margen cuenta la caminata al refugio. |
