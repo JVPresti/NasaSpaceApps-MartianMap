@@ -51,7 +51,9 @@ setMode('plan');
 
 | Field | Unit and meaning | Written by | Issue |
 |---|---|---|---|
-| `mode` | `'walk'` or `'plan'`; starts as `'plan'`, the habitat's planning table | interface (mode switch) | #5, #166 |
+| `mode` | `'walk'` (first person) or `'plan'` (the mission table is open); starts as `'walk'`, on foot inside the habitat | interface: E or a click at the table, Back to the habitat, Begin EVA | #5, #166, habitat-first flow |
+| `stage` | where the astronaut is in the flow: `'habitat'` (inside before the EVA, the only stage where the table opens), `'egress'` (airlock cycle out), `'eva'` (on the surface), `'ingress'` (airlock cycle in), `'debrief'`. See [Habitat-first flow](#habitat-first-flow) | `src/state/flow.js` | habitat-first flow |
+| `habitat.nearTable`, `habitat.zone` | inside before the EVA: the player stands within 1.9 m of the mission table and faces it within about 55° (`atTable` in `src/engine/spawn.js`), and the habitat walk zone they stand in (`collide.js`), or `false` / `null` | engine bridge, from `engine.getHabitat()` while `stage` is `'habitat'` | habitat-first flow |
 | `mission.startedAtMs`, `elapsedSec`, `paused` | mission clock. `startedAtMs` is the first start timestamp; `elapsedSec` is the current published reading, excluding pauses and including the time scale | mission clock | #59 |
 | `mission.anchorMs` | wall-clock ms of the last start, pause, resume or scale change. The matching elapsed baseline is private to the clock session; the store's current `elapsedSec` is already advanced | mission clock | #59 |
 | `mission.sol`, `lmst` | sol number, local mean solar time `'HH:MM'` at 77.3053 E | mission clock | #59 |
@@ -83,7 +85,7 @@ setMode('plan');
 | `route.decision` | `'pending'`, `'go'` or `'no-go'`, set by the crew in Plan mode | interface | #17 |
 | `route.skipped` | waypoint names the event route leaves out, for example after a dust storm | events | #24 |
 | `environment.dustOpacity` | tau. **The event engine writes this path.** The bridge turns it into the engine's storm-dust level (`src/state/dustLevel.js`): tau 0.45 (clear Jezero) is 0, tau 8 (global storm, Gale 2018) is 1. | events, MEDA replay | #22, #24, #27, #31 |
-| `environment.tempC`, `windMs`, `pressurePa` | weather. The environment runner (`src/sim/environmentRunner.js`) replays the stored MEDA sol at the mission LMST once per second from the first Walk. | MEDA replay | #31, #189 |
+| `environment.tempC`, `windMs`, `pressurePa` | weather. The environment runner (`src/sim/environmentRunner.js`) replays the stored MEDA sol at the mission LMST once per second from the start of the EVA. | MEDA replay | #31, #189 |
 | `environment.doseRateUgyH`, `doseUgy` | radiation dose rate (µGy/h) and dose received this EVA (µGy). The environment runner writes the RAD background rate (8.75 µGy/h) outside the radiation event and sums the rate in the store over mission time into `doseUgy`; the radiation event sets only the rate. | RAD background, radiation event, environment runner | #25, #31, #189 |
 | `hazards.zones` | `[{ id, x, z, radiusM, active }]`, x east / z south in metres and `radiusM` in metres: active hazard areas for the minimap. `[]` means "no zone known", **not** "the ground is safe". The minimap draws only `active === true` entries with finite `x`, `z` and `radiusM > 0`. | no writer yet; the event work (#24-#26) may fill it | #60 |
 | `hazards.off` | `[eventId]`: events switched off for this run at the mission table (Hazards step). The event runner leaves them out when the EVA starts; `[]` runs every event. | `setHazardEnabled` (mission table) | #11 |
@@ -140,7 +142,10 @@ await engine.ready;
 | `isPointerLocked()` | `true` when `document.pointerLockElement` is the engine canvas. |
 | `setQuality('auto' \| 'high' \| 'low')` | Quality choice. `auto` runs the real `detectTier` again and re-enables the existing three-slow-seconds downgrade; `high`/`low` force a tier and stop the automatic downgrade. Changes are serialised and coalesced, so rapid choices cannot interleave terrain rebuilds. Resolves with `{ tier, auto, pending, error, gpu }`; a failed texture download keeps the current scene and returns the error in `error`. |
 | `getQuality()` | The same quality state without using the development-only `window.__marswalk` hook. |
-| `resetSession()` | Returns the scene to the EVA spawn: input off, lock released, Walk mode, camera at `START`, route/shelter/waypoints cleared. The store, clock and simulation restart are done by `src/state/evaSession.js`. Quality is deliberately kept. Returns `false` before ready and is applied at the end of boot. |
+| `exitAirlock()` | Puts the player at the foot of the airlock steps facing WP1 (`airlockExit` in `spawn.js`), lets the outer hatch work, lights the wrist screen, allows sampling and brings the partner out beside the player. The app calls it while the airlock cycle has the screen dark. Returns `false` before ready. |
+| `enterHabitat()` | Puts the player back at the mission table facing it (`tableSpawn` in `spawn.js`), shuts the outer hatch, parks the partner out of sight, dims the wrist screen and turns sampling off. Called while the return cycle has the screen dark, and by `resetSession()`. Returns `false` before ready. |
+| `getHabitat()` | `{ inside, zone, nearTable }` for the habitat prompts, or `null` before ready. Read by the bridge 5 times per second. |
+| `resetSession()` | Returns the scene to the start of a new EVA: input off, lock released, Walk mode, the player at the mission table inside the habitat (as `enterHabitat()`), route/shelter/waypoints cleared. The store, clock and simulation restart are done by `src/state/evaSession.js`. Quality is deliberately kept. Returns `false` before ready and is applied at the end of boot. |
 | `setLayer(n)` | Data layer on the terrain: 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop. The wrist screen follows. |
 | `setSky(name)` | Atmosphere preset: `clear_day`, `dust_storm`, `late_afternoon`, `night`. While `setSkyTime` drives the sky, only `dust_storm` (storm look on) or another preset (off) has an effect. |
 | `setSkyTime(hours)` | Sky from the mission clock (`src/engine/missionSky.js`, #73). `hours` is the local solar time, 0 to 24. The Sun moves (`src/sim/sunPosition.js`: latitude 18.4975 N, one fixed SIM declination of 11 deg so 17:45 matches the late-afternoon preset), the sky, haze, exposure and Sun colour blend between the presets by its height (`skyByTime.js`: `night` at -12 deg and below, `late_afternoon` at 7, `clear_day` at 55 and above), and the sky's look blends toward `dust_storm` as the dust level rises (the brightness stays with `setDust`). The terrain shadow map is rebuilt over several frames after every 0.25 deg of Sun movement, about once a minute at time scale 1. `null` goes back to the last `setSky` preset. |
@@ -190,8 +195,8 @@ the mode buttons (#103). Touch and gamepad state is read through `subscribeTouch
 | Step | Real calls |
 |---|---|
 | App opens | `EngineView` starts the simulation, then `pauseMission()`. The start screen is a real pause: no mission seconds, no suit step and no player input advance behind it. |
-| Start / Resume in Walk | `engine.requestPointerLock()` first. Only after a real `true` grant: `engine.setInputEnabled(true)` and `resumeMission()`. A refusal keeps the pause and shows a retry message. |
-| Resume in Plan | `engine.setInputEnabled(true)` and `resumeMission()`; Plan uses orbit controls and needs no lock. |
+| Start / Resume in Walk | `engine.requestPointerLock()` first. Only after a real `true` grant: `engine.setInputEnabled(true)` and, on the surface, `resumeMission()`. Inside the habitat `resumeEva({ holdClock: true })` enables input and leaves the clock held. A refusal keeps the pause, shows a retry message and offers drag-to-look (#197). |
+| Resume at the mission table | `engine.setInputEnabled(true)`; the table needs no lock. The clock stays held: the table only opens before the EVA. |
 | Esc in the Walk pause menu | No lock request. Esc is a key press, not a user activation for pointer lock, so it cannot capture the mouse: the menu stays paused, cancels any request already in flight, focuses Resume and shows `Press Enter or click Resume to capture the mouse.` Esc inside Controls/Restart returns to the menu; the menu itself keeps the pause. |
 | Esc in the Plan pause menu | Resumes like Resume, because Plan needs no lock. |
 | Esc, H, lock loss | `engine.setInputEnabled(false)`, `pauseMission()`, `engine.releasePointerLock()`. The #59 clock anchors elapsed time at the exact pause write. |
@@ -204,30 +209,49 @@ late grant is released and the attempt is reported as `{ ok: false, stale: true,
 of resuming behind the menu.
 
 Menus are native `<dialog>` modals (`src/components/Modal.jsx`): `showModal()` makes the scene and top bar
-inert, traps Tab and Shift+Tab, and returns focus when closed. The top bar's mode switch is repeated inside
-the pause menu so Plan remains reachable while paused. `Sources` is disabled with a visible note until #63.
+inert, traps Tab and Shift+Tab, and returns focus when closed. There is no Plan / Walk switch in the top bar or the
+pause menu: on the surface the pause menu offers "End the EVA and go back to the mission table", a restart that
+lands at the table in the habitat.
 
 No new store fields were added. Quality belongs to the engine; pause is the existing `mission.paused` path.
+
+## Habitat-first flow
+
+`src/state/flow.js` owns the stage. Transitions only go forward, and a skipped or repeated one throws, so a late timer
+or a double click cannot skip a stage. A restart (`resetStore`) is the only way back to `'habitat'`.
+
+| Stage | What the player sees | What runs |
+|---|---|---|
+| `habitat` | First person inside, by the mission table. Habitat HUD only: where, sol and LMST, an aiming dot and "E Open the mission table" when `habitat.nearTable`, or a line saying the outer hatch opens after Begin EVA when they walk into the airlock. E, a click or the gamepad's Start at the table opens the table (`mode` `'plan'`); "Back to the habitat" closes it. | Clock held (`mission.paused`), per-leg costs, the planner while the table is open. Outer hatch shut, partner parked, wrist screen dark, sampling off. No suit, event, partner, waypoint or EVA runner exists yet. |
+| `egress` | Begin EVA (`beginEgress()`, which also closes the table) starts a 2.6 s cycle: the screen goes dark, "Depressurising" with three steps and a bar, then fades in outside. | `engine.exitAirlock()` while dark. The cycle stands still behind the pause menu. |
+| `eva` | The suit HUD, the surface top bar and hint, events, sampling, finds, the wrist. | `startSimulation` starts the EVA runners on this transition; the app then resumes the new clock from 0:00. |
+| `ingress` | The EVA runner froze `eva.summary` at the habitat entry. The same cycle runs as "Repressurising". | `engine.enterHabitat()` while dark. Input off, clock already paused by the EVA runner. |
+| `debrief` | The debrief. "Plan the next EVA" restarts into the table, "Back to the habitat" restarts on foot by the table. | Nothing new: the summary is frozen. |
+
+The cycle timing is `runAirlockCycle()` in `flow.js`, plain timers, tested with a fake clock. The bar and the steps are
+CSS animations of the same length (`src/habitat/AirlockCycle.jsx`), paused with the mission, so React renders the
+cycle once rather than per frame. Another caller (online play) starts the same step with `beginEgress()`; the app's
+cycle effect reacts to the stage, so the engine move and the EVA start do not depend on who called it.
 
 ## Simulation runners
 
 `startSimulation(engine)` in `src/state/simulation.js` starts the modules that write the store once the engine is ready. Today that is the mission clock below, the suit model (`src/sim/suitModel.js`, `src/sim/suitRunner.js`, #19) and the per-leg costs (`src/sim/legCosts.js`, #41). The suit runner ticks 4 times per second, reads `navigation` and `route.path`, uses `engine.heightAt` for the gradient, and writes `suit`. All its constants come from `public/data/hazards.json`. The per-leg costs recompute `route.legs` and `route.totals` whenever `route.path` or `route.waypoints` changes, with the same `walkCost` function the walkback uses. The partner runner (`src/sim/partnerRunner.js`, #70) ticks 4 times per second: it reads the partner only through `engine.getPartner()`, steps the partner's suit with the suit model from the partner's own measured speed and gradient, writes `crew[0]`, and applies the separation rule of `src/sim/partnerStatus.js` (100 m limit, caution from 80 m, 5 m hysteresis, all SIM). It checks the radio line of sight between the suits with `engine.lineOfSight` through `radioLinkState` (`src/sim/radio.js`); without it, `crew[0]` keeps the last position and suit values received. Nothing starts with `?mock=1`, so mock values stay put; the clock is not started and writes no session.
 
-The EVA starts at the first switch to Walk (#166). The app opens in Plan mode, where only the clock (for the top bar) and the per-leg costs run. The engine has already put the player just outside the airlock, facing WP1 (`src/engine/spawn.js`), with the partner beside them. On the first Walk, `startSimulation` starts a new clock session (EVA 0:00; the new `mission.startedAtMs` clears the boot prints), takes a terrain fix, marks the first waypoint (HAB) as visited so the next target is WP1, and starts the suit (full O2 and battery), waypoint, off-route, event and EVA statistics (#43) runners. Later switches between Plan and Walk change neither the position nor the EVA. Plan mode plans the route from the HAB airlock entry in `public/data/shelters.json` (`src/plan/routeStart.js`), so the player starts on the route and the walkback starts near zero. A reload starts a new EVA at the airlock: the player position is not persisted, so the restored clock session only shows in Plan until the first Walk.
+The EVA starts when `stage` becomes `'eva'`, at the end of the airlock cycle after Begin EVA (see [Habitat-first flow](#habitat-first-flow)). Before that, in the habitat, only the clock (held, for the local time) and the per-leg costs run. The engine moves the player just outside the airlock, facing WP1 (`src/engine/spawn.js`), with the partner beside them, while the cycle has the screen dark. Then `startSimulation` starts a new clock session (EVA 0:00; the new `mission.startedAtMs` clears the boot prints), takes a terrain fix, marks the first waypoint (HAB) as visited so the next target is WP1, and starts the suit (full O2 and battery), waypoint, off-route, event and EVA statistics (#43) runners. The mission table plans the route from the HAB airlock entry in `public/data/shelters.json` (`src/plan/routeStart.js`), so the player starts on the route and the walkback starts near zero. A reload starts again in the habitat: the player position is not persisted, and the next EVA starts a fresh clock session.
 
 ### EVA statistics and debrief (#43)
 
-The EVA runner starts with the other EVA runners on the first Walk, once `public/data/shelters.json` has loaded, because its HAB entry is the **position at the foot of the airlock steps** (535.1, 574.1), not the `HAB` route waypoint at 520, 600. It uses the normal 5 m arrival radius. If the shelter file fails, the runner does not start and the suit model keeps its existing `DEFAULT_HABITAT` fallback. The simulation's stop callback stops the runner, and a late shelter response never starts one after `stop()`. The player starts inside the HAB radius (the airlock spawn), so the phase stays `ready` until they walk out.
+The EVA runner starts with the other EVA runners at the end of the airlock cycle, once `public/data/shelters.json` has loaded, because its HAB entry is the **position at the foot of the airlock steps** (535.1, 574.1), not the `HAB` route waypoint at 520, 600. It uses the normal 5 m arrival radius. If the shelter file fails, the runner does not start and the suit model keeps its existing `DEFAULT_HABITAT` fallback. The simulation's stop callback stops the runner, and a late shelter response never starts one after `stop()`. The player starts inside the HAB radius (the airlock spawn), so the phase stays `ready` until they walk out.
 
 | Phase | When | What the runner does |
 |---|---|---|
-| `ready` | before the first Walk tick outside the HAB; includes the start screen, Plan mode, a paused mission and being inside the HAB | nothing: no distance, no minima |
+| `ready` | before the first Walk tick outside the HAB radius after the airlock; includes a paused mission and standing at the foot of the steps | nothing: no distance, no minima |
 | `active` | first Walk tick outside the 5 m HAB radius with the mission running | adds horizontal distance between successive position readings; records finite `suit.marginSec` and `suit.batteryPct` minima; records event and route history |
 | `ended` | a Walk tick inside the HAB radius while active and not paused | counts the last step, pauses the mission clock through the `mission.paused` write (#59 anchors the final elapsed value), then stores a deeply frozen `eva.summary` |
 
 Distance is suspended while paused and in Plan mode, and the position baseline is cleared, so a mode switch, resume or teleport cannot add a jump. Event starts and ends come from the event engine's `log` callback, so their `atSec` is mission time and pause/time-scale aware; `endEventRoute` still runs first. A route change is recorded only when the path **content** changes: `nextIndex`, `visited`, `legs`, `totals` and cost recalculations, or a new array with the same points, never add history. The summary's samples are the current `sampling.samples`, and its dose is the current `environment.doseUgy`/`doseRateUgyH`; the runner does not integrate radiation itself.
 
-Deliberate limits: no persistence between sessions, no extra debrief warnings, and no event/route log written before the EVA starts: route changes made in Plan before the first Walk are not history, and the route planned at that moment is recorded as the `initial` one. The summary is a snapshot; later store changes are not reflected.
+Deliberate limits: no persistence between sessions, no extra debrief warnings, and no event/route log written before the EVA starts: route changes made at the mission table before the EVA are not history, and the route planned at that moment is recorded as the `initial` one. The summary is a snapshot; later store changes are not reflected.
 
 ### Debrief screen (#43)
 

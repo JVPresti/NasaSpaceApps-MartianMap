@@ -291,7 +291,7 @@ function BeginButton({ planner, totals, onBeginEva }) {
       disabled={!route.path || !decision.go || !onBeginEva}
       onClick={() => { setRouteDecision('go'); onBeginEva?.(); }}
     >
-      {t('table.beginEva')}
+      {t('table.begin.eva')}
     </button>
   );
 }
@@ -549,7 +549,7 @@ export default function MissionTable({ planner, waypoints, onBeginEva, onClose, 
         </div>
         <div className="table-end">
           <p className="table-time">
-            {clock.lmst ? `${clock.lmst} LMST · ` : ''}{t('habitat.kicker')}
+            {clock.lmst ? `${clock.lmst} LMST · ` : ''}{t('table.habitat')}
           </p>
           {onClose && (
             <button type="button" className="table-secondary table-close" onClick={onClose}>{t('table.backToHabitat')}</button>

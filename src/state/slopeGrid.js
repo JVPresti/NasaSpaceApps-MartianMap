@@ -20,6 +20,7 @@ const typing = (e) => {
 export function connectSlopeGridKey(store = useMissionStore, target = window) {
   const onKey = (e) => {
     if (e.code !== 'KeyG' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing(e)) return;
+    if ((store.getState().stage ?? 'eva') !== 'eva') return;   // the grid is for the ground outside, not the habitat floor
     toggleSlopeGrid(store);
   };
   target.addEventListener('keydown', onKey);
