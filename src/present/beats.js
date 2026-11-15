@@ -185,7 +185,7 @@ export const BEATS = [
       at: 18.8,
       name: 'Los Frijolitos Espaciales Refritos Nueva Generación',
       people: 'Teresa Rivas Gómez · Andrea Rivas Gómez · Fernando Haro Calvo · Jorge Antonio Vazquez Guzmán · Antonio Ramos Gonzalez · Brayan Iván Pérez Ventura',
-      url: 'https://martian-map.fernando-haro-c.workers.dev',
+      url: 'https://marswalk.study',
       qr: 'qr.svg',
       open: { en: 'Open it in a desktop browser', es: 'Ábrelo en un navegador de escritorio' },
     },
