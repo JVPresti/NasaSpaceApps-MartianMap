@@ -1,8 +1,9 @@
 /* EVA debrief (#43). It reuses the start/pause dialog shell in menu.css and the app tokens in index.css.
    The mission log is the one visual focus: a quiet metric grid above, then one chronological rail. */
 
-/* 860 px rather than 760 px since the route review (#274): the map and the deviation rows sit side by side. */
-.debrief-dialog {
+/* 860 px since the route review (#274): the map and the deviation rows sit side by side. Two classes, so it wins over
+   the 520 px of .modal in menu.css whatever order the bundle puts the two sheets in. */
+.modal.debrief-dialog {
   width: min(860px, calc(100% - 32px));
 }
 
