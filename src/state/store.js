@@ -6,7 +6,7 @@ import { createInitialEvaState } from './eva.js';
 import { LOOK_DEFAULTS, clampLookSettings, readLookSettings, writeLookSettings } from '../engine/lookSettings.js';
 import { checkNeeds, DEFAULT_NEEDS, OBJECTIVE_DEFAULTS } from '../sim/missionNeeds.js';
 import { checkTasks, DEFAULT_TASKS, tasksKey } from '../sim/sampleTasks.js';
-import { deleteRoute, readRouteLibrary, recordRouteRun, routeSignature, saveRoute, writeRouteLibrary } from '../plan/routeLibrary.js';
+import { deleteRoute, readRouteLibrary, recordRouteRun, routeSignature, saveRoute, savedRouteTasks, writeRouteLibrary } from '../plan/routeLibrary.js';
 
 /** Plain data only. Units are in the field names. Coordinates: x east, z south, metres from Cheyava Falls. */
 export function createInitialState() {
@@ -187,7 +187,8 @@ export const setTasks = (list) => {
   useMissionStore.setState((s) => {
     if (s.needs.locked || key(s.needs.tasks ?? []) === key(checked)) return s;
     changed = true;
-    return { needs: { ...s.needs, tasks: checked } };
+    // The tasks are needs: a change takes the plan back from a saved route (#357), as setNeeds does.
+    return { needs: { ...s.needs, tasks: checked }, route: { ...s.route, manual: false } };
   });
   return changed;
 };
@@ -291,38 +292,59 @@ export const deleteSavedRoute = (id) => {
 };
 
 /**
+ * The sampling tasks a loaded saved route leaves on the table (#352), so the task list, the route and the debrief
+ * describe one plan. Under "Collect samples" the route's own tasks come back, into the crew's list (needs.tasks) and
+ * the plan's (route.tasks); a route saved without tasks leaves both empty, and the table asks for a task. The other
+ * goals have no tasks: the plan's stay empty and the crew's list is kept for when the goal comes back. Once the EVA has
+ * begun the tasks are locked and stay as they are.
+ * @returns {{ needs: object, plan: Array<object> }}
+ */
+function savedTasksOn(s, entry) {
+  if (s.needs.locked) return { needs: s.needs, plan: s.route.tasks ?? [] };
+  if (s.needs.objective !== 'samples') return { needs: s.needs, plan: [] };
+  const { plan, list } = savedRouteTasks(entry);
+  return { needs: { ...s.needs, tasks: list }, plan };
+}
+
+/**
  * Put a saved route back on the table (#357): its waypoints and path become the current plan (the planner re-plans
- * from the waypoints) and the decision goes back to pending. @returns {boolean} true when the route was applied
+ * from the waypoints) and the decision goes back to pending; under "Collect samples" its sampling tasks come back with
+ * it (savedTasksOn). @returns {boolean} true when the route was applied
  */
 export const applySavedRoute = (id) => {
   const state = useMissionStore.getState();
   const entry = state.routeLibrary.list.find((item) => item.id === id);
   if (!entry) return false;
-  useMissionStore.setState((s) => ({
-    route: {
-      ...s.route,
-      // manual: the planner keeps these waypoints (src/plan/useRoutePlanner.js); a change of needs takes the plan back.
-      manual: true,
-      waypoints: entry.waypoints.map((w) => ({ ...w })),
-      path: entry.path.map((point) => [...point]),
-      distanceM: entry.distanceM,
-      climbM: entry.climbM,
-      steepestSlopeDeg: entry.risk?.maxSlopeDeg ?? null,
-      etaSec: null,
-      reason: null,
-      decision: 'pending',
-      nextIndex: 0,
-      visited: [],
-      skipped: [],
-      shelter: null,
-      // The needs plan's own output: the waypoint plan that runs next never writes these, so the table would keep
-      // showing the old plan's dropped stops and reasons on the loaded route.
-      stops: [],
-      dropped: [],
-      planReasons: [],
-      explain: [],
-    },
-  }));
+  useMissionStore.setState((s) => {
+    const tasks = savedTasksOn(s, entry);
+    return {
+      needs: tasks.needs,
+      route: {
+        ...s.route,
+        tasks: tasks.plan,
+        // manual: the planner keeps these waypoints (src/plan/useRoutePlanner.js); a change of needs takes the plan back.
+        manual: true,
+        waypoints: entry.waypoints.map((w) => ({ ...w })),
+        path: entry.path.map((point) => [...point]),
+        distanceM: entry.distanceM,
+        climbM: entry.climbM,
+        steepestSlopeDeg: entry.risk?.maxSlopeDeg ?? null,
+        etaSec: null,
+        reason: null,
+        decision: 'pending',
+        nextIndex: 0,
+        visited: [],
+        skipped: [],
+        shelter: null,
+        // The needs plan's own output: the waypoint plan that runs next never writes these, so the table would keep
+        // showing the old plan's dropped stops and reasons on the loaded route.
+        stops: [],
+        dropped: [],
+        planReasons: [],
+        explain: [],
+      },
+    };
+  });
   return true;
 };
 // A restart must not lose the player's look settings (#102): the preference survives resetStore, and a new

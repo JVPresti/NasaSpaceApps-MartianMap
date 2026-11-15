@@ -448,4 +448,53 @@ describe('saved routes (#357)', () => {
     expect(useMissionStore.getState().routeLibrary.list.map((e) => e.name)).toEqual(['Valley']);
     expect(deleteSavedRoute('nope')).toBe(false);
   });
+
+  describe('with sampling tasks (#352)', () => {
+    const place = { key: 'P1', type: 'point', stopId: null, x: 100, z: 0, radiusM: 8, label: 'P1', waypoint: 'P1 · task point', reason: null };
+    const planTasks = [{ id: 't1', what: 'soil', count: 1, place, workSec: 240, kept: true, drop: null }];
+    const taskWaypoints = [waypoints[0], { name: 'P1 · task point', label: 'P1', x: 100, z: 0, workSec: 240, stopId: null, required: true, place: 'P1', tasks: ['t1'], arrivalRadiusM: 8 }];
+    const soil = { id: 't1', what: 'soil', count: 1, place: { type: 'point', id: 'P1', x: 100, z: 0 } };
+    const rock = { id: 't1', what: 'rock', count: 1, place: { type: 'stop', stopId: 'bright-angel' } };
+    const saveTasksRoute = () => {
+      empty();
+      setNeeds({ objective: 'samples' });
+      useMissionStore.setState((s) => ({ route: { ...s.route, waypoints: taskWaypoints, path, distanceM: 100, tasks: planTasks } }));
+      saveCurrentRoute('Soil');
+      const tasksRouteId = useMissionStore.getState().routeLibrary.list[0].id;
+      useMissionStore.setState((s) => ({ route: { ...s.route, tasks: [], waypoints } }));
+      saveCurrentRoute('Ridge');
+      return { tasksRouteId, plainId: useMissionStore.getState().routeLibrary.list[0].id };
+    };
+
+    it('brings a route\'s tasks back under "Collect samples", into the crew list and the plan', () => {
+      const { tasksRouteId } = saveTasksRoute();
+      setTasks([rock]);
+      expect(applySavedRoute(tasksRouteId)).toBe(true);
+      const { needs, route } = useMissionStore.getState();
+      expect(needs.tasks).toEqual([soil]);
+      expect(route.tasks).toEqual(planTasks);
+      expect(route.waypoints[1]).toMatchObject({ place: 'P1', tasks: ['t1'], arrivalRadiusM: 8 });
+      expect(route.manual).toBe(true);
+    });
+
+    it('empties the task list for a route saved without tasks, and a task edit plans from the needs again', () => {
+      const { plainId } = saveTasksRoute();
+      setTasks([rock]);
+      applySavedRoute(plainId);
+      expect(useMissionStore.getState().needs.tasks).toEqual([]);
+      expect(useMissionStore.getState().route.tasks).toEqual([]);
+      expect(setTasks([rock])).toBe(true);
+      expect(useMissionStore.getState().route.manual).toBe(false);
+    });
+
+    it('puts no tasks on the plan under the other goals and keeps the crew list for later', () => {
+      const { tasksRouteId } = saveTasksRoute();
+      setTasks([rock]);
+      setNeeds({ objective: 'cheyava' });
+      const before = useMissionStore.getState().needs;
+      applySavedRoute(tasksRouteId);
+      expect(useMissionStore.getState().needs).toBe(before);
+      expect(useMissionStore.getState().route.tasks).toEqual([]);
+    });
+  });
 });
