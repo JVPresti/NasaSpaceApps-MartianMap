@@ -163,12 +163,13 @@ export function withRouteProfile(route, id) {
   };
 }
 /**
- * Choose a route profile at the mission table (#245). Does nothing when that profile has no route, or when a solo crew
- * would leave radio contact (src/sim/missionNeeds.js holds a solo crew to the radio-contact profile while it has a route).
+ * Choose a route profile at the mission table (#245). Does nothing when that profile has no route, or while a solo crew
+ * walks the radio-contact route (src/sim/missionNeeds.js holds it there): route.profile then keeps the choice made for a
+ * pair, which is the route again when the crew goes back to two (round 1 review, P22).
  */
 export const chooseRouteProfile = (id) => {
   useMissionStore.setState((state) => {
-    if (state.needs?.crew === 1 && id !== 'radio' && state.route.profiles?.radio?.ok) return state;
+    if (state.needs?.crew === 1 && state.route.profiles?.radio?.ok) return state;
     if (state.route.profile === id && state.route.path === state.route.profiles?.[id]?.path) return state;
     const route = withRouteProfile(state.route, id);
     return route ? { route } : state;
@@ -183,7 +184,23 @@ export const setHazardEnabled = (eventId, enabled) => {
 };
 // A restart must not lose the player's look settings (#102): the preference survives resetStore, and a new
 // page load re-reads it from 'marswalk.look'.
-export const resetStore = () => useMissionStore.setState((s) => ({ ...createInitialState(), settings: s.settings }), true);
+/**
+ * Back to a fresh mission state. The look settings always survive. With keepNeeds (the debrief's Restart and the pause
+ * menu's End the EVA, product decision D9) the crew's six needs and the route profile chosen at the table survive too,
+ * unlocked for the next EVA; everything else, the hazard switches included, starts over. A page load starts from the
+ * defaults (the first sortie).
+ * @param {{ keepNeeds?: boolean }} [options]
+ */
+export const resetStore = ({ keepNeeds = false } = {}) => useMissionStore.setState((s) => {
+  const fresh = createInitialState();
+  if (!keepNeeds) return { ...fresh, settings: s.settings };
+  return {
+    ...fresh,
+    settings: s.settings,
+    needs: { ...s.needs, locked: false },
+    route: { ...fresh.route, profile: s.route.profile },
+  };
+}, true);
 
 /**
  * Partial update of the look preference (#102): clamps, writes the store and saves it in this browser.
