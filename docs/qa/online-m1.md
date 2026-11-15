@@ -99,3 +99,18 @@ PASS and the mission start survived  startedAt 1794711035711, seed 1630056496
 
 22/22 checks passed
 ```
+
+## On the PR preview
+
+Run on 2026-11-15 against the Workers Builds preview of this branch, a real Durable Object on Cloudflare: `node scripts/room-smoke.mjs https://feat-online-m1-room-martian-map.fernando-haro-c.workers.dev https://feat-online-m1-room-martian-map.fernando-haro-c.workers.dev`. 22 of 22 checks passed.
+
+| Check | Result |
+| --- | --- |
+| Crew join seen by the other player | 27.8 ms after hello |
+| Crew leave seen by the other player | 27.5 ms after close |
+| Clock offsets of 6 clients | 299.5 to 304.0 ms, spread 4.5 ms. The offset is this laptop's clock skew against Cloudflare; only the spread matters. |
+| `t` round trip | 22 to 24 ms |
+| Seats | colours 0 to 3, 5th surface 4001, 2 habitat fit, 3rd habitat 4001, same id 4002 with its colour kept |
+| Refused | bad code 400, foreign and missing Origin 403, other `/api` path 404, message before hello 4003, 5 KB message 1009 |
+| Flood at 60 msg/s | 114 of 338 answered (19.9/s), closed with 1008 after 5.7 s |
+| Idle 15 s with pings only | 2 of 2 pongs, crew list and mission start intact afterwards |
