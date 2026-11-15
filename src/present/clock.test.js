@@ -115,7 +115,7 @@ describe('camera geometry', () => {
   });
 });
 
-describe('the talk on autoplay, and the takeover', () => {
+describe('the talk on autoplay, and a pause', () => {
   it('runs every beat in order, then holds on the last', async () => {
     const { sequence } = await import('./beats.js');
     const beats = sequence('full');

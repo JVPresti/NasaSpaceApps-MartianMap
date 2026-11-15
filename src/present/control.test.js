@@ -1,14 +1,21 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createInitialState } from '../state/store.js';
 import { dustLevelFromTau } from '../state/dustLevel.js';
-import { ENGINE_TIMEOUT_MS, createHoldTimer, createPilot, pilotLabel, pointerStep, videoFrame, fallbackStep, presentHrefFor, presentKey, queryWithoutPresent, restoreEngine } from './control.js';
+import { ENGINE_TIMEOUT_MS, createHoldTimer, createPlayer, playLabel, pointerStep, slideTarget, videoFrame, fallbackStep, presentHrefFor, presentKey, queryWithoutPresent, restoreEngine } from './control.js';
 
 const key = (k, mods = {}) => ({ key: k, altKey: false, ctrlKey: false, metaKey: false, ...mods });
 
 describe('presentKey', () => {
   it('maps clicker keys to next and back', () => {
-    for (const k of ['ArrowRight', 'PageDown', ' ', 'Enter']) expect(presentKey(key(k))).toBe('next');
+    for (const k of ['ArrowRight', 'PageDown', 'Enter']) expect(presentKey(key(k))).toBe('next');
     for (const k of ['ArrowLeft', 'PageUp']) expect(presentKey(key(k))).toBe('back');
+  });
+
+  it('plays and pauses on Space, P and K, and jumps to a slide on its digit', () => {
+    for (const k of [' ', 'p', 'P', 'k', 'K']) expect(presentKey(key(k))).toBe('toggle');
+    expect(presentKey(key('1'))).toBe('slide:1');
+    expect(presentKey(key('4'))).toBe('slide:4');
+    expect(presentKey(key('0'))).toBe('swallow');
   });
 
   it('exits on Esc and switches language on L', () => {
@@ -107,22 +114,30 @@ describe('fallbackStep', () => {
   });
 });
 
-describe('createPilot: autoplay by default, the presenter takes over', () => {
-  it('starts in auto, and the first step only takes over', () => {
-    const pilot = createPilot(true);
-    expect(pilot.mode).toBe('auto');
-    expect(pilot.input('next')).toBeNull();
-    expect(pilot.mode).toBe('manual');
-    expect(pilot.input('next')).toBe('next');
-    expect(pilot.input('back')).toBe('back');
+describe('createPlayer: paused behind the Play button until the presenter starts it', () => {
+  it('starts paused and not started, then plays and pauses', () => {
+    const p = createPlayer();
+    expect(p.playing).toBe(false);
+    expect(p.started).toBe(false);
+    expect(p.toggle()).toBe(true);
+    expect(p.started).toBe(true);
+    expect(p.toggle()).toBe(false);
+    expect(p.started).toBe(true);   // the big Play button does not come back after a pause
   });
 
-  it('leaves language and exit alone, and starts manual with ?autoplay=0', () => {
-    const pilot = createPilot(true);
-    expect(pilot.input('lang')).toBe('lang');
-    expect(pilot.input('exit')).toBe('exit');
-    expect(pilot.mode).toBe('auto');
-    expect(createPilot(false).input('next')).toBe('next');
+  it('plays at once with ?autoplay=1 or a recording', () => {
+    const p = createPlayer(true);
+    expect(p.playing).toBe(true);
+    expect(p.started).toBe(true);
+  });
+});
+
+describe('slideTarget: the digit keys', () => {
+  it('turns slide N into its index, clamped to the slides there are', () => {
+    expect(slideTarget('slide:1', 6)).toBe(0);
+    expect(slideTarget('slide:4', 6)).toBe(3);
+    expect(slideTarget('slide:9', 6)).toBe(5);
+    expect(slideTarget('next', 6)).toBeNull();
   });
 });
 
@@ -158,11 +173,10 @@ describe('videoFrame: the demo plays, holds its last frame, then fades', () => {
   });
 });
 
-describe('pilotLabel: the Auto / Manual indicator', () => {
-  it('reads Auto, then Manual after the takeover, in both languages', () => {
-    expect(pilotLabel('auto', 'en')).toBe('Auto');
-    expect(pilotLabel('auto', 'es')).toBe('Automático');
-    expect(pilotLabel('manual', 'en')).toBe('Manual');
-    expect(pilotLabel(createPilot(true).mode, 'en')).toBe('Auto');
+describe('playLabel: the play state beside the slide number', () => {
+  it('reads Playing or Paused in both languages', () => {
+    expect(playLabel(true, 'en')).toBe('Playing');
+    expect(playLabel(false, 'en')).toBe('Paused');
+    expect(playLabel(false, 'es')).toBe('En pausa');
   });
 });

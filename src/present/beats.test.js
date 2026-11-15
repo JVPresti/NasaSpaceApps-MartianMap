@@ -134,10 +134,13 @@ describe('the presentation story', () => {
     expect(captionsOf(demo).length).toBeGreaterThan(0);   // the fallback if the file fails
   });
 
-  it('fits the 4:00 limit: about 3:15 on autoplay, at most 3:30, so a manual takeover still ends under 4:00', () => {
-    const total = sequence('full').reduce((a, b) => a + b.duration, 0);
-    expect(total).toBeGreaterThanOrEqual(165);   // 185 once the new demo cut lands
-    expect(total).toBeLessThanOrEqual(210);
+  it('fits the 4:00 limit: 100 s of beats around the demo video, so a 135 s cut ends the talk at 3:55', () => {
+    const beats = sequence('full');
+    const total = beats.reduce((a, b) => a + b.duration, 0);
+    const demo = beats.find((b) => b.id === 'demo');
+    expect(total - demo.duration).toBe(100);
+    expect(total).toBeGreaterThanOrEqual(165);
+    expect(total).toBeLessThanOrEqual(237);   // 4:00 less 3 s, the room for the Play press and a slow handover
     expect(sequence('full')).toHaveLength(6);   // one beat per slide
   });
 
@@ -146,7 +149,7 @@ describe('the presentation story', () => {
     expect(open.start).toBeTruthy();
     expect(stakes.id).toBe('stakes');
     expect(captionsOf(stakes).map((c) => c.en).join(' ')).toMatch(/nobody can come and get you/);
-    expect(stakes.chips.map((c) => c.tag)).toEqual(['DATA', 'DATA']);
+    expect(stakes.chips.map((c) => c.tag)).toEqual(['SIM', 'SIM']);   // NASA planning limits our suit model applies, not measurements (CONTEXT.md realism rules)
   });
 
   it('uses the app\'s radiation figures: 29.9 µGy/h peak, 10 µGy/h background', () => {

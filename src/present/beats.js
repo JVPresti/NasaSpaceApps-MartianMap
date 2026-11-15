@@ -56,7 +56,7 @@ export const BEATS = [
   {
     // The stakes before the tool: the habitat and the suit's limits
     id: 'stakes',
-    duration: 14,
+    duration: 16,
     shot: { target: 'hab', dist: 75, yaw: -40, pitch: -11, fov: 46 },
     move: { dur: 3, ease: 'inOut' },
     caption: [
@@ -64,10 +64,10 @@ export const BEATS = [
       { at: 7, en: 'On Mars, nobody can come and get you.', es: 'En Marte, nadie puede ir por ti.' },
     ],
     chips: [
-      { at: 'hab', show: [1.5], big: '{constants.evaMaxH} h', text: { en: 'longest EVA a suit allows', es: 'la EVA más larga que permite el traje' }, tag: 'DATA' },
-      { at: 'hab', show: [2.8], big: '{constants.reserveMin} min', text: { en: 'oxygen reserve the suit never touches', es: 'reserva de oxígeno que el traje no toca' }, tag: 'DATA', offset: 1 },
+      { at: 'hab', show: [1.5], big: '{constants.evaMaxH} h', text: { en: 'longest EVA a suit allows', es: 'la EVA más larga que permite el traje' }, tag: 'SIM' },
+      { at: 'hab', show: [2.8], big: '{constants.reserveMin} min', text: { en: 'oxygen reserve the plan never touches', es: 'reserva de oxígeno que el plan no toca' }, tag: 'SIM', offset: 1 },
     ],
-    source: { en: 'Suit limits: NASA xEVA concept of operations. Reserve: Apollo 17 procedures', es: 'Límites del traje: operaciones xEVA de la NASA. Reserva: procedimientos Apollo 17', tag: 'DATA' },
+    source: { en: 'Our suit model, with NASA\'s limits: xEVA concept of operations (8 h), Apollo 17 procedures (30 min)', es: 'Nuestro modelo de traje, con los límites de la NASA: operaciones xEVA (8 h), procedimientos Apollo 17 (30 min)', tag: 'SIM' },
   },
   {
     id: 'zone',
@@ -84,7 +84,7 @@ export const BEATS = [
     chips: [
       { at: 'astronaut', show: [6], big: '{zone.area:1} ha', text: { en: 'you can reach and still get home', es: 'puedes alcanzar y aún volver' },
         liveText: { en: 'reach and still get home, T+{clock}', es: 'alcanzas y aún vuelves, T+{clock}' }, tag: 'SIM', live: 'area' },
-      { at: 'hab', show: [4], text: { en: 'Habitat', es: 'Hábitat' }, tag: 'DATA', home: true },
+      { at: 'hab', show: [4], text: { en: 'Habitat', es: 'Hábitat' }, tag: 'SIM', home: true },
     ],
     source: { en: 'Zone: our planner on the HiRISE cost grid and suit model, a 30 min planned sortie. Clock sped up', es: 'Zona: nuestro planificador con el costo HiRISE y el modelo de traje, salida planeada de 30 min. Reloj acelerado', tag: 'SIM' },
   },
@@ -98,12 +98,12 @@ export const BEATS = [
     scene: { zone: true },
     tracks: { zone: [[29, 31, 1.0, 2.0], [31, 40, 2.5, 9]], zoneOpacity: [1, 1, 0, 1] },   // held from 9 s to the end
     chips: [
-      { at: 'hab', show: [0], text: { en: 'Habitat', es: 'Hábitat' }, tag: 'DATA', home: true },
+      { at: 'hab', show: [0], text: { en: 'Habitat', es: 'Hábitat' }, tag: 'SIM', home: true },
       { at: 'astronaut', show: [2.5], big: '{zone.area:1} ha', text: { en: 'you can reach and still get home', es: 'puedes alcanzar y aún volver' },
         liveText: { en: 'reach and still get home, T+{clock}', es: 'alcanzas y aún vuelves, T+{clock}' }, tag: 'SIM', live: 'area' },
       { at: 'astronaut', show: [1.0], ring: true, big: '29.9 µGy/h', text: { en: 'peak dose rate, Sept. 2017. At the alert: 10 µGy/h', es: 'tasa de dosis pico, sept. 2017. Al iniciar la alerta: 10 µGy/h' }, tag: 'DATA', danger: true, offset: 1 },
     ],
-    source: { en: 'RAD on Curiosity, Gale crater, not Jezero: 718 and 240 µGy/day. Timing: NASA DONKI', es: 'RAD en Curiosity, cráter Gale, no Jezero: 718 y 240 µGy/día. Tiempos: NASA DONKI', tag: 'DATA' },
+    source: { en: 'Dose rates: RAD on Curiosity, Gale crater, not Jezero, 718 and 240 µGy/day. When the alert comes is our scenario', es: 'Dosis: RAD en Curiosity, cráter Gale, no Jezero, 718 y 240 µGy/día. El momento de la alerta es nuestro escenario', tag: 'DATA' },
   },
   {
     id: 'demo',
@@ -124,7 +124,7 @@ export const BEATS = [
   },
   {
     id: 'close',
-    duration: 35,
+    duration: 38,
     shot: { target: 'site', dist: 2600, yaw: -24, pitch: -70, fov: 44 },
     move: { dur: 3, ease: 'inOut' },
     drift: { yaw: -0.6 },
@@ -229,10 +229,10 @@ const CUT_SOURCES = [
     move: { dur: 5, ease: 'inOut' },
     caption: { en: 'On Mars, nobody can come and get you.', es: 'En Marte, nadie puede ir por ti.' },
     chips: [
-      { at: 'hab', show: [2.5], big: '{constants.evaMaxH} h', text: { en: 'longest EVA a suit allows', es: 'la EVA más larga que permite el traje' }, tag: 'DATA' },
-      { at: 'hab', show: [4.2], big: '{constants.reserveMin} min', text: { en: 'oxygen reserve, kept untouched', es: 'reserva de oxígeno, intocable' }, tag: 'DATA', offset: 1 },
+      { at: 'hab', show: [2.5], big: '{constants.evaMaxH} h', text: { en: 'longest EVA a suit allows', es: 'la EVA más larga que permite el traje' }, tag: 'SIM' },
+      { at: 'hab', show: [4.2], big: '{constants.reserveMin} min', text: { en: 'oxygen reserve, kept untouched', es: 'reserva de oxígeno, intocable' }, tag: 'SIM', offset: 1 },
     ],
-    source: { en: 'Suit limits: NASA xEVA concept of operations. Reserve: Apollo 17 procedures', es: 'Límites del traje: operaciones xEVA de la NASA. Reserva: procedimientos Apollo 17', tag: 'DATA' },
+    source: { en: 'Our suit model, with NASA\'s limits: xEVA concept of operations (8 h), Apollo 17 procedures (30 min)', es: 'Nuestro modelo de traje, con los límites de la NASA: operaciones xEVA (8 h), procedimientos Apollo 17 (30 min)', tag: 'SIM' },
   },
 ];
 
@@ -251,10 +251,10 @@ export const GLOBAL_30 = [
     caption: [{ at: 0, en: 'Orange: where you can still get home.' }, { at: 6.2, en: 'Radiation alert. Only ground toward home stays.' }],
     tracks: { zone: [[0, 29, 1, 6], [29, 31, 6.3, 7]], zoneOpacity: [0, 1, 0.2, 1] },
     chips: [
-      { at: 'hab', show: [1.2], text: { en: 'Habitat' }, tag: 'DATA', home: true },
+      { at: 'hab', show: [1.2], text: { en: 'Habitat' }, tag: 'SIM', home: true },
       { at: 'astronaut', show: [2], big: '{zone.area:1} ha', text: { en: 'you can reach and still get home' }, liveText: { en: 'reach and still get home, T+{clock}' }, tag: 'SIM', live: 'area' },
     ],
-    source: { en: 'Zone: HiRISE cost grid, NASA suit model, 30 min sortie. Alert: RAD, Gale 2017', tag: 'SIM' },
+    source: { en: 'Zone: HiRISE cost grid, our suit model, 30 min sortie. Alert: RAD, Gale 2017', tag: 'SIM' },
   },
   {
     id: 'tags', from: 'zone', duration: 3.3, move: { dur: 0 }, caption: { en: 'Every number tagged: measured, derived or simulated.' },
@@ -262,7 +262,7 @@ export const GLOBAL_30 = [
     tracks: { zone: [31, 31, 0, 1], zoneOpacity: [1, 1, 0, 1] }, drift: null,
     chips: [
       { at: 'cheyava', show: [0.2], text: { en: 'Terrain: HiRISE DTM, MRO' }, tag: 'DATA' },
-      { at: 'hab', show: [0.6], text: { en: 'Zone: cost grid and suit model' }, tag: 'DERIVED' },
+      { at: 'hab', show: [0.6], text: { en: 'Zone: cost grid and suit model' }, tag: 'SIM' },
       { at: 'astronaut', show: [1], text: { en: 'Scenario clock and oxygen' }, tag: 'SIM', offset: 1 },
     ],
     source: { en: 'Terrain against NASA\'s DTM via Mars Trek: 0.14 m RMS', tag: 'DERIVED' },

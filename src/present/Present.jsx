@@ -1,8 +1,10 @@
 // The presentation mode (#291): ?present=1. One camera falls from Mars orbit to the HiRISE ground at Cheyava Falls,
 // the walkback zone is the hero shot, and the last beat hands over to the live mission table without a reload.
 //
-// Keys (presentation clickers send these): Right, Space, PageDown, Enter next; Left, PageUp back; L language; Esc exit.
-// URL: the beats run on their timings by default (&autoplay=0 starts manual; the first key, tap or swipe takes over);
+// Keys (presentation clickers send these): Right, PageDown, Enter next; Left, PageUp back; 1 to 9 jump to that slide;
+// Space, P or K play and pause; L language; Esc exit.
+// URL: the talk opens paused behind a Play button and then runs on the beat lengths (&autoplay=1 plays at once);
+// next, back and the slide keys move the beats whether it plays or not;
 // &record=1 steps exactly 1/60 s a frame for scripts/present/record.mjs;
 // &seq=global30 plays the 30 s global video cut; &beat=<id> starts at a beat; &tier=low forces the light version.
 //
@@ -18,7 +20,7 @@ import { createGlobe } from './globe.js';
 import { createProjector } from './project.js';
 import { layoutCards } from './layout.js';
 import { decodeLast, fill, marginAt, clockAt, areaAt, resolvePlace, trackNumber, astronautAt } from './data.js';
-import { createHoldTimer, createPilot, pilotLabel, pointerStep, videoFrame, fallbackStep, presentKey, queryWithoutPresent, restoreEngine as restoreFromStore } from './control.js';
+import { createHoldTimer, createPlayer, playLabel, pointerStep, slideTarget, videoFrame, fallbackStep, presentKey, queryWithoutPresent, restoreEngine as restoreFromStore } from './control.js';
 import './present.css';
 
 const BASE = (import.meta.env.BASE_URL || '/') + 'present/';
@@ -31,12 +33,15 @@ const UI = {
   late: { en: 'Terrain still loading. Captions until it is ready', es: 'El terreno sigue cargando. Textos mientras tanto' },
   placeholder: { en: 'zone: placeholder model', es: 'zona: modelo provisional' },
   exit: { en: 'Esc exits', es: 'Esc para salir' },
+  play: { en: 'Play', es: 'Reproducir' },
+  pause: { en: 'Pause', es: 'Pausa' },
+  slide: { en: 'Slide', es: 'Diapositiva' },
 };
 
 function params() {
   const q = new URLSearchParams(window.location.search);
   return {
-    autoplay: q.get('autoplay') !== '0' || q.get('record') === '1',
+    autoplay: q.get('autoplay') === '1' || q.get('record') === '1',   // play at once, with no Play button
     record: q.get('record') === '1',
     seq: q.get('seq') === 'global30' ? 'global30' : 'full',
     live: q.get('live') === '1',   // add the hand-over to the live app after the sources
@@ -97,6 +102,9 @@ function beatShot(beat, plan, groundAt, reduced) {
 export default function Present({ engine, onExit }) {
   const opts = useMemo(() => params(), []);
   const beats = useMemo(() => sequence(opts.seq, { live: opts.live }), [opts.seq, opts.live]);
+  // The demo video file's real length once it loads: the frame loop gives its copy of the demo beat this length, so a
+  // new cut sets the talk's length by itself (beats.js `duration` is the length until then)
+  const videoLenRef = useRef(null);
   const [lang, setLang] = useState(() => (opts.lang === 'es' || opts.lang === 'en' ? opts.lang : opts.record ? 'en' : getLanguage()));
   const [index, setIndex] = useState(() => Math.max(0, beats.findIndex((b) => b.id === opts.beat)));
   const [assets, setAssets] = useState(null);
@@ -106,9 +114,11 @@ export default function Present({ engine, onExit }) {
   const [stalled, setStalled] = useState(false);
   const still = !!failed || stalled;   // the caption fallback is up
   const indexRef = useRef(index);
-  // Auto until the presenter's first step, then manual for the rest of the session (control.js createPilot)
-  const [pilot] = useState(() => createPilot(opts.autoplay && !opts.record));
-  const [pilotMode, setPilotMode] = useState(() => pilot.mode);
+  // Paused behind the Play button until the presenter starts it (control.js createPlayer); a recording always plays
+  const [player] = useState(() => createPlayer(opts.autoplay || opts.record));
+  const [playing, setPlaying] = useState(() => player.playing);
+  const [started, setStarted] = useState(() => player.started);
+  const pausedRef = useRef(!player.playing);
   // The recorded app demo (a beat with `video`): its element, and whether the file failed to load
   const videoRef = useRef(null);
   const [videoFailed, setVideoFailed] = useState(false);
@@ -157,7 +167,11 @@ export default function Present({ engine, onExit }) {
     }
     const projector = createProjector();
     const clock = createClock({ fixedStep: opts.record ? RECORD_STEP : null });
-    const timeline = createTimeline(beats, { autoplay: opts.autoplay, start: Math.max(0, beats.findIndex((b) => b.id === opts.beat)) });
+    // Always on: a paused talk stops the beat clock itself (frame below), so a finished beat moves on only while it plays
+    // The loop's own copies of the beats, so the demo beat can take the video file's length (videoLenRef)
+    const live = beats.map((b) => ({ ...b }));
+    const liveVideo = live.find((b) => b.video) || null;
+    const timeline = createTimeline(live, { autoplay: true, start: Math.max(0, beats.findIndex((b) => b.id === opts.beat)) });
     let cine = null, engineState = { sky: null, layer: 0, dust: -1 };
     let fromShot = null, toShot = null, current = null, alive = true, raf = 0, lastNow = performance.now(), zoneFrame = 0;
     let waitingNow = false, stalledNow = false, late = false;
@@ -324,7 +338,7 @@ export default function Present({ engine, onExit }) {
       if (!on) { v.style.opacity = '0'; if (!v.paused) v.pause(); return 0; }
       const f = videoFrame(t, beat.duration, v.duration);   // control.js: plays, then holds the last frame, then fades
       v.style.opacity = f.opacity.toFixed(3);
-      if (opts.record || !f.playing) {
+      if (opts.record || !f.playing || pausedRef.current) {
         if (!v.paused) v.pause();
         if (Math.abs(v.currentTime - f.time) > (opts.record ? 1e-3 : 0.1) && !v.seeking) v.currentTime = f.time;
         return f.opacity;
@@ -336,6 +350,7 @@ export default function Present({ engine, onExit }) {
 
     function frame(dt) {
       attachEngine();
+      if (liveVideo && videoLenRef.current && !opts.record) liveVideo.duration = videoLenRef.current;
       if (stalledNow) {
         // Still late, on a beat that needs the terrain: the captions stay up. The globe beats (Mars, Jezero) need no
         // engine, so stepping back to them plays them live.
@@ -355,7 +370,7 @@ export default function Present({ engine, onExit }) {
       // Once the engine has been late, a later hold drops to the captions at once instead of waiting again.
       if (!opts.record && (holdTimer.update(hold, performance.now()) || (hold && late))) { stalledNow = late = true; setStalled(true); return; }
       if (!hold) {
-        const changed = timeline.advance(dt);
+        const changed = timeline.advance(pausedRef.current ? 0 : dt);
         if (changed) { startBeat(timeline.index); setIndex(timeline.index); }
       }
       const beat = timeline.beat;
@@ -390,8 +405,9 @@ export default function Present({ engine, onExit }) {
     const nav = {
       next() { if (timeline.index === beats.length - 1) return false; timeline.next(); startBeat(timeline.index); setIndex(timeline.index); return true; },
       back() { timeline.back(); startBeat(timeline.index); setIndex(timeline.index); },
+      goTo(i) { timeline.goTo(i); startBeat(timeline.index); setIndex(timeline.index); },
     };
-    exitRef.current = { nav, takeover: () => timeline.setAutoplay(false), release: () => { if (cine) { cine.release(); cine = null; } } };
+    exitRef.current = { nav, release: () => { if (cine) { cine.release(); cine = null; } } };
 
     if (opts.record) {
       // The recorder calls step() once per frame and saves the frame after it resolves.
@@ -451,6 +467,13 @@ export default function Present({ engine, onExit }) {
     onExit?.();
   }, [onExit, restoreEngine]);
 
+  // Play or pause: the beat clock and the demo video stop together (frame and playVideo read pausedRef)
+  const toggle = useCallback(() => {
+    player.toggle();
+    pausedRef.current = !player.playing;
+    setPlaying(player.playing); setStarted(player.started);
+  }, [player]);
+
   useEffect(() => {
     // Captured on window and stopped there, so no key reaches the app under the presentation (view.js, App's shortcuts).
     const onKey = (e) => {
@@ -462,16 +485,19 @@ export default function Present({ engine, onExit }) {
       if (e.type !== 'keydown' || e.repeat) return;
       if (action === 'exit') { exit(); return; }
       if (action === 'lang') { setLang((v) => (v === 'en' ? 'es' : 'en')); return; }
+      if (action === 'toggle') { toggle(); return; }
       step(action);
     };
-    // One step from a key, a clicker, a tap or a swipe. The first one in auto only takes over: the beat (and a video in
-    // it) carries on, and the presenter steps from there.
+    // One step from a key, a clicker, a tap or a swipe. It moves the beats at once and keeps the play state.
     const step = (action) => {
-      const next = pilot.input(action);
-      if (next === null) { exitRef.current?.takeover?.(); setPilotMode('manual'); return; }
-      if (still) { setIndex((i) => fallbackStep(i, next, beats.length)); return; }   // no clock, no camera, no hand-off
+      const target = slideTarget(action, beats.length);
       const nav = exitRef.current?.nav;
-      if (next === 'back') { nav?.back(); return; }
+      if (target !== null) {
+        if (still) setIndex(target); else nav?.goTo(target);
+        return;
+      }
+      if (still) { setIndex((i) => fallbackStep(i, action, beats.length)); return; }   // no clock, no camera, no hand-off
+      if (action === 'back') { nav?.back(); return; }
       if (!nav?.next() && beats[beats.length - 1].cta) begin();
     };
     const dialog = dialogRef.current;
@@ -492,14 +518,14 @@ export default function Present({ engine, onExit }) {
       window.removeEventListener('keydown', onKey, true); window.removeEventListener('keyup', onKey, true);
       dialog?.removeEventListener('pointerdown', onDown); dialog?.removeEventListener('pointerup', onUp);
     };
-  }, [beats, begin, exit, pilot, still]);
+  }, [beats, begin, exit, still, toggle]);
 
-  // ?autoplay keeps running in the caption fallback, on the same beat lengths
+  // The caption fallback plays on the same beat lengths while the talk plays (a pause or a step restarts the beat's wait)
   useEffect(() => {
-    if (!still || pilotMode !== 'auto' || index >= beats.length - 1) return undefined;
+    if (!still || !playing || index >= beats.length - 1) return undefined;
     const id = setTimeout(() => setIndex((i) => fallbackStep(i, 'next', beats.length)), beats[index].duration * 1000);
     return () => clearTimeout(id);
-  }, [still, pilotMode, index, beats]);
+  }, [still, playing, index, beats]);
 
   const beat = beats[index];
   const plan = assets?.plan;
@@ -519,6 +545,9 @@ export default function Present({ engine, onExit }) {
           src={index >= 1 || opts.record ? BASE + videoBeat.video.src : undefined}
           poster={BASE + videoBeat.video.poster} preload={index >= 1 || opts.record ? 'auto' : 'none'} style={{ opacity: 0 }}
           onError={() => { videoFailedRef.current = true; setVideoFailed(true); }}
+          // The beat lasts as long as the file, so a new cut sets the talk's length by itself (beats.js `duration` is
+          // the length before the file loads, and beats.test.js keeps it within 0.5 s of the file in the repo)
+          onLoadedMetadata={(e) => { const d = e.currentTarget.duration; if (Number.isFinite(d) && d > 1) videoLenRef.current = Math.round(d * 10) / 10; }}
         />
       )}
       {still && <div className="pr-fallback" style={assets ? { backgroundImage: `url(${BASE}${index < 2 ? 'globe_2k.jpg' : 'jezero_ctx.jpg'})` } : undefined} aria-hidden="true" />}
@@ -583,8 +612,23 @@ export default function Present({ engine, onExit }) {
       {!opts.record && (
         <div className="pr-progress" aria-hidden="true">
           {beats.map((b, i) => <span key={b.id} className={i === index ? 'on' : i < index ? 'past' : ''} />)}
-          <span className="pr-mode" data-mode={pilotMode}>{pilotLabel(pilotMode, lang)}</span>
           <span className="pr-lang">{lang.toUpperCase()}</span>
+        </div>
+      )}
+      {!opts.record && !started && (
+        <button type="button" className="pr-play" onClick={toggle} aria-label={tx(UI.play)}>
+          <span className="pr-play-icon" aria-hidden="true" />{tx(UI.play)}
+        </button>
+      )}
+      {!opts.record && (
+        // the slide number, so a presenter can say "slide 4" and the laptop can go there (the 4 key)
+        <div className="pr-slideno">
+          {started && (
+            <button type="button" className="pr-pp" data-playing={playing ? '1' : '0'} onClick={toggle} aria-label={tx(playing ? UI.pause : UI.play)}>
+              <span aria-hidden="true">{playing ? '❚❚' : '▶'}</span> {playLabel(playing, lang)}
+            </button>
+          )}
+          <span className="pr-slideno-n" aria-label={`${tx(UI.slide)} ${index + 1} / ${beats.length}`}>{index + 1} / {beats.length}</span>
         </div>
       )}
       {waiting && !still && <p className="pr-wait">{tx(UI.loading)}</p>}

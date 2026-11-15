@@ -235,3 +235,58 @@ body.mw-presenting .app:has(.table-screen) .engine-view canvas { visibility: vis
 .pr-qr img { display: block; width: clamp(150px, 12vw, 240px); height: auto; margin: 0 auto 0.5em; background: #fff; }
 .pr-qr figcaption { font: 600 clamp(15px, 1.15vw, 22px)/1.3 var(--font-mono); color: var(--ink); }
 .pr-qr figcaption span { font: 500 clamp(13px, 0.95vw, 18px) var(--font-body, inherit); color: rgba(233, 237, 242, 0.75); }
+
+/* The Play button: the talk opens paused on its first frame and starts here (or Space, P) */
+.pr-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.55em 1.2em 0.55em 0.95em;
+  font: 600 clamp(26px, 2.4vw, 46px)/1 var(--font-display);
+  color: var(--ink);
+  background: rgba(10, 13, 17, 0.78);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.pr-play:hover { background: rgba(10, 13, 17, 0.92); }
+.pr-play:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.pr-play-icon { width: 0; height: 0; border-style: solid; border-width: 0.45em 0 0.45em 0.75em; border-color: transparent transparent transparent currentColor; }
+
+/* The slide number, bottom right, with play and pause beside it once the talk has started */
+.pr-slideno {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: 600 clamp(15px, 1.15vw, 22px)/1 var(--font-mono);
+  color: rgba(233, 237, 242, 0.85);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+.pr-slideno-n { padding: 6px 10px; background: rgba(10, 13, 17, 0.6); border-radius: var(--radius-s, 4px); }
+.pr-pp {
+  pointer-events: auto;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 0.8em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: inherit;
+  background: rgba(10, 13, 17, 0.6);
+  border: 1px solid rgba(233, 237, 242, 0.35);
+  border-radius: var(--radius-s, 4px);
+  cursor: pointer;
+  opacity: 0.6;
+}
+.pr-pp[data-playing='0'] { color: var(--accent); border-color: var(--accent); opacity: 1; }
+.pr-pp:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
