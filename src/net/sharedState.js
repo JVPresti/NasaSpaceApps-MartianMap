@@ -123,9 +123,11 @@ export function createSharedState({ store, room, playerId, timers = globalThis, 
       return { ok: true, by: self };
     };
     if (!isOpen()) return queueLocally();
-    if (!room.send({ type: MSG.SAMPLE, sid })) { const r = queueLocally(); scheduleRetry(); return r; }
+    // A claim the client's action cap holds back waits for the retry inside the same 1.5 s window. Going ahead
+    // locally at once would let two players who both hit the cap win the same sample.
+    const out = room.send({ type: MSG.SAMPLE, sid });
     return new Promise((resolve) => {
-      const c = { resolve, timer: null, queued: false, sent: true, settled: false };
+      const c = { resolve, timer: null, queued: !out, sent: out, settled: false };
       // No answer in time: the scoop goes ahead locally and the claim stays queued for the next welcome.
       c.timer = timers.setTimeout(() => {
         c.timer = null;
@@ -136,6 +138,7 @@ export function createSharedState({ store, room, playerId, timers = globalThis, 
         resolve({ ok: true, by: self, timedOut: true });
       }, SAMPLE_CLAIM_TIMEOUT_MS);
       claims.set(sid, c);
+      if (!out) scheduleRetry();
     });
   }
 

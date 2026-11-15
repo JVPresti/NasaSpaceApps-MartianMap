@@ -132,6 +132,19 @@ describe('sample claims', () => {
     expect(sent('smp')).toHaveLength(1);
   });
 
+  it('a claim the action cap holds back waits for the retry and the room, not a local win', async () => {
+    openRoom();
+    for (let i = 0; i < 5; i++) shared.addMarker({ kind: 'find', x: i, z: 0 });   // use up the 5 actions per second
+    const p = claim('rock_1_1');
+    expect(p).toBeInstanceOf(Promise);
+    expect(sent('smp')).toEqual([]);
+    expect(store.getState().shared.samples.rock_1_1).toBeUndefined();
+    vi.advanceTimersByTime(1000);
+    expect(sent('smp')).toEqual([{ type: 'smp', sid: 'rock_1_1' }]);
+    ws().receive({ type: 'smp', sid: 'rock_1_1', by: 'b', at: 60, ok: false });
+    await expect(p).resolves.toEqual({ ok: false, by: 'b' });
+  });
+
   it('lose: resolves not ok with the winner and shows the notice for a few seconds', async () => {
     openRoom();
     const p = claim();
