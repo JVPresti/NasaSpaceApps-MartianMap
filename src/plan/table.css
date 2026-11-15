@@ -1187,6 +1187,14 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
 .task-panel > .table-stops { scroll-snap-type: y proximity; }
 .task-panel > .table-stops > li { scroll-snap-align: start; }
 .table-stops > li > .table-note { grid-column: 2 / -1; margin: 0; font-size: 12px; line-height: 1.35; }   /* the size of the stop line */
+/* At 1366 x 768 the seventh layer button (#335) takes a third row from the list: a task row a little tighter (the
+   selects at the height of the needs panel's choice buttons) and the panel's padding smaller, so one whole row, why line
+   included, still shows in English and Spanish. */
+@media (max-height: 800px) {
+  .task-panel { padding-top: 8px; padding-bottom: 8px; }
+  .task-panel > .table-stops > li { row-gap: 2px; }
+  .task-panel .needs-select { min-height: 30px; }
+}
 
 /* ------------------------------------------------------------------ conditions outlook (#248) */
 
