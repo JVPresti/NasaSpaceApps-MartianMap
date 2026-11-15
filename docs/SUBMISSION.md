@@ -27,6 +27,8 @@ Checklist:
 - [ ] The local lead has heard about the pre-event assets and answered (`docs/RULES.md`, section 1)
 - [ ] No one under 18 appears or speaks in the demo video
 - [ ] Both checkboxes ticked: Terms and Conditions, and "Confirm All Work is Original"
+- [ ] A licence is chosen. The repository has no LICENSE file, and without one NASA distributes our original work under Apache 2.0
+- [ ] Project Details links to `docs/VALIDITY.md` on GitHub. That link only works once the repository is public
 - [ ] Technical report and final presentation uploaded for the Ensenada event
 
 ## Project Name
@@ -39,9 +41,9 @@ Help text: "What did you develop? How does it address the challenge? Why is it i
 
 > On Mars, the question isn't where you can go. It's where you can go and still get home.
 >
-> Marswalk answers it for one real place: a 1.4 by 1.5 km patch of Neretva Vallis in Jezero crater, around Cheyava Falls, the rock where Perseverance found a potential biosignature. From NASA's HiRISE terrain model, we build a slope map that blocks ground steeper than NASA's 20° suited walking limit. An A* planner routes the astronaut through it, and we cost every leg in minutes and grams of oxygen. The oxygen comes from the 771 g tank of NASA's xEMU suit design, burned at rates from NASA suited treadmill tests, with Apollo's 30-minute reserve held back. Then you walk the route in first person. A dust storm, a replay of the September 2017 solar storm that Curiosity measured, or a low-oxygen warning re-plans the route back to the habitat. Every number on screen says whether a NASA mission measured it, we calculated it, or we assumed it. We checked all 106 against their sources.
+> Marswalk answers it for one real place: a 1.4 by 1.5 km patch of Neretva Vallis in Jezero crater, around Cheyava Falls, the rock where Perseverance found a potential biosignature. An EVA planner has to budget oxygen before picking a route, and Marswalk shows that budget on the real ground. From NASA's HiRISE terrain model we build a slope map that blocks ground steeper than NASA's 20° suited walking limit. A shortest-path planner (A*) routes the astronaut through it, and we cost every leg in minutes and grams of oxygen: the 771 g tank of NASA's xEMU suit design, a walking model calibrated to NASA suited tests, and Apollo's 30-minute reserve. Then you walk the route in first person. A dust storm, a solar storm built from the September 2017 event Curiosity measured, or a low-oxygen warning re-plans the route back to the habitat. Every number on screen says whether a NASA mission measured it, we calculated it, or we assumed it. We checked all 109 against their sources and list the 16 we got wrong.
 
-172 words.
+194 words.
 
 ## Project Demonstration
 
@@ -55,61 +57,74 @@ Use the full URL starting with `https://`. YouTube (unlisted is fine), Google Sl
 
 The deployed app on Cloudflare Workers (`martian-map`). It opens with no login. If the team makes the repository public before the deadline, add https://github.com/JVPresti/NasaSpaceApps-MartianMap in Project Details. The guide says "the majority of judges' evaluation will be based on your project submission", and the README is written for judges.
 
+
 ## Project Details
 
 Help text: "What does it do or how does it work? What benefits does it have? What is the intended impact of the project? What tools, coding languages, hardware, or software did you use to develop your project? How is your project creative? What factors did your team consider?"
 
-Paste everything inside the box. The form takes rich text, so the headings survive.
+Paste everything inside the box. The form takes rich text, so the headings survive. Swap the repository links for the deployed site if the repository stays private.
 
 > **What it does**
 >
-> Marswalk is a planning map and a walking test for one marswalk. The astronaut leaves the habitat in Neretva Vallis, Jezero crater, walks to Cheyava Falls and the Bright Angel outcrop, takes a sample and walks home. The site is a 1422 m by 1500 m tile of real terrain centred on the spot where Perseverance stood on sol 1210.
+> Marswalk is a planning map and a walking test for one marswalk. The astronaut leaves the habitat in Neretva Vallis, Jezero crater, walks to the Bright Angel outcrop and Cheyava Falls, takes a sample and walks home. The site is a 1422 m by 1500 m tile of real terrain centred on the spot where Perseverance stood on sol 1210.
 >
-> The map comes first. On the mission table the crew sees the site from above with four data layers: slope hazard, elevation, rock abundance and outcrop. Perseverance's 47 real drives across the tile and the places where it took its photos of the rock are drawn on top. The planner offers three routes, fastest, gentlest and in radio contact with the habitat, and shows for each one the distance, the climb, the steepest slope, the walking time, the oxygen used and the oxygen left at the turnaround after the walk home and the reserve. The crew picks one and makes the go or no-go call.
+> The map comes first. On the mission table the crew sees the site from above with a photo layer and four data layers: slope hazard, elevation, rock abundance (estimated from image brightness) and outcrop. Perseverance's 47 real drives across the tile and the places it photographed the rock from are drawn on top. The planner offers three routes, fastest, gentlest and in radio contact with the habitat. For each one it shows the distance, the climb, the steepest slope, the metres spent above 15°, the walking time, the oxygen used and the oxygen left after the walk home and the reserve. The crew picks one and makes the go or no-go call.
 >
-> Then the astronaut walks it, in first person, with a helmet display and a wrist screen. The helmet shows only what matters while walking: oxygen, the margin before turning back, the next waypoint, slope ahead, radio link, and a position estimate with its error. There is no GPS on Mars, so position drifts by dead reckoning and resets when the astronaut stops for a terrain fix. Perseverance has done the same against orbital maps since February 2026. A partner astronaut walks alongside. At the rock the astronaut photographs, samples and seals.
+> Then the astronaut walks it, in first person, with a helmet display and a wrist screen. The helmet shows only what matters while walking: oxygen, the margin before turning back, the next waypoint, slope ahead, radio link, and a position estimate with its error. There is no GPS on Mars, so position drifts as you walk and resets when the astronaut stands still for a terrain fix. Perseverance has fixed its position against orbital maps since February 2026. A partner astronaut walks alongside. At the rock the astronaut photographs, samples and seals.
 >
-> Three events break the plan. A dust storm raises the optical depth from Jezero's clear-season 0.45 to 8.0, the value Curiosity saw in Gale crater in the 2018 global storm. A radiation alert replays the September 2017 solar particle event. An X8.2 flare peaked at 16:06 UTC. 224 minutes later Curiosity's RAD saw the dose rate start to climb at Mars, and it peaked at three times background. A low-oxygen warning fires when the oxygen left no longer covers the walk home plus the reserve. Each event raises an alert and re-plans the route to the nearest shelter, and the habitat is the only full shelter. Back inside, a debrief shows distance, time outside, dose and samples.
+> Three events break the plan:
+>
+> - A dust storm raises the optical depth from 0.45 to 8.0, the value Curiosity saw in Gale crater during the 2018 global storm. The real onset took up to a sol. Ours takes 90 seconds.
+> - A radiation alert plays the September 2017 solar particle event. An X8.2 flare peaked at 16:06 UTC. 224 minutes later Curiosity's RAD saw the dose rate start to climb at Mars, and it peaked at three times background. We squeeze the 57-hour event into 12 minutes and keep the measured rates.
+> - A low-oxygen warning fires when the oxygen left no longer covers the walk home plus the reserve.
+>
+> Each event raises an alert and re-plans the route to the habitat, the one shelter the planner trusts for every event. Back inside, a debrief shows distance, time outside, dose and samples.
 >
 > **How it works**
 >
-> Terrain. NASA and USGS made the HiRISE terrain model (1 m pixels) and orthophoto (25 cm) of Jezero to land Perseverance by terrain-relative navigation. We cut our tile from those products and resample the heights to a 751 by 751 grid. Our terrain matches the HiRISE model that NASA Mars Trek serves to 0.14 m RMS over the whole tile, and Perseverance's own position fixes to 0.16 m RMS. A CTX terrain model (20 m) and mosaic (6 m) give the 12 km horizon.
+> Terrain. NASA and USGS made a HiRISE terrain model (1 m pixels) and orthophoto (25 cm) of Jezero so Perseverance could land by matching camera images to the map. We cut our tile from those products and resample the heights to a 751 by 751 grid, about 2 m per cell. Our grid reproduces the HiRISE model that NASA Mars Trek serves to 0.14 m RMS over the whole tile. A CTX terrain model (20 m) and mosaic (6 m) give the 12 km horizon.
 >
-> Route. Each cell costs 1 + (slope / 9°)² + 0.6 x rock abundance. Ground steeper than 20°, NASA's suited walking limit in the xEVA Concept of Operations, is blocked. A* runs in a Web Worker and finds a route across the tile in the browser.
+> Route. Each cell costs 1 + (slope / 9°)² + 0.6 x rock abundance. Those two weights are our choice. Ground steeper than 20°, the suited walking limit in NASA's xEVA Concept of Operations, is blocked. A* runs in a background thread of the browser.
 >
-> Suit and oxygen. The suit is NASA's xEMU design: 771 g of usable primary oxygen, a 756 Wh battery, 8 hours maximum, 4.3 psi. Walking cost comes from Minetti et al. 2002, scaled from Earth gravity to Mars gravity and calibrated to NASA's suited walking tests at 3/8 g (Norcross et al. 2008 and 2010). Walking 1 km on flat ground at 1 m/s costs 589 W and 40 g of oxygen, 5 % of the tank. On slopes the astronaut slows to keep the same effort. The walk home gets Apollo 15's 20 % pad, and the margin keeps Apollo 17's 30-minute reserve. Margin under 15 minutes is a caution. At zero it is a warning, and the crew turns back.
+> Suit and oxygen. The suit is NASA's xEMU design: 771 g of usable primary oxygen, a 756 Wh battery, 8 hours maximum, 4.3 psi. It is the only suit with every consumable published. It was built for the Moon, and a Mars suit would need different CO2 removal and cooling, which we do not model. Walking cost starts from a physiology study of walking on slopes (Minetti et al. 2002), scaled to Mars gravity and calibrated to NASA's suited walking tests at 0.12 g to 3/8 g (Norcross et al. 2008 and 2010). Walking 1 km on flat ground at 1 m/s costs 589 W and 40 g of oxygen, 5 % of the tank. On slopes the astronaut slows to keep the same effort. The walk home gets Apollo 15's 20 % pad, and the margin keeps Apollo 17's 30-minute reserve. Margin under 15 minutes is a caution. At zero it is a warning, and the crew turns back.
 >
-> Weather and radiation. Temperature, pressure and humidity replay sol 1187 from Perseverance's MEDA station, recorded within 12 m of the scene origin. Wind comes from sol 312, because MEDA's wind sensor was damaged and the archive has no wind after sol 315. The label says so. Radiation comes from Curiosity's RAD in Gale crater, the only surface radiation measurement on Mars. The display says "Gale crater, not Jezero" every time.
+> Two limits we state openly. We walk at 1 m/s on flat ground. NASA plans traverses at 2 km/h, and Apollo 14 crews averaged 2.5 km/h, so our walk times are 1.45 to 1.8 times shorter than those paces. And the climbing cost could be 14 % to 42 % higher than we show, depending on which NASA test speed the model is fitted to.
 >
-> Provenance. Every number on screen carries a tag: DATA (a NASA mission measured it or a NASA document states it), DERIVED (we calculated it from data) or SIM (our model or a scripted event). Hover a tag to see the mission, instrument, sol and reference. We checked all 106 numbers against their primary sources. 81 match, 13 are our stated assumptions, and we list the 11 that were wrong or mislabelled with an issue for each (docs/VALIDITY.md in the repository).
+> Weather and radiation. Temperature, pressure and humidity replay sol 1187 from Perseverance's MEDA weather station, recorded within 12 m of the scene origin. Wind comes from sol 312, because MEDA's wind sensor was damaged and the archive has no wind after sol 315. The label says so. Radiation comes from Curiosity's RAD in Gale crater, the only surface radiation measurement on Mars. The display says "Gale crater, not Jezero" every time. Jezero sits about 2 km higher, under less air, so its dose would be somewhat higher.
+>
+> Provenance. Every number on screen carries a tag: DATA (a NASA mission measured it or a NASA document states it), DERIVED (we calculated it from data) or SIM (our model or a scripted event). Hover a tag to see the mission, instrument, sol and reference. One exception today is the radio range, which has no tag yet. We checked 109 numbers against their primary sources. 79 match, 11 are our stated assumptions, 16 had a wrong value, tag or wording, and 3 come from a paper we could not open. Each problem has an issue in our repository: https://github.com/JVPresti/NasaSpaceApps-MartianMap/blob/main/docs/VALIDITY.md
 >
 > **Benefits**
 >
-> A mission planner can see in one screen why a route is safe or not: which stretch is steep, where the oxygen goes, how much margin is left at the far point. The margin follows the walker in real time. A crew member can check a walk against the same rules Apollo crews followed, on terrain that matches the rover's own position fixes to 16 cm.
+> A mission planner sees in one screen why a route is safe or not: which stretch is steep, where the oxygen goes, how much margin is left at the far point. During the walk the margin updates four times a second from the astronaut's real speed and slope. A crew member can check a walk against Apollo's walkback pad and 30-minute reserve, with numbers that each name their source.
 >
 > **What we hope to achieve**
 >
-> We want an EVA planning tool that is honest about the gap between data and model. The route is advice, not a safety certificate: a 2 m height grid does not see a 30 cm rock, and the app says so. The same pipeline works for any site with a HiRISE terrain model. Jezero is the first because it has the most ground truth.
+> An EVA plan that shows the oxygen cost of every metre of a real route. The route is advice, not a safety certificate: a 2 m height grid does not see a 30 cm rock, and the app says so. The planner needs only a height grid and a rock layer. We have run it on one site. Jezero comes first because Perseverance is there: its weather, its drives and its photos of Cheyava Falls are all on the map.
 >
 > **How it is creative**
 >
-> Most Mars maps answer "what is here?". Ours answers "can I get there and back on what is in my tank?" and redraws the answer as the astronaut walks. The data is not a backdrop. A replayed NASA solar storm changes the route, and NASA's suit specs set the turnaround point.
+> Most Mars maps answer "what is here?". Ours answers "can I get there and back on what is in my tank?" and redraws the answer as the astronaut walks. A replayed NASA solar storm changes the route, and NASA's suit numbers set the turnaround point.
 >
 > **Factors we considered**
 >
-> Realism over drama. Observations are labelled historical, never live. Radiation is labelled with its real site. Navigation never claims GPS. We dropped a THEMIS thermal view because its 100 m pixels put 15 by 15 pixels on the whole site. We dropped a geology map because it sits 100 to 200 m off the terrain. The interface runs on keyboard, mouse, touch and gamepad, in English and Spanish, and picks a lower graphics tier on integrated GPUs.
+> Observations are labelled historical, never live. Radiation is labelled with its real site. Navigation never claims GPS. We dropped a THEMIS thermal view because its 100 m pixels put 15 by 15 pixels on the whole site. We dropped a geology map because it sits 100 to 200 m off the terrain. A judge without a gamepad or a strong GPU can still finish the walk: it reads keyboard, mouse, touch and gamepad, switches between English and Spanish, and measures the frame rate at load to choose a High or Low graphics tier.
 >
 > **Tools and languages**
 >
 > JavaScript, React 19, Vite, three.js, Zustand, Web Workers, Web Audio, Vitest and oxlint. Blender for the terrain mesh, the suit rig and the habitat. Node.js scripts build the data files from NASA archives (PDS, DONKI, MMGIS, the Mars 2020 raw images API). Hosted on Cloudflare Workers. Python for the audit's recomputations.
 >
+> **Team**
+>
+> Los Frijolitos Espaciales Refritos Nueva Generación: Teresa Rivas Gómez, Andrea Rivas Gómez, Fernando Haro Calvo, Jorge Antonio Vazquez Guzmán, Antonio Ramos Gonzalez and Brayan Iván Pérez Ventura.
+>
 > **Use of SI**
 >
-> [Paste the disclosure from docs/RULES.md, section 2.]
+> we built Marswalk with SI tools and reviewed their output. We used an AI assistant to compare challenges and talk through the concept on 13 November. AI coding agents (Claude Code) wrote most of the code from our issues, and every change went through a reviewed pull request with tests. AI research agents found and opened the NASA reports and papers behind our numbers, and an audit run with AI agents and reviewed by us checked all 109 numbers on screen against their sources (docs/VALIDITY.md). Language models helped write the docs and the Spanish translation. The start screen video, its poster and the three hazard illustrations were generated with Higgsfield. They are artwork, not mission images, contain no NASA marks, and are captioned or credited as AI-generated. No SI model runs inside the app. The terrain, the weather, the radiation and the rover data are NASA measurements, and the route planner is plain A* on the HiRISE height grid.
 >
 > **Prior work**
 >
-> [Paste the statement from docs/RULES.md, section 1, after the local lead has answered.]
+> before the hackathon started at 9:00 am on 14 November, our graphics team prepared assets on 12 and 13 November: the HiRISE and CTX terrain tile of Neretva Vallis cut for Blender (heights, orthophotos, the first waypoint list and the rock layout), the NASA Z-2 suit rigged and animated, the habitat built on NASA's Habitat Demonstration Unit, two props, and a three.js test bench that loads them. They arrived in one commit at 9:49 am on 14 November (`9fb29fc`), and `docs/marswalk-assets/README.md` dates each pass. During the event we ported the app's rendering engine from that test bench, and wrote everything else: the route planner and cost grid, the suit and oxygen model, the event engine, the dust storm, radiation and low-oxygen events, the shelters, the source tags on every number, the HUD and Plan mode, and the MEDA, RAD, DONKI and Perseverance traverse and image pipelines. We chose the challenge and the concept on 13 November, with help from an AI assistant. We told our local lead about this before submitting. [Edit this last sentence to match what the local lead said.]
 
 ## Use of Super Intelligence (SI)
 
@@ -131,7 +146,7 @@ The form takes one link per row, with link text. Add these rows.
 | Mars 2020 MEDA bundle, PDS Atmospheres node, sols 1187 and 312 | https://doi.org/10.17189/1522849 | Temperature, pressure, humidity and wind replay |
 | MSL RAD reduced data, PDS PPI node | https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/ | Background dose and the September 2017 event curve |
 | NASA CCMC DONKI, flare 2017-09-10T15:35:00-FLR-001 | https://ccmc.gsfc.nasa.gov/DONKI/WS/get/FLR?startDate=2017-09-10&endDate=2017-09-10 | Flare time and class for the radiation event |
-| NASA CCMC DONKI notifications, 10 September 2017 | https://ccmc.gsfc.nasa.gov/DONKI/WS/get/notifications?startDate=2017-09-10&endDate=2017-09-10&type=all | First alert time, warning lead time |
+| NASA CCMC DONKI notifications, 10 September 2017 | https://ccmc.gsfc.nasa.gov/DONKI/WS/get/notifications?startDate=2017-09-10&endDate=2017-09-10&type=all | First alert time (a flare alert at 16:07 UTC) |
 | Mars 2020 Where is the rover, MMGIS traverse | https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_traverse.json | Perseverance's 47 drives on the map |
 | Mars 2020 Where is the rover, MMGIS waypoints | https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_waypoints.json | Tile origin, image pins |
 | Mars 2020 raw images, Mastcam-Z, sol 1187 | https://mars.nasa.gov/mars2020/multimedia/raw-images/ZL0_1187_0772321307_818EBY_N0541010ZCAM09237_0630LMJ | Science stop image at Bright Angel |
@@ -148,9 +163,9 @@ The form takes one link per row, with link text. Add these rows.
 | Suited 10 km walkback, Norcross et al. 2008, NTRS 20080014853 | https://ntrs.nasa.gov/citations/20080014853 | Suited walking cost at 3/8 g |
 | Suited 10 km ambulation, NASA/TP-2009-214796 | https://www.lpi.usra.edu/lunar/artemis/NorcrossEtAl_NASA-TP-2009-214796_EVA%20Walkback%20Test.pdf | Suited walking speed |
 | Inclined ambulation in a planetary suit, NASA/TP-2010-216125 | https://ntrs.nasa.gov/citations/20110003409 | Suited climbing cost |
-| EVA metabolic rate from heart rate, Hoffmann 2021, NTRS 20210024317 | https://ntrs.nasa.gov/citations/20210024317 | Reference only, not on screen |
+| EVA metabolic rate from heart rate, Hoffmann 2021, NTRS 20210024317 | https://ntrs.nasa.gov/citations/20210024317 | Metabolic rate reference in our data file |
 | Design for Ionizing Radiation Protection, OCHMO-TB-020 Rev E | https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf | 600 mSv career and 250 mSv solar event limits |
-| NASA Watches Mars Light Up During Epic Solar Storm, 2024 | https://www.nasa.gov/missions/maven/nasa-watches-mars-light-up-during-epic-solar-storm/ | May 2024 event dose for comparison |
+| NASA Watches Mars Light Up During Epic Solar Storm, 2024 | https://www.nasa.gov/missions/maven/nasa-watches-mars-light-up-during-epic-solar-storm/ | Dose of the May 2024 solar storm, a reference value in our data file |
 | Perseverance autonomous localization, JPL, February 2026 | https://www.jpl.nasa.gov/news/nasas-perseverance-now-autonomously-pinpoints-its-location-on-mars | Terrain fix model |
 | NASA GISS Mars24 | https://www.giss.nasa.gov/tools/mars24/help/notes.html | Sol length and local solar time |
 | NASA 3D Resources, Z-2 Spacesuit | https://github.com/nasa/NASA-3D-Resources/tree/master/3D%20Models/Z2%20Spacesuit | Astronaut model |
@@ -185,7 +200,7 @@ Help text: "Resources should include any code, text, and images (even if they ar
 | Zustand (MIT) | https://github.com/pmndrs/zustand |
 | Barlow font (OFL) | https://github.com/jpt/barlow |
 | IBM Plex Mono font (OFL) | https://github.com/IBM/plex |
-| Credits and licences for every asset | https://martian-map.fernando-haro-c.workers.dev (Sources screen, key C) |
+| Credits and licences for every asset (Sources screen in the app, key C) | https://martian-map.fernando-haro-c.workers.dev |
 
 Sánchez-Lavega 2025, Lemmon 2022 and Bell 2022 are Perseverance team papers. Hassler, Guo and Zeitlin are Curiosity RAD team papers. They sit here because they are journal articles, not NASA archives.
 
@@ -207,4 +222,9 @@ From the audit. Each of these appears in an old plan, a mockup or a reasonable g
 - The HUD dose during the radiation event as what the 2017 event delivered. The game squeezes 57 hours into 12 minutes. The real event added 544 µGy ([#295](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/295)).
 - A natural shelter cutting radiation by 15 %. RAD measured 4 % for a similar sky block ([#296](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/296)).
 - GPS, or NASA as a partner or endorser.
-- "Every number verified correct". Say "all 106 numbers checked against their sources, with the 11 problems listed".
+- "Every number verified correct". Say "109 numbers checked against their sources, 16 problems listed with an issue each".
+- "Our terrain matches the rover to 16 cm". The rover positions are tied to the same orbital maps. Say "our grid reproduces the USGS HiRISE model to 0.14 m RMS".
+- The rock abundance layer as a measurement. It is estimated from image brightness ([#311](https://github.com/JVPresti/NasaSpaceApps-MartianMap/issues/311)).
+- The xEMU as a Mars suit. It was designed for the Moon.
+- The habitat as full protection from cosmic rays. Say "the best shelter on the tile".
+- Walk times as NASA planning times. NASA plans at 2 km/h, we walk at 3.6 km/h.
