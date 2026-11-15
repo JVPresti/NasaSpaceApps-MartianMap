@@ -2,7 +2,6 @@ import { t, translateText } from './i18n/index.js';
 import { useLanguage } from './i18n/useLanguage.js';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import EngineView from './components/EngineView.jsx';
-import EvaKeysCard, { EVA_KEYS_CARD_MS } from './components/EvaKeysCard.jsx';
 import GamepadHint from './components/GamepadHint.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
 import PauseMenu from './components/PauseMenu.jsx';
@@ -211,6 +210,8 @@ export default function App() {
       if (result.stale) return;
       if (!result.ok) {
         if (result.lockFailed) setLockFailed(true);
+        // The start view has no room for the explanation or the drag-to-look fallback: the menu has both.
+        if (overlayRef.current === PAUSE_VIEW.KEYS) setOverlay(PAUSE_VIEW.MENU);
         setNotice(result.message);
         return;
       }
@@ -281,8 +282,22 @@ export default function App() {
     }
   }, [pauseFor, setEvaBegun]);
 
-  /** Begin EVA on the mission table's Suit tab. The click is the user gesture that captures the mouse. */
-  const handleBeginEva = useCallback(() => handleModeChange('walk'), [handleModeChange]);
+  /**
+   * Begin EVA on the mission table's Suit tab. The first time, the astronaut lands in Walk paused on the key reminder
+   * (PAUSE_VIEW.KEYS) with the clock still held; its Start walking button is the click that captures the mouse and
+   * starts the EVA (handleResume). Once the EVA is under way, Continue the EVA goes straight back to the walk.
+   */
+  const handleBeginEva = useCallback(() => {
+    if (busyRef.current) return;
+    if (evaBegunRef.current || phaseRef.current !== EVA_PHASE.PLAYING) {
+      handleModeChange('walk');
+      return;
+    }
+    resumeSeqRef.current += 1;
+    walkLockSeqRef.current += 1;
+    setMode('walk');
+    pauseFor(PAUSE_VIEW.KEYS);
+  }, [handleModeChange, pauseFor]);
 
   // Gamepad buttons reach the same actions as the keyboard (#101, #103). The engine reports them only while
   // gameplay input is enabled, so a press behind the pause menu cannot act; the phase check is a second guard.
@@ -447,16 +462,6 @@ export default function App() {
     pauseEva({ engine: engineRef.current });
   }), [setBusyState, setOverlay, setPhase]);
 
-  // The key card shows once per EVA, when it begins (the first time on the surface), and goes after EVA_KEYS_CARD_MS.
-  // A restart clears evaBegun, so the next EVA shows it again. Pausing hides it; the pause menu has the full help.
-  const [keysCard, setKeysCard] = useState(false);
-  useEffect(() => {
-    if (!evaBegun) return undefined;
-    setKeysCard(true);
-    const timer = setTimeout(() => setKeysCard(false), EVA_KEYS_CARD_MS);
-    return () => { clearTimeout(timer); setKeysCard(false); };
-  }, [evaBegun]);
-
   // The wrist key strip follows the wrist screen (#231): it shows only while the wrist screen is up.
   useEffect(() => {
     if (!engine || typeof engine.subscribeWrist !== 'function') return undefined;
@@ -506,7 +511,6 @@ export default function App() {
 
       {load.status === 'ready' && <WalkStopCard active={mode === 'walk'} />}
 
-      {playing && mode === 'walk' && keysCard && <EvaKeysCard freeLook={freeLook} />}
       {playing && mode === 'walk' && wristOpen && <p className="hint">{t(WRIST_HINT)}</p>}
 
       {load.status === 'ready' && !evaSummary && loadingDone && phase === EVA_PHASE.START && (

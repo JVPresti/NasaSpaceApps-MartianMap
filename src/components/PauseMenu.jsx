@@ -5,6 +5,7 @@ import AudioSettings from '../audio/AudioSettings.jsx';
 import { LOOK_SENSITIVITY_MAX, LOOK_SENSITIVITY_MIN, LOOK_SENSITIVITY_STEP } from '../engine/lookSettings.js';
 import { setLookSettings, useMissionStore } from '../state/store.js';
 import { ControlsPanel } from './ControlsHelp.jsx';
+import EvaStartPanel from './EvaStartPanel.jsx';
 import Modal from './Modal.jsx';
 import { FOCUSABLE, focusTarget } from './focus.js';
 
@@ -58,13 +59,14 @@ export default function PauseMenu({
   const resumeRef = useRef(null);
   const backRef = useRef(null);
   const cancelRef = useRef(null);
+  const startRef = useRef(null);
 
   useEffect(() => {
     // While the browser answers a resume the primary action is disabled and cannot take focus, so the
     // dialog itself keeps it and Enter would do nothing. Focus the primary as soon as it can take focus
     // again, including when the dialog was (re)opened during an attempt that has just ended.
     if (busy) return;
-    const primary = view === 'controls' ? backRef.current : view === 'restart' || view === 'end' ? cancelRef.current : resumeRef.current;
+    const primary = view === 'controls' ? backRef.current : view === 'keys' ? startRef.current : view === 'restart' || view === 'end' ? cancelRef.current : resumeRef.current;
     const dialog = primary?.closest?.('dialog') || null;
     const target = focusTarget(primary, dialog ? [...dialog.querySelectorAll(FOCUSABLE)] : []);
     target?.focus();
@@ -77,8 +79,8 @@ export default function PauseMenu({
 
   return (
     <Modal
-      labelledBy={view === 'controls' ? 'pause-controls-title' : view === 'menu' ? 'pause-menu-title' : 'pause-confirm-title'}
-      className={view === 'controls' ? 'pause-dialog controls-dialog' : 'pause-dialog'}
+      labelledBy={view === 'controls' ? 'pause-controls-title' : view === 'keys' ? 'pause-keys-title' : view === 'menu' ? 'pause-menu-title' : 'pause-confirm-title'}
+      className={view === 'controls' ? 'pause-dialog controls-dialog' : view === 'keys' ? 'pause-dialog eva-start-dialog' : 'pause-dialog'}
       onCancel={onCancel}
     >
       {view === 'menu' && (
@@ -190,6 +192,10 @@ export default function PauseMenu({
 
           {mode === 'walk' && freeLook && <p className="dialog-footnote">{t('menu.drag.to.look.pause')}</p>}
         </div>
+      )}
+
+      {view === 'keys' && (
+        <EvaStartPanel titleId="pause-keys-title" freeLook={freeLook} busy={busy} onStart={onResume} startRef={startRef} />
       )}
 
       {view === 'controls' && (
