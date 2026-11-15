@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marswalk technical report</title>
+<meta name="description" content="Technical report for the NASA Space Apps 2026 Ensenada local judges: Marswalk, Interplanetary Survival Guide: Martian Map.">
+<!-- Generated from REPORT.md by tools/build.py. Edit REPORT.md, then rebuild (see README.md). -->
+<style>
+  /* Fonts and colours from the app's design tokens (src/fonts.css, src/index.css, #232). */
+  @font-face { font-family: 'Barlow'; font-weight: 400; src: url('../../src/assets/fonts/barlow-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Barlow'; font-weight: 500; src: url('../../src/assets/fonts/barlow-latin-500-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Barlow'; font-weight: 600; src: url('../../src/assets/fonts/barlow-latin-600-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Barlow Condensed'; font-weight: 500; src: url('../../src/assets/fonts/barlow-condensed-latin-500-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Barlow Condensed'; font-weight: 600; src: url('../../src/assets/fonts/barlow-condensed-latin-600-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'IBM Plex Mono'; font-weight: 400; src: url('../../src/assets/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'IBM Plex Mono'; font-weight: 500; src: url('../../src/assets/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); }
+
+  :root {
+    --bg: #0a0d11;          /* app background, used on the cover */
+    --panel: #10151c;
+    --ink: #14181d;         /* print ink */
+    --ink-soft: #3a434d;
+    --dim: #66717d;
+    --line: #d6dbe1;
+    --paper: #ffffff;
+    --accent: #ff6a2b;      /* app accent: wordmark, section rule */
+    --accent-print: #d94f14;
+    --cyan: #2bffed;
+    --tag-data: #1f9a59;
+    --tag-derived: #3f7f99;
+    --tag-sim: #b87700;
+    --font-ui: 'Barlow', system-ui, sans-serif;
+    --font-display: 'Barlow Condensed', 'Barlow', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  }
+  @page { size: A4; margin: 18mm 17mm 18mm 17mm; }
+  @page :first { margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font-ui); color: var(--ink); background: var(--paper); font-size: 10.5pt; line-height: 1.5; }
+  @media screen {
+    html { background: #e8ebee; }
+    body { max-width: 210mm; margin: 24px auto; padding: 0 0 40px; box-shadow: 0 2px 18px rgba(0,0,0,0.12); }
+    .content { padding: 0 17mm; }
+    .sheet { min-height: 297mm; }
+  }
+  @media screen and (max-width: 820px) {
+    body { margin: 0; box-shadow: none; }
+    .content { padding: 0 16px; }
+    .cover { padding: 28px 16px !important; }
+    .members { grid-template-columns: 1fr !important; }
+    figure.pair .pair-grid { grid-template-columns: 1fr !important; }
+    table { display: block; overflow-x: auto; }
+  }
+
+  /* ------------------------------------------------------------- cover */
+  .cover { background: var(--bg); color: #e9edf2; height: 297mm; padding: 22mm 18mm 16mm; display: flex; flex-direction: column; page-break-after: always; break-after: page; position: relative; }
+  .cover .kicker { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); font-size: 11pt; }
+  .cover h1 { font-family: var(--font-display); font-weight: 600; font-size: 64pt; line-height: 0.9; margin: 6mm 0 3mm; letter-spacing: 0.06em; color: var(--accent); }
+  .cover .sub { font-size: 13pt; color: #c3ccd6; margin: 0; }
+  .cover .thesis { font-family: var(--font-display); font-weight: 500; font-size: 17pt; line-height: 1.2; color: #e9edf2; margin: 8mm 0 6mm; max-width: 150mm; }
+  .cover .hero { width: 100%; border: 1px solid rgba(255,255,255,0.18); border-radius: 3px; display: block; }
+  .cover .hero-cap { font-family: var(--font-mono); font-size: 7.5pt; color: #94a1af; margin-top: 2mm; }
+  .cover .team { margin-top: auto; }
+  .cover .team-name { font-family: var(--font-display); font-weight: 600; font-size: 15pt; margin: 0 0 1mm; }
+  .cover .dev { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; font-size: 9pt; color: #94a1af; margin: 0 0 3mm; }
+  .members { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3.5mm 6mm; }
+  .member { border-top: 1px solid rgba(255,255,255,0.16); padding-top: 2mm; }
+  .m-name { font-weight: 600; font-size: 10pt; }
+  .m-role { font-size: 9pt; color: #c3ccd6; }
+  .m-mail { font-family: var(--font-mono); font-size: 8pt; color: #ffb020; }
+  .cover .url { font-family: var(--font-mono); font-size: 8.5pt; color: var(--cyan); margin-top: 5mm; }
+  .confirm { font-family: var(--font-mono); font-size: 0.85em; color: #b87700; background: #fff3d6; padding: 0 3px; border-radius: 2px; }
+  .cover .confirm { background: transparent; color: #ffb020; }
+
+  /* ------------------------------------------------------------- index */
+  .index-page { page-break-after: always; break-after: page; padding-top: 4mm; }
+  .toc { list-style: none; padding: 0; margin: 6mm 0 0; font-size: 11.5pt; }
+  .toc li { display: flex; align-items: baseline; gap: 2mm; padding: 1.6mm 0; }
+  .toc .lvl1 { font-weight: 600; }
+  .toc .lvl2 { padding-left: 8mm; font-weight: 400; color: var(--ink-soft); font-size: 10.5pt; }
+  .toc .dots { flex: 1; border-bottom: 1px dotted #a9b1ba; transform: translateY(-3px); }
+  .toc .pg { font-family: var(--font-mono); font-size: 10pt; min-width: 6mm; text-align: right; }
+
+  /* ------------------------------------------------------------- body */
+  h2 { font-family: var(--font-display); font-weight: 600; font-size: 22pt; line-height: 1.05; margin: 0 0 4mm; padding-top: 2mm; border-top: 3px solid var(--accent); page-break-before: always; break-before: page; page-break-after: avoid; break-after: avoid; }
+  .index-page h2 { page-break-before: auto; break-before: auto; }
+  h3 { font-family: var(--font-display); font-weight: 600; font-size: 14pt; margin: 6mm 0 2mm; page-break-after: avoid; break-after: avoid; }
+  h4 { font-family: var(--font-display); font-weight: 600; font-size: 12pt; margin: 4mm 0 1mm; }
+  p { margin: 0 0 2.6mm; text-align: justify; hyphens: auto; }
+  ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+  li { margin-bottom: 1.2mm; }
+  strong { font-weight: 600; }
+  a { color: #1f5fa8; text-decoration: none; word-break: break-word; }
+  code { font-family: var(--font-mono); font-size: 0.86em; background: #f1f3f5; padding: 0 3px; border-radius: 2px; }
+  blockquote { margin: 0 0 3mm; padding: 2mm 0 2mm 5mm; border-left: 3px solid var(--line); color: var(--ink-soft); font-style: italic; }
+  blockquote p { margin-bottom: 2mm; }
+  table { width: 100%; border-collapse: collapse; margin: 2mm 0 4mm; font-size: 8.8pt; line-height: 1.35; page-break-inside: auto; }
+  tr { page-break-inside: avoid; break-inside: avoid; }
+  th { text-align: left; font-family: var(--font-display); font-weight: 600; font-size: 9.5pt; letter-spacing: 0.02em; border-bottom: 1.5px solid var(--ink); padding: 1.4mm 2mm; }
+  td { border-bottom: 1px solid var(--line); padding: 1.4mm 2mm; vertical-align: top; }
+  .tag { font-family: var(--font-mono); font-weight: 500; font-size: 7.5pt; padding: 0 4px; border: 1.2px solid currentColor; border-radius: 2px; white-space: nowrap; }
+  .t-DATA { color: var(--tag-data); } .t-DERIVED { color: var(--tag-derived); } .t-SIM { color: var(--tag-sim); }
+  figure { margin: 3mm 0 5mm; page-break-inside: avoid; break-inside: avoid; }
+  figure img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 2px; }
+  figure.pair .pair-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; }
+  figcaption { font-family: var(--font-mono); font-size: 8pt; color: var(--dim); text-align: center; margin-top: 1.8mm; }
+</style>
+</head>
+<body>
+<section class="cover">
+  <div class="kicker">NASA Space Apps Challenge 2026 · Ensenada</div>
+  <h1>MARSWALK</h1>
+  <p class="sub">Technical report for the local judges · Interplanetary Survival Guide: Martian Map</p>
+  <p class="thesis">On Mars, the question isn't where you can go. It's where you can go and still get home.</p>
+  <img class="hero" src="img/03-route-terrain.jpg" alt="The mission table with the Terrain layer and the route to Cheyava Falls">
+  <div class="hero-cap">The mission table: a 0.94 km route to Cheyava Falls on HiRISE terrain, bending around slopes over 20°.</div>
+  <div class="team">
+    <p class="team-name">Los Frijolitos Espaciales Refritos Nueva Generación</p>
+    <p class="dev">Development team</p>
+    <div class="members"><div class="member"><div class="m-name">Teresa Rivas Gómez</div><div class="m-role">UI/UX and 3D art</div><div class="m-mail">[email]</div></div><div class="member"><div class="m-name">Andrea Rivas Gómez</div><div class="m-role">Graphics, effects and audio <span class="confirm">[confirm]</span></div><div class="m-mail">[email]</div></div><div class="member"><div class="m-name">Fernando Haro Calvo</div><div class="m-role">Full stack and data</div><div class="m-mail">[email]</div></div><div class="member"><div class="m-name">Jorge Antonio Vazquez Guzmán</div><div class="m-role">Backend and analyst, route planner and events</div><div class="m-mail">[email]</div></div><div class="member"><div class="m-name">Antonio Ramos Gonzalez</div><div class="m-role">Full stack</div><div class="m-mail">[email]</div></div><div class="member"><div class="m-name">Brayan Iván Pérez Ventura</div><div class="m-role">App, 3D engine and suit model <span class="confirm">[confirm]</span></div><div class="m-mail">[email]</div></div></div>
+    <div class="url">https://martian-map.fernando-haro-c.workers.dev</div>
+  </div>
+</section>
+<div class="content">
+  <section class="index-page">
+    <h2>Index</h2>
+    <ol class="toc"><li class="lvl1"><span>1. Challenge</span><span class="dots"></span><span class="pg">3</span></li><li class="lvl2"><span>Interplanetary Survival Guide: Martian Map</span><span class="dots"></span><span class="pg">3</span></li><li class="lvl2"><span>Background</span><span class="dots"></span><span class="pg">3</span></li><li class="lvl2"><span>Why did we choose this challenge?</span><span class="dots"></span><span class="pg">3</span></li><li class="lvl1"><span>2. Project overview</span><span class="dots"></span><span class="pg">5</span></li><li class="lvl1"><span>3. Problem statement</span><span class="dots"></span><span class="pg">6</span></li><li class="lvl1"><span>4. Proposed solution</span><span class="dots"></span><span class="pg">7</span></li><li class="lvl1"><span>5. Technical implementation</span><span class="dots"></span><span class="pg">8</span></li><li class="lvl1"><span>6. Results</span><span class="dots"></span><span class="pg">11</span></li><li class="lvl1"><span>7. Impact and relevance</span><span class="dots"></span><span class="pg">18</span></li><li class="lvl1"><span>8. Future work</span><span class="dots"></span><span class="pg">19</span></li><li class="lvl1"><span>9. Team contributions</span><span class="dots"></span><span class="pg">20</span></li><li class="lvl1"><span>10. References</span><span class="dots"></span><span class="pg">21</span></li><li class="lvl1"><span>11. Appendices</span><span class="dots"></span><span class="pg">24</span></li></ol>
+  </section>
+  <h2 id="challenge">Challenge</h2>
+<h3>Interplanetary Survival Guide: Martian Map</h3>
+<blockquote>
+<p>NASA has explored Mars robotically for decades, studying its extreme environment, mapping its surface, and collecting many types of data. Far from home, the first astronauts to set foot on Mars will want the best map possible, with information on the details of their routes and destinations, updates on current conditions, and the data needed to complete their mission quickly and safely. Your challenge is to create a layered, integrated view of a location or route on the Martian surface that pulls together data from multiple NASA science missions and could help a human explorer plan and carry out a successful Marswalk while conducting new and exciting science along the way.</p>
+</blockquote>
+<h3>Background</h3>
+<blockquote>
+<p>Human explorers are able to conduct science and do other activities that robotic systems cannot. As seen during the recent Artemis II mission's lunar flyby, astronauts use their critical thinking skills to make connections, solve problems quickly, and apply context to observations and scientific measurements in real time. This is why NASA sends humans into the extreme environments of space, where we can learn more about our solar system and how it formed, and do science we can't on Earth. Today, human exploration is focused on the lunar surface, with more Artemis missions upcoming and planning for the phased buildup of a Moon Base underway. Part of the role of science missions at NASA is to pave the way for humans to visit new destinations in the future. Each new robotic Mars mission has represented a hugely complex engineering challenge. Sending humans will be the biggest challenge, and the biggest achievement, yet, and becoming an interplanetary species will take all of our knowledge, imagination, and hard work.</p>
+<p>Data from NASA's current and past Mars missions paints a detailed picture of the planet, but it isn't yet layered together in the combinations needed to plan specific human missions. Tools like the Jet Propulsion Laboratory's (JPL) Mars Trek and the USGS-NASA Planetary Geologic Mapping Program allow you to layer different data over a global map of Mars, but they are built for regional and global views rather than the hyperlocalized areas astronauts will target on individual spacewalks or surface excursions.</p>
+</blockquote>
+<p>Statement and background copied from the challenge page on spaceappschallenge.org on 15 November 2026.</p>
+<h3>Why did we choose this challenge?</h3>
+<p>On Mars, nobody can come and get you. A radio call to Earth takes 4 to 24 minutes each way and there is no GPS, so the crew has to know at every step whether it can still walk home. Marswalk is a map that shows where the astronaut can go and still get home.</p>
+<p>NASA has planned this way before. Apollo 15's planners sized every excursion by the walk back to the lander, with a 20 % pad on the walking effort, and Apollo 17 held 30 minutes of every suit consumable in reserve. The challenge asks for a map at the scale of one spacewalk, and we wanted it to carry Apollo's rule. Mars Trek shows a slope. It does not say what the slope costs in oxygen, or whether the walk home still fits after a storm arrives. Marswalk says both.</p>
+<p>We also wanted a reason to walk. Cheyava Falls, in Jezero crater, is the rock where Perseverance found what NASA called in 2025 a potential biosignature. The finding is potential and unconfirmed, which makes the rock a strong candidate for a first human sample. Our astronaut walks there.</p>
+<h2 id="project-overview">Project overview</h2>
+<p>Marswalk is a planning map and a first-person walking test for one marswalk on real terrain. The astronaut leaves a habitat in Neretva Vallis, walks to the Bright Angel outcrop and Cheyava Falls, takes a sample and walks home. The ground is a 1.4 by 1.5 km tile of the HiRISE terrain model that USGS built for Perseverance's landing.</p>
+<p>At a mission table, the crew sets its goal, size, time, oxygen, battery and risk. The planner builds a route, prices every leg in minutes and grams of oxygen and gives a go or no-go. Then the astronaut walks the route in first person, in a browser, in English or Spanish. A dust storm and a replay of a 2017 solar particle event break the plan and send the crew to shelter.</p>
+<p>Every number on screen carries one of three tags, used here too. DATA means a NASA mission measured it or a NASA document states it. DERIVED means we calculated it from DATA. SIM means we assumed it.</p>
+<h2 id="problem-statement">Problem statement</h2>
+<p>A Mars EVA plan has to answer one question at every step. How far can the astronaut go and still get home with the reserve intact? Four facts make that hard.</p>
+<ol>
+<li>Slope costs oxygen. In our suit model, 1 km of flat ground costs 40 g of oxygen. One kilometre up a 20° slope costs about 140 g, because the walker slows from 1.0 to 0.3 m/s to hold the same effort (DERIVED). The tank holds 771 g (DATA).</li>
+<li>NASA's exploration EVA concept rates suited walking for slopes up to 20°. Mars Trek shows slope but plans no route around steeper ground.</li>
+<li>Conditions change during a walk. Perseverance watched a 2022 dust storm over Jezero raise the optical depth from about 0.3 to about 2. Curiosity measured dose rates two to three times the background during a 2017 solar particle event.</li>
+<li>Mars has no navigation satellites and no global magnetic field to steer a compass.</li>
+</ol>
+<p>The data sits in separate archives: HiRISE, MEDA, RAD, DONKI and NASA's suit reports. We found no tool that combines them to recompute the walk home as the astronaut moves.</p>
+<h2 id="proposed-solution">Proposed solution</h2>
+<p>Marswalk answers the question at the three moments a crew needs it.</p>
+<p><strong>Before the walk, a go or no-go.</strong> The planner finds the cheapest route to the stops that fit the crew's needs. A suit model prices each leg and the walk home, then says go or no-go and names the tightest limit.</p>
+<p><strong>During the walk, a margin.</strong> The helmet shows MARGIN NOW, the minutes left after the walk home and the 30-minute reserve.</p>
+<p><strong>When conditions change, a way to shelter.</strong> A storm or a radiation alert starts a new search for the cheapest route to shelter, priced like the first one.</p>
+<h3>The return zone</h3>
+<p>The same calculation, run for every cell of the map, draws the ground the astronaut can reach and still get home. On our tile, oxygen does not set the edge of that zone. The fastest route to Cheyava Falls is 913 m and costs 45 g of oxygen out and 62 g home with the pad, 14 % of the tank (DERIVED). The reserve on time sets the edge. The first sortie plans 30 minutes and holds 15 % of them back, which leaves 25.5 usable minutes, and every minute of work at the stop shrinks the zone.</p>
+<p>In our presentation scenario the zone covers 32.4 ha at the airlock and 14.3 ha after 13 minutes outside. When the radiation alert leaves 210 seconds to reach shelter, the zone falls to 1.1 ha, all of it toward home. We computed those areas with the app's cost grid and suit model, on a SIM clock. The presentation shows the zone today, and the live mission table is next.</p>
+<h3>What is new</h3>
+<ul>
+<li>The map prices ground in oxygen, from NASA suited tests in simulated Mars gravity, and reprices the way home when an event hits.</li>
+<li>A solo astronaut must keep radio contact and works 1.5 times as long at each stop, so a crew of one gets a different route and fewer stops than a crew of two.</li>
+<li>Every number links to its mission, instrument and reference, and we publish the ones our own audit found wrong (Appendix A).</li>
+</ul>
+<h2 id="technical-implementation">Technical implementation</h2>
+<h3>Architecture</h3>
+<p>Marswalk is a static web app, and the browser does all the computing. Offline tools turn NASA archives into small data files once. The code has four layers: interface, mission state, simulation and 3D engine.</p>
+<figure><img src="img/architecture.png" alt=""><figcaption>Image 1.1. System architecture.</figcaption></figure>
+<h3>Simulation</h3>
+<p><strong>Routes.</strong> Every 2 m cell gets a cost that rises with slope and rock cover, and cells over 20° are closed. A shortest-path search finds the cheapest route and prices three profiles: fastest, gentlest and most radio contact. A re-plan to shelter took 34 ms or less from five test positions on our development machine (measured).</p>
+<p><strong>Suit model.</strong> The suit follows NASA's xEMU design, with 771 g of usable oxygen, a 756 Wh battery and an 8-hour limit (DATA). Walking effort comes from published slope walking tests, scaled to Mars gravity and calibrated to NASA suited tests (DERIVED). The walk home gets Apollo 15's 20 % pad, and the margin keeps Apollo 17's 30-minute reserve. We model oxygen and battery only, though on Mars the suit's CO2 removal or cooling could end a walk first.</p>
+<p><strong>Two margins.</strong> The app shows two margins that measure different things. The Suit step gives the oxygen left at the end of the plan, in minutes over the 30-minute reserve. The helmet's MARGIN NOW is the smaller of the oxygen margin at the current work rate and the time left on the 8-hour suit limit, each after the walk home. Outside the airlock the 8-hour limit is the smaller, so the two screens read different numbers for the same plan. We quote neither here, and one definition for both is first in our future work.</p>
+<p><strong>Dust storm.</strong> Optical depth rises from 0.45, the clear-season value Perseverance's Mastcam-Z measured at Jezero, to 8.0, which Curiosity recorded at Gale crater in the 2018 global storm. The peak is DATA from Gale, not Jezero. The rise is SIM, 90 seconds in the full EVA and 30 in the first sortie, where a real storm builds over hours.</p>
+<p><strong>Radiation alert.</strong> The alert replays the solar particle event of 10 September 2017 as Curiosity's RAD measured it at Gale crater. No instrument has measured surface radiation at Jezero, and the app says so beside each value. Three dose rates appear on screen, each measuring something different. Outside the event the helmet reads 8.75 µGy/h, the 0.210 mGy/day background from Hassler et al. 2014. The alert banner opens at 10.0 µGy/h, the rate before the 2017 event, and the hazard card quotes its peak, 29.9 µGy/h. Those two come from Zeitlin et al. 2018 and a different RAD detector. The app plays the 57-hour event in 12 minutes, or 1 minute in the first sortie (SIM).</p>
+<p><strong>Navigation, radio and shelters.</strong> Position error grows by 2 % of the distance walked and resets after 5 seconds standing still, while the dust is thin enough to see the terrain (SIM). Perseverance has fixed its position by matching camera views to orbital maps since February 2026. Radio is line of sight to the habitat mast. Natural shelters are cells that see less sky, and the habitat is the only full shelter.</p>
+<p><strong>EV2 and route review.</strong> The second astronaut walks the route with the player, carries the sample case, closes in during the storm and leads to shelter in the radiation alert. EV2 radios only with line of sight to the player. After the walk, any stretch more than 15 m off the plan gets a verdict: risky, forced, worth it or costly.</p>
+<h3>Data processing</h3>
+<p>Every value keeps its mission, instrument, product and sol.</p>
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>NASA source</th>
+<th>What we built</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Terrain</td>
+<td>HiRISE terrain model for Mars 2020, 1 m</td>
+<td>1.4 × 1.5 km crop on a 2 m grid</td>
+</tr>
+<tr>
+<td>Ground photo</td>
+<td>HiRISE orthomosaic, 25 cm</td>
+<td>Texture, outcrop mask, Image layer</td>
+</tr>
+<tr>
+<td>Rover drives</td>
+<td>Mars 2020 traverse</td>
+<td>47 drives, sols 1140 to 1266</td>
+</tr>
+<tr>
+<td>Weather</td>
+<td>Mars 2020 MEDA</td>
+<td>Sol 1187 pressure and temperature</td>
+</tr>
+<tr>
+<td>Radiation</td>
+<td>MSL RAD and DONKI</td>
+<td>Background dose and the 2017 curve</td>
+</tr>
+<tr>
+<td>Suit</td>
+<td>xEMU and xEVA documents, Apollo reports, NASA suited tests</td>
+<td>75 values: 57 DATA, 7 DERIVED, 11 SIM</td>
+</tr>
+<tr>
+<td>Science</td>
+<td>Mastcam-Z, NASA Photojournal, Hurowitz et al. 2025</td>
+<td>Stop cards and the rock model</td>
+</tr>
+</tbody>
+</table>
+<p>The six layers are Image, Terrain, Rocks, Outcrop, Radio and Exposure, and each legend names the decision it drives. Rocks is image brightness, a proxy for rock cover. We dropped two layers that would have misled: a THEMIS thermal layer that covers the whole tile with 15 × 15 pixels, and a geologic map offset 100 to 200 m from our terrain.</p>
+<p><strong>Checking the terrain.</strong> Across all 564,001 grid points, our terrain differs from the HiRISE model that NASA Mars Trek serves by 0.14 m RMS, and 97.3 % of points share a slope class (measured). That proves our processing reproduces the USGS model. It does not prove the model is true.</p>
+<figure><img src="img/mars-trek-check.jpg" alt=""><figcaption>Image 1.2. Our slope classes (left), Mars Trek's (middle) and the 2.7 % that differ (right).</figcaption></figure>
+<h3>App and hosting</h3>
+<p>The app is JavaScript on React and three.js. One Blender scene produces both the terrain mesh and the planner's height grid, so the astronaut walks on the same ground the planner prices. The engine picks a graphics tier from the measured frame rate, so the app runs on integrated graphics, with keyboard, mouse, touch or gamepad. Cloudflare Workers serves it as static files on the free plan.</p>
+<h2 id="results">Results</h2>
+<p>Every screenshot comes from the running app on 15 November 2026. The full EVA walks to Cheyava Falls. The first sortie is a 55 m walk with the storm and the radiation alert brought forward, so a player reaches the debrief in about 3 minutes at real walking speed.</p>
+<figure><img src="img/02-site.jpg" alt=""><figcaption>Image 2.1. Mission table, Site step.</figcaption></figure>
+<p>The table has four steps: Site, Route, Hazards and Suit. Site places Cheyava Falls 785 m from the habitat and shows Perseverance's image of the rock.</p>
+<figure><img src="img/03-route-terrain.jpg" alt=""><figcaption>Image 2.2. Route step with the Terrain layer, goal "Sample Cheyava Falls", cautious risk.</figcaption></figure>
+<p>For a cautious pair with 2 hours, the route is 0.94 km and 55 minutes out, 35 of them working at the two stops. It bends around the red ground over 20°, and time is the tightest limit, with 14 minutes to spare.</p>
+<figure><img src="img/06-layer-radio.jpg" alt=""><figcaption>Image 2.3. Radio layer with a crew of one.</figcaption></figure>
+<p>With one astronaut the planner takes the radio route, out of contact for 21 % of its length against 76 % on the fastest line. It drops Bright Angel and says why: "5 min over your time".</p>
+<figure class="pair"><div class="pair-grid"><img src="img/07-layer-exposure.jpg" alt=""><img src="img/08-layer-rover.jpg" alt=""></div><figcaption>Image 2.4. Exposure layer (left) and Perseverance's drives (right).</figcaption></figure>
+<p>Exposure picks the shelter in a re-plan. A cautious plan prefers the white lines, Perseverance's 47 drives.</p>
+<figure class="pair"><div class="pair-grid"><img src="img/09-plan-a.jpg" alt=""><img src="img/10-plan-b.jpg" alt=""></div><figcaption>Image 2.5. Two plans from different needs.</figcaption></figure>
+<p>A cautious solo crew with 100 minutes walks 0.88 km to one stop. A bold pair with 2 hours walks 0.91 km to both.</p>
+<figure class="pair"><div class="pair-grid"><img src="img/12-card.jpg" alt=""><img src="img/22-sample.jpg" alt=""></div><figcaption>Image 2.6. Cheyava Falls stop card (left) and sampling at a stop (right).</figcaption></figure>
+<p>Each stop card shows Perseverance's images, so the astronaut knows what to expect on arrival.</p>
+<figure><img src="img/13-hazards.jpg" alt=""><figcaption>Image 2.7. Hazards step.</figcaption></figure>
+<p>Each hazard card names the real event behind it and says its numbers come from Gale crater, not Jezero.</p>
+<figure><img src="img/14-suit-go.jpg" alt=""><figcaption>Image 2.8. Suit step with the conditions outlook and the go decision.</figcaption></figure>
+<p>The first sortie is a Go. It spends 5 g of oxygen out, and time is the tightest limit with 21 minutes to spare.</p>
+<figure><img src="img/17-walk.jpg" alt=""><figcaption>Image 2.9. Walk HUD.</figcaption></figure>
+<p>The helmet shows oxygen, MARGIN NOW, EV2, the next waypoint, the slope ahead, weather, dose and position error, each with its tag.</p>
+<figure class="pair"><div class="pair-grid"><img src="img/18-wrist.jpg" alt=""><img src="img/19-slope-grid.jpg" alt=""></div><figcaption>Image 2.10. Wrist screen (left) and slope grid on the ground (right).</figcaption></figure>
+<p>The slope grid paints the planner's 15° and 20° limits on the ground ahead.</p>
+<figure><img src="img/20-find.jpg" alt=""><figcaption>Image 2.11. Marking a find off the route.</figcaption></figure>
+<p>The planner prices a detour to a marked rock in seconds, grams and margin, and the crew decides.</p>
+<figure class="pair"><div class="pair-grid"><img src="img/23-storm-walk.jpg" alt=""><img src="img/24-storm-plan.jpg" alt=""></div><figcaption>Image 2.12. Dust storm in the helmet (left) and its re-plan on the mission table (right).</figcaption></figure>
+<p>The storm re-plans the route to the habitat, 54 m away in this run.</p>
+<figure class="pair"><div class="pair-grid"><img src="img/25-radiation.jpg" alt=""><img src="img/26-ev2.jpg" alt=""></div><figcaption>Image 2.13. Radiation alert (left) and EV2 bringing the sample case (right).</figcaption></figure>
+<p>The radiation alert follows the 2017 dose curve and marks the habitat, 45 m away, as shelter.</p>
+<figure class="pair"><div class="pair-grid"><img src="img/27-debrief.jpg" alt=""><img src="img/28-review.jpg" alt=""></div><figcaption>Image 2.14. Debrief with the route review (left) and the verdict rules (right).</figcaption></figure>
+<p>This run took 3 min 37 s outside, 171 m and 2 samples. The review judged the detour to the find "worth it", at +20 s and +1 g of oxygen over the plan.</p>
+<figure><img src="img/29-sources.jpg" alt=""><figcaption>Image 2.15. Sources screen.</figcaption></figure>
+<p>The Sources screen lists every dataset, paper, model and library with its credit and licence.</p>
+<h2 id="impact-and-relevance">Impact and relevance</h2>
+<p><strong>Impact.</strong> An EVA planner calls go or no-go from the crew's own limits (Image 2.8). The astronaut decides when to turn back from one number that updates at every step (Image 2.9). A teacher in Ensenada can run a Mars EVA in a browser, in Spanish, though no class has used it yet. The data tools accept any HiRISE terrain model, and so far we have run them on one site.</p>
+<p><strong>Creativity.</strong> Mars Trek answers "what is here?". Marswalk answers "can I get there and back?", and asks again at every step.</p>
+<p><strong>Validity.</strong> We checked 109 numbers on screen against their primary sources and publish the result, errors included (Appendix A). Our terrain reproduces the model NASA Mars Trek serves to 0.14 m RMS. The app has no live data and no radiation measured at Jezero, and it says so on screen.</p>
+<p><strong>Relevance.</strong> Marswalk is a layered view of one route built from several NASA missions. It has a science goal, optical and terrain layers, weather and radiation in the helmet, dust and space weather events, NASA suit limits, displays for habitat, helmet and wrist, rover images at each stop and a crew of two. Two parts are partial. Weather and radiation are not map layers, and rock cover is a brightness proxy, so the route avoids steep ground but not single boulders.</p>
+<p><strong>Presentation.</strong> The team gives a talk of at most 4 minutes [confirm: the organisers' page still says 3 minutes], with a recorded video of the app in the presentation in place of a live demo. The script for the 4-minute cut is [confirm]. The app's presentation mode supplies the opening, one camera move from a Viking globe of Mars down to the HiRISE terrain at Cheyava Falls. The thesis comes first: "On Mars, the question isn't where you can go. It's where you can go and still get home."</p>
+<h2 id="future-work">Future work</h2>
+<ol>
+<li>Give the Suit step and the helmet one margin definition.</li>
+<li>Draw the return zone on the live mission table.</li>
+<li>Fix what our audit found, starting with the elevation profile's slope limit, the Sun's angle and the radiation tags.</li>
+<li>Replace the rock proxy with mapped rocks, so the route avoids boulders.</li>
+<li>Start the walk inside the habitat with an airlock cycle, and finish online play with a surface crew and a habitat seat. Both are in development and not in the live app.</li>
+<li>Run the data tools on a second site, starting with Curiosity's route at Mount Sharp.</li>
+</ol>
+<h2 id="team-contributions">Team contributions</h2>
+<p><strong>Teresa Rivas Gómez, UI/UX and 3D art.</strong> Teresa built the 3D world in Blender, with the HiRISE terrain tile, the Z-2 astronaut, the habitat and the Bright Angel outcrop. She designed the HUD and the mission table and built the table, start, pause and sources screens.</p>
+<p><strong>Andrea Rivas Gómez, graphics, effects and audio [confirm role].</strong> Andrea drew the route on the ground and built the dust storm, the Sun and sky that follow mission time, the boot prints, the slope grid and the habitat wall screens. She wrote all the suit audio in code.</p>
+<p><strong>Fernando Haro Calvo, full stack and data.</strong> Fernando set up hosting and researched the suit, dust and radiation numbers. He wrote the weather and radiation pipelines, the shelters and the science stops, checked the terrain against Mars Trek, and built the source tags, the audit, EV2's behaviour and the presentation mode.</p>
+<p><strong>Jorge Antonio Vazquez Guzmán, backend and analyst for the route planner and events.</strong> Jorge wrote the walkability grid, the route planner, the shelter re-plan and the event engine, then the storm, radiation and low-oxygen events, the radio layer and navigation drift.</p>
+<p><strong>Antonio Ramos Gonzalez, full stack.</strong> Antonio built the automatic checks, the mission clock in Mars time, the minimap, the menus, the English and Spanish interface, the debrief, the wrist screen, and touch and gamepad controls.</p>
+<p><strong>Brayan Iván Pérez Ventura, app, 3D engine and suit model [confirm role].</strong> Brayan set up the app, its mission state and graphics tiers. He wrote the suit model and walkback margin, the first-person walk, the helmet HUD, sampling, the route profiles, the first sortie, planning from the crew's needs and the walked-route review.</p>
+<h2 id="references">References</h2>
+<h3>NASA data products and services</h3>
+<ul>
+<li>Fergason, R. L. et al. 2020. HiRISE digital terrain model mosaic for Mars 2020 TRN, 1 m (JEZ_hirise_soc_006). USGS. <a href="https://doi.org/10.5066/P9REJ9JN">https://doi.org/10.5066/P9REJ9JN</a></li>
+<li>HiRISE orthorectified image mosaic for Mars 2020 TRN, 25 cm (JEZ_hirise_soc_006). USGS. <a href="https://doi.org/10.5066/P9QJDP48">https://doi.org/10.5066/P9QJDP48</a></li>
+<li>CTX digital terrain model mosaic for Mars 2020 TRN, 20 m (JEZ_ctx_B_soc_008). USGS. <a href="https://doi.org/10.5066/P906QQT8">https://doi.org/10.5066/P906QQT8</a></li>
+<li>CTX orthorectified image mosaic for Mars 2020 TRN, 6 m (JEZ_ctx_B_soc_008). USGS. <a href="https://doi.org/10.5066/P9GV1ND3">https://doi.org/10.5066/P9GV1ND3</a></li>
+<li>NASA Mars Trek, HiRISE Jezero DEM. <a href="https://trek.nasa.gov/mars/">https://trek.nasa.gov/mars/</a></li>
+<li>Mars 2020 Where is the rover, MMGIS traverse. <a href="https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_traverse.json">https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_traverse.json</a></li>
+<li>Mars 2020 Where is the rover, MMGIS waypoints. <a href="https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_waypoints.json">https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_waypoints.json</a></li>
+<li>Rodriguez-Manfredi et al. Mars 2020 MEDA bundle, PDS Atmospheres node. <a href="https://doi.org/10.17189/1522849">https://doi.org/10.17189/1522849</a></li>
+<li>MSL RAD reduced data records, PDS PPI node. <a href="https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/">https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/</a></li>
+<li>NASA CCMC DONKI, flare 2017-09-10T15:35:00-FLR-001. <a href="https://ccmc.gsfc.nasa.gov/DONKI/WS/get/FLR?startDate=2017-09-10&amp;endDate=2017-09-10">https://ccmc.gsfc.nasa.gov/DONKI/WS/get/FLR?startDate=2017-09-10&amp;endDate=2017-09-10</a></li>
+<li>NASA CCMC DONKI notifications, 10 September 2017. <a href="https://ccmc.gsfc.nasa.gov/DONKI/WS/get/notifications?startDate=2017-09-10&amp;endDate=2017-09-10&amp;type=all">https://ccmc.gsfc.nasa.gov/DONKI/WS/get/notifications?startDate=2017-09-10&amp;endDate=2017-09-10&amp;type=all</a></li>
+<li>Mars 2020 raw images, Mastcam-Z left, sol 1187 (ZL0_1187_0772321307_818EBY_N0541010ZCAM09237_0630LMJ). <a href="https://mars.nasa.gov/mars2020/multimedia/raw-images/ZL0_1187_0772321307_818EBY_N0541010ZCAM09237_0630LMJ">https://mars.nasa.gov/mars2020/multimedia/raw-images/ZL0_1187_0772321307_818EBY_N0541010ZCAM09237_0630LMJ</a></li>
+<li>Mars 2020 raw images gallery, sols 1211 to 1217. <a href="https://mars.nasa.gov/mars2020/multimedia/raw-images/">https://mars.nasa.gov/mars2020/multimedia/raw-images/</a></li>
+<li>PIA26336, Perseverance Views 'Bright Angel'. <a href="https://science.nasa.gov/photojournal/perseverance-views-bright-angel/">https://science.nasa.gov/photojournal/perseverance-views-bright-angel/</a></li>
+<li>PIA26368, Perseverance Finds a Rock with Leopard Spots. <a href="https://science.nasa.gov/photojournal/perseverance-finds-a-rock-with-leopard-spots/">https://science.nasa.gov/photojournal/perseverance-finds-a-rock-with-leopard-spots/</a></li>
+<li>PIA26401, Mastcam-Z Views the 'Cheyava Falls' Workspace. <a href="https://science.nasa.gov/photojournal/mastcam-z-views-the-cheyava-falls-workspace">https://science.nasa.gov/photojournal/mastcam-z-views-the-cheyava-falls-workspace</a></li>
+<li>NASA 3D Resources, Z-2 Spacesuit. <a href="https://github.com/nasa/NASA-3D-Resources/tree/master/3D%20Models/Z2%20Spacesuit">https://github.com/nasa/NASA-3D-Resources/tree/master/3D%20Models/Z2%20Spacesuit</a></li>
+<li>NASA 3D Resources, Habitat Demonstration Unit. <a href="https://github.com/nasa/NASA-3D-Resources/tree/master/3D%20Models/Habitat%20Demonstration%20Unit">https://github.com/nasa/NASA-3D-Resources/tree/master/3D%20Models/Habitat%20Demonstration%20Unit</a></li>
+<li>NASA GISS, Mars24 sunclock technical notes. <a href="https://www.giss.nasa.gov/tools/mars24/help/notes.html">https://www.giss.nasa.gov/tools/mars24/help/notes.html</a></li>
+<li>NSSDC Mars fact sheet. <a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html">https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html</a></li>
+</ul>
+<h3>NASA documents</h3>
+<ul>
+<li>NASA JSC. Schematics and Behavioral Description for the AEMU PLSS, CTSD-ADV-959 Rev A. <a href="https://ntrs.nasa.gov/citations/20170009505">https://ntrs.nasa.gov/citations/20170009505</a></li>
+<li>NASA. Exploration EVA System Concept of Operations, EVA-EXP-0042 Rev B. <a href="https://www.nasa.gov/wp-content/uploads/2017/02/eva-exp-0042_xeva_system_con_ops_rev_b_final_dtd_10192020_ref_doc.pdf">https://www.nasa.gov/wp-content/uploads/2017/02/eva-exp-0042_xeva_system_con_ops_rev_b_final_dtd_10192020_ref_doc.pdf</a></li>
+<li>Ogilvie et al. 2026. Mars Spacesuit Mass Requirements, ICES-2026-127. <a href="https://ntrs.nasa.gov/citations/20260003038">https://ntrs.nasa.gov/citations/20260003038</a></li>
+<li>NASA MSC. Apollo 17 Final Lunar Surface Procedures, Volume 2: Contingency. <a href="https://pds-geosciences.wustl.edu/Lunar/urn-nasa-pds-apollodoc/document_a17/mission/a17_final_lunar_surface_procedures_vol2_contingency.pdf">https://pds-geosciences.wustl.edu/Lunar/urn-nasa-pds-apollodoc/document_a17/mission/a17_final_lunar_surface_procedures_vol2_contingency.pdf</a></li>
+<li>Benjamin. Apollo 15 EVA Capability and Constraints Envelopes, Bellcomm memorandum B70 10028. <a href="https://webarchive.library.unt.edu/eot2008/20090109180220id_/http://www.hq.nasa.gov/alsj/19790073512_1979073512.pdf">https://webarchive.library.unt.edu/eot2008/20090109180220id_/http://www.hq.nasa.gov/alsj/19790073512_1979073512.pdf</a></li>
+<li>Waligora, J. M. and Horrigan, D. J. 1975. Metabolism and Heat Dissipation During Apollo EVA Periods, NASA SP-368. <a href="https://ntrs.nasa.gov/citations/19760005584">https://ntrs.nasa.gov/citations/19760005584</a></li>
+<li>Norcross, J. et al. 2008. Feasibility of Suited 10 km Walkback on the Moon. <a href="https://ntrs.nasa.gov/citations/20080014853">https://ntrs.nasa.gov/citations/20080014853</a></li>
+<li>Norcross, J. et al. 2009. Feasibility of Performing a Suited 10-km Ambulation on the Moon, NASA/TP-2009-214796. <a href="https://www.lpi.usra.edu/lunar/artemis/NorcrossEtAl_NASA-TP-2009-214796_EVA%20Walkback%20Test.pdf">https://www.lpi.usra.edu/lunar/artemis/NorcrossEtAl_NASA-TP-2009-214796_EVA%20Walkback%20Test.pdf</a></li>
+<li>Norcross, J. R. et al. 2010. Metabolic Costs and Biomechanics of Inclined Ambulation and Exploration Tasks in a Planetary Suit, NASA/TP-2010-216125. <a href="https://ntrs.nasa.gov/citations/20110003409">https://ntrs.nasa.gov/citations/20110003409</a></li>
+<li>Hoffmann, B. 2021. Extravehicular Activity Metabolic Rate Model. <a href="https://ntrs.nasa.gov/citations/20210024317">https://ntrs.nasa.gov/citations/20210024317</a></li>
+<li>NASA OCHMO. Design for Ionizing Radiation Protection, OCHMO-TB-020 Rev E. <a href="https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf">https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf</a></li>
+<li>JPL, 18 February 2026. NASA's Perseverance Now Autonomously Pinpoints Its Location on Mars. <a href="https://www.jpl.nasa.gov/news/nasas-perseverance-now-autonomously-pinpoints-its-location-on-mars">https://www.jpl.nasa.gov/news/nasas-perseverance-now-autonomously-pinpoints-its-location-on-mars</a></li>
+<li>NASA, 10 June 2024. NASA Watches Mars Light Up During Epic Solar Storm. <a href="https://www.nasa.gov/missions/maven/nasa-watches-mars-light-up-during-epic-solar-storm/">https://www.nasa.gov/missions/maven/nasa-watches-mars-light-up-during-epic-solar-storm/</a></li>
+<li>JPL, 20 June 2018. Martian Dust Storm Grows Global; Curiosity Captures Photos of Thickening Haze. <a href="https://www.jpl.nasa.gov/news/martian-dust-storm-grows-global-curiosity-captures-photos-of-thickening-haze/">https://www.jpl.nasa.gov/news/martian-dust-storm-grows-global-curiosity-captures-photos-of-thickening-haze/</a></li>
+<li>JPL, 16 August 2018. Six Things to Know About NASA's Opportunity Rover Recovery Efforts. <a href="https://www.jpl.nasa.gov/news/six-things-about-opportunitys-recovery-efforts/">https://www.jpl.nasa.gov/news/six-things-about-opportunitys-recovery-efforts/</a></li>
+<li>JPL, 9 June 2016. NASA Mars Orbiters Reveal Seasonal Dust Storm Pattern. <a href="https://www.jpl.nasa.gov/news/nasa-mars-orbiters-reveal-seasonal-dust-storm-pattern/">https://www.jpl.nasa.gov/news/nasa-mars-orbiters-reveal-seasonal-dust-storm-pattern/</a></li>
+<li>NASA, 25 July 2024. NASA's Perseverance Rover Scientists Find Intriguing Mars Rock. <a href="https://www.nasa.gov/missions/mars-2020-perseverance/perseverance-rover/nasas-perseverance-rover-scientists-find-intriguing-mars-rock/">https://www.nasa.gov/missions/mars-2020-perseverance/perseverance-rover/nasas-perseverance-rover-scientists-find-intriguing-mars-rock/</a></li>
+<li>NASA, 10 September 2025. NASA Says Mars Rover Discovered Potential Biosignature Last Year. <a href="https://www.nasa.gov/news-release/nasa-says-mars-rover-discovered-potential-biosignature-last-year/">https://www.nasa.gov/news-release/nasa-says-mars-rover-discovered-potential-biosignature-last-year/</a></li>
+<li>NASA Goddard. Space Communications: 7 Things You Need to Know. <a href="https://www.nasa.gov/centers-and-facilities/goddard/space-communications-7-things-you-need-to-know/">https://www.nasa.gov/centers-and-facilities/goddard/space-communications-7-things-you-need-to-know/</a></li>
+</ul>
+<h3>Papers</h3>
+<ul>
+<li>Bell, J. F. et al. 2022. Geological, multispectral, and meteorological imaging results from the Mars 2020 Perseverance rover in Jezero crater. Science Advances 8, eabo4856. <a href="https://doi.org/10.1126/sciadv.abo4856">https://doi.org/10.1126/sciadv.abo4856</a></li>
+<li>Lemmon, M. T. et al. 2022. Dust, Sand, and Winds Within an Active Martian Storm in Jezero Crater. GRL 49, e2022GL100126. <a href="https://doi.org/10.1029/2022GL100126">https://doi.org/10.1029/2022GL100126</a></li>
+<li>Smith, C. L. et al. 2019. Visibility and Line-of-Sight Extinction Estimates in Gale Crater During the 2018/MY34 Global Dust Storm. GRL 46, 9414-9421. <a href="https://doi.org/10.1029/2019GL083788">https://doi.org/10.1029/2019GL083788</a></li>
+<li>Sánchez-Lavega, A. et al. 2025. JGR Planets 130, e2024JE008565. <a href="https://doi.org/10.1029/2024JE008565">https://doi.org/10.1029/2024JE008565</a></li>
+<li>Hassler, D. M. et al. 2014. Mars' Surface Radiation Environment Measured with the Mars Science Laboratory's Curiosity Rover. Science 343, 1244797. <a href="https://doi.org/10.1126/science.1244797">https://doi.org/10.1126/science.1244797</a></li>
+<li>Guo, J. et al. 2015. Modeling the Variations of Dose Rate Measured by RAD During the First MSL Martian Year: 2012-2014. ApJ 810, 24. <a href="https://doi.org/10.1088/0004-637X/810/1/24">https://doi.org/10.1088/0004-637X/810/1/24</a></li>
+<li>Zeitlin, C. et al. 2018. Analysis of the Radiation Hazard Observed by RAD on the Surface of Mars During the September 2017 Solar Particle Event. GRL 45, 5845-5851. <a href="https://doi.org/10.1029/2018GL077760">https://doi.org/10.1029/2018GL077760</a></li>
+<li>Hurowitz, J. A. et al. 2025. Redox-driven mineral and organic associations in Jezero Crater, Mars. Nature 645, 332-340. <a href="https://doi.org/10.1038/s41586-025-09413-0">https://doi.org/10.1038/s41586-025-09413-0</a></li>
+<li>Minetti, A. E. et al. 2002. Energy cost of walking and running at extreme uphill and downhill slopes. J Appl Physiol 93, 1039-1046. <a href="https://doi.org/10.1152/japplphysiol.01177.2001">https://doi.org/10.1152/japplphysiol.01177.2001</a></li>
+<li>Farley, C. T. and McMahon, T. A. 1992. Energetics of walking and running: insights from simulated reduced-gravity experiments. J Appl Physiol 73, 2709-2712. <a href="https://doi.org/10.1152/jappl.1992.73.6.2709">https://doi.org/10.1152/jappl.1992.73.6.2709</a></li>
+<li>Golombek, M. P. et al. 2003. Rock size-frequency distributions on Mars and implications for Mars Exploration Rover landing safety and operations. JGR Planets 108(E12). <a href="https://doi.org/10.1029/2002JE002035">https://doi.org/10.1029/2002JE002035</a></li>
+<li>Ehresmann, B. et al. 2021. JGR Planets. <a href="https://doi.org/10.1029/2021JE006851">https://doi.org/10.1029/2021JE006851</a></li>
+<li>Deans, M. et al. 2017. Minerva: User-Centered Science Operations Software Capability for Future Human Exploration (SEXTANT traverse planner). <a href="https://ntrs.nasa.gov/citations/20170002363">https://ntrs.nasa.gov/citations/20170002363</a></li>
+<li>Marquez, J. J. et al. 2019. Future Needs for Science-Driven Geospatial and Temporal Extravehicular Activity Planning and Execution (BASALT). Astrobiology 19(3). <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC6442304">https://pmc.ncbi.nlm.nih.gov/articles/PMC6442304</a></li>
+</ul>
+<h3>Software, models and fonts</h3>
+<p>three.js, React and Zustand (MIT). Barlow, Barlow Condensed and IBM Plex Mono (SIL OFL 1.1). Rocks, textures and habitat props from Poly Haven (CC0). Start screen video and hazard illustrations generated with Higgsfield. Each licence is listed on the app's Sources screen.</p>
+<h2 id="appendices">Appendices</h2>
+<h3>Appendix A. Measured versus simulated</h3>
+<p>On 15 November 2026 we checked 109 numbers shown in Marswalk against their primary sources.</p>
+<table>
+<thead>
+<tr>
+<th>Verdict</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Matches the source</td>
+<td>72</td>
+</tr>
+<tr>
+<td>Rounded to the precision shown</td>
+<td>7</td>
+</tr>
+<tr>
+<td>Our assumption, tagged SIM</td>
+<td>11</td>
+</tr>
+<tr>
+<td>Right number, wrong tag, page or wording</td>
+<td>14</td>
+</tr>
+<tr>
+<td>Wrong on screen</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Not verified, because the publisher blocked the paper</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+<p>The two wrong numbers are the elevation profile, which turns red above 25° where the planner says 20°, and the Sun's height, drawn for the wrong season.</p>
+<p>The main values behind the walk home:</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>We use</th>
+<th>Tag</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No-go slope</td>
+<td>20°</td>
+<td><span class="tag t-DATA">DATA</span></td>
+</tr>
+<tr>
+<td>Usable oxygen</td>
+<td>771 g</td>
+<td><span class="tag t-DATA">DATA</span></td>
+</tr>
+<tr>
+<td>1 km flat at 1.0 m/s</td>
+<td>40 g of oxygen</td>
+<td><span class="tag t-DERIVED">DERIVED</span></td>
+</tr>
+<tr>
+<td>1 km up 20° at 0.3 m/s</td>
+<td>About 140 g of oxygen</td>
+<td><span class="tag t-DERIVED">DERIVED</span></td>
+</tr>
+<tr>
+<td>Walking speed on the flat</td>
+<td>1.0 m/s, where NASA plans at 0.56 m/s</td>
+<td><span class="tag t-SIM">SIM</span></td>
+</tr>
+<tr>
+<td>Walk home pad</td>
+<td>20 %</td>
+<td><span class="tag t-DATA">DATA</span></td>
+</tr>
+<tr>
+<td>Reserve</td>
+<td>30 min</td>
+<td><span class="tag t-DATA">DATA</span></td>
+</tr>
+<tr>
+<td>Clear-season optical depth</td>
+<td>0.45, Jezero</td>
+<td><span class="tag t-DATA">DATA</span></td>
+</tr>
+<tr>
+<td>Storm optical depth</td>
+<td>8.0, Gale crater, 2018</td>
+<td><span class="tag t-DATA">DATA</span></td>
+</tr>
+<tr>
+<td>Storm rise</td>
+<td>90 s, or 30 s in the first sortie</td>
+<td><span class="tag t-SIM">SIM</span></td>
+</tr>
+<tr>
+<td>Background dose rate</td>
+<td>0.210 mGy/day (8.75 µGy/h), Gale crater</td>
+<td><span class="tag t-DATA">DATA</span></td>
+</tr>
+<tr>
+<td>2017 event, before and peak</td>
+<td>10.0 and 29.9 µGy/h, Gale crater, checked against the abstract only</td>
+<td><span class="tag t-DATA">DATA</span></td>
+</tr>
+<tr>
+<td>2017 event, length in the app</td>
+<td>12 min, or 1 min in the first sortie, for 57 h</td>
+<td><span class="tag t-SIM">SIM</span></td>
+</tr>
+<tr>
+<td>Position drift and terrain fix</td>
+<td>2 % of distance, 5 s standing still</td>
+<td><span class="tag t-SIM">SIM</span></td>
+</tr>
+<tr>
+<td>Return zone areas</td>
+<td>32.4, 14.3 and 1.1 ha</td>
+<td><span class="tag t-SIM">SIM</span></td>
+</tr>
+</tbody>
+</table>
+<p>Marswalk has no live data, no Earth-Mars delay and no radiation measured at Jezero.</p>
+<h3>Appendix B. Use of SI (AI) tools</h3>
+<p>We built Marswalk with SI tools and checked their output ourselves.</p>
+<ul>
+<li><strong>Code.</strong> AI coding agents wrote most of the code from tasks we wrote. Every change passed automatic checks, and teammates reviewed part of them.</li>
+<li><strong>Research.</strong> AI agents found the NASA reports and papers behind our numbers and ran the audit, which we reviewed.</li>
+<li><strong>Writing.</strong> Language models helped write the documentation, the Spanish translation and this report.</li>
+<li><strong>Images and video.</strong> We generated the start screen video and the hazard illustrations with an SI tool. They are artwork, not mission images, carry no NASA marks and are credited as AI-generated. [confirm: say whether each now carries a visible "SI-generated" watermark]</li>
+<li><strong>Ideation.</strong> One of us worked through the challenge choice and the concept with a conversational assistant.</li>
+<li><strong>Inside the app.</strong> No SI model runs in Marswalk. The route planner is a shortest-path search and the suit model is a formula.</li>
+</ul>
+<h3>Appendix C. Prior work [confirm after the local lead answers]</h3>
+<p>On 12 and 13 November, before the event, Teresa prepared 3D assets: the terrain tile, the rigged Z-2 suit, the habitat, two props and a test scene. We chose the challenge and concept on 13 November. We wrote everything else during the event.</p>
+<h3>Appendix D. Links</h3>
+<ul>
+<li>App: <a href="https://martian-map.fernando-haro-c.workers.dev">https://martian-map.fernando-haro-c.workers.dev</a></li>
+<li>Repository: <a href="https://github.com/JVPresti/NasaSpaceApps-MartianMap">https://github.com/JVPresti/NasaSpaceApps-MartianMap</a> [confirm: public before submission]</li>
+<li>Video: [confirm: add the link]</li>
+</ul>
+</div>
+</body>
+</html>
