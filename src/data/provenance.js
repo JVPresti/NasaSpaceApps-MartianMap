@@ -137,7 +137,9 @@ export const STORE_PATHS = Object.freeze({
   'route.nextIndex': sim('first waypoint not visited yet'),
   'route.visited': sim('waypoints already reached in Walk mode'),
   'route.reason': sim('why the re-planner changed the route'),
-  'route.shelter': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'shelters.json: sky view ray cast on the HiRISE height grid', from: HIRISE },
+  // The place is DERIVED (habitat placement, or sky view ray cast on the HiRISE grid); a natural point's dose cut is a
+  // SIM upper bound (shelters.json dose_reduction, #296)
+  'route.shelter': { tag: 'DERIVED', label: 'HiRISE DTM', source: 'shelters.json: the habitat airlock, or a natural point from the sky view ray cast on the HiRISE height grid, whose dose cut is a SIM upper bound', from: HIRISE },
   'route.decision': sim('go or no-go chosen by the crew'),
   'route.skipped': sim('waypoints the event route leaves out'),
   // route profiles compared on the mission table (#245, src/sim/routeProfiles.js); time and oxygen as route.totals

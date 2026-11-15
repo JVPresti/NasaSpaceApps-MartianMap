@@ -17,8 +17,9 @@ provenance.define({
     tag: 'DERIVED',
     label: 'HiRISE DTM · sky view',
     source: 'mean sky view along the planned route, sampled every 5 m on the 6 m sky view grid of public/data/sky_view.json '
-      + '(src/sim/skyView.js, method in docs/route/shelters.md). Under an isotropic SEP flux the dose scales with it, so 1 - mean '
-      + 'is an upper bound on the saving against open ground. On this tile sky view spans only about 0.81 to 1.0.',
+      + '(src/sim/skyView.js, method in docs/route/shelters.md). Taking the dose to scale with it (isotropic SEP flux, SIM), 1 - mean '
+      + 'is an upper bound on the saving against open ground: RAD measured about 4 % less dose with 19 % of the sky blocked '
+      + '(Ehresmann et al. 2021, JGR Planets 126, doi 10.1029/2021JE006851). On this tile sky view spans only about 0.81 to 1.0.',
   },
 });
 
