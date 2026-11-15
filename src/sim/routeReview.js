@@ -9,7 +9,8 @@
  *   plan          { path, waypoints, legs }: the route snapshot taken at the go decision. route.path changes during the
  *                 EVA (off-route and event re-plans), so the review compares against this snapshot instead.
  *   routeChanges  [{ atSec, kind, reason, after, x, z }]: every real re-plan, the moments the plan changed.
- *   finds         [{ label, x, z, atSec, accepted }]: every find the player marked (#71).
+ *   finds         [{ label, x, z, atSec, accepted, verdict }]: every find the player marked (#71); verdict is what its
+ *                 card read when it was added to the route ('go' | 'no-go' | 'unknown'), null when it was not added.
  *   samples       [{ x, z, atSec }]: every sample secured (#36).
  *
  * Three steps:
@@ -24,7 +25,9 @@
  *        risky   it crossed ground at or above SLOPE_LIMIT_DEG. A sample, a find or an alert never excuses a no-go slope.
  *        forced  an event was running when it started, or the track follows a slope detour or hazard re-route the
  *                system planned before it started. A correct reaction, not a mistake.
- *        risky   the margin went under the reserve, or the player was still off the route when an event started.
+ *        risky   the margin went under the reserve, or the player was still off the route when an event started,
+ *                unless the track went to a find the crew added while its card read GO (a recorded narrowing of #274,
+ *                product decision D7: the system approved that detour; the reason line still names the alert).
  *        worth   the player marked a find or secured a sample in it (and nothing above applied).
  *        costly  none of the above: time and O2 for nothing.
  *      Risky beats worth it, as the issue asks; forced beats the margin and late-event rules because a detour to a
@@ -237,7 +240,10 @@ function priceDeviation(points, cum, deviation, plan, measure) {
   };
 }
 
-/** Finds and samples inside a stretch: marked or secured while it lasted, or (for an accepted find) walked to. */
+/**
+ * Finds and samples inside a stretch: marked or secured while it lasted, or (for an accepted find) walked to.
+ * goFinds: the finds the track went to that the crew added to the route while the card read GO (D7).
+ */
 function scienceInside(points, deviation, finds, samples, rules) {
   const t0 = points[deviation.startIndex].atSec;
   const t1 = points[deviation.endIndex].atSec;
@@ -246,6 +252,7 @@ function scienceInside(points, deviation, finds, samples, rules) {
   const near = (item) => isPoint(item) && offPart.some((p) => Math.hypot(p.x - item.x, p.z - item.z) <= rules.reachM);
   return {
     finds: finds.filter((f) => during(f) || (f?.accepted === true && near(f))),
+    goFinds: finds.filter((f) => f?.accepted === true && f.verdict === 'go' && near(f)),
     samples: samples.filter((s) => (finite(s?.atSec) ? during(s) : near(s))),
   };
 }
@@ -297,9 +304,14 @@ function judge(points, deviation, cost, science, context, rules) {
     return { verdict: 'risky', reason: { code: 'reserve', marginSec: cost.minMarginSec, near: near(cost.lowestIndex) } };
   }
   const late = deviation.crossIndex < deviation.endIndex ? eventsIn(points, deviation.crossIndex + 1, deviation.endIndex) : [];
-  if (late.length > 0) {
+  // D7: an alert that starts on the way to a find the crew added while its card read GO does not make the detour
+  // risky; the system approved it. The reason still names the alert.
+  if (late.length > 0 && science.goFinds.length === 0) {
     const index = points.findIndex((p, i) => i > deviation.crossIndex && p.eventId === late[0]);
     return { verdict: 'risky', reason: { code: 'late-event', eventId: late[0], atSec: points[index]?.atSec ?? null } };
+  }
+  if (late.length > 0) {
+    return { verdict: 'worth', reason: { code: 'find', label: science.goFinds[0].label ?? null, marginSec: cost.minMarginSec, lateEventId: late[0] } };
   }
   if (science.finds.length > 0) {
     return { verdict: 'worth', reason: { code: 'find', label: science.finds[0].label ?? null, marginSec: cost.minMarginSec } };

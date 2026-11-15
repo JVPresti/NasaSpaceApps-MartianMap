@@ -64,7 +64,11 @@ export function reasonText(deviation, events = []) {
     case 'replan': return t(r.kind === 'event' ? 'review.reason.replan.event' : 'review.reason.replan.slope', { time: formatMissionTime(r.atSec) });
     case 'reserve': return t('review.reason.reserve', { margin, near: nearText(r.near) });
     case 'late-event': return t('review.reason.late.event', { event: eventLabel(r.eventId, events) });
-    case 'find': return t('review.reason.find', { label: r.label ?? '', margin });
+    case 'find':
+      // D7: on the way to a find added on a GO card, an alert that started does not make it risky; it is still named.
+      return r.lateEventId
+        ? t('review.reason.find.alert', { label: r.label ?? '', margin, event: eventLabel(r.lateEventId, events) })
+        : t('review.reason.find', { label: r.label ?? '', margin });
     case 'sample': return plural('review.reason.sample', r.count, { margin });
     default: return t('review.reason.none', { distance: formatDistance(deviation.cost?.walkedM) });
   }

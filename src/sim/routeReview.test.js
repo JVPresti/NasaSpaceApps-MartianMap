@@ -279,6 +279,32 @@ describe('judging a deviation', () => {
     expect(d.reason.atSec).toBeGreaterThan(track[d.crossIndex].atSec);
   });
 
+  it('lets an alert that starts on the way to a find added on a GO card pass, and still names it (D7)', () => {
+    const track = walk(detour, (p, s) => (s >= 200 ? { eventId: 'radiation' } : {}));
+    const goFind = { id: 'find-1', label: 'M01', x: 200, z: 60, atSec: 30, accepted: true, verdict: 'go' };
+    const [d] = review(track, { finds: [goFind] }).deviations;
+    expect(d).toMatchObject({ verdict: 'worth', reason: { code: 'find', label: 'M01', lateEventId: 'radiation' } });
+
+    // The rest of the rule stands: only a find the crew added on a GO card, and only when the track went to it.
+    const during = timeAt(track, inDetour);
+    for (const [what, extra] of [
+      ['a find added on a no-go card', { finds: [{ ...goFind, verdict: 'no-go' }] }],
+      ['a find with an unknown verdict', { finds: [{ ...goFind, verdict: 'unknown' }] }],
+      ['a find only marked', { finds: [{ ...goFind, accepted: false, verdict: null, atSec: during }] }],
+      ['a GO find the track did not go to', { finds: [{ ...goFind, x: 900, z: 900 }] }],
+      ['a sample-only detour', { samples: [{ id: 1, kind: 'rock', x: 200, z: 60, atSec: during }] }],
+      ['plain wandering', {}],
+    ]) {
+      expect(review(track, extra).deviations[0], what).toMatchObject({ verdict: 'risky', reason: { code: 'late-event', eventId: 'radiation' } });
+    }
+
+    // The slope and the reserve rules still apply on the way to a GO find.
+    const steep = walk(detour, (p, s) => ({ ...(s >= 200 ? { eventId: 'radiation' } : {}), ...(p.z > 30 ? { slopeDeg: 22 } : {}) }));
+    expect(review(steep, { finds: [goFind] }).deviations[0]).toMatchObject({ verdict: 'risky', reason: { code: 'slope' } });
+    const low = walk(detour, (p, s) => ({ ...(s >= 200 ? { eventId: 'radiation' } : {}), ...(p.z > 40 ? { marginSec: -60 } : {}) }));
+    expect(review(low, { finds: [goFind] }).deviations[0]).toMatchObject({ verdict: 'risky', reason: { code: 'reserve' } });
+  });
+
   it('calls a detour with none of that costly', () => {
     const result = review(walk(detour));
     expect(result.deviations[0]).toMatchObject({ n: 1, verdict: 'costly', reason: { code: 'none' } });

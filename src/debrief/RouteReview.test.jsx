@@ -7,7 +7,7 @@ import { distanceToPath } from '../sim/offRoute.js';
 import { REVIEW_RULES, reviewRoute } from '../sim/routeReview.js';
 import DebriefScreen from './DebriefScreen.jsx';
 import { MAP_SPAN_M, RouteReviewView } from './RouteReview.jsx';
-import { costText, ruleNotes, summaryLine } from './reviewText.js';
+import { costText, reasonText, ruleNotes, summaryLine } from './reviewText.js';
 
 afterEach(() => setLanguage('en'));
 
@@ -178,12 +178,12 @@ describe('route review in the debrief', () => {
   it('states the whole verdict order in "How to read these numbers", in English and Spanish', () => {
     const order = (notes) => notes.find((n) => n.term === 'Which verdict wins' || n.term === 'Qué veredicto gana').text;
     const english = order(ruleNotes(1800));
-    expect(english).toContain(`ground at or above ${REVIEW_RULES.slopeLimitDeg}° (risky); an alert or a system re-plan when it started (forced); the margin under the reserve, or an alert that started while you were off the route (risky); a find or a sample (worth it); otherwise costly.`);
+    expect(english).toContain(`ground at or above ${REVIEW_RULES.slopeLimitDeg}° (risky); an alert or a system re-plan when it started (forced); the margin under the reserve, or an alert that started while you were off the route, except on the way to a find added on a GO card (risky); a find or a sample (worth it); otherwise costly.`);
     expect(english).toContain('a forced detour stays forced when the margin drops under the reserve or a second alert starts during it');
     expect(text(renderDebrief(FOLLOWED))).toContain('Which verdict wins');
     setLanguage('es');
     const spanish = order(ruleNotes(1800));
-    expect(spanish).toContain(`terreno de ${REVIEW_RULES.slopeLimitDeg}° o más (arriesgado); una alerta o una nueva ruta del sistema al empezar (forzado); el margen bajo la reserva, o una alerta que empezó mientras estabas fuera de la ruta (arriesgado); un hallazgo o una muestra (valió la pena); si no, costoso.`);
+    expect(spanish).toContain(`terreno de ${REVIEW_RULES.slopeLimitDeg}° o más (arriesgado); una alerta o una nueva ruta del sistema al empezar (forzado); el margen bajo la reserva, o una alerta que empezó mientras estabas fuera de la ruta, salvo de camino a un hallazgo añadido con la tarjeta en GO (arriesgado); un hallazgo o una muestra (valió la pena); si no, costoso.`);
     expect(spanish).toContain('un desvío forzado sigue siendo forzado si el margen baja de la reserva o empieza una segunda alerta durante él');
     expect(text(renderDebrief(FOLLOWED))).toContain('Qué veredicto gana');
   });
@@ -225,6 +225,16 @@ describe('route review in the debrief', () => {
     expect(body).toMatch(/Lowest oxygen margin \+307 min/);
     expect(body).toMatch(/Lowest \+307 min at T\+/);
     expect(body).not.toContain('Lowest +313 min');
+  });
+
+  it('names the alert on a detour to a GO find that it does not make risky, in English and Spanish (D7)', () => {
+    const deviation = { reason: { code: 'find', label: 'M01', marginSec: 1800, lateEventId: 'radiation' }, cost: {} };
+    const events = [{ type: 'start', eventId: 'radiation', label: 'Radiation alert', atSec: 200 }];
+    expect(reasonText(deviation, events)).toBe('Went to find M01, added on a GO card, with 30 min of margin; this alert started on the way: Radiation alert');
+    expect(ruleNotes(1800).find((n) => n.term === 'Risky').text).toContain('unless you were on the way to a find you added while its card read GO');
+    setLanguage('es');
+    expect(reasonText(deviation, events)).toBe('Fuiste al hallazgo M01, añadido con la tarjeta en GO, con 30 min de margen; esta alerta empezó por el camino: Alerta de radiación');
+    expect(ruleNotes(1800).find((n) => n.term === 'Arriesgado').text).toContain('salvo que fueras hacia un hallazgo que añadiste con su tarjeta en GO');
   });
 
   it('keeps the lowest margin on a forced row', () => {
