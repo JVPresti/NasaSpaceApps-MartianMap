@@ -15,5 +15,6 @@ nothing touched. `glFrames` counts frames with at least one WebGL draw, `long_ta
 
 Both sets ran before the rig matched only the map's layer group (31f9633). On #282 builds (pr282, map282, fixes282) the
 layer loop also clicked NeedsPanel's crew and risk buttons, so `layer_long_tasks_all` for those builds counts
-re-plans too, and the steps after it start from a different crew. The idle, suit and map drag columns come before
-the layer loop and are not affected.
+re-plans too, and the steps after it start from a different crew. The idle columns come before the loop. The map
+drag and Suit step columns come after it. A re-run of #282 with the fixed loop gave counts in the same range: 18 and 21 long
+tasks in the drag, and 2 long tasks each time the Suit step reopened.
