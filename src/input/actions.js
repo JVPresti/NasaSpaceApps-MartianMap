@@ -61,7 +61,7 @@ export const ACTIONS = Object.freeze([
   // Both views
   { id: 'pause', codes: ['Escape'], keys: ['Escape'], files: ['src/App.jsx'], touch: 'button', when: 'always', label: 'touch.pause' },
   { id: 'mode', codes: ['KeyM'], files: WALK_KEYS, touch: 'button', when: 'walk', label: 'touch.map' },
-  { id: 'help', codes: ['KeyH'], keys: ['h', 'H'], files: ['src/App.jsx'], touch: 'dialog', control: { file: 'src/components/PauseMenu.jsx', has: 'onClick={onControls}' }, label: 'touch.help' },
+  { id: 'help', codes: ['KeyH'], keys: ['h', 'H'], files: ['src/App.jsx'], touch: 'dialog', control: { file: 'src/components/PauseMenu.jsx', has: 'ControlsPanel' }, label: 'touch.help' },
   { id: 'layer-next', codes: ['KeyL'], files: WALK_KEYS, touch: 'button', when: 'walk', more: true, label: 'touch.layer' },
   { id: 'layer-off', codes: ['Digit0', 'Numpad0'], files: WALK_KEYS, touch: 'button', when: 'walk', more: true, label: 'touch.layer.off' },
   { id: 'visor-frame', codes: ['KeyV'], files: WALK_KEYS, touch: 'button', when: 'surface', more: true, label: 'touch.visor' },
@@ -97,35 +97,37 @@ export const ACTIONS = Object.freeze([
   // Every menu dialog (Modal.jsx): Esc is its Resume or Back button, Enter its primary button, Tab moves keyboard focus
   // only, so a tap on any button is the touch control
   { id: 'dialog-keys', codes: ['Tab', 'Enter', 'Escape'], keys: ['Tab', 'Enter', 'Escape'], files: ['src/components/Modal.jsx'],
-    touch: 'dialog', control: { file: 'src/components/PauseMenu.jsx', has: 'onClick={onResume}' }, label: 'touch.dialog.focus' },
+    touch: 'dialog', control: { file: 'src/components/PauseMenu.jsx', has: 'menu-resume' }, label: 'touch.dialog.focus' },
   { id: 'sources-close', codes: ['Escape', 'Tab'], keys: ['Escape', 'Tab'], files: ['src/sources/SourcesScreen.jsx'],
-    touch: 'dialog', control: { file: 'src/sources/SourcesScreen.jsx', has: 'className="sources-close" onClick={onClose}' }, label: 'touch.dialog.focus' },
+    touch: 'dialog', control: { file: 'src/sources/SourcesScreen.jsx', has: 'className="sources-close"' }, label: 'touch.dialog.focus' },
   { id: 'card-close', codes: ['Enter', 'NumpadEnter', 'Escape'], files: ['src/stops/closeKeys.js'],
-    touch: 'dialog', control: { file: 'src/stops/StopCard.jsx', has: 'className="stop-close" onClick={onClose}' }, label: 'touch.dialog.focus' },
+    touch: 'dialog', control: { file: 'src/stops/StopCard.jsx', has: 'className="stop-close"' }, label: 'touch.dialog.focus' },
   { id: 'map-popup-close', codes: ['Escape'], keys: ['Escape'], files: ['src/plan/MissionMap.jsx', 'src/plan/TraverseLayer.jsx'],
     touch: 'dialog', control: { file: 'src/plan/MissionMap.jsx', has: 'className="map-pop-close"' }, label: 'touch.dialog.focus' },
   // Placing a sampling task on the map (#352): Esc cancels the pick; the task list draws a Cancel link for it
   { id: 'task-pick-cancel', codes: ['Escape'], keys: ['Escape'], files: ['src/plan/useTaskPlace.js'],
-    touch: 'dialog', control: { file: 'src/plan/TaskList.jsx', has: 'onClick={cancelPick}' }, label: 'touch.dialog.focus' },
+    touch: 'dialog', control: { file: 'src/plan/TaskList.jsx', has: 'tasktable.pick.cancel' }, label: 'touch.dialog.focus' },
   { id: 'tooltip-close', codes: ['Escape'], keys: ['Escape'], files: ['src/components/SourceTag.jsx'],
-    touch: 'gesture', control: { file: 'src/components/SourceTag.jsx', has: 'onPointerUp={onPointerUp}' }, label: 'touch.dialog.focus' },
+    touch: 'gesture', control: { file: 'src/components/SourceTag.jsx', has: 'tipAfterTap(' }, label: 'touch.dialog.focus' },
   // A waypoint's x or z field: Enter commits, Esc restores. The on-screen keyboard's Done key and a tap outside both blur
   // the field, which commits it; restoring is retyping the old value.
   { id: 'waypoint-field', codes: ['Enter', 'Escape'], keys: ['Enter', 'Escape'], files: ['src/plan/RoutePanel.jsx'],
-    touch: 'gesture', control: { file: 'src/plan/RoutePanel.jsx', has: 'onBlur={commit}' }, label: 'touch.dialog.focus' },
+    touch: 'gesture', control: { file: 'src/plan/RoutePanel.jsx', has: 'inputMode="numeric"' }, label: 'touch.dialog.focus' },
   { id: 'table-step', codes: ['ArrowLeft', 'ArrowRight'], keys: ['ArrowLeft', 'ArrowRight'], files: ['src/plan/MissionTable.jsx'],
-    touch: 'dialog', control: { file: 'src/plan/MissionTable.jsx', has: 'id={`table-tab-${item.id}`}' }, label: 'touch.table.step' },
+    touch: 'dialog', control: { file: 'src/plan/MissionTable.jsx', has: 'table-tab-' }, label: 'touch.table.step' },
 
-  // The presentation (?present=1, src/present/control.js). Its touch controls arrive with #373 (swipe) and the on-screen
-  // Back, Exit and Language buttons after it; until then actions.test.js lists them as pending, by name.
+  // The presentation (?present=1, src/present/control.js). #373 (feat/present-story-cut) lands the swipe and the tap that
+  // step next and back, as pointerStep() in src/present/control.js; the on-screen Exit and Language buttons have no PR
+  // yet. Until each control lands, actions.test.js lists the action as pending, by name, and fails the moment the
+  // control it names appears, so the list cannot go stale.
   { id: 'present-next', codes: ['ArrowRight', 'PageDown', 'Space', 'Enter'], keys: ['ArrowRight', 'PageDown', ' ', 'Enter', 'Spacebar'], files: ['src/present/control.js'],
-    touch: 'dialog', control: { file: 'src/present/Present.jsx', has: 'data-present-action="next"' }, label: 'touch.present.next' },
+    touch: 'gesture', control: { file: 'src/present/control.js', has: 'pointerStep(' }, label: 'touch.present.next' },
   { id: 'present-back', codes: ['ArrowLeft', 'PageUp'], keys: ['ArrowLeft', 'PageUp'], files: ['src/present/control.js'],
-    touch: 'dialog', control: { file: 'src/present/Present.jsx', has: 'data-present-action="back"' }, label: 'touch.present.back' },
+    touch: 'gesture', control: { file: 'src/present/control.js', has: 'pointerStep(' }, label: 'touch.present.back' },
   { id: 'present-exit', codes: ['Escape'], keys: ['Escape'], files: ['src/present/control.js'],
-    touch: 'dialog', control: { file: 'src/present/Present.jsx', has: 'data-present-action="exit"' }, label: 'touch.present.exit' },
+    touch: 'dialog', control: { file: 'src/present/Present.jsx', has: 'className="pr-touch-exit"' }, label: 'touch.present.exit' },
   { id: 'present-language', codes: ['KeyL'], keys: ['l', 'L'], files: ['src/present/control.js'],
-    touch: 'dialog', control: { file: 'src/present/Present.jsx', has: 'data-present-action="language"' }, label: 'touch.present.language' },
+    touch: 'dialog', control: { file: 'src/present/Present.jsx', has: 'className="pr-touch-language"' }, label: 'touch.present.language' },
 ]);
 
 /** Bar action ids that follow a sampling input, and the input's name in the engine's sampling status. */

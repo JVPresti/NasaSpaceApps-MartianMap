@@ -4,6 +4,10 @@ import { coarsePointer } from '../input/device.js';
 import './tapTitles.css';
 import { LONG_PRESS_MS, LONG_PRESS_SLOP_PX, TITLE_SHOW_MS, placeTitle, titleTarget } from './tapTitles.js';
 
+// How long after a long press's pointerup its dismissing click may arrive (the safety window: a new press already
+// clears the pending dismissal, so in practice only the click that follows the lift matches).
+const DISMISS_CLICK_MS = 800;
+
 /**
  * Shows a title's text on a coarse pointer (#365, tapTitles.js): a tap on a plain element with a title, or a long press
  * on a control. Mount it once per screen that uses titles; it does nothing with a mouse, which already gets the
@@ -11,8 +15,8 @@ import { LONG_PRESS_MS, LONG_PRESS_SLOP_PX, TITLE_SHOW_MS, placeTitle, titleTarg
  */
 export default function TapTitles() {
   const [tip, setTip] = useState(null);   // { text, style, host }
-  const press = useRef(null);
-  const eatClickUntil = useRef(0);
+  const press = useRef(null);             // the finger down: { x, y, held, timer }; held once the long press showed
+  const dismiss = useRef(null);           // { x, y, at } of the pointerup that ended a shown long press
 
   useEffect(() => {
     const show = (found) => {
@@ -24,22 +28,35 @@ export default function TapTitles() {
       setTip(null);
       clearTimeout(press.current?.timer);
       press.current = null;
+      // A new press ends the previous one: if its dismissing click never fired, nothing is left to swallow.
+      dismiss.current = null;
       if (event.pointerType !== 'touch' && !coarsePointer()) return;
       const found = titleTarget(event.target, 'press');
       if (!found) return;
-      press.current = {
-        x: event.clientX, y: event.clientY,
-        timer: setTimeout(() => { show(found); eatClickUntil.current = Date.now() + 800; }, LONG_PRESS_MS),
-      };
+      const held = { x: event.clientX, y: event.clientY, held: false, timer: null };
+      held.timer = setTimeout(() => { held.held = true; show(found); }, LONG_PRESS_MS);
+      press.current = held;
     };
     const onMove = (event) => {
       const p = press.current;
       if (p && Math.hypot(event.clientX - p.x, event.clientY - p.y) > LONG_PRESS_SLOP_PX) { clearTimeout(p.timer); press.current = null; }
     };
-    const onUp = () => { clearTimeout(press.current?.timer); press.current = null; };
+    const onUp = (event) => {
+      const p = press.current;
+      clearTimeout(p?.timer);
+      press.current = null;
+      // The click a browser fires when a long press lifts must not also press the control. Only that one is swallowed:
+      // it follows this pointerup, at this spot, before any other pointer goes down (a new press clears `dismiss`).
+      if (p?.held) dismiss.current = { x: event.clientX, y: event.clientY, at: Date.now() };
+    };
     const onClick = (event) => {
-      // the click that ends a long press must not also press the control
-      if (Date.now() < eatClickUntil.current) { event.preventDefault(); event.stopPropagation(); eatClickUntil.current = 0; return; }
+      const d = dismiss.current;
+      dismiss.current = null;
+      if (d && Date.now() - d.at < DISMISS_CLICK_MS && Math.hypot(event.clientX - d.x, event.clientY - d.y) <= LONG_PRESS_SLOP_PX) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       if (!coarsePointer()) return;
       const found = titleTarget(event.target, 'tap');
       if (found) show(found);

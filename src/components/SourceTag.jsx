@@ -102,7 +102,7 @@ export default function SourceTag({ path, variant = 'label', interactive = true,
   const onBlur = (e) => { if (!tipRef.current?.contains(e.relatedTarget)) close(); };
   return (
     <span
-      className={classes + ' source-tag-interactive'} data-tag={entry.tag} tabIndex={0} aria-describedby={id}
+      className={classes + ' source-tag-interactive' + (tip ? ' source-tag-open' : '')} data-tag={entry.tag} tabIndex={0} aria-describedby={id}
       onMouseEnter={open} onMouseLeave={closeSoon} onFocus={open} onBlur={onBlur} onKeyDown={onKeyDown} onPointerUp={onPointerUp}
     >
       <span aria-hidden="true">{text}</span>

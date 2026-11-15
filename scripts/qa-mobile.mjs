@@ -9,6 +9,7 @@
 // and Mesa needs its d3d12 driver: set QA_GALLIUM=d3d12 (on Linux with a native GPU, leave it unset).
 import { existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import puppeteer from 'puppeteer-core';
 
 /** The sizes the mobile checks run at, CSS px. */
@@ -119,10 +120,10 @@ export async function fps(page, ms = 3000) {
   }), ms);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const url = process.argv[2] || 'http://localhost:5173/';
   const oi = process.argv.indexOf('--out');
-  const out = oi > 0 ? process.argv[oi + 1] : join(process.env.HOME, '.cache/marswalk-mobile/shots');
+  const out = oi > 0 ? process.argv[oi + 1] : join(process.env.HOME || process.env.USERPROFILE || '.', '.cache/marswalk-mobile/shots');
   const browser = await launch();
   try {
     for (const [name, size] of Object.entries(VIEWPORTS)) {

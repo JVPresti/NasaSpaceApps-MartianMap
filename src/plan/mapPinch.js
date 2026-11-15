@@ -46,10 +46,12 @@ export function useMapPinch(boxRef, { crop, tile, min, setView, dragRef }) {
     const points = () => [...fingers.values()].slice(0, 2);
     const down = (event) => {
       if (event.pointerType !== 'touch') return;
+      // Capture every touch pointer, not only the second: a finger that lifts outside the map must still send its
+      // pointerup here, or a stale entry would stay in `fingers` and skew the next pinch.
+      try { box.setPointerCapture(event.pointerId); } catch { /* the pointer is already gone */ }
       fingers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       if (fingers.size < 2) return;
       event.stopPropagation();
-      try { box.setPointerCapture(event.pointerId); } catch { /* the finger already left */ }
       const { crop: c, dragRef: drag } = live.current;
       if (drag) drag.current = null;
       pinch = { start: c, from: points(), rect: box.getBoundingClientRect() };
@@ -66,6 +68,7 @@ export function useMapPinch(boxRef, { crop, tile, min, setView, dragRef }) {
     };
     const up = (event) => {
       if (!fingers.delete(event.pointerId)) return;
+      try { box.releasePointerCapture(event.pointerId); } catch { /* the browser released it already */ }
       if (pinch) event.stopPropagation();   // the lift that ends a pinch is not a tap on the map
       if (fingers.size === 0) pinch = null;
       else if (pinch && fingers.size < 2) pinch = { ...pinch, from: null };   // one finger left: wait for both to lift
