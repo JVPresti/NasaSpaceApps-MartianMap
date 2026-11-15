@@ -29,7 +29,7 @@ describe('ControlsHelp', () => {
   it('lists the habitat table actions on one row: E opens the plan, X finishes the EVA (#244)', () => {
     const html = renderToStaticMarkup(<ControlsHelp />);
     expect(html).toContain('<kbd>E</kbd><span class="controls-or">/</span><kbd>X</kbd>');
-    expect(html).toContain('Habitat table: open plan / finish EVA');
+    expect(html).toContain('Cabin: open plan or finish EVA');   // short, so the caps and the line stay on one row like Y / N
   });
 
   it('lays the groups out in three columns in either language', () => {
@@ -42,6 +42,6 @@ describe('ControlsHelp', () => {
     expect(spanish).toContain('Ambas vistas');
     expect(spanish).toContain('Mesa de misión');
     expect(spanish).not.toContain('menu.help.');
-    expect(spanish).toContain('Mesa del hábitat: abrir plan / terminar EVA');
+    expect(spanish).toContain('Cabina: abrir plan o terminar EVA');
   });
 });

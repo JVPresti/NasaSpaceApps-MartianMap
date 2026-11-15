@@ -576,7 +576,7 @@
   "tableprompt.make.plan": "Make a plan",
   "tableprompt.finish.eva": "Finish EVA",
   "tableprompt.no.eva": "No EVA in progress",
-  "tableprompt.help": "Habitat table: open plan / finish EVA",
+  "tableprompt.help": "Cabin: open plan or finish EVA",
   "tableprompt.gamepad": "In the habitat cabin, A opens the plan and X finishes the EVA.",
   "menu.help.finds.panels": "Finds and panels",
   "menu.help.mark.find": "Mark a find",
