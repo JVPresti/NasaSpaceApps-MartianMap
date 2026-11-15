@@ -12,3 +12,8 @@ on 15 November 2026. The builds interleave, so each load spike on the machine la
 A row with an error is a run that failed and that no median uses. The idle columns cover 5 s with the table open and
 nothing touched. `glFrames` counts frames with at least one WebGL draw, `long_tasks` are tasks over 50 ms, and
 `inp_ms` is the slowest input-to-next-paint of the step from the Event Timing API.
+
+Both sets ran before the rig matched only the map's layer group (31f9633). On #282 builds (pr282, map282, fixes282) the
+layer loop also clicked NeedsPanel's crew and risk buttons, so `layer_long_tasks_all` for those builds counts
+re-plans too, and the steps after it start from a different crew. The idle, suit and map drag columns come before
+the layer loop and are not affected.
