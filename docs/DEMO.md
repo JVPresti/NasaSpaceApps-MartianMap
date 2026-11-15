@@ -112,30 +112,35 @@ A step whose control is not on screen is skipped and listed as "not driven".
 ### Measured
 
 15 November 2026, branch `feat/short-mission-dynamic-routes`, Edge 157 headless with the GPU (NVIDIA RTX 5070),
-1366 x 768, English, `npm run measure:demo`. The table UI was still being built: the conditions outlook was not on
-screen yet, so its dwell ran on the Hazards step.
+1366 x 768, English, `npm run measure:demo`. Every step was driven; the walk ran at 135 to 165 fps, 131 m in 135 s
+(0.97 m/s with the turns and stops), with no step-aside.
 
 | # | Segment | Budget | Actual | of which dwell | Measured |
 |---|---|---|---|---|---|
 | 1 | Start screen, choose mission | 0:15 | 0:13 | 0:12 | 0:01 |
 | 2 | Table: site and layers | 1:15 | 0:53 | 0:52 | 0:01 |
-| 3 | Needs → route, two inputs, why line | 1:15 | 1:09 | 0:50 | 0:19 |
-| 4 | Outlook, go / no-go, Begin EVA, controls | 0:30 | 0:30 | 0:20 | 0:10 |
-| 5 | Walk out (visor, minimap, a find) | 1:00 | 1:42 | 0:02 | 1:40 |
+| 3 | Needs → route, two inputs, why line | 1:15 | 1:00 | 0:50 | 0:10 |
+| 4 | Outlook, go / no-go, Begin EVA, controls | 0:30 | 0:23 | 0:22 | 0:01 |
+| 5 | Walk out (visor, minimap, a find) | 1:00 | 1:19 | 0:02 | 1:17 |
 | 6 | Stop and sample | 0:45 | 0:18 | 0:03 | 0:15 |
-| 7 | Dust storm and re-plan | 0:30 | 0:15 | 0:06 | 0:09 |
-| 8 | Radiation and walk back | 0:50 | 1:02 | 0:05 | 0:57 |
-| 9 | Habitat table: Open plan, Finish EVA | 0:20 | 0:07 | 0:05 | 0:02 |
+| 7 | Dust storm and re-plan | 0:30 | 0:16 | 0:06 | 0:10 |
+| 8 | Radiation and walk back | 0:50 | 1:00 | 0:05 | 0:55 |
+| 9 | Habitat table: Open plan, Finish EVA | 0:20 | 0:06 | 0:05 | 0:01 |
 | 10 | Debrief | 0:40 | 0:31 | 0:30 | 0:01 |
 | 11 | Sources | 0:10 | 0:08 | 0:08 | 0:00 |
-| | **Total** | **7:30** | **6:47** | 3:13 | 3:34 |
+| | **Total** | **7:30** | **6:09** | 3:15 | 2:54 |
 
-Mission times: at the stop T+102 s, sample secured T+113 s, storm T+120 s (18 s after the stop), radiation T+135 s,
-back in the habitat T+197 s; the debrief judged the detour "1 deviation: 1 worth it". The machine was running other
-builds and tests during this run and the frame rate dropped to 3 fps at moments, so the walk averaged 0.88 m/s (131 m
-in 148 s): the engine caps a frame's step at 0.1 s. At a steady 60 fps the walk out is about 1:18 (next run).
+Mission times: at the stop T+79 s, sample secured T+90 s, dust storm T+97 s (18 s after the stop), radiation alert
+T+113 s, back in the habitat T+173 s, debrief at T+180 s. The debrief judged the detour "1 deviation: 1 worth it".
+The walk out runs 19 s over its budget because of the detour to the find (70 m instead of 55 m, plus the 2 s hold);
+the stop and the storm come in under theirs. The 1:21 left under the target is room for the presenter.
 
-**A player** (the same run with `--dwell-scale 0.25`, Spanish, 1366 x 768, 131 to 165 fps, 0.97 m/s): start screen to
-the debrief in **3:33**, of which 2:46 is the EVA (at the stop T+78 s, storm T+96 s, radiation T+111 s, back T+164 s).
-That includes the detour to mark a find; walking straight to the stop saves about 25 s. #265 asks for about 3 minutes
-and no more than 4.
+When other builds or tests load the machine, the frame rate can fall under 10 fps, and the engine, which caps a frame's
+step at 0.1 s, then walks slower than 1.0 m/s. The script reports the frame rate and the walking speed, and warns when
+it fell below 12 fps; one such run (3 fps at moments, 0.88 m/s) still finished in 6:47.
+
+**A player** (`--dwell-scale 0.25`, Spanish, 1366 x 768, 0.97 m/s): start screen to the debrief in **3:33**, of which
+2:46 is the EVA (at the stop T+78 s, storm T+96 s, radiation T+111 s, back T+164 s). That includes the detour to mark
+a find; walking straight to the stop saves about 25 s. #265 asks for about 3 minutes and no more than 4.
+
+The same flow ran at 1920 x 1080 in English and Spanish (`--dwell-scale 0.1`): every step driven, EVA 2:44 and 3:06.
