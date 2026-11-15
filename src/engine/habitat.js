@@ -13,7 +13,7 @@ export function createHabitat(ctx) {
     // A walker stands inside a zone or outside every solid. The numbers and the rules live in collide.js (same numbers as habitat.json).
     ZONES: HAB_ZONES, SOLIDS: HAB_SOLIDS,
     local(x, z, o) { const dx = x - this.pos.x, dz = z - this.pos.z, t = this.root.rotation.y, c = Math.cos(t), s = Math.sin(t); o.x = dx * c - dz * s; o.v = dx * s + dz * c; return o; },
-    _l: { x: 0, v: 0 }, open: 0, BLOCKS: [],
+    _l: { x: 0, v: 0 }, open: 0, sealed: false, BLOCKS: [],
     zone(x, z) { if (!this.root) return null; const l = this.local(x, z, this._l); return habZone(l.x, l.v, this.open, this.BLOCKS); },
     canStand(x, z) { if (!this.root) return true; const l = this.local(x, z, this._l); return habCanStand(l.x, l.v, this.open, this.BLOCKS); },
     // walker collision (#38): one step from (x0, z0) to p ({ x, z }, changed in place). A blocked step slides along the wall it hit
@@ -30,7 +30,7 @@ export function createHabitat(ctx) {
       if (this.lights) { const on = U.uLamp.value.x > 0; for (const l of this.lights) l.visible = on; U.uHabGlow.value.set(1.0, 0.84, 0.62).multiplyScalar(on ? 0.16 : 0); }
       this.screens.update(dt || 0.016, camera.position.distanceToSquared(this.pos) < 200);   // the wall screens refresh 4 times a second, only when someone is near (habitatScreens.js)
       this.prompt.update(dt, this.inCabin());   // the table's prompt, in the cabin only (#244)
-      if (!this.hatch) return; const l = this.local(view.eye.x, view.eye.z, this._l), pl = sys.partner.root ? this.local(sys.partner.root.position.x, sys.partner.root.position.z, { x: 0, v: 0 }) : null, near = (view.mode === 'eye' && l.x > 3.0 && l.x < 11.5 && Math.abs(l.v) < 3.0) || (pl && sys.partner.root.visible && pl.x > 3.0 && pl.x < 11.6 && Math.abs(pl.v) < 2.0);   // reference: the hatch opens when a walker is near
+      if (!this.hatch) return; const l = this.local(view.eye.x, view.eye.z, this._l), pl = sys.partner.root ? this.local(sys.partner.root.position.x, sys.partner.root.position.z, { x: 0, v: 0 }) : null, near = !this.sealed && ((view.mode === 'eye' && l.x > 3.0 && l.x < 11.5 && Math.abs(l.v) < 3.0) || (pl && sys.partner.root.visible && pl.x > 3.0 && pl.x < 11.6 && Math.abs(pl.v) < 2.0));   // reference: the hatch opens when a walker is near, and stays shut (sealed) before Begin EVA (habitat-first flow)
       this.open += ((near ? 1 : 0) - this.open) * Math.min(1, (dt || 0.016) * 3); this.hatch.rotation.y = 1.65 * this.open;
     },
     // Wall screens and planning table: drawn from mission data by habitatScreens.js (#47); created in createHabitat below.

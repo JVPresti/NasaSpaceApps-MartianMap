@@ -10,21 +10,23 @@ import { presentHref, presentLabel } from '../present/entry.js';
 
 /**
  * The start screen (#11): the title over a looping video of an astronaut walking on Mars (AI-generated, credited in
- * Sources as artistic; the first frame is the poster and stays still with reduced motion) and one main action, which opens the mission table.
+ * Sources as artistic; the first frame is the poster and stays still with reduced motion) and one main action, which
+ * puts the astronaut on foot inside the habitat, next to the mission table (habitat-first flow).
  * It is the first screen (#266): App mounts it before the scene is ready, so the video and text show at once, while
  * the scene loads behind it. The main action stays unavailable until then and shows the real progress; Controls and
  * Sources already work. It is a modal dialog, so the scene behind it is inert (App also hides the top
- * bar and the table while it is open). Nothing runs behind it: the EVA's clock, suit and events start at Begin EVA.
- * The mission table needs no pointer lock, so nothing is captured here; once the player has chosen drag-to-look
- * after a refused capture (#197), a note says that Walk will not capture the mouse either.
- * The main action opens the first mission (the first sortie, #265). `onFullEva`, when given, adds one secondary button
- * that opens the table on the full EVA instead (the Cheyava Falls objective); the table's objective can change either.
- * @param {{ busy: boolean, notice: string|null, freeLook?: boolean,
+ * bar and the table while it is open). Nothing runs behind it: the EVA's clock, suit and events start when the
+ * airlock cycle after Begin EVA ends. Walking in the habitat needs the mouse, so the click captures it; after a refused
+ * capture the screen offers drag-to-look (#197).
+ * The main action enters the habitat on the first mission (the first sortie, #265). `onFullEva`, when given, adds one
+ * secondary button that enters it on the full EVA instead (the Cheyava Falls objective); the table's objective can
+ * change either until Begin EVA.
+ * @param {{ busy: boolean, notice: string|null, freeLook?: boolean, lockFailed?: boolean,
  *   scene?: { status: string, stage?: string, progress?: number }|null,
- *   onStart: () => void, onFullEva?: () => void, onSources?: () => void }} props
+ *   onStart: () => void, onStartWithoutCapture?: () => void, onFullEva?: () => void, onSources?: () => void }} props
  *   scene is App's load state. A null scene counts as ready, so a caller that already has the engine can use the screen as it was.
  */
-export default function StartScreen({ busy, notice, freeLook = false, scene = null, onStart, onFullEva, onSources }) {
+export default function StartScreen({ busy, notice, freeLook = false, lockFailed = false, scene = null, onStart, onStartWithoutCapture, onFullEva, onSources }) {
   const [controls, setControls] = useState(false);
   const startRef = useRef(null);
   const closeRef = useRef(null);
@@ -61,6 +63,7 @@ export default function StartScreen({ busy, notice, freeLook = false, scene = nu
             <p className="start-kicker">{t('app.brand')}</p>
             <h2 id="start-title" className="start-title">{t('ui.cheyava.falls')}</h2>
             <p className="start-text">{t('menu.start.intro')}</p>
+            <p className="start-text">{t('menu.start.in.habitat')}</p>
 
             {notice && <p className="dialog-notice" role="alert">{translateText(notice)}</p>}
 
@@ -75,7 +78,7 @@ export default function StartScreen({ busy, notice, freeLook = false, scene = nu
                 data-autofocus="true"
               >
                 {ready
-                  ? (busy ? t('menu.opening') : t('menu.open.mission.table'))
+                  ? (busy ? (freeLook ? t('menu.opening') : t('menu.capturing.the.mouse')) : t('menu.enter.habitat'))
                   : t('menu.loading.scene', { p0: percent })}
                 {!ready && (
                   <span className="start-progress" aria-hidden="true">
@@ -83,6 +86,11 @@ export default function StartScreen({ busy, notice, freeLook = false, scene = nu
                   </span>
                 )}
               </button>
+              {lockFailed && !freeLook && onStartWithoutCapture && (
+                <button type="button" className="ui-button ghost" onClick={onStartWithoutCapture} disabled={busy}>
+                  {t('menu.continue.without.mouse.capture')}
+                </button>
+              )}
               {onFullEva && (
                 <button type="button" className="ui-button ghost start-full" onClick={onFullEva} disabled={busy || !ready}>
                   {t('mission.start.full')}

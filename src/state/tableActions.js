@@ -14,6 +14,7 @@
 import { subscribeLanguage, t } from '../i18n/index.js';
 import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import { requestEvaEnd } from './eva.js';
+import { STAGE } from './flow.js';
 import { useMissionStore } from './store.js';
 
 export const OPEN_PLAN_KEY = 'E';
@@ -22,7 +23,11 @@ const CODES = { KeyE: 'open-plan', KeyX: 'end-eva' };
 /** The gamepad actions (gamepadInput.js) that belong to the table; they never reach the app's own gamepad handler. */
 export const TABLE_PAD_ACTIONS = Object.freeze(['open-plan', 'end-eva']);
 
-const walking = (state) => !!state && state.mode === 'walk' && !state.mission?.paused;
+// In the habitat before the EVA the mission clock is held (mission.paused with mission.held) while the astronaut walks
+// (#260), so that counts as walking. A pause menu clears `held`, so the prompt goes and the keys do nothing behind it.
+// The airlock cycle also holds the clock, and it owns the screen, so a held clock counts as walking only in the habitat.
+const walking = (state) => !!state && state.mode === 'walk'
+  && (!state.mission?.paused || (state.mission?.held === true && state.stage === STAGE.HABITAT));
 
 /**
  * The player walks in the habitat's cabin (engine.inHabitatCabin): where the table prompt shows and its keys act. There

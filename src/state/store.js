@@ -9,11 +9,19 @@ import { checkNeeds, DEFAULT_NEEDS, OBJECTIVE_DEFAULTS } from '../sim/missionNee
 /** Plain data only. Units are in the field names. Coordinates: x east, z south, metres from Cheyava Falls. */
 export function createInitialState() {
   return {
-    mode: 'plan',                                   // 'walk' | 'plan'; the app opens at the planning table (#166)
+    // 'walk' (first person) or 'plan' (the mission table is open). The astronaut starts inside the habitat on foot.
+    mode: 'walk',
+    // Where the astronaut is in the flow: 'habitat' | 'egress' | 'eva' | 'debrief' (src/state/flow.js).
+    stage: 'habitat',
+    // Inside the habitat, written by the engine bridge 5 times per second while the stage is 'habitat': the walk
+    // zone the astronaut stands in ('main', 'airlock', ...), or null outside. The habitat HUD reads it.
+    habitat: { zone: null },
     // Clock fields: docs/STATE_AND_ENGINE.md. anchorMs is the wall timestamp elapsedSec is measured from;
     // startedAtMs is the first start. The mission clock fills anchorMs and the fields after it when it starts.
     mission: {
-      startedAtMs: null, elapsedSec: 0, paused: false, sol: null, lmst: null,
+      // held: the clock is stopped because the astronaut is in the habitat before the EVA, not because a menu is open
+      // (#260). Walking and the table's prompt go on while held; a pause menu clears it.
+      startedAtMs: null, elapsedSec: 0, paused: false, held: false, sol: null, lmst: null,
       anchorMs: null, timeScale: 1, initialSol: null, initialLmst: null, longitudeDeg: null, sky: null,
     },
     suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
@@ -23,8 +31,8 @@ export function createInitialState() {
     // budget and the risk weights; explain: why each leg bends (#246, src/sim/routeExplain.js), one entry per route.legs
     // entry. Codes and numbers only: the table writes the sentences.
     route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [], profiles: null, profile: 'fastest', stops: [], dropped: [], planReasons: [], budget: null, weights: null, explain: [] },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js; profiles and profile: the routes the table compares and the one chosen (#245, src/sim/routeProfiles.js)
-    // The crew's needs at the mission table (#265, goal 2). setNeeds changes them until the EVA begins (locked: the first
-    // switch to Walk, the moment src/state/simulation.js starts the EVA); the route re-plans from them in Plan mode.
+    // The crew's needs at the mission table (#265, goal 2). setNeeds changes them until Begin EVA (locked: beginEgress in
+    // src/state/flow.js, at the start of the airlock cycle); the route re-plans from them in Plan mode.
     needs: { ...DEFAULT_NEEDS, locked: false },
     environment: { dustOpacity: 0, tempC: null, windMs: null, pressurePa: null, doseRateUgyH: null, doseUgy: null },
     // Active hazard areas for the minimap (#60): [{ id, x, z, radiusM, active }], metres. Empty means
@@ -102,10 +110,16 @@ export function createStoreAdapter(store = useMissionStore) {
 export const storeAdapter = createStoreAdapter();
 
 // Small actions for the interface.
-// The first switch to Walk begins the EVA (src/state/simulation.js starts it then), so it also locks the crew's needs.
+// Walking no longer begins the EVA: the astronaut walks in the habitat first (habitat-first flow, #260). Begin EVA
+// (beginEgress in src/state/flow.js) locks the crew's needs.
+// During the airlock cycle (stage 'egress') the mode stays 'walk' and every switch is refused: the engine moves the
+// player outside at the dark point, so a table opened now would leave store and engine disagreeing.
+// Returns false when the switch was refused.
 export const setMode = (mode) => {
   if (mode !== 'walk' && mode !== 'plan') throw new Error('mode must be walk or plan');
-  useMissionStore.setState((s) => (mode === 'walk' && !s.needs.locked ? { mode, needs: { ...s.needs, locked: true } } : { mode }));
+  if (useMissionStore.getState().stage === 'egress') return false;
+  useMissionStore.setState({ mode });
+  return true;
 };
 
 /**
@@ -233,10 +247,12 @@ export const setVisorFrame = (on) => {
 // happen. The clock never overwrites a pause with its own value.
 export const setMissionPaused = (paused) => {
   if (typeof paused !== 'boolean') throw new Error('mission.paused must be a boolean');
-  storeAdapter.set('mission.paused', paused);
+  useMissionStore.setState((s) => ({ mission: { ...s.mission, paused, held: false } }));
 };
 export const pauseMission = () => setMissionPaused(true);
 export const resumeMission = () => setMissionPaused(false);
+/** The habitat before the EVA (#260): the clock stays stopped while the astronaut walks and plans. */
+export const holdMission = () => useMissionStore.setState((s) => ({ mission: { ...s.mission, paused: true, held: true } }));
 export const setMissionTimeScale = (scale) => {
   if (typeof scale !== 'number' || !Number.isFinite(scale) || scale <= 0) throw new Error('mission.timeScale must be a finite number greater than 0');
   storeAdapter.set('mission.timeScale', scale);

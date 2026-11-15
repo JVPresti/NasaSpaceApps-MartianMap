@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FIRST_OBJECTIVE, FULL_OBJECTIVE, eventStartSec, missionForObjective } from '../sim/missions.js';
-import { resetStore, setMode, useMissionStore } from '../state/store.js';
+import { resetStore, useMissionStore } from '../state/store.js';
 import { chooseMission } from './chooseMission.js';
+import { beginEgress } from '../state/flow.js';
 
 beforeEach(() => resetStore());
 
@@ -9,7 +10,7 @@ describe('chooseMission (the start screen choice, #265)', () => {
   it('opens the first sortie from the main action', () => {
     expect(chooseMission(FIRST_OBJECTIVE)).toBe('sortie');
     const { needs, mode } = useMissionStore.getState();
-    expect(mode).toBe('plan');
+    expect(mode).toBe('walk');   // on foot in the habitat, by the table (#260)
     expect(missionForObjective(needs.objective).id).toBe('first');
     expect(eventStartSec(needs.objective, 'dust-storm')).toBe(45);
     expect(needs.timeMin).toBe(30);
@@ -26,7 +27,7 @@ describe('chooseMission (the start screen choice, #265)', () => {
 
   it('changes nothing once the EVA has begun', () => {
     chooseMission(FIRST_OBJECTIVE);
-    setMode('walk');
+    beginEgress();   // Begin EVA locks the needs
     expect(chooseMission(FULL_OBJECTIVE)).toBe('sortie');
     expect(useMissionStore.getState().needs.locked).toBe(true);
   });

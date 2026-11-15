@@ -428,8 +428,9 @@ const tabOrSite = (id) => (TABS.some((item) => item.id === id) ? id : TABS[0].id
  *   waypoints: Array<{ name: string, x: number, z: number }>, evaBegun?: boolean, onBeginEva?: () => void,
  *   onControls?: () => void, initialTab?: 'site' | 'route' | 'hazards' | 'suit' }} props
  *   initialTab: the step the table opens on (the habitat table's "Open plan" opens Route); step 1 by default
+ *   onClose: "Back to the habitat", before the EVA only (habitat-first flow, #260): walk again by the table
  */
-export default function MissionTable({ planner, waypoints, evaBegun = false, onBeginEva, onControls, initialTab = 'site' }) {
+export default function MissionTable({ planner, waypoints, evaBegun = false, onBeginEva, onClose, onControls, initialTab = 'site' }) {
   const [tab, setTab] = useState(() => tabOrSite(initialTab));
   // A new initialTab while the table is open moves to that step; set while rendering, as React suggests for state
   // that follows a prop.
@@ -806,10 +807,15 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
             </button>
           ))}
         </div>
-        <p className="table-time">
-          {evaBegun ? `EVA ${formatEva(clock.elapsedSec)} · ` : ''}
-          {clock.lmst ? `${clock.lmst} LMST · ` : ''}{t('table.habitat')}
-        </p>
+        <div className="table-end">
+          <p className="table-time">
+            {evaBegun ? `EVA ${formatEva(clock.elapsedSec)} · ` : ''}
+            {clock.lmst ? `${clock.lmst} LMST · ` : ''}{t('table.habitat')}
+          </p>
+          {onClose && (
+            <button type="button" className="table-secondary table-close" onClick={onClose}>{t('table.backToHabitat')}</button>
+          )}
+        </div>
       </header>
       <div id="table-body" className={'table-body table-body-' + tab} role="tabpanel" aria-labelledby={`table-tab-${tab}`}>
         {body}

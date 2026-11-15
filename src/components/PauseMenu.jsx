@@ -68,7 +68,7 @@ export default function PauseMenu({
       {view === 'menu' && (
         <div className="dialog-body">
           <h2 id="pause-menu-title" className="dialog-title">
-            {evaBegun || mode === 'walk' ? t('menu.eva.paused') : t('menu.planning.paused')}
+            {evaBegun ? t('menu.eva.paused') : t('menu.planning.paused')}
           </h2>
 
           <div className="menu-actions">

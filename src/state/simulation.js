@@ -2,11 +2,12 @@
 // Today: the mission clock (#59), the suit model (#19), the per-leg route costs (#41), events and the EVA statistics
 // (#43), the partner (#70) and the environment: MEDA weather replay and RAD dose (#189). Navigation joins here as it lands.
 //
-// Two phases (#166). The app opens in Plan mode, at the habitat's planning table: only the clock (for the Plan top bar)
-// and the per-leg costs run. The EVA starts on the first switch to Walk, with the astronaut at the airlock (the engine
-// places them there, src/engine/spawn.js): a fresh clock, full consumables, a fresh terrain fix, WP1 as the next target,
-// and the walkback, partner, off-route, waypoint, event, environment and EVA statistics runners. Later switches between Plan and Walk
-// change nothing here.
+// Two phases (habitat-first flow, src/state/flow.js). The app opens with the astronaut inside the habitat: only the
+// clock (held, for the local time) and the per-leg costs run while they walk around and plan at the mission table.
+// The EVA starts when the stage becomes 'eva', at the end of the airlock cycle, with the astronaut already outside
+// (the engine moved them there while the screen was dark, src/engine/spawn.js): a fresh clock, full consumables, a
+// fresh terrain fix, WP1 as the next target, and the walkback, partner, off-route, waypoint, event, environment and EVA
+// statistics runners. Nothing in the habitat can start them, so no event fires and no oxygen is used before the EVA.
 import { useMissionStore } from './store.js';
 import { DEMO_MISSION_CLOCK, SKY_PRESETS, startMissionClock } from '../sim/missionClock.js';
 import { startEventRunner } from './events.js';
@@ -116,7 +117,7 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     if (clock && paused) clock.pause();
     initNavigation({ store });   // a terrain fix at the airlock; after the clock, for the fix time
     // The navigation drift (#42): the estimate follows the bridge's true position (navigation.trueX/trueZ) from
-    // the first Walk on, and initNavigation's fresh fix re-seeds it.
+    // the start of the EVA on, and initNavigation's fresh fix at the airlock re-seeds it.
     navigation = startNavigationDrift({
       store,
       lineOfSight: engine.lineOfSight,
@@ -126,7 +127,7 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     // The crew's needs as they were locked at Begin EVA: the mission and the consumables the walk starts with.
     const needs = store.getState().needs ?? {};
     // A crew of one walks alone (D8): no partner on the surface, so no EV2 chip, no separation alert and no hand-over.
-    // A restart puts the scripted partner back at the airlock (engine.resetSession), for a crew of two.
+    // The next airlock cycle puts the scripted partner back beside the player (engine.exitAirlock), for a crew of two.
     const solo = needs.crew === 1;
     if (solo && typeof engine.setPartnerSource === 'function') {
       try { engine.setPartnerSource(null); } catch (e) { console.warn('partner not hidden:', e); }
@@ -134,7 +135,7 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     const waypoints = startWaypointRunner({ store });
     stopsReady.then((stops) => { if (stops) waypoints.setStops(stops); });
     eva = {
-      // The mission (#265) is the one the crew's objective defines, locked by this same switch to Walk (setMode).
+      // The mission (#265) is the one the crew's objective defines, locked at Begin EVA (beginEgress in flow.js).
       events: startEventRunner({ store, objective: needs.objective, stops: loadedStops, onEventLog: (entry) => recordEvaEvent(store, entry) }),
       offRoute: startOffRoute({ store }),
       waypoints,
@@ -170,9 +171,9 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     }, () => {});
   }
 
-  const onMode = (s) => { if (s.mode === 'walk' && !eva && !stopped) { unsubscribe(); startEva(); } };
-  const unsubscribe = store.subscribe(onMode);
-  onMode(store.getState());
+  const onStage = (s) => { if (s.stage === 'eva' && !eva && !stopped) { unsubscribe(); startEva(); } };
+  const unsubscribe = store.subscribe(onStage);
+  onStage(store.getState());
 
   return () => {
     stopped = true;
