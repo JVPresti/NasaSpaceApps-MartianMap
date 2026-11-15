@@ -403,6 +403,7 @@
   "menu.the.mouse.was.released.so.the.eva.is": "Se liberó el ratón y la EVA está en pausa. Elige Continuar para capturarlo de nuevo.",
   "menu.scene.quality.could.not.be.changed": "No se pudo cambiar la calidad de la escena.",
   "menu.the.eva.could.not.be.restarted": "No se pudo reiniciar la EVA.",
+  "menu.the.eva.could.not.be.resumed": "No se pudo reanudar la EVA.",
   "menu.w.a.s.d.or.arrows": "W A S D o flechas",
   "menu.shift": "Mayús",
   "menu.jog": "Trotar",

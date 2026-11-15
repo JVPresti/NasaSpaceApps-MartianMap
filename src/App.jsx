@@ -211,7 +211,7 @@ export default function App() {
       setNotice(null);
     } catch (cause) {
       // Resume must never stay disabled: the menu is the only way back into the EVA.
-      setNotice((cause && cause.message) || 'The EVA could not be resumed.');
+      setNotice((cause && cause.message) || 'menu.the.eva.could.not.be.resumed');
     } finally {
       setBusyState(false);
     }

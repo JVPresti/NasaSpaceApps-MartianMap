@@ -403,6 +403,7 @@
   "menu.the.mouse.was.released.so.the.eva.is": "The mouse was released, so the EVA is paused. Choose Resume to capture it again.",
   "menu.scene.quality.could.not.be.changed": "Scene quality could not be changed.",
   "menu.the.eva.could.not.be.restarted": "The EVA could not be restarted.",
+  "menu.the.eva.could.not.be.resumed": "The EVA could not be resumed.",
   "menu.w.a.s.d.or.arrows": "W A S D or arrows",
   "menu.shift": "Shift",
   "menu.jog": "Jog",
