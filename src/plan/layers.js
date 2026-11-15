@@ -204,7 +204,7 @@ export const LAYERS = [
     get maxLabel() { return t('layers.exposure.open'); },
     get swatches() { return [{ color: MARKER_COLOURS.shelter, label: t('layers.exposure.shelter'), detail: t('layers.exposure.shelter.detail') }]; },
   },
-  // The return zone (src/sim/returnZone.js): everywhere the crew can walk to and still walk home with the 30 min
+  // The return zone (src/sim/returnZone.js): everywhere the crew can walk to and still walk home with the O2
   // reserve. src/zone/ReturnZoneLayer.jsx draws it over the map from the zone service (src/state/returnZone.js).
   ZONE_LAYER,
 ];

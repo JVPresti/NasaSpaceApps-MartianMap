@@ -6,6 +6,7 @@ import poster from '../assets/ui/surface.webp';
 import { ControlsPanel } from './ControlsHelp.jsx';
 import Modal from './Modal.jsx';
 import { FOCUSABLE, focusTarget } from './focus.js';
+import { presentHref, presentLabel } from '../present/entry.js';
 
 /**
  * The start screen (#11): the title over a looping video of an astronaut walking on Mars (AI-generated, credited in
@@ -98,6 +99,7 @@ export default function StartScreen({ busy, notice, freeLook = false, scene = nu
             {freeLook && <p className="start-note">{t('menu.drag.to.look.table')}</p>}
           </div>
           <p className="start-credit">{t('menu.start.credit')}</p>
+          <a className="start-present" href={presentHref()}>{presentLabel()}</a>
         </div>
         </>
       )}

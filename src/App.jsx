@@ -1,4 +1,5 @@
 import { t, translateText } from './i18n/index.js';
+import PresentGate from './present/PresentGate.jsx';   // ?present=1, the pitch inside the app (#291)
 import { useLanguage } from './i18n/useLanguage.js';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import EngineView from './components/EngineView.jsx';
@@ -627,6 +628,7 @@ export default function App() {
       {/* Last, so its native dialog is created after the debrief and its top layer sits above it. Mounted from the
           first frame (#266): Sources is usable on the start screen while the scene still loads. */}
       <SourcesRoot />
+      <PresentGate engine={engine} />
     </div>
   );
 }

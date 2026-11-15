@@ -2,7 +2,7 @@ import { t, formatNumber } from '../i18n/index.js';
 // Helmet HUD (issue #20): what the astronaut reads while walking. Every value comes from the mission store; the store
 // changes a few times per second (suit 4 Hz, position 5 Hz), so these components re-render at that rate, never per frame.
 // Layout follows the v3 "Caminar · Normal" mockup; final Figma measurements come later (#11).
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
@@ -14,6 +14,10 @@ import RadioLink from './RadioLink.jsx';
 import LayerChip from './LayerChip.jsx';
 import SlopeAhead from './SlopeAhead.jsx';
 import * as I from './icons.jsx';
+import { clearOfRects, createPanelRects } from './labelClear.js';
+import { applyVisorClasses, isDetailToggle, samplingInProgress } from './visorMode.js';
+import { wristOwnsKeys } from '../screens/wrist/ownership.js';
+import { setLiveEngine, usePoseFrame } from './livePose.js';
 import NavLine from './NavLine.jsx';
 import Minimap from './Minimap.jsx';
 import './hud.css';
@@ -44,33 +48,61 @@ const SPAN = 60;                         // degrees shown each side of the headi
 const W = 1120, R = 1500, CX = W / 2, TOP = 12, SWEEP = 0.4;   // tape geometry in viewBox units
 const arc = (offsetDeg) => { const a = offsetDeg / SPAN * SWEEP; return { x: CX + R * Math.sin(a), y: TOP + R * (1 - Math.cos(a)), a }; };
 
+// The tape is drawn once for every heading (ticks at their absolute bearing on one circle) and turned as a group each
+// frame; the labels counter-turn so they stay upright, and a wedge-shaped clip keeps the visible arc to ±SPAN.
+const TICKS = [];
+for (let d = -SPAN; d <= 360 + SPAN; d += 5) {
+  const { x, y, a } = arc(d), major = d % 15 === 0, len = major ? 12 : 6;
+  TICKS.push({ d, x, y, a, major, len, label: wrapDeg(d) % 45 === 0 ? cardinal(d) : null });
+}
+const PIVOT = { x: CX, y: TOP + R };
+const rad2deg = 180 / Math.PI;
+const CLIP = (() => {   // a wedge from the circle's centre through both ends of the visible arc, a little past the labels
+  const far = R * 1.2, a = SWEEP;
+  return `M${PIVOT.x} ${PIVOT.y} L${PIVOT.x + far * Math.sin(-a)} ${PIVOT.y - far * Math.cos(-a)} L${PIVOT.x + far * Math.sin(a)} ${PIVOT.y - far * Math.cos(a)} Z`;
+})();
+
 function HeadingTape() {
   const heading = useMissionStore((s) => s.navigation.headingDeg);
   const target = useMissionStore(useShallow((s) => { const w = nextWaypointInfo(s.route, s.navigation); return w ? Math.round(w.bearingDeg) : null; }));
-  const h = typeof heading === 'number' ? heading : null;
-  const ticks = [];
-  if (h !== null) {
-    const first = Math.ceil((h - SPAN) / 5) * 5;
-    for (let d = first; d <= h + SPAN; d += 5) {
-      const o = d - h, { x, y, a } = arc(o), major = d % 15 === 0, len = major ? 12 : 6;
-      ticks.push(<line key={'t' + d} x1={x} y1={y} x2={x - Math.sin(a) * len} y2={y + Math.cos(a) * len} className={major ? 'hud-tick-major' : 'hud-tick'} />);
-      if (wrapDeg(d) % 45 === 0) ticks.push(<text key={'l' + d} x={x} y={y + 30} className="hud-tape-label">{cardinal(d)}</text>);
-    }
-  }
-  let marker = null;
-  if (h !== null && target !== null) {
-    const o = ((target - h + 540) % 360) - 180;
-    if (Math.abs(o) <= SPAN) { const { x, y } = arc(o); marker = <path d={`M${x - 7} ${y + 16} L${x + 7} ${y + 16} L${x} ${y + 27} Z`} className="hud-tape-target" />; }
-  }
+  const group = useRef(null), box = useRef(null), shown = useRef({ h: null, text: null });
+  const h0 = typeof heading === 'number' ? heading : null;
+  // Per frame: turn the tape to the engine's heading and update the box, writing to the DOM only when it changed.
+  usePoseFrame((p) => {
+    const h = p && Number.isFinite(p.headingDeg) ? p.headingDeg : null;
+    if (h === null || h === shown.current.h || !group.current) return;
+    shown.current.h = h;
+    const turn = -(h / SPAN) * SWEEP * rad2deg;
+    group.current.setAttribute('transform', `rotate(${turn} ${PIVOT.x} ${PIVOT.y})`);
+    for (const el of group.current.querySelectorAll('text')) el.setAttribute('transform', `rotate(${-turn} ${el.getAttribute('x')} ${el.getAttribute('y')})`);
+    const text = Math.round(wrapDeg(h)) + '°';
+    if (box.current && text !== shown.current.text) { box.current.textContent = text; shown.current.text = text; }
+  });
+  // the first paint and the case without a live engine use the store's heading
+  const turn0 = h0 === null ? 0 : -(h0 / SPAN) * SWEEP * rad2deg;
+  // the waypoint marker sits at its absolute bearing, drawn radially so it points at the arc after the turn
+  const markerAt = (deg) => { const { x, y, a } = arc(deg); return <path key={deg} d={`M${x - 7} ${y + 16} L${x + 7} ${y + 16} L${x} ${y + 27} Z`} transform={`rotate(${a * rad2deg} ${x} ${y})`} className="hud-tape-target" />; };
+  const markers = target === null ? [] : [target, target < SPAN ? target + 360 : null, target > 360 - SPAN ? target - 360 : null].filter((d) => d !== null).map(markerAt);
   const path = `M${arc(-SPAN).x} ${arc(-SPAN).y} A${R} ${R} 0 0 1 ${arc(SPAN).x} ${arc(SPAN).y}`;
   return (
-    <div className="hud-heading" aria-label={h === null ? t('ui.heading.unknown') : t('ui.heading.p0.degrees', { p0: Math.round(h) })}>
+    <div className="hud-heading" aria-label={h0 === null ? t('ui.heading.unknown') : t('ui.heading.p0.degrees', { p0: Math.round(h0) })}>
       <svg viewBox={`0 0 ${W} 120`} className="hud-tape" aria-hidden="true">
+        <defs><clipPath id="hud-tape-clip"><path d={CLIP} /></clipPath></defs>
         <path d={path} className="hud-tape-arc" />
-        {ticks}{marker}
+        {h0 !== null && (
+          <g clipPath="url(#hud-tape-clip)">
+            <g ref={group} transform={`rotate(${turn0} ${PIVOT.x} ${PIVOT.y})`}>
+              {TICKS.map((k) => <line key={'t' + k.d} x1={k.x} y1={k.y} x2={k.x - Math.sin(k.a) * k.len} y2={k.y + Math.cos(k.a) * k.len} className={k.major ? 'hud-tick-major' : 'hud-tick'} />)}
+              {TICKS.filter((k) => k.label).map((k) => (
+                <text key={'l' + k.d} x={k.x - Math.sin(k.a) * 30} y={k.y + Math.cos(k.a) * 30} transform={`rotate(${-turn0} ${k.x - Math.sin(k.a) * 30} ${k.y + Math.cos(k.a) * 30})`} className="hud-tape-label">{k.label}</text>
+              ))}
+              {markers}
+            </g>
+          </g>
+        )}
         <line x1={CX} y1={TOP - 10} x2={CX} y2={TOP + 18} className="hud-tape-center" />
       </svg>
-      <div className="hud-heading-box">{h === null ? '–' : Math.round(wrapDeg(h)) + '°'}</div>
+      <div className="hud-heading-box" ref={box}>{h0 === null ? '–' : Math.round(wrapDeg(h0)) + '°'}</div>
     </div>
   );
 }
@@ -223,21 +255,26 @@ function WaypointMarker({ engine }) {
 
   useEffect(() => {
     if (!engine || !hasTarget) return undefined;
-    let frame = 0;
+    let frame = 0, panels = null;
     const draw = () => {
       frame = requestAnimationFrame(draw);
       const m = marker.current, a = arrow.current, t = target.current;
       if (!m || !a) return;
       const box = m.parentElement;   // the .hud overlay, inset 0 over the engine container
       const place = t && box ? placeMarker(engine, t, box.clientWidth, box.clientHeight) : null;
-      m.style.visibility = place?.mode === 'marker' ? 'visible' : 'hidden';
+      // a world label behind a HUD panel shows through it and reads as a glitch (#283). Move it beside the panel, or hide
+      // it when there is no clear spot, since the panel below already names the waypoint and its range
+      if (place?.mode === 'marker' && box && !panels) panels = createPanelRects(box);
+      const p = place?.mode === 'marker' ? panels.get(m) : null;
+      const clear = p ? clearOfRects(place, p.w, p.h, p.rects) : true;
+      m.style.visibility = place?.mode === 'marker' && clear ? 'visible' : 'hidden';
       a.style.visibility = place?.mode === 'edge' ? 'visible' : 'hidden';
       if (!place) return;
       const el = place.mode === 'marker' ? m : a;
       el.style.transform = `translate(${place.x}px, ${place.y}px) translate(-50%, -50%)` + (place.mode === 'edge' ? ` rotate(${place.angle}deg)` : '');
     };
     draw();
-    return () => cancelAnimationFrame(frame);
+    return () => { cancelAnimationFrame(frame); if (panels) panels.dispose(); };
   }, [engine, hasTarget]);
 
   if (!info) return null;
@@ -260,6 +297,52 @@ function WaypointMarker({ engine }) {
   );
 }
 
+// I shows every instrument (#283). By default the visor keeps what a walk needs: heading, EVA clock, suit and margin,
+// next waypoint, partner and minimap. The full set adds the environment strip, the navigation and radio lines, the
+// sampling checklist, local solar time and the source tag of each reading. A panel that is warning stays visible.
+function useHudDetail() {
+  const [detail, setDetail] = useState(false);
+  useEffect(() => {
+    const onKey = (e) => {
+      if (isDetailToggle(e, { wristOwnsKeys: wristOwnsKeys(), dialogOpen: !!document.querySelector('dialog[open]') })) setDetail((v) => !v);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  return detail;
+}
+
+/**
+ * The two keys a first-time player needs to find everything else. It also owns the visor's mode classes on the .hud
+ * element: hud-detail while I is on, hud-sampling-on while a rock or the soil is in view or a sample is under way (the
+ * checklist also shows while a science card is open, see hud.css).
+ */
+function KeyHint({ engine }) {
+  const ref = useRef(null);
+  useEffect(() => { setLiveEngine(engine ?? null); return () => setLiveEngine(null); }, [engine]);   // the per-frame pose feed (#307)
+  // hud-wrist while the wrist screen is up (#286): the waypoint panel folds to its header row (hud.css)
+  useEffect(() => {
+    const hud = ref.current && ref.current.closest('.hud');
+    if (!hud || !engine || typeof engine.subscribeWrist !== 'function') return undefined;
+    const off = engine.subscribeWrist((state) => hud.classList.toggle('hud-wrist', state?.open === true));
+    return () => { if (typeof off === 'function') off(); hud.classList.remove('hud-wrist'); };
+  }, [engine]);
+  const detail = useHudDetail();
+  const sampling = useMissionStore(samplingInProgress);
+  useLayoutEffect(() => {
+    const hud = ref.current && ref.current.closest('.hud');
+    if (!hud) return undefined;
+    applyVisorClasses(hud.classList, { detail, sampling });
+    return () => hud.classList.remove('hud-detail', 'hud-sampling-on');
+  }, [detail, sampling]);
+  return (
+    <div className="hud-keys" aria-hidden="true" ref={ref}>
+      <span><kbd>H</kbd>{t('ui.hud.keys.controls')}</span>
+      <span><kbd>I</kbd>{t(detail ? 'ui.hud.keys.fewer' : 'ui.hud.keys.instruments')}</span>
+    </div>
+  );
+}
+
 /**
  * The whole visor HUD. Rendered by App in Walk mode once the scene is ready. Alerts show in App's event banner, under
  * the heading box (src/events/events.css), so the HUD has no alert strip of its own.
@@ -275,6 +358,7 @@ export default function Hud({ engine, minimapRoute }) {
       {!cabin && <WaypointMarker engine={engine} />}
       <SlopeAhead engine={engine} />
       <Clocks />
+      <KeyHint engine={engine} />
       <SuitPanel />
       <PartnerPanel />
       <LayerChip />

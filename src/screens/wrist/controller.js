@@ -27,7 +27,7 @@ export function connectWrist(engine, store = useMissionStore) {
     if (disposed) return;
     const state = store.getState(), page = PAGES[pageIndex];
     const model = wristView(state, page, row);
-    const map = page === 'map' ? wristMapView(state) : null;
+    const map = page === 'map' ? wristMapView(withLiveHeading(state)) : null;
     const signature = JSON.stringify([model, map, page === 'map' ? resourceVersion : 0]);
     if (signature === painted) return;
     painted = signature;
@@ -96,9 +96,24 @@ export function connectWrist(engine, store = useMissionStore) {
       resourceVersion++;
       if (open && PAGES[pageIndex] === 'map') scheduler.request('shelters');
     }).catch(() => {});
+  // The map page's heading wedge follows the engine, not the 5 Hz store copy (#307): while the map is up, a frame loop
+  // asks for a repaint when the heading moved a degree. The scheduler still caps the canvas texture at its own rate.
+  let liveHeading = null, frame = 0;
+  function withLiveHeading(state) {
+    return Number.isFinite(liveHeading) ? { ...state, navigation: { ...state.navigation, headingDeg: liveHeading } } : state;
+  }
+  const watchHeading = () => {
+    if (disposed) return;
+    if (open && PAGES[pageIndex] === 'map') {
+      const h = engine.getPlayer().headingDeg;
+      if (!Number.isFinite(liveHeading) || Math.abs(((h - liveHeading + 540) % 360) - 180) >= 1) { liveHeading = h; scheduler.request('heading'); }
+    }
+    frame = requestAnimationFrame(watchHeading);
+  };
+  frame = requestAnimationFrame(watchHeading);
   scheduler.request('init');
   return () => {
-    disposed = true; off(); offLanguage(); scheduler.dispose();
+    disposed = true; cancelAnimationFrame(frame); off(); offLanguage(); scheduler.dispose();
     setWristKeyOwner(false);
     window.removeEventListener('keydown', onKey);
     window.removeEventListener('keyup', onKeyUp);

@@ -1,0 +1,32 @@
+{
+  "note": "Written by scripts/present/build_assets.py from NASA Mars Trek tiles. Boxes are west, south, east, north in degrees.",
+  "globe": {
+    "layer": "Mars_Viking_MDIM21_ClrMosaic_global_232m",
+    "box": [
+      -180,
+      -90,
+      180,
+      90
+    ]
+  },
+  "region": {
+    "layer": "THEMIS_DayIR_ControlledMosaics_100m_v2_oct2018",
+    "colour": "Mars_Viking_MDIM21_ClrMosaic_global_232m",
+    "box": [
+      75.9,
+      16.8,
+      79.1,
+      20.0
+    ]
+  },
+  "ctx": {
+    "layer": "JEZ_ctx_B_soc_008_orthoMosaic_6m_Eqc_latTs0_lon0",
+    "colour": "Mars_Viking_MDIM21_ClrMosaic_global_232m",
+    "box": [
+      77.1604655,
+      18.2110274,
+      77.6991776,
+      18.7211945
+    ]
+  }
+}

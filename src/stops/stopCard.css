@@ -152,19 +152,21 @@
    src/events/events.css), so an alert during a stop covers neither. --u matches the HUD's base unit (src/hud/hud.css). */
 .stop-card-walk {
   --u: clamp(11px, 1.4vh, 20px);
-  top: calc(var(--u) * 18.6);
+  /* under the Walk alert (top 13.4 --u plus its height, src/events/events.css), so a storm during a stop covers neither */
+  top: calc(var(--u) * 20.4);
   right: calc(7.8vw + clamp(120px, 27.5vh, 480px) + var(--u) * 1.2);
-  width: calc(var(--u) * 21);
-  max-height: calc(30.5vh);
+  /* readable at 1366 x 768 (#287): 13 px body at the smallest unit, on the HUD's surface panel (#232) */
+  width: calc(var(--u) * 30);
+  max-height: 40vh;
   overflow-y: auto;
-  padding: calc(var(--u) * 0.8) calc(var(--u) * 0.9);
-  font-size: calc(var(--u) * 0.86);
-  background: rgba(40, 22, 15, 0.62);
-  border-color: rgba(255, 240, 225, 0.7);
-  border-radius: calc(var(--u) * 0.8);
+  padding: calc(var(--u) * 1.1) calc(var(--u) * 1.2);
+  font-size: max(var(--text-m), calc(var(--u) * 1.05));
+  background: var(--surface);
+  border-color: var(--line-strong);
+  border-radius: var(--radius-m);
   scrollbar-width: none;
 }
-.stop-card-walk .stop-figure img { max-height: 12vh; object-fit: cover; }
+.stop-card-walk .stop-figure img { max-height: 14vh; object-fit: cover; }
 .stop-card-walk .stop-summary { margin-top: 0.5em; }
 @media (max-width: 900px) {
   .stop-card-walk { right: calc(3vw + clamp(120px, 27.5vh, 480px) + var(--u) * 1.2); }   /* follows .hud-right */
