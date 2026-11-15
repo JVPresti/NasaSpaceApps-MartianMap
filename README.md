@@ -38,7 +38,7 @@ Every number on screen carries one of three tags, except the radio range, which 
 
 We checked 109 numbers against their primary sources: 79 match, 11 are our stated assumptions, 16 had a wrong value, tag or wording, and 3 come from a paper we could not open. Each problem has an issue. The table is [docs/VALIDITY.md](docs/VALIDITY.md).
 
-Walking runs in real time. The hazards do not. The dust storm builds in 90 seconds where the real one took up to a sol, and the radiation event squeezes 57 hours of the September 2017 solar storm into 12 minutes at its measured dose rates.
+Walking runs in real time. The hazards do not. The dust storm builds in 90 seconds where the real one took up to a sol, and the radiation event squeezes 57 hours of the September 2017 solar storm into 12 minutes, from its measured background to its measured peak dose rate with our steps in between.
 
 Three limits apply everywhere:
 
