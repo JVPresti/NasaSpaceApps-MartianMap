@@ -2,7 +2,7 @@
    Barlow Condensed for the large numbers, the same as the mission table. Sizes scale with the viewport height, so the
    layout reads the same at 1080p and 1440p. */
 .hud {
-  --u: clamp(13px, 1.6vh, 21px);                 /* base unit: 13 px up to about 810 px tall, 17 px at 1080p, 21 px at 1440p */
+  --u: var(--hud-u);                              /* base unit (src/index.css): 13 px on short screens, 17 px at 1080p, 21 px at 1440p */
   --hud-min-text: 10px;                          /* floor for captions, units and source tags, so none drops below 10 px */
   /* the HUD panels use the shared surface and line tokens (src/index.css); the minimap and partner styles read these */
   --glass: var(--surface);
@@ -89,12 +89,9 @@
 
 /* right-hand column (#191): minimap, sampling checklist, environment strip, NAV line and radio link, top to bottom.
    One flex stack, so a panel that grows pushes the ones below it down instead of covering them. The stop card
-   (src/stops/stopCard.css) sits left of this column and reads its width from --hud-right-w. */
+   (src/stops/stopCard.css) and the slope-ahead warning sit left of it, at --hud-beside-right (src/index.css). */
 .hud-right {
-  /* the minimap's size: the widest panel in the column. It grows with the text (--u) too, so the environment strip and
-     the sampling checklist fit at the 13 px floor on short screens. */
-  --hud-right-w: clamp(120px, max(27.5vh, calc(var(--u) * 19.5)), 480px);
-  position: absolute; right: 7.8vw; top: 23.5vh; width: var(--hud-right-w);
+  position: absolute; right: var(--hud-right-x); top: 23.5vh; width: var(--hud-right-w);
   display: flex; flex-direction: column; align-items: flex-end; gap: calc(var(--u) * 0.55);
 }
 .hud-right > * { flex: none; max-width: 100%; }
@@ -182,12 +179,13 @@
   fill: currentColor;
 }
 
-/* slope ahead warning + local no-go map */
+/* slope ahead warning + local no-go map. Left of the right column (#392), never behind the minimap; from 40 % of the
+   height it stays under the Walk alert banner and right of the crosshair. */
 .hud-slope-warning {
   position: absolute;
-  right: 7.8vw;
-  top: 34vh;
-  width: min(330px, 28vw);
+  right: var(--hud-beside-right);
+  top: 40vh;
+  width: min(330px, calc(50vw - var(--hud-beside-right) - var(--hud-u) * 2));
   padding: 0.8em 0.9em;
   color: var(--ink);
   background: var(--surface);
@@ -345,7 +343,6 @@
 
 /* small windows: drop to the essentials */
 @media (max-width: 900px) {
-  .hud-right { right: 3vw; }
   .hud-suit { left: 3vw; }
   .hud-eva { left: 3vw; } .hud-lmst { right: 3vw; }
 }
