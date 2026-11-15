@@ -18,7 +18,7 @@ Nobody commits, pushes, or merges directly to `main`, not even for a one-line fi
    ```
 
 3. **Do the work** and push your branch.
-4. **Check for merge conflicts. This step is mandatory.** Before you open the pull request, check that your branch merges into an up-to-date `main` without conflicts:
+4. **Check for merge conflicts. This step is mandatory.** Before you mark the pull request ready for review, check that your branch merges into an up-to-date `main` without conflicts:
 
    ```bash
    git fetch origin
@@ -38,10 +38,10 @@ Nobody commits, pushes, or merges directly to `main`, not even for a one-line fi
    git push
    ```
 
-   Merge `main` into your branch; do not rebase or force-push a branch that someone else may have pulled. Open the pull request only once the check is clean.
-5. **Open a pull request** against `main` and link the issue in the description with `Closes #<issue-number>`.
+   Merge `main` into your branch; do not rebase or force-push a branch that someone else may have pulled. Mark the pull request ready for review only once the check is clean.
+5. **Open a pull request** against `main` and link the issue in the description with `Closes #<issue-number>`. While the work is still in progress, open it as a **draft pull request**, not a regular one. When the work is finished, mark it **Ready for review**. See [Draft pull requests](#draft-pull-requests).
 6. **Get a review.** Any teammate other than the author can review. One approval is enough.
-7. **Merge the pull request** on GitHub once it is approved. The linked issue closes automatically.
+7. **Merge the pull request** on GitHub once it is approved and no longer a draft. The linked issue closes automatically.
 
 One pull request resolves one issue. If the work grows beyond the issue, open a new issue for the extra part.
 
@@ -94,15 +94,24 @@ docs(readme): explain how to run the project
 refactor(map): split tile loading into a hook
 ```
 
-Before asking for a review:
+Before you mark a pull request ready for review:
 
 - The description links the issue with `Closes #<issue-number>`.
 - `npm run lint` and `npm run build` pass.
 - The branch has no merge conflicts with an up-to-date `main` (step 4 of the workflow).
 - The pull request contains only the changes for its issue.
 
+### Draft pull requests
+
+A pull request whose work is still in progress is a draft. A draft shows the team what you are working on and still runs CI, but it cannot be merged, so nobody merges half-finished work.
+
+- **Open it as a draft.** On GitHub, open the arrow next to **Create pull request** and pick **Create draft pull request**. From the terminal, run `gh pr create --draft`.
+- **Mark it ready** once the work is finished and the checks above pass. Click **Ready for review** at the bottom of the pull request, or run `gh pr ready`. Reviews start from here.
+- **Convert it back to a draft** if it needs more work after it was marked ready, for example to resolve conflicts with `main`. Click **Convert to draft** under *Reviewers* in the sidebar, or run `gh pr ready --undo`. Mark it ready again when you are done.
+
 ### Reviewing and merging
 
+- Review and merge only pull requests marked ready for review. A draft is still being worked on.
 - Any teammate can review. The author cannot approve their own pull request.
 - Requested changes are pushed to the same branch. Do not open a second pull request.
 - `main` keeps moving while a pull request is open. Before merging, GitHub must show that the branch has no conflicts with the base branch. If it shows conflicts, the author resolves them as in step 4 and pushes again.
