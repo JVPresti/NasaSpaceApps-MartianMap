@@ -2,13 +2,16 @@ import { t, translateText } from '../i18n/index.js';
 // Partner on the helmet HUD (#70, plan section 3.4 scenario 7). The visor keeps one chip: suit status dot, range and a
 // bearing arrow relative to the heading. The detail (O2, battery, separation bar with the limit) opens with T, and
 // opens by itself while the separation or the partner's suit is in caution or warning. Plan section 3.3: what takes
-// reading stays off the visor until asked for. The values come from crew[0], written by src/sim/partnerRunner.js.
+// reading stays off the visor until asked for. The values come from the crew entries, written by src/sim/partnerRunner.js:
+// one card per entry, the scripted partner offline or each remote surface player online (#53), named and coloured.
 // With no radio line of sight (plan section 4.2) the chip greys out and shows the last known position.
+// Online, an "Offline: playing solo" line shows when the room connection gave up (plan section 9.7).
 import { useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
 import { crewCss } from './crewColor.js';
+import { showsOfflineNotice } from './onlineNotice.js';
 import { batteryLevel, formatValue } from './format.js';
 import * as I from './icons.jsx';
 import './partner.css';
@@ -50,12 +53,25 @@ function Bar({ frac, level, marks = [] }) {
 
 export default function PartnerPanel() {
   const manual = usePartnerKey();
+  const count = useMissionStore((s) => Math.min(s.crew.length, 3));
+  const offline = useMissionStore((s) => showsOfflineNotice(s.online));
+  if (!count && !offline) return null;
+  return (
+    <div className="hud-partners">
+      {offline && <div className="hud-panel hud-online-notice" role="status">{t('online.offline.solo')}</div>}
+      {Array.from({ length: count }, (_, i) => <PartnerCard key={i} index={i} manual={manual} />)}
+    </div>
+  );
+}
+
+function PartnerCard({ index, manual }) {
+  const tag = (field) => 'crew.' + index + '.' + field;
   const p = useMissionStore(useShallow((s) => {
-    const c = s.crew[0];
+    const c = s.crew[index];
     if (!c || !Number.isFinite(c.rangeM)) return null;
     const h = s.navigation.headingDeg;
     return {
-      id: c.id, color: crewCss(c.color),
+      id: c.name || c.id, color: crewCss(c.color),
       rangeM: Math.round(c.rangeM), bearingDeg: Math.round(c.bearingDeg),
       relDeg: Number.isFinite(h) && Number.isFinite(c.bearingDeg) ? Math.round(((c.bearingDeg - h + 540) % 360) - 180) : null,
       o2: Number.isFinite(c.oxygenPct) ? Math.round(c.oxygenPct) : null,
@@ -94,19 +110,19 @@ export default function PartnerPanel() {
       </div>
       {open && (
         <div className="hud-panel hud-partner-detail">
-          {!p.link && <div className="hud-partner-nolink">{t('menu.no.link.last.contact')}{lastSeen}<SourceTag path="crew.0.link" /></div>}
+          {!p.link && <div className="hud-partner-nolink">{t('menu.no.link.last.contact')}{lastSeen}<SourceTag path={tag('link')} /></div>}
           <div className="hud-partner-row">
-            <div className="hud-row-head"><span className="hud-o2">{t('ui.o')}<sub>2</sub></span><b>{formatValue(p.o2)}</b><small>%</small><SourceTag path="crew.0.oxygenPct" /></div>
+            <div className="hud-row-head"><span className="hud-o2">{t('ui.o')}<sub>2</sub></span><b>{formatValue(p.o2)}</b><small>%</small><SourceTag path={tag('oxygenPct')} /></div>
             <Bar frac={p.o2 / 100} level={p.o2Level} />
           </div>
           <div className="hud-partner-row">
-            <div className="hud-row-head"><I.Battery /><b>{formatValue(p.batt)}</b><small>%</small><SourceTag path="crew.0.batteryPct" /></div>
+            <div className="hud-row-head"><I.Battery /><b>{formatValue(p.batt)}</b><small>%</small><SourceTag path={tag('batteryPct')} /></div>
             <Bar frac={p.batt / 100} level={p.battLevel} />
           </div>
           <div className="hud-partner-row hud-partner-sep">
-            <div className="hud-row-head"><span className="hud-partner-sep-label">{t('menu.sep')}</span><b>{p.rangeM}</b><small>/ {p.limitM}{t('units.metresSuffix')}</small><SourceTag path="crew.0.rangeM" /></div>
+            <div className="hud-row-head"><span className="hud-partner-sep-label">{t('menu.sep')}</span><b>{p.rangeM}</b><small>/ {p.limitM}{t('units.metresSuffix')}</small><SourceTag path={tag('rangeM')} /></div>
             <Bar frac={p.rangeM / scale} level={p.separation} marks={[{ at: p.cautionM / scale, kind: 'caution' }, { at: p.limitM / scale, kind: 'limit' }]} />
-            <div className="hud-caption">{t('menu.separation.limit')}{p.limitM}{t('units.metresSuffix')}<SourceTag path="crew.0.separationLimitM" /></div>
+            <div className="hud-caption">{t('menu.separation.limit')}{p.limitM}{t('units.metresSuffix')}<SourceTag path={tag('separationLimitM')} /></div>
           </div>
         </div>
       )}

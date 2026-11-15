@@ -7,8 +7,9 @@
 //
 // base defaults to http://localhost:8787. Use http://localhost:5173 to go through the Vite proxy (npm run dev).
 // origin defaults to http://localhost:5173, the Origin a browser on the Vite dev server sends.
-// Results: docs/qa/online-m1.md.
+// Results: docs/qa/online-m1.md, and docs/qa/online-m2.md for the pose groups (poses, poseflood, standing, rtt).
 import http from 'node:http';
+import { createPoseSender } from '../src/net/poseSync.js';
 
 const BASE = new URL(process.argv[2] || 'http://localhost:8787');
 const ORIGIN = process.argv[3] || 'http://localhost:5173';
@@ -210,6 +211,89 @@ async function hibernation(idleMs) {
   for (const x of [a, b, c]) x.ws.close();
 }
 
+// M2 (#53): the relay adds the sender's id, skips the sender and drops habitat poses.
+async function poses() {
+  const room = code();
+  const a = client(room), b = client(room), h = client(room, { role: 'habitat' });
+  await Promise.all([a.ready, b.ready, h.ready]);
+  const pose = { type: 'p', x: 1.25, z: -3.5, h: 1.571, pt: 0, a: 'walk', hp: 0, ct: Date.now(), ex: 1.3, ez: -3.4 };
+  const seen = Promise.all([b.wait('p'), h.wait('p')]);
+  const t0 = performance.now();
+  a.send(pose);
+  const [pb, ph] = await seen;
+  check('a pose reaches the others with the sender id', pb.id === a.id && ph.id === a.id && pb.x === 1.25, `id ${pb.id}, ${(pb.at - t0).toFixed(1)} ms`);
+  h.send({ ...pose, ct: pose.ct + 1 });
+  a.send({ type: 'tel', o2: 88.5, bat: 91 });
+  const tel = await b.wait('tel');
+  await sleep(300);
+  check('tel is relayed with the id', tel.id === a.id && tel.o2 === 88.5);
+  check('the sender gets no echo, and habitat poses are dropped', !a.msgs.some((m) => m.type === 'p') && !b.msgs.some((m) => m.type === 'p' && m.id === h.id));
+  for (const x of [a, b, h]) x.ws.close();
+}
+
+// A client that ignores the cap: 60 poses per second.
+async function poseFlood() {
+  const room = code();
+  const a = client(room), b = client(room);
+  await Promise.all([a.ready, b.ready]);
+  const t0 = performance.now();
+  let sent = 0;
+  const timer = setInterval(() => { if (a.ws.readyState === 1) a.send({ type: 'p', x: sent * 0.1, z: 0, h: 0, pt: 0, a: 'walk', hp: 0, ct: Date.now() + sent++ }); }, 1000 / 60);
+  const closed = await Promise.race([a.closedP, sleep(12_000).then(() => null)]);
+  clearInterval(timer);
+  const secs = ((closed?.at ?? performance.now()) - t0) / 1000;
+  const relayed = b.msgs.filter((m) => m.type === 'p').length;
+  check('60 poses per second: the room relays only the bucket', relayed < sent * 0.6, `${sent} sent, ${relayed} relayed (${(relayed / secs).toFixed(1)}/s)`);
+  check('and closes the client with 1008 after about 5 s', closed?.code === 1008 && secs >= 5 && secs < 9, closed ? `${closed.code} ${closed.reason} after ${secs.toFixed(1)} s` : 'not closed');
+  b.ws.close();
+}
+
+// Two standing players run the real pose throttle every frame: one pose each at the start, one more when the
+// other joins, then only the 10 s ping. Watch the dev:room log: the room is evicted and built again on wake.
+async function standing(idleMs) {
+  const room = code();
+  const a = client(room), b = client(room, { hello: false });
+  await a.ready;
+  const senders = [a, b].map((c) => {
+    c.poseCount = 0;
+    return createPoseSender({ send: (m) => { if (c.ws.readyState !== 1 || !c.welcome) return false; c.send(m); c.poseCount++; return true; }, read: () => ({ x: 3, z: 4, headingRad: 1, gait: 'idle' }) });
+  });
+  a.ws.addEventListener('message', (e) => { if (e.data !== 'pong' && JSON.parse(e.data).type === 'crew') senders[0].forceNext(); });
+  const frames = setInterval(() => senders.forEach((s) => s.tick()), 16);
+  await b.join();
+  const pinger = setInterval(() => { for (const c of [a, b]) if (c.ws.readyState === 1) c.ws.send('ping'); }, 10_000);
+  await sleep(1000);
+  const before = [a.poseCount, b.poseCount];
+  console.log(`standing pair in room ${room} for ${idleMs / 1000} s at ${new Date().toISOString()}`);
+  await sleep(idleMs);
+  const after = [a.poseCount, b.poseCount];
+  check('standing players send no poses, only pings', after[0] === before[0] && after[1] === before[1], `poses before ${before.join('/')} (b received ${b.msgs.filter((m) => m.type === 'p').length} from a), after ${after.join('/')}, pongs ${a.pongs || 0}/${b.pongs || 0}`);
+  clearInterval(frames); clearInterval(pinger);
+  console.log('waking room ' + room + ' at ' + new Date().toISOString());
+  const c = client(room);
+  const w = await c.ready;
+  check('the room wakes with the crew intact', w.crew.length === 3);
+  for (const x of [a, b, c]) x.ws.close();
+}
+
+async function rtt(samples = 20) {
+  const room = code();
+  const a = client(room);
+  await a.ready;
+  const list = [];
+  for (let i = 0; i < samples; i++) {
+    const c0 = performance.now(), key = Date.now() * 1000 + i;
+    const p = a.wait('t', (m) => m.c === key);
+    a.send({ type: 't', c: key });
+    await p;
+    list.push(performance.now() - c0);
+    await sleep(100);
+  }
+  list.sort((x, y) => x - y);
+  check('t round trip', true, `min ${list[0].toFixed(1)} ms, median ${list[list.length >> 1].toFixed(1)} ms, max ${list[list.length - 1].toFixed(1)} ms over ${samples}`);
+  a.ws.close();
+}
+
 const only = process.env.ONLY;
 const idle = Number(process.env.IDLE_MS || 15_000);
 console.log(`room smoke test against ${WS_BASE} with Origin ${ORIGIN}`);
@@ -218,5 +302,9 @@ if (!only || only === 'seats') await seats();
 if (!only || only === 'refuse') await refusals();
 if (!only || only === 'flood') await flood();
 if (!only || only === 'hibernate') await hibernation(idle);
+if (!only || only === 'poses') await poses();
+if (!only || only === 'poseflood') await poseFlood();
+if (!only || only === 'standing') await standing(idle);
+if (!only || only === 'rtt') await rtt();
 console.log(`\n${results.length - failed}/${results.length} checks passed`);
 process.exit(failed ? 1 : 0);

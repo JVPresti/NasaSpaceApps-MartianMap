@@ -48,15 +48,38 @@ A partner source is any object with:
 |---|---|---|
 | `createScriptedPartner()` | `src/engine/partnerSource.js` | **The test bench's partner, now the default.** It patrols between (14, 58) and (5, 12) with 3 s pauses. The commands `'toggleCase'` and `'visitHabitat'` run the hand-over and the walk into the habitat and back. The case clip is timed from its data: 2.07 s, release or grab at 0.9 s (`astronaut.json`). For `'toggleCase'` it walks toward where the player is now, re-aimed every frame, and stops 1.6 m from them (`HANDOVER_M`), or at once if the player walks up closer. |
 | `createStaticPartner()` | `src/engine/partnerSource.js` | Holds one pose; `set(patch)` changes it. It is the shape of a network source: the latest received state. |
+| `createNetPartner()` | `src/net/netPartner.js` | One remote surface player (#53), drawn 150 ms behind real time from their poses, in their colour slot. Loaded only with `?room=`. |
 
 ## Using it
 
 ```js
 engine.setPartnerSource(createStaticPartner({ x: 8, z: 64 }));   // or null to hide the partner
 engine.partnerCommand('toggleCase');                              // forwarded to source.command, if any
+engine.setPartnerSources([a, b, c]);                              // several partners (#53); [] brings the base source back
+engine.getPartners();                                             // [{ id, name, color, state, radio }]
 ```
 
-**Writing a network source (#53):**
+## Several partners (#53)
+
+Online, up to three other surface players walk next to you. The engine keeps two kinds of source (`src/engine/partnerSlots.js`):
+
+- The **base source**, set by `setPartnerSource`: the scripted partner by default. A restart at the airlock sets it again.
+- A **list**, set by `setPartnerSources([...])`, at most 3. While it is not empty it replaces the base source. `[]` brings the base back where it left off. Resetting the base does not touch the list, so a restart while online keeps the remote players.
+
+The first listed source drives the full partner (`src/engine/partner.js`): the tool case, the helmet lamp's light on the ground, the cast shadow, the hatch, collision and boot prints. Each other source gets a lighter suit (`src/engine/extraPartners.js`): the same model, clips and ground height in its own colour, with a blob shadow and the lamp glow, but no case, no lamp light, no hatch and no collision. Those are single-slot systems today, and one full partner plus two lighter suits keeps the frame cost close to offline.
+
+A source may also have:
+
+| Field | Meaning |
+|---|---|
+| `name` | display name for the team panel and the map. Defaults to `id`. |
+| `radio()` | what this crew member reports over the radio: `{ name, x, z, oxygenPct, batteryPct }`. A remote player reports their own position estimate (#42) and the O2 and battery of their last `tel`. Missing fields fall back to the true position and the local suit model. |
+
+`getPartners()` returns `[{ id, name, color, state, radio }]`, the full partner first. `getPartner()` still returns the full partner's `{ id, color, state }`. The partner runner (`src/sim/partnerRunner.js`) reads `getPartners()` and writes one `crew` entry per partner, in that order. A remote entry takes `x`, `z`, `oxygenPct` and `batteryPct` from `radio()`, and like the scripted partner they only update while there is radio line of sight; behind a ridge the entry keeps the last values received, the minimap marker turns grey and reads "last known". The separation alert follows the nearest partner.
+
+**Scripted or remote (`src/net/poseSync.js`).** While at least one other surface player is in the room, the remote players replace the scripted partner. Alone, or when the connection status is `'offline'` (3 failed reconnects, plan section 9.7) or `'closed'`, the scripted partner comes back and the visor shows "Offline: playing solo". A short reconnect (`'connecting'`) keeps the remote players.
+
+**The network source (#53)** is `createNetPartner()` in `src/net/netPartner.js`:
 - **`update`:** return the latest pose received, interpolated over about 150 ms.
 - **`gait` and `action`:** take them from the remote player's state.
 - **`color`:** take it from the player's slot in `PLAYER_COLORS` (`src/engine/crew.js`).

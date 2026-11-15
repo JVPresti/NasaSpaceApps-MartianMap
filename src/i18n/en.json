@@ -464,6 +464,8 @@
   "menu.partner.p0.p1.p2.metres.bearing.p3.suit": "Partner {p0}: {p1}{p2} metres, bearing {p3}, suit {p4}, separation {p5}",
   "menu.no.radio.link": "No radio link",
   "menu.last": "LAST",
+  "online.offline.solo": "Offline: playing solo",
+  "map.last.known": "last known",
   "menu.press.t.for.partner.detail": "Press T for partner detail",
   "menu.t": "T",
   "menu.no.link.last.contact": "NO LINK · last contact ",

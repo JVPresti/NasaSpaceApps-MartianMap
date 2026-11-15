@@ -24,9 +24,8 @@ function relevantState(s) {
     waypoints: s.route?.waypoints,
     nextIndex: s.route?.nextIndex,
     zones: s.hazards?.zones,
-    partnerX: s.crew?.[0]?.x,
-    partnerZ: s.crew?.[0]?.z,
-    partnerLink: s.crew?.[0]?.link,
+    // every crew marker (#53): position, radio link and name, as one string so the comparison stays cheap
+    crewKey: (s.crew || []).map((c) => c.x + ',' + c.z + ',' + c.link + ',' + (c.name || c.id)).join(';'),
     finds: s.finds?.list,
   };
 }
@@ -39,9 +38,7 @@ function changed(prev, next) {
     || prev.waypoints !== next.waypoints
     || prev.nextIndex !== next.nextIndex
     || prev.zones !== next.zones
-    || prev.partnerX !== next.partnerX
-    || prev.partnerZ !== next.partnerZ
-    || prev.partnerLink !== next.partnerLink
+    || prev.crewKey !== next.crewKey
     || prev.finds !== next.finds;
 }
 
@@ -93,6 +90,7 @@ export default function Minimap({ tracker }) {
         shelters,
         zones: state.hazards?.zones,
         partner: state.crew?.[0] ?? null,
+        crew: state.crew ?? [],
         finds: state.finds?.list,
       });
     }

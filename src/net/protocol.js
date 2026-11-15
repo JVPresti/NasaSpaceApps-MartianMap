@@ -170,6 +170,7 @@ const pickCrewEntry = (e) => ({ id: e.id, name: e.name, color: e.color, role: e.
 const copyOptional = (out, msg, keys) => { for (const k of keys) if (msg[k] !== undefined) out[k] = msg[k]; return out; };
 const isRoutePoint = (pt) => Array.isArray(pt) && pt.length === 2 && isInt(pt[0], -1e6, 1e6) && isInt(pt[1], -1e6, 1e6);
 const isPoseField = (v) => isInt(v, 0, 255) || isStr(v, 16);
+const isBit = (v) => v === 0 || v === 1;
 
 /**
  * One validator per message type, used by both sides. Each takes a decoded message and returns a copy with
@@ -202,9 +203,15 @@ export const VALIDATORS = Object.freeze({
     if ((m.op !== 'join' && m.op !== 'leave') || !isCrewEntry(m.p)) return null;
     return { type: MSG.CREW, op: m.op, p: pickCrewEntry(m.p) };
   },
+  // x, z: true position (cm); h: heading clockwise from north and pt: pitch, radians; a: gait; hp: hand pose;
+  // ct: sender clock (ms). Optional (M2): ex, ez the sender's navigation estimate for the map, ac and at a
+  // one-shot body clip and its time (s), c 0 when not carrying the case, l 0 or 1 to force the lamp.
   [MSG.POSE](m) {
     if (![m.x, m.z, m.h, m.pt, m.ct].every(isNum) || !isPoseField(m.a) || !isPoseField(m.hp) || !isOpt(m.id, isId)) return null;
-    return copyOptional({ type: MSG.POSE, x: m.x, z: m.z, h: m.h, pt: m.pt, a: m.a, hp: m.hp, ct: m.ct }, m, ['id']);
+    if (!isOpt(m.ex, isNum) || !isOpt(m.ez, isNum) || (m.ex === undefined) !== (m.ez === undefined)) return null;
+    if (!isOpt(m.ac, (v) => isStr(v, 16) && v.length > 0) || !isOpt(m.at, isNum) || (m.ac === undefined) !== (m.at === undefined)) return null;
+    if (!isOpt(m.c, isBit) || !isOpt(m.l, isBit)) return null;
+    return copyOptional({ type: MSG.POSE, x: m.x, z: m.z, h: m.h, pt: m.pt, a: m.a, hp: m.hp, ct: m.ct }, m, ['ex', 'ez', 'ac', 'at', 'c', 'l', 'id']);
   },
   [MSG.TELEMETRY](m) {
     if (!isNum(m.o2) || !isNum(m.bat) || !isOpt(m.id, isId)) return null;

@@ -10,6 +10,7 @@ import {
   STALE_MS, decode, encode, utf8ByteLength, validate,
 } from '../src/net/protocol.js';
 import { createTokenBucket } from '../src/net/rateLimit.js';
+import { POSE_HANDLERS } from './handlers/poses.js';
 
 const SCHEMA = [
   'CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)',
@@ -23,11 +24,12 @@ function randomUint32() {
 
 /**
  * Handlers for seated sockets, by message type. Each gets (room, ws, msg, me, now) where msg has passed the
- * protocol validator and me is the sender's crew entry. Later pieces add:
- * M2 `p` and `tel` (relay to the others with the sender's id), M3 `mk`, `smp` and `case` (SQLite, then
- * broadcast), M4 `rt` and `go`. A type without a handler is ignored.
+ * protocol validator and me is the sender's crew entry. M2 `p` and `tel` live in handlers/poses.js. Later
+ * pieces add M3 `mk`, `smp` and `case` (SQLite, then broadcast) and M4 `rt` and `go`. A type without a
+ * handler is ignored.
  */
 export const HANDLERS = {
+  ...POSE_HANDLERS,
   [MSG.START](room, _ws, _msg, _me, now) {
     room.broadcast({ type: MSG.START, ...room.startMission(now) });
   },

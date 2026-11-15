@@ -464,6 +464,8 @@
   "menu.partner.p0.p1.p2.metres.bearing.p3.suit": "Compañero {p0}: {p1}{p2} metros, rumbo {p3}, traje {p4}, separación {p5}",
   "menu.no.radio.link": "Sin enlace de radio",
   "menu.last": "ÚLTIMA",
+  "online.offline.solo": "Sin conexión: juegas en solitario",
+  "map.last.known": "última posición",
   "menu.press.t.for.partner.detail": "Pulsa T para ver el detalle del compañero",
   "menu.t": "T",
   "menu.no.link.last.contact": "SIN ENLACE · último contacto ",

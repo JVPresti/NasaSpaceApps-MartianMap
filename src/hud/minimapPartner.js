@@ -1,7 +1,10 @@
 // Partner on the helmet minimap (#70). A dot in the partner's suit colour at crew[0].x/z. With no radio line of sight
 // (crew[0].link false) the dot is a grey dashed ring labelled LAST at the last known position, as plan section 4.2 asks. A partner beyond
 // the map's range sits on the rim as a small arrow pointing toward them.
+// Online (#53) every crew entry gets a marker: a remote player's x/z is their own position estimate, received only in
+// radio line of sight, so behind a ridge it greys out where it was last received and reads "last known".
 // Plain JavaScript, no React and no three.js.
+import { t } from '../i18n/index.js';
 import { crewCss } from './crewColor.js';
 
 const TAU = Math.PI * 2;
@@ -21,9 +24,14 @@ export function partnerMarker(partner, project, cx, cy, radius, marginPx = 8) {
   if (!partner || !Number.isFinite(partner.x) || !Number.isFinite(partner.z)) return null;
   const p = project(partner.x, partner.z), dx = p.x - cx, dy = p.y - cy, d = Math.hypot(dx, dy), max = radius - marginPx;
   const lost = partner.link === false;
-  const base = { angle: Math.atan2(dy, dx), lost, color: lost ? LOST : crewCss(partner.color) || '#ff9a3c', label: partner.id || 'EV2' };
+  const base = { angle: Math.atan2(dy, dx), lost, color: lost ? LOST : crewCss(partner.color) || '#ff9a3c', label: partner.name || partner.id || 'EV2' };
   if (d <= max) return { ...base, x: p.x, y: p.y, edge: false };
   return { ...base, x: cx + dx / d * max, y: cy + dy / d * max, edge: true };
+}
+
+/** Paint every crew marker (the scripted partner, or each remote player). */
+export function drawPartners(g, crew, project, cx, cy, radius) {
+  for (const entry of Array.isArray(crew) ? crew : []) drawPartner(g, entry, project, cx, cy, radius);
 }
 
 /** Paint the partner marker on the minimap canvas. */
@@ -69,7 +77,7 @@ export function drawPartner(g, partner, project, cx, cy, radius) {
   g.textBaseline = 'middle';
   g.strokeStyle = 'rgba(20, 10, 6, 0.8)';
   g.lineWidth = 3;
-  const text = m.lost ? m.label + ' LAST' : m.label;
+  const text = m.lost ? m.label + ' ' + t('map.last.known') : m.label;
   g.strokeText(text, m.x + r + 3, m.y);
   g.fillText(text, m.x + r + 3, m.y);
   g.restore();
