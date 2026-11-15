@@ -2,7 +2,7 @@ import { t, formatNumber } from '../i18n/index.js';
 // Helmet HUD (issue #20): what the astronaut reads while walking. Every value comes from the mission store; the store
 // changes a few times per second (suit 4 Hz, position 5 Hz), so these components re-render at that rate, never per frame.
 // Layout follows the v3 "Caminar · Normal" mockup; final Figma measurements come later (#11).
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import SharedSourceTag from '../components/SourceTag.jsx';
 import { useMissionStore } from '../state/store.js';
@@ -19,6 +19,7 @@ import Minimap from './Minimap.jsx';
 import './hud.css';
 import { SamplingChecklist, SamplingCrosshair } from './SamplingPanel.jsx';
 import PartnerPanel from './PartnerPanel.jsx';
+import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 
 // Shared source tag (#62). The HUD never takes the pointer, so the tag shows its tag text only and puts the full
 // source in the title and the screen reader text.
@@ -259,25 +260,62 @@ function WaypointMarker({ engine }) {
   );
 }
 
+// I shows every instrument (#283). By default the visor keeps what a walk needs: heading, EVA clock, suit and margin,
+// next waypoint, partner and minimap. The full set adds the environment strip, the navigation and radio lines, the
+// sampling checklist, local solar time and the source tag of each reading. A panel that is warning stays visible.
+const DETAIL_CODE = 'KeyI';
+function useHudDetail() {
+  const [detail, setDetail] = useState(false);
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.code !== DETAIL_CODE || e.repeat || e.ctrlKey || e.metaKey || e.altKey || wristOwnsKeys()) return;
+      const el = e.target;
+      if (el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName))) return;
+      if (document.querySelector('dialog[open]')) return;
+      setDetail((v) => !v);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  return detail;
+}
+
+/** The two keys a first-time player needs to find everything else. */
+function KeyHint({ detail }) {
+  return (
+    <div className="hud-keys" aria-hidden="true">
+      <span><kbd>H</kbd>{t('ui.hud.keys.controls')}</span>
+      <span><kbd>I</kbd>{t(detail ? 'ui.hud.keys.fewer' : 'ui.hud.keys.instruments')}</span>
+    </div>
+  );
+}
+
 /**
  * The whole visor HUD. Rendered by App in Walk mode once the scene is ready. Alerts show in App's event banner, under
  * the heading box (src/events/events.css), so the HUD has no alert strip of its own.
  * `minimapRoute` is App's route tracker: it outlives this component so Plan mode does not reset the walk.
  */
 export default function Hud({ engine, minimapRoute }) {
+  const detail = useHudDetail();
+  // the sampling checklist joins the default set while a rock or the soil is in view, or a sample is under way
+  const sampling = useMissionStore((s) => {
+    const c = s.sampling.checklist;
+    return !!(s.sampling.status && s.sampling.status.target) || c.photo || c.texture || c.sample;
+  });
   return (
-    <div className="hud" aria-label={t('ui.helmet.display')}>
+    <div className={detail ? 'hud hud-detail' : 'hud'} aria-label={t('ui.helmet.display')}>
       <HeadingTape />
       <WaypointMarker engine={engine} />
       <SlopeAhead engine={engine} />
       <Clocks />
+      <KeyHint detail={detail} />
       <SuitPanel />
       <PartnerPanel />
       <LayerChip />
       {/* One flex column on the right (#191): each panel sits under the one above, so none can cover another. */}
       <div className="hud-right">
         <Minimap tracker={minimapRoute} />
-        <SamplingChecklist />
+        {(detail || sampling) && <SamplingChecklist />}
         <EnvStrip />
         <NavLine><SourceTag path="navigation.errorM" /></NavLine>
         <RadioLink engine={engine} />

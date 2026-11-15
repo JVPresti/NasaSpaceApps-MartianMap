@@ -348,3 +348,26 @@
 
 /* The panels that live in their own files (partner, layer chip, minimap legend) take the same square corners (#232). */
 .hud .hud-partner-chip, .hud .hud-partner-detail, .hud .hud-layer, .hud .hud-map-legend { border-radius: var(--radius-m); font-family: var(--font-ui); }
+
+/* Default visor (#283): I adds the rest (.hud-detail). Source tags stay in the reading's accessible name and title. */
+.hud:not(.hud-detail) .hud-src {
+  position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; border: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+.hud:not(.hud-detail) .hud-env,
+.hud:not(.hud-detail) .hud-lmst,
+.hud:not(.hud-detail) .hud-nav:not(.hud-caution),
+.hud:not(.hud-detail) .hud-radio-linked { display: none; }
+
+/* the two keys that open everything else, under the EVA clock */
+.hud-keys {
+  position: absolute; left: 7.8vw; top: calc(var(--u) * 8);
+  display: flex; gap: 1em; font-size: max(var(--text-xs), 0.72em); color: var(--ink); white-space: nowrap;
+}
+.hud-keys span { display: flex; align-items: center; gap: 0.4em; }
+.hud-keys kbd {
+  min-width: 1.6em; padding: 0.05em 0.4em; text-align: center;
+  font: 600 1em/1.4 var(--font-ui); color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius-s);
+}
+@media (max-width: 900px) { .hud-keys { left: 3vw; } }
