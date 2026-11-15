@@ -2,16 +2,16 @@
 
 > **Format.** Hard limit 3:00 (the organisers' page, `docs/SUBMISSION.md`, PR #316). The talk is `script-en.md`, in English, and ends at 2:42. Then the judges ask questions (`qa.md`). There is no live demo: the `demo` beat plays an 85 s video of the real app.
 
-Six beats, one **Right** each. P2 stands at the laptop and presses every Right, on the cue words below. P1 speaks the first four beats, P2 the video cues, P3 the close. The keys come from `src/present/control.js`.
+**Autoplay is on.** The presentation plays its six beats by itself, and nobody needs to press anything. The speakers follow the screen. If the timing slips, any **Right** or **Left** takes over manually, and from then on each beat waits for a key. The autoplay default comes from the presentation thread's PR #373 (`feat/present-story-cut`); step 7 below checks that the live site has it.
 
-**Which build.** The `stakes` and `close` beats and the six-chapter video are on the presentation thread's branch `feat/present-story-cut`. This sheet assumes it has merged and the site serves it. Step 7 checks that.
+Two versions of the talk are in `script-en.md`. **A**: P1 tells the story and says the last lines, P2 gives the video cues and the data part of the close. **B**: one presenter says everything. A third person, or P2 in version A, stands by the laptop only to take over if needed.
 
-## Keys
+## Keys, for taking over
 
 | Key | Does |
 |---|---|
-| **Right**, **Space**, **PageDown** or **Enter** | Next beat. A presentation clicker sends these |
-| **Left** or **PageUp** | Previous beat |
+| **Right**, **Space**, **PageDown** or **Enter** | Next beat, and autoplay stops |
+| **Left** or **PageUp** | Previous beat, and autoplay stops |
 | **L** | Switch the captions between English and Spanish |
 | **Esc** | Leave the presentation for the app. Do not press it during the talk |
 
@@ -20,32 +20,36 @@ Six beats, one **Right** each. P2 stands at the laptop and presses every Right, 
 | Step | Do | Check |
 |---|---|---|
 | 1 | Plug the laptop into power and the projector. Display duplicated, 1920 x 1080. | The projector shows the desktop |
-| 2 | Chrome, tab 1: `https://martian-map.fernando-haro-c.workers.dev/?present=1`. Wait for the fall from orbit to start. | About 20 s on the GPU laptop. "3D view unavailable. Captions only" means WebGL failed, so run the talk from the PDF (below) |
+| 2 | Chrome, tab 1: `https://martian-map.fernando-haro-c.workers.dev/?present=1`. Let it load, then reload just before the talk so it starts at 0:00 when the speaker is ready. | About 20 s on the GPU laptop. "3D view unavailable. Captions only" means WebGL failed, so run the talk from the PDF (below) |
 | 3 | Captions in English. If they show Spanish, press **L** once. | The first caption is in English |
 | 4 | Tab 2: `docs/pitch/out/deck-global.pdf`, full screen, on slide 1. Tab 3: the backup video file the presentation thread records (the same 85 s cut as an mp4), paused at 0:00. | One click plays it |
 | 5 | **F11** for full screen. Sound at about 30 %. | |
 | 6 | Close every other app, notification and chat. | |
-| 7 | Step through all six beats once with **Right**. Stop on `close`: one more **Right** may open the app. Reload tab 1 so the open starts fresh. | The beats are open, stakes, zone, radiation, demo, close, and the video plays with picture. If the site still shows `plan`, `sources` and `credits`, the story cut has not deployed: tell Fernando, and run from the PDF |
+| 7 | Let the whole presentation autoplay once against a stopwatch. | It runs open, stakes, zone, radiation, demo, close and stops at 2:42 without a key. If it waits on the first beat, autoplay is not deployed: step it with **Right** on the times below. If it shows `plan`, `sources` and `credits`, the story cut is not deployed: tell Fernando and run from the PDF |
 
 **No network.** The site makes no live calls to NASA. As a backup the night before: check out `main`, `npm ci`, `npm run build`, `npm run preview`, and keep `http://localhost:4173/?present=1`.
 
 ## The talk
 
-| Talk time | Beat | P2 presses Right on | Speaker and first words | If it fails |
-|---|---|---|---|---|
-| 0:00 | `open` | (already there) | P1: "The first people on Mars…" | Black screen or captions only: switch to tab 2 and follow the PDF column below |
-| 0:14 | `stakes` | P1 finishing the open line, "unconfirmed" | P1: "Two astronauts walk out…" | |
-| 0:26 | `zone` | "…come and get you." | P1: "So the question is not…" | The zone does not draw: say the line, and show PDF slide 3 if it stays empty |
-| 0:42 | `radiation` | The word "alert" in "Watch a radiation alert." | P1: two seconds of silence while the zone closes, then "Only the way home is left." | |
-| 0:52 | `demo` | "…the way home is left." | P2: one cue per chapter card, at 0:00, 0:20, 0:30, 0:45, 1:05 and 1:15 of the video | See "If the video fails" |
-| 2:17 | `close` | The video's last frame | P3: "Marswalk layers four kinds of NASA data…" | |
-| 2:42 | end | **Nothing** | P3: "Thank you." Then questions | |
+Speakers in version A. In version B the one presenter says every line.
+
+| Time | Beat on screen | Speaker and first words | If it slips or fails |
+|---|---|---|---|
+| 0:00 | `open` | P1: "The first people on Mars…" | Black screen or captions only: switch to tab 2 and follow the PDF column below |
+| 0:14 | `stakes` | P1: "Two astronauts walk out…" | If the screen is still on `open`, press **Right** |
+| 0:26 | `zone` | P1: "So the question is not…" | If the zone does not draw, say the line anyway |
+| 0:41 | (end of `zone`) | P1: "Watch a radiation alert." Start 1 s before the beat changes, so "alert" lands with the alert at 0:42 | |
+| 0:42 | `radiation` | P1: two seconds of silence while the zone closes, then "Only the way home is left." **Handover to P2** | |
+| 0:52 | `demo` | P2: one cue per chapter card, at 0:00, 0:20, 0:30, 0:45, 1:05 and 1:15 of the video | See "If the video fails" |
+| 2:17 | `close`, sources list | P2: "Marswalk layers four kinds of NASA data…" | |
+| 2:31 | `close`, the names | **Handover to P1.** P1: "On Mars, the question is where you can still get home…" | If the names are not up yet, wait for them |
+| 2:42 | end | P1: "Thank you." Then questions | Nobody presses anything |
 
 ## If the video fails
 
 The `demo` beat shows no picture, freezes, or has no sound.
 
-1. Click tab 3 and play the backup mp4 full screen. P2 says the cues over it. When it ends, click tab 1 and press **Right** for `close`.
+1. Click tab 3 and play the backup mp4 full screen. P2 says the cues over it. When it ends, click tab 1 and press **Right** for `close`. Autoplay is now off, so press **Right** again if the close needs it.
 2. No backup file: show PDF slide 4 (the walk in four screens) and say the six cues over it in about 30 s, then go to `close`. The talk ends about 55 s early, which leaves more time for questions.
 
 ## If the whole presentation fails: the PDF
@@ -62,16 +66,19 @@ The `demo` beat shows no picture, freezes, or has no sound.
 
 ## Rehearsal checklist
 
-- [ ] Run the whole talk once against a stopwatch on the laptop, with the site, not the PDF. It must end under 2:50.
-- [ ] P2 practises the Right on "alert" three times. The silence after it is the moment to remember.
-- [ ] P2 says each chapter cue as its card appears, then stops talking.
+- [ ] Pick version A or B.
+- [ ] Run the whole talk twice on the laptop with autoplay, against a stopwatch. It must end by 2:50.
+- [ ] Practise "Watch a radiation alert" so it starts about 1 s before the beat changes, then hold the silence.
+- [ ] Practise the handovers in version A: P1 to P2 after "Only the way home is left", P2 to P1 when the names appear.
+- [ ] The video cues: say each one as its card appears, then stop talking.
 - [ ] Only three numbers spoken: eight hours, twenty degrees, fourteen centimetres.
-- [ ] The thesis is said twice, on `zone` and in the close.
+- [ ] The thesis is said twice, on `zone` and at the end.
+- [ ] Practise one take-over: press **Right** mid-talk and finish the talk on keys.
 - [ ] Open tabs 2 and 3 and check each fallback once.
 - [ ] Confirm with the organisers: the 3:00 limit, whether Q&A follows, and whether we use our own laptop.
-- [ ] Read `qa.md` aloud once. Fill in the "Who answers" column.
+- [ ] Read `qa.md` aloud once and fill in the "Who answers" column.
 
 ## Re-check later
 
-- **Any change to `src/present/beats.js`**: rerun `node docs/pitch/tools/sync-present.mjs`, fix the times in both scripts and rerun `node docs/pitch/tools/timing.mjs`.
-- **The final chapter times** from the presentation thread's PR: replace the video times in `script-en.md` and `script-es.md`.
+- **#373's final chapter times**: replace the video times in `script-en.md` and `script-es.md`, and rerun `node docs/pitch/tools/timing.mjs`.
+- **Any change to `src/present/beats.js`**: rerun `node docs/pitch/tools/sync-present.mjs` and fix the times in both scripts.
