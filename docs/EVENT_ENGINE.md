@@ -91,9 +91,15 @@ first mission (`src/sim/missions.js`) meet both events at any walking pace.
 | Field | Shape | Effect |
 | --- | --- | --- |
 | `requires` | `[{ "path": "route.nextIndex", "op": "gte", "value": 2, "forSec": 20 }]` | A store threshold that must have held for `forSec` seconds of mission time (0 when left out). The time counts from the first update it held; it restarts if the threshold stops holding. |
+| `requires` | `[{ "area": { "x": 493, "z": 539, "radius": 8 }, "forSec": 90 }]` | A place reached at least `forSec` seconds ago. Reached once is reached for good: leaving it again changes nothing. |
+| `requires` | `[{ "nearEndM": 10 }]` | The position within `nearEndM` metres of the event's own end area (held while it is there). Needs an `end` of type `area`. |
 | `requires` | `[{ "event": "dust-storm", "afterSec": 15 }]` | Another event must have started at least `afterSec` seconds ago. An event this engine does not run (switched off at the mission table) counts as met. |
-| `latestSec` | `180` | From this mission time the basic trigger and the store thresholds no longer count; event requirements still do, so two late events keep their order. Not before `atSec`. |
-| `holdInsideEnd` | `true` | The event does not start while the position is inside its own `end` area (it would end in the same update and never play); it starts on the first update outside. Needs an `end` of type `area`. |
+| `requires` | `[{ "anyOf": [ ... ] }]` | Any one of the listed requirements is enough. |
+| `latestSec` | `240` | From this mission time the basic trigger and the other requirements no longer count; a top-level event requirement still does, so two late events keep their order. Not before `atSec`. |
+| `holdInsideEnd` | `true` | The event does not start while the position is inside its own `end` area (it would end in the same update and never play); it starts on the first update outside, or at `latestSec`. Needs an `end` of type `area`. |
+
+An `end` can carry `minSec`: the end condition is not checked until the event has run that long, so an event that
+starts inside its own end area still plays.
 
 The real storm and radiation events carry `{ "type": "manual" }` in their files: the
 mission gives them their trigger (`missionEventDefinitions`), T+480 s and T+720 s in
