@@ -8,6 +8,7 @@ import { connectHabitatScreens } from '../state/habitatScreens.js';
 import { startSimulation } from '../state/simulation.js';
 import { connectWrist } from '../screens/wrist/controller.js';
 import { connectAudio } from '../audio/connectAudio.js';
+import { connectEvaEnd } from '../state/evaEnd.js';
 
 const ASSET_BASE = import.meta.env.BASE_URL + 'marswalk/';
 
@@ -42,7 +43,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
 
     let engine;
     let live = true;
-    let disconnect = null, stopSimulation = null, disconnectSampling = null, disconnectSlopeGridKey = null, disconnectWrist = null, disconnectHabitatScreens = null, disconnectAudio = null;
+    let disconnect = null, stopSimulation = null, disconnectSampling = null, disconnectSlopeGridKey = null, disconnectWrist = null, disconnectHabitatScreens = null, disconnectAudio = null, disconnectEvaEnd = null;
     const mock = new URLSearchParams(window.location.search).get('mock') === '1';
     const current = () => live && (engine === undefined || engineRef.current === engine);
 
@@ -90,6 +91,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
         disconnectWrist = connectWrist(engine);   // wrist screen app (#67)
         disconnectHabitatScreens = connectHabitatScreens(engine);   // the habitat's wall screens and planning table (#47)
         disconnectAudio = connectAudio(engine);   // suit audio (#72): starts on the first click or key press
+        disconnectEvaEnd = connectEvaEnd(engine);   // X ends the EVA back in the habitat, prompt over the table (#244)
         startCurrentSimulation();
         pauseMission();   // the start screen is a real pause, including ?mock=1 where nothing starts
         callbacks.current.onEngine?.(engine, {
@@ -115,6 +117,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
       if (disconnectWrist) disconnectWrist();
       if (disconnectHabitatScreens) disconnectHabitatScreens();
       if (disconnectAudio) disconnectAudio();
+      if (disconnectEvaEnd) disconnectEvaEnd();
       engine.dispose();
     };
   }, []);

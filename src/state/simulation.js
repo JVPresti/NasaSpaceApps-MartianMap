@@ -136,7 +136,9 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
       if (stopped) return;
       if (!entry) { console.error('shelters.json not loaded, EVA statistics not started'); return; }
       try {
-        eva.stats = startEvaRunner({ store, habitat: { x: entry.x, z: entry.z } });
+        // the whole habitat counts as being back, not only the circle at the foot of the steps (#244)
+        const habitatZoneAt = typeof engine.habitatZoneAt === 'function' ? (x, z) => engine.habitatZoneAt(x, z) : undefined;
+        eva.stats = startEvaRunner({ store, habitat: { x: entry.x, z: entry.z }, habitatZoneAt });
       } catch (e) {
         console.error('EVA statistics not started:', e);
       }
