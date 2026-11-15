@@ -1,0 +1,52 @@
+{
+  "findings": [
+    {
+      "where": "slides/02.png ('Walking home costs 54 g and 18 min on this route'), slides/03.png (bar 54 g / 72 g / 34 g = 14 min, and the pointer to docs/pitch/data/walkback-zone.json), script-3min-en.md cold open and beat 5, video-30s.md 0:02-0:05",
+      "problem": "The walk-home cost is the outbound cost with the pad added, not the walk home. I ran the app's own walkCost on the planned 913 m path (src/sim, same imports as docs/pitch/tools/walkback-zone.mjs). Outbound: 44.8 g, 18.5 min, 33 m of climb and 55 m of descent. 44.8 x 1.2 = 53.8, which is the slide's 54 g, and 18 min is the outbound time. Cheyava Falls sits about 22 m below the habitat, so the walk home climbs 55 m. On the same route, reversed, with the 20 % pad, walkCost gives 61.8 g and 21.3 min, and the margin is 10.6 min, not 14. The file that slide 3 cites agrees with neither number: at the alert frame (frame 40) it records backG 57.3 and marginMin 13. So one hero number has three values: 54 on the slide, 57.3 in the cited file, 61.8 by the app's rule on the drawn route. The conclusion survives (the margin stays positive), but a judge who opens the cited file sees 13 where the slide says 14.",
+      "severity": "major",
+      "criterion": "Validity",
+      "proposal": "Price the route the alert produces. A direct planRoute from Cheyava Falls to the habitat is 824 m, and walkCost with the pad gives 53.4 g and 18.4 min, so the margin is 14.1 min. Then say that: slide 2 'The re-planned route home (824 m) costs 53 g and 18 min'; bar 53 / 72 / 35 g = 14 min; cold open 'Walking back costs 53'. Keep 913 m as the distance she walked out. Add that re-planned leg and the alert-frame margin to walkback-zone.mjs, rerun it, and commit the JSON so the file slide 3 names shows 53 g and 14 min. If there is no time to touch the tool, drop the file path from slide 3 rather than cite a file that says 13."
+    },
+    {
+      "where": "beats.md beat 3 (3-minute and 5-minute tables: 'the zone shrinks along the route, snaps at the alert'), docs/pitch/data/walkback-zone.json frames 24 and 36-40",
+      "problem": "In the exported data the blue zone collapses before the alert. areaHa goes 25.9 at frame 36 to 1.1 at frame 37, while O2 left only moves from 164 g to 162 g. The alert is frame 40. Frame 37 is where she reaches WP3 (Bright Angel, on 28.7 degree no-go rock): the start cell lands in a pocket cut off by blocked cells, the outbound Dijkstra reaches almost nothing, and the 'alive' mask is monotonic so the zone never recovers. Frame 24 has backG and marginMin null for the same reason (an unreachable cell). If the presentation draws from this file, the hero visual shows the zone vanishing three frames before the alert banner, for a reason that has nothing to do with oxygen or radiation. The spoken line says the area is 'computed with the app's planner and suit model'. At frames 37 to 39 it is a grid artefact.",
+      "severity": "major",
+      "criterion": "Validity",
+      "proposal": "In walkback-zone.mjs, snap the astronaut to the nearest cell that is connected to the habitat (back[x] finite), not just the nearest unblocked cell, and rerun. Check that areaHa falls smoothly to frame 39 and drops only at frame 40. If there is no time, end the outbound leg of the clip at frame 36 and fire the alert there, or skip WP3 in the clip's path."
+    },
+    {
+      "where": "demo-run-sheet.md cut B, B2 to B4; script-3min-en.md demo lines B2 and B3; qa.md 5c",
+      "problem": "The live margin is the number the pitch is about, and cut B has not been run at 20 % O2 (the run sheet says so). By the code survey the margin divides O2 by the current rate smoothed over 30 s (suitModel.js:228, 244-251). At 154 g that reads about +230 min standing (rest rate, 771 g lasts 21.8 h) and about +34 min walking. So in B3 the judges watch the number fall by roughly 200 minutes over 20 m of walking, and in B4, when the presenter stops to open the Events strip, it climbs again during a radiation alert. P2 says 'minutes left after walking home and keeping the reserve' while the number does something else. An EVA operations judge will ask what happened, and the true answer is issue #312.",
+      "severity": "major",
+      "criterion": "Validity",
+      "proposal": "Run B2 to B4 once today on the demo laptop and write down what the pill reads at Start walking, after 20 s of walking, and 10 s after the alert. If it swings, keep W held while firing the alert (click the Events chip with the mouse, the cursor is already free), and have P2 say one clause: 'it is priced at my current pace'. If the run at 20 % misbehaves, use the fallback line already in the sheet (+480, the 8 h clock) and let slide 3 carry the 14 minutes."
+    },
+    {
+      "where": "slides/02.png, caption under the map",
+      "problem": "The map image covers the first line of the caption. 'The app's route to Cheyava Falls on HiRISE...' runs behind the legend and the map edge and cannot be read. This is the slide where a data judge checks the claim about the 28.7 degree stop.",
+      "severity": "minor",
+      "criterion": "Presentation",
+      "proposal": "Give the figure a fixed height or the caption a top margin in deck-global.html and re-export slide 2."
+    },
+    {
+      "where": "video-30s.md 0:10-0:20 on-screen text and 0:20-0:30 narration; beats.md 30-second table",
+      "problem": "The on-screen line lists 'MEDA · Curiosity RAD', but no shot in the video shows radiation, and RAD appears without 'Gale'. A source named and not shown is the superficial use the Relevance criterion marks down. The last narration line also differs between the two files: video-30s.md still says 'We process the same HiRISE model as NASA Mars Trek, to fourteen centimetres', which reads as terrain accuracy, while beats.md has the corrected 'Our grid reproduces NASA's HiRISE model to fourteen centimetres'.",
+      "severity": "minor",
+      "criterion": "Relevance",
+      "proposal": "On screen at 0:10-0:20 name only what the shots show: 'HiRISE terrain model · Mastcam-Z · storm opacity from Curiosity, Gale 2018'. Copy the beats.md narration line into video-30s.md, English and Spanish."
+    },
+    {
+      "where": "script-3min-en.md beat 7, closing line",
+      "problem": "'Matches NASA Mars Trek to fourteen centimetres' is a check of the team's resampling against the same product, not of the ground. Spoken without 'RMS' or 'typical', with 'that is the ground she walks home on' right after, it sounds like terrain accuracy. Slide 7 words it correctly.",
+      "severity": "minor",
+      "criterion": "Validity",
+      "proposal": "'Our 2 metre grid reproduces the HiRISE model that NASA Mars Trek serves, to fourteen centimetres on average.' Same length, and it matches slide 7."
+    }
+  ],
+  "must_not_claim_violations": [],
+  "advance": {
+    "yes": true,
+    "why": "The HiRISE DTM is core, not decoration: it sets the slope mask, the A* route, the oxygen per leg and the walkback margin, and the deck gives the other sources one honest line each. Gale versus Jezero, the lunar suit, SIM tags and the hand-fired alert are all disclosed, and I found no must-not-claim violation in the round 4 materials. The walkback margin is a real EVA planning concept (Apollo 15 pad, Apollo 17 reserve) applied correctly in principle. What holds it back is the hero number: 54 g and 18 min are the outbound cost with a pad, the cited file says 57.3 g and 13 min, and the app's rule on the drawn route gives 62 g and 11 min.",
+    "change_my_mind": "I would vote no if the deck ships citing walkback-zone.json while that file shows 13 min and 57.3 g against the slide's 14 and 54, or if the live demo shows the margin rising during the radiation alert with no explanation. I would score Validity higher if the walk-home figure is the re-planned 824 m route (53 g, 18 min, 14 min margin), the JSON is regenerated to match, and the zone only collapses at the alert frame."
+  }
+}
