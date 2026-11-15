@@ -49,7 +49,7 @@ export function tightestText(limit) {
  *   limits: planLimits() of the route on the table; dust: the opacity the crew would walk in and the terrain-fix
  *   limit (hazards.json dust.event.nav_fix_tau_max); objective: the crew's goal, for the way out; radiationExpected: the
  *   run's radiation alert is switched on and has not fired (the outlook beside the decision gives its time)
- * @returns {{ tone: 'ok' | 'caution' | 'warning' | null, title: string, text: string, go: boolean,
+ * @returns {{ tone: 'ok' | 'caution' | 'warning' | null, title: string, text: string, note?: string, go: boolean,
  *   reason: 'error' | 'planning' | 'time' | 'o2' | 'battery' | 'reserve' | 'dust' | 'caution' | 'go', limit: string | null }}
  */
 export function decisionFor({ planner, totals, limits = null, dust = null, objective = null, radiationExpected = false }) {
@@ -69,9 +69,9 @@ export function decisionFor({ planner, totals, limits = null, dust = null, objec
   const expect = radiationExpected ? `${t('table.decision.radiation.expected')} ` : '';
   const caution = limits ? limits.status === 'caution' : totals.status === 'caution';
   if (caution) {
-    return { tone: 'caution', title: t('table.decision.go.with.care'), text: tight + expect + t('table.decision.begin.note'), go: true, reason: 'caution', limit: limits?.tightest?.id ?? null };
+    return { tone: 'caution', title: t('table.decision.go.with.care'), text: (tight + expect).trim(), note: t('table.decision.begin.note'), go: true, reason: 'caution', limit: limits?.tightest?.id ?? null };
   }
-  return { tone: 'ok', title: t('table.decision.go'), text: tight + expect + t('table.decision.begin.note'), go: true, reason: 'go', limit: limits?.tightest?.id ?? null };
+  return { tone: 'ok', title: t('table.decision.go'), text: (tight + expect).trim(), note: t('table.decision.begin.note'), go: true, reason: 'go', limit: limits?.tightest?.id ?? null };
 }
 
 /**

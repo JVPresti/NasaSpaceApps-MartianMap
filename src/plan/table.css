@@ -1177,6 +1177,16 @@ button.table-stop-name {
   .profiles-table td { padding-top: 1px; padding-bottom: 1px; }
   .table-big > span { margin-top: 2px; }
   .table-hazard-cards dd { font-size: 14px; }
+  /* the Suit step's right column: the decision names the plan, its tightest limit and the expected alert */
+  .ring svg { max-width: 104px; }
+  .ring figcaption b { font-size: 28px; }
+  .return-panel { gap: 10px; }
+  .return-margin { padding-top: 10px; }
+  .return-margin b { font-size: 38px; }
+  .table-decision { font-size: 32px; margin-bottom: 6px; }
+  .decision-begin { display: none; }   /* "once you begin, the table closes": the Begin EVA button says it */
+  .budget-panel { gap: 10px; }
+  .table-body-route .table-right { gap: 8px; }
   .table-hazard-cards .table-note { margin-bottom: 10px; }
   .table-hazard-switch { padding-top: 12px; }
 }

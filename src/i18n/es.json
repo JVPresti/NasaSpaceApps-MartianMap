@@ -804,7 +804,7 @@
   "table.budget.key.way.out": "ida",
   "table.budget.key.way.back": "vuelta",
   "table.budget.key.left": "al volver al hábitat",
-  "table.budget.note": "Tiempo de marcha y subida del modelo de elevación HiRISE. Oxígeno y batería de nuestro modelo del traje. La ida incluye el trabajo previsto en las paradas, que la salida no juega en tiempo real.",
+  "table.budget.note": "Marcha y subida del modelo HiRISE; oxígeno y batería de nuestro modelo del traje. La ida incluye el trabajo previsto en las paradas, que la salida no juega en tiempo real.",
   "table.return.title": "De vuelta en el hábitat",
   "table.return.oxygen.left": "Oxígeno restante",
   "table.return.battery.left": "Batería restante",
