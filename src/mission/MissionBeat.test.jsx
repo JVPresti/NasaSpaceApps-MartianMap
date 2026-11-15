@@ -37,6 +37,21 @@ describe('beat lines (#265)', () => {
     expect(catalogs.en['mission.beat.plan']).toMatch(/HiRISE/);
   });
 
+  it('never says GPS, and keeps each Walk beat on one line beside the HUD at 1366 px (about 92 characters)', () => {
+    for (const language of ['en', 'es']) {
+      for (const beat of MISSIONS.first.beats) expect(catalogs[language][beat.text]).not.toMatch(/GPS/);
+      for (const id of ['walk', 'dust-storm', 'radiation']) {
+        const beat = MISSIONS.first.beats.find((entry) => entry.id === id);
+        expect(catalogs[language][beat.text].length).toBeLessThanOrEqual(92);
+      }
+    }
+  });
+
+  it('names the full EVA on the start screen like the table names its goal', () => {
+    expect(catalogs.en['mission.start.full']).toContain('Sample Cheyava Falls');
+    expect(catalogs.es['mission.start.full']).toContain('Muestrear Cheyava Falls');
+  });
+
   it('shows the plan beat as a table note before Begin EVA, and not after', () => {
     expect(renderToStaticMarkup(<PlanBeat evaBegun={false} />)).toMatch(/class="table-note mission-beat"[^>]*>Plan · /);
     expect(renderToStaticMarkup(<PlanBeat evaBegun={true} />)).toBe('');

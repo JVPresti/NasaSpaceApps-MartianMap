@@ -77,7 +77,7 @@ describe('StartScreen mission choice (#265)', () => {
   it('keeps one main action, which opens the first mission, and adds the full EVA as a secondary button', () => {
     const html = render({ scene: ready, onFullEva: noop });
     expect(primary(html)).toContain('Open the mission table');
-    expect(fullButton(html)).toContain('Full EVA · Cheyava Falls sample');
+    expect(fullButton(html)).toContain('Full EVA · Sample Cheyava Falls');
     expect(fullButton(html)).not.toContain('disabled');
   });
 
@@ -87,7 +87,7 @@ describe('StartScreen mission choice (#265)', () => {
 
   it('names it in Spanish', () => {
     setLanguage('es');
-    expect(fullButton(render({ scene: ready, onFullEva: noop }))).toContain('EVA completa · muestra de Cheyava Falls');
+    expect(fullButton(render({ scene: ready, onFullEva: noop }))).toContain('EVA completa · Muestrear Cheyava Falls');
   });
 
   it('shows no mission choice without the handler', () => {
