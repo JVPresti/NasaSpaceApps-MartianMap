@@ -18,9 +18,11 @@ export const ENVIRONMENT_TICK_MS = 1000;
 /** The alert id the radiation event publishes while it runs (src/sim/events/radiation.json). */
 export const RADIATION_EVENT_ID = 'radiation';
 
+// The dose this EVA is the held rates over mission time: during the radiation event, its rates over the minutes the event
+// plays, not the 544 µGy the 57 h event of 2017 delivered (#295; the registry entry's note gives that figure).
 export const DOSE_SOURCE = Object.freeze({
   tag: 'DERIVED',
-  source: 'dose this EVA: the dose rate in the store summed over mission time (RAD background, or the radiation event)',
+  source: 'dose this EVA: the dose rate in the store summed over mission time (the RAD background, or the radiation event\'s rates over the minutes the event plays in this EVA)',
 });
 
 export const CLEAR_TAU_SOURCE = Object.freeze({

@@ -43,11 +43,23 @@
   --font-num: var(--font-ui);                /* numbers in tables and readouts, with tabular figures */
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;   /* codes only */
 
+  /* Walk HUD geometry shared by the HUD (src/hud/hud.css) and the panels that sit beside its right column, the
+     slope-ahead warning and the stop card (src/stops/stopCard.css), so none of them covers the column (#392). */
+  --hud-u: clamp(13px, 1.6vh, 21px);         /* HUD base unit: 13 px up to about 810 px tall, 17 px at 1080p, 21 px at 1440p */
+  --hud-right-x: 7.8vw;                      /* gap from the right edge to the right column */
+  /* the column's width (the minimap's size); it grows with the text so the environment strip fits at the 13 px floor */
+  --hud-right-w: clamp(120px, max(27.5vh, calc(var(--hud-u) * 19.5)), 480px);
+  --hud-beside-right: calc(var(--hud-right-x) + var(--hud-right-w) + var(--hud-u) * 1.2);   /* right edge of a panel beside it */
+
   font: 15px/1.4 var(--font-ui);
   color: var(--ink);
   background: var(--bg);
   color-scheme: dark;
   -webkit-font-smoothing: antialiased;
+}
+
+@media (max-width: 900px) {
+  :root { --hud-right-x: 3vw; }
 }
 
 *,

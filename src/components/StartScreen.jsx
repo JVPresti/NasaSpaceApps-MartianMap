@@ -98,6 +98,7 @@ export default function StartScreen({ busy, notice, freeLook = false, lockFailed
               )}
               <button type="button" className="ui-button ghost" onClick={() => setControls(true)}>{t('menu.controls')}</button>
               {onSources && <button type="button" className="ui-button ghost" onClick={onSources}>{t('ui.sources.188')}</button>}
+              <a className="ui-button ghost start-present" href={presentHref()}>{presentLabel()}</a>
             </div>
             {!ready && (
               <p className="start-status" role="status">
@@ -107,7 +108,6 @@ export default function StartScreen({ busy, notice, freeLook = false, lockFailed
             {freeLook && <p className="start-note">{t('menu.drag.to.look.table')}</p>}
           </div>
           <p className="start-credit">{t('menu.start.credit')}</p>
-          <a className="start-present" href={presentHref()}>{presentLabel()}</a>
         </div>
         </>
       )}

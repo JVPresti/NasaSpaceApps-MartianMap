@@ -8,7 +8,9 @@
  * left the range and bearing are null and the route is complete.
  *
  * The arrival radius of a science stop comes from `arrival_radius` in
- * public/data/stops.json (2 m for both stops); every other waypoint uses 5 m.
+ * public/data/stops.json (2 m for both stops); a waypoint that carries its own
+ * `arrivalRadiusM` (a sampling task's point, #352) uses that; every other
+ * waypoint uses 5 m.
  *
  * Plain JavaScript: no React, no three.js.
  */
@@ -25,8 +27,13 @@ export const WAYPOINT_SOURCES = {
   'navigation.waypointBearingDeg': { tag: 'SIM', source: 'bearing from the player position to the next waypoint or shelter' },
 };
 
-/** Arrival radius in metres for a waypoint: the linked stop's `arrival_radius`, else 5 m. */
+/**
+ * Arrival radius in metres for a waypoint: its own `arrivalRadiusM` when it carries one (a sampling task's point, #352),
+ * else the linked stop's `arrival_radius`, else 5 m.
+ */
 export function arrivalRadiusM(stops, waypoint) {
+  const own = waypoint?.arrivalRadiusM;
+  if (typeof own === 'number' && Number.isFinite(own) && own > 0) return own;
   return stopForWaypoint(stops ?? [], waypoint)?.arrival_radius.value ?? ARRIVAL_RADIUS_M;
 }
 

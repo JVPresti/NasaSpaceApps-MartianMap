@@ -19,6 +19,7 @@ describe('missionForObjective', () => {
     expect(missionForObjective('sortie').id).toBe('first');
     expect(missionForObjective('cheyava').id).toBe('full');
     expect(missionForObjective('bright-angel').id).toBe('full');
+    expect(missionForObjective('samples').id).toBe('full');
   });
 
   it('falls back to the first mission, like the default needs', () => {
@@ -42,6 +43,15 @@ describe('event times per mission', () => {
       expect(eventTrigger(objective, 'dust-storm')).toEqual({ type: 'missionTime', atSec: 480 });
       expect(eventTrigger(objective, 'radiation')).toEqual({ type: 'missionTime', atSec: 720 });
     }
+  });
+
+  it('runs a Collect samples plan on the full EVA\'s schedule: the storm at T+480 s, radiation at T+720 s (#352)', () => {
+    const [storm, rad] = missionEventDefinitions('samples', DEFINITIONS, { stops: STOPS });
+    expect(storm.trigger).toEqual({ type: 'missionTime', atSec: 480 });
+    expect(rad.trigger).toEqual({ type: 'missionTime', atSec: 720 });
+    expect(storm.timeline).toEqual(dustStorm.timeline);
+    expect(eventTiming('samples', 'radiation')).toMatchObject({ earliestSec: 720, afterStop: null });
+    expect(MISSIONS.full.beats).toEqual([]);
   });
 
   it('brings both events forward in the first mission, the storm first', () => {

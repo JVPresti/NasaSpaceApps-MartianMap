@@ -94,12 +94,14 @@ function withMinutes(sec, signed = false) {
 
 function suitContent(state) {
   const suit = state?.suit ?? {};
+  // The margin row names the limit that sets the figure (#323): the O2 or the 8 h EVA clock.
+  const limit = suit.marginLimit === 'eva' ? 'eva' : suit.marginLimit === 'o2' ? 'o2' : null;
   const fields = [
     { label: t('wrist.row.o2'), path: 'suit.oxygenPct', value: withUnit(suit.oxygenPct, 0, '%') },
     { label: t('wrist.row.battery'), path: 'suit.batteryPct', value: withUnit(suit.batteryPct, 0, '%') },
     { label: t('wrist.row.pressure'), path: 'suit.pressurePsi', value: withUnit(suit.pressurePsi, 1, t('ui.psi')) },
     { label: t('wrist.row.o2time'), path: 'suit.oxygenSec', value: withMinutes(suit.oxygenSec) },
-    { label: t('wrist.row.margin'), path: 'suit.marginSec', value: withMinutes(suit.marginSec, true) },
+    { label: limit ? t('wrist.row.margin.' + limit) : t('wrist.row.margin'), path: 'suit.marginSec', value: withMinutes(suit.marginSec, true) },
   ];
   const rows = fields.map((field) => makeRow(field.label, field.value, { tag: tagFor(state, field.path) }));
   const status = LEVELS.includes(suit.status) ? suit.status : null;

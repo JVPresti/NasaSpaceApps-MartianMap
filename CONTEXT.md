@@ -48,6 +48,7 @@ These apply to every feature. Reviewers check them.
    - Real: terrain shape and photo.
    - Artistic: the Mars colour, which is a tint because HiRISE is grayscale.
    - Modelled: rocks follow a statistical model, and the Cheyava Falls rock is hand-made.
+   - Read from image brightness: the Rocks and Outcrop layers, and the rock cover the route planner prices. Brightness also follows lithology, dust and sunlit slopes, so both are SIM proxies, not DERIVED. The planner's slope and rock weights are our choice too (SIM).
 
 ## Coordinates and units
 
@@ -72,7 +73,7 @@ Each layer depends only on the layers below it:
 
 What exists today:
 
-- **`src/sim/costGrid.js`**: walkability grid from slope and rock density; cells over 25° are blocked.
+- **`src/sim/costGrid.js`**: walkability grid from slope and rock density; cells over 20° are blocked (NASA's suited walking limit, `slope.no_go` in `public/data/hazards.json`). The slope layer, the slope-ahead warning and the elevation profile take their limits from its `COST_CONSTANTS`.
 - **`src/sim/routePlanner.js`**, `routePlanner.worker.js`, `routePlannerClient.js`: A* in a Web Worker. Output is the `path` format of `route.json`: `[[x, z], ...]`.
 - **`src/sim/returnZone.js`**, `returnZone.worker.js`: the return zone, where the crew can go and still get home inside the plan's budget. Two Dijkstra passes over the height grid, priced by the suit model ([STATE_AND_ENGINE](docs/STATE_AND_ENGINE.md#return-zone-309)).
 - **`src/sim/eventEngine.js`**: data-driven events (trigger, timeline, alert, planner request). The contract is in [docs/EVENT_ENGINE.md](docs/EVENT_ENGINE.md).

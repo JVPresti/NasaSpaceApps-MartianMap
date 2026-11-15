@@ -1,14 +1,21 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createInitialState } from '../state/store.js';
 import { dustLevelFromTau } from '../state/dustLevel.js';
-import { ENGINE_TIMEOUT_MS, createHoldTimer, fallbackStep, presentHrefFor, presentKey, queryWithoutPresent, restoreEngine } from './control.js';
+import { ENGINE_TIMEOUT_MS, createHoldTimer, createPlayer, playLabel, pointerStep, slideTarget, videoFrame, fallbackStep, presentHrefFor, presentKey, queryWithoutPresent, restoreEngine } from './control.js';
 
 const key = (k, mods = {}) => ({ key: k, altKey: false, ctrlKey: false, metaKey: false, ...mods });
 
 describe('presentKey', () => {
   it('maps clicker keys to next and back', () => {
-    for (const k of ['ArrowRight', 'PageDown', ' ', 'Enter']) expect(presentKey(key(k))).toBe('next');
+    for (const k of ['ArrowRight', 'PageDown', 'Enter']) expect(presentKey(key(k))).toBe('next');
     for (const k of ['ArrowLeft', 'PageUp']) expect(presentKey(key(k))).toBe('back');
+  });
+
+  it('plays and pauses on Space, P and K, and jumps to a slide on its digit', () => {
+    for (const k of [' ', 'p', 'P', 'k', 'K']) expect(presentKey(key(k))).toBe('toggle');
+    expect(presentKey(key('1'))).toBe('slide:1');
+    expect(presentKey(key('4'))).toBe('slide:4');
+    expect(presentKey(key('0'))).toBe('swallow');
   });
 
   it('exits on Esc and switches language on L', () => {
@@ -104,5 +111,80 @@ describe('fallbackStep', () => {
     expect(fallbackStep(3, 'next', 10)).toBe(4);
     expect(fallbackStep(9, 'next', 10)).toBe(9);   // no hand-off into an app without an engine
     expect(fallbackStep(4, 'lang', 10)).toBe(4);
+  });
+});
+
+describe('createPlayer: paused behind the Play button until the presenter starts it', () => {
+  it('starts paused and not started, then plays and pauses', () => {
+    const p = createPlayer();
+    expect(p.playing).toBe(false);
+    expect(p.started).toBe(false);
+    expect(p.toggle()).toBe(true);
+    expect(p.started).toBe(true);
+    expect(p.toggle()).toBe(false);
+    expect(p.started).toBe(true);   // the big Play button does not come back after a pause
+  });
+
+  it('plays at once with ?autoplay=1 or a recording', () => {
+    const p = createPlayer(true);
+    expect(p.playing).toBe(true);
+    expect(p.started).toBe(true);
+  });
+});
+
+describe('slideTarget: the digit keys', () => {
+  it('turns slide N into its index, clamped to the slides there are', () => {
+    expect(slideTarget('slide:1', 6)).toBe(0);
+    expect(slideTarget('slide:4', 6)).toBe(3);
+    expect(slideTarget('slide:9', 6)).toBe(5);
+    expect(slideTarget('next', 6)).toBeNull();
+  });
+});
+
+describe('pointerStep: taps and swipes', () => {
+  it('reads a swipe left as next, right as back, and a tap by its half', () => {
+    expect(pointerStep({ x: 600, y: 300 }, { x: 400, y: 310 }, 1000)).toBe('next');
+    expect(pointerStep({ x: 300, y: 300 }, { x: 500, y: 290 }, 1000)).toBe('back');
+    expect(pointerStep({ x: 800, y: 300 }, { x: 802, y: 301 }, 1000)).toBe('next');
+    expect(pointerStep({ x: 100, y: 300 }, { x: 101, y: 300 }, 1000)).toBe('back');
+    expect(pointerStep({ x: 100, y: 300 }, { x: 130, y: 300 }, 1000)).toBeNull();   // a drag, not a step
+  });
+});
+
+describe('videoFrame: the demo plays, holds its last frame, then fades', () => {
+  it('plays from the beat start and fades in', () => {
+    expect(videoFrame(0, 90, 89.5)).toMatchObject({ time: 0, playing: true, opacity: 0 });
+    expect(videoFrame(10, 90, 89.5)).toMatchObject({ time: 10, playing: true, opacity: 1 });
+  });
+
+  it('holds a frame before the end once the file has played, never an ended or rewound video', () => {
+    const f = videoFrame(89.8, 90, 89.5);
+    expect(f.playing).toBe(false);
+    expect(f.time).toBeCloseTo(89.5 - 1 / 30);
+  });
+
+  it('fades out over the beat\'s last 0.6 s into the next beat', () => {
+    expect(videoFrame(89.7, 90, 89.5).opacity).toBeCloseTo(0.5);
+    expect(videoFrame(90, 90, 89.5).opacity).toBe(0);
+  });
+
+  it('holds the last frame, with no fade, once the presenter has taken over and the beat stays up', () => {
+    expect(videoFrame(89.7, 90, 89.5, { hold: true })).toMatchObject({ playing: false, opacity: 1 });
+    const f = videoFrame(200, 90, 89.5, { hold: true });
+    expect(f.opacity).toBe(1);
+    expect(f.time).toBeCloseTo(89.5 - 1 / 30);
+    expect(videoFrame(10, 90, 89.5, { hold: true })).toMatchObject({ time: 10, playing: true, opacity: 1 });
+  });
+
+  it('falls back to the beat length while the file\'s length is unknown', () => {
+    expect(videoFrame(5, 90, NaN)).toMatchObject({ time: 5, playing: true });
+  });
+});
+
+describe('playLabel: the play state beside the slide number', () => {
+  it('reads Playing or Paused in both languages', () => {
+    expect(playLabel(true, 'en')).toBe('Playing');
+    expect(playLabel(false, 'en')).toBe('Paused');
+    expect(playLabel(false, 'es')).toBe('En pausa');
   });
 });

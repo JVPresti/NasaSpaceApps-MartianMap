@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { assertPartnerState } from '../engine/partnerSource.js';
 import { CREWMATE, createCrewmate } from './crewmate.js';
-import { canStand, densePath, habToWorld, makeHabitat, makeTrack, makeWorld, recordTrack, reversals } from './crewmateFixtures.js';
+import { canStand, densePath, habToWorld, makeHabitat, makeTrack, makeWorld, recordTrack, reversals, withoutSteps } from './crewmateFixtures.js';
 
 const DT = 1 / 30;
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
@@ -53,14 +53,15 @@ function runIt() {
     assertPartnerState(state);
     if (prevYaw !== null) maxTurnRate = Math.max(maxTurnRate, angle(state.yaw - prevYaw) / DT);
     prevYaw = state.yaw;
-    frames.push({ t, x: state.x, z: state.z, yaw: state.yaw, gait: state.gait, carrying: state.carrying, player: { ...p }, mode: brain.inspect().mode });
+    frames.push({ t, x: state.x, z: state.z, yaw: state.yaw, gait: state.gait, carrying: state.carrying, player: { ...p }, mode: brain.inspect().mode, yielding: brain.inspect().yield });
   }
   return { frames, flips: brain.inspect().flips, maxTurnRate };
 }
 
 describe('EV2 does not go back and forth: a 3-minute first mission on a recorded walk', () => {
   const run = runIt();
-  const ev2 = run.frames.map((f) => ({ t: f.t, x: f.x, z: f.z }));
+  // a step aside out of the player's way (#377) is the player's doing, not EV2 going back and forth: left out
+  const ev2 = withoutSteps(run.frames).map((f) => ({ t: f.t, x: f.x, z: f.z }));
   const player = run.frames.map((f) => ({ t: f.t, x: f.player.x, z: f.player.z }));
   const playerTurns = reversals(player), ev2Turns = reversals(ev2);
 

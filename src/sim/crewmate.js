@@ -67,7 +67,14 @@ export const CREWMATE = Object.freeze({
   SLOPE_CALL_DEG: 15,   // a slope this steep ahead gets a callout and a side step (routeProfiles.js caution grade)
   SLOPE_LOOK_M: 15,     // how far ahead along the route it looks for one
   SLOPE_SIDE_M: 1.5,    // the side step off the line on that stretch
-  PASS_SIDE_M: 1.8,     // passing the player to lead the way: this far to the side, clear of the 0.9 m gap
+  PASS_SIDE_M: 2.6,     // passing the player to lead the way: this far to the side, at SPACE_CLEAR_M
+  SPACE_M: 2,           // personal space: following, waiting or leading, it never walks closer than this. A player who
+  YIELD_M: 1.6,         //   will be closer than YIELD_M in YIELD_LOOK_SEC makes it step aside, until they are
+  SPACE_CLEAR_M: 2.6,   //   SPACE_CLEAR_M away
+  YIELD_LOOK_SEC: 1.2,
+  BODY_M: 1.2,          // the hand-over, the science stop and the airlock: never closer than this (two suits, not 0.9 m)
+  YIELD_MS: 1.8,        // stepping aside, a quick side step without turning away from the player ...
+  YIELD_ACCEL_MS2: 5,   // ... up to speed in 0.4 s
   SIDE_EASE_MS: 0.6,    // the lead's side offset changes at most this fast
   ARRIVE_BEHIND_M: 2.5, // a lead point this close behind it counts as reached
   CALL_GAP_SEC: 20,     // at most one callout per this many seconds, unless urgent
@@ -144,7 +151,7 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
     lastP: null, vp: 0, stillFor: 0, clock: 0, evaClock: 0, phase: null,
     carrying: true, bend: null, hold: 0, holdCarry: true, holdFace: null,   // bend: { t, carryAfter }
     path: null, pathRef: null, crumbs: [], trail: null, own: null, along: null, vAlong: 0,           // own: { ref, s } the crewmate's last place on a track
-    latches: {}, flips: [], bands: {}, passSign: 0, side: 0, sideAt: null, vTo: 0, leadT: null, leadIdle: false, trace: [], planted: false,
+    latches: {}, flips: [], bands: {}, passSign: 0, side: 0, sideAt: null, vTo: 0, leadT: null, leadIdle: false, pvx: 0, pvz: 0, pwx: 0, pwz: 0, prevP: null, trace: [], planted: false,
     stopId: null, stopSpot: null, spotFor: null, done: new Map(),
     handover: null,
     chain: -1, chainArrived: false, joinX: null, homeLead: false, lowOwn: false, leftHome: false,
@@ -356,7 +363,10 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
   // a lead point within ARRIVE_BEHIND_M behind it, or that close while the player stops: it is there, it does not turn back
   const leadGo = (g, speed, P) => {
     const gx = g.x - m.x, gz = g.z - m.z, gd = hypot(gx, gz);
-    if (gd < R.ARRIVE_BEHIND_M && (m.leadIdle || gx * Math.sin(m.yaw) + gz * Math.cos(m.yaw) < 0)) return hold(P);
+    // holding, it holds until the point is 1.5 m past ARRIVE_BEHIND_M: a swaying player sways the point with them
+    const near = m.bands['lead:there'] ? gd < R.ARRIVE_BEHIND_M + 1.5 : gd < R.ARRIVE_BEHIND_M;
+    m.bands['lead:there'] = near && (m.leadIdle || gx * Math.sin(m.yaw) + gz * Math.cos(m.yaw) < 0);
+    if (m.bands['lead:there']) return hold(P);
     return go(g.x, g.z, speed, P);
   };
   // the player's progress toward the target, smoothed (m.vTo), from `left`, the way still to go (along the route when it
@@ -367,7 +377,7 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
     if (q && q.kind === kind && dt > 0 && dt < 0.5) m.vTo += ((q.d - left) / dt - m.vTo) * Math.min(1, dt * 3);
     else if (!q || q.kind !== kind || dt >= 0.5) m.vTo = q && q.kind !== kind ? m.vTo : 0;
     m.leadT = { d: left, t: m.clock, kind };
-    m.leadIdle = band('lead:idle', m.vTo, 0.3, 0.5);
+    m.leadIdle = band('lead:idle', m.vTo, 0.3, 0.5) || m.planted;   // planted: swaying in place is not coming
   }
 
   // lead the way to a target (the shelter, or home), leadM ahead of the player; it waits for them past FAR_M
@@ -470,6 +480,32 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
   }
 
   // ------------------------------------------------------------ one frame
+  // ------------------------------------------------------------ personal space
+  // The modes that keep SPACE_M. The others come closer on purpose: the hand-over and the science stop at HANDOVER_M,
+  // the case down beside the player, the airlock walk behind them. They keep BODY_M.
+  const SPACED = new Set(['buddy', 'storm', 'radiation', 'low']);
+  const floorM = () => (SPACED.has(m.mode) && !m.bend && m.hold <= 0 ? R.SPACE_M : R.BODY_M);
+
+  // A player who comes inside YIELD_M (or will within YIELD_LOOK_SEC): step aside, facing them, until they are
+  // SPACE_CLEAR_M away. Sideways off their line of walk when they are walking, straight back when they are not.
+  function space(intent, P) {
+    if (!SPACED.has(m.mode) || m.bend || m.hold > 0) { m.bands.yield = false; return intent; }
+    const dx = m.x - P.x, dz = m.z - P.z, d = hypot(dx, dz) || 1e-6;
+    // the player's speed toward it, less 0.4 m/s: swaying or a slow shuffle is not coming at it
+    const closing = m.planted ? 0 : Math.max(0, (m.pvx * dx + m.pvz * dz) / d - 0.4);
+    if (!band('yield', d - closing * R.YIELD_LOOK_SEC, R.YIELD_M, R.SPACE_CLEAR_M)) { m.yieldSign = 0; return intent; }
+    let ux = dx / d, uz = dz / d;
+    const v = hypot(m.pvx, m.pvz);
+    if (v > 0.3) {
+      // a walking player: straight to the side of their walk, on the side it is already on, so they walk past.
+      // Never along their walk, back or forward: that would read as turning round to follow them.
+      const wx = m.pvx / v, wz = m.pvz / v, lx = wz, lz = -wx;   // lx, lz: left of the player's walk
+      if (!m.yieldSign) m.yieldSign = dx * lx + dz * lz >= 0 ? 1 : -1;
+      ux = lx * m.yieldSign; uz = lz * m.yieldSign;
+    }
+    return { go: null, step: { x: ux, z: uz, speed: R.YIELD_MS }, face: P };
+  }
+
   function decide(dt, world, sense) {
     const P = world.player, h = world.habitat;
     if (m.hold > 0) { m.hold -= dt; if (m.hold <= 0) { m.hold = 0; startBend(m.holdCarry); } return hold(m.holdFace); }
@@ -584,6 +620,8 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
     m.clock += dt;
     if (sense.phase === 'eva') m.evaClock += dt;
     m.vp += (step / dt - m.vp) * Math.min(1, dt * 3);
+    if (m.prevP && dt > 0) { const k = Math.min(1, dt * 3); m.pvx += ((P.x - m.prevP.x) / dt - m.pvx) * k; m.pvz += ((P.z - m.prevP.z) / dt - m.pvz) * k; const w = Math.min(1, dt); m.pwx += ((P.x - m.prevP.x) / dt - m.pwx) * w; m.pwz += ((P.z - m.prevP.z) / dt - m.pwz) * w; }
+    m.prevP = { x: P.x, z: P.z };
     // stopped below STILL_MS, walking again only above 1.5 times that: a player shuffling at the threshold stays stopped
     m.stillFor = m.vp < R.STILL_MS ? m.stillFor + dt : m.vp > R.STILL_MS * 1.5 || m.stillFor === 0 ? 0 : m.stillFor;
     // where the player stood PLANTED_SEC ago, from a sample every 0.25 s
@@ -615,7 +653,7 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
       if (m.bend.t >= CASE_CLIP.releaseAt && m.carrying !== m.bend.carryAfter) m.carrying = m.bend.carryAfter;
       if (m.bend.t >= CASE_CLIP.seconds) m.bend = null;
       intent = hold(null);
-    } else intent = decide(dt, world, sense);
+    } else intent = space(decide(dt, world, sense), world.player);
 
     move(dt, world, intent);
     flush(sense, out);
@@ -642,6 +680,15 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
       if (hypot(p.x - x, p.z - z) > 0.05) return false;
     }
     return true;
+  }
+
+  // a step that would end inside the floor around the player ends on it instead (it may slide round them, never in)
+  function keepSpace(P, p) {
+    if (!P) return;
+    const f = floorM(), dx = p.x - P.x, dz = p.z - P.z, d = hypot(dx, dz), now = dist(me(), P);
+    if (d >= f || d >= now) return;
+    const r = Math.min(f, now), l = d || 1e-6;
+    p.x = P.x + dx / l * r; p.z = P.z + dz / l * r;
   }
 
   function move(dt, world, intent) {
@@ -680,9 +727,19 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
       m.yaw = wrap(m.yaw + clamp(off * Math.min(1, dt * 5), -maxTurn, maxTurn));
     }
     m.groundSpeed = 0;
-    if (m.speed > 0.01 && !m.bend) {
+    if (intent.step && !m.bend) {
+      // stepping aside: the body moves, the heading stays on the player (turned above, toward intent.face)
+      m.speed = 0;
+      m.stepV = Math.min(intent.step.speed, (m.stepV || 0) + R.YIELD_ACCEL_MS2 * dt);
+      const p = { x: m.x + intent.step.x * m.stepV * dt, z: m.z + intent.step.z * m.stepV * dt };
+      if (world.collide) world.collide(m.x, m.z, p);
+      const moved = hypot(p.x - m.x, p.z - m.z);
+      m.x = p.x; m.z = p.z; m.groundSpeed = moved / dt;
+    } else if (m.speed > 0.01 && !m.bend) {
+      m.stepV = 0;
       const st = m.speed * dt, p = { x: m.x + Math.sin(m.yaw) * st, z: m.z + Math.cos(m.yaw) * st };
       if (world.collide) world.collide(m.x, m.z, p);
+      keepSpace(world.player, p);
       const moved = hypot(p.x - m.x, p.z - m.z);
       m.stuck = vWant > 0.2 && moved < st * 0.2 ? m.stuck + dt : 0;
       if (m.stuck > R.STUCK_SEC) { m.stuck = 0; m.sidestep = 1.2; }
@@ -731,7 +788,7 @@ export function createCrewmate({ slopeAt = null, rules: R = CREWMATE } = {}) {
   return {
     update, command,
     /** What the crewmate is doing, for tests and the development hook. flips: every latched decision change, with its time. */
-    inspect: () => ({ mode: m.mode, x: m.x, z: m.z, yaw: m.yaw, carrying: m.carrying, bending: !!m.bend, chain: m.chain, lowOwn: m.lowOwn, stopId: m.stopId, done: [...m.done.keys()], follow: latched('follow', 'wait'), flips: m.flips.slice() }),
+    inspect: () => ({ yield: !!m.bands.yield, mode: m.mode, x: m.x, z: m.z, yaw: m.yaw, carrying: m.carrying, bending: !!m.bend, chain: m.chain, lowOwn: m.lowOwn, stopId: m.stopId, done: [...m.done.keys()], follow: latched('follow', 'wait'), flips: m.flips.slice() }),
   };
 }
 

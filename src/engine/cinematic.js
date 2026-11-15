@@ -69,13 +69,17 @@ export function createCinematic(ctx, hooks) {
   const hidden = [];
   let labelFrames = 0;
   const LABEL_EVERY = 30;   // a full scene walk every 30 frames; between them only the top three levels
-  const hide = (o) => { if (o && o.layers.isEnabled(0)) { hidden.push(o); o.layers.set(HIDDEN_LAYER); } };
+  // Each hidden object keeps its own layer mask for release(): the arms' skinned meshes also sit on the shadow layer.
+  const hide = (o) => { if (o && o.layers.isEnabled(0)) { hidden.push([o, o.layers.mask]); o.layers.set(HIDDEN_LAYER); } };
+  // The first-person view model (the arms, the wrist screen, anything on the camera) never shows in the presentation:
+  // the engine sets the arms' `visible` every frame, so they leave the camera's layer instead.
+  const hideFirstPerson = () => camera.traverse((o) => { if (o !== camera) hide(o); });
   const hideAppLabels = (full) => {
     if (ctx.sys.routeGlow) { hide(ctx.sys.routeGlow.mesh); hide(ctx.sys.routeGlow.chevrons); }
     // Waypoint, shelter and find labels, also ones added later. The waypoint markers rebuild their sprites in a group
     // on the scene whenever the route changes (2 levels down); a find's label sits on its pole (3 levels down,
     // finds.js). So the top three levels are checked every frame: on a slow GPU 30 frames can take seconds.
-    if (full) { scene.traverse((o) => { if (o.isSprite) hide(o); }); return; }
+    if (full) { scene.traverse((o) => { if (o.isSprite) hide(o); }); hideFirstPerson(); return; }
     const walk = (o, depth) => { for (const c of o.children) { if (c.isSprite) hide(c); else if (depth < 3 && c !== group) walk(c, depth + 1); } };
     walk(scene, 1);
   };
@@ -228,7 +232,7 @@ export function createCinematic(ctx, hooks) {
       group.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
       for (const t of textures) t.dispose();
       if (zoneUniforms.tLast.value) zoneUniforms.tLast.value.dispose();
-      for (const o of hidden) o.layers.set(0);
+      for (const [o, mask] of hidden) o.layers.mask = mask;
       camera.fov = saved.fov; camera.near = saved.near; camera.far = saved.far; camera.up.copy(saved.up); camera.updateProjectionMatrix();
       if (fogWritten !== null && U.uFogK.value === fogWritten) U.uFogK.value = fogBase;
       if (!looping) hooks.loop(true);

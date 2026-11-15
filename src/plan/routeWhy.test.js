@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { setLanguage } from '../i18n/index.js';
-import { droppedWhy, legWhy, planReasonLines, stopLine } from './routeWhy.js';
+import { droppedWhy, legWhy, planReasonLines, stopLine, taskDroppedWhy, taskRole, taskText } from './routeWhy.js';
 import { eventWhen, shortDuration } from './tableFormat.js';
 
 afterEach(() => setLanguage('en'));
@@ -98,6 +98,44 @@ describe('table durations', () => {
     expect(eventWhen(75)).toBe('75 s into the EVA');
     expect(eventWhen(480)).toBe('8 min into the EVA');
     expect(eventWhen(null)).toBeNull();
+  });
+});
+
+describe('sampling tasks (#352)', () => {
+  const rock = { id: 't1', what: 'rock', count: 1 };
+  const photos = { id: 't2', what: 'photo', count: 2 };
+
+  it('says what and how many', () => {
+    expect(taskText(rock)).toBe('1 rock sample');
+    expect(taskText(photos)).toBe('2 photos');
+    expect(taskText({ what: 'soil', count: 3 })).toBe('3 soil samples');
+    expect(taskText({ what: 'photo', count: 1 })).toBe('1 photo');
+  });
+
+  it('names the tasks a leg serves, as the role of its stop line', () => {
+    expect(taskRole([rock, photos])).toBe('for 1 rock sample · 2 photos');
+    expect(stopLine({ workSec: 480, role: taskRole([rock]), explain: leg({ clear: true }) })).toBe('For 1 rock sample · 8 min work · straight line clear');
+    expect(taskRole([])).toBeNull();
+    expect(taskRole(null)).toBeNull();
+  });
+
+  it('says why a task was left out, as for a stop', () => {
+    expect(taskDroppedWhy({ ...photos, kept: false, drop: { limit: 'time', overSec: 840 } })).toBe('14 min over your time');
+    expect(taskDroppedWhy({ ...photos, kept: false, drop: { limit: 'unreachable' } })).toBe('No walkable route to it');
+    expect(taskDroppedWhy({ ...rock, kept: true, drop: null })).toBeNull();
+  });
+
+  it('says when there is no task to plan, and leaves the tasks kept or dropped to the task list', () => {
+    expect(planReasonLines([
+      { code: 'task-added', task: 't2' }, { code: 'task-dropped', task: 't3', limit: 'o2' }, { code: 'fits', spareSec: 600 },
+    ])).toEqual(['Fits, 10 min to spare.']);
+    expect(planReasonLines([{ code: 'no-tasks' }])).toEqual(['No sampling task yet: add one to plan a route.']);
+  });
+
+  it('speaks Spanish', () => {
+    setLanguage('es');
+    expect(taskRole([rock, photos, { what: 'soil', count: 1 }])).toBe('para 1 muestra de roca · 2 fotos · 1 muestra de suelo');
+    expect(planReasonLines([{ code: 'no-tasks' }])).toEqual(['Aún no hay tareas de muestreo: añade una para planear una ruta.']);
   });
 });
 

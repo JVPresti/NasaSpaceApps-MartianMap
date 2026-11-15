@@ -6,9 +6,9 @@ import './events.css';
 const TOGGLE_KEY = '`';
 
 /**
- * Debug strip for the demo: fire any registered event by hand. Shown in
- * development, or with ?debug=1 in a production build. Collapsed to a small
- * chip by default so it stays out of the demo; the chip or the ` key opens it.
+ * Debug strip for the demo: fire any registered event by hand. Shown only with
+ * ?debug=1 in the URL, in development and in production builds (#401).
+ * Collapsed to a small chip by default; the chip or the ` key opens it.
  */
 export default function EventDebug() {
   const [events, setEvents] = useState(() => listEvents());

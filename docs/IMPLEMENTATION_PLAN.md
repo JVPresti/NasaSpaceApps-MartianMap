@@ -145,8 +145,8 @@ The simulator mixes measured data with our own models. Every value on screen car
 | Tag | Meaning | Examples |
 | --- | --- | --- |
 | **DATA** | Measured by a NASA mission. Shown with mission, site and date or sol. | Terrain height, orbital image, MEDA pressure, RAD dose rate |
-| **DERIVED** | Computed by us from measured data. | Slope, rock abundance, route, line of sight |
-| **SIM** | Our model or a scripted event. | Oxygen and battery use, position drift, the dust storm timing |
+| **DERIVED** | Computed by us from measured data. | Slope, route, line of sight |
+| **SIM** | Our model or a scripted event. | Oxygen and battery use, position drift, the dust storm timing, rock cover read from image brightness |
 
 Three limits from the research note apply everywhere. Published observations are historical, not live. RAD measured radiation in Gale crater, not Jezero. A 1 m elevation model does not see small rocks, so a route is advice, not a safety certificate.
 
@@ -182,7 +182,7 @@ Implementation is small. The simulation knows the true position. A navigation mo
 | **Sky** | Tan daytime sky, blue glow around the setting Sun, dust opacity (tau) | The four existing presets, blended by time and tau | SIM |
 | **Weather** | MEDA on Perseverance: pressure of roughly 650 to 800 Pa, air temperature, wind | Replay of one real sol, labelled with its sol number | DATA |
 | **Radiation** | RAD on Curiosity: about 0.2 mGy per sol on the surface in Gale crater | Background dose counter; scripted particle event scaled from RAD records | DATA + SIM |
-| **Terrain hazard** | Slope from the HiRISE elevation model; Golombek rock abundance | Under 15° normal, 15 to 20° caution, over 20° no-go. 20° is NASA's suited walking limit (xEVA concept of operations, EVA-EXP-0042 Rev B). The slope layer and the route planner both read these limits from `src/sim/costGrid.js`, which matches `public/data/hazards.json`. | DERIVED |
+| **Terrain hazard** | Slope from the HiRISE elevation model; rock cover read from HiRISE brightness, with the Golombek size model | Under 15° normal, 15 to 20° caution, over 20° no-go. 20° is NASA's suited walking limit (xEVA concept of operations, EVA-EXP-0042 Rev B). The slope layer and the route planner both read these limits from `src/sim/costGrid.js`, which matches `public/data/hazards.json`. | DERIVED (slope) + SIM (rock cover, a brightness proxy) |
 | **Mobility** | Suited walking at 1.0 m/s on flat ground, jogging at 1.5 m/s, just under the fastest suited pace tested at Mars gravity (1.52 m/s) | Speed and effort scale with slope and rock cover | SIM |
 | **Suit** | Oxygen, battery, suit pressure of 4.3 psi as in the mockups | Consumption follows effort; walkback time comes from the route home | SIM |
 | **Light** | A helmet work lamp reaches 15 to 20 m | Existing night preset | SIM |
@@ -194,7 +194,7 @@ Implementation is small. The simulation knows the true position. A navigation mo
 | --- | --- | --- | :--: | --- |
 | **Optical, from orbit** | HiRISE orthomosaic at 25 cm (USGS, Mars 2020 TRN); CTX mosaic at 6 m | Ground texture, minimap base | **P0** | Have |
 | **Topographic** | HiRISE elevation model at 1 m; CTX elevation model at 20 m | Terrain mesh, slope, elevation profile, line of sight, route cost | **P0** | Have |
-| **Derived geology** | Rock abundance after the Golombek model; outcrop mask from HiRISE | Route cost, science targeting | **P0** | Have |
+| **Derived geology** | Rock cover read from HiRISE brightness, with the Golombek size model; outcrop brightness mask from HiRISE (both SIM proxies) | Route cost, science targeting | **P0** | Have |
 | **Atmospheric** | MEDA, in the Mars 2020 archive on PDS | Environment strip, dust storm numbers and trigger | **P0** | Extract one or two sols |
 | **Radiation** | RAD, in the Curiosity archive on PDS | Dose on the HUD, radiation event numbers | **P0** | Constants and one event curve |
 | **Optical, from the surface** | Perseverance Mastcam-Z images of Bright Angel, sols 1187 to 1217; Navcam and WATSON images of Cheyava Falls | Science stop cards, reference match at the rock, colour matching of terrain and sky | **P1** | Colour matching done (see `docs/marswalk-assets/README.md`). Curate 10 to 15 images for the stops |

@@ -83,6 +83,20 @@ describe('applySamplingEvent', () => {
     expect(s.samples).toHaveLength(1);
   });
 
+  it('logs every photo with the point it was aimed at and the mission time, for the sampling tasks (#352)', () => {
+    const start = { ...createInitialState().sampling };
+    delete start.photoLog;   // a slice built before the log existed
+    let s = applySamplingEvent(start, { type: 'photo', kind: 'rock', site: 'Bright Angel', x: -11.2, z: -49.5 }, 30);
+    s = applySamplingEvent(s, { type: 'photo', kind: 'ground', x: 3, z: 4 }, 42);
+    expect(s.photos).toBe(2);
+    expect(s.photoLog).toEqual([
+      { x: -11.2, z: -49.5, kind: 'rock', site: 'Bright Angel', atSec: 30 },
+      { x: 3, z: 4, kind: 'ground', site: null, atSec: 42 },
+    ]);
+    // other events leave the log as it was
+    expect(applySamplingEvent(s, { type: 'collect', id: 1, kind: 'ground', x: 3, z: 4 }, 50).photoLog).toBe(s.photoLog);
+  });
+
   it('keeps the status written by the bridge', () => {
     const s = { ...createInitialState().sampling, status: { phase: 'idle' } };
     expect(applySamplingEvent(s, { type: 'photo', x: 0, z: 0 }).status).toBe(s.status);

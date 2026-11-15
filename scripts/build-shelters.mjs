@@ -27,7 +27,10 @@ const hazards = readJson('public/data/hazards.json').values;
 
 /** Selection rules. DERIVED or SIM, explained in docs/route/shelters.md. */
 const RULES = {
-  /** A safe point must cut the isotropic SEP dose by at least this much. */
+  /**
+   * A safe point must hide at least this share of the sky, read as the most it can cut the SEP dose under an
+   * isotropic flux (SIM upper bound). RAD measured a cut about a fifth of the hidden share (RAD_SHIELDING below).
+   */
   minDoseReduction: 0.12,
   /** Every node within this radius must be walkable, so the spot is a patch, not one node. Metres. */
   patchRadiusM: 4,
@@ -43,6 +46,17 @@ const RULES = {
 
 /** Azimuths for the check of each chosen point, to show the grid result has converged. */
 const CHECK_AZIMUTHS = 72;
+
+/**
+ * The one measurement of terrain shielding on Mars: Curiosity's RAD beside Butte M12, with 19 % of the sky blocked,
+ * saw the dose rate fall about 4 % (galactic cosmic rays). The notes quote it beside the geometric upper bound; the
+ * selection does not use it (docs/route/shelters.md, "After the hackathon").
+ */
+const RAD_SHIELDING = {
+  blockedSky: 0.19,
+  doseCut: 0.04,
+  citation: 'Ehresmann et al. 2021, JGR Planets 126, doi 10.1029/2021JE006851',
+};
 
 function round(value, digits) {
   const f = 10 ** digits;
@@ -222,7 +236,9 @@ const sepDose = hazards['radiation.sep_2017.event_dose'];
 const assumption =
   'Assumes an isotropic SEP flux above the horizon: dose is proportional to the visible solid angle of the upper hemisphere, and the planet blocks everything below the horizontal. ' +
   'The real flux at the surface is stronger toward the zenith, because particles arriving at a low angle cross more atmosphere, so blocking the low sky saves less than this estimate. ' +
-  'Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky.';
+  'Read the reduction as an upper bound. It ignores secondary particles from the ground and the rock itself (albedo neutrons) and the galactic background, which comes from the same sky. ' +
+  `The one measurement on Mars found a far smaller cut: Curiosity's RAD beside Butte M12, with ${Math.round(RAD_SHIELDING.blockedSky * 100)} % of the sky blocked, ` +
+  `measured about ${Math.round(RAD_SHIELDING.doseCut * 100)} % less dose, about a fifth of the blocked share (${RAD_SHIELDING.citation}).`;
 
 function shelterNote(point) {
   return (
@@ -268,6 +284,8 @@ const natural = chosen.map((point, index) => {
   const check = skyViewAt(grid, point.x, point.z, { azimuths: CHECK_AZIMUTHS });
   point.skyViewCheck = check.skyView;
   const reduction = 1 - check.skyView;
+  /** The reduction scaled by RAD's measured ratio, for the note only: the selection keeps the upper bound. */
+  const measuredCut = (reduction * RAD_SHIELDING.doseCut) / RAD_SHIELDING.blockedSky;
   const maxHorizon = Math.max(...check.horizonDeg);
   const maxAzimuth = (check.horizonDeg.indexOf(maxHorizon) * 360) / CHECK_AZIMUTHS;
   const x = round(point.x, 1);
@@ -299,14 +317,20 @@ const natural = chosen.map((point, index) => {
         label: 'HiRISE DEM · sky view',
         provenance: valueProvenance(shelterNote(point) + assumption),
       },
+      // SIM: the sky view is DERIVED geometry, but "hidden sky = dose cut" is our assumption, and RAD measured far less.
       dose_reduction: {
         value: round(reduction, 3),
         unit: 'fraction of the open-ground SEP dose',
-        tag: 'DERIVED',
-        label: 'HiRISE DEM · sky view',
+        tag: 'SIM',
+        label: 'HiRISE DEM · sky view · upper bound',
         provenance: valueProvenance(
-          `1 - sky view factor. Applied to the September 2017 event (${sepDose.value} ${sepDose.unit}, RAD in Gale crater, hazards.json radiation.sep_2017.event_dose) ` +
+          'Upper bound from geometry, tagged SIM: 1 - sky view factor, which takes the share of the sky the terrain hides as the share of the dose it removes. ' +
+            'The sky view is DERIVED from the terrain; that step is our assumption, not a measurement. ' +
+            `Applied to the September 2017 event (${sepDose.value} ${sepDose.unit}, RAD in Gale crater, hazards.json radiation.sep_2017.event_dose) ` +
             `it would save at most ${Math.round(sepDose.value * reduction)} µGy. ` +
+            `Scaled by the ratio RAD measured (${Math.round(RAD_SHIELDING.doseCut * 100)} % less dose for ${Math.round(RAD_SHIELDING.blockedSky * 100)} % of the sky blocked, galactic cosmic rays) ` +
+            `it would be a ${(measuredCut * 100).toFixed(1)} % cut, about ${Math.round(sepDose.value * measuredCut)} µGy, likely less for a solar event, ` +
+            `and under the ${Math.round(RULES.minDoseReduction * 100)} % minimum for a safe point. ` +
             assumption,
         ),
       },
@@ -356,7 +380,7 @@ const output = {
 
 writeFileSync(root('public/data/shelters.json'), `${JSON.stringify(output, null, 2)}\n`);
 
-console.log('\nid    x       z       sky view  dose cut  route m  line m');
+console.log('\nid    x       z       sky view  cut, max  route m  line m');
 for (const s of natural) {
   const line = Math.hypot(s.x - habitat.entry.x, s.z - habitat.entry.z);
   console.log(

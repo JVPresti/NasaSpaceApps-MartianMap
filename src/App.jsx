@@ -16,6 +16,7 @@ import DebriefScreen from './debrief/DebriefScreen.jsx';
 import EventBanner from './events/EventBanner.jsx';
 import EventDebug from './events/EventDebug.jsx';
 import { StopBanner, WalkBeat } from './mission/MissionBeat.jsx';
+import TaskBanner from './mission/TaskBanner.jsx';
 import { chooseMission } from './mission/chooseMission.js';
 import Finds from './finds/Finds.jsx';
 import Hud from './hud/Hud.jsx';
@@ -40,9 +41,9 @@ const WRIST_HINT = 'menu.hint.wrist';
 
 const SITE = 'ui.neretva.vallis.jezero.crater.mars';
 
-const DEBUG_EVENTS =
-  import.meta.env.DEV ||
-  (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1');
+// The event debug strip (fire any event by hand) only with ?debug=1, in development too (#401): the plain URL shows
+// the interface as players see it, without the Events chip in the corner.
+const DEBUG_EVENTS = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1';
 
 // Escape is a key press, not a user activation, so it cannot grant pointer lock. In the Walk pause menu it
 // must explain that instead of starting a request that can only fail.
@@ -586,6 +587,8 @@ export default function App() {
       {load.status === 'ready' && mode === 'walk' && stage === STAGE.EVA && <EventBanner className="event-banner-walk" />}
       {/* The first mission's science stop (D10): why it is worth the walk, in the banner's place before any alert. */}
       {playing && mode === 'walk' && <StopBanner evaBegun={evaBegun} />}
+      {/* A sampling task at its place (#352): what to collect there and the tick, in the same place; never over an alert. */}
+      {playing && mode === 'walk' && <TaskBanner />}
       {load.status === 'ready' && DEBUG_EVENTS && <EventDebug />}
 
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={translateText(SITE)} onRetry={handleRetry} />

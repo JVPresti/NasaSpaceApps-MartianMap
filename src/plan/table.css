@@ -150,6 +150,11 @@
 
 .table-text.small { font-size: 14px; }
 
+/* The step's title and description, boxed like the panels under it (#395), so the left column starts with a panel
+   level with the right column's first one. flex: none keeps it at its text's height when the column scrolls. */
+.table-intro { flex: none; display: flex; flex-direction: column; gap: 10px; }
+.table-intro .table-note { margin-top: 0; }
+
 .table-panel {
   padding: 16px 18px;
   background: var(--panel-bg);
@@ -449,6 +454,9 @@ button.table-stop-name {
 
 .table-map { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .table-map:active { cursor: grabbing; }
+/* placing a sampling task (#352): a click sets the point, a drag still moves the map */
+.table-map.picking,
+.table-map.picking:active { cursor: crosshair; }
 
 .table-map-fit {
   position: absolute;
@@ -498,7 +506,7 @@ button.table-stop-name {
 .map-traverse-shadow { stroke: #0a0d11; stroke-width: 3.4px; opacity: 0.5; }
 
 /* The pin of the stop images: a dot where the rover stood and a tag to its left, clear of the stop markers, whose
-   tags open to the right. Above the route and markers, under the stop details (.map-pop, z-index 2). */
+   tags open to the right. Above the route and markers, under the stop details (.map-pop, z-index 3). */
 .map-pins { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .map-pin { position: absolute; width: 0; height: 0; }
 .map-pin-dot {
@@ -854,7 +862,7 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
   .table-stops { gap: 2px; }
   .table-body-route .table-right { gap: 10px; }
   /* the goal's one-line description: the goal select and the stop list say the same on a short screen */
-  .table-body-route .table-left > .table-text { display: none; }
+  .table-body-route .table-intro > .table-text { display: none; }
 }
 
 @media (max-width: 1100px) {
@@ -888,7 +896,7 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
 
 .budget-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .budget-head > span { font-size: 15px; color: var(--text-2); }
-.budget-head b { font: 600 30px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.budget-head b { font: 600 clamp(40px, 3.4vw, 56px)/1 var(--font-display); font-variant-numeric: tabular-nums; }   /* large: the panel shares the column's height (#397) */
 .budget-head small { margin-left: 6px; font: 400 13px var(--font-ui); color: var(--dim); }
 
 .budget-stack {
@@ -933,7 +941,7 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
 .ring figcaption span { margin-top: 2px; font-size: 12px; color: var(--dim); }
 
 .return-margin { display: grid; gap: 4px; padding-top: 14px; border-top: 1px solid var(--panel-line); }
-.return-margin b { font: 600 48px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.return-margin b { font: 600 clamp(56px, 4.6vw, 72px)/1 var(--font-display); font-variant-numeric: tabular-nums; }
 .return-margin small { margin-left: 6px; font: 400 15px var(--font-ui); color: var(--text-2); }
 .return-margin span { font-size: 14px; color: var(--text-2); }
 
@@ -1005,10 +1013,21 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
 /* Route step: the four numbers centred in their quarter of the panel */
 .table-fill > .table-grid2 { justify-items: center; text-align: center; }
 
-/* the window a stop opens on the map */
+/* Stacking on the mission table map, bottom to top (#380):
+   0  the image and the route lines
+   1  marks: the rover's image pins, the layer places, the route's stops and the crew position (mapLayers.css)
+   2  chrome: the caption, the legend, the rover key and the fit button
+   3  popups: the stop details and the rover images (placed by usePlacedPopup, never over the chrome)
+   1000  source tag details, in a portal on the page (SourceTag.css) */
+.table-map-caption, .table-map-legend, .table-map-traverse-key, .table-map-fit { z-index: 2; }
+
+/* the window a stop opens on the map; usePlacedPopup sets left and top */
 .map-pop {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
+  max-width: calc(100% - 16px);
+  max-height: calc(100% - 16px);
+  overflow: auto;
   width: 270px;
   padding: 12px 14px 14px;
   font-size: 13px;
@@ -1177,19 +1196,70 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
 /* The plan's reasons under the route numbers, at the size of the profile note below them */
 .table-note.route-why { font-size: 12px; line-height: 1.4; }
 
+/* "Collect samples" (#352, TaskList.jsx): a task is a stop row of the same grid. What and how many on the first line,
+   where and Remove under them, then the stop line, the pick hint, a refusal or the rock warning under the code. */
+.table-stops .task-where { grid-column: 2; }
+/* The list takes the height the needs and the layer panels leave and scrolls inside, so the layer buttons stay in view
+   on a 1366 x 768 screen; rows from the top, as a list being edited grows. */
+.task-panel { min-height: 150px; }
+.task-panel > .table-stops { min-height: 0; overflow-y: auto; align-content: start; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+/* the list rests on the top of a row, never on half of one */
+.task-panel > .table-stops { scroll-snap-type: y proximity; }
+.task-panel > .table-stops > li { scroll-snap-align: start; }
+.table-stops > li > .table-note { grid-column: 2 / -1; margin: 0; font-size: 12px; line-height: 1.35; }   /* the size of the stop line */
+/* At 1366 x 768 the seventh layer button (#335) takes a third row from the list: a task row a little tighter (the
+   selects at the height of the needs panel's choice buttons) and the panel's padding smaller, so one whole row, why line
+   included, still shows in English and Spanish. */
+@media (max-height: 800px) {
+  .task-panel { padding-top: 8px; padding-bottom: 8px; }
+  .task-panel > .table-stops > li { row-gap: 2px; }
+  .task-panel .needs-select { min-height: 30px; }
+}
+
 /* ------------------------------------------------------------------ conditions outlook (#248) */
 
-/* Five figures in a row over the suit model, level with go / no-go: the table's panel, label and number styles */
-.table-centre-wrap .outlook-strip { flex: none; width: 100%; }
-.outlook-strip .outlook-window { margin-left: auto; text-align: right; }
-.outlook-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 0; }
-.outlook-grid dt { overflow: hidden; font-size: 13px; color: var(--dim); text-overflow: ellipsis; white-space: nowrap; }
-.outlook-grid dd { margin: 4px 0 0; white-space: nowrap; }
-.outlook-grid b { font: 600 20px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
-.outlook-grid dd span { margin-left: 4px; font-size: 12px; color: var(--dim); }
-.outlook-grid small { display: block; margin-top: 3px; font-size: 11px; line-height: 1.3; color: var(--dim); }
-.outlook-grid small > .src-tag:first-child { margin: 0 6px 0 0; }
-.outlook-exposure b { font-weight: 600; color: var(--text-2); }
+/* Conditions as round badges in the Suit step's right column (#397): three a row, an icon in a ring coloured by the
+   condition (muted for context figures that set no limit), the number large under it and one word. */
+.table-right .outlook-strip { flex: none; padding: 14px 12px; }
+.outlook-badges { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 8px; }
+.outlook-badge { margin: 0; display: grid; justify-items: center; gap: 6px; text-align: center; }
+.outlook-ring { position: relative; width: min(64px, 100%); aspect-ratio: 1; }
+.outlook-ring svg { display: block; width: 100%; height: 100%; }
+.outlook-ring .ring-track, .outlook-ring .ring-fill { stroke-width: 8; }
+.outlook-icon { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255, 255, 255, 0.55); }   /* muted: the track's grey */
+.outlook-icon .hud-icon { width: 24px; height: 24px; color: inherit; }   /* the icon takes its ring's colour (#397) */
+.outlook-glyph { font: 600 22px/1 var(--font-display); }
+.outlook-badge.tone-ok .outlook-icon { color: var(--ok); }
+.outlook-badge.tone-caution .outlook-icon { color: var(--caution); }
+.outlook-badge.tone-warning .outlook-icon { color: var(--danger); }
+.outlook-badge figcaption { display: grid; gap: 2px; }
+.outlook-badge figcaption b { font: 600 20px/1.05 var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.outlook-badge.tone-ok figcaption b { color: var(--ok); }
+.outlook-badge.tone-caution figcaption b { color: var(--caution); }
+.outlook-badge.tone-warning figcaption b { color: var(--danger); }
+.outlook-badge figcaption b small { margin-left: 2px; font: 400 11px var(--font-ui); color: var(--dim); }
+.outlook-badge figcaption span { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px; font-size: 12px; color: var(--dim); }
+.outlook-badge .src-tag { margin: 0 0 0 2px; }
+
+/* Go / no-go at the head of the Suit step's middle column (#397): the verdict is the largest word on the step, in the
+   colour of the decision, with a coloured edge; under it two chips (the tightest limit, the expected alert) and the
+   plan in one line. No label above it. */
+.table-centre-wrap .suit-decision { flex: none; width: 100%; padding: 18px 20px 16px; text-align: center; border-top: 3px solid var(--panel-line); }
+.suit-decision[data-tone='ok'] { border-top-color: var(--ok); }
+.suit-decision[data-tone='caution'] { border-top-color: var(--caution); }
+.suit-decision[data-tone='warning'] { border-top-color: var(--danger); }
+.suit-decision .table-decision { margin: 0 0 12px; font-size: clamp(56px, 5.4vw, 84px); letter-spacing: 0.03em; text-transform: uppercase; }
+.suit-decision .table-text { max-width: 62ch; margin: 0 auto 10px; }
+.suit-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 10px; }
+.suit-chip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px;
+  font-size: 14px; border: 1px solid currentColor; border-radius: var(--radius-m);
+  background: rgba(255, 255, 255, 0.03);
+}
+.suit-chip .hud-icon { width: 18px; height: 18px; color: inherit; }   /* the chip's colour, not the HUD's cyan */
+.suit-chip b { margin-left: 2px; font: 600 20px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.suit-chip b small { margin-left: 2px; font: 400 12px var(--font-ui); }
+.suit-plan { margin: 0; font-size: 13px; color: var(--dim); }
 
 /* A 1366 x 768 screen: the needs controls a little lower, and the hazard cards keep their switch in view in both
    languages (the Spanish text is longer). After the rules above, so it wins over them. */
@@ -1209,8 +1279,12 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
   .ring figcaption b { font-size: 28px; }
   .return-panel { gap: 10px; }
   .return-margin { padding-top: 10px; }
-  .return-margin b { font-size: 38px; }
+  .return-margin b { font-size: 48px; }
+  .budget-head b { font-size: 40px; }
   .table-decision { font-size: 32px; margin-bottom: 6px; }
+  .suit-decision .table-decision { font-size: 56px; margin-bottom: 8px; }
+  .outlook-ring { width: min(54px, 100%); }
+  .outlook-badges { row-gap: 10px; }
   .decision-begin { display: none; }   /* "once you begin, the table closes": the Begin EVA button says it */
   .budget-panel { gap: 10px; }
   .table-body-route .table-right { gap: 8px; }
@@ -1236,6 +1310,8 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
   row-gap: 0;
 }
 .table-hazard-cards > li > .table-hazard-art { height: 100%; min-height: 0; max-height: none; }
+/* the subgrid has no row gap and the art fills its row, so the art's own margin is lost: the title keeps the air (#399) */
+.table-hazard-cards > li > .table-hazard-title { padding-top: 20px; }
 /* each card's text sits at the top of its shared row, not spread over it; the switch at the foot */
 .table-hazard-cards > li > .table-hazard-title,
 .table-hazard-cards > li > dl,
