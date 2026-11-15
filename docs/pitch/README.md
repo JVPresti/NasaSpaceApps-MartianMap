@@ -38,6 +38,5 @@ change to that block.
 
 - Pitch length and format (5, 8 or 3 minutes; Q&A separate or not; own laptop or not).
 - Presenters P1, P2, P3 and who drives the laptop.
-- Member names and spelling on slide 1 (taken from git authors).
 - Who records the 30-second video and on which machine.
 - The AI-use and "built before the event" answers in `qa.md` (questions 10 and 11).

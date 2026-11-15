@@ -40,7 +40,7 @@ Solo si el equipo la elige en el ensayo. Va antes del beat 1 y usa los 20 segund
 
 | Tiempo | Quién | Texto |
 |---|---|---|
-| 0:00 | P1 | El año pasado este equipo ganó Ensenada con NASA Explorer: primer lugar de diecisiete, y nominados globales. |
+| 0:00 | P1 | El año pasado, cinco de nosotros ganamos Ensenada con NASA Explorer: primer lugar de diecisiete, y nominados globales. Este año se sumó Andrea. Refritos, nueva generación. |
 | 0:12 | P1 | (Pausa. Cambia a Jezero.) |
 | 0:20 | | |
 

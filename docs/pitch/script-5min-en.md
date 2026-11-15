@@ -36,7 +36,7 @@ The English version of `script-5min-es.md`, line for line, for rehearsal with no
 
 | Time | Who | Text |
 |---|---|---|
-| 0:00 | P1 | Last year this team won Ensenada with NASA Explorer: first of seventeen, and Global Nominees. |
+| 0:00 | P1 | Last year, five of us won Ensenada with NASA Explorer: first of seventeen, and Global Nominees. This year Andrea joined. Refried, new generation. |
 | 0:12 | P1 | (Pause. Cut to Jezero.) |
 | 0:20 | | |
 
