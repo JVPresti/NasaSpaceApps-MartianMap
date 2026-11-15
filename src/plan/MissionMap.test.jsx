@@ -70,6 +70,11 @@ describe('MissionMap', () => {
     expect(html).toContain('<b>Habitat</b>');
   });
 
+  it('shows a crosshair only while a sampling task\'s place is being chosen (#352)', () => {
+    expect(render()).toContain('class="table-map"');
+    expect(render({ picking: true, onPick: () => {} })).toContain('class="table-map picking"');
+  });
+
   it('says SHELTER in the interface language', () => {
     setLanguage('es');
     expect(render({ eventRoute: true, path: [[493, 539], [535.1, 574.1]] })).toContain('REFUGIO');

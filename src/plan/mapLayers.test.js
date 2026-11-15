@@ -6,7 +6,7 @@ import { setLanguage } from '../i18n/index.js';
 import { radioShadowMask } from '../sim/radio.js';
 import { LAYERS } from './layers.js';
 import {
-  LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, contourLine, drawMapPosition, layerColour, layerPlaces, mapCrop, marsColour, paintMap, sampleRed, slopeGrid, tagFlips,
+  LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, contourLine, drawMapPosition, fromMap, layerColour, layerPlaces, mapCrop, marsColour, paintMap, sampleRed, slopeGrid, tagFlips,
   toMap, zoomCrop,
 } from './mapLayers.js';
 import { exposureText } from './routeExposure.js';
@@ -230,6 +230,39 @@ describe('mission table map', () => {
     expect(layerPlaces(LAYER.OUTCROP, { candidates, dropped: [{ id: 'sortie', limit: 'odd' }] }).find((p) => p.id === 'sortie').detail).toBe('dropped: no route');
     setLanguage('es');
     expect(layerPlaces(LAYER.OUTCROP, { candidates }).find((p) => p.id === 'sortie')).toMatchObject({ label: 'Zona de tono claro', detail: 'otro objetivo' });
+  });
+
+  it('marks the sampling task places on Rocks and Outcrop, what each collects, and why a place was left out (#352)', () => {
+    const candidates = routeStopCandidates(readJson('public/data/stops.json'));
+    const tasks = [
+      { id: 't1', what: 'rock', count: 1, place: { type: 'stop', stopId: 'bright-angel' } },
+      { id: 't2', what: 'photo', count: 2, place: { type: 'stop', stopId: 'bright-angel' } },
+      { id: 't3', what: 'soil', count: 3, place: { type: 'point', id: 'P1', x: 560, z: 574 } },
+    ];
+    const planTasks = [{ id: 't1', kept: true }, { id: 't2', kept: true }, { id: 't3', kept: false, drop: { limit: 'o2' } }];
+    const rocks = layerPlaces(LAYER.ROCK, { candidates, tasks, planTasks });
+    expect(rocks).toEqual([
+      { id: 'task-bright-angel', kind: 'task', x: -11, z: -50, label: 'Rock ×1 · Photo ×2', detail: '', title: 'Bright Angel: Rock ×1 · Photo ×2', opens: 'left' },
+      { id: 'task-P1', kind: 'task', x: 560, z: 574, label: 'Soil ×3', detail: 'dropped: O2 margin', title: 'P1: Soil ×3: dropped: O2 margin', opens: 'left' },
+    ]);
+    // on Outcrop a task place takes the place of its stop's candidate mark; the other candidates stay
+    expect(layerPlaces(LAYER.OUTCROP, { candidates, tasks, planTasks }).map((p) => p.id)).toEqual(['cheyava-falls', 'sortie', 'task-bright-angel', 'task-P1']);
+    // no tasks (any goal but Collect samples): the layers mark what they did before
+    expect(layerPlaces(LAYER.ROCK, { candidates })).toEqual([]);
+    expect(layerPlaces(LAYER.OUTCROP, { candidates }).map((p) => p.id)).toEqual(['bright-angel', 'cheyava-falls', 'sortie']);
+    expect(layerPlaces(LAYER.TERRAIN, { candidates, tasks })).toEqual([]);
+    setLanguage('es');
+    expect(layerPlaces(LAYER.ROCK, { candidates, tasks: tasks.slice(0, 1) })[0].label).toBe('Roca ×1');
+  });
+
+  it('turns a click on the map back into metres', () => {
+    const crop = { x0: 400, z0: 500, size: 150 };
+    expect(fromMap(0, 0, crop)).toEqual({ x: 400, z: 500 });
+    expect(fromMap(50, 100, crop)).toEqual({ x: 475, z: 650 });
+    const [u, v] = toMap(523.4, 611.2, crop);
+    const back = fromMap(u, v, crop);
+    expect(back.x).toBeCloseTo(523.4, 9);
+    expect(back.z).toBeCloseTo(611.2, 9);
   });
 
   it('marks the natural shelters on Exposure with their dose cut, and nothing on the other layers', () => {

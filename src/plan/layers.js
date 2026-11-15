@@ -33,6 +33,7 @@ export const MARKER_COLOURS = Object.freeze({
   candidate: '#c9d0d8',   // a candidate stop the plan did not keep (.map-place-candidate)
   shelter: '#0a0d11',     // a shelter: the habitat's square marker (.map-marker-home)
   radio: '#5b8fbf',       // ground out of sight of the habitat mast, as the engine's radio-shadow overlay
+  task: '#ff6a2b',        // a sampling task's place, "Collect samples" only (#352): the main action's colour (var(--accent))
 });
 
 const knownRisk = (risk) => (Object.hasOwn(RISK_SETTINGS, risk) ? risk : 'standard');
