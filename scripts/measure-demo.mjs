@@ -26,7 +26,7 @@ import puppeteer from 'puppeteer-core';
 const BUDGET = [
   ['start', 'Start screen, choose mission', 15],
   ['site', 'Table: site, goal Cheyava Falls, the layers and what each decides', 65],
-  ['needs', 'Two contrasting plans, profiles, a stop card, back to the sortie', 55],
+  ['needs', 'Plan A, a stop card, plan B with sampling tasks, profiles, back to the sortie', 55],
   ['go', 'Hazards, outlook, go / no-go, Begin EVA, keys, help (H)', 35],
   ['walkOut', 'Walk out: HUD, wrist (R), slope grid (G), visor (V), a find', 95],
   ['stop', 'Science stop and sample', 20],
@@ -52,7 +52,7 @@ const DWELL = {
   exposure: 5,         // Exposure: which shelter the re-plan would choose
   rover: 3,            // Perseverance's drives on and off
   planA: 8,           // plan A: solo, cautious, 100 min, with its why lines and the stop it drops
-  planB: 8,           // plan B: pair, bold, 2 h, both stops
+  planB: 8,           // plan B: pair, bold, goal Collect samples, a soil task added at a point clicked on the map
   profiles: 6,         // the three route profiles compared
   card: 14,            // the Cheyava Falls stop card with Perseverance's images
   hazards: 8,          // the hazard cards: when each event comes in this mission (Hazards step)
@@ -90,6 +90,12 @@ const WALK = {
   stuckSec: 2.5,            // no progress for this long: step aside
 };
 
+// Plan B's sampling task (#352): "Add task" adds soil x1, which the presenter places by a click on the table map, 50 m
+// north of the airlock (535.1, 574.1) on 7 degree ground (src/sim/taskPlace.js takes it as clicked), 25 m from the
+// light-toned patch (a click within 8 m of a stop takes the stop) and clear of the habitat's map label at 1366 x 768.
+// Metres, x east / z south.
+const TASK_POINT = { x: 515, z: 528 };
+
 // ---------------------------------------------------------------------------------------------------- selectors
 // Text is matched through the i18n catalogs (src/i18n/<lang>.json), so the same steps run in English and Spanish.
 const SEL = {
@@ -113,6 +119,9 @@ const SEL = {
   card: '.stop-card-plan',
   cardClose: '.stop-card-plan .stop-close',
   whyLines: '.route-why, .table-stop-why',
+  // the sampling tasks of the Collect samples goal (src/plan/TaskList.jsx)
+  taskAdd: '[data-task-add]',
+  taskWhere: (id) => `.task-where[data-task-where="${id}"]`,
   outlook: '.outlook-strip',
   keysStart: '.eva-start-dialog .menu-resume',
   menuResume: '.pause-dialog .menu-resume',
@@ -395,6 +404,26 @@ async function resumeFromMenu() {
   return resumePlay();
 }
 
+/**
+ * Where a ground point (x east, z south) is on the table map, in page pixels, from the route's own markers (the habitat
+ * and the last stop), so any zoom or pan of the map is followed; with `onMap` whether a click there reaches the map
+ * itself rather than a marker or its label. Null when the markers are not all on the map.
+ */
+const mapPoint = (x, z) => S((tx, tz) => {
+  const w = window.__missionStore.getState().route.waypoints;
+  const map = document.querySelector('.table-map');
+  const marks = [...document.querySelectorAll('.table-map .map-stops > .map-marker')];
+  if (!map || w.length < 2 || marks.length !== w.length) return null;
+  const at = (el) => [parseFloat(el.style.left), parseFloat(el.style.top)];
+  const [u0, v0] = at(marks[0]), [u1, v1] = at(marks.at(-1));
+  const a = w[0], b = w.at(-1);
+  const u = u0 + ((tx - a.x) / (b.x - a.x)) * (u1 - u0), v = v0 + ((tz - a.z) / (b.z - a.z)) * (v1 - v0);
+  const rect = map.getBoundingClientRect();
+  const px = rect.left + (u / 100) * rect.width, py = rect.top + (v / 100) * rect.height;
+  const hit = document.elementFromPoint(px, py);
+  return { x: px, y: py, onMap: !!hit && map.contains(hit) && !hit.closest('button, .map-marker, .map-place') };
+}, x, z);
+
 try {
   page = await browser.newPage();
   page.on('pageerror', (e) => console.log('  page error: ' + e.message));
@@ -465,7 +494,7 @@ try {
     await layerButton('image');
   }
 
-  // 3. Two contrasting plans, profiles, a stop card, back to the first sortie --------------------------------------
+  // 3. Plan A, a stop card, plan B with sampling tasks, profiles, back to the first sortie -------------------------
   begin('needs');
   if (!PLAYER) {
     await setRange(SEL.time, 100);          // plan A: solo, cautious, 100 min
@@ -476,13 +505,30 @@ try {
     shown('why-this-route lines', await exists(SEL.whyLines));
     await dwell(DWELL.planA);
     await snap('plan-a');
-    await clickIndex(SEL.crew, 1);          // plan B: pair, bold, 2 h
+    await act({ marker: 'Cheyava', wait: 0.5 });   // the marker's details, then the Cheyava Falls card and its images
+    await click(SEL.openCard);
+    const card = await waitFor((sel) => document.querySelector(sel), 5, 'Cheyava Falls card', SEL.card);
+    shown('Cheyava Falls stop card and Perseverance images', card);
+    await dwell(DWELL.card);
+    await snap('card');
+    await click(SEL.cardClose);
+    // plan B: pair, bold, the goal Collect samples (it opens with a rock sample at Bright Angel and its 2 h), then Add task
+    // (soil x1) placed by a click on the map
+    await clickIndex(SEL.crew, 1);
     await clickIndex(SEL.risk, 2);
-    await setRange(SEL.time, 120);
-    await planned('window.__missionStore.getState().needs.timeMin === 120 && route.waypoints.length >= 3', 'plan B');
-    await sleep(1.5);
+    await act({ select: SEL.goal, value: 'samples', wait: 0.5 });
+    await planned('window.__missionStore.getState().needs.objective === "samples" && (route.tasks ?? []).length === 1', 'plan B: Collect samples');
+    const added = await click(SEL.taskAdd);
+    await waitFor(() => (window.__missionStore.getState().needs.tasks ?? []).length === 2, 5, 'the task added');
+    await act({ select: SEL.taskWhere('t2'), value: 'pick', wait: 0.3 });
+    const at = await mapPoint(TASK_POINT.x, TASK_POINT.z);
+    if (at?.onMap) await page.mouse.click(at.x, at.y);
+    else console.log(`  the task point is not clear on the map: ${JSON.stringify(at)}`);
+    const placed = added && at?.onMap && await planned('(route.tasks ?? []).some((t) => t.id === "t2" && t.place?.type === "point" && t.kept)', 'plan B with the soil task at its point');
     const planB = await planSummary();
-    console.log(`  plan B (${planB.needs}): ${planB.km} km, stops ${planB.stops}, dropped ${planB.dropped}, fits ${planB.fits}`);
+    const tasks = await S(() => (window.__missionStore.getState().route.tasks ?? []).map((t) => `${t.what} x${t.count} at ${t.place?.label} (${t.place?.x}, ${t.place?.z})${t.kept ? '' : ' left out'}`).join(' + '));
+    console.log(`  plan B (${planB.needs}): ${planB.km} km, stops ${planB.stops}, tasks ${tasks}, fits ${planB.fits}`);
+    shown('sampling tasks: goal Collect samples, Add task, a place clicked on the map', !!placed);
     shown('two contrasting plans', planA.stops !== planB.stops);
     await dwell(DWELL.planB);
     await snap('plan-b');
@@ -493,13 +539,6 @@ try {
       await dwell(DWELL.profiles / 2);
       shown('route profiles');
     } else shown('route profiles', false);
-    await act({ marker: 'Cheyava', wait: 0.5 });   // the marker's details, then the Cheyava Falls card and its images
-    await click(SEL.openCard);
-    const card = await waitFor((sel) => document.querySelector(sel), 5, 'Cheyava Falls card', SEL.card);
-    shown('Cheyava Falls stop card and Perseverance images', card);
-    await dwell(DWELL.card);
-    await snap('card');
-    await click(SEL.cardClose);
     // back to the first sortie: standard risk, the goal (its time comes back to 30 min)
     await clickIndex(SEL.risk, 1);
     await act({ select: SEL.goal, value: 'sortie' });

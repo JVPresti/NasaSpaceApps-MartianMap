@@ -44,7 +44,7 @@ Budget in minutes and seconds. The beat line on screen says the same as the pres
 |---|---|---|---|---|---|
 | 1 | Start screen | 0:15 | Read the title; press **Open the mission table** (the first sortie). Point at **Full EVA · Sample Cheyava Falls** as the longer mission | the start screen, its video, the mission choice | HiRISE terrain (credit line) |
 | 2 | Table: the layers on the Cheyava Falls route | 1:05 | Site step: where we are, the plan beat line. **Route** step: set the goal to **Sample Cheyava Falls** (934 m, Bright Angel then Cheyava Falls); scroll the map in and out. Then one decision per layer: **Terrain** with risk **cautious** (where the route bends); **Rocks** (the cost cautious puts on rock cover); **Outcrop** (the stops it keeps on light-toned rock); **Radio** with a crew of **1** (the radio route, and Bright Angel left out: a dropped stop and its reason); **Exposure** (which shelter a re-plan would pick); **Rover** (Perseverance's drives) | the mission table, the HiRISE map, every layer and its "what this decides" line, the crew's needs, a dropped stop | MRO HiRISE DTM and orthomosaic, Perseverance traverse (MMGIS), radio and sky view derived from the DTM |
-| 3 | Two plans, a stop card, back to the sortie | 0:55 | Plan A: solo, cautious, **100 min**: one stop, the why lines. Plan B: pair, **bold**, **2 h**: both stops. Compare the three profiles. Open the **Cheyava Falls** card from its marker (Perseverance's images), close it. Risk back to standard, goal back to **First sortie** | two contrasting generated plans, why-this-route, route profiles, the budget with work time, stop cards and photos | Mastcam-Z and WATSON images (PIA26401, PIA26368), suit model, HiRISE slope |
+| 3 | Two plans, a stop card, back to the sortie | 0:55 | Plan A: solo, cautious, **100 min**: one stop, the why lines. Open the **Cheyava Falls** card from its marker (Perseverance's images), close it. Plan B: pair, **bold**, goal **Collect samples** (it opens with a rock sample at Bright Angel and 2 h); **Add task** and place its soil sample with a click on the map, about 50 m north of the airlock: the route now serves both tasks, and the why lines name the task each leg serves. Compare the three profiles. Risk back to standard, goal back to **First sortie** | two contrasting generated plans, why-this-route, sampling tasks placed on the map, route profiles, the budget with work time, stop cards and photos | Mastcam-Z and WATSON images (PIA26401, PIA26368), suit model, HiRISE slope and cost grid (the clicked place) |
 | 4 | Hazards, outlook, go / no-go, Begin EVA | 0:35 | Hazards step: the three hazards and when each comes in this mission. Suit step: the conditions outlook beside **Go**. **Begin EVA**, the walk keys card, **Start walking**; **H** for the controls help, then resume | hazard cards, conditions outlook, suit check, go / no-go, walk keys, controls help and the pause behind it | MEDA (sol 1187), RAD (Gale), DONKI, hazards.json |
 | 5 | Walk out | 1:35 | Walk 12 m: the visor, the minimap. **R** raises the wrist: **J** and **Enter** choose a layer on the arm, **]** the map page, **R** lowers it, **0** clears the layer. **G** slope grid on and off; **V** visor frame off and on. Step off the line toward a light patch, hold **Q** on the ground to mark a find, read its card and press **Y** to add it; on to the stop | visor HUD, minimap, waypoint panel, navigation line, partner, wrist screen, slope grid, visor frame, mark-a-find and its detour price | HiRISE DTM (slope, elevation profile), MEDA weather, suit model |
 | 6 | Science stop and sample | 0:20 | Read the stop's banner (why it is worth the walk, SIM) and the beat line; look down, **P** photo, click the ground, **E** stow and seal | the stop's reason, sampling clips and checklist | HiRISE outcrop mask (SIM stop) |
@@ -59,6 +59,13 @@ The find card is answered **Y** (add to the route), as a presenter shows the dec
 because a find added on a GO card is not judged risky for an alert that starts on the way (D7). **N** would also do:
 the find stays recorded either way.
 
+**If a judge asks to see a sampling task walked** (outside the timed run, #352): on the Route step choose **Collect
+samples**, **Add task**, place the soil sample with a click on the map about 50 m from the airlock, and remove the rock
+task at Bright Angel, so the list is soil x1 at that point; then Begin EVA as a pair. It takes about 3 minutes, well
+before the full EVA's storm at T+480 s: the banner at the point ("Collect 1 soil sample here · 0 of 1"), its tick once
+the sample is in the bag ("✓ Done"), the task line in the sampling panel, and the debrief's Sampling tasks row (Done,
+with the time and the distance from the place).
+
 ## Feature coverage
 
 Every feature on `main`, where the timed demo shows it, and how the measurement script checks it.
@@ -72,6 +79,7 @@ Every feature on `main`, where the timed demo shows it, and how the measurement 
 | Layers: image, terrain (slope), rocks, outcrop, radio shadow, exposure, Perseverance drives; legend "what this decides" | 2 |
 | Dropped stops and their reason (Bright Angel for a solo crew) | 2, 3 |
 | Two contrasting plans; why this route (per leg and for the plan) | 3 |
+| Sampling tasks | 3 |
 | Route profiles (fastest, gentlest, radio) | 3 |
 | Work time at stops and the budget (#247) | 3 |
 | Cheyava Falls stop card and Perseverance photos | 3 (table) |
