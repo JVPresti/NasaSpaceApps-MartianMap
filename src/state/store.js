@@ -5,7 +5,7 @@ import { create } from 'zustand';
 import { createInitialEvaState } from './eva.js';
 import { LOOK_DEFAULTS, clampLookSettings, readLookSettings, writeLookSettings } from '../engine/lookSettings.js';
 import { checkNeeds, DEFAULT_NEEDS, OBJECTIVE_DEFAULTS } from '../sim/missionNeeds.js';
-import { deleteRoute, readRouteLibrary, saveRoute, writeRouteLibrary } from '../plan/routeLibrary.js';
+import { deleteRoute, readRouteLibrary, recordRouteRun, routeSignature, saveRoute, writeRouteLibrary } from '../plan/routeLibrary.js';
 
 /** Plain data only. Units are in the field names. Coordinates: x east, z south, metres from Cheyava Falls. */
 export function createInitialState() {
@@ -212,15 +212,36 @@ export const setHazardEnabled = (eventId, enabled) => {
  * Save the currently planned route under a name (#357). Needs a planned path and at least one waypoint; the route
  * snapshot keeps its waypoints, path, distance, climb and risk, and starts an empty success record.
  * @param {string} name
- * @returns {boolean} true when a route was saved
+ * @returns {object | null} the saved entry, or null when there was nothing to save (no name, no plan)
  */
 export const saveCurrentRoute = (name) => {
   const state = useMissionStore.getState();
   const list = saveRoute(state.routeLibrary.list, { name, route: state.route, nowMs: Date.now() });
-  if (list === state.routeLibrary.list) return false;
+  if (list === state.routeLibrary.list) return null;
   writeRouteLibrary(list);
   useMissionStore.setState((s) => ({ routeLibrary: { ...s.routeLibrary, list } }));
-  return true;
+  return list[0];
+};
+
+/**
+ * Save the route an EVA just ended on, from the debrief (#364): the plan as it stands, with the finds added during the
+ * walk, joins the library under a name, and this EVA becomes its first run — attempt, completion when every waypoint
+ * was reached, samples, distance and dose. @param {string} name @param {object | null} summary the frozen EVA summary
+ * @returns {object | null} the saved entry, or null when there was nothing to save
+ */
+export const saveEvaRoute = (name, summary) => {
+  const state = useMissionStore.getState();
+  const list = saveRoute(state.routeLibrary.list, { name, route: state.route, nowMs: Date.now() });
+  if (list === state.routeLibrary.list) return null;
+  const entry = list[0];
+  writeRouteLibrary(list);
+  useMissionStore.setState((s) => ({ routeLibrary: { ...s.routeLibrary, list } }));
+  const waypoints = state.route?.waypoints;
+  const completed = Array.isArray(waypoints) && waypoints.length > 0
+    && (state.route?.visited?.length ?? 0) >= waypoints.length;
+  // The new entry is the newest, so recordRouteRun finds it by signature before any older route with the same stops.
+  recordRouteRun(useMissionStore, routeSignature(entry), summary, { completed });
+  return entry;
 };
 
 /** Delete one saved route (#357). @returns {boolean} true when it was deleted */

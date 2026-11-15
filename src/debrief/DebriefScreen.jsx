@@ -17,6 +17,7 @@ import {
 } from './format.js';
 import RouteReview, { ReviewNotes } from './RouteReview.jsx';
 import { MissionRecap } from '../mission/MissionBeat.jsx';
+import SaveRouteForm from '../plan/SaveRouteForm.jsx';
 import { useReserveSec } from './useReserveSec.js';
 import './debrief.css';
 
@@ -181,6 +182,13 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
           ) : (
             <p className="debrief-empty">{t('debrief.log.empty')}</p>
           )}
+        </section>
+
+        {/* Save the route as it ended, with the finds added during the walk (#364): Restart would start a fresh plan. */}
+        <section className="debrief-save" aria-labelledby="debrief-save-title">
+          <h3 id="debrief-save-title" className="debrief-section-title">{t('debrief.save.title')}</h3>
+          <p className="debrief-save-text">{t('debrief.save.text')}</p>
+          <SaveRouteForm summary={summary} buttonClass="ui-button primary" className="debrief-save-form" />
         </section>
 
         <section className="debrief-notes" aria-labelledby="debrief-notes-title">

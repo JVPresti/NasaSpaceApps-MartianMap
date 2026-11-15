@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createEventEngine } from '../sim/eventEngine.js';
 import exampleEvent from '../sim/events/example-event.json';
 import { LOOK_DEFAULTS, LOOK_STORAGE_KEY } from '../engine/lookSettings.js';
-import { applySavedRoute, chooseRouteProfile, createInitialState, deleteSavedRoute, resetStore, saveCurrentRoute, setLookSettings, setMode, setNeeds, setRouteDecision, storeAdapter, useMissionStore, withRouteProfile } from './store.js';
+import { applySavedRoute, chooseRouteProfile, createInitialState, deleteSavedRoute, resetStore, saveCurrentRoute, saveEvaRoute, setLookSettings, setMode, setNeeds, setRouteDecision, storeAdapter, useMissionStore, withRouteProfile } from './store.js';
 import { createMockState } from './mock.js';
 import { beginEgress } from './flow.js';
 
@@ -301,7 +301,7 @@ describe('saved routes (#357)', () => {
   it('saves the plan under a name, with the work at the stops and an empty record', () => {
     empty();
     useMissionStore.setState(plan);
-    expect(saveCurrentRoute('  Ridge ')).toBe(true);
+    expect(saveCurrentRoute('  Ridge ')).toEqual(expect.objectContaining({ name: 'Ridge' }));
     const [entry] = useMissionStore.getState().routeLibrary.list;
     expect(entry).toMatchObject({ name: 'Ridge', distanceM: 100, climbM: 2, waypoints, path });
     expect(entry.risk).toEqual({ maxSlopeDeg: 17, climbM: 2, level: 'caution' });
@@ -310,9 +310,38 @@ describe('saved routes (#357)', () => {
 
   it('refuses a save without a name or without a plan', () => {
     empty();
-    expect(saveCurrentRoute('Ridge')).toBe(false);
+    expect(saveCurrentRoute('Ridge')).toBeNull();
     useMissionStore.setState(plan);
-    expect(saveCurrentRoute('   ')).toBe(false);
+    expect(saveCurrentRoute('   ')).toBeNull();
+    expect(useMissionStore.getState().routeLibrary.list).toEqual([]);
+  });
+
+  it('saves the route an EVA ended on and counts that EVA as its first run (#364)', () => {
+    empty();
+    const find = { name: 'Find · shiny rock', x: 100, z: 20 };
+    const walked = [...waypoints, find];
+    useMissionStore.setState((s) => ({
+      route: { ...s.route, waypoints: walked, path, distanceM: 100, climbM: 2, steepestSlopeDeg: 17, visited: walked.map((w) => w.name) },
+    }));
+    const entry = saveEvaRoute('EVA ridge', { sampleCount: 2, distanceM: 870.5, doseUgy: 6.2 });
+    expect(entry).toEqual(expect.objectContaining({ name: 'EVA ridge' }));
+    const [saved] = useMissionStore.getState().routeLibrary.list;
+    expect(saved.waypoints).toEqual(walked);
+    expect(saved.record).toEqual({ attempts: 1, completed: 1, samples: 2, distanceM: 870.5, doseUgy: 6.2, lastRunAtMs: expect.any(Number) });
+  });
+
+  it('flags the run as not completed when a waypoint was left out, and still saves', () => {
+    empty();
+    useMissionStore.setState((s) => ({
+      route: { ...s.route, waypoints, path, distanceM: 100, climbM: 2, steepestSlopeDeg: 17, visited: ['HAB'] },
+    }));
+    expect(saveEvaRoute('Ridge', { sampleCount: 0, distanceM: 120, doseUgy: null })).toEqual(expect.objectContaining({ name: 'Ridge' }));
+    expect(useMissionStore.getState().routeLibrary.list[0].record).toMatchObject({ attempts: 1, completed: 0, samples: 0, distanceM: 120, doseUgy: null });
+  });
+
+  it('refuses a debrief save without a plan and never records a run', () => {
+    empty();
+    expect(saveEvaRoute('Ridge', { sampleCount: 1, distanceM: 50, doseUgy: 1 })).toBeNull();
     expect(useMissionStore.getState().routeLibrary.list).toEqual([]);
   });
 

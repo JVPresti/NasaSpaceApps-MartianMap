@@ -1243,22 +1243,7 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
   .table-hazard-cards > li > .table-hazard-art { height: 160px; }
 }
 
-/* Saved routes (#357): the crew's route library on the Route step. */
-.saved-routes-form {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-.saved-routes-form input {
-  flex: 1;
-  min-width: 0;
-  padding: 6px 8px;
-  font: inherit;
-  color: var(--ink);
-  background: var(--glass, rgba(12, 16, 20, 0.6));
-  border: 1px solid var(--edge, rgba(255, 255, 255, 0.12));
-  border-radius: 4px;
-}
+/* Saved routes (#357): the crew's route library on the Route step. The form itself lives in saveRoute.css. */
 .saved-routes-list {
   list-style: none;
   margin: 0;
