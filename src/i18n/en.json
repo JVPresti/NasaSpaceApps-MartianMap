@@ -136,6 +136,8 @@
   "ui.plan.mode.layers.and.waypoints": "Plan mode layers and waypoints",
   "ui.map.layers": "Map layers",
   "ui.data.layer": "Data layer",
+  "ui.layer.chip.off": "off",
+  "ui.layer.chip.label": "Data layer {name}, legend: {legend}. Press 0 to turn it off.",
   "ui.terrain.data.layer": "Terrain data layer",
   "ui.p0.l.next.layer.shift.l.previous.layer": "{p0} — L: next layer; Shift+L: previous layer; 0: no layer",
   "ui.overlays": "Overlays",
