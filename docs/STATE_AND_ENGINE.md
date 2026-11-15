@@ -98,9 +98,10 @@ setMode('plan');
 | `sampling.photos` | helmet camera photos taken this EVA | sampling bridge | #36 |
 | `sampling.status` | the engine's `getSampling()`: `{ phase, holding, target, caseState, caseInReach, actions }`, or `null` before the engine reports | sampling bridge, 5 times per second when it changes | #36 |
 | `view.layer` | 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop | Plan mode, wrist screen | #14, #67 |
-| `view.sky` | `'clear_day'`, `'dust_storm'`, `'late_afternoon'`, `'night'`. The default is `'late_afternoon'` (#59) | events, later the clock | #24, #59, #73 |
+| `view.sky` | `'clear_day'`, `'dust_storm'`, `'late_afternoon'`, `'night'`. The default is `'late_afternoon'` (#59). While the mission clock runs the Sun and the sky follow its time instead (#73); then `'dust_storm'` only asks for the storm look | events, the clock's start preset | #24, #59, #73 |
 | `view.skyBlend` | 0 to 1, blend from the current `view.sky` preset to `dust_storm` as the storm opacity rises | events | #24 |
 | `view.slopeGrid` | `true` shows the slope grid on the ground in Walk mode; the G key toggles it (`src/state/slopeGrid.js`) | interface | #50 |
+| `settings.look` | `{ sensitivity, invertY }`: mouse-look speed as a multiple of the base rate (0.5-2, step 0.1, default 1; it multiplies both pointer-locked and drag look) and inverted vertical look (default off, flips only pitch). A player preference saved in `localStorage` under `marswalk.look`, not mission state: `resetStore()` keeps it and a new page load re-reads it (a blocked or corrupt entry leaves the defaults). Written by the pause menu through `setLookSettings()` | interface | #102 |
 | `sources['<path>']` | `{ tag: 'DATA' \| 'DERIVED' \| 'SIM', source, label? }` for any value above. Every path also needs an entry in `src/data/provenance.js`, which adds the mission, instrument, site, sol or date and link | whoever writes the value | #62 |
 
 `null` means "not known yet". The interface should show a dash, not 0.
@@ -131,7 +132,9 @@ await engine.ready;
 | Call | Behaviour |
 |---|---|
 | `setMode('plan' \| 'walk')` | Switches the camera. Can be called before `ready`; it is applied when ready. Plan cancels any pending pointer-lock request and releases the lock, so a late Walk grant cannot capture the mouse in the map. |
-| `setInputEnabled(enabled)` | Gates walk/orbit input. Disabling clears every held key and stops orbit controls, so WASD, arrows and mouse look cannot act behind a menu. Can be called before `ready`. |
+| `setInputEnabled(enabled)` | Gates walk/orbit input. Disabling clears every held key and stops orbit controls, so WASD, arrows and mouse look cannot act behind a menu. It also drops a touch stick in progress and forgets gamepad button state, so releasing a menu cannot resume a deflected stick or repeat a held button. Can be called before `ready`. |
+| `subscribeTouch(listener)` | Follows the Walk touch stick (#103) for the on-screen overlay: `{ visible, active, knobX, knobY, jog }`. The listener is called immediately with the current state and then on touch events only, never per frame. Returns an unsubscribe function. |
+| `subscribeGamepad(listener)` | Reports whether a gamepad has been used (#103): `{ used, connected }`. Called immediately on subscribe, so a hint mounted after the first press still appears, and again on first use. Returns an unsubscribe function. |
 | `requestPointerLock()` | Asks the browser to lock the pointer on the engine canvas. Supports the legacy void form and the promise form; resolves `true` only after a real grant and `false` on refusal, an unsupported browser, the 3 s watchdog, release or dispose. A browser promise that resolves while `document.pointerLockElement` is still not the canvas is not success: the change event settles the request. Concurrent calls share one request. A call before `ready` is queued until the canvas exists. |
 | `releasePointerLock()` | Releases the lock now. A queued pre-ready request resolves `false`. |
 | `isPointerLocked()` | `true` when `document.pointerLockElement` is the engine canvas. |
@@ -139,8 +142,11 @@ await engine.ready;
 | `getQuality()` | The same quality state without using the development-only `window.__marswalk` hook. |
 | `resetSession()` | Returns the scene to the EVA spawn: input off, lock released, Walk mode, camera at `START`, route/shelter/waypoints cleared. The store, clock and simulation restart are done by `src/state/evaSession.js`. Quality is deliberately kept. Returns `false` before ready and is applied at the end of boot. |
 | `setLayer(n)` | Data layer on the terrain: 0 none, 1 slope hazard, 2 elevation, 3 rock abundance, 4 outcrop. The wrist screen follows. |
-| `setSky(name)` | Atmosphere preset: `clear_day`, `dust_storm`, `late_afternoon`, `night`. |
+| `setSky(name)` | Atmosphere preset: `clear_day`, `dust_storm`, `late_afternoon`, `night`. While `setSkyTime` drives the sky, only `dust_storm` (storm look on) or another preset (off) has an effect. |
+| `setSkyTime(hours)` | Sky from the mission clock (`src/engine/missionSky.js`, #73). `hours` is the local solar time, 0 to 24. The Sun moves (`src/sim/sunPosition.js`: latitude 18.4975 N, one fixed SIM declination of 11 deg so 17:45 matches the late-afternoon preset), the sky, haze, exposure and Sun colour blend between the presets by its height (`skyByTime.js`: `night` at -12 deg and below, `late_afternoon` at 7, `clear_day` at 55 and above), and the sky's look blends toward `dust_storm` as the dust level rises (the brightness stays with `setDust`). The terrain shadow map is rebuilt over several frames after every 0.25 deg of Sun movement, about once a minute at time scale 1. `null` goes back to the last `setSky` preset. |
+| `getSun()` | `{ hours, elevationDeg, azimuthDeg }` while `setSkyTime` drives the sky, else `null`. |
 | `setSlopeGrid(on)` | Slope grid (`src/engine/slopeGrid.js`, #50): thin lines every 2 m on the ground around the player in Walk mode, coloured by slope with the slope layer's legend (the route planner's limits). |
+| `setLookSettings({ sensitivity, invertY })` | Mouse look (`src/engine/lookSettings.js`, #102): the multiplier 0.5-2 applied to both locked and drag look, and `invertY` flips only the vertical axis. Values are clamped (never throws); a call before `ready` is applied at the end of boot; `resetSession()` keeps them. |
 | `setHabitatScreens(data)` | The habitat's five wall screens and planning table (`src/engine/habitatScreens.js`, #47) draw from `data`, built from the store by `habitatScreenData()` in `src/state/habitatScreens.js` and sent at most 4 times per second by `connectHabitatScreens(engine)`: cabin (fixed values, tagged SIM), EVA team (suit and `crew[0]`), weather and alerts (`environment`, `alerts`), and the route, visited waypoints, player and shelter on the table. Missing values show as a dash. |
 | `setDust(level)` | Storm dust (`src/engine/dust.js`, #27), 0 = clear (the scene as before) to 1 = global storm: thicker, drifting haze on everything (visibility about 1 km), dimmer and redder light with fading shadows, and faint wisps near the helmet. Eased, so a storm builds up. Works on top of any sky preset or blend. |
 | `setRoute(path)` | Draws `[[x, z], ...]` as the route glow (`src/engine/routeGlow.js`, #29): a dotted line on the ground near the player, a thin outlined line further away, and chevrons floating ahead in Walk mode. The part already walked turns grey and follows the player, so walking back lights the route again. `null` clears it. |
@@ -165,7 +171,9 @@ await engine.ready;
 
 Options: `inputEnabled: false` starts with gameplay input gated off (the app shell passes this for the start
 screen). `onLockChange(locked)` fires only when the pointer lock actually changes, never per frame. The app
-uses it to pause as soon as the lock is lost in Walk.
+uses it to pause as soon as the lock is lost in Walk. `onGamepadAction(action)` reports a standard-gamepad press
+(`mode`, `layer-prev`, `layer-next`) once per press; App routes it through the same handlers as the keyboard and
+the mode buttons (#103). Touch and gamepad state is read through `subscribeTouch` and `subscribeGamepad`.
 
 - **When they work:** the terrain queries throw before `ready`; `setSky`, `setRoute`, `setDust`, `setInputEnabled`, the
   pointer-lock request/quality calls and `resetSession` before `ready` are stored and applied when ready.
@@ -271,7 +279,7 @@ pauseMission(); resumeMission(); // src/state/store.js, or a direct mission.paus
 setMissionTimeScale(60);         // or a direct mission.timeScale write
 ```
 
-The runner subscribes to `mission.paused` and `mission.timeScale`, so the suit runner's existing check of `mission.paused` and any direct `storeAdapter.set('mission.paused', true)` are honoured at the exact instant and are not overwritten by the clock. `view.sky` is set once at start from the chosen/restored preset; later time never changes the sky (#73). The clock tags `mission.startedAtMs`, the initial/preset fields and `timeScale` as `SIM` (demo epoch and configuration, not a historical measurement or precise ephemeris); `elapsedSec`, `anchorMs`, `sol` and `lmst` are `DERIVED`.
+The runner subscribes to `mission.paused` and `mission.timeScale`, so the suit runner's existing check of `mission.paused` and any direct `storeAdapter.set('mission.paused', true)` are honoured at the exact instant and are not overwritten by the clock. `view.sky` is set once at start from the chosen/restored preset and never changed by later ticks; the Sun follows the clock time through the engine bridge instead (#73). The clock tags `mission.startedAtMs`, the initial/preset fields and `timeScale` as `SIM` (demo epoch and configuration, not a historical measurement or precise ephemeris); `elapsedSec`, `anchorMs`, `sol` and `lmst` are `DERIVED`.
 
 **Limitations.** The suit runner still keeps its own wall clock for consumables and they do not persist across reload. Changing the mission scale affects mission time only in this issue. There are no visual clock controls yet; use the store actions or a console. No online clock offset or no-pause rule is part of #59.
 
@@ -327,7 +335,7 @@ Tests: `src/hud/minimapGeometry.test.js` (tile UV with the five real waypoints, 
 
 `connectEngine(engine)` in `src/state/engineBridge.js` is called by `EngineView` once the engine is ready. It returns a disconnect function.
 
-- **Store to engine:** `mode`, `view.layer`, `view.sky`, `view.skyBlend`, `view.slopeGrid`, `route.path`, `route.shelter` and `environment.dustOpacity` (as the dust level), each when it changes.
+- **Store to engine:** `mode`, `view.layer`, `view.sky`, `view.skyBlend`, `view.slopeGrid`, `settings.look`, the mission time (`mission.initialLmst` plus `elapsedSec`, or `lmst`, as `setSkyTime` hours, `src/state/skyTime.js`), `route.path`, `route.shelter` and `environment.dustOpacity` (as the dust level), each when it changes.
 - **Engine to store:** `navigation.trueX`, `trueZ` and `headingDeg` every 200 ms, skipped while the player stands still. This is the TRUE position (#42): the navigation drift runner (`src/sim/navigationDrift.js`) reads it and writes the estimate into `navigation.x` / `z`. Only simulation logic reads `trueX` / `trueZ`; the interface reads the estimate.
 
 ## Unexpected finds (#71)

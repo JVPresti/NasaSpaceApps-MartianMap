@@ -73,31 +73,56 @@ export function createTerrain(ctx) {
       const m = new THREE.Mesh(g, new THREE.ShaderMaterial({ uniforms: { ...U, tRing: { value: tRing } }, vertexShader: SH.RING_VERT, fragmentShader: SH.RING_FRAG }));
       m.frustumCulled = false; scene.add(m);
     },
-    // sun shadow map (CPU ray-march of the real heightfield, once per preset)
+    // sun shadow map (CPU ray-march of the real heightfield). computeShadows bakes it at once (a preset, a tier change);
+    // startShadowBake spreads the same work over frames while the Sun moves (#73), keeping the old map until it is done.
     computeShadows(res) {
-      const d = U.uSunDir.value, data = new Uint8Array(res * res);
-      const hl = Math.hypot(d.x, d.z), maxH = 760;
-      for (let j = 0; j < res; j++) {
-        const z = (0.5 - j / (res - 1)) * T.H;
-        for (let i = 0; i < res; i++) {
-          const x = (i / (res - 1) - 0.5) * T.W, y0 = tileH(x, z) + 0.4;
-          let occ = 0, t = 4;
-          for (let s = 0; s < 80 && occ < 1; s++) {
-            const y = y0 + d.y * t; if (y > maxH) break;
-            const px = x + d.x * t, pz = z + d.z * t;
-            if (Math.abs(px) > 5900 || Math.abs(pz) > 5900) break;
-            const o = (groundH(px, pz) - y) / (t * 0.03 * Math.max(hl, 0.2) + 0.5);
-            if (o > occ) occ = o;
-            t *= 1.11; t += 1.5;
+      const job = api.startShadowBake(res);
+      job.step(Infinity);
+    },
+    /**
+     * @param {number} res map size in texels
+     * @returns {{ step: (budgetMs: number) => boolean, dir: { x: number, y: number, z: number } }} step returns true when done
+     */
+    startShadowBake(res) {
+      const d = U.uSunDir.value.clone(), data = new Uint8Array(res * res);
+      let row = 0;
+      return {
+        dir: d,
+        step(budgetMs) {
+          const end = performance.now() + budgetMs;
+          while (row < res) {
+            shadowRow(d, data, res, row++);
+            if (performance.now() > end) break;
           }
-          data[j * res + i] = 255 * (1 - Math.min(1, occ));
-        }
-      }
-      if (api.shadowTex) api.shadowTex.dispose();
-      const st = new THREE.DataTexture(data, res, res, THREE.RedFormat, THREE.UnsignedByteType);
-      st.magFilter = st.minFilter = THREE.LinearFilter; st.needsUpdate = true;
-      api.shadowTex = st; U.tShadow.value = st;
+          if (row < res) return false;
+          publishShadows(data, res);
+          return true;
+        },
+      };
     },
   };
+  function shadowRow(d, data, res, j) {
+    const hl = Math.hypot(d.x, d.z), maxH = 760;
+    const z = (0.5 - j / (res - 1)) * T.H;
+    for (let i = 0; i < res; i++) {
+      const x = (i / (res - 1) - 0.5) * T.W, y0 = tileH(x, z) + 0.4;
+      let occ = 0, t = 4;
+      for (let s = 0; s < 80 && occ < 1; s++) {
+        const y = y0 + d.y * t; if (y > maxH) break;
+        const px = x + d.x * t, pz = z + d.z * t;
+        if (Math.abs(px) > 5900 || Math.abs(pz) > 5900) break;
+        const o = (groundH(px, pz) - y) / (t * 0.03 * Math.max(hl, 0.2) + 0.5);
+        if (o > occ) occ = o;
+        t *= 1.11; t += 1.5;
+      }
+      data[j * res + i] = 255 * (1 - Math.min(1, occ));
+    }
+  }
+  function publishShadows(data, res) {
+    if (api.shadowTex) api.shadowTex.dispose();
+    const st = new THREE.DataTexture(data, res, res, THREE.RedFormat, THREE.UnsignedByteType);
+    st.magFilter = st.minFilter = THREE.LinearFilter; st.needsUpdate = true;
+    api.shadowTex = st; U.tShadow.value = st;
+  }
   return api;
 }

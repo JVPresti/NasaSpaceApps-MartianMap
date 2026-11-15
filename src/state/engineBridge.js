@@ -1,14 +1,16 @@
-// Connects the mission store and the engine. Store -> engine: mode, layer, sky, route path, shelter, dust, when they change,
-// and clearing the boot prints when a new EVA starts.
+// Connects the mission store and the engine. Store -> engine: mode, layer, sky, mission time (the Sun, #73), route path,
+// shelter, dust and the look settings, when they change, and clearing the boot prints when a new EVA starts.
 // Engine -> store: the player's position and heading, 5 times per second (never per frame). The position written is the
 // TRUE one (#42): the drift model (src/sim/navigationDrift.js) reads it and writes the estimate the HUD shows.
 import { useMissionStore } from './store.js';
 import { dustLevelFromTau } from './dustLevel.js';
+import { missionSolarHours } from './skyTime.js';
 
 export const PLAYER_POLL_MS = 200;
 
 /** @returns {() => void} disconnect */
 export function connectEngine(engine, store = useMissionStore) {
+  let lastHours;
   const apply = (s, prev) => {
     if (!prev || s.mode !== prev.mode) engine.setMode(s.mode);
     if (!prev || s.view.layer !== prev.view.layer) engine.setLayer(s.view.layer);
@@ -19,9 +21,15 @@ export function connectEngine(engine, store = useMissionStore) {
     if (prev ? s.view.skyBlend !== prev.view.skyBlend : (s.view.skyBlend ?? 0) > 0) {
       engine.setSkyBlend(s.view.sky, 'dust_storm', s.view.skyBlend ?? 0);
     }
+    // the sky follows the mission clock (#73); without a mission time it stays on the view.sky preset
+    if (!prev || s.mission !== prev.mission) {
+      const hours = missionSolarHours(s.mission);
+      if (hours !== lastHours) { lastHours = hours; engine.setSkyTime(hours); }
+    }
     if (!prev || s.route.path !== prev.route.path) engine.setRoute(s.route.path);
     if (!prev || s.route.shelter !== prev.route.shelter) engine.setShelter(s.route.shelter ?? null);
     if (!prev || s.environment.dustOpacity !== prev.environment.dustOpacity) engine.setDust(dustLevelFromTau(s.environment.dustOpacity));
+    if (!prev || s.settings.look !== prev.settings.look) engine.setLookSettings(s.settings.look);
     // a new EVA starts with clean ground: the boot prints of the last one go (#46)
     if (prev && s.mission.startedAtMs !== prev.mission.startedAtMs) engine.clearPrints();
   };

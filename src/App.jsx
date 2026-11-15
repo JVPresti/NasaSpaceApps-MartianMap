@@ -2,9 +2,12 @@ import { t, translateText } from './i18n/index.js';
 import { useLanguage } from './i18n/useLanguage.js';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import EngineView from './components/EngineView.jsx';
+import GamepadHint from './components/GamepadHint.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
 import PauseMenu from './components/PauseMenu.jsx';
 import StartScreen from './components/StartScreen.jsx';
+import TouchStick from './components/TouchStick.jsx';
+import { cycleLayer } from './components/shortcuts.js';
 import { useShortcuts } from './components/useShortcuts.js';
 import DebriefScreen from './debrief/DebriefScreen.jsx';
 import EventBanner from './events/EventBanner.jsx';
@@ -232,14 +235,20 @@ export default function App() {
     handleResume();
   }, [handleResume]);
 
-  const handleModeChange = useCallback(async (next) => {
+  const handleModeChange = useCallback(async (next, { capture = true } = {}) => {
     if (busyRef.current) return;
     if (next === useMissionStore.getState().mode) return;
     // Any mode change ends a pending resume; setMode also makes the engine cancel a pending Walk lock.
     resumeSeqRef.current += 1;
     const attempt = ++walkLockSeqRef.current;
     setMode(next);
-    if (phaseRef.current === EVA_PHASE.PLAYING && next === 'walk' && !freeLookRef.current) {
+    // A gamepad press is not a user gesture, so the browser can only refuse a lock request (#103). The pad
+    // switch keeps drag-to-look, the same fallback as #197, instead of pausing behind a failed capture.
+    if (!capture && next === 'walk' && !freeLookRef.current) {
+      freeLookRef.current = true;
+      setFreeLookState(true);
+    }
+    if (phaseRef.current === EVA_PHASE.PLAYING && next === 'walk' && capture && !freeLookRef.current) {
       // The click itself is the user gesture. If the lock is refused, stay paused and explain.
       const instance = engineRef.current;
       const lock = await requestEvaLock(instance);
@@ -273,6 +282,16 @@ export default function App() {
 
   /** Begin EVA on the mission table's Suit tab. The click is the user gesture that captures the mouse. */
   const handleBeginEva = useCallback(() => handleModeChange('walk'), [handleModeChange]);
+
+  // Gamepad buttons reach the same actions as the keyboard (#101, #103). The engine reports them only while
+  // gameplay input is enabled, so a press behind the pause menu cannot act; the phase check is a second guard.
+  const handleGamepadAction = useCallback((action) => {
+    if (phaseRef.current !== EVA_PHASE.PLAYING || busyRef.current) return;
+    if (action === 'mode') {
+      handleModeChange(useMissionStore.getState().mode === 'walk' ? 'plan' : 'walk', { capture: false });
+    } else if (action === 'layer-prev') cycleLayer(-1);
+    else if (action === 'layer-next') cycleLayer(1);
+  }, [handleModeChange]);
 
   const handleQuality = useCallback(async (option) => {
     const instance = engineRef.current;
@@ -436,6 +455,7 @@ export default function App() {
         onError={handleError}
         onLockChange={handleLockChange}
         onEngine={handleEngine}
+        onGamepadAction={handleGamepadAction}
       />
 
       {load.status === 'ready' && (
@@ -463,6 +483,9 @@ export default function App() {
       <LoadingScreen key={`loading-${load.attempt}`} state={load} site={translateText(SITE)} onRetry={handleRetry} onGone={handleGone} />
 
       {load.status === 'ready' && mode === 'walk' && <Hud engine={engine} minimapRoute={minimapRoute} />}
+      {/* Inputs appear only after they are used (#103): the stick on the first touch, the pad hint on the first press. */}
+      {load.status === 'ready' && mode === 'walk' && !evaSummary && <TouchStick engine={engine} />}
+      {load.status === 'ready' && mode === 'walk' && !evaSummary && <GamepadHint engine={engine} />}
       {load.status === 'ready' && <Finds engine={engine} mode={mode} />}
 
       {load.status === 'ready' && <WalkStopCard active={mode === 'walk'} />}
