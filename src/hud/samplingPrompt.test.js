@@ -65,6 +65,30 @@ describe('samplingPrompt', () => {
   });
 });
 
+describe('samplingPrompt online (#54)', () => {
+  it('a sample another player took: no click, a note with their name', () => {
+    const p = samplingPrompt(status({ target: cheyava(true), actions: { ...NONE, click: 'collect', photo: 'photo' } }), { takenBy: 'Bea' });
+    expect(keys(p)).toEqual(['P']);
+    expect(p.note).toBe('Sample already taken by Bea');
+    expect(p.reticle).toBe('look');
+  });
+
+  it('the case with another player: no F, a note', () => {
+    const p = samplingPrompt(status({ phase: 'holding', holding: 'rock', actions: { ...NONE, stow: 'stow', case: 'call-case' } }), { caseWith: 'Bea' });
+    expect(keys(p)).toEqual(['E']);
+    expect(p.note).toBe('The tool case is with Bea');
+  });
+
+  it('says it is checking while a claim is out', () => {
+    expect(samplingPrompt(status({ phase: 'claiming' })).note).toBe('Checking the sample log…');
+  });
+
+  it('offline names change nothing', () => {
+    const s = status({ target: cheyava(true), actions: { ...NONE, click: 'collect', photo: 'photo', case: 'call-case' } });
+    expect(samplingPrompt(s, { takenBy: null, caseWith: null })).toEqual(samplingPrompt(s));
+  });
+});
+
 describe('CHECKLIST', () => {
   it('has the four steps in order', () => {
     expect(CHECKLIST.map((r) => r.id)).toEqual(['photo', 'texture', 'sample', 'seal']);

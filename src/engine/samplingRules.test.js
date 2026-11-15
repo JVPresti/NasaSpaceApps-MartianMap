@@ -3,8 +3,9 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   CASE_STAND_M, CHEYAVA_FALLS, GROUND_STAND_M, PHOTO_RANGE_M, ROCK_STAND_M, SAMPLE_REACH_M,
-  angleDelta, caseState, classifyTarget, inReach, inputActions, marchGround, pickRock, pourStand, rayCylinder, raySphere, standPoint,
+  angleDelta, caseState, classifyTarget, inReach, inputActions, marchGround, pickRock, pourStand, rayCylinder, raySphere, sampleIdFor, standPoint,
 } from './samplingRules.js';
+import { validate } from '../net/protocol.js';
 
 const asset = (p) => JSON.parse(readFileSync(fileURLToPath(new URL('../../public/marswalk/' + p, import.meta.url)), 'utf8'));
 const norm = (v) => { const l = Math.hypot(v.x, v.y, v.z); return { x: v.x / l, y: v.y / l, z: v.z / l }; };
@@ -169,5 +170,22 @@ describe('inputActions', () => {
   });
   it('does nothing outside Walk mode', () => {
     expect(inputActions({ ...base, walk: false })).toEqual({ click: null, photo: null, stow: null, case: null });
+  });
+});
+
+describe('sampleIdFor (#54)', () => {
+  it('names a named rock, a loose rock by its centre and the ground by its 2 m square', () => {
+    expect(sampleIdFor({ kind: 'rock', site: CHEYAVA_FALLS, point: { x: 1, z: 2 } })).toBe('site-cheyava-falls');
+    expect(sampleIdFor({ kind: 'rock', site: 'Bright Angel', point: { x: 1, z: 2 } })).toBe('site-bright-angel');
+    expect(sampleIdFor({ kind: 'rock', site: null, point: { x: 9, z: 9 }, rock: { x: 12.34, z: -5.66 } })).toBe('rock_123_-57');
+    expect(sampleIdFor({ kind: 'ground', site: null, point: { x: 3.9, z: -0.1 } })).toBe('soil_1_-1');
+    expect(sampleIdFor({ kind: 'ground', site: null, point: { x: 2.1, z: -1.9 } })).toBe('soil_1_-1');
+    expect(sampleIdFor(null)).toBe(null);
+  });
+
+  it('every id passes the protocol', () => {
+    for (const t of [{ kind: 'rock', site: CHEYAVA_FALLS, point: { x: 0, z: 0 } }, { kind: 'rock', rock: { x: -1e4, z: 1e4 }, point: { x: 0, z: 0 } }, { kind: 'ground', point: { x: -1234.5, z: 999.9 } }]) {
+      expect(validate({ type: 'smp', sid: sampleIdFor(t) })).not.toBe(null);
+    }
   });
 });

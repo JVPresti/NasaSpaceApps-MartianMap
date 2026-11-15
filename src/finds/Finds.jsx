@@ -11,6 +11,7 @@ import SharedSourceTag from '../components/SourceTag.jsx';
 import { FIND_HOLD_MS, FIND_RANGE_M, FIND_STEADY_M, MAX_FINDS } from '../sim/findDetour.js';
 import { createFindService, markFind, pruneFinds } from '../state/finds.js';
 import { useMissionStore } from '../state/store.js';
+import { createSharedMarkersSelector } from '../hud/sharedMarkers.js';
 import { formatMinutes } from '../hud/format.js';
 import { formatNumber, t, translateText } from '../i18n/index.js';
 import '../hud/hud.css';
@@ -218,13 +219,15 @@ export default function Finds({ engine, mode }) {
   useEffect(() => {
     if (!engine) return undefined;
     let last = null;
+    const sharedOf = createSharedMarkersSelector();   // other players' markers (#54): drawn, never a decision card; [] offline
     const sync = () => {
-      const s = useMissionStore.getState();
-      if (last && last.list === s.finds.list && last.mode === s.mode) return;
-      last = { list: s.finds.list, mode: s.mode };
+      const s = useMissionStore.getState(), shared = sharedOf(s);
+      if (last && last.list === s.finds.list && last.mode === s.mode && last.shared === shared) return;
+      last = { list: s.finds.list, mode: s.mode, shared };
       engine.setFinds(s.finds.list
         .filter((f) => s.mode === 'walk' || f.status !== 'accepted')
-        .map((f) => ({ id: f.id, label: f.label, x: f.x, z: f.z, status: f.status, verdict: f.detour?.verdict ?? null })));
+        .map((f) => ({ id: f.id, label: f.label, x: f.x, z: f.z, status: f.status, verdict: f.detour?.verdict ?? null }))
+        .concat(shared.map((m) => ({ id: m.id, label: m.label, x: m.x, z: m.z, status: m.status, color: m.color }))));
     };
     sync();
     const unsubscribe = useMissionStore.subscribe(sync);

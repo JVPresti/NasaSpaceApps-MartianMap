@@ -582,5 +582,11 @@
   "menu.start.intro": "Neretva Vallis, Jezero crater, Mars. Plan a walk across real Mars terrain to the rock where Perseverance found a potential biosignature, then walk it in a suit that runs out of oxygen.",
   "menu.open.mission.table": "Open the mission table",
   "menu.drag.to.look.table": "Mouse capture is off: in Walk, drag on the scene to look around.",
-  "menu.start.credit": "Video: AI-generated illustration of an EVA · Terrain data: HiRISE, NASA/JPL-Caltech/University of Arizona · NASA Space Apps 2026"
+  "menu.start.credit": "Video: AI-generated illustration of an EVA · Terrain data: HiRISE, NASA/JPL-Caltech/University of Arizona · NASA Space Apps 2026",
+  "online.sample.taken.by": "Sample already taken by {name}",
+  "online.case.with": "The tool case is with {name}",
+  "online.sample.claiming": "Checking the sample log…",
+  "online.another.player": "another player",
+  "online.marker.note": "Note",
+  "online.marker.go": "Go"
 }

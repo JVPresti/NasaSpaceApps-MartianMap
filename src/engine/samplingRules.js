@@ -13,6 +13,22 @@ export const CASE_STAND_M = 0.85;     // 0.85 m from the case, on the side away 
 export const CHEYAVA_FALLS = 'Cheyava Falls';
 export const BRIGHT_ANGEL = 'Bright Angel';   // the layered outcrop at WP3 (rocks.js buildOutcrop)
 
+export const SOIL_CELL_M = 2;         // online (#54): one soil sample per 2 m square of ground in a room
+
+/**
+ * The id of what a click would sample, the same on every client in a room (#54): a named rock by its name, a loose rock
+ * by its centre in decimetres (rocks.js places them from a fixed seed), the ground by its SOIL_CELL_M square.
+ * Characters stay within the protocol's id pattern (letters, digits, _ and -).
+ * @param {{ kind: string, site?: string | null, point: { x: number, z: number }, rock?: { x: number, z: number } | null } | null} target
+ */
+export function sampleIdFor(target) {
+  if (!target || !target.point) return null;
+  if (target.site) return 'site-' + target.site.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const dm = (v) => String(Math.round(v * 10));
+  if (target.kind === 'rock') { const c = target.rock || target.point; return 'rock_' + dm(c.x) + '_' + dm(c.z); }
+  return 'soil_' + Math.floor(target.point.x / SOIL_CELL_M) + '_' + Math.floor(target.point.z / SOIL_CELL_M);
+}
+
 /** Horizontal distance between two { x, z } points. */
 export const horizontalDistance = (a, b) => Math.hypot(b.x - a.x, b.z - a.z);
 
