@@ -65,7 +65,7 @@ Los Frijolitos Espaciales Refritos Nueva Generación. Areas follow who wrote wha
 
 ### Use of SI and prior work
 
-We built Marswalk with SI tools (the 2026 rules' word for AI). We used an AI assistant to compare challenges and talk through the concept on 13 November. AI coding agents wrote most of the code from our issues. Almost every change reached `main` through a pull request that CI checked with lint, build and our test suite, and a teammate other than the author reviewed 38 of the 134 pull requests merged by 15 November. AI research agents found the NASA reports and papers, and an audit run with AI agents and reviewed by us traced 109 numbers to them. We generated the start screen video, its poster and the three hazard illustrations with Higgsfield. They are artwork, not mission images, and none shows a NASA logo or flag. No SI model runs inside the app. The planner is A* and the suit model is a formula.
+We built Marswalk with SI tools (the 2026 rules' word for AI). We used an AI assistant to compare challenges and talk through the concept on 13 November. AI coding agents wrote most of the code from our issues. Almost every change reached `main` through a pull request, and since 11:06 am on 14 November CI has checked each one. A teammate other than the author reviewed 38 of the 134 pull requests merged by 15 November. AI research agents found the NASA reports and papers, and an audit run with AI agents and reviewed by us traced 109 numbers to them. We generated the start screen video, its poster and the three hazard illustrations with Higgsfield. They are artwork, not mission images, and none shows a NASA logo or flag. No SI model runs inside the app. The planner is A* and the suit model is a formula.
 
 Before the event started, on 12 and 13 November, our graphics team prepared the HiRISE and CTX terrain tile, the rigged Z-2 suit, the habitat, two props and a three.js test bench. During the event we ported the app's rendering engine from that test bench and wrote everything else. The full disclosure, the prior-work statement and our reading of the NASA insignia rules are in [docs/RULES.md](docs/RULES.md).
 
@@ -79,7 +79,7 @@ Every pull request gets its own preview link, posted as a comment on the pull re
 
 ## Contributing
 
-The workflow in [CONTRIBUTING.md](CONTRIBUTING.md) is issue, branch, pull request, review, then squash merge, and it has the naming conventions. Six commits on the morning of 14 November went straight to `main`: the repository setup, the Vite template, two commits that added agent skills, and two merges, one of which brought in the pre-event assets. Since 10:02 am that day, every change has reached `main` through a pull request that CI checks with lint, build and tests. A teammate other than the author reviewed 38 of the 134 pull requests merged by 15 November.
+The workflow in [CONTRIBUTING.md](CONTRIBUTING.md) is issue, branch, pull request, review, then squash merge, and it has the naming conventions. Six commits on the morning of 14 November went straight to `main`: the repository setup, the Vite template, two commits that added agent skills, and two merges, one of which brought in the pre-event assets. Since 10:02 am that day, every change has reached `main` through a pull request, and since 11:06 am CI checks each one. A teammate other than the author reviewed 38 of the 134 pull requests merged by 15 November.
 
 ## Testing
 
