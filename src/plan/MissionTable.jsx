@@ -124,13 +124,15 @@ function Big({ value, unit, label, tone }) {
   );
 }
 
-function Hazards({ compact = false }) {
+// The event runner reads hazards.off once, when the EVA starts (src/state/events.js). After Begin EVA a switch would
+// change nothing, so the switches lock and show the choice the run started with.
+function Hazards({ compact = false, locked = false }) {
   const off = useMissionStore(useShallow((s) => s.hazards.off ?? []));
   return HAZARDS.map((hazard) => {
     const on = !hazard.events.some((id) => off.includes(id));
     return (
       <label key={hazard.id} className="table-check">
-        <input type="checkbox" checked={on} onChange={(event) => hazard.events.forEach((id) => setHazardEnabled(id, event.target.checked))} />
+        <input type="checkbox" checked={on} disabled={locked} onChange={(event) => hazard.events.forEach((id) => setHazardEnabled(id, event.target.checked))} />
         <span>{compact ? hazard.name : 'Can happen in this run'}</span>
       </label>
     );
@@ -402,7 +404,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           </div>
           <div className="table-panel table-fill">
             <p className="table-label">Hazards in this run</p>
-            <div className="table-checks"><Hazards compact /></div>
+            <div className="table-checks"><Hazards compact locked={evaBegun} /></div>
           </div>
           <div className="table-panel">
             <p className="table-label" title="On the map: scroll to zoom, drag to move, double-click to fit the route">Map layer · scroll to zoom, drag to move</p>
@@ -481,7 +483,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
                 <div><dt>What to do</dt><dd>{hazard.act}</dd></div>
               </dl>
               <p className="table-note">{hazard.basis}</p>
-              <HazardSwitch hazard={hazard} />
+              <HazardSwitch hazard={hazard} locked={evaBegun} />
             </li>
           ))}
         </ul>
@@ -560,12 +562,12 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
   );
 }
 
-function HazardSwitch({ hazard }) {
+function HazardSwitch({ hazard, locked = false }) {
   const off = useMissionStore(useShallow((s) => s.hazards.off ?? []));
   const on = !hazard.events.some((id) => off.includes(id));
   return (
     <label className="table-check table-hazard-switch">
-      <input type="checkbox" checked={on} onChange={(event) => hazard.events.forEach((id) => setHazardEnabled(id, event.target.checked))} />
+      <input type="checkbox" checked={on} disabled={locked} onChange={(event) => hazard.events.forEach((id) => setHazardEnabled(id, event.target.checked))} />
       <span>Can happen in this run</span>
     </label>
   );
