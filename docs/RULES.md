@@ -68,12 +68,12 @@ Two more things predate the event:
 Do not hide it. The git history is public to anyone the repo is shared with, and the assets README dates every pass. Hiding it would turn a rules question into an honesty question.
 
 1. **Today, before submitting:** message the Ensenada local lead. Say what was made on 12 and 13 November, and ask whether the project stays eligible for local and global judging. Keep the reply.
-2. **In the submission:** paste the statement below at the end of Project Details, and list the pre-event assets in References.
+2. **In the submission:** paste the statement below at the end of Project Details. It names the pre-event assets, so they need no separate list.
 3. **If the local lead says no:** the code written during the event (planner, events, suit model, HUD, data files, every NASA dataset pipeline) does not depend on the pre-event textures. It does depend on `terrain.json` and the engine port. Ask whether a statement of what was rebuilt during the event is enough before anyone tries to rebuild assets in the last hours.
 
 ### Prior-work statement, ready to paste
 
-> Prior work: before the hackathon started at 9:00 am on 14 November, our graphics team prepared 3D assets on 12 and 13 November. They are the HiRISE terrain tile cut for Blender, the NASA Z-2 suit rigged and animated, the habitat built on NASA's Habitat Demonstration Unit, two props, and a three.js test bench that loads them. They arrived in one commit at 9:49 am on 14 November (`9fb29fc`), and `docs/marswalk-assets/README.md` dates each pass. Everything else was written during the event: the route planner, the cost grid, the suit and oxygen model, the event engine, the radiation and dust events, the shelters, the provenance system, the HUD and Plan mode, and every NASA data pipeline (MEDA, RAD, DONKI, the Perseverance traverse and images). We chose the challenge and the concept on 13 November. We told our local lead about this before submitting.
+> Prior work: before the hackathon started at 9:00 am on 14 November, our graphics team prepared assets on 12 and 13 November: the HiRISE and CTX terrain tile of Neretva Vallis cut for Blender (heights, orthophotos, the first waypoint list and the rock layout), the NASA Z-2 suit rigged and animated, the habitat built on NASA's Habitat Demonstration Unit, two props, and a three.js test bench that loads them. They arrived in one commit at 9:49 am on 14 November (`9fb29fc`), and `docs/marswalk-assets/README.md` dates each pass. During the event we ported the app's rendering engine from that test bench, and wrote everything else: the route planner and cost grid, the suit and oxygen model, the event engine, the dust storm, radiation and low-oxygen events, the shelters, the source tags on every number, the HUD and Plan mode, and the MEDA, RAD, DONKI and Perseverance traverse and image pipelines. We chose the challenge and the concept on 13 November, with help from an AI assistant. We told our local lead about this before submitting.
 
 Edit the last sentence to match what happened.
 
@@ -134,9 +134,9 @@ Do not tick "Building SI/ML Into the Project". Marswalk runs no model. The plann
 
 For Project Details and the README:
 
-> Use of SI: we built Marswalk with SI tools and checked their output ourselves. AI coding agents (Claude Code) wrote most of the code from our issues, and every change went through a reviewed pull request with tests. AI research agents found and opened the NASA reports and papers behind our numbers. We then checked each value against its source by hand, and `docs/VALIDITY.md` lists all 106. Language models helped write the docs and the Spanish translation. The start screen video, its poster and the three hazard illustrations were generated with Higgsfield and carry an "SI-generated" watermark. They are artwork, not mission images, and contain no NASA marks. No SI model runs inside the app. The terrain, the weather, the radiation and the rover data are NASA measurements, and the route planner is plain A* on the HiRISE height grid.
+> Use of SI: we built Marswalk with SI tools and reviewed their output. We used an AI assistant to compare challenges and talk through the concept on 13 November. AI coding agents (Claude Code) wrote most of the code from our issues, and every change went through a reviewed pull request with tests. AI research agents found and opened the NASA reports and papers behind our numbers, and an audit run with AI agents and reviewed by us checked all 109 numbers on screen against their sources (`docs/VALIDITY.md`). Language models helped write the docs and the Spanish translation. The start screen video, its poster and the three hazard illustrations were generated with Higgsfield. They are artwork, not mission images, contain no NASA marks, and are captioned or credited as AI-generated. No SI model runs inside the app. The terrain, the weather, the radiation and the rover data are NASA measurements, and the route planner is plain A* on the HiRISE height grid.
 
-Remove the watermark sentence if #301 is not done in time, and say instead which files are SI-generated.
+When #301 lands, change "captioned or credited as AI-generated" to "carry a visible SI-generated watermark".
 
 ## 3. NASA insignia on the suit and habitat
 
@@ -177,7 +177,7 @@ Keep the textures as they are for the hackathon. The models are NASA material us
 
 ## Other rules we meet
 
-- **NASA data for a Global Award.** "To be eligible for a Global Award, you must use at least one NASA data or resource." We use 13 NASA datasets and services, 3 Photojournal images, 13 NASA documents and 2 NASA 3D models. `docs/SUBMISSION.md` lists them.
+- **NASA data for a Global Award.** "To be eligible for a Global Award, you must use at least one NASA data or resource." We use 13 NASA datasets and services, 3 Photojournal images, 13 NASA documents and pages, the NASA GISS Mars24 notes and 2 NASA 3D models. `docs/SUBMISSION.md` lists them.
 - **No one under 18.** "Project demonstrations and final projects may not include any images, video, audio, or other likeness to persons under 18 years old." The astronauts are 3D models and the start video is generated. Check the demo video before upload: no team member under 18 on camera or voice.
 - **Public links.** Demo and final project links must open "with no logins, permissions, or registrations required". The repository is private today. Make it public, or use the deployed site as the final project link.
 - **Licence.** Original content must be open source. Without a licence, NASA distributes it under Apache 2.0. Every third-party asset needs its licence listed, which `docs/credits.md` already does.
