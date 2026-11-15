@@ -1,8 +1,8 @@
 /**
  * Pose and telemetry sync for online play (#53, docs/IMPLEMENTATION_PLAN.md 9.4).
  *
- * Send side. createPoseSender sends a `p` only when the suit moved more than 5 cm, turned more than 1 degree
- * or changed gait, action, case or lamp, at most `hz` times per second (5 by default, never above
+ * Send side. createPoseSender sends a `p` only when the suit moved more than 5 cm, turned more than 1 degree,
+ * its navigation estimate moved more than 0.5 m, or it changed gait, action, case or lamp, at most `hz` times per second (5 by default, never above
  * CLIENT_RATE.poseMaxHz = 10, however often tick() runs). A player who stands still sends nothing; the
  * 10 s `ping` of src/net/room.js keeps the socket alive. createTelemetrySender sends `tel` every 5 s.
  *
@@ -51,10 +51,17 @@ export function poseMessage(pose, ct) {
   return msg;
 }
 
+/** The navigation estimate (ex, ez) moving this far also sends a pose: a terrain fix or a late estimate while standing. */
+export const ESTIMATE_MIN_MOVE_M = 0.5;
+
 /** True when `next` differs enough from the last pose sent to be worth a message. */
 export function poseChanged(last, next) {
   if (!last) return true;
   if (Math.hypot(next.x - last.x, next.z - last.z) > CLIENT_RATE.poseMinMoveM) return true;
+  // The habitat map (#55) draws the estimate. It updates 4 times per second, so the pose sent on a move can carry the
+  // estimate from before it; without this a player who then stands still stays at the stale estimate on the map.
+  const hadEst = Number.isFinite(last.ex) && Number.isFinite(last.ez), hasEst = Number.isFinite(next.ex) && Number.isFinite(next.ez);
+  if (hadEst !== hasEst || (hasEst && Math.hypot(next.ex - last.ex, next.ez - last.ez) > ESTIMATE_MIN_MOVE_M)) return true;
   if (Math.abs(turnBetween(last.headingRad, next.headingRad)) > CLIENT_RATE.poseMinTurnDeg * Math.PI / 180) return true;
   return next.gait !== last.gait || (next.hand ?? 0) !== (last.hand ?? 0) || (next.action?.name ?? null) !== (last.action?.name ?? null)
     || (next.carrying !== false) !== (last.carrying !== false) || next.lampOn !== last.lampOn;
@@ -175,7 +182,8 @@ export function usesRemotePartners(online) {
  * @param {{ room: { send: Function, on: Function }, store: { getState: Function, subscribe: Function },
  *   getEngine: () => object | null, timers?: { setInterval: Function, clearInterval: Function },
  *   now?: () => number, hz?: number }} options
- * @returns {{ stop: () => void, sender: object, partners: Map<string, object>, tick: () => void, stats: object }}
+ * @returns {{ stop: () => void, sender: object, partners: Map<string, object>, buffers: Map<string, object>,
+ *   telemetry: Map<string, { oxygenPct: number, batteryPct: number }>, tick: () => void, stats: object }}
  */
 export function startPoseSync({ room, store, getEngine, timers = globalThis, now = () => Date.now(), hz }) {
   const buffers = new Map();     // id -> pose buffer
@@ -225,7 +233,8 @@ export function startPoseSync({ room, store, getEngine, timers = globalThis, now
         partners.set(e.id, createNetPartner({ entry: e, buffer: bufferFor(e.id), telemetry: () => telemetry.get(e.id) ?? null, now }));
       }
     }
-    const list = usesRemotePartners(state) ? players.map((e) => partners.get(e.id)) : [];
+    // The habitat seat (#55) only receives: its map reads the buffers, and no suit is drawn in its scene.
+    const list = usesRemotePartners(state) && state?.me?.role !== ROLE.HABITAT ? players.map((e) => partners.get(e.id)) : [];
     const key = list.map((p) => p.id + ':' + p.slot + ':' + p.name).join(',');
     const engine = getEngine();
     if (!engine || typeof engine.setPartnerSources !== 'function') { applied = null; return; }
@@ -261,7 +270,7 @@ export function startPoseSync({ room, store, getEngine, timers = globalThis, now
   sync();
 
   return {
-    sender, partners, buffers, stats, tick, sync,
+    sender, partners, buffers, telemetry, stats, tick, sync,
     stop() {
       timers.clearInterval(timer);
       for (const off of offs) off();

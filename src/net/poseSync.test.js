@@ -48,6 +48,20 @@ describe('pose sender', () => {
     expect(h.sent).toHaveLength(1);
   });
 
+  it('standing still, a navigation estimate that moves more than 0.5 m sends a pose (#55: the habitat map draws it)', () => {
+    const h = sender();
+    h.s.tick();
+    h.clock.ms += 1000; h.pose.ex = 0.4; h.s.tick();
+    expect(h.sent).toHaveLength(1);
+    h.clock.ms += 1000; h.pose.ex = 0.6; h.s.tick();
+    expect(h.sent).toHaveLength(2);
+    expect(h.sent[1]).toMatchObject({ x: 0, z: 0, ex: 0.6 });
+    // a teleport whose pose went out with the old estimate: the next estimate follows while standing
+    h.clock.ms += 1000; h.pose.x = 30; h.s.tick();
+    h.clock.ms += 1000; h.pose.ex = 30; h.s.tick();
+    expect(h.sent.map((m) => [m.x, m.ex])).toEqual([[0, 0], [0, 0.6], [30, 0.6], [30, 30]]);
+  });
+
   it('ignores moves up to 5 cm and turns up to 1 degree, sends past them', () => {
     const h = sender();
     h.s.tick();
