@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildCostGrid, isBlockedAt } from './costGrid.js';
-import { isSegmentClear, measurePath, planRoute, smoothPath } from './routePlanner.js';
+import { isSegmentClear, measurePath, planRoute, segmentCost, smoothPath, smoothPathByCost } from './routePlanner.js';
 
 const CELL = 2;
 
@@ -111,6 +111,45 @@ describe('smoothing', () => {
       }),
     ).toBe(false);
     expect(smoothPath(wallGrid, around)).toEqual(around);
+  });
+});
+
+describe('smoothing by cost (#245)', () => {
+  // An expensive but open band at x = 0 (column 50), from z = -40 to 40: the search goes around one end.
+  const band = flatGrid(101);
+  for (let j = 30; j <= 70; j += 1) {
+    band.cost[j * 101 + 50] = 100;
+    band.baseCost[j * 101 + 50] = 100;
+  }
+  // measureCost samples only the vertices, so price whole lines with segmentCost.
+  const lineCost = (path) => path.slice(1).reduce((sum, [x, z], k) => sum + segmentCost(band, { x: path[k][0], z: path[k][1] }, { x, z }), 0);
+
+  it('prices a straight line by the cells it crosses', () => {
+    expect(segmentCost(band, { x: -20, z: 60 }, { x: -10, z: 60 })).toBeCloseTo(10, 6);
+    expect(segmentCost(band, { x: -4, z: 0 }, { x: 4, z: 0 })).toBeGreaterThan(100);
+  });
+
+  it('keeps the detour that clear-only smoothing cuts back across the band', () => {
+    const around = planRoute(band, [[-20, 0], [20, 0]], { smooth: false }).path;
+    expect(Math.max(...around.map(([, z]) => Math.abs(z)))).toBeGreaterThan(38);   // the search went round an end
+    expect(smoothPath(band, around)).toEqual([around[0], around.at(-1)]);   // straight through the band
+    const byCost = smoothPathByCost(band, around);
+    expect(byCost.length).toBeGreaterThan(2);
+    expect(lineCost(byCost)).toBeLessThan(lineCost([around[0], around.at(-1)]));
+    expect(lineCost(byCost)).toBeLessThanOrEqual(lineCost(around) * 1.02 + 1e-6);
+  });
+
+  it('takes the same shortcuts as clear-only smoothing where every cell costs the same', () => {
+    const staircase = [[-10, -10], [-8, -8], [-6, -6], [-4, -4], [-2, -2]];
+    expect(smoothPathByCost(flatGrid(101), staircase)).toEqual([[-10, -10], [-2, -2]]);
+  });
+
+  it('is the planner smoothing only when asked for', () => {
+    const clear = planRoute(band, [[-20, 0], [20, 0]]);
+    const cost = planRoute(band, [[-20, 0], [20, 0]], { smoothing: 'cost' });
+    expect(clear.path).toHaveLength(2);
+    expect(cost.path.length).toBeGreaterThan(2);
+    expect(lineCost(cost.path)).toBeLessThan(lineCost(clear.path));
   });
 });
 

@@ -25,24 +25,6 @@ Rules:
 
 ## The mission store
 
-### Wrist screen (#67)
-
-The wrist controller (`src/screens/wrist/controller.js`) reads this same store and paints a fixed 512 × 352 canvas. The engine owns the `CanvasTexture` on the arm's `Screen` material, while the interface owns the canvas content. No React or store imports enter the engine.
-
-In Walk, `R` raises or lowers the wrist, `[`/`]` changes pages, `J`/`K` selects the next/previous row, and `Enter` confirms a layer through `setLayer`. Checklist and suit rows are read-only. Typing, held keys, modifier shortcuts, paused missions and dialogs do not operate the wrist. Point indicates the selected row; confirmation briefly uses the existing pinch pose. The walking controls view that opens the EVA names R; while the wrist is up a key strip lists the wrist keys, and `engine.subscribeWrist` reports the change to the interface (#231).
-
-Every visible wrist string comes from `src/i18n/en.json` and `es.json` through `t()`: page titles and footer, suit row labels and status, and the map's missing-image and uncertainty lines. Page metadata resolves its text through getters, so a language switch repaints an open wrist through `subscribeLanguage` without reopening it. DATA/DERIVED/SIM tags and HiRISE stay invariant.
-
-One key has one consumer (#231). While the wrist is up, `src/screens/wrist/ownership.js` marks it as the keyboard owner and the science stop card, the finds gesture (Q, Y, N), the partner panel (T), the slope grid (G), the sources shortcut (C), the end-EVA key at the habitat (X) and the mode/layer shortcuts (M, L, Shift+L, 0) leave their keys alone. The wrist takes precedence over an open science card; a sources screen or a modal still owns the keyboard. `R` does not raise the wrist while Q is held, so the arm cannot stay in the point pose after the wrist comes down. Escape keeps its pause path and lowers the wrist with the rest of the session.
-
-Opening is rejected during sampling clips. A held sample survives opening and its tool pose is restored on closing; sampling inputs are disabled while reading the wrist. Entering Plan or pausing closes the wrist. Page/selection live in the controller session, survive a Plan round trip, and reset when the engine is replaced or retried.
-
-The map shows the entire real HiRISE tile north-up with an isotropic metre scale, route, waypoints, refuges and the store's navigation estimate and uncertainty. Missing image/position data are reported or omitted, never replaced with simulated fixes. Navigation remains subject to the existing estimate contract above.
-
-The controller signs only the current page's displayed content and repaints/uploads the texture when that signature changes. Hidden pages and unchanged store updates do not repaint it; coalescing caps work at 10 Hz. Opening refreshes a page that changed while closed. The engine's fallback layer painter never overwrites an external canvas.
-
-Engine methods (after `ready`): `setWristScreen(canvas|null)`, `invalidateWristScreen()`, `setWristOpen(boolean)` (returns success), `setWristPointer({x,y,pressed})` (canvas pixels), `getWristState()`, `subscribeWrist(listener)` and `getOrthoImage()`. Disconnect the controller before disposing the engine. Development-only `window.__marswalkWrist` exposes the canvas and a read-only snapshot for verification.
-
 ```js
 import { useMissionStore, storeAdapter, setMode } from './state/store.js';
 
@@ -79,13 +61,15 @@ setMode('plan');
 | `route.path` | `[[x, z], ...]`, the format of `route.json` and `planRoute()` | planner | #16, #23 |
 | `route.nextIndex` | index of the next waypoint | waypoint tracking | #61 |
 | `route.visited` | names of the waypoints already reached, in order | waypoint tracking | #61 |
-| `route.distanceM`, `climbM`, `steepestSlopeDeg`, `etaSec` | from `planRoute()` (`distance`, `climb`, `steepestSlopeDeg`) | planner | #16, #41 |
+| `route.distanceM`, `climbM`, `steepestSlopeDeg`, `etaSec` | from `planRoute()` (`distance`, `climb`, `steepestSlopeDeg`); a route planned at the table takes the chosen profile's values, whose `steepestSlopeDeg` is sampled every metre of the path (#245) | planner | #16, #41, #245 |
 | `route.reason` | why the route changed, for example after an event | re-planner | #23 |
 | `route.shelter` | `{ id, name, x, z, type, protection }` from `public/data/shelters.json`: the shelter the re-planner chose, highlighted in green; `null` when no event is active | re-planner, events | #23, #24 to #26, #30 |
 | `route.legs` | `[{ from, to, distanceM, climbM, descentM, maxSlopeDeg, timeSec, o2G, o2Pct, batteryWh, batteryPct }]`, one per leg between consecutive `route.waypoints`, walked out at nominal effort. `maxSlopeDeg` is the steepest grade along the walking direction. `[]` without a route | per-leg costs (`src/sim/legCosts.js`) | #41 |
 | `route.totals` | the same fields summed over the legs (the maximum for `maxSlopeDeg`), plus the walk home along the same path with the 20 % pad (`returnTimeSec`, `returnO2G`, `returnBatteryWh`), what is left at the habitat (`arrivalO2G`, `arrivalO2Pct`, `arrivalBatteryWh`, `arrivalBatteryPct`), `marginSec` (margin at the end of the plan: O2 left at the habitat as time at the flat walking rate, minus the 30 min reserve, capped at `suit.eva_duration_max` minus the walk out and back) and `status` as for `suit.status`. `null` without a route | per-leg costs | #41 |
 | `route.decision` | `'pending'`, `'go'` or `'no-go'`, set by the crew in Plan mode | interface | #17 |
 | `route.skipped` | waypoint names the event route leaves out, for example after a dust storm | events | #24 |
+| `route.profiles` | `{ fastest, gentlest, radio }`, one route per profile for the mission table to compare. Each is `{ id, ok, path, distanceM, climbM, steepestSlopeDeg, overCautionM, timeSec, o2G, o2Pct, batteryWh, marginSec, shadowShare, longestShadowM }` or `{ id, ok: false, reason }` (`'no-mast'` for radio until the engine gives the habitat mast). Time, oxygen, battery and margin come from `routeLegCosts`; `overCautionM` is the length on slopes over 15°; `shadowShare` the share of the route out of line of sight of the mast. `null` before the first plan | planner (`src/plan/useRoutePlanner.js`, `src/sim/routeProfiles.js`) | #245 |
+| `route.profile` | the chosen profile id, `'fastest'` by default. `chooseRouteProfile(id)` copies its path and numbers to `route.path`, `distanceM`, `climbM`, `steepestSlopeDeg` and `etaSec`, so Walk, `route.legs`, `route.totals` and go / no-go follow it | mission table | #245 |
 | `environment.dustOpacity` | tau. **The event engine writes this path.** The bridge turns it into the engine's storm-dust level (`src/state/dustLevel.js`): tau 0.45 (clear Jezero) is 0, tau 8 (global storm, Gale 2018) is 1. | events, MEDA replay | #22, #24, #27, #31 |
 | `environment.tempC`, `windMs`, `pressurePa` | weather. The environment runner (`src/sim/environmentRunner.js`) replays the stored MEDA sol at the mission LMST once per second from the first Walk. | MEDA replay | #31, #189 |
 | `environment.doseRateUgyH`, `doseUgy` | radiation dose rate (µGy/h) and dose received this EVA (µGy). The environment runner writes the RAD background rate (8.75 µGy/h) outside the radiation event and sums the rate in the store over mission time into `doseUgy`; the radiation event sets only the rate. | RAD background, radiation event, environment runner | #25, #31, #189 |
@@ -196,7 +180,7 @@ the mode buttons (#103). Touch and gamepad state is read through `subscribeTouch
 
 | Step | Real calls |
 |---|---|
-| App opens | `EngineView` starts the simulation, then `pauseMission()`. The start screen is a real pause: no mission seconds, no suit step and no player input advance behind it. |
+| App opens | The start screen is the first screen (#266): it shows at once with its video, Controls and Sources. `EngineView` loads the scene behind it; the main action stays disabled and shows the real progress until `ready`, then opens the mission table. `EngineView` starts the simulation, then `pauseMission()`. The start screen is a real pause: no mission seconds, no suit step and no player input advance behind it. |
 | Start / Resume in Walk | `engine.requestPointerLock()` first. Only after a real `true` grant: `engine.setInputEnabled(true)` and `resumeMission()`. A refusal keeps the pause and shows a retry message. |
 | Resume in Plan | `engine.setInputEnabled(true)` and `resumeMission()`; Plan uses orbit controls and needs no lock. |
 | Esc in the Walk pause menu | No lock request. Esc is a key press, not a user activation for pointer lock, so it cannot capture the mouse: the menu stays paused, cancels any request already in flight, focuses Resume and shows `Press Enter or click Resume to capture the mouse.` Esc inside Controls/Restart returns to the menu; the menu itself keeps the pause. |
@@ -209,6 +193,13 @@ the mode buttons (#103). Touch and gamepad state is read through `subscribeTouch
 before any input or clock write; when the interface paused, changed mode or restarted in the meantime, a
 late grant is released and the attempt is reported as `{ ok: false, stale: true, message: null }` instead
 of resuming behind the menu.
+
+`src/preload.js` runs once after the first render and fetches, behind the start screen, the files that would
+otherwise wait for a later screen (#266): the hazard illustrations, the visor art, every `@font-face` in
+`src/fonts.css` through `document.fonts.load`, and every image in `stops.json`. It never rejects; the screens
+that really need a file still report their own errors. When the scene itself fails, `LoadingScreen` is the
+failure panel alone: the real message with **Try again**, which remounts `EngineView` and returns to the
+start screen.
 
 Menus are native `<dialog>` modals (`src/components/Modal.jsx`): `showModal()` makes the scene and top bar
 inert, traps Tab and Shift+Tab, and returns focus when closed. The top bar's mode switch is repeated inside
@@ -309,6 +300,24 @@ The runner subscribes to `mission.paused` and `mission.timeScale`, so the suit r
 | Seal | the container is closed: the stow clip ended, or the partner took the case back with the lid closed |
 
 A sealed checklist stays ticked until the next photo or scoop starts a new one. Out of scope here: the dust puff and the mark in the soil (#50).
+
+## Wrist screen (#67)
+
+The wrist controller (`src/screens/wrist/controller.js`) reads the mission store and paints a fixed 512 × 352 canvas. The engine owns the `CanvasTexture` on the arm's `Screen` material, while the interface owns the canvas content. No React or store imports enter the engine.
+
+In Walk, `R` raises or lowers the wrist, `[`/`]` changes pages, `J`/`K` selects the next/previous row, and `Enter` (or the numeric keypad's Enter) confirms a layer through `setLayer`. Checklist and suit rows are read-only. Typing, held keys, modifier shortcuts, paused missions and dialogs do not operate the wrist. Point indicates the selected row; confirmation briefly uses the existing pinch pose. The walking controls view that opens the EVA names R; while the wrist is up a key strip lists the wrist keys, and `engine.subscribeWrist` reports the change to the interface (#231).
+
+Every visible wrist string comes from `src/i18n/en.json` and `es.json` through `t()`: page titles and footer, suit row labels and status, and the map's missing-image and uncertainty lines. Page metadata resolves its text through getters, so a language switch repaints an open wrist through `subscribeLanguage` without reopening it. DATA/DERIVED/SIM tags and HiRISE stay invariant.
+
+One key has one consumer (#231). While the wrist is up, `src/screens/wrist/ownership.js` marks it as the keyboard owner and the science stop card, the finds gesture (Q, Y, N), the partner panel (T), the slope grid (G), the sources shortcut (C), the end-EVA key at the habitat (X) and the mode/layer shortcuts (M, L, Shift+L, 0) leave their keys alone. The wrist takes precedence over an open science card; a sources screen or a modal still owns the keyboard. `R` does not raise the wrist while Q is held, so the arm cannot stay in the point pose after the wrist comes down. Escape keeps its pause path and lowers the wrist with the rest of the session.
+
+Opening is rejected during sampling clips. A held sample survives opening and its tool pose is restored on closing; sampling inputs are disabled while reading the wrist, and the sampling crosshair and prompt hide until it comes down (`subscribeWristKeyOwner` in `ownership.js`). Entering Plan or pausing closes the wrist. Page/selection live in the controller session, survive a Plan round trip, and reset when the engine is replaced or retried.
+
+The map shows the entire real HiRISE tile north-up with an isotropic metre scale, route, waypoints, refuges and the store's navigation estimate and uncertainty. Missing image/position data are reported or omitted, never replaced with simulated fixes. Navigation follows the estimate contract in the mission store snapshot.
+
+The controller signs only the current page's displayed content and repaints/uploads the texture when that signature changes. Hidden pages and unchanged store updates do not repaint it; coalescing caps work at 10 Hz. Opening refreshes a page that changed while closed. The engine's fallback layer painter never overwrites an external canvas.
+
+Engine methods (after `ready`): `setWristScreen(canvas|null)`, `invalidateWristScreen()`, `setWristOpen(boolean)` (returns success), `setWristPointer({x,y,pressed})` (canvas pixels), `getWristState()`, `subscribeWrist(listener)` and `getOrthoImage()`. Disconnect the controller before disposing the engine. Development-only `window.__marswalkWrist` exposes the canvas and a read-only snapshot for verification.
 
 ## The helmet HUD
 

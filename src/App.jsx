@@ -23,6 +23,7 @@ import { openSources } from './sources/sourcesStore.js';
 import { pauseMission, resumeMission, setMode, useMissionStore } from './state/store.js';
 import { EVA_PHASE, PAUSE_VIEW, pauseEva, requestEvaLock, restartEva, resumeEva } from './state/evaSession.js';
 import { continueEva } from './state/eva.js';
+import { preloadAppAssets } from './preload.js';
 import './App.css';
 import './components/menu.css';
 
@@ -87,7 +88,6 @@ export default function App() {
   const evaSummary = useMissionStore((s) => s.eva.summary);
   const [engine, setEngine] = useState(null);
   const [load, dispatch] = useReducer(loadReducer, undefined, () => INITIAL_LOAD);
-  const [loadingDone, setLoadingDone] = useState(false);
   const [wristOpen, setWristOpen] = useState(false);
   // The minimap route tracker belongs to the app, not to the minimap: App unmounts the HUD in Plan mode,
   // so a tracker created inside the Minimap effect would lose the walked distance on every mode switch.
@@ -126,6 +126,7 @@ export default function App() {
 
   const engineRef = useRef(null);
   const runtimeRef = useRef(null);
+  const preloadStartedRef = useRef(false);
 
   // A pointer-lock answer belongs to the action that asked for it. These sequences are bumped by anything
   // that ends an attempt (Escape, a mode change, restart, retry), so a late grant can never resume input or
@@ -140,7 +141,6 @@ export default function App() {
     resumeSeqRef.current += 1;
     dispatch({ type: 'error', error });
   }, []);
-  const handleGone = useCallback(() => setLoadingDone(true), []);
 
   const handleEngine = useCallback((instance, runtime) => {
     resumeSeqRef.current += 1;
@@ -393,7 +393,6 @@ export default function App() {
   const handleRetry = useCallback(() => {
     resumeSeqRef.current += 1;
     walkLockSeqRef.current += 1;
-    setLoadingDone(false);
     setPhase(EVA_PHASE.START);
     setOverlay(null);
     setNotice(null);
@@ -470,14 +469,32 @@ export default function App() {
     return engine.subscribeWrist((state) => setWristOpen(state?.open === true));
   }, [engine]);
 
+  // The start screen is the first screen (#266): while it is open, fetch the hazard art, visor art, every font face
+  // and the science stop photos that would otherwise wait for the table, the cards or the EVA. Once per page, even
+  // with StrictMode's double mount; a failure is silent because each screen still reports its own.
+  useEffect(() => {
+    if (preloadStartedRef.current) return;
+    preloadStartedRef.current = true;
+    preloadAppAssets();
+  }, []);
+
   const playing = load.status === 'ready' && !evaSummary && phase === EVA_PHASE.PLAYING;
   // Only while the EVA is playing: off while loading, on the start screen and in the pause menu. There is no mode button any
   // more (#11: the EVA begins on the mission table and returns to it from the pause menu), but M still goes
   // through the same handler, so it also captures the mouse in Walk (#174).
-  useShortcuts(playing, handleModeChange);
+  // Before the EVA has begun, M must not leave the table: Begin EVA is the only way out, behind the Go / No-go check.
+  const handleShortcutMode = useCallback((next) => {
+    if (next === 'walk' && !evaBegunRef.current) return;
+    handleModeChange(next);
+  }, [handleModeChange]);
+  useShortcuts(playing, handleShortcutMode);
+
+  // The start screen is up from the first frame: the scene loads behind it, and the screen also owns the failure
+  // panel. The class hides the top bar and the table behind it, as it did once the scene was ready.
+  const atStart = phase === EVA_PHASE.START && !evaSummary && load.status !== 'error';
 
   return (
-    <div className={load.status === 'ready' && phase === EVA_PHASE.START ? 'app at-start' : 'app'}>
+    <div className={atStart ? 'app at-start' : 'app'}>
       <EngineView
         key={`engine-${load.attempt}`}
         onStatus={handleStatus}
@@ -506,7 +523,7 @@ export default function App() {
       {load.status === 'ready' && mode === 'walk' && <EventBanner className="event-banner-walk" />}
       {load.status === 'ready' && DEBUG_EVENTS && <EventDebug />}
 
-      <LoadingScreen key={`loading-${load.attempt}`} state={load} site={translateText(SITE)} onRetry={handleRetry} onGone={handleGone} />
+      <LoadingScreen key={`loading-${load.attempt}`} state={load} site={translateText(SITE)} onRetry={handleRetry} />
 
       {load.status === 'ready' && mode === 'walk' && <Hud engine={engine} minimapRoute={minimapRoute} />}
       {/* Inputs appear only after they are used (#103): the stick on the first touch, the pad hint on the first press. */}
@@ -518,14 +535,17 @@ export default function App() {
 
       {playing && mode === 'walk' && wristOpen && <p className="hint">{t(WRIST_HINT)}</p>}
 
-      {load.status === 'ready' && !evaSummary && loadingDone && phase === EVA_PHASE.START && (
+      {atStart && (
         <StartScreen
           busy={busy}
           notice={notice}
           freeLook={freeLook}
+          scene={load}
           onStart={() => {
             // The start screen always opens the mission table; the EVA begins from there. The table needs no
             // pointer lock, so a refused capture is met at Begin EVA, where the pause menu offers drag-to-look.
+            // The main action is disabled until the scene is ready; this guard keeps a stale click harmless.
+            if (load.status !== 'ready') return;
             if (useMissionStore.getState().mode !== 'plan') setMode('plan');
             handleResume();
           }}
@@ -574,8 +594,9 @@ export default function App() {
         />
       )}
 
-      {/* Last, so its native dialog is created after the debrief and its top layer sits above it. */}
-      {load.status === 'ready' && <SourcesRoot />}
+      {/* Last, so its native dialog is created after the debrief and its top layer sits above it. Mounted from the
+          first frame (#266): Sources is usable on the start screen while the scene still loads. */}
+      <SourcesRoot />
     </div>
   );
 }

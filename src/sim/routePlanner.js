@@ -307,6 +307,67 @@ export function smoothPath(grid, path) {
 }
 
 /**
+ * Weighted cost of the straight line between two world positions: its length times the mean cost multiplier,
+ * sampled at half a cell (nearest node). Infinity when a sample is blocked.
+ * @param {object} grid
+ * @param {{x: number, z: number}} a
+ * @param {{x: number, z: number}} b
+ * @returns {number}
+ */
+export function segmentCost(grid, a, b) {
+  const length = Math.hypot(b.x - a.x, b.z - a.z);
+  if (length === 0) return 0;
+  const steps = Math.max(1, Math.ceil(length / (Math.min(grid.cellSizeX, grid.cellSizeZ) * 0.5)));
+  let total = 0;
+  for (let s = 0; s < steps; s += 1) {
+    const t = (s + 0.5) / steps;
+    const multiplier = costAt(grid, a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t);
+    if (!Number.isFinite(multiplier)) return Infinity;
+    total += multiplier;
+  }
+  return (total * length) / steps;
+}
+
+/**
+ * How much more than the cells it replaces a shortcut may cost in {@link smoothPathByCost}: 2 %. Without slack the
+ * line keeps a vertex every few cells; with it the radio and gentlest routes have about half as many vertices and
+ * keep their gain (offline runs on the route.json stops, #245).
+ */
+export const COST_SMOOTHING_SLACK = 0.02;
+
+/**
+ * Like {@link smoothPath}, but a shortcut is taken only when it costs at most {@link COST_SMOOTHING_SLACK} more than
+ * the cells it replaces, on the grid's own cost. `smoothPath` only keeps clear of blocked cells, so on a grid that
+ * prices slope or radio shadow its straight lines cut back across the ground the search went around (#245).
+ * @param {object} grid
+ * @param {Array<[number, number]>} path
+ * @param {number} [slack]
+ * @returns {Array<[number, number]>}
+ */
+export function smoothPathByCost(grid, path, slack = COST_SMOOTHING_SLACK) {
+  if (path.length <= 2) return path;
+  const point = ([x, z]) => ({ x, z });
+  const walked = new Float64Array(path.length);
+  for (let k = 1; k < path.length; k += 1) {
+    walked[k] = walked[k - 1] + segmentCost(grid, point(path[k - 1]), point(path[k]));
+  }
+  const result = [path[0]];
+  let anchor = 0;
+  for (let i = 2; i < path.length; i += 1) {
+    const a = point(path[anchor]);
+    const b = point(path[i]);
+    const replaced = walked[i] - walked[anchor];
+    const shortcut = isSegmentClear(grid, a, b) && segmentCost(grid, a, b) <= replaced * (1 + slack);
+    if (!shortcut) {
+      anchor = i - 1;
+      result.push(path[anchor]);
+    }
+  }
+  result.push(path[path.length - 1]);
+  return result;
+}
+
+/**
  * Route metrics in the same shape the Plan panel and the HUD need.
  * @param {object} grid
  * @param {Array<[number, number]>} path
@@ -358,9 +419,11 @@ export function measureCost(grid, path) {
  *
  * @param {object} grid grid from `buildCostGrid`
  * @param {Array<{x: number, z: number, name?: string}|[number, number]>} waypointInput
- * @param {{smooth?: boolean, start?: {x: number, z: number},
+ * @param {{smooth?: boolean, smoothing?: 'clear' | 'cost', start?: {x: number, z: number},
  *   maxIterations?: number, snapRadius?: number, goalRadiusM?: number,
  *   heuristicWeight?: number}} [options]
+ *   smoothing: 'clear' (default) takes any shortcut clear of blocked cells; 'cost' only one that costs no more on the
+ *   grid ({@link smoothPathByCost}), for grids whose cost carries more than distance (the route profiles, #245).
  * @returns {{
  *   ok: boolean, path: Array<[number, number]>, waypoints: Array<{x: number, z: number, name?: string}>,
  *   distance: number, climb: number, steepestSlopeDeg: number, cost: number,
@@ -431,9 +494,10 @@ export function planRoute(grid, waypointInput, options = {}) {
   }
 
   const smoothed = options.smooth !== false;
+  const smooth = options.smoothing === 'cost' ? (s) => smoothPathByCost(grid, s) : (s) => smoothPath(grid, s);
   const finalPath = [];
   for (const segment of rawSegments) {
-    const smoothedSegment = smoothed ? smoothPath(grid, segment) : segment;
+    const smoothedSegment = smoothed ? smooth(segment) : segment;
     if (finalPath.length > 0) smoothedSegment.shift();
     finalPath.push(...smoothedSegment);
   }

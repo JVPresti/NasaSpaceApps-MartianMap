@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { loadDataFile, TERRAIN_PATH } from '../data/dataFiles.js';
+import { t } from '../i18n/index.js';
 import { decodeTerrain } from '../sim/costGrid.js';
 import { waypointNumber } from '../sim/waypointNumber.js';
 import { acrossLabel, clampCrop, mapCrop, paintMap, slopeGrid, toMap, zoomCrop } from './mapLayers.js';
@@ -13,6 +14,7 @@ import TraverseLayer from './TraverseLayer.jsx';
 
 const BASE = import.meta.env.BASE_URL + 'marswalk/assets/';
 const PIXELS = 768;
+const NO_ALTERNATIVES = [];
 
 let dataRequest = null;
 
@@ -55,7 +57,7 @@ function pointFacts({ terrain, slopes }, { x, z }) {
 
 /** "WP1 · channel floor" → ["WP1", "channel floor"]; the first stop is the habitat airlock. */
 function markerLabel(name, index) {
-  if (index === 0) return ['HAB', 'habitat airlock'];
+  if (index === 0) return ['HAB', t('map.habitat.airlock')];
   return name.includes(' · ') ? name.split(' · ') : [name, ''];
 }
 
@@ -65,10 +67,12 @@ function markerLabel(name, index) {
  *   science: waypoint names with a science stop, their markers drawn in the route colour
  *   route: false shows only the start and the target (the Site step), without the route or the stops between
  *   legs: route.legs, for the distance and time to each stop; onScience: opens a stop's science card
+ *   alternatives: [{ id, path }] the route profiles not in use (#245), dashed in their colours under the route;
+ *   routeClass: class on the route line, for the colour of the profile in use
  *   traverse: draw Perseverance's drives and the pin of its stop images under the route (#249, TraverseLayer.jsx)
  * Clicking a stop opens a small window with its height, slope and the leg that reaches it.
  */
-export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, traverse = false }) {
+export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, alternatives = NO_ALTERNATIVES, routeClass = '', traverse = false }) {
   const canvasRef = useRef(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -81,7 +85,8 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
 
   const tile = data ? { width: data.terrain.width, depth: data.terrain.depth } : { width: 1422.5, depth: 1500 };
   const pathPoints = useMemo(() => (path ?? []).map(([x, z]) => ({ x, z })), [path]);
-  const fit = useMemo(() => mapCrop([...waypoints, ...pathPoints], tile), [waypoints, pathPoints, tile.width, tile.depth]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const altPoints = useMemo(() => alternatives.flatMap((a) => a.path.map(([x, z]) => ({ x, z }))), [alternatives]);
+  const fit = useMemo(() => mapCrop([...waypoints, ...pathPoints, ...altPoints], tile), [waypoints, pathPoints, altPoints, tile.width, tile.depth]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [view, setView] = useState(null);   // null: framed on the route
   const [open, setOpen] = useState(null);   // index of the stop whose details are open
   const crop = view ?? fit;
@@ -135,7 +140,8 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
     return () => window.removeEventListener('keydown', onKey, true);
   }, [open]);
 
-  const line = (pathPoints.length > 1 ? pathPoints : waypoints).map((p) => toMap(p.x, p.z, crop).map((v) => v.toFixed(2)).join(',')).join(' ');
+  const toLine = (points) => points.map((p) => toMap(p.x, p.z, crop).map((v) => v.toFixed(2)).join(',')).join(' ');
+  const line = toLine(pathPoints.length > 1 ? pathPoints : waypoints);
   const last = waypoints.length - 1;
 
   return (
@@ -152,8 +158,11 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
       <canvas ref={canvasRef} width={PIXELS} height={PIXELS} role="img" aria-label={title} />
       {traverse && <TraverseLayer crop={crop} />}
       <svg className="table-map-marks" viewBox="0 0 100 100" aria-hidden="true">
+        {route && alternatives.map((a) => (
+          <polyline key={a.id} points={toLine(a.path.map(([x, z]) => ({ x, z })))} className={'map-route-alt profile-' + a.id} />
+        ))}
         {route && line && <polyline points={line} className="map-route-shadow" />}
-        {route && line && <polyline points={line} className="map-route" />}
+        {route && line && <polyline points={line} className={routeClass ? 'map-route ' + routeClass : 'map-route'} />}
       </svg>
       {/* Stops as numbered markers with a label, as on the 3D plan map: HTML, so the text stays sharp at any zoom. The
           numbers are the app's one numbering (#220, src/sim/waypointNumber.js): HAB is 0 and WP1 is 1. */}
@@ -162,7 +171,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
           const [u, v] = toMap(w.x, w.z, crop);
           if (u < -5 || u > 105 || v < -5 || v > 105) return null;
           if (!route && k !== 0 && k !== last) return null;
-          const [code, name] = route ? markerLabel(w.name, k) : [k === 0 ? 'Habitat' : w.name, ''];
+          const [code, name] = route ? markerLabel(w.name, k) : [k === 0 ? t('table.habitat') : w.name, ''];
           const target = science.has(w.name) || k === last;
           return (
             <li key={k} className={target ? 'map-marker target' : 'map-marker'} style={{ left: `${u}%`, top: `${v}%` }}>
@@ -170,7 +179,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
                 type="button"
                 className="map-marker-hit"
                 aria-expanded={open === k}
-                aria-label={`${code}${name ? ' ' + name : ''}: details`}
+                aria-label={t('map.marker.details', { name: `${code}${name ? ' ' + name : ''}` })}
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={() => setOpen(open === k ? null : k)}
               >
@@ -190,33 +199,33 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
         const walked = legs.slice(0, open).reduce((sum, l) => sum + (l?.distanceM ?? 0), 0);
         const style = { left: u > 60 ? undefined : `calc(${u}% + 18px)`, right: u > 60 ? `calc(${100 - u}% + 18px)` : undefined, top: `clamp(8px, calc(${v}% - 40px), calc(100% - 260px))` };
         return (
-          <div className="map-pop" style={style} role="dialog" aria-label={`${code} details`} onPointerDown={(event) => event.stopPropagation()}>
+          <div className="map-pop" style={style} role="dialog" aria-label={t('map.marker.details', { name: code })} onPointerDown={(event) => event.stopPropagation()}>
             <div className="map-pop-head">
               <div><b>{code}</b>{name && <span>{name}</span>}</div>
-              <button type="button" className="map-pop-close" aria-label="Close" onClick={() => setOpen(null)}>×</button>
+              <button type="button" className="map-pop-close" aria-label={t('menu.close')} onClick={() => setOpen(null)}>×</button>
             </div>
             <dl>
-              <div><dt>Stop</dt><dd>{waypointNumber(open)} of {waypointNumber(last)}</dd></div>
-              {fact && <div><dt>Height</dt><dd>{Math.round(fact.height)} m <small>above the lowest point</small></dd></div>}
-              {fact && <div><dt>Slope here</dt><dd className={fact.slope > SLOPE_LIMITS.noGo ? 'tone-warning' : fact.slope > SLOPE_LIMITS.caution ? 'tone-caution' : undefined}>{Math.round(fact.slope)}°</dd></div>}
-              {leg && <div><dt>From the last stop</dt><dd>{Math.round(leg.distanceM)} m · {Math.round(leg.timeSec / 60)} min · +{Math.round(leg.climbM)} m</dd></div>}
-              {open > 0 && <div><dt>From the habitat</dt><dd>{Math.round(walked)} m walked</dd></div>}
-              <div><dt>Position</dt><dd>x {Math.round(w.x)} · z {Math.round(w.z)} m</dd></div>
+              <div><dt>{t('map.pop.stop')}</dt><dd>{t('map.pop.n.of.m', { n: waypointNumber(open), m: waypointNumber(last) })}</dd></div>
+              {fact && <div><dt>{t('map.pop.height')}</dt><dd>{Math.round(fact.height)} m <small>{t('map.pop.above.lowest')}</small></dd></div>}
+              {fact && <div><dt>{t('map.pop.slope')}</dt><dd className={fact.slope > SLOPE_LIMITS.noGo ? 'tone-warning' : fact.slope > SLOPE_LIMITS.caution ? 'tone-caution' : undefined}>{Math.round(fact.slope)}°</dd></div>}
+              {leg && <div><dt>{t('map.pop.from.last')}</dt><dd>{Math.round(leg.distanceM)} m · {Math.round(leg.timeSec / 60)} min · +{Math.round(leg.climbM)} m</dd></div>}
+              {open > 0 && <div><dt>{t('map.pop.from.habitat')}</dt><dd>{t('map.pop.walked', { m: Math.round(walked) })}</dd></div>}
+              <div><dt>{t('map.pop.position')}</dt><dd>x {Math.round(w.x)} · z {Math.round(w.z)} m</dd></div>
             </dl>
             {onScience && science.has(w.name) && (
-              <button type="button" className="map-pop-science" onClick={() => { onScience(w.name); setOpen(null); }}>Open the science card</button>
+              <button type="button" className="map-pop-science" onClick={() => { onScience(w.name); setOpen(null); }}>{t('table.open.science.card')}</button>
             )}
           </div>
         );
       })()}
       <p className="table-map-caption">
         {title}
-        <span>North up · {acrossLabel(crop.size)}</span>
+        <span>{t('map.north.up')} · {acrossLabel(crop.size)}</span>
       </p>
       {legend}
       {view && (
         <button type="button" className="table-map-fit" onPointerDown={(event) => event.stopPropagation()} onClick={() => setView(null)}>
-          Fit route
+          {t('map.fit.route')}
         </button>
       )}
       {error && <p className="table-map-error" role="status">{error}</p>}

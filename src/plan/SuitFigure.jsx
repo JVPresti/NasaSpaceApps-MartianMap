@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { t } from '../i18n/index.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
@@ -115,10 +116,10 @@ export default function SuitFigure() {
   }, []);
 
   return (
-    <div className="suit-figure" ref={boxRef} role="img" aria-label="The suit, turning slowly. Drag to turn it.">
-      {status === 'loading' && <p className="suit-figure-note">Loading the suit…</p>}
-      {status === 'error' && <p className="suit-figure-note">The suit model could not be shown.</p>}
-      <p className="suit-figure-caption">Z-2 suit shape (NASA 3D Resources) · numbers from the xEMU suit model · drag to turn</p>
+    <div className="suit-figure" ref={boxRef} role="img" aria-label={t('suit.figure.label')}>
+      {status === 'loading' && <p className="suit-figure-note">{t('suit.figure.loading')}</p>}
+      {status === 'error' && <p className="suit-figure-note">{t('suit.figure.error')}</p>}
+      <p className="suit-figure-caption">{t('suit.figure.caption')}</p>
     </div>
   );
 }
