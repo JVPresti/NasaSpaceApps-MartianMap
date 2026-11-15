@@ -106,7 +106,7 @@ export const BEATS = [
   },
   {
     id: 'demo',
-    duration: 75,   // the video's length (public/present/demo.mp4)
+    duration: 74,   // the video's length (public/present/demo.mp4)
     shot: { target: 'hab', dist: 95, yaw: -40, pitch: -14, fov: 48 },
     move: { dur: 0 },
     // The real app, recorded on main with #290 and #335 (PR #356 names the commits). Its captions are in the video,
@@ -114,11 +114,11 @@ export const BEATS = [
     video: { src: 'demo.mp4', srcEs: 'demo-es.mp4', poster: 'demo-poster.jpg' },
     caption: [
       { at: 0, en: 'In orange, where the crew still gets home.', es: 'En naranja, desde dónde aún vuelven a casa.' },
-      { at: 5.4, en: 'With 30 min, the zone tightens.', es: 'Con 30 min, la zona se estrecha.' },
-      { at: 12, en: 'The crew\'s needs build the route.', es: 'Las necesidades del equipo arman la ruta.' },
-      { at: 24, en: 'Out through the airlock, with EV2.', es: 'Afuera por la esclusa, con EV2.' },
-      { at: 38.8, en: 'Radiation alert. EV2 turns home too.', es: 'Alerta de radiación. EV2 también vuelve.' },
-      { at: 64.8, en: 'Back inside, the walk is reviewed.', es: 'Ya adentro, se revisa la caminata.' },
+      { at: 5.2, en: 'With 30 min, the zone tightens.', es: 'Con 30 min, la zona se estrecha.' },
+      { at: 11.5, en: 'The crew\'s needs build the route.', es: 'Las necesidades del equipo arman la ruta.' },
+      { at: 23.5, en: 'Out through the airlock, with EV2.', es: 'Afuera por la esclusa, con EV2.' },
+      { at: 37.8, en: 'Radiation alert. EV2 turns home too.', es: 'Alerta de radiación. EV2 también vuelve.' },
+      { at: 63.8, en: 'Back inside, the walk is reviewed.', es: 'Ya adentro, se revisa la caminata.' },
     ],
   },
   {
