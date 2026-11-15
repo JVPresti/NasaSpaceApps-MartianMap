@@ -6,6 +6,7 @@
 // The colours repeat the terrain shader (src/engine/shaders.js, TERRAIN_FRAG) so a layer looks the same in both; radio
 // shadow and exposure are drawn here only (table-only layers, src/plan/layers.js).
 
+import { drawPositionMarker, markerState } from '../hud/positionMarker.js';
 import { SLOPE_LIMITS } from './layers.js';
 import { formatNumber, t, translateText } from '../i18n/index.js';
 import { rockAbundanceAt, sampleHeights } from '../sim/costGrid.js';
@@ -70,6 +71,24 @@ export function clampCrop(crop, tile) {
 /** World position to a share (0 to 100) of the map square, for an SVG with viewBox 0 0 100 100. */
 export function toMap(x, z, crop) {
   return [((x - crop.x0) / crop.size) * 100, ((z - crop.z0) / crop.size) * 100];
+}
+
+/**
+ * Draw the crew's position on the table map (MapPosition.jsx): the HUD's marker, dot, heading wedge and uncertainty
+ * ring, without its text label. Beside a stop the label covered the stop's name, and the stop list ("Here") and the
+ * HUD's NAV line already give the position and the fix.
+ * @param {CanvasRenderingContext2D} ctx a context whose transform maps CSS pixels
+ * @param {{ x: number, z: number, errorM?: number | null, headingDeg?: number | null } | null} position
+ * @param {{ x0: number, z0: number, size: number }} crop
+ * @param {{ w: number, h: number }} size the canvas in CSS pixels
+ * @returns {boolean} whether a marker was drawn
+ */
+export function drawMapPosition(ctx, position, crop, size) {
+  const toScreen = (x, z) => { const [u, v] = toMap(x, z, crop); return { x: (u / 100) * size.w, y: (v / 100) * size.h }; };
+  const marker = markerState(position, toScreen);
+  if (!marker) return false;
+  drawPositionMarker(ctx, marker, { label: false });
+  return true;
 }
 
 /**

@@ -16,7 +16,7 @@ import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import { formatMinutes } from '../hud/format.js';
 import { useInCabin } from '../hud/useInCabin.js';
 import { inCabin } from '../state/tableActions.js';
-import { findMarkers } from './markers.js';
+import { canPointFind, findMarkers } from './markers.js';
 import { formatNumber, t, translateText } from '../i18n/index.js';
 import '../hud/hud.css';
 import './finds.css';
@@ -79,7 +79,7 @@ function FindPointer({ engine, service }) {
       if (!hold) return;
       hold.frame = requestAnimationFrame(step);
       const s = useMissionStore.getState();
-      if (s.mission.paused || s.mode !== 'walk' || wristOwnsKeys()) { stop(); return; }
+      if (!canPointFind(s, { cabin: inCabin(engine), wrist: wristOwnsKeys() })) { stop(); return; }
       const now = performance.now(), aim = engine.aimGround(FIND_RANGE_M);
       if (!aim) { hold.anchor = null; hold.t0 = now; draw(0, 'none'); return; }   // sky or ground past 50 m
       if (!hold.anchor || Math.hypot(aim.x - hold.anchor.x, aim.z - hold.anchor.z) > FIND_STEADY_M) { hold.anchor = aim; hold.t0 = now; }
@@ -95,7 +95,7 @@ function FindPointer({ engine, service }) {
       if (e.code === 'Escape') { stop(); return; }
       if (e.code !== FIND_KEY || !plainKey(e) || hold) return;
       const s = useMissionStore.getState();
-      if (s.mode !== 'walk' || s.mission.paused || wristOwnsKeys()) return;
+      if (!canPointFind(s, { cabin: inCabin(engine), wrist: wristOwnsKeys() })) return;   // not in the cabin either (#244)
       const blocked = markBlocker(s.finds);
       if (blocked) { flash(blocked); return; }
       hold = { t0: performance.now(), anchor: null, frame: 0 };

@@ -119,6 +119,9 @@ function routeSnapshot(route) {
     reason: typeof route.reason === 'string' ? route.reason : null,
     shelterId: route.shelter?.id ?? null,
     waypointCount: Array.isArray(route.waypoints) ? route.waypoints.length : 0,
+    // The kind its writer gave this path (src/sim/routeUpdate.js), only while the path is still the one it was given
+    // for: the reason is shown text, in the interface language, so the kind must not be read from it (B2).
+    changeKind: route.changeKind && route.changeKind.path === route.path && typeof route.changeKind.kind === 'string' ? route.changeKind.kind : null,
   };
 }
 
@@ -250,10 +253,12 @@ function reasonMentionsAlert(reason, alerts) {
 
 /**
  * Classify a route change by its reason and the route it produced. The first real path is `initial`; later normal
- * re-plans are `replan`. `offroute`, `slope` and `event` follow the reason written by their runner or the shelter
- * set by the event re-planner.
+ * re-plans are `replan`. A kind the writer stored with the path (the slope detour, whose reason is translated) comes
+ * first; `offroute`, `slope` and `event` otherwise follow the reason written by their runner (English constants) or the
+ * shelter set by the event re-planner.
  */
 function routeChangeKind(reason, snapshot, hasInitialRoute, alerts) {
+  if (['offroute', 'slope', 'event'].includes(snapshot?.changeKind)) return snapshot.changeKind;
   const text = typeof reason === 'string' ? reason : '';
   if (/^Off route/i.test(text)) return 'offroute';
   if (/^Detour/i.test(text)) return 'slope';

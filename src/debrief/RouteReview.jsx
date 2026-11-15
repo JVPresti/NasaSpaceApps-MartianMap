@@ -215,6 +215,7 @@ export function RouteReviewView({ summary, review, selected, onSelect }) {
                   marks={marks}
                   focus={focus}
                   minSpanM={MAP_SPAN_M}
+                  flipTags={false}
                 />
               </div>
               {legend}

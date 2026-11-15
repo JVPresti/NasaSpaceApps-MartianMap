@@ -124,6 +124,24 @@ export function createOffRouteMonitor(options = {}) {
 }
 
 /**
+ * What an off-route re-plan leads to (D12): the shelter while the route home is set (route.shelter, kept after the
+ * alerts until the crew is at the habitat), else the waypoints still ahead, leaving out the stops a hazard skipped.
+ * Skipped stops come back only through Re-plan at the table.
+ * @param {{ waypoints?: Array<object>, nextIndex?: number, skipped?: string[], shelter?: object | null }} route
+ * @returns {Array<{ name?: string, x: number, z: number }>}
+ */
+export function offRouteTargets(route) {
+  const shelter = route?.shelter;
+  if (shelter && Number.isFinite(shelter.x) && Number.isFinite(shelter.z)) {
+    return [{ name: shelter.name ?? shelter.id ?? 'Shelter', x: shelter.x, z: shelter.z }];
+  }
+  const waypoints = Array.isArray(route?.waypoints) ? route.waypoints : [];
+  const nextIndex = Number.isInteger(route?.nextIndex) ? route.nextIndex : 0;
+  const skipped = new Set(Array.isArray(route?.skipped) ? route.skipped : []);
+  return waypoints.slice(nextIndex).filter((waypoint) => !skipped.has(waypoint?.name));
+}
+
+/**
  * Start the off-route watcher.
  *
  * `route.nextIndex` is the contract from #61: the first waypoint not visited
@@ -166,9 +184,7 @@ export function startOffRouteRunner({
       return;
     }
 
-    const waypoints = Array.isArray(state.route?.waypoints) ? state.route.waypoints : [];
-    const nextIndex = Number.isInteger(state.route?.nextIndex) ? state.route.nextIndex : 0;
-    const remaining = waypoints.slice(nextIndex);
+    const remaining = offRouteTargets(state.route);
     const eventActive = Object.values(state.alerts ?? {}).some((alert) => alert && alert.active);
     const decision = monitor.update({
       point,

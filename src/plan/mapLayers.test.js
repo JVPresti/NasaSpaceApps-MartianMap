@@ -6,7 +6,7 @@ import { setLanguage } from '../i18n/index.js';
 import { radioShadowMask } from '../sim/radio.js';
 import { LAYERS } from './layers.js';
 import {
-  LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, contourLine, layerColour, layerPlaces, mapCrop, marsColour, paintMap, sampleRed, slopeGrid, tagFlips,
+  LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, contourLine, drawMapPosition, layerColour, layerPlaces, mapCrop, marsColour, paintMap, sampleRed, slopeGrid, tagFlips,
   toMap, zoomCrop,
 } from './mapLayers.js';
 import { exposureText } from './routeExposure.js';
@@ -58,6 +58,20 @@ describe('mission table map', () => {
     const full = mapCrop(route, tile, { min: MAP_MIN_SPAN_M });
     expect(full.size).toBeGreaterThan(700);
     expect(full.size).toBeLessThanOrEqual(tile.width);
+  });
+
+  it('draws the crew position with its ring and no text label, so it never covers a stop name (A2)', () => {
+    const calls = [];
+    const ctx = new Proxy({}, {
+      get: (target, key) => (key in target ? target[key] : () => { calls.push(key); return { width: 40 }; }),
+      set: (target, key, value) => { target[key] = value; return true; },
+    });
+    const crop = { x0: 0, z0: 0, size: 100 };
+    const nav = { x: 50, z: 50, errorM: 1.5, headingDeg: 90, fixMode: 'dead reckoning' };
+    expect(drawMapPosition(ctx, nav, crop, { w: 400, h: 400 })).toBe(true);
+    expect(calls.filter((c) => c === 'arc').length).toBeGreaterThanOrEqual(2);   // the uncertainty ring and the dot
+    expect(calls).not.toContain('fillText');   // no "±1.5 m · dead reckoning" beside the stop
+    expect(drawMapPosition(ctx, { x: null, z: null }, crop, { w: 400, h: 400 })).toBe(false);
   });
 
   it('puts north up and east right', () => {

@@ -79,7 +79,7 @@ describe('route profiles panel (#245)', () => {
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Fastest/);
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Gentlest/);
     expect(html).toMatch(/<button[^>]*aria-pressed="true"[^>]*disabled=""[^>]*>Radio/);   // fixed, not a choice
-    expect(text(html)).toContain('A solo crew keeps radio contact.');
+    expect(text(html)).toContain('Solo: the route with the most radio contact.');
     // with no radio route (the mast not loaded yet) a solo crew may still choose
     mock.patch = (state) => ({ ...state, needs: { ...state.needs, crew: 1 } });
     expect(render().match(/disabled=""/g)).toHaveLength(1);

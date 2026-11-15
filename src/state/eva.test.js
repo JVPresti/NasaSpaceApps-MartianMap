@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createEventEngine } from '../sim/eventEngine.js';
 import exampleEvent from '../sim/events/example-event.json';
+import { catalogs } from '../i18n/index.js';
 import { reviewRoute } from '../sim/routeReview.js';
+import { applyPlannedRoute } from '../sim/routeUpdate.js';
 import { continueEva, recordEvaEvent, requestEvaEnd, samePath, startEvaRunner, TRACK_STEP_M } from './eva.js';
 import { resetStore, storeAdapter, useMissionStore } from './store.js';
 
@@ -457,6 +459,52 @@ describe('route review inputs (#274)', () => {
     useMissionStore.setState((state) => ({ route: { ...state.route, legs: ROUTE.legs, totals: ROUTE.totals } }));
     expect(eva().plan.legs).toHaveLength(2);
     expect(eva().plan.totals).toMatchObject({ timeSec: 500, walkSec: 200 });
+  });
+
+  it('classifies the slope detour by the kind its writer stored, with the reason in English or Spanish (B2)', () => {
+    for (const lang of ['en', 'es']) {
+      resetStore();
+      mode('walk');
+      setRoute();
+      place(HAB.x, HAB.z);
+      const runner = runnerAt();
+      const reason = catalogs[lang]['ui.detour.steeper.than.p0.ahead'].replace('{p0}', '20');
+      applyPlannedRoute(useMissionStore, { ok: true, path: [[HAB.x, HAB.z], [HAB.x - 50, HAB.z + 30]], distance: 58, climb: 0, steepestSlopeDeg: 9 }, { reason, kind: 'slope' });
+      expect(eva().routeChanges.map((c) => c.kind), lang).toEqual(['initial', 'slope']);
+      expect(eva().routeChanges[1].reason).toBe(reason);
+      // A later route from a writer that sets no kind (an event's route to a shelter) does not inherit 'slope'.
+      useMissionStore.setState((state) => ({ route: { ...state.route, path: [[HAB.x - 50, HAB.z + 30], [HAB.x, HAB.z]], reason: 'Dust storm: opacity rising. Return to the habitat. (dust-storm)', shelter: { id: 'HAB', x: HAB.x, z: HAB.z } } }));
+      expect(eva().routeChanges.map((c) => c.kind), lang).toEqual(['initial', 'slope', 'event']);
+      runner.stop();
+      runners.splice(runners.indexOf(runner), 1);
+    }
+  });
+
+  it('judges a walk along the system slope detour forced in English and in Spanish (B2)', () => {
+    const verdicts = {};
+    for (const lang of ['en', 'es']) {
+      resetStore();
+      mode('walk');
+      setRoute();
+      place(HAB.x, HAB.z);
+      mission(0);
+      suit({ marginSec: 3000, oxygenG: 600 });
+      slope(5);
+      const runner = runnerAt();
+      walkTo(runner, HAB.x - 40, HAB.z);
+      // The system's slope detour from where the crew stands, then the walk follows it 30 m off the plan and back.
+      const detour = [[HAB.x - 40, HAB.z], [HAB.x - 60, HAB.z + 30], [HAB.x - 120, HAB.z + 30], [HAB.x - 160, HAB.z], [HAB.x - 200, HAB.z]];
+      const reason = catalogs[lang]['ui.detour.steeper.than.p0.ahead'].replace('{p0}', '20');
+      applyPlannedRoute(useMissionStore, { ok: true, path: detour, distance: 230, climb: 0, steepestSlopeDeg: 12 }, { reason, kind: 'slope' });
+      for (const [x, z] of detour.slice(1)) walkTo(runner, x, z);
+      const e = eva();
+      const review = reviewRoute({ track: e.track, plan: e.plan, routeChanges: e.routeChanges, finds: [], samples: [] });
+      verdicts[lang] = review.deviations.map((d) => [d.verdict, d.reason.code, d.reason.kind]);
+      runner.stop();
+      runners.splice(runners.indexOf(runner), 1);
+    }
+    expect(verdicts.en).toEqual([['forced', 'replan', 'slope']]);
+    expect(verdicts.es).toEqual(verdicts.en);
   });
 
   it('records where each route change happened', () => {
