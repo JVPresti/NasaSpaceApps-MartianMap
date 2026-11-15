@@ -1,9 +1,18 @@
 /* Partner chip and detail (#70), under the suit panel on the left. Uses the variables of .hud (hud.css):
    --u, --ink, --dim, --unit, --glass, --edge, --ok, --caution, --warning. --partner is the partner's suit colour. */
-.hud-partner {
-  --partner: #ff9a3c;
+/* One section per crew entry (#53): the scripted partner, or up to three remote players, stacked. */
+.hud-partners {
   position: absolute; left: 7.8vw; top: calc(27vh + var(--u) * 20); width: calc(var(--u) * 14.5);
   display: flex; flex-direction: column; gap: 0.45em;
+}
+.hud-partner {
+  --partner: #ff9a3c;
+  display: flex; flex-direction: column; gap: 0.45em;
+}
+/* "Offline: playing solo" (#53, plan section 9.7): the room gave up, the scripted partner is back. */
+.hud-online-notice {
+  padding: 0.3em 0.9em; border-radius: 0.55em; white-space: nowrap; font-size: 0.85em;
+  color: var(--caution); border-left: 0.28em solid var(--caution);
 }
 
 .hud-partner-chip {

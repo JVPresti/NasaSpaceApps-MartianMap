@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import * as SH from './shaders.js';
 import { CASE_CLIP } from './partnerSource.js';
+import { createPartnerSlots } from './partnerSlots.js';
 
 export function createPartner(ctx) {
   const { scene, U, assets, sys, view } = ctx;
@@ -25,8 +26,11 @@ export function createPartner(ctx) {
     return world;
   }
 
+  const slots = createPartnerSlots();
   const partner = {
-    source: null, state: null,
+    slots, state: null,
+    /** The source drawn now: the first of setSources, else the base source (partnerSlots.js). */
+    get source() { return slots.main(); },
     // read by props (case in hand, lid), habitat (hatch opens for a walker), legs (shared model) and view (collision)
     root: null, carrying: true, bending: false, wantCarry: true, blob: null, gltf: null, map: null, accent: null,
     mixer: null, acts: {}, bend: null, glow: null, stoop: 0, nw: 1, bendW: 0,
@@ -34,9 +38,17 @@ export function createPartner(ctx) {
 
     /** @param {object | null} source a partner source; null hides the partner */
     setSource(source) {
-      this.source = source;
-      if (source && source.color) this.uPlayer.value.set(...source.color);
+      slots.setBase(source);
+      this.tint();
     },
+    /** @param {object[]} sources remote partners that replace the base source while the list is not empty */
+    setSources(sources) {
+      slots.setList(sources);
+      this.tint();
+    },
+    tint() { const s = slots.main(); if (s && s.color) this.uPlayer.value.set(...s.color); },
+    /** What a source sees of the world, refreshed: shared with the extra suits (extraPartners.js). */
+    world: () => refreshWorld(),
     /** Forwards a scripted command ('toggleCase', 'visitHabitat') to the source, if it supports commands. */
     command(name) {
       return !!(this.source && typeof this.source.command === 'function' && this.source.command(name, refreshWorld()));

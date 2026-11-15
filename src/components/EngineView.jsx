@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { createEngine } from '../engine/index.js';
 import { pauseMission, useMissionStore } from '../state/store.js';
 import { connectEngine } from '../state/engineBridge.js';
+import { clearCurrentEngine, setCurrentEngine } from '../state/currentEngine.js';
 import { connectSampling } from '../state/sampling.js';
 import { connectSlopeGridKey } from '../state/slopeGrid.js';
 import { connectHabitatScreens } from '../state/habitatScreens.js';
@@ -91,6 +92,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
         disconnectHabitatScreens = connectHabitatScreens(engine);   // the habitat's wall screens and planning table (#47)
         disconnectAudio = connectAudio(engine);   // suit audio (#72): starts on the first click or key press
         startCurrentSimulation();
+        setCurrentEngine(engine);   // online play reads the pose and draws remote suits through it (#53)
         pauseMission();   // the start screen is a real pause, including ?mock=1 where nothing starts
         callbacks.current.onEngine?.(engine, {
           stopSimulation: stopCurrentSimulation,
@@ -108,6 +110,7 @@ export default function EngineView({ onStatus, onProgress, onReady, onError, onL
         engineRef.current = null;
         callbacks.current.onEngine?.(null);
       }
+      clearCurrentEngine(engine);
       stopCurrentSimulation();
       if (disconnect) disconnect();
       if (disconnectSampling) disconnectSampling();

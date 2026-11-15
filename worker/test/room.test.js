@@ -193,7 +193,7 @@ describe('start and t', () => {
   });
 
   it('has a handler map for later pieces to extend', () => {
-    expect(Object.keys(HANDLERS)).toEqual(expect.arrayContaining(['start', 't', 'mk', 'smp', 'case']));
+    expect(Object.keys(HANDLERS)).toEqual(expect.arrayContaining(['p', 'tel', 'start', 't', 'mk', 'smp', 'case']));
   });
 });
 

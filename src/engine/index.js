@@ -12,6 +12,7 @@ import { subscribeLanguage } from '../i18n/index.js';
 //   engine.setQuality('auto' | 'high' | 'low'); engine.getQuality(); engine.resetSession();
 //   engine.subscribeTouch(listener); engine.subscribeGamepad(listener);   // UI hints for touch and gamepad (#103)
 //   engine.heightAt(x, z); engine.slopeAt(x, z); engine.lineOfSight(a, b); engine.getPlayer();
+//   engine.setPartnerSource(source); engine.setPartnerSources([...]); engine.getPartner(); engine.getPartners();
 //   // wrist screen app (#67), wrist.js: the interface draws the canvas, the engine shows it on the arm
 //   engine.setWristScreen(canvas | null); engine.invalidateWristScreen(); engine.setWristOpen(true | false);
 //   engine.setWristPointer({ x, y, pressed }); engine.getWristState(); engine.getOrthoImage();
@@ -43,6 +44,7 @@ import { createRocks, buildCheyava, buildOutcrop } from './rocks.js';
 import { createRoute } from './route.js';
 import { createCast } from './cast.js';
 import { createPartner } from './partner.js';
+import { createExtraPartners } from './extraPartners.js';
 import { createScriptedPartner } from './partnerSource.js';
 import { CREW } from './crew.js';
 import { createLegs } from './legs.js';
@@ -208,7 +210,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     camera.getWorldDirection(U.uCamDir.value);
     const eyeMode = ctx.view.mode === 'eye';
     if (sys.arms.L) sys.arms.L.g.visible = sys.arms.R.g.visible = eyeMode;   // first-person arms only in Walk
-    U.uTime.value += dt; sys.partner.update(dt); sys.arms.update(dt); sys.legs.update(dt, eyeMode ? ctx.view.moveSpeed : 0); sys.props.update(dt); sys.habitat.update(dt);
+    U.uTime.value += dt; sys.partner.update(dt); sys.extraPartners.update(dt); sys.arms.update(dt); sys.legs.update(dt, eyeMode ? ctx.view.moveSpeed : 0); sys.props.update(dt); sys.habitat.update(dt);
     sys.sampling.update(dt);   // after props: follows the clip and the scoop content (#36)
     sys.sampleDust.update(dt);   // after sampling: the puff and the scrape when the scoop reaches the ground (#50)
     sys.slopeGrid.update(dt);
@@ -259,7 +261,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     // subsystems: created now (terrain data is known), loaded below in the bench's order
     ctx.terrain = createTerrain(ctx);
     sys.rocks = createRocks(ctx); sys.route = createRoute(ctx); sys.cast = createCast(ctx);
-    sys.partner = createPartner(ctx); sys.arms = createArms(ctx); sys.legs = createLegs(ctx); sys.props = createProps(ctx); sys.habitat = createHabitat(ctx);
+    sys.partner = createPartner(ctx); sys.extraPartners = createExtraPartners(ctx); sys.arms = createArms(ctx); sys.legs = createLegs(ctx); sys.props = createProps(ctx); sys.habitat = createHabitat(ctx);
     sys.arms.setScreenCanvas(pending.wristScreen);   // the app's canvas may have arrived before boot reached the arms
     viewCtl = createView(ctx, canvas, signal, {
       inputEnabled,
@@ -771,6 +773,29 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       return p && p.source ? { id: p.source.id, color: p.source.color, state: p.state } : null;
     },
     /**
+     * Several partners (#53, docs/PARTNER.md): sources that replace the base source while the list is not empty,
+     * at most 3. The first drives the full partner, the others an extra suit each in their colour. [] brings the
+     * base source (the scripted partner) back. setPartnerSource keeps setting the base. Available once ready.
+     * @param {object[]} sources
+     */
+    setPartnerSources(sources) {
+      if (!sys.partner) throw new Error('engine is not ready: wait for engine.ready');
+      sys.partner.setSources(sources);
+    },
+    /**
+     * Every partner drawn on the last frame: [{ id, name, color, state, radio }], the full partner first. radio is
+     * what the source reports over the radio (source.radio(), docs/PARTNER.md), or null. Read by the partner runner.
+     */
+    getPartners() {
+      const p = sys.partner;
+      if (!p || !p.source) return [];
+      const describe = (source, state) => ({
+        id: source.id, name: source.name ?? source.id, color: source.color, state,
+        radio: typeof source.radio === 'function' ? source.radio() : null,
+      });
+      return [describe(p.source, p.state), ...sys.extraPartners.list().map((e) => describe(e.source, e.state))];
+    },
+    /**
      * Sampling (sampling.js, #36): what the crosshair is on, the clip phase, the partner's case and what each input does now.
      * Plain data for the store bridge; null before the scene is ready.
      */
@@ -788,7 +813,8 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
     getPlayer() {
       const v = ctx.view, deg = ((v.yaw * 180 / Math.PI) % 360 + 360) % 360;
       const zone = sys.habitat && sys.habitat.zone(v.eye.x, v.eye.z);   // habitat walk zone under the player (collide.js), for the suit audio (#72)
-      return { x: v.eye.x, z: v.eye.z, headingDeg: deg, mode: v.mode === 'eye' ? 'walk' : 'plan', habitatZone: zone ? zone.n : null };
+      // pitch (radians) and moveSpeed (m/s) are for the online pose (#53)
+      return { x: v.eye.x, z: v.eye.z, headingDeg: deg, pitch: v.pitch, moveSpeed: v.moveSpeed, mode: v.mode === 'eye' ? 'walk' : 'plan', habitatZone: zone ? zone.n : null };
     },
     dispose() {
       if (!alive) return;
@@ -828,6 +854,7 @@ export function createEngine(container, { assetBase, mode = 'plan', tier = null,
       if (sys.radioShadow) sys.radioShadow.dispose();
       if (ctx.terrain && ctx.terrain.shadowTex) ctx.terrain.shadowTex.dispose();
       for (const s of [sys.partner, sys.legs]) if (s && s.mixer) s.mixer.stopAllAction();
+      if (sys.extraPartners) sys.extraPartners.dispose();
       renderer.dispose(); renderer.forceContextLoss();
       canvas.remove();
     },
