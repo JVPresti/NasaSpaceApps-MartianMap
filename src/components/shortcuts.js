@@ -1,5 +1,5 @@
 import { LAYERS } from '../plan/layers.js';
-import { setLayer, setMode, useMissionStore } from '../state/store.js';
+import { setLayer, setMode, setVisorFrame, useMissionStore } from '../state/store.js';
 import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 
 /**
@@ -35,6 +35,10 @@ export function handleShortcut(event, { onMode = setMode } = {}) {
       break;
     case 'KeyL':
       cycleLayer(event.shiftKey ? -1 : 1);
+      break;
+    case 'KeyV':
+      if (state.mode !== 'walk') return;   // the visor frame only shows in Walk (#28)
+      setVisorFrame();
       break;
     case 'Digit0':
     case 'Numpad0':

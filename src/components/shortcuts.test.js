@@ -127,3 +127,25 @@ describe('mission keyboard shortcuts', () => {
     }
   });
 });
+
+describe('visor frame shortcut (#28)', () => {
+  it('V turns the visor frame off and on in Walk', () => {
+    setMode('walk');
+    expect(useMissionStore.getState().settings.visorFrame).toBe(true);
+    expect(press('KeyV').preventDefault).toHaveBeenCalledOnce();
+    expect(useMissionStore.getState().settings.visorFrame).toBe(false);
+    press('KeyV');
+    expect(useMissionStore.getState().settings.visorFrame).toBe(true);
+  });
+
+  it('V does nothing at the mission table, and the choice survives a restart', () => {
+    setMode('plan');
+    expect(press('KeyV').preventDefault).not.toHaveBeenCalled();
+    expect(useMissionStore.getState().settings.visorFrame).toBe(true);
+    setMode('walk');
+    press('KeyV');
+    resetStore();
+    expect(useMissionStore.getState().settings.visorFrame).toBe(false);
+    press('KeyV');   // settings outlive resetStore, so leave the frame on for later tests
+  });
+});
