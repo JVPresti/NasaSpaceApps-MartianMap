@@ -452,6 +452,7 @@
   "menu.walk.to.cheyava.falls.and.sample.the.science": "Camina hasta Cheyava Falls y toma una muestra del objetivo científico en Neretva Vallis, en el fondo del cráter Jezero. Planifica la ruta en el hábitat y luego cambia a Modo Caminar: la EVA empieza en la esclusa, a 785 m de la roca en línea recta.",
   "menu.start.position.sim.the.foot.of.the.habitat": "Posición inicial SIM: el pie de los escalones de la esclusa del hábitat, x 535 m al este, z 574 m al sur de Cheyava Falls (entrada HAB en shelters.json). Sitio 18.4975 N, 77.3053 E (DATA: punto de ruta de Mars 2020 Perseverance, sol 1210).",
   "menu.opening": "Abriendo…",
+  "menu.loading.scene": "Cargando la escena… {p0} %",
   "menu.start.in.plan.view": "Empezar en Modo Plan",
   "menu.start.eva": "Iniciar EVA",
   "menu.plan.view.resumes.without.capturing.the.mouse.the": "Modo Plan continúa sin capturar el ratón. El reloj de misión y el traje siguen en pausa detrás de esta pantalla.",
