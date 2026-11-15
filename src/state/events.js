@@ -104,7 +104,7 @@ function loadPlanner() {
 
 // `shelter` is the shelters.json entry the planner chose. The waypoint runner, the HUD and the engine highlight all
 // target it while it is set; the event's end clears it (endEventRoute below).
-function writeRoute(store, result, reason, shelter = null) {
+export function writeRoute(store, result, reason, shelter = null) {
   store.setState((state) => {
     if (!result.ok) {
       return {
@@ -112,8 +112,11 @@ function writeRoute(store, result, reason, shelter = null) {
       };
     }
     const targetName = result.target?.name;
+    // The stops the shelter route leaves out: not the target, not the habitat, and not a stop already reached (#265: the
+    // first mission's storm starts after the crew has been at its only stop, which is visited, not skipped).
+    const visited = new Set(Array.isArray(state.route.visited) ? state.route.visited : []);
     const skipped = state.route.waypoints
-      .filter((waypoint) => waypoint.name !== targetName && waypoint.name !== 'HAB')
+      .filter((waypoint) => waypoint.name !== targetName && waypoint.name !== 'HAB' && !visited.has(waypoint.name))
       .map((waypoint) => waypoint.name);
     return {
       route: {

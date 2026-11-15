@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { recordEvaEvent } from './eva.js';
-import { eventEnvironmentSources, listEvents, startEventRunner } from './events.js';
+import { eventEnvironmentSources, listEvents, startEventRunner, writeRoute } from './events.js';
 import { resetStore, setMode, setNeeds, useMissionStore } from './store.js';
 import { provenance } from '../data/provenance.js';
 import { MISSION_SOURCES } from '../sim/missions.js';
@@ -174,5 +174,19 @@ describe('event runner missions (#265)', () => {
     for (const path of Object.keys(MISSION_SOURCES)) expect(provenance.lookup(path)?.tag).toBe('SIM');
     expect(eventEnvironmentSources('first')['environment.dustOpacity'].source).toMatch(/30 s \(SIM\)/);
     expect(eventEnvironmentSources('full')['environment.dustOpacity'].source).not.toMatch(/first mission/);
+  });
+});
+
+describe('event route', () => {
+  it('lists as skipped only the stops not reached yet', () => {
+    useMissionStore.setState((state) => ({
+      route: {
+        ...state.route,
+        waypoints: [{ name: 'HAB', x: 0, z: 0 }, { name: 'S1', x: 1, z: 1 }, { name: 'S2', x: 2, z: 2 }],
+        visited: ['HAB', 'S1'],
+      },
+    }));
+    writeRoute(useMissionStore, { ok: true, path: [[2, 2], [0, 0]], distance: 3, climb: 0, steepestSlopeDeg: 1, target: { id: 'HAB', name: 'Habitat' } }, 'storm');
+    expect(useMissionStore.getState().route.skipped).toEqual(['S2']);
   });
 });
