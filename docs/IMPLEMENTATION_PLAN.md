@@ -519,7 +519,7 @@ JSON with short keys, all on one socket. Sizes are the JSON text before WebSocke
 | Type | Direction | Contents | Size | Rate |
 | --- | --- | --- | :--: | --- |
 | `hello` | client to room | name, role, preferred colour | ~80 B | Once per connection |
-| `welcome` | room to client | your player ID and colour, crew list, `started_at`, seed, server time, markers, samples, case holder, last route | 0.3 to 3 KB | Once per connection |
+| `welcome` | room to client | your player ID and colour, crew list, `started_at`, seed, server time, markers, samples, case holder, last route and last go or no-go call from the habitat (`route: { pts, by, at }`, `go: { go, why, by, at }`, or null) | 0.3 KB in a new room, about 3.3 KB with a 200-point route; each marker adds about 0.12 KB | Once per connection |
 | `crew` | room to all | join or leave, with the crew entry | ~90 B | On change |
 | `p` (pose) | client to room to others | x, z, heading, pitch, animation, hand pose, client time. The room adds the sender's ID. | ~70 B in, ~80 B out | Only on change, at most 10 per second |
 | `tel` | client to room to others | oxygen, battery | ~40 B | Every 5 s |

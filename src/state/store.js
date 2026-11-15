@@ -19,7 +19,7 @@ export function createInitialState() {
     },
     suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
     navigation: { x: null, z: null, trueX: null, trueZ: null, headingDeg: null, slopeDeg: null, waypointRangeM: null, waypointBearingDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // x/z: the estimate the HUD shows (#42); trueX/trueZ: the true position, engine bridge only
-    route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [] },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js
+    route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [], origin: null },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js; origin: { kind: 'habitat', by, at } for a route the habitat seat sent (#55)
     environment: { dustOpacity: 0, tempC: null, windMs: null, pressurePa: null, doseRateUgyH: null, doseUgy: null },
     // Active hazard areas for the minimap (#60): [{ id, x, z, radiusM, active }], metres. Empty means
     // "no zone known", not "safe". No writer yet; the event work (#24-#26) fills it. The minimap draws
@@ -52,6 +52,12 @@ export function createInitialState() {
     // this player's unsent ones (pending: true, id null); samples: { [sampleId]: { by, at, pending? } }; caseHolder: player id
     // or null; notice: { key: 'sample-taken' | 'case-held', by, seq, atMs } for a few seconds; findCids: { [find id]: cid }.
     shared: { markers: [], samples: {}, caseHolder: null, notice: null, findCids: {} },
+    // #55, written only by src/net/habitat.js. These defaults mean offline. route: the room's last route from the habitat
+    // { path: [[x, z]] metres, by, at }; go: the last call { go, why, by, at }; notice: { key: 'route' | 'go' | 'no-go', by,
+    // name, seq, atMs } for the visor, for a few seconds; sent: { route, go } null | 'pending' | 'confirmed' for this
+    // habitat seat's last send; crew: the habitat seat's map, [{ id, name, color, x, z, link, lastKnown, heardAtMs,
+    // rangeM, oxygenPct, batteryPct }].
+    habitat: { route: null, go: null, notice: null, sent: { route: null, go: null }, crew: [] },
   };
 }
 

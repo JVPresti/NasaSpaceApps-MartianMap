@@ -19,6 +19,7 @@ import Minimap from './Minimap.jsx';
 import './hud.css';
 import { SamplingChecklist, SamplingCrosshair } from './SamplingPanel.jsx';
 import PartnerPanel from './PartnerPanel.jsx';
+import HabitatCalls from '../online/HabitatCalls.jsx';
 
 // Shared source tag (#62). The HUD never takes the pointer, so the tag shows its tag text only and puts the full
 // source in the title and the screen reader text.
@@ -273,6 +274,7 @@ export default function Hud({ engine, minimapRoute }) {
       <Clocks />
       <SuitPanel />
       <PartnerPanel />
+      <HabitatCalls />
       <LayerChip />
       {/* One flex column on the right (#191): each panel sits under the one above, so none can cover another. */}
       <div className="hud-right">

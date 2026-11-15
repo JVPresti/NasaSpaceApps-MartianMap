@@ -1,5 +1,6 @@
 /* Online play (#52): the join panel on the start screen, the Crew tab of the mission table and the Walk room badge.
-   Same tokens as the rest of the interface (src/index.css): square corners, one orange main action, sentence case. */
+   Same tokens as the rest of the interface (src/index.css): square corners, one orange main action, sentence case.
+   The habitat seat (#55) adds the crew layer on the table map, the seat's panels and the calls on the visor. */
 
 /* ------------------------------------------------------------------ join panel */
 
@@ -43,6 +44,7 @@
   border-radius: 0;
 }
 
+.online-field input:disabled { opacity: 0.5; }
 .online-field input:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .online-field .online-code-input { width: 8ch; font: 500 24px/1 var(--font-mono); letter-spacing: 0.18em; text-transform: uppercase; }
 
@@ -126,3 +128,142 @@
 }
 
 .room-badge code { font: 500 14px/1 var(--font-mono); letter-spacing: 0.1em; color: var(--ink); }
+
+/* ---------------------------------------------------------------- map layer */
+
+.online-map-sent { pointer-events: none; }
+.online-map-sent polyline {
+  fill: none;
+  stroke: var(--cyan);
+  stroke-width: 0.45;
+  stroke-dasharray: 1.4 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.9;
+}
+
+.online-map-crew,
+.online-map-notes {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+.online-map-suit,
+.online-map-note {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transform: translate(-7px, -50%);
+  white-space: nowrap;
+}
+
+.online-map-suit i {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background: var(--c);
+  border: 2px solid #0a0d11;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--c), 0 0 10px rgba(0, 0, 0, 0.6);
+}
+
+.online-map-suit span,
+.online-map-note span {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 6px;
+  font: 600 12px/1.2 var(--font-ui);
+  color: var(--ink);
+  background: rgba(10, 13, 17, 0.82);
+  border-left: 2px solid var(--c);
+}
+
+.online-map-suit small { font-weight: 500; color: var(--dim); }
+.online-map-suit.last-known i { border-style: dashed; box-shadow: 0 0 0 1px var(--c); }
+.online-map-suit.last-known span { color: var(--dim); }
+
+.online-map-note { transform: translate(-6px, -50%); }
+.online-map-note i {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  background: var(--c);
+  transform: rotate(45deg);
+  outline: 2px solid #0a0d11;
+}
+.online-map-note.kind-go i { background: var(--ok); }
+.online-map-note span { font-weight: 500; }
+
+.online-map-pick {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 2px dashed var(--accent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- habitat seat panels */
+
+.habitat-crew ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+
+.habitat-crew li {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.habitat-crew li > i { width: 12px; height: 12px; background: var(--c); border-radius: 50%; }
+.habitat-crew li.last-known > i { background: none; border: 2px dashed var(--dim); }
+.habitat-crew-who { display: grid; gap: 2px; min-width: 0; }
+.habitat-crew-who b { font: 600 16px/1.2 var(--font-ui); overflow: hidden; text-overflow: ellipsis; }
+.habitat-crew-who small { font-size: 13px; color: var(--dim); }
+
+.habitat-crew dl { display: flex; gap: 14px; margin: 0; }
+.habitat-crew dl div { display: grid; justify-items: end; }
+.habitat-crew dt { font-size: 12px; color: var(--dim); }
+.habitat-crew dd { margin: 0; font: 600 18px/1.1 var(--font-num); font-variant-numeric: tabular-nums; }
+.habitat-crew dd small { margin-left: 1px; font-size: 12px; font-weight: 500; color: var(--unit); }
+
+.online-go .online-field,
+.online-note .online-field { margin-bottom: 10px; }
+.online-go-yes { border-color: var(--ok); }
+.online-go-no { border-color: var(--warning); }
+.online-note .table-secondary:disabled { opacity: 0.45; cursor: not-allowed; }
+.online-note-where { margin: 0 0 10px; }
+
+/* ---------------------------------------------------------------- visor */
+
+.online-visor-notice,
+.online-visor-call {
+  position: absolute;
+  top: 150px;
+  left: 50%;
+  z-index: 6;
+  max-width: min(560px, calc(100% - 28px));
+  padding: 10px 16px;
+  transform: translateX(-50%);
+  color: var(--ink);
+  background: rgba(10, 13, 17, 0.9);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--cyan);
+  border-radius: var(--radius-m);
+  pointer-events: none;
+}
+
+.online-visor-notice { font: 600 16px/1.3 var(--font-ui); }
+
+.online-visor-call { display: grid; gap: 4px; }
+.online-visor-call b { font: 600 22px/1.1 var(--font-display); }
+.online-visor-call span { font-size: 15px; color: var(--text-2, var(--ink)); }
+.online-visor-call.is-go { border-left-color: var(--ok); }
+.online-visor-call.is-go b { color: var(--ok); }
+.online-visor-call.is-no-go { border-left-color: var(--warning); }
+.online-visor-call.is-no-go b { color: var(--warning); }

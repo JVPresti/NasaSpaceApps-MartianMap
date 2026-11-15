@@ -69,13 +69,23 @@ describe('validators', () => {
   });
 
   it('welcome and crew', () => {
-    const welcome = { type: 'welcome', you: { id: 'a1', color: 0, role: 'surface' }, crew: [entry], startedAt: null, seed: null, now: 5, markers: [], samples: [], caseHolder: null, route: null };
+    const welcome = { type: 'welcome', you: { id: 'a1', color: 0, role: 'surface' }, crew: [entry], startedAt: null, seed: null, now: 5, markers: [], samples: [], caseHolder: null, route: null, go: null };
     expect(validate(welcome)).toEqual(welcome);
+    expect(validate({ ...welcome, go: undefined })).toEqual(welcome);
     expect(validate({ ...welcome, seed: -1 })).toBeNull();
     expect(validate({ ...welcome, crew: [{ ...entry, color: null }] })).toBeNull();
     expect(validate({ type: 'crew', op: 'join', p: entry })).toEqual({ type: 'crew', op: 'join', p: entry });
     expect(validate({ type: 'crew', op: 'leave', p: { ...entry, role: 'habitat', color: null } })).not.toBeNull();
     expect(validate({ type: 'crew', op: 'kick', p: entry })).toBeNull();
+  });
+
+  it('welcome carries the last route and go or no-go call (#55), and drops a bad one without refusing the welcome', () => {
+    const base = { type: 'welcome', you: { id: 'a1', color: 0, role: 'surface' }, crew: [entry], startedAt: null, seed: null, now: 5, markers: [], samples: [], caseHolder: null };
+    const route = { pts: [[10, 20], [30, -40]], by: 'h1', at: 7 };
+    const go = { go: false, why: 'Dust rising', by: 'h1', at: 8 };
+    expect(validate({ ...base, route, go })).toMatchObject({ route, go });
+    expect(validate({ ...base, route: { ...route, pts: [[1.5, 2]] }, go: { ...go, go: 'no' } })).toMatchObject({ route: null, go: null });
+    expect(validate({ ...base, route: { pts: route.pts }, go: { go: true } })).toMatchObject({ route: null, go: null });
   });
 
   it('start and t, both directions', () => {

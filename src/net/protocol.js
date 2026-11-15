@@ -181,6 +181,7 @@ const copyOptional = (out, msg, keys) => { for (const k of keys) if (msg[k] !== 
 const isRoutePoint = (pt) => Array.isArray(pt) && pt.length === 2 && isInt(pt[0], -1e6, 1e6) && isInt(pt[1], -1e6, 1e6);
 const isPoseField = (v) => isInt(v, 0, 255) || isStr(v, 16);
 const isBit = (v) => v === 0 || v === 1;
+const stripType = ({ type: _type, ...rest }) => rest;
 
 /**
  * One validator per message type, used by both sides. Each takes a decoded message and returns a copy with
@@ -196,17 +197,23 @@ export const VALIDATORS = Object.freeze({
     if (isColor(m.color)) out.color = m.color;
     return out;
   },
+  // welcome.route { pts, by, at } and welcome.go { go, why, by, at } (#55): the habitat seat's last route and last call,
+  // stored in the room's meta table, or null. Their fields are those of the rt and go broadcasts.
   [MSG.WELCOME](m) {
     const you = m.you;
     if (!you || !isId(you.id) || !isRole(you.role) || !isNullable(you.color, isColor)) return null;
     if (!Array.isArray(m.crew) || !m.crew.every(isCrewEntry)) return null;
     if (!isNullable(m.startedAt, isTime) || !isNullable(m.seed, isUint32) || !isTime(m.now)) return null;
     if (!Array.isArray(m.markers) || !Array.isArray(m.samples)) return null;
-    if (!isNullable(m.caseHolder, isId) || !isNullable(m.route, Array.isArray)) return null;
+    if (!isNullable(m.caseHolder, isId)) return null;
+    // route and go (#55): the habitat seat's last route and last call, or null. A bad one is dropped, not the welcome.
+    const route = m.route ? VALIDATORS[MSG.ROUTE]({ ...m.route, type: MSG.ROUTE }) : null;
+    const go = m.go ? VALIDATORS[MSG.GO]({ ...m.go, type: MSG.GO }) : null;
     return {
       type: MSG.WELCOME, you: { id: you.id, color: you.color, role: you.role }, crew: m.crew.map(pickCrewEntry),
       startedAt: m.startedAt, seed: m.seed, now: m.now, markers: m.markers, samples: m.samples,
-      caseHolder: m.caseHolder, route: m.route,
+      caseHolder: m.caseHolder, route: route && route.by && route.at !== undefined ? stripType(route) : null,
+      go: go && go.by && go.at !== undefined ? stripType(go) : null,
     };
   },
   [MSG.CREW](m) {

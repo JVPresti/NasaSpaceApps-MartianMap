@@ -12,6 +12,7 @@ import {
 import { createTokenBucket } from '../src/net/rateLimit.js';
 import { POSE_HANDLERS } from './handlers/poses.js';
 import { SHARED_HANDLERS, releaseCaseOf, sharedWelcome } from './handlers/shared.js';
+import { HABITAT_HANDLERS, habitatWelcome } from './handlers/habitat.js';
 
 const SCHEMA = [
   'CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)',
@@ -26,8 +27,8 @@ function randomUint32() {
 /**
  * Handlers for seated sockets, by message type. Each gets (room, ws, msg, me, now) where msg has passed the
  * protocol validator and me is the sender's crew entry. M2 `p` and `tel` (relay to the others with the sender's id)
- * are in handlers/poses.js, M3 `mk`, `smp` and `case` (SQLite, then broadcast) in handlers/shared.js. M4 adds `rt`
- * and `go`. A type without a handler is ignored.
+ * are in handlers/poses.js, M3 `mk`, `smp` and `case` (SQLite, then broadcast) in handlers/shared.js, M4 `rt` and `go`
+ * from the habitat seat in handlers/habitat.js. A type without a handler is ignored.
  */
 export const HANDLERS = {
   ...POSE_HANDLERS,
@@ -38,6 +39,7 @@ export const HANDLERS = {
     room.sendTo(ws, { type: MSG.TIME, c: msg.c, s: now });
   },
   ...SHARED_HANDLERS,
+  ...HABITAT_HANDLERS,
 };
 
 export class Room extends DurableObject {
@@ -209,7 +211,7 @@ export class Room extends DurableObject {
     const { startedAt, seed } = this.mission();
     this.sendTo(ws, {
       type: MSG.WELCOME, you: { id: entry.id, color, role: entry.role }, crew: this.crew(),
-      startedAt, seed, now, ...sharedWelcome(this), route: null,
+      startedAt, seed, now, ...sharedWelcome(this), ...habitatWelcome(this),
     });
     this.broadcast({ type: MSG.CREW, op: 'join', p: entry }, ws);
   }

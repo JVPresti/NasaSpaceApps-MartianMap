@@ -30,5 +30,5 @@ export function createSocketFactory() {
 export const welcomeFor = (id, extra = {}) => ({
   type: 'welcome', you: { id, color: 0, role: 'surface' },
   crew: [{ id, name: 'Crew 1', color: 0, role: 'surface', joinedAt: 1 }],
-  startedAt: null, seed: null, now: 1, markers: [], samples: [], caseHolder: null, route: null, ...extra,
+  startedAt: null, seed: null, now: 1, markers: [], samples: [], caseHolder: null, route: null, go: null, ...extra,
 });

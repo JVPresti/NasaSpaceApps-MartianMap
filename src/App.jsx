@@ -417,6 +417,9 @@ export default function App() {
         return;
       }
       if (event.key === 'h' || event.key === 'H') {
+        // Typing in a text field (the habitat seat's note and reason, #55) is not the Controls key.
+        const target = event.target;
+        if (target?.isContentEditable || target?.closest?.('input, textarea, select')) return;
         if (phaseRef.current === EVA_PHASE.PLAYING) {
           event.preventDefault();
           setControlsFromMenu(false);

@@ -4,7 +4,8 @@
  *
  * startOnline({ code, store }) creates the player identity, connects to the room, runs the clock and writes
  * the `online` slice of the mission store (docs/STATE_AND_ENGINE.md), and syncs poses with the other players
- * (src/net/poseSync.js). sharedState.js writes the `shared` slice. It returns { send, on, addMarker, stop, poses, ... }.
+ * (src/net/poseSync.js). sharedState.js writes the `shared` slice and habitat.js the `habitat` slice (#55). It returns
+ * { send, on, addMarker, sendRoute, sendGo, addNote, stop, poses, ... }.
  */
 import { createClock } from './clock.js';
 import { getPlayerId, getPlayerName, getPreferredColor, setPreferredColor } from './identity.js';
@@ -14,6 +15,8 @@ import { startPoseSync } from './poseSync.js';
 import { getCurrentEngine } from '../state/currentEngine.js';
 import { createSharedState } from './sharedState.js';
 import { installSharedHooks } from '../state/sharedHooks.js';
+import { createHabitatState } from './habitat.js';
+import { installHabitatHooks } from '../state/habitatHooks.js';
 
 export { getPlayerName, newPlayerId, setPlayerName } from './identity.js';
 
@@ -71,6 +74,13 @@ export function startOnline({ code, store, role = ROLE.SURFACE, color, connect =
     ...(connectOptions.timers ? { timers: connectOptions.timers } : {}), ...(connectOptions.now ? { now: connectOptions.now } : {}),
   });
 
+  // The habitat seat (#55): route, go or no-go and the crew on its map. The table reaches it through src/state/habitatHooks.js.
+  const habitat = createHabitatState({
+    store, room, playerId: id, shared, poses, getEngine,
+    ...(connectOptions.timers ? { timers: connectOptions.timers } : {}), ...(connectOptions.now ? { now: connectOptions.now } : {}),
+  });
+  const uninstallHabitat = installHabitatHooks({ sendRoute: habitat.sendRoute, sendGo: habitat.sendGo, addNote: habitat.addNote });
+
   return {
     code: roomCode,
     id,
@@ -85,8 +95,17 @@ export function startOnline({ code, store, role = ROLE.SURFACE, color, connect =
     shared,
     /** Places a shared marker: { kind: 'find' | 'note' | 'go', x, z, label }. Returns its client id. */
     addMarker: (marker) => shared.addMarker(marker),
+    habitat,
+    /** Habitat seat: sends the planned path (metres), decimated to at most 200 points in decimetres. */
+    sendRoute: (path) => habitat.sendRoute(path),
+    /** Habitat seat: go (true) or no-go (false), with an optional short reason. */
+    sendGo: (go, why) => habitat.sendGo(go, why),
+    /** A 'note' (default) or 'go' marker at x, z metres with a short label. */
+    addNote: (x, z, label, kind) => habitat.addNote(x, z, label, kind),
     stop() {
       for (const off of offs) off();
+      uninstallHabitat();
+      habitat.stop();
       poses.stop();
       uninstall();
       shared.stop();

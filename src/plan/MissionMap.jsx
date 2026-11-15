@@ -65,8 +65,10 @@ function markerLabel(name, index) {
  *   route: false shows only the start and the target (the Site step), without the route or the stops between
  *   legs: route.legs, for the distance and time to each stop; onScience: opens a stop's science card
  * Clicking a stop opens a small window with its height, slope and the leg that reaches it.
+ *   overlay: (crop) => node, drawn over the map in the same frame (the habitat seat's crew and notes, src/online/)
+ *   onPick: (x, z) => void, a click on the map that did not drag it, in world metres
  */
-export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null }) {
+export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, overlay = null, onPick = null }) {
   const canvasRef = useRef(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -116,7 +118,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const onPointerDown = (event) => {
     if (event.button !== 0 && event.button !== 2) return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    dragRef.current = { x: event.clientX, y: event.clientY, crop, width: event.currentTarget.getBoundingClientRect().width };
+    dragRef.current = { x: event.clientX, y: event.clientY, crop, width: event.currentTarget.getBoundingClientRect().width, button: event.button };
   };
   const onPointerMove = (event) => {
     const drag = dragRef.current;
@@ -124,7 +126,14 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
     const metres = drag.crop.size / drag.width;
     setView(clampCrop({ ...drag.crop, x0: drag.crop.x0 - (event.clientX - drag.x) * metres, z0: drag.crop.z0 - (event.clientY - drag.y) * metres }, tile));
   };
-  const endDrag = () => { dragRef.current = null; };
+  const endDrag = (event) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    // A click that did not move the map picks a point (#55). 4 px of play keeps a shaky click a click.
+    if (!onPick || !drag || drag.button !== 0 || event?.type !== 'pointerup' || Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 4) return;
+    const rect = boxRef.current.getBoundingClientRect();
+    onPick(drag.crop.x0 + ((event.clientX - rect.left) / rect.width) * drag.crop.size, drag.crop.z0 + ((event.clientY - rect.top) / rect.height) * drag.crop.size);
+  };
 
   useEffect(() => {
     if (open === null) return undefined;
@@ -178,6 +187,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
           );
         })}
       </ol>
+      {overlay && overlay(crop)}
       {open !== null && waypoints[open] && (() => {
         const w = waypoints[open];
         const [u, v] = toMap(w.x, w.z, crop);
