@@ -43,6 +43,19 @@ describe('the visor HUD and the habitat table (#244)', () => {
     for (const panel of ['hud-suit', 'hud-sampling', 'hud-env', 'hud-heading']) expect(html).toContain(panel);
   });
 
+  it('names the limit that sets the margin now, the EVA clock or the O2 (#323)', () => {
+    walking();
+    const withMargin = (marginLimit) => {
+      useMissionStore.setState((s) => ({ suit: { ...s.suit, marginSec: 480 * 60, walkbackSec: 0, walkbackTo: 'habitat', status: 'nominal', marginLimit } }));
+      return render(engine(false));
+    };
+    const eva = withMargin('eva');
+    expect(eva).toContain('MARGIN NOW');
+    expect(eva).toContain('EVA clock');
+    expect(eva).toContain('home in');
+    expect(withMargin('o2')).toContain('>O2<');
+  });
+
   it('keeps the stow prompt in the cabin while a sample is in the scoop, since E stows it there', () => {
     walking();
     useMissionStore.setState((s) => ({ sampling: { ...s.sampling, status: { phase: 'holding', holding: 'ground', target: null, actions: { click: null, photo: null, stow: 'stow', case: null } } } }));

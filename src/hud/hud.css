@@ -84,6 +84,8 @@
 .hud-walkback.hud-caution b, .hud-walkback.hud-caution .hud-icon { color: var(--caution); }
 .hud-walkback.hud-warning b, .hud-walkback.hud-warning .hud-icon { color: var(--warning); }
 .hud-caption { margin-top: 0.35em; font-size: max(var(--hud-min-text), 0.66em); letter-spacing: 0.14em; color: var(--dim); }
+/* the limit that sets the margin now (#323): small caps in the unit colour, beside the number's name */
+.hud-limit { font-family: var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--unit); white-space: nowrap; }
 
 /* right-hand column (#191): minimap, sampling checklist, environment strip, NAV line and radio link, top to bottom.
    One flex stack, so a panel that grows pushes the ones below it down instead of covering them. The stop card
