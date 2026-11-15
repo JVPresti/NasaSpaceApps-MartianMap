@@ -166,8 +166,22 @@
    base unit (src/hud/hud.css), so it tracks the heading tape at every height. */
 .event-banner.event-banner-walk {
   --u: clamp(11px, 1.4vh, 20px);
-  top: calc(var(--u) * 10.6);
+  /* under the heading tape, never over it: the tape is how the player turns toward the shelter (#284) */
+  top: calc(var(--u) * 13.4);
+  width: min(560px, calc(100% - 28px));
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-left-width: 4px;
 }
+/* the instruction is the largest thing in the banner; the level word sits above it */
+.event-banner-walk .event-banner-main { flex-direction: column; gap: 4px; }
+.event-banner-walk .event-text { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 600; line-height: 1.2; }
+.event-banner-walk.caution { border-color: var(--caution); }
+.event-banner-walk.warning { border-color: var(--warning); }
+.event-banner-walk.danger { border-color: var(--danger); }
+/* the source note, skipped stops and other alerts are detail: I shows them with the rest of the instruments (#283) */
+.app:not(:has(.hud-detail)) .event-banner-walk .event-banner-meta { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .event-banner {
