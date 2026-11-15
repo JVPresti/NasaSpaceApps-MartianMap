@@ -1,26 +1,29 @@
 import { t } from '../i18n/index.js';
 
-// Each entry is one visual column; each column holds groups of [key, action] rows. Three columns fit the start
-// screen at 1366 × 768 without scrolling (#199); the narrower pause dialog wraps the third column under the others.
-// Descriptions stay at a few words so every row is one line.
+// Keys are drawn one cap at a time (#11), so a combination reads as the keys to press. A token longer than one
+// character is a catalog key (Shift, Mouse, Click...), a single character is the key itself, and '/' separates two
+// alternatives. Each entry of COLUMNS is one visual column, so every key fits the start screen and the pause menu at
+// 1366 × 768 without scrolling (#199); narrower screens wrap the columns.
 const COLUMNS = [
   [
     {
-      title: 'ui.walk',
+      title: 'menu.help.group.walking',
       rows: [
-        ['menu.help.key.wasd', 'ui.walk'],
-        ['menu.shift', 'menu.jog'],
-        ['menu.mouse', 'menu.help.look'],
-        ['ui.esc', 'menu.help.pause'],
-        ['menu.h', 'menu.help.this.help'],
+        [['W', 'A', 'S', 'D', '/', 'menu.help.key.arrows'], 'menu.help.walk'],
+        [['menu.shift'], 'menu.jog'],
+        [['menu.mouse'], 'menu.help.look'],
+        [['ui.esc'], 'menu.help.release.pause'],
+        [['H'], 'menu.help.this.help'],
       ],
     },
     {
-      title: 'ui.plan',
+      // src/plan/MissionMap.jsx: wheel zoom, drag to move, double click to fit the route; Esc pauses the table.
+      title: 'menu.help.group.table',
       rows: [
-        ['menu.help.key.right.drag', 'menu.help.pan'],
-        ['menu.scroll', 'menu.zoom.in.and.out'],
-        ['ui.esc', 'menu.help.pause'],
+        [['menu.scroll'], 'menu.zoom.in.and.out'],
+        [['menu.help.key.drag'], 'menu.help.pan'],
+        [['menu.help.key.double.click'], 'menu.help.fit.route'],
+        [['ui.esc'], 'menu.help.open.menu'],
       ],
     },
   ],
@@ -29,20 +32,21 @@ const COLUMNS = [
       // src/engine/sampling.js: click, KeyP, KeyE, KeyF. The HUD prompt names the action that applies now.
       title: 'menu.help.sampling',
       rows: [
-        ['click', 'menu.help.collect'],
-        ['menu.help.key.p', 'menu.help.photo'],
-        ['menu.help.key.e', 'menu.help.stow'],
-        ['menu.help.key.f', 'menu.help.case'],
+        [['click'], 'menu.help.collect'],
+        [['P'], 'menu.help.photo'],
+        [['E'], 'menu.help.stow'],
+        [['F'], 'menu.help.case'],
       ],
     },
     {
       // src/components/shortcuts.js (M, L, Shift+L, 0) and src/sources/sourcesStore.js (C).
       title: 'menu.help.both.views',
       rows: [
-        ['menu.help.key.m', 'menu.help.switch.view'],
-        ['menu.help.key.l', 'menu.help.layer.cycle'],
-        ['menu.help.key.0', 'menu.help.layer.none'],
-        ['menu.help.key.c', 'ui.sources.188'],
+        [['M'], 'menu.help.switch.table'],
+        [['L'], 'menu.help.layer.next'],
+        [['menu.shift', 'L'], 'menu.help.layer.previous'],
+        [['0'], 'menu.help.layer.image'],
+        [['C'], 'ui.sources.188'],
       ],
     },
   ],
@@ -52,17 +56,19 @@ const COLUMNS = [
       // src/screens/wrist/keys.js (R; the wrist screen lists its own page and row keys).
       title: 'menu.help.finds.panels',
       rows: [
-        ['menu.q.hold.2.s', 'menu.help.mark.find'],
-        ['menu.y.n', 'menu.help.add.or.dismiss'],
-        ['menu.t', 'menu.help.partner.detail'],
-        ['menu.help.key.g', 'menu.help.slope.grid'],
-        ['menu.help.key.r', 'menu.help.wrist'],
+        [['Q'], 'menu.help.mark.find.hold'],
+        [['Y', '/', 'N'], 'menu.help.add.or.dismiss'],
+        [['T'], 'menu.help.partner.detail'],
+        [['G'], 'menu.help.slope.grid'],
+        [['R'], 'menu.help.wrist'],
       ],
     },
   ],
 ];
 
-/** The shared controls reference, shown on the start screen and from the pause menu. */
+const cap = (token) => (token.length > 1 ? t(token) : token);
+
+/** The controls reference (#11 style), shown from the start screen, the mission table and the pause menu. */
 export default function ControlsHelp() {
   return (
     <div className="controls-help">
@@ -73,8 +79,12 @@ export default function ControlsHelp() {
               <h3>{t(group.title)}</h3>
               <dl className="controls-list">
                 {group.rows.map(([keys, action]) => (
-                  <div className="controls-row" key={keys}>
-                    <dt>{t(keys)}</dt>
+                  <div className="controls-row" key={keys.join('+') + action}>
+                    <dt>
+                      {keys.map((token, k) => (token === '/'
+                        ? <span key={k} className="controls-or">/</span>
+                        : <kbd key={k}>{cap(token)}</kbd>))}
+                    </dt>
                     <dd>{t(action)}</dd>
                   </div>
                 ))}
@@ -83,6 +93,28 @@ export default function ControlsHelp() {
           ))}
         </div>
       ))}
+    </div>
+  );
+}
+
+/**
+ * The controls dialog content: title, the close action and the reference. `closeLabel` names where the close action
+ * goes (back to the pause menu, or plain Close for the start screen and the mission table).
+ * @param {{ titleId: string, onClose: () => void, closeRef?: import('react').Ref<HTMLButtonElement>, closeLabel?: string }} props
+ */
+export function ControlsPanel({ titleId, onClose, closeRef, closeLabel }) {
+  return (
+    <div className="dialog-body controls-panel">
+      <div className="dialog-head">
+        <div>
+          <h2 id={titleId} className="dialog-title">{t('menu.help.title')}</h2>
+        </div>
+        <button type="button" className="ui-button ghost" ref={closeRef} data-autofocus="true" onClick={onClose}>
+          {closeLabel ?? t('ui.close').trim()}
+        </button>
+      </div>
+      <ControlsHelp />
+      <p className="dialog-footnote">{t('menu.help.paused.note')}</p>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 // Connects the mission store and the engine. Store -> engine: mode, layer, sky, mission time (the Sun, #73), route path,
 // shelter, dust, when they change, and clearing the boot prints when a new EVA starts.
-// Engine -> store: the player's position and heading, 5 times per second (never per frame).
-// For now the position written is the true one; the estimate with its error ring comes with #21 and #42.
+// Engine -> store: the player's position and heading, 5 times per second (never per frame). The position written is the
+// TRUE one (#42): the drift model (src/sim/navigationDrift.js) reads it and writes the estimate the HUD shows.
 import { useMissionStore } from './store.js';
 import { dustLevelFromTau } from './dustLevel.js';
 import { missionSolarHours } from './skyTime.js';
@@ -38,9 +38,9 @@ export function connectEngine(engine, store = useMissionStore) {
   const timer = setInterval(() => {
     const p = engine.getPlayer(), nav = store.getState().navigation;
     const x = Math.round(p.x * 100) / 100, z = Math.round(p.z * 100) / 100, headingDeg = Math.round(p.headingDeg * 10) / 10;
-    if (x === nav.x && z === nav.z && headingDeg === nav.headingDeg && nav.slopeDeg !== null) return;   // standing still: no store update, no re-render
+    if (x === nav.trueX && z === nav.trueZ && headingDeg === nav.headingDeg && nav.slopeDeg !== null) return;   // standing still: no store update, no re-render
     const slopeDeg = Math.round(engine.slopeAt(x, z) * 10) / 10;   // terrain slope under the player, for the HUD (DERIVED from the HiRISE DTM)
-    store.setState((s) => ({ navigation: { ...s.navigation, x, z, headingDeg, slopeDeg } }));
+    store.setState((s) => ({ navigation: { ...s.navigation, trueX: x, trueZ: z, headingDeg, slopeDeg } }));
   }, PLAYER_POLL_MS);
 
   return () => { unsubscribe(); clearInterval(timer); };

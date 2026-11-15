@@ -86,7 +86,7 @@ function Metric({ metric }) {
 }
 
 /** The reason under the go / no-go buttons: planner state first, then the oxygen margin from route.totals. */
-function DecisionReason({ planner, route }) {
+export function DecisionReason({ planner, route }) {
   const totals = route.totals;
   if (planner.status === 'loading') return <p className="decision-reason">{t('ui.loading.terrain.and.hazard.data')}</p>;
   if (planner.status === 'planning') return <p className="decision-reason planning" role="status">{t('ui.planning.route')}</p>;
@@ -117,12 +117,14 @@ const DECISION_LABEL = { pending: 'pending', go: 'ui.go', 'no-go': 'ui.no.go' };
 
 /**
  * One route panel for Plan mode: summary, elevation profile, go / no-go with its reason, cost per leg and the waypoint editor.
+ * `embedded` is the Route tab of the mission table (MissionTable.jsx): no panel frame or title, and the go / no-go
+ * decision is left to the Suit tab, so only Re-plan stays here.
  * @param {{ planner: { status: string, error: string | null, replan: () => void },
  *   waypoints: Array<{ name: string, x: number, z: number }>,
  *   onWaypointsChange: (waypoints: Array<object>) => void,
- *   engine: object | null }} props
+ *   engine: object | null, embedded?: boolean }} props
  */
-export default function RoutePanel({ planner, waypoints, onWaypointsChange, engine }) {
+export default function RoutePanel({ planner, waypoints, onWaypointsChange, engine, embedded = false }) {
   const route = useMissionStore((s) => s.route);
   const metrics = routeMetrics(route);
   const decision = route.decision;
@@ -134,12 +136,16 @@ export default function RoutePanel({ planner, waypoints, onWaypointsChange, engi
     onWaypointsChange(next);
   };
 
+  const Frame = embedded ? 'div' : 'aside';
+
   return (
-    <aside className="plan-panel route-panel" aria-label={t('ui.planned.route.and.cost')}>
-      <header className="plan-panel-head">
-        <h2>{t('ui.route')}</h2>
-        <p className="plan-panel-source">{t('ui.a.planner.hirise.dtm')}</p>
-      </header>
+    <Frame className={embedded ? 'route-panel' : 'plan-panel route-panel'} aria-label={embedded ? undefined : t('ui.planned.route.and.cost')}>
+      {!embedded && (
+        <header className="plan-panel-head">
+          <h2>{t('ui.route')}</h2>
+          <p className="plan-panel-source">{t('ui.a.planner.hirise.dtm')}</p>
+        </header>
+      )}
 
       <dl className="route-metrics">
         {metrics.map((metric) => (
@@ -154,7 +160,18 @@ export default function RoutePanel({ planner, waypoints, onWaypointsChange, engi
         slopeAt={engine?.slopeAt}
       />
 
-      <section className="route-decision-block" aria-label={t('ui.go.or.no.go')}>
+      {embedded && (
+        <div className="route-replan-row">
+          <p className="plan-panel-source">{t('ui.a.planner.hirise.dtm')}</p>
+          {skipped.length > 0 && (
+            <p className="route-skipped">{t('ui.re.planned.for.the.event.skipped')}{skipped.join(' · ')}
+            </p>
+          )}
+          <button type="button" className="route-replan" onClick={planner.replan} disabled={planning}>{t('ui.re.plan')}</button>
+        </div>
+      )}
+
+      {!embedded && <section className="route-decision-block" aria-label={t('ui.go.or.no.go')}>
         <div className="decision-head">
           <h3>{t('noGoHeading')}</h3>
           <span className={'decision-state ' + decision}>{t(DECISION_LABEL[decision] ?? decision)}</span>
@@ -180,7 +197,7 @@ export default function RoutePanel({ planner, waypoints, onWaypointsChange, engi
             onClick={() => setRouteDecision('no-go')}
           >{t('ui.no.go')}</button>
         </div>
-      </section>
+      </section>}
 
       <details className="plan-disclosure" open>
         <summary>{t('ui.cost.per.leg')}</summary>
@@ -201,6 +218,6 @@ export default function RoutePanel({ planner, waypoints, onWaypointsChange, engi
           ))}
         </ol>
       </details>
-    </aside>
+    </Frame>
   );
 }

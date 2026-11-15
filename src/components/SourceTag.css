@@ -5,10 +5,10 @@
 .source-tag-tip {
   --source-tag-ink: var(--ink, #f3e6d8);
   --source-tag-dim: var(--dim, #b9a08a);
-  --source-tag-panel: rgba(20, 12, 9, 0.95);  /* the app --panel (0.78) is too thin for text over the map */
+  --source-tag-panel: rgba(10, 13, 17, 0.96);  /* the app --panel (0.78) is too thin for text over the map */
   --source-tag-line: var(--line, rgba(255, 214, 170, 0.16));
   --source-tag-data: var(--cyan, #8fd3ee);
-  --source-tag-derived: #b8e6c4;
+  --source-tag-derived: var(--ok, #b8e6c4);
   --source-tag-sim: var(--accent, #e0683a);
   --source-tag-focus: var(--cyan, #8fd3ee);
 }
@@ -19,7 +19,7 @@
   display: inline-block;
   margin-left: 0.4em;
   padding: 0 0.4em;
-  font: 600 0.72em/1.5 ui-monospace, Consolas, monospace;
+  font: 500 0.72em/1.5 var(--font-mono, ui-monospace, Consolas, monospace);
   letter-spacing: 0.04em;
   color: var(--source-tag-dim);
   border: 1px solid var(--source-tag-line);
@@ -53,12 +53,12 @@
   box-sizing: border-box;
   width: max-content;
   padding: 8px 10px;
-  font: 400 12px/1.4 system-ui, sans-serif;
+  font: 400 12px/1.4 var(--font-ui, system-ui, sans-serif);
   text-align: left;
   color: var(--source-tag-ink);
   background: var(--source-tag-panel);
   border: 1px solid var(--source-tag-line);
-  border-radius: 6px;
+  border-radius: var(--radius-m, 3px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
   animation: source-tag-in 120ms ease;
 }

@@ -15,13 +15,14 @@ export function createInitialState() {
       anchorMs: null, timeScale: 1, initialSol: null, initialLmst: null, longitudeDeg: null, sky: null,
     },
     suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
-    navigation: { x: null, z: null, headingDeg: null, slopeDeg: null, waypointRangeM: null, waypointBearingDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // the estimate, never the truth: no GPS on Mars
+    navigation: { x: null, z: null, trueX: null, trueZ: null, headingDeg: null, slopeDeg: null, waypointRangeM: null, waypointBearingDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // x/z: the estimate the HUD shows (#42); trueX/trueZ: the true position, engine bridge only
     route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [] },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js
     environment: { dustOpacity: 0, tempC: null, windMs: null, pressurePa: null, doseRateUgyH: null, doseUgy: null },
     // Active hazard areas for the minimap (#60): [{ id, x, z, radiusM, active }], metres. Empty means
     // "no zone known", not "safe". No writer yet; the event work (#24-#26) fills it. The minimap draws
     // only active === true entries with a finite centre and radiusM > 0.
-    hazards: { zones: [] },
+    // off: ids of events switched off at the mission table before the EVA (#11). The event runner leaves them out.
+    hazards: { zones: [], off: [] },
     alerts: {},                                     // { [eventId]: { id, eventId, level, text, startedAtSec, active } | null }
     crew: [],                                       // [{ id, name, color, x, z, oxygenPct, batteryPct }]
     // #36, written by src/state/sampling.js: samples secured this EVA, the checklist of the sample in progress, and the engine's
@@ -90,6 +91,13 @@ export const setRoutePath = (path) => storeAdapter.set('route.path', path);
 export const setRouteDecision = (decision) => {
   if (!['pending', 'go', 'no-go'].includes(decision)) throw new Error('route decision must be pending, go or no-go');
   storeAdapter.set('route.decision', decision);
+};
+/** Switch an event on or off for this run (mission table, #11). Read once, when the EVA's event runner starts. */
+export const setHazardEnabled = (eventId, enabled) => {
+  useMissionStore.setState((state) => {
+    const off = (state.hazards.off ?? []).filter((id) => id !== eventId);
+    return { hazards: { ...state.hazards, off: enabled ? off : [...off, eventId] } };
+  });
 };
 export const resetStore = () => useMissionStore.setState(createInitialState(), true);
 

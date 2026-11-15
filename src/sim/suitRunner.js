@@ -1,15 +1,16 @@
 /**
  * Runs the suit model against the mission store a few times per second.
  *
- * Reads the player's position (navigation.x/z) and the planned route from the store, measures speed and gradient
- * between ticks, steps the consumables, and writes the suit section back. Time comes from timestamps (`now()`),
- * never from adding up frame times; ticks while the mission is paused consume nothing.
+ * Reads the player's true position (navigation.trueX/trueZ, #42) and the planned route from the store, measures
+ * speed and gradient between ticks, steps the consumables, and writes the suit section back. Time comes from
+ * timestamps (`now()`), never from adding up frame times; ticks while the mission is paused consume nothing.
  *
  * Plain JavaScript: the store is any object with getState / setState (the Zustand store in src/state/store.js),
  * and the terrain is a heightAt(x, z) function (the engine's query). No React, no three.js.
  */
 import { createSuitState, pathHome, pathToShelter, stepSuit, suitReadout, walkCost } from './suitModel.js';
 import { DEFAULT_HABITAT } from './replan.js';
+import { truePosition } from './navigation.js';
 
 export const SUIT_TICK_MS = 250;
 
@@ -34,27 +35,28 @@ export function startSuitRunner({ store, heightAt, constants: c, habitat = DEFAU
 
   function tick() {
     const s = store.getState(), t = now(), nav = s.navigation;
-    if (!Number.isFinite(nav.x) || !Number.isFinite(nav.z)) { last = null; return; }   // engine not reporting yet
+    const p = truePosition(nav);
+    if (!Number.isFinite(p.x) || !Number.isFinite(p.z)) { last = null; return; }   // engine not reporting yet
     if (last) {
       const dtSec = Math.min(1, Math.max(0, (t - last.t) / 1000));
       if (dtSec > 0 && !s.mission.paused) {
-        const run = Math.hypot(nav.x - last.x, nav.z - last.z), k = Math.min(1, dtSec / 1);
+        const run = Math.hypot(p.x - last.x, p.z - last.z), k = Math.min(1, dtSec / 1);
         speed += (run / dtSec - speed) * k;
-        if (run > 0.05) gradient += ((heightAt(nav.x, nav.z) - heightAt(last.x, last.z)) / run - gradient) * k;
+        if (run > 0.05) gradient += ((heightAt(p.x, p.z) - heightAt(last.x, last.z)) / run - gradient) * k;
         suit = stepSuit(suit, { dtSec, speedMs: speed, gradient }, c);
       }
     }
-    last = { t, x: nav.x, z: nav.z };
+    last = { t, x: p.x, z: p.z };
 
     // walkback: recompute when the player moved a metre or the route changed. During an event the route leads from
     // the player to route.shelter, so the walkback follows it forward to the shelter instead of back to its start.
     const shelter = shelterOf(s.route);
-    const key = Math.round(nav.x) + ',' + Math.round(nav.z) + ',' + (s.route.path ? s.route.path.length + ':' + s.route.path[0] : 'none')
+    const key = Math.round(p.x) + ',' + Math.round(p.z) + ',' + (s.route.path ? s.route.path.length + ':' + s.route.path[0] : 'none')
       + ',' + (shelter ? shelter.x + ':' + shelter.z : 'home');
     if (key !== walkbackKey) {
       walkbackKey = key;
       walkbackTo = shelter ? 'shelter' : 'habitat';
-      const path = shelter ? pathToShelter(nav, s.route.path, shelter) : pathHome(nav, s.route.path, habitat);
+      const path = shelter ? pathToShelter(p, s.route.path, shelter) : pathHome(p, s.route.path, habitat);
       walkback = walkCost(path, heightAt, c);
     }
 
