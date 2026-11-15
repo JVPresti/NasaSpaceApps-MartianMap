@@ -126,6 +126,28 @@ function validateThreshold(threshold, field, errors) {
   }
 }
 
+// A trigger's `requires` entry (#265): a store threshold that has held for `forSec` seconds, or another event that
+// started at least `afterSec` seconds ago.
+function validateRequirement(requirement, field, errors) {
+  if (!isPlainObject(requirement)) {
+    errors.push(`${field} must be an object`)
+    return
+  }
+  if (requirement.event !== undefined) {
+    if (typeof requirement.event !== 'string' || !ID_PATTERN.test(requirement.event)) {
+      errors.push(`${field}.event must be an event id`)
+    }
+    if (!isFiniteNumber(requirement.afterSec) || requirement.afterSec < 0) {
+      errors.push(`${field}.afterSec must be a finite number of seconds >= 0`)
+    }
+    return
+  }
+  validateThreshold(requirement, field, errors)
+  if (requirement.forSec !== undefined && (!isFiniteNumber(requirement.forSec) || requirement.forSec < 0)) {
+    errors.push(`${field}.forSec must be a finite number of seconds >= 0`)
+  }
+}
+
 function validateTrigger(trigger, field, errors) {
   if (!isPlainObject(trigger)) {
     errors.push(`${field} must be an object`)
@@ -143,6 +165,20 @@ function validateTrigger(trigger, field, errors) {
     validateArea(trigger, field, errors)
   } else if (trigger.type === 'threshold') {
     validateThreshold(trigger, field, errors)
+  }
+  if (trigger.requires !== undefined) {
+    if (!Array.isArray(trigger.requires)) errors.push(`${field}.requires must be an array`)
+    else trigger.requires.forEach((requirement, index) => validateRequirement(requirement, `${field}.requires[${index}]`, errors))
+  }
+  if (trigger.latestSec !== undefined) {
+    if (!isFiniteNumber(trigger.latestSec) || trigger.latestSec < 0) {
+      errors.push(`${field}.latestSec must be a finite number of seconds >= 0`)
+    } else if (isFiniteNumber(trigger.atSec) && trigger.latestSec < trigger.atSec) {
+      errors.push(`${field}.latestSec must not be before ${field}.atSec`)
+    }
+  }
+  if (trigger.holdInsideEnd !== undefined && typeof trigger.holdInsideEnd !== 'boolean') {
+    errors.push(`${field}.holdInsideEnd must be a boolean`)
   }
 }
 
@@ -282,6 +318,9 @@ export function validateEvent(definition) {
 
   if (definition.planner !== undefined) validatePlanner(definition.planner, errors)
   if (definition.end !== undefined) validateEnd(definition.end, errors)
+  if (definition.trigger?.holdInsideEnd === true && definition.end?.type !== 'area') {
+    errors.push('trigger.holdInsideEnd needs an end of type "area"')
+  }
   if (definition.endSet !== undefined) validateSetObject(definition.endSet, 'endSet', errors)
 
   return { ok: errors.length === 0, errors }
@@ -311,7 +350,7 @@ function thresholdPasses(threshold, store) {
   return compare(store.get(threshold.path), threshold.op, threshold.value)
 }
 
-function triggerPasses(trigger, missionTimeSec, position, store) {
+function basicTriggerPasses(trigger, missionTimeSec, position, store) {
   if (trigger.type === 'missionTime') return missionTimeSec >= trigger.atSec
   if (trigger.type === 'area') return isInsideArea(trigger, position)
   if (trigger.type === 'threshold') return thresholdPasses(trigger, store)
@@ -393,12 +432,55 @@ export function createEventEngine(options) {
     throw new Error(`Invalid event definitions:\n- ${definitionErrors.join('\n- ')}`)
   }
 
+  // heldSinceSec: per `requires` threshold, the mission time since which it has held (null while it does not).
   const states = new Map(
     definitions.map((definition) => [
       definition.id,
-      { status: STATUS.idle, startedAtSec: null, nextTimelineIndex: 0, alert: null },
+      {
+        status: STATUS.idle, startedAtSec: null, nextTimelineIndex: 0, alert: null,
+        heldSinceSec: (definition.trigger.requires ?? []).map(() => null),
+      },
     ]),
   )
+
+  // Follow every `requires` threshold of an idle event, so `forSec` counts from the moment it first held.
+  function trackRequirements(definition, state, missionTimeSec) {
+    const requires = definition.trigger.requires
+    if (!requires) return
+    requires.forEach((requirement, index) => {
+      if (requirement.event !== undefined) return
+      if (!thresholdPasses(requirement, store)) state.heldSinceSec[index] = null
+      else if (state.heldSinceSec[index] === null) state.heldSinceSec[index] = missionTimeSec
+    })
+  }
+
+  // An event requirement on an event this engine does not run (switched off at the mission table) counts as met.
+  function requirementsMet(definition, state, missionTimeSec) {
+    const requires = definition.trigger.requires
+    if (!requires) return true
+    return requires.every((requirement, index) => {
+      if (requirement.event !== undefined) {
+        const other = states.get(requirement.event)
+        if (!other) return true
+        return other.status !== STATUS.idle && missionTimeSec - other.startedAtSec >= requirement.afterSec
+      }
+      const since = state.heldSinceSec[index]
+      return since !== null && missionTimeSec - since >= (requirement.forSec ?? 0)
+    })
+  }
+
+  /**
+   * Whether an idle event starts now. The basic trigger and every `requires` entry must pass; `latestSec` starts it
+   * anyway from that mission time; `holdInsideEnd` keeps it waiting while the position is inside its own end area,
+   * where it would end at once and never play (#265).
+   */
+  function triggerPasses(definition, state, missionTimeSec, position) {
+    const trigger = definition.trigger
+    let passes = basicTriggerPasses(trigger, missionTimeSec, position, store) && requirementsMet(definition, state, missionTimeSec)
+    if (!passes && isFiniteNumber(trigger.latestSec) && trigger.type !== 'manual') passes = missionTimeSec >= trigger.latestSec
+    if (passes && trigger.holdInsideEnd === true && isInsideArea(definition.end, position)) passes = false
+    return passes
+  }
 
   let lastMissionTimeSec = 0
   const resolveMissionTime =
@@ -519,9 +601,13 @@ export function createEventEngine(options) {
     // Phase 1: decide every idle trigger from the store as it was at the start
     // of this update, then start them. No event can change another trigger
     // mid-frame, which keeps one update deterministic.
+    for (const definition of definitions) {
+      const state = states.get(definition.id)
+      if (state.status === STATUS.idle) trackRequirements(definition, state, missionTimeSec)
+    }
     const toStart = definitions.filter((definition) => {
       const state = states.get(definition.id)
-      return state.status === STATUS.idle && triggerPasses(definition.trigger, missionTimeSec, position, store)
+      return state.status === STATUS.idle && triggerPasses(definition, state, missionTimeSec, position)
     })
     for (const definition of toStart) {
       if (startEvent(definition, missionTimeSec)) started.push(definition.id)
