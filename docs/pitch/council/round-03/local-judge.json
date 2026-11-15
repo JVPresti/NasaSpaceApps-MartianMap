@@ -1,0 +1,52 @@
+{
+  "findings": [
+    {
+      "where": "Demo B2-B3 (0:15-0:45 of cut B), the margin pill",
+      "problem": "The whole pitch rests on 'it drops as I walk', and that is the one step nobody has run. The run sheet says the 20 % walk was never tested on the demo machine. The pill shows whole minutes, so 20 s of walking moves it by 0 or 1, or, if the O2 rate smoothing starts from the resting rate, it falls by hundreds of minutes in seconds. The fallback is worse. A pill reading +480, like D5-walk-hud.jpg, tells me oxygen does not matter, 30 seconds after you told me oxygen is everything.",
+      "severity": "blocker",
+      "criterion": "Validity",
+      "proposal": "Rehearse 20 % on the demo laptop today and write down the number the pill shows at Start walking and after 20 s. If it barely moves, change the line to 'thirty-three minutes, and every metre out costs me two: one out, one back'. If 20 % will not work, start lower or drop the oxygen story from the demo. Never show +480 live."
+    },
+    {
+      "where": "Demo B4 (0:45-1:15), dust storm line",
+      "problem": "You say the storm 'takes the horizon' and 'the route re-plans', but you only wait 5 s. At that point tau is about 0.5 (the banner in D7-storm-walk.jpg says 0.45, D7-storm-plan.jpg says 0.53) and the horizon is still sharp. On a 55 m sortie the re-planned route on the map is the same short line as before, and the panel underneath says 'The route was chosen before the EVA began and stays as it is'. What I see contradicts what I hear.",
+      "severity": "major",
+      "criterion": "Validity",
+      "proposal": "Point at what does change on the visor. The NAV line goes from 'terrain fix ±0.4 m' to 'dead reckoning ±1.8 m', the target switches to 'HAB SHELTER', and the margin caption changes to 'shelter in'. Say 'no fix, the error grows, and the visor points me home'. Skip the M map step, it saves 10 s and avoids the confusing note."
+    },
+    {
+      "where": "Cold open 0:00 vs demo 0:55, and the answer at 2:10",
+      "problem": "You open on Cheyava Falls: 913 m, 160 g, a radiation alert. Then the demo is a different walk, 55 m, a different hazard (dust storm) and a different margin. The 13-minute answer comes back from the presentation mode, not from the app. A judge with no Mars background could leave thinking the app never handled her case. The radiation alert you set up in the first 24 s never shows up live.",
+      "severity": "major",
+      "criterion": "Presentation",
+      "proposal": "Add one bridge line at B1, 'Same planner, a 55-metre first walk so it fits in a minute'. Better, fire Radiation alert from the Events strip instead of Dust storm. The live banner then says 'Curiosity · Gale crater, not Jezero' and the margin caption switches to 'shelter in', which pays off the cold open on the real screen."
+    },
+    {
+      "where": "Whole 3-minute script; 'who' exists only on slide 7",
+      "problem": "Nobody says out loud who uses this or why it matters. In the 3-minute cut the 5-minute 'EVA planners / classrooms in Ensenada' line was dropped. With nothing about reach, the Impact score is whatever I guess. And you still have 18 s of slack.",
+      "severity": "major",
+      "criterion": "Impact",
+      "proposal": "Spend about 8 s of the slack before the last number: 'For an EVA planner comparing three routes before approving one, and for a classroom here in Ensenada: it runs in a browser, offline.'"
+    },
+    {
+      "where": "Beat 7 (2:28), 'reproduces the HiRISE model to fourteen centimetres'",
+      "problem": "As an engineer I hear that you imported a NASA terrain file correctly. That is necessary, but it validates the input, not the decision. The claim I need to trust is '13 minutes of margin', and its suit model, 20 % pad and walking speed (tagged SIM on the visor) get no source when spoken. Ending on 0.14 m answers a question I did not ask.",
+      "severity": "major",
+      "criterion": "Validity",
+      "proposal": "Keep 0.14 m on screen and add one spoken clause on the decision. Either 'the reserve and the 20 % pad are Apollo 17 and Apollo 15 rules, and walking speed is our assumption, so the visor marks it SIM', or '109 numbers checked against their sources, 16 problems listed'. Put the source next to the number that drives the go/no-go."
+    },
+    {
+      "where": "Beat 5 (2:10), 'Curiosity measured that radiation in Gale crater, not Jezero, and the alert says so'",
+      "problem": "To a non-Mars judge this sounds like an unprompted confession, and it leaves two questions open. Is the alert real data or invented? Why does radiation decide a margin that was all about oxygen? 'Gale' means nothing to me, and it comes at the moment you should be landing the answer.",
+      "severity": "minor",
+      "criterion": "Presentation",
+      "proposal": "Say what it is, then the caveat, in one sentence. 'The alert replays a real 2017 solar storm measured by Curiosity in another crater, and the app labels it that way.' Then tie it to the decision with 'radiation means shelter early, and the margin says she can afford the walk'."
+    }
+  ],
+  "advance": {
+    "yes": true,
+    "why": "Within 40 seconds I understood the problem without any Mars background. The oxygen bar (160 g, 54 to walk home, 72 reserve, 13 min left) is real arithmetic I can follow, and the app labels each reading DATA, DERIVED or SIM, something I rarely see at a hackathon. NASA terrain drives the route and the slope limit, not decoration. It fits in 2:42.",
+    "change_my_mind": "A demo that shows +480 min or a margin that never moves, or a storm with a clear sky while the presenter says the horizon is gone. Either one turns the best story of the afternoon into a slide show with a game attached. Also, if I scan the QR and look for the blue walkback area, I will not find it, because the app only has the number (code-facts section 4). Say clearly in beat 3 that the area is a presentation view."
+  },
+  "remembered_after_27_teams": "The oxygen bar: 160 grams, 54 to walk home, 72 untouchable, 13 minutes left, go home now. And the team with the long refried-beans name."
+}

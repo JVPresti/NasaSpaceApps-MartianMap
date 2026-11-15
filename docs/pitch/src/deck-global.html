@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Marswalk, global deck</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  /* slide 1 */
+  .s-title .names { display: grid; grid-template-columns: repeat(2, auto); justify-content: start; gap: 6px 48px; font-size: 30px; margin-top: 18px; }
+  .s-title .team { font-family: var(--font-display); font-size: 44px; font-weight: 600; margin-top: 56px; }
+  .s-title .tagline { font-size: 46px; line-height: 1.25; max-width: 980px; margin-top: 30px; }
+  /* slide 2 */
+  .s-problem .facts { display: grid; grid-template-columns: 1fr; gap: 26px; width: 820px; margin-top: 40px; }
+  .s-problem .fact b { font-family: var(--font-display); font-size: 64px; font-weight: 600; display: block; line-height: 1; }
+  .s-problem .fact span { font-size: 30px; color: var(--dim); }
+  .s-problem .map { position: absolute; right: 120px; top: 96px; width: 740px; height: 740px; }
+  /* slide 3 */
+  .bar { display: flex; height: 120px; margin-top: 64px; border: 1px solid var(--line-strong); border-radius: 3px; overflow: hidden; }
+  .bar > div { display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 600; font-size: 34px; color: #0a0d11; text-align: center; line-height: 1.05; padding: 0 12px; }
+  .bar .used { background: #5b6672; color: var(--ink); }
+  .bar .home { background: var(--cyan); }
+  .bar .reserve { background: var(--caution); }
+  .bar .margin { background: var(--ok); }
+  .bar-notes { display: grid; grid-template-columns: 30% 30% 15% 25%; font-size: 24px; color: var(--dim); margin-top: 14px; line-height: 1.3; }
+  .bar-notes div { padding-right: 18px; }
+  .shrink { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 70px; }
+  .shrink .panel { padding: 26px 28px; }
+  .shrink b { font-family: var(--font-display); font-size: 40px; display: block; }
+  .shrink span { font-size: 26px; color: var(--dim); }
+  /* slide 4 */
+  .ux { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px 36px; margin-top: 40px; }
+  .ux .frame { height: 330px; }
+  .ux .step { font-family: var(--font-display); font-size: 34px; font-weight: 600; margin-top: 10px; }
+  .ux .step em { font-style: normal; color: var(--accent); margin-right: 10px; }
+  .ux .step span { font-family: var(--font-ui); font-weight: 400; font-size: 24px; color: var(--dim); margin-left: 8px; }
+  /* slide 5 */
+  .data { width: 100%; border-collapse: collapse; margin-top: 40px; }
+  .data td { font-size: 28px; padding: 16px 18px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.25; }
+  .data td:first-child { font-family: var(--font-display); font-weight: 600; font-size: 32px; width: 640px; }
+  .data td:first-child small { display: block; font-family: var(--font-ui); font-weight: 400; font-size: 22px; color: var(--dim); }
+  .data td.arrow { color: var(--accent); width: 60px; font-size: 32px; }
+  /* slide 6 */
+  .tags { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 56px; }
+  .tags .panel p { font-size: 28px; margin-top: 16px; }
+  .tags .panel .ex { font-size: 24px; color: var(--dim); margin-top: 14px; }
+  .proof { display: flex; gap: 48px; margin-top: 56px; align-items: center; }
+  /* slide 7 */
+  .next { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px; margin-top: 50px; width: 1180px; }
+  .next .panel b { font-family: var(--font-display); font-size: 40px; display: block; }
+  .next .panel span { font-size: 26px; color: var(--dim); }
+  .qr { position: absolute; right: 120px; top: 200px; width: 420px; text-align: center; }
+  .qr img { width: 360px; height: 360px; background: #fff; padding: 14px; border-radius: 3px; }
+  .qr p { font-size: 24px; margin-top: 14px; }
+</style>
+</head>
+<body>
+
+<!-- 1. Title, thesis and team -->
+<section class="slide s-title">
+  <img class="bleed" src="../img/app-surface-ev2.jpg" alt="Marswalk: the partner astronaut on HiRISE terrain in Jezero crater">
+  <div class="shade-left"></div>
+  <div class="over">
+    <p class="kicker">NASA Space Apps 2026</p>
+    <p class="dim" style="font-size:28px;margin-top:10px">Challenge: Interplanetary Survival Guide: Martian Map</p>
+    <h1 style="margin-top:36px">Marswalk</h1>
+    <p class="tagline">On Mars, the question isn't where you can go. It's where you can go <span class="cyan">and still get home.</span></p>
+    <p class="team">Los Frijolitos Espaciales Refritos Nueva Generación</p>
+    <div class="names dim">
+      <span>Teresa Rivas Gómez</span><span>Andrea Rivas Gómez</span>
+      <span>Fernando Haro Calvo</span><span>Jorge Antonio Vazquez Guzmán</span>
+      <span>Antonio Ramos Gonzalez</span><span>Brayan Iván Pérez Ventura</span>
+    </div>
+    <p class="dim" style="font-size:26px;margin-top:22px">Ensenada, Mexico</p>
+  </div>
+  <p class="credit">Screenshot of the app in Jezero crater. Terrain: HiRISE, NASA/JPL-Caltech/University of Arizona</p>
+</section>
+
+<!-- 2. Problem -->
+<section class="slide s-problem">
+  <p class="kicker">Cheyava Falls, Jezero crater</p>
+  <h2 style="margin-top:24px;width:860px;font-size:68px">913 m from home, at the end of her walk outside (EVA), a radiation alert. Can she get back?</h2>
+  <div class="facts">
+    <div class="fact"><b>160 g of O<sub>2</sub> left</b><span>The re-planned route home, 824 m, costs 53 g and 18 min (the app's planner and suit model)</span></div>
+    <div class="fact"><b>30 min reserve</b><span>Never touched: 72 g at walking pace (Apollo 17 rule)</span></div>
+    <div class="fact"><b>8 h, 20°, no GPS</b><span>Longest EVA and steepest slope (NASA xEVA); position from the terrain</span></div>
+  </div>
+  <div class="frame map"><img src="../img/app-map-cheyava-terrain.jpg" alt="Planned route on HiRISE with slope bands"></div>
+  <p class="credit" style="left:auto;right:120px;top:856px;bottom:auto;width:740px">The app's route to Cheyava Falls on HiRISE slope: amber 15-20°, red over 20° (the planner blocks those cells; at Bright Angel, a stop on 28.7° rock, it stops at the walkable edge). 785 m in a straight line</p>
+  <p class="credit">160 g is our scenario (SIM), the end of a long EVA, 21 % of the 771 g tank</p>
+</section>
+
+<!-- 3. The margin -->
+<section class="slide s-idea">
+  <p class="kicker">The margin</p>
+  <h2 style="margin-top:24px;width:1550px">A radiation alert means shelter early. 14 minutes to spare: head home now.</h2>
+  <div class="row" style="margin-top:50px;gap:64px;align-items:flex-start">
+    <div style="flex:1">
+      <p class="dim" style="font-size:26px">Her 160 g of O<sub>2</sub> at Cheyava Falls</p>
+      <div class="bar" style="margin-top:12px">
+        <div class="home" style="width:34%">Walk home 53 g</div>
+        <div class="reserve" style="width:45%">Reserve 72 g</div>
+        <div class="margin" style="width:21%">34 g = 14 min</div>
+      </div>
+      <div class="bar-notes" style="grid-template-columns:34% 45% 21%">
+        <div>Priced along the route with +20 % (Apollo 15 rule)</div>
+        <div>30 min that nobody touches (Apollo 17 rule)</div>
+        <div>At walking pace, 2.4 g/min</div>
+      </div>
+      <p style="margin-top:44px">The visor shows this one number, in minutes: oxygen or the 8 h suit clock, whichever runs out first, recomputed every metre. Her numbers come from the app's planner and suit model for this scenario (<span class="mono" style="font-size:26px">docs/pitch/data/walkback-zone.json</span>, field coldOpen).</p>
+    </div>
+    <div style="width:520px;flex:none">
+      <div class="frame" style="height:390px"><img src="../img/app-hud-margin.jpg" alt="HUD suit panel with the margin, +399 min"></div>
+      <p class="caption">The same readout in the app (main build), 40 m from home with a full tank, reads +399 min. Tagged SIM because its weakest input, walking speed, is our assumption.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. User experience -->
+<section class="slide s-ux">
+  <p class="kicker">The walk, in four screens</p>
+  <h2 style="margin-top:20px">Plan the walk to Cheyava Falls at the table. Walk it with the margin on the visor.</h2>
+  <div class="ux">
+    <div><div class="frame"><img src="../img/app-table-cheyava-terrain.jpg" alt=""></div><p class="step"><em>1</em>Mission table<span>the goal draws the route; the planner blocks slopes over 20°</span></p></div>
+    <div><div class="frame"><img src="../img/app-walk-hud.jpg" alt=""></div><p class="step"><em>2</em>Visor<span>margin, route and position error</span></p></div>
+    <div><div class="frame"><img src="../img/app-radiation-walk.jpg" alt=""></div><p class="step"><em>3</em>Alert<span>a dust storm or radiation alert re-plans the route home</span></p></div>
+    <div><div class="frame"><img src="../img/app-debrief-review.jpg" alt="" style="object-position:top"></div><p class="step"><em>4</em>Debrief<span>margin over the reserve, minute by minute</span></p></div>
+  </div>
+</section>
+
+<!-- 5. NASA data -->
+<section class="slide s-data">
+  <p class="kicker">Five NASA sources, what each one feeds</p>
+  <h2 style="margin-top:20px">HiRISE draws the route. NASA suited tests price the oxygen. Curiosity sets the alerts.</h2>
+  <table class="data">
+    <tr><td>MRO HiRISE terrain model, 1 m<small>JEZ_hirise_soc_006 on a 2 m grid; its 25 cm image shown at 0.5 m</small></td><td class="arrow">→</td><td>Slope, the route, walking cost per leg, radio shadow, the ground you see</td></tr>
+    <tr><td>Perseverance Mastcam-Z and traverse<small>Mars 2020, sols 1140 to 1266</small></td><td class="arrow">→</td><td>Science stops, photos of Cheyava Falls, the rover's drives; clear-sky dust opacity 0.45</td></tr>
+    <tr><td>Perseverance MEDA<small>sol 1187 temperature and pressure; sol 312 wind</small></td><td class="arrow">→</td><td>Temperature, pressure and wind shown before go / no-go and on the visor</td></tr>
+    <tr><td>Curiosity RAD and Mastcam<small>September 2017 solar event; 2018 global dust storm, Gale crater</small></td><td class="arrow">→</td><td>Background and peak dose rates of the radiation alert; the storm's opacity, 8.0</td></tr>
+    <tr><td>NASA suit documents<small>xEMU (a lunar suit) tank, Norcross 2008 and 2010 suited tests, Apollo 15 and 17 rules</small></td><td class="arrow">→</td><td>771 g of O<sub>2</sub>, 30 min reserve, +20 % walkback, 20° limit, 8 h; O<sub>2</sub> per metre from a walking model calibrated to NASA suited tests</td></tr>
+  </table>
+</section>
+
+<!-- 6. Measured vs simulated -->
+<section class="slide s-honest">
+  <p class="kicker">Measured or simulated</p>
+  <h2 style="margin-top:20px">Every suit and environment reading carries its source tag.</h2>
+  <div class="tags">
+    <div class="panel"><span class="tag data">DATA</span><p>Measured by a mission or set in a NASA document.</p><p class="ex">Terrain height, RAD dose rates, the 20° limit</p></div>
+    <div class="panel"><span class="tag derived">DERIVED</span><p>We calculate it from DATA.</p><p class="ex">Slope, O<sub>2</sub> left, distance walked</p></div>
+    <div class="panel"><span class="tag sim">SIM</span><p>Our assumption, with the reason.</p><p class="ex">Walking speed 1 m/s, when the storm arrives, the position error</p></div>
+  </div>
+  <div class="row" style="margin-top:40px;gap:56px;align-items:center">
+    <div class="frame" style="width:440px;height:330px;flex:none"><img src="../img/app-hud-margin.jpg" alt="The visor's suit panel with DERIVED, DATA and SIM tags"></div>
+    <p style="width:1080px">On the visor: oxygen and battery are DERIVED, suit pressure is DATA, the margin is SIM. Radiation was measured in Gale crater, not Jezero, and the alert says so on screen. The storm's rise to its peak in 30 s is ours, tagged SIM.</p>
+  </div>
+</section>
+
+<!-- 7. One hard fact, users, next -->
+<section class="slide s-next">
+  <p class="kicker">The same HiRISE model as NASA Mars Trek</p>
+  <div class="row" style="align-items:baseline;gap:36px;margin-top:20px">
+    <div class="big ok" style="font-size:180px">0.14<span class="unit">m</span></div>
+    <h3 style="width:760px">RMS: our 2 m grid reproduces the USGS HiRISE model that NASA Mars Trek serves, over 564,001 points. 109 numbers checked against their sources; 16 known limits published.</h3>
+  </div>
+  <div class="next" style="margin-top:44px">
+    <div class="panel"><b>EVA planners</b><span>could compare the fastest, gentlest and radio-contact routes before approving one</span></div>
+    <div class="panel"><b>Classrooms in Ensenada</b><span>could plan the walk to Cheyava Falls and watch the margin against the reserve</span></div>
+    <div class="panel"><b>Next: heart rate</b><span>a chest-strap reading sets O<sub>2</sub> use, through NASA's EVA metabolic rate model (Hoffmann 2021)</span></div>
+    <div class="panel"><b>Next: other HiRISE sites</b><span>terrain, slope and route take any HiRISE model; stops are per site</span></div>
+  </div>
+  <div class="qr" style="top:420px"><img src="../img/qr-demo.svg" alt="QR code to the demo"><p>Scan to walk the 55 m first sortie<br><span class="dim">martian-map.fernando-haro-c.workers.dev</span></p></div>
+</section>
+
+</body>
+</html>

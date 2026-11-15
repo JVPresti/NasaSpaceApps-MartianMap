@@ -1,0 +1,117 @@
+{
+  "quotes": [
+    {
+      "file": "script-3min-en.md",
+      "where": "0:24, beat 1 Thesis, P1 (also script-3min-es.md \"Esto es Marswalk.\" and beats.md 1b)",
+      "quote": "This is Marswalk.",
+      "why_generic": "The product reveal line. Swap the name and every team in the room says it. It is \"introducing\" from the banned list in three words, and it spends a sentence on a name the title slide already shows.",
+      "rewrite": "Marswalk puts that answer on her visor as one number, in minutes."
+    },
+    {
+      "file": "script-3min-en.md",
+      "where": "2:28, beat 7 One fact, P3 (also script-3min-es.md \"Un último dato:\" and beats.md beat 7)",
+      "quote": "One last number:",
+      "why_generic": "A throat-clearing lead-in any pitch can use. It announces a fact instead of saying it.",
+      "rewrite": "cut. Start on \"Our grid reproduces the HiRISE model on NASA Mars Trek to fourteen centimetres.\""
+    },
+    {
+      "file": "script-3min-en.md",
+      "where": "2:28, beat 7, the last spoken sentence of the pitch (also script-3min-es.md \"El código QR abre la demo.\")",
+      "quote": "The QR code opens the demo.",
+      "why_generic": "Every team with a QR closes on this sentence. It is the last thing the judges hear, and it says nothing about Mars, oxygen or the margin.",
+      "rewrite": "Scan it and walk the 55-metre first sortie yourself. (Slide 7 already says \"Scan to walk the 55 m first sortie\".) Or cut it and stop on fourteen centimetres."
+    },
+    {
+      "file": "video-30s.md",
+      "where": "0:05-0:10, Name and tagline, narration (same line in beats.md 30-second table)",
+      "quote": "Marswalk tells her how far she can go and still get home.",
+      "why_generic": "A product promise with no number, and the on-screen text under it repeats the same words. Five of the video's 30 seconds carry the tagline twice and no fact.",
+      "rewrite": "Marswalk puts one number on her visor: minutes to spare after the walk home. (14 words, check it against the 5 s slot.)"
+    },
+    {
+      "file": "video-30s.md",
+      "where": "0:05-0:10, on-screen text",
+      "quote": "Marswalk · where you can go and still get home",
+      "why_generic": "A product name plus a tagline, the format of every app title card. The narration says the same thing at the same moment.",
+      "rewrite": "Marswalk · MARGIN NOW: minutes left after the walk home and a 30 min reserve"
+    },
+    {
+      "file": "beats.md",
+      "where": "30-second video table, 0:02-0:05, On screen",
+      "quote": "Martian Map: plan a walk on Mars",
+      "why_generic": "Any team on this challenge can show this card unchanged. It restates the challenge title. It also disagrees with video-30s.md, which has a different card for the same shot.",
+      "rewrite": "913 m to the habitat · 54 g of O2 to walk back"
+    },
+    {
+      "file": "video-30s.md",
+      "where": "0:02-0:05, The challenge, on-screen text",
+      "quote": "NASA Space Apps 2026 · Martian Map",
+      "why_generic": "Event name and challenge name. Every Martian Map entry carries this label, and it uses the 3 seconds where the viewer needs the stakes.",
+      "rewrite": "913 m to the habitat · 54 g of O2 to walk back. Move the event label to the 0:00 team card."
+    },
+    {
+      "file": "slides/05.png",
+      "where": "headline",
+      "quote": "The route, the oxygen and the alerts come from mission data.",
+      "why_generic": "\"Comes from mission data\" is what every Space Apps deck says about its NASA sources, here in a list of three. The table under it is specific, the headline is not.",
+      "rewrite": "HiRISE draws the route. NASA suited tests price the oxygen. Curiosity sets the alerts."
+    },
+    {
+      "file": "slides/04.png",
+      "where": "kicker above the headline",
+      "quote": "ONE EVA: PLAN, WALK, REACT, REVIEW",
+      "why_generic": "A four-verb process label that fits any planning app, fitness tracker or project tool. The four captions below already say what each step does.",
+      "rewrite": "THE WALK TO CHEYAVA FALLS, IN FOUR SCREENS"
+    },
+    {
+      "file": "beats.md",
+      "where": "5-minute table, beat 7, On screen",
+      "quote": "For EVA planners · for classrooms in Ensenada",
+      "why_generic": "A \"for X, for Y\" audience line with no verb. Replace Ensenada with any city and it fits any team. qa.md 12 admits nobody outside the team has used it, so the line also reads as a claim.",
+      "rewrite": "Two lines: \"EVA planners compare Fastest, Gentlest and Radio routes\" / \"A class in Ensenada plans the walk to Cheyava Falls\" (the wording slide 7 already uses)."
+    },
+    {
+      "file": "beats.md",
+      "where": "5-minute table, beat 3, On screen, first caption",
+      "quote": "Reach it and still get home",
+      "why_generic": "The thesis again as a caption. The team rule says the thesis is said once. Counting slide 1, the script at 0:24 and the video tagline, this is the fourth pass of \"still get home\", which turns a thesis into a slogan.",
+      "rewrite": "Blue: she reaches it and walks home with 30 min in reserve"
+    },
+    {
+      "file": "qa.md",
+      "where": "question 10, EN answer",
+      "quote": "We used AI coding assistants to write and review code and documents; every change went through an issue and a reviewed pull request.",
+      "why_generic": "The stock AI disclosure. Any 2026 team can read it aloud unchanged, and it names no tool and no count.",
+      "rewrite": "Name the assistant and give the count from GitHub: \"We wrote and reviewed code with <tool>. The repo has <N> pull requests, the last one #316, each tied to an issue.\" Fill both from the repo before saying it."
+    },
+    {
+      "file": "qa.md",
+      "where": "question 11, EN answer, last sentence",
+      "quote": "The history is on GitHub: every change has its issue and pull request.",
+      "why_generic": "Repeats the question 10 line, and any team with a repo can say it. It gives the judge no date to check.",
+      "rewrite": "Give the boundary: \"The first commit of the mission table is dated <date>, after kickoff. The 3D engine commits are before it.\""
+    },
+    {
+      "file": "slides/01.png",
+      "where": "thesis under the title (also script-3min-en.md 0:24, beats.md 1b and the 5-minute thesis line)",
+      "quote": "On Mars, the question isn't where you can go. It's where you can go and still get home.",
+      "why_generic": "This is the team's chosen thesis, so it stays, but judge it honestly: it is a \"not X, it's Y\" construction, the most recognisable AI sentence shape, and a route-planning team on any Mars challenge can use it. The proof (160 g, 54 g, 72 g, 13 min) makes it yours. Without those numbers next to it, it is a slogan.",
+      "rewrite": "Keep it once, spoken at 0:24. On slide 1 put the number under it: \"913 m from the habitat, 160 g of O2, 13 minutes to spare.\""
+    }
+  ],
+  "banned_words_found": [
+    {
+      "file": "beats.md",
+      "quote": "5 + Andrea: refried, new generation"
+    },
+    {
+      "file": "script-3min-en.md",
+      "quote": "We are Los Frijolitos Espaciales Refritos Nueva Generación, from Ensenada."
+    },
+    {
+      "file": "script-3min-en.md",
+      "quote": "This is Marswalk."
+    }
+  ],
+  "overall": "The set is close to clean: no banned adjective appears outside the team's own name (\"Nueva Generación\" / \"new generation\", a proper name, and \"This is Marswalk.\" as a stand-in for \"introducing\"), and the generic lines left are the reveal, the two lead-in and sign-off lines of the close, the video's tagline and challenge cards, two slide labels, and a thesis repeated four times against the team's own \"said once\" rule."
+}
