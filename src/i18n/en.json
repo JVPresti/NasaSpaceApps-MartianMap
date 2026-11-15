@@ -955,6 +955,7 @@
   "table.event.replanned": "{event}: route re-planned to the shelter, {shelter}.",
   "table.event.an.event": "An event",
   "table.event.terrain.shade": "terrain shade",
+  "table.eva.total": "EVA total",
   "table.planned.out": "Planned out",
   "table.planned.out.title": "Walk out to the last stop plus the work planned at the stops, from the suit model. The work is planned time: the walk does not play it in real time.",
   "table.budget.key.out.work": "{min} out, {work} of it work",

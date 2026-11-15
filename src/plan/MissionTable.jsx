@@ -285,6 +285,17 @@ function Stack({ parts, label }) {
 }
 
 /**
+ * The whole EVA in minutes, door to door: the walk out with the work at the stops, plus the walk back. Rounded as the
+ * Suit step's time bar rounds its parts, so the two steps show the same numbers (#341).
+ * @param {object} tot route.totals
+ */
+function evaMinutes(tot) {
+  const out = Math.ceil(tot.timeSec / 60);
+  const back = tot.roundTrip ? 0 : Math.round(tot.returnTimeSec / 60);
+  return { out, back, total: out + back };
+}
+
+/**
  * What the EVA spends, as budgets: time (out, back, and against the crew's time: spare and the risk reserve) and the
  * oxygen and battery tanks (out, back, left). Shares from route.totals (src/sim/legCosts.js) and route.budget
  * (src/sim/missionNeeds.js). The time bar is the crew's time only: the oxygen margin is the Return panel's figure (N12).
@@ -650,15 +661,30 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
                 {planner.status === 'planning' ? t('table.planning') : t('table.replan')}
               </button>
             </div>
+            {/* The verdict on the step where the route is chosen, the same one the Suit step shows (#341) */}
+            {!event && !evaBegun && decision.reason !== 'planning' && (
+              <p className={'table-decision table-route-decision' + (decision.tone ? ' tone-' + decision.tone : '')}>{decision.title}</p>
+            )}
             <div className="table-grid2">
               <Big value={cardMetrics.distance} unit="km" label={t('ui.distance')} />
               {/* Walk out plus the work at the stops (#247): planned time, not played in real time */}
               {event
                 ? <Big value={cardMetrics.time} unit="min" label={t('table.event.to.shelter')} />
-                : <Big value={cardMetrics.time} unit="min" label={t('table.planned.out')} title={t('table.planned.out.title')} />}
+                : totals && !remaining
+                  ? <Big value={evaMinutes(totals).total} unit="min" label={t('table.eva.total')} />
+                  : <Big value={cardMetrics.time} unit="min" label={t('table.planned.out')} title={t('table.planned.out.title')} />}
               <Big value={cardMetrics.climb} unit="m" label={t('ui.climb')} />
               <Big value={cardMetrics.steepest} unit="°" label={t('table.steepest.slope')} tone={remaining ? null : steepTone} />
             </div>
+            {!event && totals && !remaining && (
+              <p className="table-note route-eva-parts">
+                {totals.workSec > 0
+                  ? t('table.budget.key.out.work', { min: evaMinutes(totals).out, work: shortDuration(totals.workSec) })
+                  : t('table.budget.key.out', { min: evaMinutes(totals).out })}
+                {' · '}
+                {totals.roundTrip ? t('table.budget.key.round.trip') : t('table.budget.key.back', { min: evaMinutes(totals).back })}
+              </p>
+            )}
             {remaining && remaining.count === 0 && !evaProgress.skipped.length && (
               <p className="table-note">{t(evaProgress.atHabitat ? 'table.progress.home' : 'table.progress.done')}</p>
             )}
