@@ -100,9 +100,12 @@ describe('zoneChange on the table', () => {
   });
 
   it('builds the plan key once while the route objects stay the same', () => {
-    const first = zoneInput(base, habitat, c).plan;
-    expect(zoneInput({ ...base, mission: { elapsedSec: 5 } }, habitat, c).plan).toBe(first);
-    expect(zoneInput({ ...base, route: { ...base.route, budget: { ...base.route.budget } } }, habitat, c).plan).not.toBe(first);
+    const memo = {};
+    const first = zoneInput(base, habitat, c, memo).plan;
+    expect(zoneInput({ ...base, mission: { elapsedSec: 5 } }, habitat, c, memo).plan).toBe(first);
+    expect(zoneInput({ ...base, route: { ...base.route, budget: { ...base.route.budget } } }, habitat, c, memo).plan).not.toBe(first);
+    // another caller's memo, as another store's service has, builds its own plan
+    expect(zoneInput(base, habitat, c, {}).plan).not.toBe(first);
   });
 });
 

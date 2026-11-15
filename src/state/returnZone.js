@@ -41,21 +41,22 @@ export const ZONE_REFRESH = Object.freeze({ moveM: 5, o2G: 2, batteryWh: 1, elap
 
 const finite = (v) => typeof v === 'number' && Number.isFinite(v);
 
-let planMemo = { budget: undefined, waypoints: undefined, fromIndex: -1, value: null };
+/** A fresh memo for planOf. Each zone service keeps its own, so two stores never share a plan. */
+const newPlanMemo = () => ({ budget: undefined, waypoints: undefined, fromIndex: -1, value: null });
 
 /**
  * The plan's budget beyond time and O2 (route.budget, #282) and the stops still to work, for computeReturnZone's `plan`,
  * with its key. Kept while route.budget, route.waypoints and the next stop are the same objects, so the store writes
- * of a walk (several a second) build nothing.
+ * of a walk (several a second) build nothing. Without a memo it builds the plan every call.
  */
-function planOf(s, fromIndex) {
+function planOf(s, fromIndex, planMemo = newPlanMemo()) {
   const budget = s.route?.budget, waypoints = s.route?.waypoints;
   if (planMemo.budget === budget && planMemo.waypoints === waypoints && planMemo.fromIndex === fromIndex) return planMemo.value;
   const stops = (waypoints ?? []).slice(fromIndex).filter((w) => finite(w?.x) && finite(w?.z) && w.workSec > 0)
     .map((w) => ({ x: w.x, z: w.z, workSec: w.workSec }));
   const plan = { marginFloor: budget?.marginFloor, marginFloorSec: budget?.marginFloorSec, batteryReserveWh: budget?.batteryReserveWh, stops };
   const value = { plan, key: JSON.stringify(plan) };
-  planMemo = { budget, waypoints, fromIndex, value };
+  Object.assign(planMemo, { budget, waypoints, fromIndex, value });
   return value;
 }
 
@@ -69,8 +70,9 @@ function hazardKey(hazards) {
  * @param {object} s store state
  * @param {{ x: number, z: number }} habitat the HAB airlock entry of shelters.json
  * @param {object} c suit constants
+ * @param {object} [memo] the caller's planOf memo, kept across calls on the same store
  */
-export function zoneInput(s, habitat, c) {
+export function zoneInput(s, habitat, c, memo) {
   const modifiers = zoneModifiers(s, missionEventDefinitions(s.needs?.objective, EVENT_DEFINITIONS));
   const budget = s.route?.budget;
   const evaLimitSec = finite(budget?.usableSec) ? budget.usableSec : undefined;
@@ -78,7 +80,7 @@ export function zoneInput(s, habitat, c) {
   if (!live) {
     const o2G = finite(budget?.o2StartG) ? budget.o2StartG : c.o2UsableG;
     const batteryWh = finite(budget?.batteryStartWh) ? budget.batteryStartWh : c.batteryWh;
-    const { plan, key } = planOf(s, 1);
+    const { plan, key } = planOf(s, 1, memo);
     return {
       kind: 'plan', home: habitat, from: null, suit: { o2G, batteryWh, elapsedSec: 0 }, evaLimitSec, plan, planKey: key,
       modifiers: { hazards: modifiers.hazards, homeward: false }, hazardKey: hazardKey(modifiers.hazards), events: [], windowSec: null,
@@ -90,7 +92,7 @@ export function zoneInput(s, habitat, c) {
   const from = finite(p.x) && finite(p.z) ? { x: p.x, z: p.z } : null;
   const elapsedSec = finite(s.mission?.elapsedSec) ? s.mission.elapsedSec : 0;
   const batteryWh = finite(s.suit?.batteryPct) ? (s.suit.batteryPct / 100) * c.batteryWh : undefined;
-  const { plan, key } = planOf(s, Math.max(1, s.route?.nextIndex ?? 1));
+  const { plan, key } = planOf(s, Math.max(1, s.route?.nextIndex ?? 1), memo);
   return {
     kind: 'live', home, from, suit: { o2G: s.suit.oxygenG, batteryWh, elapsedSec }, evaLimitSec, plan, planKey: key,
     modifiers: { hazards: modifiers.hazards, homeward: modifiers.homeward, shelterWithinSec: modifiers.shelterWithinSec ?? undefined },
@@ -132,6 +134,7 @@ export function returnZoneService(store = useMissionStore, { clientFactory = cre
   const listeners = new Set();
   let zone = null, started = false, client = null, habitat = DEFAULT_HABITAT, constants = null;
   let lastInput = null, lastAt = -Infinity, timer = null, busy = false;
+  const planMemo = newPlanMemo();
 
   async function run(input) {
     busy = true;
@@ -153,7 +156,7 @@ export function returnZoneService(store = useMissionStore, { clientFactory = cre
 
   function check() {
     if (!constants || busy) return;
-    const input = zoneInput(store.getState(), habitat, constants);
+    const input = zoneInput(store.getState(), habitat, constants, planMemo);
     const change = zoneChange(lastInput, input);
     if (!change.needed) return;
     const wait = change.urgent ? 0 : lastAt + ZONE_REFRESH.minGapMs - Date.now();

@@ -1,0 +1,131 @@
+renderer: ANGLE (Microsoft Corporation, D3D12 (NVIDIA GeForce RTX 3070), OpenGL 4.6)
+  layer buttons: Image | Terrain | Rocks | Outcrop | Radio | Exposure | Return zone
+  plan zone: {"kind":"plan","events":[],"insideCells":8163,"edgeCells":13203,"insideM2":123860.45413948562,"edgeM2":200334.38392792217,"reachM":613.0644026950533,"limit":"eva","ms":76.70000000298023}
+  fps table with the zone layer: min 57.0, median 60.0, minimap draw max - ms, long tasks 0 (0 ms)
+  fps walking with the minimap zone: min 58.0, median 60.0, minimap draw max 4.6 ms, long tasks 0 (0 ms)
+  at the stop: {"kind":"live","events":[],"insideCells":7689,"edgeCells":12798,"insideM2":116668.26312366837,"edgeM2":194189.15742706566,"reachM":609.3903789485335,"limit":"eva","ms":52.70000000298023}
+  fps standing at the stop with the minimap zone: min 60.0, median 60.0, minimap draw max 1.4 ms, long tasks 0 (0 ms)
+  storm after 81 s; zone snapped 4 ms after the alert: {"kind":"live","events":["dust-storm"],"insideCells":749,"edgeCells":0,"insideM2":11364.875676892652,"edgeM2":0,"reachM":78.96136956904462,"limit":"event","ms":63.900000005960464}
+  fps walk in the storm: min 53.0, median 60.0, minimap draw max 0.8 ms, long tasks 1 (116 ms)
+  radiation: {"kind":"live","events":["dust-storm","radiation"],"insideCells":0,"edgeCells":0,"insideM2":0,"edgeM2":0,"reachM":0,"limit":"window","ms":6.100000008940697}
+{
+  "gpu": true,
+  "baseline": false,
+  "at": "2026-11-15T15:14:31.555Z",
+  "loadStart": [
+    2.65,
+    1.75,
+    1.61
+  ],
+  "renderer": "ANGLE (Microsoft Corporation, D3D12 (NVIDIA GeForce RTX 3070), OpenGL 4.6)",
+  "fps": {
+    "table with the zone layer": {
+      "min": 57,
+      "median": 60,
+      "minimapDrawMsMax": null,
+      "longTasks": 0,
+      "longTaskMs": 0
+    },
+    "walking with the minimap zone": {
+      "min": 58,
+      "median": 60,
+      "minimapDrawMsMax": 4.6,
+      "longTasks": 0,
+      "longTaskMs": 0
+    },
+    "standing at the stop with the minimap zone": {
+      "min": 60,
+      "median": 60,
+      "minimapDrawMsMax": 1.4,
+      "longTasks": 0,
+      "longTaskMs": 0
+    },
+    "walk in the storm": {
+      "min": 53,
+      "median": 60,
+      "minimapDrawMsMax": 0.8,
+      "longTasks": 1,
+      "longTaskMs": 116
+    }
+  },
+  "zone": {
+    "plan": {
+      "kind": "plan",
+      "events": [],
+      "insideCells": 8163,
+      "edgeCells": 13203,
+      "insideM2": 123860.45413948562,
+      "edgeM2": 200334.38392792217,
+      "reachM": 613.0644026950533,
+      "limit": "eva",
+      "ms": 76.70000000298023
+    },
+    "start": {
+      "kind": "live",
+      "events": [],
+      "insideCells": 8183,
+      "edgeCells": 13191,
+      "insideM2": 124163.92211483656,
+      "edgeM2": 200152.3031427116,
+      "reachM": 614.8158006691253,
+      "limit": "eva",
+      "ms": 71.09999999403954
+    },
+    "atStop": {
+      "kind": "live",
+      "events": [],
+      "insideCells": 7689,
+      "edgeCells": 12798,
+      "insideM2": 116668.26312366837,
+      "edgeM2": 194189.15742706566,
+      "reachM": 609.3903789485335,
+      "limit": "eva",
+      "ms": 52.70000000298023
+    },
+    "snapMs": 4,
+    "storm": {
+      "kind": "live",
+      "events": [
+        "dust-storm"
+      ],
+      "insideCells": 749,
+      "edgeCells": 0,
+      "insideM2": 11364.875676892652,
+      "edgeM2": 0,
+      "reachM": 78.96136956904462,
+      "limit": "event",
+      "ms": 63.900000005960464
+    },
+    "beforeStorm": {
+      "kind": "live",
+      "events": [],
+      "insideCells": 7575,
+      "edgeCells": 12705,
+      "insideM2": 114938.49566416802,
+      "edgeM2": 192778.0313416838,
+      "reachM": 606.7346084261237,
+      "limit": "eva",
+      "ms": 59.20000000298023
+    },
+    "radiation": {
+      "kind": "live",
+      "events": [
+        "dust-storm",
+        "radiation"
+      ],
+      "insideCells": 0,
+      "edgeCells": 0,
+      "insideM2": 0,
+      "edgeM2": 0,
+      "reachM": 0,
+      "limit": "window",
+      "ms": 6.100000008940697
+    }
+  },
+  "walkedM": 51.72222854947778,
+  "loadEnd": [
+    4.91,
+    3.4,
+    2.28
+  ]
+}

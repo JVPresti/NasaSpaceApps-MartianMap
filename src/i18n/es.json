@@ -308,7 +308,7 @@
   "layers.zone.status.live": "Desde tu posición: quedan {time} del plan · O2 {o2} % · reserva de O2 {reserve} min · justo bajo {caution} min",
   "layers.zone.limit.o2": "El O2 marca el borde",
   "layers.zone.limit.eva": "Tu tiempo planeado marca el borde",
-  "layers.zone.limit.event": "{event}: nuevo plan: volver a casa, solo queda el camino de vuelta",
+  "layers.zone.limit.event": "{event}: nuevo plan, volver a casa. Solo queda el camino de vuelta",
   "layers.zone.limit.none": "Todo el terreno transitable al alcance",
   "layers.zone.limit.window.beyond": "{event}: refugio fuera de alcance en la ventana de {sec} s. Vuelve ya",
   "layers.zone.limit.window.out": "{event}: refugio a {need}, ventana de {sec} s. Vuelve ya",

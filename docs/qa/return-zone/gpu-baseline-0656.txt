@@ -1,0 +1,54 @@
+renderer: ANGLE (Microsoft Corporation, D3D12 (NVIDIA GeForce RTX 3070), OpenGL 4.6)
+  layer buttons: Image | Terrain | Rocks | Outcrop | Radio | Exposure | Return zone
+  plan zone: null
+  fps table with the zone layer: min 57.0, median 60.0, minimap draw max - ms, long tasks 0 (0 ms)
+  fps walking with the minimap zone: min 60.0, median 60.0, minimap draw max 1 ms, long tasks 0 (0 ms)
+  at the stop: null
+  fps standing at the stop with the minimap zone: min 59.0, median 60.0, minimap draw max 1.2 ms, long tasks 0 (0 ms)
+  storm after 80 s; zone snapped 0 ms after the alert: null
+  fps walk in the storm: min 56.0, median 60.0, minimap draw max 1.2 ms, long tasks 0 (0 ms)
+  radiation: null
+{
+  "gpu": true,
+  "renderer": "ANGLE (Microsoft Corporation, D3D12 (NVIDIA GeForce RTX 3070), OpenGL 4.6)",
+  "fps": {
+    "table with the zone layer": {
+      "min": 57,
+      "median": 60,
+      "minimapDrawMsMax": null,
+      "longTasks": 0,
+      "longTaskMs": 0
+    },
+    "walking with the minimap zone": {
+      "min": 60,
+      "median": 60,
+      "minimapDrawMsMax": 1,
+      "longTasks": 0,
+      "longTaskMs": 0
+    },
+    "standing at the stop with the minimap zone": {
+      "min": 59,
+      "median": 60,
+      "minimapDrawMsMax": 1.2,
+      "longTasks": 0,
+      "longTaskMs": 0
+    },
+    "walk in the storm": {
+      "min": 56,
+      "median": 60,
+      "minimapDrawMsMax": 1.2,
+      "longTasks": 0,
+      "longTaskMs": 0
+    }
+  },
+  "zone": {
+    "plan": null,
+    "start": null,
+    "atStop": null,
+    "snapMs": 0,
+    "storm": null,
+    "beforeStorm": null,
+    "radiation": null
+  },
+  "walkedM": 51.563348830828836
+}

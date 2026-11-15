@@ -8,6 +8,7 @@
 // Without QA_GPU it runs headless on SwiftShader, as CI machines can. QA_GPU=1 needs a display (DISPLAY, WSLg) and a
 // full Chromium (CHROME_PATH or --browser), and fails when the renderer is SwiftShader.
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { loadavg } from 'node:os';
 import { createServer } from 'vite';
 import puppeteer from 'puppeteer-core';
 
@@ -36,7 +37,7 @@ const browser = await puppeteer.launch({
       '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', '--no-sandbox', '--mute-audio']
     : ['--ignore-gpu-blocklist', '--enable-unsafe-swiftshader', '--mute-audio'],
 });
-const report = { gpu: GPU, renderer: null, fps: {}, zone: {} };
+const report = { gpu: GPU, baseline: BASELINE, at: new Date().toISOString(), loadStart: loadavg(), renderer: null, fps: {}, zone: {} };
 let page;
 const S = (fn, ...a) => page.evaluate(fn, ...a);
 const shot = (name) => page.screenshot({ path: `${SHOTS}/${name}.png` });
@@ -188,6 +189,7 @@ try {
   await shotOf('.table-map', '07b-table-map-event');
 } finally {
   writeFileSync(`${SHOTS}/report.json`, JSON.stringify(report, null, 2));
+  report.loadEnd = loadavg();
   console.log(JSON.stringify(report, null, 2));
   await browser.close();
   await server.close();
