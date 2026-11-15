@@ -609,10 +609,13 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
     body = (
       <>
         <section className="table-left">
-          <h2 className="table-h">{t('ui.cheyava.falls')}</h2>
-          <p className="table-text">{t('table.site.text')}</p>
-          {/* The first mission's plan beat (#265, src/mission/MissionBeat.jsx): nothing for the full EVA. */}
-          <PlanBeat evaBegun={evaBegun} />
+          {/* The step's title opens the column's first box (#395), level with the right column's first panel. */}
+          <header className="table-panel table-intro">
+            <h2 className="table-h">{t('ui.cheyava.falls')}</h2>
+            <p className="table-text">{t('table.site.text')}</p>
+            {/* The first mission's plan beat (#265, src/mission/MissionBeat.jsx): nothing for the full EVA. */}
+            <PlanBeat evaBegun={evaBegun} />
+          </header>
           {image && (
             <figure className="table-panel table-fill table-photo">
               <img src={imageUrl(image)} alt={image.alt} width={image.width_px} height={image.height_px} />
@@ -647,8 +650,10 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
     body = (
       <>
         <section className="table-left">
-          <h2 className="table-h">{t(`needs.objective.${objective}`)}</h2>
-          <p className="table-text">{t(`needs.objective.${objective}.text`)}</p>
+          <header className="table-panel table-intro">
+            <h2 className="table-h">{t(`needs.objective.${objective}`)}</h2>
+            <p className="table-text">{t(`needs.objective.${objective}.text`)}</p>
+          </header>
           {/* The crew's needs take the place of the compact hazard switches, which the Hazards step has in full. */}
           <NeedsPanel locked={evaBegun} />
           {samplesTable && !event ? (
@@ -820,7 +825,9 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
     body = (
       <>
         <section className="table-left">
-          <h2 className="table-h">{t('table.suit.check')}</h2>
+          <header className="table-panel table-intro">
+            <h2 className="table-h">{t('table.suit.check')}</h2>
+          </header>
           <div className="table-panel">
             <div className="table-panel-head">
               <p className="table-label">{t(evaBegun && !evaProgress.atHabitat ? 'table.suit.now.eva' : 'table.suit.now')}</p>
