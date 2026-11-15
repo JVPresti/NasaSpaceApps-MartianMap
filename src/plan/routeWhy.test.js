@@ -73,7 +73,7 @@ describe('stops left out and plan reasons', () => {
   it('speaks Spanish', () => {
     setLanguage('es');
     expect(stopLine({ workSec: 300, explain: leg({ block: 'slope', extraM: 62, extraSec: 75 }) })).toBe('5 min de trabajo · rodea terreno de más de 20°: +62 m, +75 s');
-    expect(planReasonLines([{ code: 'fits', spareSec: 1260 }, { code: 'solo-work', factor: 1.5 }])).toEqual(['Cabe, sobran 21 min.', 'El trabajo lleva 1,5 × más en solitario.']);
+    expect(planReasonLines([{ code: 'fits', spareSec: 1260 }, { code: 'solo-work', factor: 1.5 }])).toEqual(['Cabe, sobran 21 min.', 'Trabajo × 1,5 en solitario.']);
   });
 });
 

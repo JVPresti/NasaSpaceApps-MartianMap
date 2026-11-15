@@ -357,7 +357,12 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
   const objective = useMissionStore((s) => s.needs.objective);
   const dust = useDustAgainstLimit();
   const decision = decisionFor({ planner, totals, budget: planCurrent ? route.budget : null, dust });
-  const whyLines = planCurrent ? planReasonLines(route.planReasons) : [];
+  // Each reason is said once: a solo crew held to the radio route under the profile buttons it turns off
+  // (RouteProfiles.jsx). A no-go takes the place of the plan's reasons: what to change comes first, the crew and risk
+  // settings stay in view in the needs panel, and each leg's reason stays in the stop list.
+  const soloRadio = useMissionStore((s) => s.needs.crew === 1) && profiles?.radio?.ok === true;
+  const noGo = !decision.go && decision.reason !== 'planning';
+  const whyLines = planCurrent && !noGo ? planReasonLines((route.planReasons ?? []).filter((r) => !(soloRadio && r.code === 'solo-radio'))) : [];
 
   const onTabKey = (event) => {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;

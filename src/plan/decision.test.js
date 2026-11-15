@@ -25,7 +25,7 @@ describe('go / no-go', () => {
   it('is a no-go when the plan is over the crew\'s time, oxygen or battery, with the reason', () => {
     const time = decisionFor({ planner: ready, totals: nominal, budget: { fits: false, limit: 'time', usedSec: 4560, usableSec: 3060 } });
     expect(time).toMatchObject({ go: false, reason: 'budget', tone: 'warning' });
-    expect(time.text).toContain('1 h 16 min of the 51 min you can use');
+    expect(time.text).toContain('needs 1 h 16 min; you can use 51 min');
     expect(decisionFor({ planner: ready, totals: nominal, budget: { fits: false, limit: 'o2' } }).text).toMatch(/oxygen margin/);
     expect(decisionFor({ planner: ready, totals: nominal, budget: { fits: false, limit: 'battery' } }).text).toMatch(/battery/);
   });

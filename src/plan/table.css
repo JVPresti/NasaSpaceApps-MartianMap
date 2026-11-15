@@ -824,7 +824,13 @@ button.table-stop-name {
   .table-panel { padding: 12px 14px; }
   .table-primary { min-height: 52px; font-size: 23px; }
   .table-secondary { min-height: 40px; }
-  .table-layers button { min-height: 36px; }
+  .table-layers button { min-height: 32px; }
+  .table-layers { gap: 6px; }
+  .table-body-route .table-left { gap: 10px; }
+  .table-grid2 { row-gap: 8px; }
+  .table-big b { font-size: 30px; }
+  .table-stops { gap: 2px; }
+  .table-body-route .table-right { gap: 10px; }
   /* the goal's one-line description: the goal select and the stop list say the same on a short screen */
   .table-body-route .table-left > .table-text { display: none; }
 }
@@ -1140,6 +1146,8 @@ button.table-stop-name {
 }
 .table-stops li.dropped .table-stop-name { color: var(--dim); }
 .table-stops li.dropped .table-stop-dist { color: var(--caution); }
+/* The plan's reasons under the route numbers, at the size of the profile note below them */
+.table-note.route-why { font-size: 12px; line-height: 1.4; }
 
 /* ------------------------------------------------------------------ conditions outlook (#248) */
 
@@ -1154,3 +1162,17 @@ button.table-stop-name {
 .outlook-grid small { display: block; margin-top: 3px; font-size: 11px; line-height: 1.3; color: var(--dim); }
 .outlook-grid small > .src-tag:first-child { margin: 0 6px 0 0; }
 .outlook-exposure b { font-weight: 600; color: var(--text-2); }
+
+/* A 1366 x 768 screen: the needs controls a little lower, and the hazard cards keep their switch in view in both
+   languages (the Spanish text is longer). After the rules above, so it wins over them. */
+@media (max-height: 800px) {
+  .needs-select { min-height: 32px; }
+  .table-layers.needs-choice button { min-height: 30px; }
+  .profiles-table th,
+  .profiles-table td { padding-top: 1px; padding-bottom: 1px; }
+  .table-big > span { margin-top: 2px; }
+  .table-hazard-art { height: clamp(40px, calc(100vh - 730px), 220px); }
+  .table-hazard-cards dd { font-size: 14px; }
+  .table-hazard-cards .table-note { margin-bottom: 10px; }
+  .table-hazard-switch { padding-top: 12px; }
+}
