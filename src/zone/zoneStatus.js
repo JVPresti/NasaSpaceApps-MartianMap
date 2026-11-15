@@ -39,6 +39,8 @@ export function zoneStatus(zone) {
     const left = Math.round(inputs.shelterWithinSec ?? 0);
     const need = homeSecFrom(zone);
     if (left <= 0) limit = t('layers.zone.limit.window.closed', { event: eventName(event) });
+    // the home pass stops at the window, so a walk home past it reads Infinity: out of reach, length unknown
+    else if (need === Infinity) limit = t('layers.zone.limit.window.beyond', { event: eventName(event), sec: left });
     else if (Number.isFinite(need) && need > left) limit = t('layers.zone.limit.window.out', { event: eventName(event), need: shortDuration(need), sec: left });
     else limit = t('layers.zone.limit.window', { event: eventName(event), sec: left });
   } else if (stats.limit === 'event') limit = t('layers.zone.limit.event', { event: eventName(event) });

@@ -140,6 +140,7 @@ try {
   await walkTo(stop.x, stop.z, 2.5);
   report.walkedM = await S(() => window.__missionStore.getState().eva.distanceM);
   await sleep(2.5);
+  if (await paused()) { await resume(); await sleep(1); }
   report.zone.atStop = await zoneNow();
   console.log('  at the stop: ' + JSON.stringify(report.zone.atStop));
   await shot('03-walk-at-stop');
@@ -168,6 +169,7 @@ try {
   report.zone.beforeStorm = before;
   console.log(`  storm after ${((stormAt - t0) / 1000).toFixed(0)} s; zone snapped ${report.zone.snapMs} ms after the alert: ${JSON.stringify(report.zone.storm)}`);
   await sleep(0.6);
+  if (await paused()) { await resume(); await sleep(1); }
   await shot('05-storm-snap');
   await shotOf('.hud-map-wrap', '05b-minimap-storm-snap');
   await fps('walk in the storm');
