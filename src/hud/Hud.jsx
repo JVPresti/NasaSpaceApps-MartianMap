@@ -11,6 +11,7 @@ import { nextTarget } from '../sim/waypointRunner.js';
 import { batteryLevel, cardinal, formatEva, formatMinutes, formatValue, nextWaypointInfo, wrapDeg } from './format.js';
 import ElevationProfile from './ElevationProfile.jsx';
 import RadioLink from './RadioLink.jsx';
+import LayerChip from './LayerChip.jsx';
 import SlopeAhead from './SlopeAhead.jsx';
 import * as I from './icons.jsx';
 import NavLine from './NavLine.jsx';
@@ -272,6 +273,7 @@ export default function Hud({ engine, minimapRoute }) {
       <Clocks />
       <SuitPanel />
       <PartnerPanel />
+      <LayerChip />
       {/* One flex column on the right (#191): each panel sits under the one above, so none can cover another. */}
       <div className="hud-right">
         <Minimap tracker={minimapRoute} />

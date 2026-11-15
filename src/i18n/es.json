@@ -134,6 +134,8 @@
   "ui.plan.mode.layers.and.waypoints": "Capas y puntos de ruta del Modo Plan",
   "ui.map.layers": "Capas del mapa",
   "ui.data.layer": "Capa de datos",
+  "ui.layer.chip.off": "apagar",
+  "ui.layer.chip.label": "Capa de datos {name}, leyenda: {legend}. Pulsa 0 para apagarla.",
   "ui.terrain.data.layer": "Capa de datos del terreno",
   "ui.p0.l.next.layer.shift.l.previous.layer": "{p0} — L: capa siguiente; Mayús+L: capa anterior; 0: sin capa",
   "ui.overlays": "Superposiciones",
