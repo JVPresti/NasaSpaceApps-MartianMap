@@ -1,7 +1,8 @@
 // Unexpected find (#71, plan section 3.4 scenario 3). Hold Q for 2 s while looking at the ground: the right arm points,
 // a ring fills around the centre of the view and a marker drops where the view meets the terrain. A card then prices
 // the detour (time, O2, walkback margin before and after, go or no-go) and the crew chooses: Y adds the find to the
-// route, N or Esc dismisses it. The card closes after the choice, so nothing stays on the visor.
+// route, N or Esc dismisses it. The card closes after the choice, so nothing stays on the visor. In the habitat's cabin an
+// unanswered card waits, keys included, so it never covers the table prompt (#244); it comes back outside the cabin.
 //
 // App mounts this once the scene is ready, in both modes: the markers in the scene follow the store in Walk and in Plan,
 // the ring and the card show only in Walk. The ring is redrawn through refs, never by a React render per frame.
@@ -13,6 +14,7 @@ import { createFindService, markFind, pruneFinds } from '../state/finds.js';
 import { useMissionStore } from '../state/store.js';
 import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import { formatMinutes } from '../hud/format.js';
+import { useInCabin } from '../hud/useInCabin.js';
 import { formatNumber, t, translateText } from '../i18n/index.js';
 import '../hud/hud.css';
 import './finds.css';
@@ -237,11 +239,14 @@ export default function Finds({ engine, mode }) {
     if (s.route.visited !== prev.route.visited || s.route.waypoints !== prev.route.waypoints) pruneFinds();
   }), []);
 
+  // In the cabin the table prompt is the interface (#244): an unanswered card waits, keys included, until the crew is out.
+  const cabin = useInCabin(engine);
+
   if (mode !== 'walk') return null;
   return (
     <div className="hud finds-layer">
       <FindPointer engine={engine} service={service} />
-      <FindCard service={service} />
+      {!cabin && <FindCard service={service} />}
     </div>
   );
 }

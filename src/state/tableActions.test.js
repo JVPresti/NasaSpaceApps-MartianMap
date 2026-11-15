@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setLanguage, t } from '../i18n/index.js';
 import { setWristKeyOwner } from '../screens/wrist/ownership.js';
 import { startEvaRunner } from './eva.js';
-import { canEndEva, canOpenPlan, connectTableActions, END_EVA_KEY, OPEN_PLAN_KEY, tablePrompt } from './tableActions.js';
+import { canEndEva, canOpenPlan, connectTableActions, END_EVA_KEY, inCabin, OPEN_PLAN_KEY, tablePrompt } from './tableActions.js';
 import { resetStore, useMissionStore } from './store.js';
 
 function keyTarget() {
@@ -220,6 +220,12 @@ describe('the habitat table actions (#244)', () => {
     atHabitat();
     expect(target.press('KeyE').preventDefault).not.toHaveBeenCalled();
     expect(refuse).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks the engine whether the player is in the cabin, and says no without one', () => {
+    expect(inCabin(fakeEngine(true))).toBe(true);
+    expect(inCabin(fakeEngine(false))).toBe(false);
+    for (const engine of [null, undefined, {}, { inHabitatCabin: () => 1 }]) expect(inCabin(engine)).toBe(false);
   });
 
   it('redraws the prompt in the chosen language', () => {

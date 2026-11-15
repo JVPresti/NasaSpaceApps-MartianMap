@@ -24,6 +24,13 @@ export const TABLE_PAD_ACTIONS = Object.freeze(['open-plan', 'end-eva']);
 
 const walking = (state) => !!state && state.mode === 'walk' && !state.mission?.paused;
 
+/**
+ * The player walks in the habitat's cabin (engine.inHabitatCabin): where the table prompt shows and its keys act. There
+ * the walk's centred HUD items (the find card, the next-waypoint panel and marker) give way to the prompt, so nothing
+ * covers it or points the crew back outside (src/hud/useInCabin.js). False without an engine or the engine call.
+ */
+export const inCabin = (engine) => !!engine && typeof engine.inHabitatCabin === 'function' && engine.inHabitatCabin() === true;
+
 /** Whether the end prompt applies now: during the EVA, back at the habitat, walking with the mission running. */
 export function canEndEva(state) {
   return walking(state) && state.eva?.phase === 'active' && state.eva.atHabitat === true;
@@ -77,10 +84,9 @@ export function connectTableActions(engine, { onOpenPlan = () => false, store = 
   const unsubscribe = store.subscribe(() => show());
   const unsubscribeLanguage = subscribeLanguage(() => show(true));
 
-  const inCabin = () => typeof engine.inHabitatCabin === 'function' && engine.inHabitatCabin() === true;
   /** @returns {boolean} the action ran */
   function act(action) {
-    if (!inCabin() || wristOwnsKeys()) return false;   // the wrist owns the keyboard while up (#231)
+    if (!inCabin(engine) || wristOwnsKeys()) return false;   // the wrist owns the keyboard while up (#231)
     const state = store.getState();
     if (action === 'open-plan') return canOpenPlan(state) && onOpenPlan() !== false;
     if (action === 'end-eva') return canEndEva(state) && requestEvaEnd(store);
