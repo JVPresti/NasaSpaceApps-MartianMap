@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { formatNumber, t } from '../i18n/index.js';
 import { applySavedRoute, deleteSavedRoute, saveCurrentRoute, useMissionStore } from '../state/store.js';
 import SourceTag from './SourceTag.jsx';
+import { keepInView } from './keepInView.js';
 
 // Saved routes (#357): the crew's route library at the mission table. Each entry shows the plan (waypoints,
 // distance, climb, steepest grade) and its success record (runs, completions, samples, distance walked).
@@ -50,6 +51,8 @@ export default function SavedRoutes() {
           placeholder={t('savedRoutes.name.placeholder')}
           aria-label={t('savedRoutes.name')}
           onChange={(event) => setName(event.target.value)}
+          onFocus={(event) => keepInView(event.currentTarget)}
+          enterKeyHint="done"
         />
         <button type="submit" className="table-secondary" disabled={!canSave || name.trim() === ''}>{t('savedRoutes.save')}</button>
       </form>

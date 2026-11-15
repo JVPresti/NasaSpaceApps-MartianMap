@@ -603,7 +603,7 @@ export default function App() {
       {load.status === 'ready' && mode === 'walk' && !evaSummary && <TouchStick engine={engine} />}
       {load.status === 'ready' && mode === 'walk' && !evaSummary && <GamepadHint engine={engine} />}
       {/* Every keyboard action as a button on a touch screen (#365); the stick and drag-to-look stay with the engine. */}
-      {playing && mode === 'walk' && stage !== STAGE.EGRESS && <TouchActions engine={engine} wristOpen={wristOpen} />}
+      {playing && mode === 'walk' && <TouchActions engine={engine} wristOpen={wristOpen} />}
       {load.status === 'ready' && <Finds engine={engine} mode={mode} />}
 
       {load.status === 'ready' && <WalkStopCard active={mode === 'walk' && stage === STAGE.EVA} />}

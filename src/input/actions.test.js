@@ -116,6 +116,7 @@ describe('the action list (#365)', () => {
     expect(wrist).toEqual(expect.arrayContaining(['wrist', 'wrist-next-page', 'wrist-confirm']));
     expect(wrist).not.toContain('partner');
     expect(ids({ mode: 'plan', stage: 'eva' })).toEqual(['pause']);
+    expect(ids({ mode: 'walk', stage: 'egress', inCabin: true })).toEqual(['pause']);   // the airlock cycle
   });
 
   it('shows a sampling button only when its input does something now', () => {

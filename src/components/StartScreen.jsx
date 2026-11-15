@@ -6,6 +6,7 @@ import poster from '../assets/ui/surface.webp';
 import { ControlsPanel } from './ControlsHelp.jsx';
 import Modal from './Modal.jsx';
 import { FOCUSABLE, focusTarget } from './focus.js';
+import './menuMobile.css';
 import { presentHref, presentLabel } from '../present/entry.js';
 
 /**

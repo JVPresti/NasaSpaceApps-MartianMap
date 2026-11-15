@@ -160,8 +160,10 @@ export function touchBarActions(now) {
   const surface = walk && now?.stage === 'eva';
   const cabin = walk && !!now?.inCabin;
   const wrist = surface && !!now?.wristOpen;
+  const egress = now?.stage === 'egress';   // the airlock cycle: nobody walks, only Pause applies
   const show = (a) => {
     if (a.touch !== 'button') return false;
+    if (egress) return a.when === 'always';
     switch (a.when) {
       case 'always': return true;
       case 'walk': return walk;

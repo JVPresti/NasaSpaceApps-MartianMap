@@ -72,3 +72,11 @@
 @media (prefers-reduced-motion: reduce) {
   .source-tag-tip { animation: none; }
 }
+
+/* Touch (#365): a tap opens the details (SourceTag.jsx). The chip is small, so an invisible margin around it takes the
+   finger too, and the details read at 14 px. */
+@media (pointer: coarse) {
+  .source-tag-interactive::after { content: ''; position: absolute; inset: -12px -6px; }
+  .source-tag-tip { font-size: 14px; }
+  .source-tag-tip a { display: inline-block; min-height: 32px; padding: 6px 0; }
+}

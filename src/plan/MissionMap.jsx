@@ -15,6 +15,7 @@ import { useSkyView } from './routeExposure.js';
 import TraverseLayer from './TraverseLayer.jsx';
 import ReturnZoneLayer from '../zone/ReturnZoneLayer.jsx';
 import { useReturnZone, zoneFrameKey, zoneFramePoints } from '../zone/useReturnZone.js';
+import { useMapPinch } from './mapPinch.js';
 import './mapLayers.css';
 
 // Flat map of the mission table (#11). The picture is painted once per layer from the HiRISE image, the outcrop mask
@@ -173,6 +174,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const crop = view ?? fit;
   const boxRef = useRef(null);
   const dragRef = useRef(null);
+  useMapPinch(boxRef, { crop, tile, min: Math.min(120, minSpanM), setView, dragRef });   // two fingers (#365)
 
   // Repaint at most once per frame while zooming or dragging.
   useEffect(() => {

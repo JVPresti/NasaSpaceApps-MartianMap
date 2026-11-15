@@ -6,6 +6,7 @@ import { CREDITS_PATH } from '../data/provenance.js';
 import { SOURCES_KEY, closeSources, openSources, useSourcesStore } from './sourcesStore.js';
 import { wristOwnsKeys } from '../screens/wrist/ownership.js';
 import './sources.css';
+import './sourcesMobile.css';
 
 // Not bundled. The provenance registry has usually loaded it already, and the shared loader
 // returns that copy; a failed load is tried again on the next open.

@@ -19,6 +19,8 @@ import RouteReview, { ReviewNotes } from './RouteReview.jsx';
 import { MissionRecap } from '../mission/MissionBeat.jsx';
 import { useReserveSec } from './useReserveSec.js';
 import './debrief.css';
+import './debriefMobile.css';
+import TapTitles from '../plan/TapTitles.jsx';
 
 /** The tag chip stays small next to a large metric value and is not interactive inside the modal. */
 const TAG_CLASS = () => 'source-tag-chip debrief-tag';
@@ -205,6 +207,8 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
         </div>
         <p className="dialog-footnote">{t('debrief.footnote')}</p>
       </div>
+      {/* a row's or a mark's title on a touch screen (#365) */}
+      <TapTitles />
     </Modal>
   );
 }

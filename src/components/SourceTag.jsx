@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom';
 import { provenance as appRegistry, describeEntry, textAlternative } from '../data/provenance.js';
 import { useMissionStore } from '../state/store.js';
+import { tipAfterTap } from './sourceTagTap.js';
 import './SourceTag.css';
 
 // Source tag (#62): says next to a value whether it was measured (DATA), computed by us (DERIVED) or simulated
@@ -21,9 +22,12 @@ function placeTip(anchor) {
   return below < window.innerHeight * 0.6 ? { left, top: below, maxWidth: w } : { left, bottom: window.innerHeight - r.top + GAP, maxWidth: w };
 }
 
-function Details({ entry, style, onEnter, onLeave }) {
+function Details({ entry, style, onEnter, onLeave, tipRef }) {
+  // Inside an open modal dialog (the debrief, the sources screen) the portal goes into the dialog, so the details sit in
+  // the top layer with it instead of under it.
+  const host = document.querySelector('dialog[open]') ?? document.body;
   return createPortal(
-    <div className="source-tag-tip" style={style} aria-hidden="true" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+    <div className="source-tag-tip" ref={tipRef} style={style} aria-hidden="true" onMouseEnter={onEnter} onMouseLeave={onLeave}>
       <dl>
         {describeEntry(entry).map(([k, v, href]) => (
           <div key={k}>
@@ -33,7 +37,7 @@ function Details({ entry, style, onEnter, onLeave }) {
         ))}
       </dl>
     </div>,
-    document.body,
+    host,
   );
 }
 
@@ -62,6 +66,7 @@ export default function SourceTag({ path, variant = 'label', interactive = true,
   const id = useId();
   const [tip, setTip] = useState(null);
   const closeTimer = useRef(null);
+  const tipRef = useRef(null);
   useEffect(() => () => clearTimeout(closeTimer.current), []);
   const entry = registry.resolve(path, live);
   if (!entry || (requireSource && !live)) return null;
@@ -86,14 +91,21 @@ export default function SourceTag({ path, variant = 'label', interactive = true,
   const keep = () => clearTimeout(closeTimer.current);
   const close = () => { clearTimeout(closeTimer.current); setTip(null); };
   const onKeyDown = (e) => { if (e.key === 'Escape') close(); };
+  // a tap opens and closes the details (#365); a tap on a link inside them must not close them first
+  const onPointerUp = (e) => {
+    const next = tipAfterTap(Boolean(tip), e.pointerType);
+    if (next === 'open') open(e);
+    else if (next === 'close') close();
+  };
+  const onBlur = (e) => { if (!tipRef.current?.contains(e.relatedTarget)) close(); };
   return (
     <span
       className={classes + ' source-tag-interactive'} data-tag={entry.tag} tabIndex={0} aria-describedby={id}
-      onMouseEnter={open} onMouseLeave={closeSoon} onFocus={open} onBlur={close} onKeyDown={onKeyDown}
+      onMouseEnter={open} onMouseLeave={closeSoon} onFocus={open} onBlur={onBlur} onKeyDown={onKeyDown} onPointerUp={onPointerUp}
     >
       <span aria-hidden="true">{text}</span>
       <span id={id} className="source-tag-sr">{alt}</span>
-      {tip && <Details entry={entry} style={tip} onEnter={keep} onLeave={closeSoon} />}
+      {tip && <Details entry={entry} style={tip} onEnter={keep} onLeave={closeSoon} tipRef={tipRef} />}
     </span>
   );
 }

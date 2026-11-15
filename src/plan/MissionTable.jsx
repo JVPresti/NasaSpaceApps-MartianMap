@@ -43,6 +43,7 @@ import oxygenArt from '../assets/ui/hazard_oxygen.webp';
 import radiationArt from '../assets/ui/hazard_radiation.webp';
 import { fixed as num, routeMetrics } from './routePlan.js';
 import './table.css';
+import { PlanMenuButton, PlanSheetToggle, PlanWalkButton } from './PlanTouch.jsx';
 
 // The mission table (#11): the screen in the habitat where the EVA is planned, before the helmet view. Four steps
 // (site, route, hazards, suit check); the EVA begins from the route or the suit check. The Walk view then needs no
@@ -547,6 +548,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
         <EventBanner />
         <PlanStopCard />
       </div>
+      <PlanSheetToggle />
     </div>
   );
 
@@ -823,6 +825,8 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           {onClose && (
             <button type="button" className="table-secondary table-close" onClick={onClose}>{t('table.backToHabitat')}</button>
           )}
+          {!onClose && <PlanWalkButton />}
+          <PlanMenuButton />
         </div>
       </header>
       <div id="table-body" className={'table-body table-body-' + tab} role="tabpanel" aria-labelledby={`table-tab-${tab}`}>

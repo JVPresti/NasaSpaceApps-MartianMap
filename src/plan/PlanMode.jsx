@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 import { useMissionStore } from '../state/store.js';
 import MissionTable from './MissionTable.jsx';
+import { planSheet, usePlanSheet } from './planSheet.js';
+import TapTitles from './TapTitles.jsx';
+import './planMobile.css';
 import { useRoutePlanner } from './useRoutePlanner.js';
 import { startAtAirlock } from './routeStart.js';
 import { loadDataFile, ROUTE_PATH } from '../data/dataFiles.js';
@@ -19,6 +22,7 @@ import { SHELTERS_PATH } from '../sim/shelters.js';
 export default function PlanMode({ engine, active, evaBegun = false, onBeginEva, onClose, onControls, initialTab = 'site' }) {
   const waypoints = useMissionStore((s) => s.route.waypoints);
   const planner = useRoutePlanner({ waypoints, enabled: active, engine });
+  const sheet = usePlanSheet();
 
   // route.json holds the five placeholder waypoints from the assets team. The route starts at the airlock (#166);
   // without shelters.json it starts at the HAB waypoint as before. The planner chooses the stops from the crew's needs
@@ -56,5 +60,12 @@ export default function PlanMode({ engine, active, evaBegun = false, onBeginEva,
 
   if (!active) return null;
 
-  return <MissionTable planner={planner} waypoints={waypoints} evaBegun={evaBegun} onBeginEva={onBeginEva} onClose={onClose} onControls={onControls} initialTab={initialTab} />;
+  // The wrapper has no box (display: contents): it only carries the phone sheet's state for planMobile.css. A tap on a
+  // step tab opens the sheet, since the player asked to see that step.
+  return (
+    <div className={'plan-touch plan-sheet-' + sheet} onClickCapture={(event) => { if (event.target.closest?.('[role="tab"]')) planSheet.open(); }}>
+      <MissionTable planner={planner} waypoints={waypoints} evaBegun={evaBegun} onBeginEva={onBeginEva} onClose={onClose} onControls={onControls} initialTab={initialTab} />
+      <TapTitles />
+    </div>
+  );
 }
