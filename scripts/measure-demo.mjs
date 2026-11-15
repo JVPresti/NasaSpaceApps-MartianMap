@@ -238,6 +238,8 @@ async function act(action) {
   } else if (action.click) {
     await S((sel, k) => document.querySelectorAll(sel)[k]?.click(), action.click, action.index ?? 0);
   } else if (action.marker) {
+    // the planner worker answers first: wait for the marker of the new stop
+    await waitFor((sel, text) => [...document.querySelectorAll(sel)].some((el) => el.textContent.includes(text)), 15, `map marker "${action.marker}"`, SEL.mapMarkers, action.marker);
     if (!(await clickText(action.marker, SEL.mapMarkers))) skip(`map marker "${action.marker}"`);
   }
   await sleep(1.5);
@@ -275,12 +277,29 @@ const stopWalking = () => S(() => window.__marswalk.walking(false));
  * Walk along a polyline at walking pace until the last point is within `tolerance` or `until()` is true.
  * @returns {Promise<'arrived' | 'until' | 'timeout'>}
  */
-async function walkPath(points, { tolerance = WALK.pointToleranceM, until = null, timeoutS = 240 } = {}) {
+// Walking is measured, so the report says how fast it really went: distance, time, frame rate and step-asides. The
+// engine caps a frame's step at 0.1 s (src/engine/index.js), so below 10 fps the astronaut walks slower than 1.0 m/s.
+const walking = { sec: 0, metres: 0, fps: [], asides: 0 };
+
+async function walkPath(points, options = {}) {
+  const t0 = Date.now();
+  const d0 = await S(() => window.__missionStore.getState().eva.distanceM ?? 0);
+  const result = await walkPathInner(points, options);
+  walking.sec += (Date.now() - t0) / 1000;
+  walking.metres += (await S(() => window.__missionStore.getState().eva.distanceM ?? 0)) - d0;
+  return result;
+}
+
+async function walkPathInner(points, { tolerance = WALK.pointToleranceM, until = null, timeoutS = 240 } = {}) {
   let i = 0;
   const t0 = Date.now();
-  let best = Infinity, lastProgress = Date.now(), aside = 0;
+  let best = Infinity, lastProgress = Date.now(), aside = 0, lastFps = 0;
   while ((Date.now() - t0) / 1000 < timeoutS) {
     if (until && (await until())) { await stopWalking(); return 'until'; }
+    if (Date.now() - lastFps > 2000) {
+      lastFps = Date.now();
+      walking.fps.push(await S(() => window.__marswalk.stats().fps));
+    }
     const [px, pz] = points[i];
     const last = i === points.length - 1;
     const r = await steer(px, pz);
@@ -294,6 +313,7 @@ async function walkPath(points, { tolerance = WALK.pointToleranceM, until = null
     if ((Date.now() - lastProgress) / 1000 > WALK.stuckSec) {
       // Blocked by a rock or a wall the height map does not see: step aside, alternating sides, then carry on.
       aside += 1;
+      walking.asides += 1;
       const side = aside % 2 ? 1 : -1;
       await S((s) => { const m = window.__marswalk, p = m.pose(); m.place(p.x, p.z, p.yaw + s * 1.2, 0); m.walking(true); }, side);
       await sleep(1.5);
@@ -495,10 +515,16 @@ try {
   await snap('debrief');
   const debriefText = await S((sel) => document.querySelector(sel)?.innerText ?? '', SEL.debrief);
   marks.noDeviations = /No deviations|Sin desv/i.test(debriefText);
-  await S((sel) => { const d = document.querySelector(sel); d?.scrollTo?.(0, d.scrollHeight / 2); }, SEL.debrief);
+  await S((sel, k) => {
+    const d = document.querySelector(sel);
+    for (const el of [d, d?.closest('dialog')]) if (el) el.scrollTop = (el.scrollHeight - el.clientHeight) * k;
+  }, SEL.debrief, 0.5);
   await dwell(DWELL.debrief / 2);
   await snap('debrief-review');
-  await S((sel) => { const d = document.querySelector(sel); d?.scrollTo?.(0, d.scrollHeight); }, SEL.debrief);
+  await S((sel, k) => {
+    const d = document.querySelector(sel);
+    for (const el of [d, d?.closest('dialog')]) if (el) el.scrollTop = (el.scrollHeight - el.clientHeight) * k;
+  }, SEL.debrief, 1);
   await dwell(DWELL.debrief / 2);
   await snap('debrief-end');
 
@@ -526,6 +552,11 @@ try {
   console.log(`EVA (Start walking to the debrief): ${fmt(evaWall)} of play, mission clock T+${marks.endT?.toFixed(0)} s.`);
   console.log(`Mission times: at the stop T+${marks.arriveT?.toFixed(0)} s, sample secured T+${marks.sampledT?.toFixed(0)} s, storm T+${marks.stormT?.toFixed(0)} s, radiation T+${marks.radiationT?.toFixed(0)} s, back in the habitat T+${marks.backT?.toFixed(0)} s.`);
   console.log(`Find marked: ${marks.find ? 'yes' : 'no'}. Debrief review: ${marks.noDeviations ? '"No deviations"' : 'a deviation with its verdict'}.`);
+  const fps = walking.fps.filter(Number.isFinite);
+  const speed = walking.sec > 0 ? walking.metres / walking.sec : NaN;
+  console.log(`Walking: ${walking.metres.toFixed(0)} m in ${walking.sec.toFixed(0)} s, ${speed.toFixed(2)} m/s with the turns and stops; `
+    + `${fps.length ? Math.min(...fps) + ' to ' + Math.max(...fps) : '?'} fps; ${walking.asides} step-asides.`);
+  if (fps.length && Math.min(...fps) < 12) console.log('Warning: the browser fell below 12 fps, so the walk ran slower than 1.0 m/s (the engine caps a frame at 0.1 s). Measure on a quieter machine or with --headed.');
   if (notDriven.length) console.log('\nNot driven (control not on screen yet):\n- ' + notDriven.join('\n- '));
 } finally {
   await browser.close();
