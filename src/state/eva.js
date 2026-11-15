@@ -57,6 +57,7 @@ export function createInitialEvaState() {
     events: [],                  // [{ type: 'start' | 'end', eventId, label, atSec }]
     routeChanges: [],            // [{ atSec, kind, reason, before, after, x, z }], see routeSnapshot below; x, z: where it happened
     track: [],                   // [{ x, z, atSec, marginSec, slopeDeg, eventId, o2G, home }] every TRACK_STEP_M walked (#274)
+    lowPoint: null,              // a track point at the reading of minOxygenMarginSec; the summary's track includes it
     plan: null,                  // the approved route at Begin EVA: { atSec, decision, profile, path, waypoints, legs, totals } (#274)
     finds: [],                   // [{ id, label, x, z, atSec, accepted }] every find marked this EVA (#274)
     summary: null,               // final frozen snapshot; null until phase 'ended'
@@ -313,6 +314,18 @@ function lowest(current, reading) {
   return current === null || reading < current ? reading : current;
 }
 
+/**
+ * The track with the point of the lowest margin in its place by mission time, unless it is already there. The track
+ * keeps a point every 2 m of walking; the lowest margin is read every tick, often while standing still.
+ */
+function withLowPoint(track, lowPoint) {
+  const list = Array.isArray(track) ? track : [];
+  if (!lowPoint || !isFiniteNumber(lowPoint.atSec)) return list;
+  if (list.some((p) => p.atSec === lowPoint.atSec && p.x === lowPoint.x && p.z === lowPoint.z)) return list;
+  const index = list.findIndex((p) => isFiniteNumber(p.atSec) && p.atSec > lowPoint.atSec);
+  return index < 0 ? [...list, lowPoint] : [...list.slice(0, index), lowPoint, ...list.slice(index)];
+}
+
 function buildSummary(state, eva, endedAtSec) {
   const startedAtSec = isFiniteNumber(eva.startedAtSec) ? eva.startedAtSec : null;
   const sampling = state?.sampling ?? {};
@@ -327,8 +340,9 @@ function buildSummary(state, eva, endedAtSec) {
     minBatteryPct: isFiniteNumber(eva.minBatteryPct) ? eva.minBatteryPct : null,
     events: clone(Array.isArray(eva.events) ? eva.events : []),
     routeChanges: clone(Array.isArray(eva.routeChanges) ? eva.routeChanges : []),
-    // The route review inputs (#274): the walked track, the plan approved at Begin EVA and every marked find.
-    track: clone(Array.isArray(eva.track) ? eva.track : []),
+    // The route review inputs (#274): the walked track (with the point of the lowest margin, so the debrief's chart and
+    // its headline agree), the plan approved at Begin EVA and every marked find.
+    track: clone(withLowPoint(eva.track, eva.lowPoint)),
     plan: eva.plan ? clone(eva.plan) : null,
     finds: clone(Array.isArray(eva.finds) ? eva.finds : []),
     sampleCount: Number.isInteger(sampling.count) ? sampling.count : samples.length,
@@ -509,10 +523,14 @@ export function startEvaRunner({
       // began it at the mission table, and being at the habitat no longer ends it by itself.
       lastPosition = { x: truth.x, z: truth.z };
       sinceTrackM = 0;
-      const patch = { phase: 'active', startedAtSec: missionTimeSec(state), atHabitat: inside, track: withPoint(eva.track, trackPoint(state, truth, eva, inside, slopeAt)) };
+      const first = trackPoint(state, truth, eva, inside, slopeAt);
+      const patch = { phase: 'active', startedAtSec: missionTimeSec(state), atHabitat: inside, track: withPoint(eva.track, first) };
       const minOxygen = lowest(null, state.suit?.marginSec);
       const minBattery = lowest(null, state.suit?.batteryPct);
-      if (minOxygen !== null) patch.minOxygenMarginSec = minOxygen;
+      if (minOxygen !== null) {
+        patch.minOxygenMarginSec = minOxygen;
+        patch.lowPoint = first;
+      }
       if (minBattery !== null) patch.minBatteryPct = minBattery;
       writeEva(store, patch);
       return;
@@ -530,22 +548,27 @@ export function startEvaRunner({
 
     const minOxygen = lowest(eva.minOxygenMarginSec, state.suit?.marginSec);
     const minBattery = lowest(eva.minBatteryPct, state.suit?.batteryPct);
+    const point = trackPoint(state, truth, eva, inside, slopeAt);
+    // The point where the lowest margin was read: often between two track points (standing at a stop, on the airlock
+    // steps), so the debrief's chart would otherwise show a higher minimum than its headline.
+    const lowPoint = minOxygen !== eva.minOxygenMarginSec ? point : eva.lowPoint ?? null;
 
     if (inside && eva.endRequested) {
       // Count the last steps, the current margins and the point where the walk ended before freezing the summary.
-      const track = withPoint(eva.track, trackPoint(state, truth, eva, inside, slopeAt));
+      const track = withPoint(eva.track, point);
       sinceTrackM = 0;
-      endEva({ distanceM, minOxygenMarginSec: minOxygen, minBatteryPct: minBattery, atHabitat: false, endRequested: false, track });
+      endEva({ distanceM, minOxygenMarginSec: minOxygen, minBatteryPct: minBattery, atHabitat: false, endRequested: false, track, lowPoint });
       return;
     }
 
     const patch = {};
     // One track point every TRACK_STEP_M of walking, measured along the steps like the distance (#274).
     if (sinceTrackM >= TRACK_STEP_M || !Array.isArray(eva.track) || eva.track.length === 0) {
-      const track = withPoint(eva.track, trackPoint(state, truth, eva, inside, slopeAt));
+      const track = withPoint(eva.track, point);
       if (track !== eva.track) patch.track = track;
       sinceTrackM = 0;
     }
+    if (lowPoint !== (eva.lowPoint ?? null)) patch.lowPoint = lowPoint;
     if (inside !== eva.atHabitat) patch.atHabitat = inside;
     if (!inside && eva.endRequested) patch.endRequested = false;   // only at the habitat
     if (distanceM !== eva.distanceM) patch.distanceM = distanceM;

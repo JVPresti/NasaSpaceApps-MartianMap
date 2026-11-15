@@ -4,7 +4,7 @@ import { provenance } from '../data/provenance.js';
 import { t } from '../i18n/index.js';
 import MissionMap from '../plan/MissionMap.jsx';
 import { REVIEW_RULES, reviewRoute } from '../sim/routeReview.js';
-import { formatMinutes, formatMissionTime, waypointCode } from './format.js';
+import { formatMissionTime, formatSignedMinutes, waypointCode } from './format.js';
 import { costText, detailText, reasonText, ruleNotes, summaryLine, verdictLabel } from './reviewText.js';
 
 // Route review in the debrief (#274): the plan approved at Begin EVA and the walked track on the mission table's map,
@@ -67,24 +67,26 @@ function reviewMarks(review, summary) {
 
 /**
  * The suit margin over the EVA, with the reserve line (margin 0: below it the suit is using the reserve) and the
- * deviations shaded in their verdict colours.
+ * deviations shaded in their verdict colours. lowestSec is the summary's lowest margin, read every tick, so the label
+ * reads exactly as the debrief's "Lowest oxygen margin"; the summary's track carries the point it was read at.
  */
-export function MarginStrip({ track, deviations }) {
+export function MarginStrip({ track, deviations, lowestSec = null }) {
   const points = track.filter((p) => isNumber(p.atSec) && isNumber(p.marginSec));
   if (points.length < 2) return null;
   const t0 = points[0].atSec;
   const span = Math.max(1, points.at(-1).atSec - t0);
   const margins = points.map((p) => p.marginSec);
-  const low = Math.min(...margins);
+  const trackLow = Math.min(...margins);
+  const low = isNumber(lowestSec) ? Math.min(lowestSec, trackLow) : trackLow;
   const lo = Math.min(0, low);
   const hi = Math.max(...margins, lo + 600);
   const pad = (hi - lo) * 0.1;
   const x = (sec) => ((sec - t0) / span) * 100;
   const y = (m) => ((hi + pad - m) / (hi - lo + 2 * pad)) * 100;
-  const lowest = points[margins.indexOf(low)];
+  const lowest = points[margins.indexOf(trackLow)];
   const reserveY = y(0);
   const line = points.map((p) => x(p.atSec).toFixed(2) + ',' + y(p.marginSec).toFixed(2)).join(' ');
-  const lowText = formatMinutes(low);
+  const lowText = formatSignedMinutes(low);
   const atText = formatMissionTime(lowest.atSec);
 
   return (
@@ -215,7 +217,7 @@ export function RouteReviewView({ summary, review, selected, onSelect }) {
               <p className="debrief-empty">{t('review.none.detail', { enter: rules.enterM, length: rules.minLengthM })}</p>
             )}
           </div>
-          <MarginStrip track={review.track} deviations={review.deviations} />
+          <MarginStrip track={review.track} deviations={review.deviations} lowestSec={summary.minOxygenMarginSec} />
         </>
       )}
     </section>

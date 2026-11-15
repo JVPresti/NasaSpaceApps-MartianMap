@@ -479,6 +479,34 @@ describe('route review inputs (#274)', () => {
     expect(eva().finds).toEqual([{ id: 'find-1', label: 'M01', x: 480, z: 620, atSec: 40, accepted: true }]);
   });
 
+  it('puts the point of the lowest margin into the summary track, so the chart and the headline agree', () => {
+    place(HAB.x, HAB.z);
+    mission(0);
+    suit({ marginSec: 3000, oxygenG: 600 });
+    const runner = runnerAt();
+    walkTo(runner, HAB.x - 10, HAB.z);
+    // Standing still at a stop: the margin dips between two track points, then recovers once the walk home shortens.
+    mission(useMissionStore.getState().mission.elapsedSec + 30);
+    suit({ marginSec: 2900.4 });
+    runner.tick();
+    mission(useMissionStore.getState().mission.elapsedSec + 1);
+    suit({ marginSec: 2985 });
+    runner.tick();
+    expect(eva().track.some((p) => p.marginSec === 2900)).toBe(false);   // no walking, no regular track point
+    walkTo(runner, HAB.x, HAB.z);
+    requestEvaEnd(useMissionStore);
+    runner.tick();
+
+    const { summary } = eva();
+    expect(summary.minOxygenMarginSec).toBe(2900.4);
+    const low = summary.track.filter((p) => p.marginSec === Math.round(summary.minOxygenMarginSec));
+    expect(low).toEqual([expect.objectContaining({ x: HAB.x - 10, z: HAB.z, atSec: 40 })]);
+    expect(Math.min(...summary.track.map((p) => p.marginSec))).toBe(2900);
+    // In time order, once.
+    const times = summary.track.map((p) => p.atSec);
+    expect(times).toEqual([...times].sort((a, b) => a - b));
+  });
+
   it('freezes the track, plan and finds into the summary, and keeps them counting after continue EVA', () => {
     setRoute();
     place(HAB.x, HAB.z);

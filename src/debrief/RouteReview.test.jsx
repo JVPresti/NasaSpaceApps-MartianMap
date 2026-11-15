@@ -198,6 +198,16 @@ describe('route review in the debrief', () => {
     expect(summaryLine(review(-130, -3.2))).toBe('1 desvío: 1 costoso. 2 min y 3 g de O2 por debajo del plan.');
   });
 
+  it('gives the margin chart the same lowest margin as the headline metric', () => {
+    // The headline is read every tick; the chart's points come every 2 m. The summary's track carries the lowest
+    // reading (src/state/eva.js), and the label reads the summary's figure in the same format.
+    const track = walk([[0, 0], [400, 0], [0, 0]], (p, s) => ({ marginSec: 18780 + s }));
+    const body = text(renderDebrief(summaryWith(track, { minOxygenMarginSec: 18420 })));
+    expect(body).toMatch(/Lowest oxygen margin \+307 min/);
+    expect(body).toMatch(/Lowest \+307 min at T\+/);
+    expect(body).not.toContain('Lowest +313 min');
+  });
+
   it('keeps the lowest margin on a forced row', () => {
     const track = walk([[0, 0], [150, 0], [200, 60], [250, 0], [400, 0]], (p, s) => (
       s >= 200 ? { eventId: 'radiation', marginSec: -180 } : s >= 100 ? { eventId: 'dust-storm' } : {}
