@@ -1277,6 +1277,8 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
   row-gap: 0;
 }
 .table-hazard-cards > li > .table-hazard-art { height: 100%; min-height: 0; max-height: none; }
+/* the subgrid has no row gap and the art fills its row, so the art's own margin is lost: the title keeps the air (#399) */
+.table-hazard-cards > li > .table-hazard-title { padding-top: 20px; }
 /* each card's text sits at the top of its shared row, not spread over it; the switch at the foot */
 .table-hazard-cards > li > .table-hazard-title,
 .table-hazard-cards > li > dl,
