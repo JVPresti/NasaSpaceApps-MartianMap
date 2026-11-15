@@ -34,22 +34,30 @@ const at = (x, z, visited = ['HAB', 'WP3 · Bright Angel outcrop']) => useMissio
 const secure = (samples, photoLog = []) => useMissionStore.setState((s) => ({ sampling: { ...s.sampling, samples, photoLog } }));
 
 describe('the task banner (#352)', () => {
-  it('shows each task of the place on arrival, in the stop banner\'s markup, tagged SIM', () => {
+  it('shows the place\'s first task on arrival in one line, in the stop banner\'s markup, tagged SIM', () => {
     at(-12, -48);
     const html = banner();
     expect(html).toMatch(/^<div class="event-banner info event-banner-walk mission-stop" role="status" data-task-place="bright-angel">/);
     expect(html).toContain('Task · Bright Angel');
-    expect(html).toContain('Collect 1 rock sample here · 0 of 1');
-    expect(html).toContain('Take 2 photos here · 0 of 2');
+    expect(html).toMatch(/data-task="t1" data-state="open">Collect 1 rock sample here · 0 of 1 · \+1 more /);
+    expect(html.match(/class="event-text"/g)).toHaveLength(1);   // one line: the science card sits under the banner
     expect(html.match(/data-tag="SIM"/g)).toHaveLength(1);
   });
 
-  it('ticks a task when its sample is secured inside the place, and counts photos as they come', () => {
+  it('goes on to the next task once one is in, counts photos as they come, and ticks the place when all are in', () => {
     at(-12, -48);
     secure([{ id: 1, kind: 'rock', site: 'Bright Angel', x: -11.5, z: -49, into: 'pouch', atSec: 300 }], [{ x: -11, z: -50, kind: 'rock', site: 'Bright Angel', atSec: 290 }]);
-    const html = banner();
-    expect(html).toMatch(/data-task="t1" data-state="done">✓ Done · 1 rock sample here · 1 of 1/);
-    expect(html).toContain('Take 2 photos here · 1 of 2');
+    expect(banner()).toMatch(/data-task="t2" data-state="open">Take 2 photos here · 1 of 2 </);
+    secure([{ id: 1, kind: 'rock', site: 'Bright Angel', x: -11.5, z: -49, into: 'pouch', atSec: 300 }], [{ x: -11, z: -50, kind: 'rock', site: 'Bright Angel', atSec: 290 }, { x: -10, z: -50, kind: 'rock', site: null, atSec: 310 }]);
+    expect(banner()).toMatch(/data-task="t1 t2" data-state="done">✓ Done · 1 rock sample, 2 photos here </);
+  });
+
+  it('ticks a single task with its count when its sample is secured inside the place', () => {
+    at(-12, -48);
+    useMissionStore.setState((s) => ({ route: { ...s.route, tasks: [TASKS[0]] } }));
+    expect(banner()).toMatch(/data-task="t1" data-state="open">Collect 1 rock sample here · 0 of 1 </);
+    secure([{ id: 1, kind: 'rock', site: 'Bright Angel', x: -11.5, z: -49, into: 'pouch', atSec: 300 }]);
+    expect(banner()).toMatch(/data-task="t1" data-state="done">✓ Done · 1 rock sample here · 1 of 1 </);
   });
 
   it('keeps an open task open when its sample was taken elsewhere: the count is what is in at the place', () => {
@@ -106,8 +114,9 @@ describe('the task banner (#352)', () => {
     setLanguage('es');
     const html = banner();
     expect(html).toContain('Tarea · Bright Angel');
-    expect(html).toContain('Recoge 1 muestra de roca aquí · 0 de 1');
-    expect(html).toContain('Toma 2 fotos aquí · 0 de 2');
+    expect(html).toContain('Recoge 1 muestra de roca aquí · 0 de 1 · +1 más');
+    secure([{ id: 1, kind: 'rock', site: 'Bright Angel', x: -11.5, z: -49, into: 'pouch', atSec: 300 }]);
+    expect(banner()).toContain('Toma 2 fotos aquí · 0 de 2');
     expect(catalogs.es['taskwalk.done']).not.toBe(catalogs.en['taskwalk.done']);
   });
 });
