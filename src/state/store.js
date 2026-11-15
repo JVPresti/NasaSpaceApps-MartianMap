@@ -110,9 +110,14 @@ export const storeAdapter = createStoreAdapter();
 // Small actions for the interface.
 // Walking no longer begins the EVA: the astronaut walks in the habitat first (habitat-first flow, #260). Begin EVA
 // (beginEgress in src/state/flow.js) locks the crew's needs.
+// During the airlock cycle (stage 'egress') the mode stays 'walk' and every switch is refused: the engine moves the
+// player outside at the dark point, so a table opened now would leave store and engine disagreeing.
+// Returns false when the switch was refused.
 export const setMode = (mode) => {
   if (mode !== 'walk' && mode !== 'plan') throw new Error('mode must be walk or plan');
+  if (useMissionStore.getState().stage === 'egress') return false;
   useMissionStore.setState({ mode });
+  return true;
 };
 
 /**

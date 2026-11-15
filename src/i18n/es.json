@@ -594,7 +594,7 @@
   "airlock.out.step1": "Escotilla interior sellada",
   "airlock.out.step2": "Cámara vaciada",
   "airlock.out.step3": "Escotilla exterior abierta",
-  "airlock.note": "Un ciclo real dura varios minutos. La demo lo acorta a unos segundos.",
+  "airlock.note": "Acortado para la demo.",
   "menu.end.eva.to.table": "Terminar la EVA y volver a la mesa de misión",
   "menu.end.eva": "Terminar la EVA",
   "menu.enter.habitat": "Entrar al hábitat",

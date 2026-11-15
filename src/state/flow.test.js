@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  AIRLOCK_CYCLE_MS, AIRLOCK_MIN_DARK_MS, STAGE, beginEgress, canAdvance, completeEgress, continueFromDebrief, inAirlock, isOnSurface,
+  AIRLOCK_CYCLE_MS, AIRLOCK_MIN_DARK_MS, STAGE, beginEgress, canAdvance, canSwitchMode, completeEgress, continueFromDebrief, inAirlock, isOnSurface,
   isPlanning, runAirlockCycle, showDebrief,
 } from './flow.js';
 import { pauseMission, resetStore, setMode, useMissionStore } from './store.js';
@@ -86,6 +86,18 @@ describe('flow stages', () => {
     expect(useMissionStore.getState().stage).toBe(STAGE.DEBRIEF);
     continueFromDebrief();   // Continue EVA
     expect(isOnSurface(useMissionStore.getState())).toBe(true);
+  });
+
+  it('refuses every Plan / Walk switch during the airlock cycle, so the table cannot open over the new EVA', () => {
+    setMode('plan');
+    beginEgress();
+    expect(canSwitchMode(useMissionStore.getState())).toBe(false);
+    expect(setMode('plan')).toBe(false);   // M or the pad's Start in the 2.6 s cycle
+    expect(useMissionStore.getState().mode).toBe('walk');
+    completeEgress();
+    expect(canSwitchMode(useMissionStore.getState())).toBe(true);
+    expect(setMode('plan')).toBe(true);   // on the surface the table reopens (#282)
+    expect(useMissionStore.getState().mode).toBe('plan');
   });
 
   it('refuses a skipped or repeated transition', () => {

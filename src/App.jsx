@@ -29,7 +29,7 @@ import { pauseMission, resumeMission, setMode, useMissionStore } from './state/s
 import { FIRST_OBJECTIVE, FULL_OBJECTIVE } from './sim/missions.js';
 import { EVA_PHASE, PAUSE_VIEW, pauseEva, requestEvaLock, restartEva, resumeEva } from './state/evaSession.js';
 import { continueEva } from './state/eva.js';
-import { STAGE, beginEgress, completeEgress, continueFromDebrief, runAirlockCycle, showDebrief } from './state/flow.js';
+import { STAGE, beginEgress, canSwitchMode, completeEgress, continueFromDebrief, runAirlockCycle, showDebrief } from './state/flow.js';
 import { preloadAppAssets } from './preload.js';
 import './App.css';
 import './components/menu.css';
@@ -38,10 +38,6 @@ import './components/menu.css';
 const WRIST_HINT = 'menu.hint.wrist';
 
 const SITE = 'ui.neretva.vallis.jezero.crater.mars';
-
-// Leaving the table on foot (M, the pad's Start, Continue): in the habitat before the EVA that is walking by the table,
-// after it the surface (#260). Never during the airlock cycle, which owns the screen until the hatch opens.
-const walkAllowed = () => useMissionStore.getState().stage !== STAGE.EGRESS;
 
 const DEBUG_EVENTS =
   import.meta.env.DEV ||
@@ -256,6 +252,8 @@ export default function App() {
   const handleModeChange = useCallback(async (next, { capture = true } = {}) => {
     if (busyRef.current) return;
     if (next === useMissionStore.getState().mode) return;
+    // The airlock cycle owns the screen (#260): M, the pad's Start and the menus change nothing until the hatch opens.
+    if (!canSwitchMode(useMissionStore.getState())) return;
     // Any mode change ends a pending resume; setMode also makes the engine cancel a pending Walk lock.
     resumeSeqRef.current += 1;
     const attempt = ++walkLockSeqRef.current;
@@ -319,8 +317,9 @@ export default function App() {
     if (phaseRef.current !== EVA_PHASE.PLAYING || busyRef.current) return;
     if (action === 'mode') {
       const next = useMissionStore.getState().mode === 'walk' ? 'plan' : 'walk';
-      // As M (handleShortcutMode): in the habitat the table closes back to walking there; never during the cycle.
-      if (!modeSwitchAllowed(next, walkAllowed())) return;
+      // As M (handleShortcutMode): in the habitat the table closes back to walking there (#260). handleModeChange
+      // refuses every switch during the airlock cycle.
+      if (!modeSwitchAllowed(next, true)) return;
       handleModeChange(next, { capture: false });
     } else if (action === 'layer-prev') cycleLayer(-1);
     else if (action === 'layer-next') cycleLayer(1);
@@ -534,15 +533,18 @@ export default function App() {
   // through the same handler, so it also captures the mouse in Walk (#174).
   // Before the EVA has begun, M must not leave the table: Begin EVA is the only way out, behind the Go / No-go check.
   const handleShortcutMode = useCallback((next) => {
-    if (!modeSwitchAllowed(next, walkAllowed())) return;
+    // Habitat-first (#260): leaving the table on foot is walking in the habitat before the EVA, so #282's guard lets it
+    // through; handleModeChange refuses every switch during the airlock cycle.
+    if (!modeSwitchAllowed(next, true)) return;
     handleModeChange(next);
   }, [handleModeChange]);
   useShortcuts(playing, handleShortcutMode);
 
-  // The start screen always opens the mission table, on the mission the player chose (#265): the main action opens the
-  // first sortie, the secondary button the full EVA. The objective defines the mission and stays editable at the table
-  // until Begin EVA. The table needs no pointer lock, so a refused capture is met at Begin EVA, where the pause menu
-  // offers drag-to-look. Both actions are disabled until the scene is ready; this guard keeps a stale click harmless.
+  // The start screen puts the astronaut on foot in the habitat, on the mission the player chose (#265, #260): the main
+  // action starts the first sortie, the secondary button the full EVA. The objective defines the mission and stays
+  // editable at the table until Begin EVA. Walking needs the mouse, so the click asks for it; a refusal offers
+  // drag-to-look on the start screen. Both actions are disabled until the scene is ready; this guard keeps a stale
+  // click harmless.
   const startMission = (objective) => {
     if (load.status !== 'ready') return;
     chooseMission(objective);

@@ -594,7 +594,7 @@
   "airlock.out.step1": "Inner hatch sealed",
   "airlock.out.step2": "Chamber pumped down",
   "airlock.out.step3": "Outer hatch open",
-  "airlock.note": "A real cycle takes several minutes. The demo shortens it to a few seconds.",
+  "airlock.note": "Shortened for the demo.",
   "menu.end.eva.to.table": "End the EVA and go back to the mission table",
   "menu.end.eva": "End the EVA",
   "menu.enter.habitat": "Enter the habitat",

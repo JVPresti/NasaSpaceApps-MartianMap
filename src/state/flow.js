@@ -7,18 +7,21 @@
  *      └────────────────────────── restart (Restart, End the EVA: a new EVA at the table) ◀──────┘
  *
  * - `habitat`: inside, before the EVA. The astronaut walks around in first person and plans at the mission table
- *   (store `mode` 'plan' while the table is open). The mission clock is held, no suit or event runner exists yet,
+ *   (store `mode` 'plan' while the table is open). The table also reopens from the cabin during the EVA ("[E] Open plan",
+ *   #282). The mission clock is held, no suit or event runner exists yet,
  *   the outer hatch stays shut and the partner waits out of sight.
  * - `egress`: the airlock cycle after Begin EVA. The route is fixed. The engine moves the player outside while the
  *   screen is dark.
- * - `eva`: on the surface. `startSimulation` starts the EVA runners on this transition: a new clock at 0:00, full
- *   consumables, the terrain fix at the airlock, events, partner and statistics.
+ * - `eva`: on the surface. `startSimulation` starts the EVA runners on this transition: a new clock at 0:00, the O2 and
+ *   battery the crew set at the table (`startConsumables(needs)`, #265), the terrain fix at the airlock, events, the
+ *   partner (none for a crew of one) and statistics.
  * - `debrief`: the astronaut walked back in through the airlock and ended the EVA with X at the table (#244), so the
  *   EVA runner froze `eva.summary`. There is no cycle on the way in: the player already came through the real hatch.
  *   Continue EVA goes back to `eva` with the statistics still counting; a restart goes back to `habitat`.
  *
- * Restarting (pause menu, debrief) resets the store, which puts the stage back to `habitat`. There is no other way
- * back: a transition that is not in NEXT throws, so a late timer or a double click cannot skip a stage.
+ * Transitions follow NEXT: forward, plus debrief back to eva for Continue EVA. Restarting (pause menu, debrief) resets
+ * the store, which puts the stage back to `habitat`; there is no other way back. A transition that is not in NEXT
+ * throws, so a late timer or a double click cannot skip a stage.
  *
  * Plain JavaScript: no React and no three.js. The store is injected, like the other runners.
  */
@@ -38,7 +41,7 @@ const NEXT = Object.freeze({
   [STAGE.DEBRIEF]: [STAGE.EVA],
 });
 
-/** Length of one airlock cycle on screen, in ms. A real cycle takes minutes; the demo shortens it. */
+/** Length of one airlock cycle on screen, in ms, shortened for the demo (SIM: not a real depressurisation time). */
 export const AIRLOCK_CYCLE_MS = 2600;
 /** The screen is fully dark from this fraction of the cycle on, so the engine can move the player unseen. */
 export const AIRLOCK_DARK_AT = 0.25;
@@ -50,8 +53,10 @@ export function canAdvance(from, to) {
   return (NEXT[from] ?? []).includes(to);
 }
 
-/** True while the astronaut is inside before the EVA, the only stage where the mission table opens. */
+/** True while the astronaut is inside before the EVA. The table opens here, and from the cabin during the EVA (#282). */
 export const isPlanning = (state) => (state.stage ?? STAGE.HABITAT) === STAGE.HABITAT;
+/** False during the airlock cycle, which owns the screen: no Plan / Walk switch from any key, pad or menu. */
+export const canSwitchMode = (state) => state.stage !== STAGE.EGRESS;
 /** True while the EVA runners own the mission: the suit HUD, events, sampling and the wrist. */
 export const isOnSurface = (state) => state.stage === STAGE.EVA;
 /** True during the airlock cycle out. */
