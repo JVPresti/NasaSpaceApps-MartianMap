@@ -69,7 +69,7 @@ describe('event runner mission time', () => {
 const AIRLOCK = { x: 535.1, z: 574.1 };
 const STOP = { x: 493, z: 539 };
 const HAB_WAYPOINT = { name: 'HAB', x: AIRLOCK.x, z: AIRLOCK.z };
-const S1 = { name: 'S1 · light-toned patch', x: STOP.x, z: STOP.z, stopId: 'sortie', workSec: 300, required: true };
+const S1 = { name: 'S1 · light-toned patch', x: STOP.x, z: STOP.z, stopId: 'sortie', workSec: 120, required: true };
 const HAB_SHELTER = { id: 'HAB', name: 'Habitat', type: 'habitat', protection: 'full', x: AIRLOCK.x, z: AIRLOCK.z };
 /** A point `share` of the way from the stop to the airlock, and its distance from the airlock. */
 const toward = (share) => ({ x: STOP.x + (AIRLOCK.x - STOP.x) * share, z: STOP.z + (AIRLOCK.z - STOP.z) * share });

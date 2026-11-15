@@ -294,6 +294,9 @@ describe('EVA start at the first switch to Walk (#166)', () => {
       return Promise.resolve(name ? { ok: true, json: () => Promise.resolve(withEnvironment[name]) } : { ok: false, status: 404 });
     }));
     planned();
+    // The background values over 6 min: the full EVA, whose first event comes at T+480 s (the first mission's storm would
+    // come by T+240 s and its opacity is SIM).
+    setNeeds({ objective: 'cheyava' });
     const stop = startSimulation(ENGINE);
     await flush();
     vi.advanceTimersByTime(5000);
