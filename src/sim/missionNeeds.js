@@ -23,7 +23,7 @@
  */
 import { COST_CONSTANTS, heightAt } from './costGrid.js';
 import { insertFindWaypoint, priceDetour, rankInsertions } from './findDetour.js';
-import { routeLegCosts, startConsumables } from './legCosts.js';
+import { legCostSources, routeLegCosts, startConsumables } from './legCosts.js';
 import { DEFAULT_PROFILE, planOnProfile, pricedProfileGrid, PROFILE_IDS, ROUTE_PROFILES } from './routeProfiles.js';
 
 /**
@@ -335,4 +335,33 @@ export function planFromNeeds(needs, site) {
     route: current.route,
     totals,
   });
+}
+
+/** Key of the needs that change the plan (not `locked`), so an equal update does not plan again. */
+export function needsKey(needs) {
+  const n = normaliseNeeds(needs);
+  return NEEDS_KEYS.map((k) => n[k]).join('|');
+}
+
+/**
+ * Source entries for the plan's fields in the store (route.stops, route.dropped, route.planReasons, route.budget,
+ * route.weights, route.explain) and for the needs the crew sets. Time and O2 take the tags legCostSources gives
+ * route.totals, so the budget carries the same tags as the route panel.
+ * @param {object} hazards public/data/hazards.json
+ * @returns {Record<string, { tag: string, source: string }>}
+ */
+export function planSources(hazards) {
+  const legs = legCostSources(hazards);
+  return {
+    'route.stops': { tag: 'SIM', source: 'stops chosen from stops.json by the objective, then kept while the plan fits the time, O2 and battery (src/sim/missionNeeds.js)' },
+    'route.dropped': { tag: 'SIM', source: 'optional stops left out: with them the plan goes over the time less the reserve, under the O2 margin floor or under the battery reserve' },
+    'route.planReasons': { tag: 'SIM', source: 'why the plan is what it is: the crew rules, the risk setting and each stop added or dropped (src/sim/missionNeeds.js)' },
+    'route.weights': { tag: 'SIM', source: 'risk setting: slope penalty, rock weight, rover-ground discount and reserve are our choice; the 20 degree limit is NASA\'s suited walking limit and never moves' },
+    'route.budget': { tag: 'SIM', source: 'time available set by the crew, less the risk reserve; the walk out, the work at the stops and the walk home from the suit model' },
+    'route.budget.usedSec': { ...legs['route.totals.timeSec'] },
+    'route.budget.marginSec': { ...legs['route.totals.marginSec'] },
+    'route.explain': { tag: 'DERIVED', source: 'straight line between the ends of each leg, tested on the HiRISE height map against the 20 degree limit like the planner (isSegmentClear)' },
+    'route.explain.extraM': { tag: 'DERIVED', source: 'planned leg length on the HiRISE height map minus its straight line' },
+    'route.explain.extraSec': { ...legs['route.legs.walkSec'] },
+  };
 }

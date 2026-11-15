@@ -19,6 +19,7 @@
  *   replan: (request: {from: object, shelters?: Array<object>, options?: object}) => Promise<object>,
  *   detour: (request: object) => Promise<object>,
  *   profiles: (waypoints: Array<object>, options?: object) => Promise<object>,
+ *   needs: (needs: object, site: object, options?: object) => Promise<object>,
  *   terminate: () => void
  * }}
  */
@@ -127,6 +128,25 @@ export function createRoutePlannerClient(options = {}) {
       return new Promise((resolve, reject) => {
         pending.set(id, { resolve, reject });
         worker.postMessage({ type: 'profiles', id, waypoints, options: profileOptions });
+      });
+    },
+
+    /**
+     * The route from the crew's needs (missionNeeds.js) and the profile comparison on its stops.
+     * @param {object} needs the store's needs plus `profile`, the profile chosen at the table
+     * @param {{ start: object, stops: Array<object>, traverse: Array<object> | null, constants: object }} site
+     * @param {{ mast?: { x: number, y?: number, z: number } | null }} [needsOptions]
+     * @returns {Promise<{ plan: object, profiles: Record<string, object> | null }>}
+     */
+    needs(needs, site, needsOptions = {}) {
+      if (!gridReady) {
+        return Promise.reject(new Error('route planner has no grid yet'));
+      }
+      const id = nextId;
+      nextId += 1;
+      return new Promise((resolve, reject) => {
+        pending.set(id, { resolve, reject });
+        worker.postMessage({ type: 'needs', id, needs, site, options: needsOptions });
       });
     },
 

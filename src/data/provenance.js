@@ -141,6 +141,25 @@ export const STORE_PATHS = Object.freeze({
   'route.profiles.weights': sim('profile weights are our choice: slope cubed for the gentlest, three times the cost out of sight of the mast for radio contact'),
   'route.profiles.timeSec': LEG_TIME,
   'route.profiles.o2G': LEG_O2,
+  // the route from the crew's needs (src/sim/missionNeeds.js): stops, budget and reasons rest on our work times, rules
+  // and risk settings (SIM); the per-leg explanation is the planner on the HiRISE height map (#246)
+  'route.stops': sim('stops chosen from stops.json by the objective, then kept while the plan fits the time, O2 and battery'),
+  'route.dropped': sim('optional stops left out: with them the plan goes over the time less the reserve, under the O2 margin floor or under the battery reserve'),
+  'route.planReasons': sim('why the plan is what it is: the crew rules, the risk setting and each stop added or dropped'),
+  'route.weights': sim('risk setting: slope penalty, rock weight, rover-ground discount and reserve are our choice; the 20 degree limit is NASA\'s suited walking limit and never moves'),
+  'route.budget': sim('time available set by the crew, less the risk reserve; the walk out, the work at the stops and the walk home from the suit model'),
+  'route.budget.usedSec': LEG_TIME,
+  'route.budget.marginSec': LEG_MARGIN,
+  'route.explain': { ...PLANNER, source: 'straight line between the ends of each leg, tested on the HiRISE height map against the 20 degree limit like the planner' },
+  'route.explain.extraM': { ...PLANNER, source: 'planned leg length on the HiRISE height map minus its straight line' },
+  'route.explain.extraSec': LEG_WALK,
+  // the needs the crew sets at the mission table (#265): inputs, not measurements
+  'needs.objective': sim('objective chosen by the crew at the mission table'),
+  'needs.crew': sim('crew size chosen at the mission table: a solo astronaut stays in radio contact and works 1.5 times as long'),
+  'needs.timeMin': sim('time available for the EVA, set by the crew'),
+  'needs.o2Pct': sim('suit O2 at the start, set by the crew as a share of the xEMU primary tank'),
+  'needs.batteryPct': sim('suit battery at the start, set by the crew as a share of the xEMU battery'),
+  'needs.risk': sim('risk tolerance chosen by the crew: slope penalty, rock weight, reserve and rover-ground preference'),
   ...prefixed('route.legs.', LEG_FIELDS),
   ...prefixed('route.totals.', TOTAL_FIELDS),
 
