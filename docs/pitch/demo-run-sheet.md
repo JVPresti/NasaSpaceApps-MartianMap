@@ -15,7 +15,7 @@ Where `main` and #282 differ, this sheet follows #282 and says so in a note.
 | 3 | Open Chrome and go to the demo URL with `?debug=1` (below). Wait on the start screen until the main button reads **Open the mission table** instead of "Loading scene". | About 20 s on the GPU laptop |
 | 4 | Language: open the table once, press **Esc**, **Settings**, set **Idioma / Language** to **Español** for the local judges, then reload the page. The choice is saved in the browser. | The start screen says "Abrir la mesa de misión" |
 | 5 | Press **F11** for full screen. Turn the laptop sound on at about 30 %: the suit audio (fans, breathing, alarms) helps the storm beat. | |
-| 6 | Open the fallback folder in a second window: `docs/pitch/fallback/`. Have the clip for your cut ready to play in a browser tab. | One click plays it |
+| 6 | Open the backup video (recorded from the app by the presentation mode, `feat/present-mode`) in a second browser tab, paused at 0:00, and the stills folder `docs/pitch/fallback/stills/` in an image viewer. | One click plays it |
 | 7 | Close every other app, notification and chat. | |
 
 **Demo URL.** Until #282 merges, the preview build: `https://feat-short-mission-dynamic-routes-martian-map.fernando-haro-c.workers.dev/?debug=1`. After it merges: `https://martian-map.fernando-haro-c.workers.dev/?debug=1`. `?debug=1` adds a small "Events `" chip in the bottom corner. Leave it closed; it is only the emergency trigger in beat D7.
@@ -28,13 +28,13 @@ Uses DEMO.md segments 2, 3, 4, 5, 6 and 7, cut short. Segment 1 (start screen) i
 
 | Beat | Time | DEMO.md | Do | Say (Spanish script line, short) | If it fails |
 |---|---|---|---|---|---|
-| D1 | 0:00 | 1 | Click **Abrir la mesa de misión** (Open the mission table). | "Esta es la mesa de misión. Todo lo que ven es Jezero, con datos de la NASA." | WebGL error or blank screen: switch to the fallback clip, start at 0:00, keep talking over it |
-| D2 | 0:05 | 2 | **Siguiente: ruta** (Next: route). Click the **Terreno** (Terrain) layer. Point at the legend line that says what the layer decides. | "Cada capa dice qué decide. Terreno: la pendiente del modelo de HiRISE. La ruta rodea la zona amarilla y nunca cruza la roja." | Layer does not paint: say the line over the still `fallback/stills/04-terrain.png` |
-| D3 | 0:25 | 3 | In **Objetivo** (Goal), choose **Muestrear Cheyava Falls**. Wait for the route to redraw (2 to 5 s). Then set it back to **Primera salida** (First sortie). | "Si la tripulación pide ir a la roca donde Perseverance encontró una posible biofirma, la ruta crece a 930 metros y el plan recalcula tiempo y oxígeno. Hoy hacemos la primera salida: 55 metros." | The planner hangs over 8 s: leave the goal on First sortie and go on; still `09-goal-cheyava.png` |
+| D1 | 0:00 | 1 | Click **Abrir la mesa de misión** (Open the mission table). | "Esta es la mesa de misión. Todo lo que ven es Jezero, con datos de la NASA." | WebGL error or blank screen: switch to the backup video, keep talking over it; no video, step through `fallback/stills/` from `D1-table-site.jpg` |
+| D2 | 0:05 | 2 | **Siguiente: ruta** (Next: route). Click the **Terreno** (Terrain) layer. Point at the legend line that says what the layer decides. | "Cada capa dice qué decide. Terreno: la pendiente del modelo de HiRISE. La ruta rodea la zona amarilla y nunca cruza la roja." | Layer does not paint: say the line over the still `fallback/stills/D2-terrain-layer.jpg` |
+| D3 | 0:25 | 3 | In **Objetivo** (Goal), choose **Muestrear Cheyava Falls**. Wait for the route to redraw (2 to 5 s). Then set it back to **Primera salida** (First sortie). | "Si la tripulación pide ir a la roca donde Perseverance encontró una posible biofirma, la ruta crece a 930 metros y el plan recalcula tiempo y oxígeno. Hoy hacemos la primera salida: 55 metros." | The planner hangs over 8 s: leave the goal on First sortie and go on; still `D3-goal-cheyava.jpg` |
 | D4 | 0:45 | 4 | Tab **Traje** (Suit): point at **Salir** (Go) and the conditions outlook. Click **Empezar la EVA** (Begin EVA), then **Empezar a caminar** (Start walking). Click the scene once to capture the mouse. | "El plan dice que sí podemos salir. Empezamos." | No Go (No-go shown): the goal is still Cheyava Falls, set it back to First sortie |
 | D5 | 0:55 | 5 | Hold **W** and steer with the mouse toward the waypoint marker (S1). Do not stop to mark a find. About 55 s of walking. | "Arriba a la izquierda, el número que importa: el margen de regreso. Es el oxígeno que me sobra después de volver caminando al hábitat y guardar la reserva de 30 minutos. Cada paso de subida lo reduce. Abajo, la navegación: Marte no tiene GPS, así que la posición se fija comparando el terreno con el mapa de HiRISE." | Frame rate drops or the astronaut stalls: keep walking, it still arrives. Lost the direction: the minimap (top right) shows the route in cyan |
 | D6 | 1:50 | 6 | At S1: **P** (photo), click the ground at your feet (sample), **E** (stow). | "Llegamos. Foto, muestra, guardar." | Skip sampling if it does not respond; the storm only needs you at the stop |
-| D7 | 2:05 | 7 | The dust storm starts by itself about 20 s after arriving. Read the banner. Press **M**: the table opens on Route with the new route home. Press **M** again to go back. | "Tormenta de polvo. La opacidad viene de la tormenta global de 2018 medida por Curiosity. El sistema recalcula la ruta al hábitat, y el margen se ajusta." | No storm by 2:10: press **`**, click **Dust storm**, press **`** again. Still no storm: say the line over `18-storm-walk.png` |
+| D7 | 2:05 | 7 | The dust storm starts by itself about 20 s after arriving. Read the banner. Press **M**: the table opens on Route with the new route home. Press **M** again to go back. | "Tormenta de polvo. La opacidad viene de la tormenta global de 2018 medida por Curiosity. El sistema recalcula la ruta al hábitat, y el margen se ajusta." | No storm by 2:10: press **`**, click **Dust storm**, press **`** again. Still no storm: say the line over `D7-storm-walk.jpg` and `D7-storm-plan.jpg` |
 | | 2:20 | 8-11 | Leave the app as it is and go back to the slides. | "Quince segundos después llega la alerta de radiación, con dosis reales de Curiosity. Al volver, el resumen compara la ruta caminada con la aprobada." | |
 
 `main` note: on `main` the storm comes at T+480 s and there is no first sortie. Do not run Cut A on `main`.
@@ -77,14 +77,14 @@ Run DEMO.md exactly, segments 1 to 11, with keiwv's measured times. The script i
 | What fails | Do |
 |---|---|
 | The page does not load (network) | Switch to the offline URL `http://localhost:4173/?debug=1` |
-| WebGL fails, black scene, or under 10 fps | Play the fallback clip for the cut and narrate over it. Do not apologise more than once |
+| WebGL fails, black scene, or under 10 fps | Play the backup video and narrate over it. Say once that the live build needs the GPU, then go on |
 | The pointer will not capture | Drag on the scene to look (the app offers drag-to-look) |
 | A key does nothing | The wrist screen may be up and owning the keys: press **R** to lower it |
 | The pause menu opens by mistake (Esc) | Click **Continuar** (Resume) |
 | A stop card covers the view | **Enter** or **Esc** closes it |
 | Everything fails | Stills in `fallback/stills/`, in beat order, one per beat |
 
-Fallback clips and stills were recorded from the real app on #282 with `npm run measure:demo` on a GPU (see `fallback/README.md`). Re-record them on the demo laptop the morning of the pitch if the app changed.
+The stills were captured from the real #282 build (commit 989970f) with keiwv's `npm run measure:demo` on this machine's RTX 3070, 1920 × 1080, English. Names start with the beat they replace (D for cut A, S for the other DEMO.md segments). Re-take them on the demo laptop with `npm run measure:demo -- --headed --viewport 1920x1080 --shots <folder>` if the app changes. `S1-start-AI-video.jpg` shows the AI-generated start video: do not use it in the submission video or the deck.
 
 ## Re-check after these merge
 
