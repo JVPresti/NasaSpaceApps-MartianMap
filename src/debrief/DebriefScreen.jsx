@@ -15,6 +15,7 @@ import {
   routeReasonText,
 } from './format.js';
 import RouteReview, { ReviewNotes } from './RouteReview.jsx';
+import { MissionRecap } from '../mission/MissionBeat.jsx';
 import { useReserveSec } from './useReserveSec.js';
 import './debrief.css';
 
@@ -158,6 +159,9 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
         </dl>
 
         <RouteReview summary={summary} />
+
+        {/* The first mission's recap (#265, src/mission/MissionBeat.jsx): one line per beat; nothing for the full EVA. */}
+        <MissionRecap className="debrief-notes" titleClassName="debrief-section-title" />
 
         <section className="debrief-log-section" aria-labelledby="debrief-log-title">
           <h3 id="debrief-log-title" className="debrief-section-title">{t('debrief.log.title')}</h3>
