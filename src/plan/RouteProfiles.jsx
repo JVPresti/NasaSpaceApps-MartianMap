@@ -46,8 +46,8 @@ export default function RouteProfiles({ locked = false }) {
   // The profile in use is the one whose route is the route: after an event re-plan none is.
   const inUse = PROFILE_IDS.find((id) => profiles[id]?.ok && profiles[id].path === path) ?? null;
   const described = inUse ?? chosen;
-  // A solo crew stays in radio contact (src/sim/missionNeeds.js): while the radio route exists, the store refuses the
-  // other profiles (chooseRouteProfile), so their buttons are off and the note says why.
+  // A solo crew stays in radio contact (src/sim/missionNeeds.js): while the radio route exists, the store ignores every
+  // choice (chooseRouteProfile), so all three buttons are off, Radio shown as the one in use, and the note says why.
   const soloRadio = crew === 1 && profiles.radio?.ok === true;
 
   return (
@@ -64,7 +64,7 @@ export default function RouteProfiles({ locked = false }) {
                   type="button"
                   className={'profiles-pick profile-' + id}
                   aria-pressed={id === inUse}
-                  disabled={locked || !profiles[id]?.ok || (soloRadio && id !== 'radio')}
+                  disabled={locked || !profiles[id]?.ok || soloRadio}
                   title={t(`profiles.${id}.what`)}
                   onClick={() => chooseRouteProfile(id)}
                 >

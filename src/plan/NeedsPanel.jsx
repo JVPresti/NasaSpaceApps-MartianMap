@@ -1,9 +1,13 @@
 import { useShallow } from 'zustand/react/shallow';
 import { formatNumber, t } from '../i18n/index.js';
-import { CONSUMABLE_RANGE_PCT, CREW_SETTINGS, CREW_SIZES, OBJECTIVE_IDS, RISK_IDS, RISK_SETTINGS, TIME_RANGE_MIN } from '../sim/missionNeeds.js';
+import { useMemo } from 'react';
+import { HAZARDS_PATH } from '../data/provenance.js';
+import { CONSUMABLE_RANGE_PCT, CREW_SETTINGS, CREW_SIZES, OBJECTIVE_IDS, RISK_IDS, RISK_SETTINGS, timeRangeMin } from '../sim/missionNeeds.js';
+import { suitConstantsFromHazards } from '../sim/suitModel.js';
 import { setNeeds, useMissionStore } from '../state/store.js';
 import { formatDuration } from './routePlan.js';
 import SourceTag from './SourceTag.jsx';
+import { useDataFile } from './useConditions.js';
 
 // The crew's needs at the mission table (8-minute plan, goal 2): what the walk is for, who goes, how long they have,
 // what they start with and how much risk they take. Each change goes to the store (setNeeds) and the planner plans the
@@ -64,6 +68,11 @@ export default function NeedsPanel({ locked = false }) {
   const off = locked || needs.locked === true;
   const set = (partial) => { if (!off) setNeeds(partial); };
   const pct = (value) => `${Math.round(value)} %`;
+  // The time range ends at the suit's EVA limit in hazards.json (N22); the default range until the file has loaded.
+  const hazards = useDataFile(HAZARDS_PATH);
+  const timeRange = useMemo(() => {
+    try { return timeRangeMin(hazards ? suitConstantsFromHazards(hazards) : null); } catch { return timeRangeMin(null); }
+  }, [hazards]);
 
   return (
     <div className="table-panel needs-panel">
@@ -83,7 +92,7 @@ export default function NeedsPanel({ locked = false }) {
             options={CREW_SIZES.map((n) => ({ id: n, label: t(`needs.crew.${n}`), title: t(`needs.crew.${n}.title`, { factor: formatNumber(CREW_SETTINGS[n].workFactor, 1) }) }))} />
         </Row>
         <Row label={t('needs.time')} htmlFor="needs-time" title={t('needs.time.title')}>
-          <Slider id="needs-time" min={TIME_RANGE_MIN[0]} max={TIME_RANGE_MIN[1]} step={TIME_STEP_MIN} value={needs.timeMin}
+          <Slider id="needs-time" min={timeRange[0]} max={timeRange[1]} step={TIME_STEP_MIN} value={needs.timeMin}
             text={formatDuration(needs.timeMin * 60)} disabled={off} onValue={(timeMin) => set({ timeMin })} />
         </Row>
         <Row label={t('needs.o2')} htmlFor="needs-o2" title={t('needs.o2.title')}>
