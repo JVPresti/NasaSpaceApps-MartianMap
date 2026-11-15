@@ -14,6 +14,7 @@
  */
 import { stopForWaypoint } from '../data/stops.js';
 import { bearingDeg } from './bearing.js';
+import { truePosition } from './navigation.js';
 
 export const WAYPOINT_TICK_MS = 200;
 export const ARRIVAL_RADIUS_M = 5;
@@ -67,7 +68,11 @@ export function startWaypointRunner({ store, stops: initialStops = [], setInterv
     const state = store.getState();
     if (state.mode !== 'walk') return;
     const nav = state.navigation;
-    if (!finite(nav)) return;
+    // Arrival is physical: the astronaut is really there when the true position enters the radius (#42). The range
+    // and bearing below are what the suit reports, from the estimate, so the HUD never leaks the true position.
+    const truth = truePosition(nav);
+    if (!finite(truth)) return;
+    const est = { x: Number.isFinite(nav.x) ? nav.x : truth.x, z: Number.isFinite(nav.z) ? nav.z : truth.z };
 
     // Arrive at as many waypoints as the position is inside (stacked waypoints), then measure to what is left,
     // so the range written below always belongs to the target the HUD shows.
@@ -76,7 +81,7 @@ export function startWaypointRunner({ store, stops: initialStops = [], setInterv
     for (let guard = 0; guard <= (route.waypoints?.length ?? 0); guard += 1) {
       const target = nextTarget(route);
       if (target?.kind !== 'waypoint') break;
-      if (Math.hypot(target.x - nav.x, target.z - nav.z) > arrivalRadiusM(stops, target.waypoint)) break;
+      if (Math.hypot(target.x - truth.x, target.z - truth.z) > arrivalRadiusM(stops, target.waypoint)) break;
       reached.push(target.name);
       route = { ...route, nextIndex: target.index + 1 };
     }
@@ -92,8 +97,8 @@ export function startWaypointRunner({ store, stops: initialStops = [], setInterv
 
     const target = nextTarget(route);
     const aim = target && target.kind !== 'complete';
-    const rangeM = aim ? Math.hypot(target.x - nav.x, target.z - nav.z) : null;
-    const bearing = aim ? bearingDeg(nav, target) : null;
+    const rangeM = aim ? Math.hypot(target.x - est.x, target.z - est.z) : null;
+    const bearing = aim ? bearingDeg(est, target) : null;
     if (nav.waypointRangeM === rangeM && nav.waypointBearingDeg === bearing) return;
     store.setState((current) => ({
       navigation: { ...current.navigation, waypointRangeM: rangeM, waypointBearingDeg: bearing },

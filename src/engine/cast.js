@@ -9,7 +9,8 @@ export function createCast(ctx) {
     mark(root, only) { root.traverse(o => { if (o.isSkinnedMesh) { if (only) o.layers.set(1); else o.layers.enable(1); } }); },
     set(i, on, x, y, z) { this.on[i] = on; if (on) U.uCastC.value[i].set(x, y + 1.0, z); else U.uCastC.value[i].set(0, -1e5, 0); },
     render() {
-      const active = ctx.tier === 'high' && U.uBlob.value > 0.02 && (this.on[0] || this.on[1] || this.on[2]); U.uCastOn.value = active ? 1 : 0; if (!active) { this.dirty = true; return; }
+      // off once the storm leaves under 0.5 % of the direct sun (stormLight.js, #203): the shadow then changes the ground by under 1 %
+      const active = ctx.tier === 'high' && U.uBlob.value > 0.02 && U.uStormSun.value > 0.005 && (this.on[0] || this.on[1] || this.on[2]); U.uCastOn.value = active ? 1 : 0; if (!active) { this.dirty = true; return; }
       const s = U.uSunDir.value, r = U.uCastR.value.set(0, 1, 0).cross(s).normalize(), u = U.uCastU.value.copy(s).cross(r).normalize();
       if (!this.sunSeen.equals(s)) { this.sunSeen.copy(s); this.dirty = true; }
       U.tCast.value = this.rt.texture; this.rt.scissorTest = true;

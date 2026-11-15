@@ -134,13 +134,13 @@ export function SourcesScreen({ credits, status, onClose }) {
       <div className="sources-frame">
         <header className="sources-head">
           <div>
-            <p className="sources-kicker">{t('ui.credits')}</p>
+            <p className="sources-kicker">
+              {t('ui.credits')}{groups.length ? ` · ${t('ui.p0.sources.in.p1.groups', { p0: credits.entries.length, p1: groups.length })}` : ''}
+            </p>
             <h2 id="sources-title">{t('ui.sources.188')}</h2>
           </div>
-          <p className="sources-count">
-            {groups.length ? t('ui.p0.sources.in.p1.groups', { p0: credits.entries.length, p1: groups.length }) : null}
-          </p>
-          <button ref={closeRef} type="button" className="sources-close" onClick={onClose} aria-label={t('ui.close.sources')}>{t('ui.close')}<kbd>{t('ui.esc')}</kbd>
+          <button ref={closeRef} type="button" className="sources-close" onClick={onClose} aria-label={t('ui.close.sources')} title={t('ui.close.esc')}>
+            {t('ui.close').trim()}
           </button>
         </header>
 
@@ -170,26 +170,15 @@ export function SourcesScreen({ credits, status, onClose }) {
           {groups.map((group) => (
             <section key={group.id} className="sources-group" aria-labelledby={`sources-${group.id}`}>
               <h3 id={`sources-${group.id}`}>
-                {translateText(group.label)} <span>{group.entries.length}</span>
+                {translateText(group.label)} <span>· {group.entries.length}</span>
               </h3>
               <ul className="sources-list">
                 {group.entries.map((entry) => (
                   <li key={entry.id} className="sources-entry" data-entry={entry.id}>
                     <h4>{entry.name}</h4>
-                    <dl>
-                      <div>
-                        <dt>{t('ui.provider')}</dt>
-                        <dd>{entry.provider}</dd>
-                      </div>
-                      <div>
-                        <dt>{t('ui.credit')}</dt>
-                        <dd className="sources-credit">{entry.credit_line}</dd>
-                      </div>
-                      <div>
-                        <dt>{t('ui.licence')}</dt>
-                        <dd>{entry.license}</dd>
-                      </div>
-                    </dl>
+                    <p className="sources-provider">{entry.provider}</p>
+                    <p className="sources-credit">{t('ui.credit.line', { text: entry.credit_line })}</p>
+                    <p className="sources-licence">{t('ui.licence.line', { text: entry.license })}</p>
                     <a href={entry.url} target="_blank" rel="noopener noreferrer">
                       {linkHost(entry.url)}
                       <span className="sources-visually-hidden">{t('ui.opens.in.a.new.tab')}</span>

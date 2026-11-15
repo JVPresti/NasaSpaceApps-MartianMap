@@ -11,6 +11,7 @@
 //
 // The input gate, the pointer-lock controller, the touch stick and the gamepad reader are plain modules
 // (input.js, pointerLock.js, touchInput.js, gamepadInput.js), so the pause/menu rules are unit-tested without three.js.
+// The look speed multiplier and the inverted vertical axis (#102) are applied to both locked and drag look.
 import * as THREE from 'three';
 import { addCircle, pushOut, PARTNER_GAP, WALKER_RADIUS } from './collide.js';
 import { createGamepadPoller } from './gamepadInput.js';
@@ -18,6 +19,8 @@ import { createInputGate } from './input.js';
 import { createPointerLock } from './pointerLock.js';
 import { createTouchControls } from './touchInput.js';
 import { walkVector } from './walkVector.js';
+import { LOOK_DEFAULTS, clampLookSettings } from './lookSettings.js';
+import { walkStep } from './walkInput.js';
 
 // The test bench's start, 70 m south of Cheyava Falls in Neretva Vallis. Only a debug teleport now (__marswalk.cheyavaView,
 // scripts/measure-fps.mjs): the EVA starts at the habitat airlock (spawn.js, placed by the engine once the habitat is down, #166).
@@ -27,13 +30,29 @@ const NEAR = { eye: 0.15, orbit: 5 };
 // Suited walking speeds from public/data/hazards.json: mobility.speed.flat and mobility.speed.jog (both SIM).
 // The test bench used 1.4 and 4.5 m/s, faster than a suited astronaut and outside the suit model's range (#13, #19).
 export const WALK_SPEED = 1.0, JOG_SPEED = 1.5;
-const JOG_BOB_FROM = 1.25;        // m/s: above this the head bob switches to the jogging lope
 const LOOK_LOCKED = 0.0025;       // rad per pixel of mouse movement while the pointer is locked
 const LOOK_DRAG = 0.004;          // rad per pixel while dragging (the bench's value)
 const LOOK_PAD = 2.2;             // rad per second at full right-stick deflection
+export const LOOK_PITCH_LIMIT = 1.2;   // rad: how far up and down the camera can look
 
 export function createViewState() {
-  return { mode: 'eye', yaw: 0, pitch: 0, eye: new THREE.Vector3(), keys: {}, moveSpeed: 0 };   // eye and yaw: set at the airlock during boot
+  return { mode: 'eye', yaw: 0, pitch: 0, eye: new THREE.Vector3(), keys: {}, moveSpeed: 0, forwardSpeed: 0 };   // eye and yaw: set at the airlock during boot
+}
+
+/**
+ * Applies one mouse-look delta. Locked and drag look share this, so the sensitivity and the inverted
+ * vertical axis behave the same in both (#102). The signature of look() does not change.
+ * @param {{ yaw: number, pitch: number }} view
+ * @param {number} dx horizontal pixels (right positive)
+ * @param {number} dy vertical pixels (down positive)
+ * @param {number} k radians per pixel for this path (LOOK_LOCKED or LOOK_DRAG)
+ * @param {{ sensitivity?: number, invertY?: boolean }} settings
+ */
+export function applyLook(view, dx, dy, k, settings = LOOK_DEFAULTS) {
+  const sensitivity = Number.isFinite(settings?.sensitivity) ? settings.sensitivity : LOOK_DEFAULTS.sensitivity;
+  const invert = settings?.invertY === true ? -1 : 1;
+  view.yaw += dx * k * sensitivity;
+  view.pitch = Math.max(-LOOK_PITCH_LIMIT, Math.min(LOOK_PITCH_LIMIT, view.pitch + dy * k * sensitivity * invert));
 }
 
 /**
@@ -73,7 +92,8 @@ export function createView(ctx, canvas, signal, {
     onChange: (isLocked) => { if (!isLocked) drag = false; onLockChange(isLocked); },
   });
   const locked = () => pointerLock.isLocked();
-  const look = (dx, dy, k) => { view.yaw += dx * k; view.pitch = Math.max(-1.2, Math.min(1.2, view.pitch + dy * k)); };
+  const lookSettings = { ...LOOK_DEFAULTS };
+  const look = (dx, dy, k) => applyLook(view, dx, dy, k, lookSettings);
   const applyControls = () => { controls.enabled = input && view.mode === 'orbit'; };
   const publishTouch = () => { onTouch(touch.state()); };
   // Pointer capture keeps a drag alive outside the canvas. It is an optimisation, so a refused or unknown
@@ -208,6 +228,17 @@ export function createView(ctx, canvas, signal, {
     applyControls();
   }
 
+  /**
+   * Look preference (#102). Copies the clamped values into the state look() reads, so it applies from the
+   * next mouse movement without touching the current pose.
+   * @param {{ sensitivity?: number, invertY?: boolean }} next
+   */
+  function setLookSettings(next) {
+    const s = clampLookSettings(next);
+    lookSettings.sensitivity = s.sensitivity;
+    lookSettings.invertY = s.invertY;
+  }
+
   const fwd = new THREE.Vector3(), right = new THREE.Vector3();
   let bobAmp = 0, bobPhase = 0, camGround = 0, camDuck = 0, groundInit = false;
   const obs = [];   // this frame's obstacles near the walker (collide.js), reused
@@ -229,34 +260,34 @@ export function createView(ctx, canvas, signal, {
     const padReading = input ? pollGamepad() : null;
     if (view.mode === 'eye') {
       const eye = view.eye, yaw = view.yaw;
-      const ex = eye.x, ez = eye.z;
-      // Touch look is consumed once per frame, so a fast drag cannot apply twice in one frame.
+      // Touch look is consumed once per frame, so a fast drag cannot apply twice in one frame. Both go through look(),
+      // so the player's sensitivity and inverted Y (#102) apply to touch and gamepad too.
       const dragLook = input ? touch.consumeLook() : { dx: 0, dy: 0 };
       if (input && (dragLook.dx !== 0 || dragLook.dy !== 0)) look(dragLook.dx, dragLook.dy, LOOK_DRAG);
       if (padReading && (padReading.lookX !== 0 || padReading.lookY !== 0)) {
         look(padReading.lookX * LOOK_PAD * dt, padReading.lookY * LOOK_PAD * dt, 1);
       }
+      // One normalised step (#227): no key combination moves faster than the chosen gait, and Shift alone picks the
+      // jog. A sampling clip pins the player (sampling.pinned()): no key, stick or pad movement, moveSpeed 0, no jog bob.
+      const pinned = sys.sampling ? sys.sampling.pinned() : false;
+      const shift = gate.isDown('ShiftLeft') || gate.isDown('ShiftRight');
+      const speed = !input || pinned ? 0 : shift ? JOG_SPEED : WALK_SPEED;
+      let step = speed > 0 ? walkStep((code) => gate.isDown(code), yaw, speed, dt) : { x: 0, z: 0, forward: 0 };
       fwd.set(Math.sin(yaw), 0, -Math.cos(yaw)); right.set(-fwd.z, 0, fwd.x);
-      // One speed vector per frame. The keyboard keeps its exact old mapping (WASD/arrows at WALK_SPEED, Shift at
-      // JOG_SPEED, diagonals unnormalised); touch and gamepad add an analogue vector of magnitude 0..1 times the
-      // walking or jog speed. While an analogue source is active the sum is capped at JOG_SPEED, so no input can
-      // outrun Shift and the suit model's numbers stay valid (#103).
-      const keySpeed = input ? (gate.isDown('ShiftLeft') || gate.isDown('ShiftRight') ? JOG_SPEED : WALK_SPEED) : 0;
-      const keyX = (gate.isDown('KeyD') || gate.isDown('ArrowRight') ? 1 : 0) - (gate.isDown('KeyA') || gate.isDown('ArrowLeft') ? 1 : 0);
-      const keyY = (gate.isDown('KeyW') || gate.isDown('ArrowUp') ? 1 : 0) - (gate.isDown('KeyS') || gate.isDown('ArrowDown') ? 1 : 0);
-      const stick = touch.velocity();
-      const analogueJog = stick.jog || (padReading ? padReading.jog : false);
-      const { x: vx, y: vy } = walkVector({
-        keyX, keyY, keySpeed,
-        anaX: stick.x + (padReading ? padReading.moveX : 0),
-        anaY: stick.y + (padReading ? padReading.moveY : 0),
-        anaSpeed: analogueJog ? JOG_SPEED : WALK_SPEED,
-        maxSpeed: JOG_SPEED,
-      });
-      if (vx !== 0 || vy !== 0) {
-        eye.addScaledVector(fwd, vy * dt);
-        eye.addScaledVector(right, vx * dt);
+      // Touch and gamepad (#103) add an analogue vector of magnitude 0..1 times the walking or jog speed on top of the
+      // keys. While an analogue source is active the sum is capped at JOG_SPEED, so no input can outrun Shift and the
+      // suit model's numbers stay valid. The keys keep the normalised step above.
+      const stick = input && !pinned ? touch.velocity() : null;
+      const pad = input && !pinned ? padReading : null;
+      const anaX = (stick ? stick.x : 0) + (pad ? pad.moveX : 0), anaY = (stick ? stick.y : 0) + (pad ? pad.moveY : 0);
+      const analogueJog = (anaX !== 0 || anaY !== 0) && !!((stick && stick.jog) || (pad && pad.jog));
+      if (anaX !== 0 || anaY !== 0) {
+        const kx = dt > 0 ? (step.x * right.x + step.z * right.z) / dt : 0, ky = dt > 0 ? (step.x * fwd.x + step.z * fwd.z) / dt : 0;
+        const v = walkVector({ keyX: kx, keyY: ky, keySpeed: 1, anaX, anaY, anaSpeed: analogueJog ? JOG_SPEED : WALK_SPEED, maxSpeed: JOG_SPEED });
+        step = { x: (right.x * v.x + fwd.x * v.y) * dt, z: (right.z * v.x + fwd.z * v.y) * dt, forward: v.y };
       }
+      const ex = eye.x, ez = eye.z;
+      if (step.x !== 0 || step.z !== 0) { eye.x += step.x; eye.z += step.z; }
       // collisions (#38, collide.js): rocks of 0.35 m and larger, the Cheyava Falls rock and the partner push the walker out, in one solve
       // so a walker squeezed between two of them ends clear of both. Then the habitat walls, last and hard: a blocked step slides along
       // the wall, and no push can shove the walker through one. Also while an arm clip plays: a clip moves only the camera (arms.cam).
@@ -272,12 +303,15 @@ export function createView(ctx, canvas, signal, {
       camGround = !groundInit || Math.abs(gT - camGround) > 1.5 ? gT : camGround + (gT - camGround) * Math.min(1, dt * 12); groundInit = true;
       camDuck += (dT - camDuck) * Math.min(1, dt * 10);
       camera.position.set(cx, camGround + 1.7 - camDuck + cc.drop + dig, cz); camera.rotation.set(-(view.pitch * (1 - cs) + cc.pitch * cs), -yaw, 0, 'YXZ');
-      view.moveSpeed = Math.hypot(eye.x - ex, eye.z - ez) / Math.max(dt, 1e-4);
+      view.moveSpeed = pinned ? 0 : Math.hypot(eye.x - ex, eye.z - ez) / Math.max(dt, 1e-4);
+      view.forwardSpeed = pinned ? 0 : (step.forward || 0);   // signed forward m/s for the legs (#228): negative walking backward, 0 strafing
       // reference head bob: one bounce per step; jogging on Mars is a slow lope (long 2 m strides, bigger bounce). Camera only, no asset involved.
-      const jog = view.moveSpeed > JOG_BOB_FROM, bt = arms.clip ? 0 : view.moveSpeed > 0.1 ? (jog ? 0.045 : 0.012) : 0; bobAmp += (bt - bobAmp) * Math.min(1, dt * 6); bobPhase += view.moveSpeed * dt * Math.PI * 2 / (jog ? 1.0 : 0.5);
+      // The gait is chosen by the Shift key (#227), never by the measured speed.
+      const jog = (shift || analogueJog) && speed > 0, bt = arms.clip ? 0 : view.moveSpeed > 0.1 ? (jog ? 0.045 : 0.012) : 0; bobAmp += (bt - bobAmp) * Math.min(1, dt * 6); bobPhase += view.moveSpeed * dt * Math.PI * 2 / (jog ? 1.0 : 0.5);
       camera.position.y += Math.abs(Math.sin(bobPhase * 0.5)) * bobAmp * 2 - bobAmp; camera.position.addScaledVector(right, Math.sin(bobPhase * 0.5) * bobAmp * 0.4);
     } else {
       view.moveSpeed = 0;
+      view.forwardSpeed = 0;
       if (input) controls.update();
       const g = groundH(camera.position.x, camera.position.z) + 2; if (camera.position.y < g) camera.position.y = g;
     }
@@ -293,6 +327,7 @@ export function createView(ctx, canvas, signal, {
     view.yaw = pose.yaw;
     view.pitch = 0;
     view.moveSpeed = 0;
+    view.forwardSpeed = 0;
     gate.clear();
     drag = false;
     touch.clear(); pad.reset(); publishTouch();
@@ -306,6 +341,7 @@ export function createView(ctx, canvas, signal, {
     setMode,
     update,
     setInputEnabled,
+    setLookSettings,
     reset,
     /** Touch stick state for the overlay (src/components/TouchStick.jsx); changes only on touch events. */
     touchState: () => touch.state(),
