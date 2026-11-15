@@ -199,7 +199,7 @@ export default function Present({ engine, onExit }) {
       const prev = beats[Math.max(0, timeline.previous)];
       // Starting cold (?beat=, a recording segment): come from where the previous beat ended, spin and drift included,
       // so two segments recorded apart join without a jump.
-      if (!keepFrom || !current) fromShot = current ? { ...current } : (i > 0 ? endShot(prev) : beatShot(beat, plan, groundAt(), reduced));
+      if (!keepFrom || !current) fromShot = current ? { ...current } : (i > 0 ? endShot(prev) : beatShot(beat.start ? { ...beat, shot: beat.start } : beat, plan, groundAt(), reduced));
       toShot = beatShot(beat, plan, groundAt(), reduced);
       const eng = engineRef.current;
       if (cine && eng) {
@@ -485,7 +485,7 @@ export default function Present({ engine, onExit }) {
         // Lazy: the file starts loading after the first beat, so the opening never waits on it
         <video
           ref={videoRef} className="pr-video" aria-hidden="true" muted playsInline disablePictureInPicture
-          src={index >= 1 || opts.record ? BASE + videoBeat.video.src : undefined}
+          src={index >= 1 || opts.record ? BASE + (lang === 'es' && videoBeat.video.srcEs ? videoBeat.video.srcEs : videoBeat.video.src) : undefined}
           poster={BASE + videoBeat.video.poster} preload={index >= 1 || opts.record ? 'auto' : 'none'} style={{ opacity: 0 }}
           onError={() => { videoFailedRef.current = true; setVideoFailed(true); }}
         />

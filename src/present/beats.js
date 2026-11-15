@@ -7,6 +7,7 @@
 // Fields
 //   id          unique name, used in the URL (?beat=zone) and by the recorder
 //   duration    seconds the beat runs under autoplay and recording
+//   start       optional: where the camera starts when the beat opens the show (the `open` beat's orbit)
 //   shot        where the camera ends: a target, a distance to it and the view angles
 //                 target  { lat, lon } in degrees, { x, z } in metres from Cheyava Falls, or a place name below
 //                 dist    metres from the target; yaw is the view heading in degrees clockwise from north,
@@ -34,6 +35,147 @@ export const PLACES = {
 };
 
 export const BEATS = [
+  {
+    // One fall from orbit to the HiRISE ground, the danger first (#355, judge review)
+    id: 'open',
+    duration: 20,
+    start: { target: { lat: 14, lon: 52 }, dist: 15_500_000, yaw: 0, pitch: -90, fov: 32 },
+    shot: { target: 'cheyava', dist: 1100, yaw: -40, pitch: -34, fov: 42 },
+    move: { dur: 15, ease: 'zoom' },
+    title: 'Marswalk',
+    caption: [
+      { at: 0, en: 'On Mars, nobody can come and get you.', es: 'En Marte, nadie puede ir por ti.' },
+      { at: 8, en: 'Marswalk shows where you can still get home.', es: 'Marswalk muestra desde dónde aún vuelves a casa.' },
+    ],
+    chips: [
+      { at: 'cheyava', show: [16], text: { en: 'Cheyava Falls, Jezero crater', es: 'Cheyava Falls, cráter Jezero' }, tag: 'DATA' },
+    ],
+    source: { en: 'Viking MDIM 2.1, THEMIS 100 m, CTX 6 m, then HiRISE 1 m terrain. Colour: our tint', es: 'Viking MDIM 2.1, THEMIS 100 m, CTX 6 m, luego terreno HiRISE 1 m. Color: nuestro tinte', tag: 'DATA' },
+  },
+  {
+    id: 'plan',
+    duration: 24,
+    shot: { target: { x: 250, z: 270 }, dist: 1450, yaw: -25, pitch: -58, fov: 44 },
+    move: { dur: 4, ease: 'inOut' },
+    caption: { en: 'Marswalk prices every metre in oxygen.', es: 'Marswalk cobra cada metro en oxígeno.' },
+    scene: { route: true },
+    tracks: { route: [0, 'totals.distanceM', 3, 14] },
+    chips: [
+      { at: 'leg:0', show: [5], big: '{legs.0.distanceM} m', text: { en: '{legs.0.timeMin} min · {legs.0.o2G} g O2', es: '{legs.0.timeMin} min · {legs.0.o2G} g O2' }, tag: 'DERIVED' },
+      { at: 'leg:2', show: [10], offset: 1, big: '{legs.2.distanceM} m', text: { en: '{legs.2.timeMin} min · {legs.2.o2G} g O2, uphill', es: '{legs.2.timeMin} min · {legs.2.o2G} g O2, cuesta arriba' }, tag: 'DERIVED' },
+      { at: 'cheyava', show: [17], big: '{totals.distanceM} m', text: { en: 'habitat to Cheyava Falls', es: 'del hábitat a Cheyava Falls' }, tag: 'DERIVED' },
+      { at: 'bend', show: [13.5], big: '{bend.slopeDeg:1}°', text: { en: 'slope here. Over {constants.slopeNoGoDeg}° is no-go', es: 'de pendiente. Más de {constants.slopeNoGoDeg}° no se pasa' }, tag: 'DERIVED', danger: true },
+    ],
+    source: { en: 'Route: our planner on the HiRISE slope. O2: NASA suit tests', es: 'Ruta: nuestro planificador sobre la pendiente HiRISE. O2: pruebas de trajes de la NASA', tag: 'DERIVED' },
+  },
+  {
+    id: 'zone',
+    duration: 24,
+    shot: { target: { x: 440, z: 480 }, dist: 1150, yaw: -30, pitch: -54, fov: 44 },
+    move: { dur: 5, ease: 'inOut' },
+    drift: { yaw: -0.8 },
+    caption: [
+      { at: 0, en: 'The question is not where you can go.', es: 'La pregunta no es a dónde puedes ir.' },
+      { at: 6, en: 'It is where you can still get home.', es: 'Es desde dónde todavía vuelves a casa.' },
+    ],
+    scene: { zone: true },
+    tracks: { zone: [0, 29, 8, 21], zoneOpacity: [0, 1, 4.5, 6] },
+    chips: [
+      { at: 'astronaut', show: [8], big: '{zone.area:1} ha', text: { en: 'you can reach and still get home', es: 'puedes alcanzar y aún volver' },
+        liveText: { en: 'reach and still get home, T+{clock}', es: 'alcanzas y aún vuelves, T+{clock}' }, tag: 'SIM', live: 'area' },
+      { at: 'hab', show: [5.5], text: { en: 'Habitat', es: 'Hábitat' }, tag: 'DATA', home: true },
+    ],
+    source: { en: 'Zone: computed by our planner from the HiRISE cost grid and suit model, 30 min first sortie. Clock sped up', es: 'Zona: la calcula nuestro planificador con el costo HiRISE y el modelo de traje, salida de 30 min. Reloj acelerado', tag: 'SIM' },
+  },
+  {
+    // The moment to remember: the alert, then the zone closing in on the astronaut, held at the end
+    id: 'radiation',
+    duration: 16,
+    shot: { target: 'astronaut', dist: 380, yaw: -20, pitch: -52, fov: 44 },
+    move: { dur: 3, ease: 'inOut' },
+    caption: { en: 'Radiation alert. Only ground toward home stays.', es: 'Alerta de radiación. Solo queda volver a casa.' },
+    scene: { zone: true },
+    tracks: { zone: [[29, 31, 1.2, 2.4], [31, 40, 3.5, 13]], zoneOpacity: [1, 1, 0, 1] },
+    chips: [
+      { at: 'hab', show: [0], text: { en: 'Habitat', es: 'Hábitat' }, tag: 'DATA', home: true },
+      { at: 'astronaut', show: [3.5], big: '{zone.area:1} ha', text: { en: 'you can reach and still get home', es: 'puedes alcanzar y aún volver' },
+        liveText: { en: 'reach and still get home, T+{clock}', es: 'alcanzas y aún vuelves, T+{clock}' }, tag: 'SIM', live: 'area' },
+      { at: 'astronaut', show: [1.2], ring: true, big: '29.9 µGy/h', text: { en: 'peak dose rate, Sept. 2017, 3× the 10 µGy/h background', es: 'tasa de dosis máxima, sept. 2017, 3× el fondo de 10 µGy/h' }, tag: 'DATA', danger: true, offset: 1 },
+    ],
+    source: { en: 'RAD on Curiosity, Gale crater, not Jezero: 718 and 240 µGy/day. Timing: NASA DONKI', es: 'RAD en Curiosity, cráter Gale, no Jezero: 718 y 240 µGy/día. Tiempos: NASA DONKI', tag: 'DATA' },
+  },
+  {
+    id: 'demo',
+    duration: 75,   // the video's length (public/present/demo.mp4)
+    shot: { target: 'hab', dist: 95, yaw: -40, pitch: -14, fov: 48 },
+    move: { dur: 0 },
+    // The real app, recorded on main with #290 and #335 (PR #356 names the commits). Its captions are in the video,
+    // in English (demo.mp4) and Spanish (demo-es.mp4); these show only if the file fails to load.
+    video: { src: 'demo.mp4', srcEs: 'demo-es.mp4', poster: 'demo-poster.jpg' },
+    caption: [
+      { at: 0, en: 'In orange, where the crew still gets home.', es: 'En naranja, desde dónde aún vuelven a casa.' },
+      { at: 5.4, en: 'With 30 min, the zone tightens.', es: 'Con 30 min, la zona se estrecha.' },
+      { at: 12, en: 'The crew\'s needs build the route.', es: 'Las necesidades del equipo arman la ruta.' },
+      { at: 24, en: 'Out through the airlock, with EV2.', es: 'Afuera por la esclusa, con EV2.' },
+      { at: 38.8, en: 'Radiation alert. EV2 turns home too.', es: 'Alerta de radiación. EV2 también vuelve.' },
+      { at: 64.8, en: 'Back inside, the walk is reviewed.', es: 'Ya adentro, se revisa la caminata.' },
+    ],
+  },
+  {
+    id: 'sources',
+    duration: 18,
+    shot: { target: 'site', dist: 2500, yaw: -20, pitch: -66, fov: 44 },
+    move: { dur: 4, ease: 'inOut' },
+    caption: { en: 'Measured, derived or simulated. Every number says which.', es: 'Medido, derivado o simulado. Cada número lo dice.' },
+    scene: { route: true },
+    tracks: { route: ['totals.distanceM', 'totals.distanceM', 0, 1], dust: [0.75, 0, 0, 3] },
+    chips: [
+      { at: 'cheyava', show: [2], text: { en: 'Terrain: HiRISE DTM, MRO', es: 'Terreno: DTM HiRISE, MRO' }, tag: 'DATA' },
+      { at: 'leg:1', show: [3.2], text: { en: 'Slope, route, O2 per metre', es: 'Pendiente, ruta, O2 por metro' }, tag: 'DERIVED' },
+      { at: 'hab', show: [4.4], text: { en: 'Walking speed, storm timing', es: 'Velocidad al caminar, momento de la tormenta' }, tag: 'SIM' },
+      { at: 'leg:3', show: [6], big: '{trek.rmsM} m', text: { en: 'our terrain against NASA\'s DTM, via Mars Trek', es: 'nuestro terreno contra el DTM de la NASA, en Mars Trek' }, tag: 'DERIVED' },
+    ],
+    source: { en: 'Every dataset is listed in Sources, in the app', es: 'Cada dato está en Fuentes, dentro de la app', tag: 'DATA' },
+  },
+  {
+    id: 'credits',
+    duration: 22,
+    shot: { target: 'site', dist: 2600, yaw: -24, pitch: -70, fov: 44 },
+    move: { dur: 3, ease: 'inOut' },
+    drift: { yaw: -0.6 },
+    caption: { en: 'Every source on screen, by name.', es: 'Cada fuente en pantalla, por su nombre.' },
+    scene: { route: true },
+    tracks: { route: ['totals.distanceM', 'totals.distanceM', 0, 1] },
+    // Names as docs/credits.md and scripts/credits-sources.mjs give them
+    list: {
+      title: { en: 'Sources', es: 'Fuentes' },
+      lines: [
+        { en: 'Globe: Viking MDIM 2.1 colorized global mosaic, 232 m. NASA/JPL/USGS', es: 'Globo: mosaico global Viking MDIM 2.1 a color, 232 m. NASA/JPL/USGS', tag: 'DATA' },
+        { en: 'Jezero: Mars Odyssey THEMIS day IR controlled global mosaic, 100 m. NASA/JPL-Caltech/ASU', es: 'Jezero: mosaico global THEMIS IR diurno, Mars Odyssey, 100 m. NASA/JPL-Caltech/ASU', tag: 'DATA' },
+        { en: 'CTX image mosaic for Mars 2020 TRN, 6 m (JEZ_ctx_B_soc_008). NASA/JPL/MSSS', es: 'Mosaico CTX para Mars 2020 TRN, 6 m (JEZ_ctx_B_soc_008). NASA/JPL/MSSS', tag: 'DATA' },
+        { en: 'HiRISE terrain model, 1 m, and image mosaic, 25 cm, for Mars 2020 TRN (JEZ_hirise_soc_006). NASA/JPL/UArizona', es: 'Modelo de terreno HiRISE, 1 m, y mosaico de imagen, 25 cm, para Mars 2020 TRN (JEZ_hirise_soc_006). NASA/JPL/UArizona', tag: 'DATA' },
+        { en: 'Terrain check: NASA Mars Trek HiRISE Jezero DEM, 0.14 m RMS', es: 'Revisión del terreno: DEM HiRISE de Jezero en NASA Mars Trek, 0.14 m RMS', tag: 'DERIVED' },
+        { en: 'Radiation: MSL Curiosity RAD, Gale crater, September 2017 event (Zeitlin et al. 2018)', es: 'Radiación: RAD de MSL Curiosity, cráter Gale, evento de septiembre 2017 (Zeitlin et al. 2018)', tag: 'DATA' },
+        { en: 'Dust: 2018 global dust storm, τ 8 at Gale (NASA/JPL, 20 June 2018)', es: 'Polvo: tormenta global de 2018, τ 8 en Gale (NASA/JPL, 20 de junio de 2018)', tag: 'DATA' },
+        { en: 'Suit: 8 h limit, NASA xEVA Concept of Operations EVA-EXP-0042. 30 min reserve, Apollo 17 procedures', es: 'Traje: límite de 8 h, NASA xEVA Concept of Operations EVA-EXP-0042. Reserva de 30 min, procedimientos Apollo 17', tag: 'DATA' },
+        { en: 'Route, slope and oxygen: our planner and suit model on that data', es: 'Ruta, pendiente y oxígeno: nuestro planificador y modelo de traje sobre esos datos', tag: 'DERIVED' },
+        { en: 'The first sortie, its clock and the return zone scenario: ours', es: 'La primera salida, su reloj y el escenario de la zona de regreso: nuestros', tag: 'SIM' },
+      ],
+      note: 'Teresa Rivas Gómez · Andrea Rivas Gómez · Fernando Haro Calvo · Jorge Antonio Vazquez Guzmán · Antonio Ramos Gonzalez · Brayan Iván Pérez Ventura',
+    },
+  },
+  {
+    id: 'live',
+    duration: 6,
+    shot: { target: 'hab', dist: 95, yaw: -40, pitch: -14, fov: 48 },
+    move: { dur: 4, ease: 'inOut' },
+    caption: { en: 'Now we walk it, live.', es: 'Ahora la caminamos, en vivo.' },
+    cta: { en: 'Open the mission table', es: 'Abrir la mesa de misión' },   // the start screen's own button (menu.open.mission.table)
+  },
+];
+
+// Shots the 30 s cut borrows; the full presentation opens with `open` instead.
+const CUT_SOURCES = [
   {
     id: 'mars',
     duration: 8,
@@ -79,109 +221,6 @@ export const BEATS = [
     ],
     source: { en: 'Suit limits: NASA xEVA concept of operations. Reserve: Apollo 17 procedures', es: 'Límites del traje: operaciones xEVA de la NASA. Reserva: procedimientos Apollo 17', tag: 'DATA' },
   },
-  {
-    id: 'plan',
-    duration: 15,
-    shot: { target: { x: 250, z: 270 }, dist: 1450, yaw: -25, pitch: -58, fov: 44 },
-    move: { dur: 4, ease: 'inOut' },
-    caption: { en: 'Marswalk prices every metre in oxygen.', es: 'Marswalk cobra cada metro en oxígeno.' },
-    scene: { route: true },
-    tracks: { route: [0, 'totals.distanceM', 3, 11] },
-    chips: [
-      { at: 'leg:0', show: [5], big: '{legs.0.distanceM} m', text: { en: '{legs.0.timeMin} min · {legs.0.o2G} g O2', es: '{legs.0.timeMin} min · {legs.0.o2G} g O2' }, tag: 'DERIVED' },
-      { at: 'leg:2', show: [8], offset: 1, big: '{legs.2.distanceM} m', text: { en: '{legs.2.timeMin} min · {legs.2.o2G} g O2, uphill', es: '{legs.2.timeMin} min · {legs.2.o2G} g O2, cuesta arriba' }, tag: 'DERIVED' },
-      { at: 'cheyava', show: [12], big: '{totals.distanceM} m', text: { en: 'habitat to Cheyava Falls', es: 'del hábitat a Cheyava Falls' }, tag: 'DERIVED' },
-      { at: 'bend', show: [10.5], big: '{bend.slopeDeg:1}°', text: { en: 'slope here. Over {constants.slopeNoGoDeg}° is no-go', es: 'de pendiente. Más de {constants.slopeNoGoDeg}° no se pasa' }, tag: 'DERIVED', danger: true },
-    ],
-    source: { en: 'Route: our planner on the HiRISE slope. O2: NASA suit tests', es: 'Ruta: nuestro planificador sobre la pendiente HiRISE. O2: pruebas de trajes de la NASA', tag: 'DERIVED' },
-  },
-  {
-    id: 'zone',
-    duration: 22,
-    shot: { target: { x: 440, z: 480 }, dist: 1150, yaw: -30, pitch: -54, fov: 44 },
-    move: { dur: 5, ease: 'inOut' },
-    drift: { yaw: -1.0 },
-    caption: [
-      { at: 0, en: 'The question is not where you can go.', es: 'La pregunta no es a dónde puedes ir.' },
-      { at: 5, en: 'It is where you can still get home.', es: 'Es desde dónde todavía vuelves a casa.' },
-      { at: 15, en: 'Radiation alert. Only ground toward home stays.', es: 'Alerta de radiación. Solo queda volver a casa.' },
-    ],
-    scene: { zone: true },
-    tracks: { zone: [[0, 29, 7, 14], [29, 31, 15.5, 16.8]], zoneOpacity: [0, 1, 4.5, 6] },
-    chips: [
-      { at: 'astronaut', show: [7], big: '{zone.area:1} ha', text: { en: 'you can reach and still get home', es: 'puedes alcanzar y aún volver' },
-        liveText: { en: 'reach and still get home, T+{clock}', es: 'alcanzas y aún vuelves, T+{clock}' }, tag: 'SIM', live: 'area' },
-      { at: 'hab', show: [5.5], text: { en: 'Habitat', es: 'Hábitat' }, tag: 'DATA', home: true },
-      { at: 'astronaut', show: [15.5], ring: true, big: '{rad.peak} µGy/h', text: { en: 'peak dose rate at Gale, Sept. 2017, 2.5× normal', es: 'tasa de dosis máxima en Gale, sept. 2017, 2.5× lo normal' }, tag: 'DATA', danger: true, offset: 1 },
-    ],
-    source: { en: 'Zone: computed by our planner from the HiRISE cost grid and suit model. Not in the walk HUD yet. Clock sped up', es: 'Zona: la calcula nuestro planificador con el costo HiRISE y el modelo de traje. Aún no está en el HUD. Reloj acelerado', tag: 'SIM' },
-  },
-  {
-    id: 'demo',
-    duration: 85,   // the video's length (public/present/demo.mp4)
-    shot: { target: 'hab', dist: 95, yaw: -40, pitch: -14, fov: 48 },
-    move: { dur: 0 },
-    // The real app, recorded (scripts/present/demo-cut.md). Its captions are in the video; these show only if it fails.
-    video: { src: 'demo.mp4', poster: 'demo-poster.jpg' },
-    caption: [
-      { at: 0, en: 'The crew sets its needs at the table.', es: 'El equipo fija sus necesidades en la mesa.' },
-      { at: 17, en: 'The planner builds the route from them.', es: 'El planificador arma la ruta con ellas.' },
-      { at: 34, en: 'In orange, where you can still get home.', es: 'En naranja, desde dónde aún vuelves.' },
-      { at: 50, en: 'Out through the airlock, with EV2.', es: 'Afuera por la esclusa, con EV2.' },
-      { at: 70, en: 'Afterwards, the walked route against the plan.', es: 'Después, la ruta caminada contra el plan.' },
-    ],
-  },
-  {
-    id: 'sources',
-    duration: 12,
-    shot: { target: 'site', dist: 2500, yaw: -20, pitch: -66, fov: 44 },
-    move: { dur: 4, ease: 'inOut' },
-    caption: { en: 'Measured, derived or simulated. Every number says which.', es: 'Medido, derivado o simulado. Cada número lo dice.' },
-    scene: { route: true },
-    tracks: { route: ['totals.distanceM', 'totals.distanceM', 0, 1], dust: [0.75, 0, 0, 3] },
-    chips: [
-      { at: 'cheyava', show: [2], text: { en: 'Terrain: HiRISE DTM, MRO', es: 'Terreno: DTM HiRISE, MRO' }, tag: 'DATA' },
-      { at: 'leg:1', show: [3.2], text: { en: 'Slope, route, O2 per metre', es: 'Pendiente, ruta, O2 por metro' }, tag: 'DERIVED' },
-      { at: 'hab', show: [4.4], text: { en: 'Walking speed, storm timing', es: 'Velocidad al caminar, momento de la tormenta' }, tag: 'SIM' },
-      { at: 'leg:3', show: [6], big: '{trek.rmsM} m', text: { en: 'our terrain against NASA\'s DTM, via Mars Trek', es: 'nuestro terreno contra el DTM de la NASA, en Mars Trek' }, tag: 'DERIVED' },
-    ],
-    source: { en: 'Every dataset is listed in Sources, in the app', es: 'Cada dato está en Fuentes, dentro de la app', tag: 'DATA' },
-  },
-  {
-    id: 'credits',
-    duration: 14,
-    shot: { target: 'site', dist: 2600, yaw: -24, pitch: -70, fov: 44 },
-    move: { dur: 3, ease: 'inOut' },
-    drift: { yaw: -0.6 },
-    caption: { en: 'Every source on screen, by name.', es: 'Cada fuente en pantalla, por su nombre.' },
-    scene: { route: true },
-    tracks: { route: ['totals.distanceM', 'totals.distanceM', 0, 1] },
-    // Names as docs/credits.md and scripts/credits-sources.mjs give them
-    list: {
-      title: { en: 'Sources', es: 'Fuentes' },
-      lines: [
-        { en: 'Globe: Viking MDIM 2.1 colorized global mosaic, 232 m. NASA/JPL/USGS', es: 'Globo: mosaico global Viking MDIM 2.1 a color, 232 m. NASA/JPL/USGS', tag: 'DATA' },
-        { en: 'Jezero: Mars Odyssey THEMIS day IR controlled global mosaic, 100 m. NASA/JPL-Caltech/ASU', es: 'Jezero: mosaico global THEMIS IR diurno, Mars Odyssey, 100 m. NASA/JPL-Caltech/ASU', tag: 'DATA' },
-        { en: 'CTX image mosaic for Mars 2020 TRN, 6 m (JEZ_ctx_B_soc_008). NASA/JPL/MSSS', es: 'Mosaico CTX para Mars 2020 TRN, 6 m (JEZ_ctx_B_soc_008). NASA/JPL/MSSS', tag: 'DATA' },
-        { en: 'HiRISE terrain model, 1 m, and image mosaic, 25 cm, for Mars 2020 TRN (JEZ_hirise_soc_006). NASA/JPL/UArizona', es: 'Modelo de terreno HiRISE, 1 m, y mosaico de imagen, 25 cm, para Mars 2020 TRN (JEZ_hirise_soc_006). NASA/JPL/UArizona', tag: 'DATA' },
-        { en: 'Terrain check: NASA Mars Trek HiRISE Jezero DEM, 0.14 m RMS', es: 'Revisión del terreno: DEM HiRISE de Jezero en NASA Mars Trek, 0.14 m RMS', tag: 'DERIVED' },
-        { en: 'Radiation: MSL Curiosity RAD, Gale crater, September 2017 event (Zeitlin et al. 2018)', es: 'Radiación: RAD de MSL Curiosity, cráter Gale, evento de septiembre 2017 (Zeitlin et al. 2018)', tag: 'DATA' },
-        { en: 'Dust: 2018 global dust storm, τ 8 at Gale (NASA/JPL, 20 June 2018)', es: 'Polvo: tormenta global de 2018, τ 8 en Gale (NASA/JPL, 20 de junio de 2018)', tag: 'DATA' },
-        { en: 'Suit: 8 h limit, NASA xEVA Concept of Operations EVA-EXP-0042. 30 min reserve, Apollo 17 procedures', es: 'Traje: límite de 8 h, NASA xEVA Concept of Operations EVA-EXP-0042. Reserva de 30 min, procedimientos Apollo 17', tag: 'DATA' },
-        { en: 'Route, slope and oxygen: our planner and suit model on that data', es: 'Ruta, pendiente y oxígeno: nuestro planificador y modelo de traje sobre esos datos', tag: 'DERIVED' },
-        { en: 'The first sortie, its clock and the return zone scenario: ours', es: 'La primera salida, su reloj y el escenario de la zona de regreso: nuestros', tag: 'SIM' },
-      ],
-      note: 'Teresa Rivas Gómez · Andrea Rivas Gómez · Fernando Haro Calvo · Jorge Antonio Vazquez Guzmán · Antonio Ramos Gonzalez · Brayan Iván Pérez Ventura',
-    },
-  },
-  {
-    id: 'live',
-    duration: 6,
-    shot: { target: 'hab', dist: 95, yaw: -40, pitch: -14, fov: 48 },
-    move: { dur: 4, ease: 'inOut' },
-    caption: { en: 'Now we walk it, live.', es: 'Ahora la caminamos, en vivo.' },
-    cta: { en: 'Open the mission table', es: 'Abrir la mesa de misión' },   // the start screen's own button (menu.open.mission.table)
-  },
 ];
 
 // The 30 s global video: intro, challenge, name and tagline, how it works with NASA data, the future.
@@ -225,7 +264,7 @@ export const GLOBAL_30 = [
 export function sequence(name = 'full', { live = false } = {}) {
   if (name !== 'global30') return live ? BEATS : BEATS.filter((b) => b.id !== 'live');
   return GLOBAL_30.map((cut) => {
-    const base = BEATS.find((b) => b.id === (cut.from || cut.id));
+    const base = [...BEATS, ...CUT_SOURCES].find((b) => b.id === (cut.from || cut.id));
     if (!base) throw new Error('GLOBAL_30 names an unknown beat: ' + cut.id);
     const tracks = cut.tracks || scaleTracks(base.tracks, cut.duration / base.duration);
     return { ...base, ...cut, tracks, chips: cut.chips ?? base.chips };
