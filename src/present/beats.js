@@ -108,19 +108,25 @@ export const BEATS = [
   },
   {
     id: 'demo',
-    duration: 74,   // the video's length (public/present/demo.mp4)
+    duration: 78,   // the video's length (public/present/demo.mp4)
     shot: { target: 'hab', dist: 95, yaw: -40, pitch: -14, fov: 48 },
     move: { dur: 0 },
-    // The real app, recorded on main (PR #373 names the commit). Its captions are in the video, in English; these show
-    // only if the file fails to load. beats.test.js checks `duration` against the file's real length.
+    // The real app, recorded on main at c237a18 (#406): eleven shots at their real speed, joined by dissolves. Its
+    // captions are in the video, in English; these follow them at the same times, cut to 8 words, and show only if
+    // the file fails to load. beats.test.js checks `duration` against the file's real length.
     video: { src: 'demo.mp4', poster: 'demo-poster.jpg' },
     caption: [
-      { at: 0, en: 'In orange, where the crew still gets home.', es: 'En naranja, desde dónde aún vuelven a casa.' },
-      { at: 5.2, en: 'With 30 min, the zone tightens.', es: 'Con 30 min, la zona se estrecha.' },
-      { at: 11.5, en: 'The crew\'s needs build the route.', es: 'Las necesidades del equipo arman la ruta.' },
-      { at: 23.5, en: 'Out through the airlock, with EV2.', es: 'Afuera por la esclusa, con EV2.' },
-      { at: 37.8, en: 'Radiation alert. EV2 turns home too.', es: 'Alerta de radiación. EV2 también vuelve.' },
-      { at: 63.8, en: 'Back inside, the walk is reviewed.', es: 'Ya adentro, se revisa la caminata.' },
+      { at: 0, en: 'Each stop carries Perseverance\'s photos.', es: 'Cada parada lleva fotos de Perseverance.' },
+      { at: 4.6, en: 'The crew sets science, time and risk.', es: 'El equipo fija ciencia, tiempo y riesgo.' },
+      { at: 10.2, en: 'The app says if it is safe.', es: 'La app dice si es seguro salir.' },
+      { at: 14.4, en: 'Out through the airlock.', es: 'Afuera por la esclusa.' },
+      { at: 22.5, en: 'On the wrist: terrain layers and the map.', es: 'En la muñeca: capas del terreno y mapa.' },
+      { at: 36.3, en: 'The slope grid shows the ground\'s shape.', es: 'La malla de pendiente muestra el relieve.' },
+      { at: 39.4, en: 'At the science stop: photo, scoop, seal.', es: 'En la parada científica: foto, pala, sello.' },
+      { at: 49.6, en: 'Radiation alert: a new route home.', es: 'Alerta de radiación: nueva ruta a casa.' },
+      { at: 55.0, en: 'EV2 turns back too.', es: 'EV2 también regresa.' },
+      { at: 61.4, en: 'Back in the habitat.', es: 'De vuelta en el hábitat.' },
+      { at: 69.0, en: 'The walk against the plan.', es: 'La caminata frente al plan.' },
     ],
   },
   {
