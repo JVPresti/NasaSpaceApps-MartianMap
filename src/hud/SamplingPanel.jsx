@@ -47,7 +47,7 @@ function SamplingPrompt() {
   const p = samplingPrompt(status);
   return (
     <>
-      {p.reticle && <div className={'hud-reticle hud-reticle-' + p.reticle} aria-hidden="true" />}
+      <div className={'hud-reticle hud-reticle-' + p.reticle} aria-hidden="true" />
       {(p.items.length > 0 || p.note) && (
         <div className="hud-sample-prompt" role="status">
           {p.items.map((it) => <div key={it.key} className="hud-prompt-item"><kbd>{it.key}</kbd><span>{it.text}</span></div>)}
