@@ -13,7 +13,7 @@ Decision for issue #242 (track review, weakness 1: the layers inform nothing) an
 | 2 | Rocks (`rock`) | What the route costs, most of all at cautious risk | Drawn from the density grid of `terrain.json` that the planner prices (`costGrid.rockAbundanceAt`), on the table and on the ground. It used to remap the orthomosaic's brightness, a different source | DERIVED · HiRISE, Golombek model | yes | yes |
 | 3 | Outcrop (`outcrop`) | Where the crew stops: light-toned rock is the science target | The candidate stops of `public/data/stops.json` are marked: the ones the route visits by their numbered markers, the others with why (dropped for time, O2, battery or no route, or part of another objective) | DERIVED · HiRISE outcrop mask; SIM stop choice | yes | yes (mask only) |
 | 4 | Radio shadow (`radio`) | The route of a solo crew, or of the radio-contact profile | New layer: the ground the habitat mast cannot see, on the planner's own 10 m mask (`radio.radioShadowMask`) | DERIVED · HiRISE DTM line of sight | yes | no |
-| 5 | Exposure (`exposure`) | Radiation risk and the shelter choice, not the path | New layer: sky view of the tile, the natural shelters of `shelters.json` with their dose cut, and a route readout | DERIVED · HiRISE DTM sky view | yes | no |
+| 5 | Exposure (`exposure`) | Radiation risk and the shelter choice, not the path | New layer: sky view of the tile, the natural shelters of `shelters.json` with the share of sky they hide, and a route readout | DERIVED · HiRISE DTM sky view; the dose cut built on it is SIM, an upper bound | yes | no |
 | – | Perseverance drives (overlay, Rover button) | A cautious route prefers ground the rover crossed | Its key now says so | DATA · Mars 2020 traverse | yes | no |
 
 `view.layer` in the store is the index. One list in `src/plan/layers.js` feeds the table buttons and legend, the 3D ground (`uLayer` in `src/engine/shaders.js`, the engine's `LAYERS`), the wrist layers page, the Walk layer chip and the L / Shift+L / 0 keys.
@@ -45,11 +45,11 @@ It is the base map under every layer: the HiRISE photo is what the crew will see
 
 ## The Exposure caveat
 
-The sky view factor is the share of the upper hemisphere a crouching astronaut sees (`src/sim/skyView.js`, method and limits in `docs/route/shelters.md`). During a solar particle event the dose scales with it if the flux is isotropic above the horizon.
+The sky view factor is the share of the upper hemisphere a crouching astronaut sees (`src/sim/skyView.js`, method and limits in `docs/route/shelters.md`). It is DERIVED geometry. During a solar particle event the dose would scale with it if the flux were isotropic above the horizon; that step is our assumption (SIM), and the one measurement on Mars puts the real saving at about a fifth of it (below).
 
 - **The range on this tile is narrow.** On the 6 m grid the app reads (`sky_view.json`) it runs from 0.82 to 1.00; the full 2 m grid reaches 0.807 at its lowest node (`shelters.json`), so the terrain never hides more than about 19 % of the sky, and the tile median is 0.927. The legend reads the range from the loaded grid and the colour ramp spans it, so the colours exaggerate small differences on purpose.
-- **It informs a risk readout and the shelter choice, not the path.** A 5 % difference in sky view along a route is too small to justify a longer walk, so no route profile prices it. What the layer shows is where the natural shelters are (SP1 to SP4, 15 to 16 % less dose) and how exposed the planned route is.
-- **The saving is an upper bound.** Particles from low in the sky cross more atmosphere, so hiding the low sky saves less than the isotropic estimate.
+- **It informs a risk readout and the shelter choice, not the path.** A 5 % difference in sky view along a route is too small to justify a longer walk, so no route profile prices it. What the layer shows is where the natural shelters are (SP1 to SP4, 15 to 16 % of the sky hidden, so at most 15 to 16 % less dose) and how exposed the planned route is.
+- **The saving is an upper bound, tagged SIM.** Particles from low in the sky cross more atmosphere, so hiding the low sky saves less than the isotropic estimate. Curiosity's RAD, beside Butte M12 with 19 % of the sky blocked, measured about 4 % less dose (Ehresmann et al. 2021, JGR Planets 126, [doi 10.1029/2021JE006851](https://doi.org/10.1029/2021JE006851)), about a fifth of the blocked share. Scaled that way the natural shelters cut 3.2 to 3.3 %, under the 12 % minimum for a safe point; `docs/route/shelters.md` ("After the hackathon") has the numbers. The shelter marker's tooltip and the route readout say so on screen.
 
 The readout is `skyViewAlongPath(sky, path)` in `src/sim/skyView.js`: the mean, minimum and maximum sky view along `route.path`, sampled every 5 m and weighted by length like `radioShadowAlongPath`, and where the sky is most hidden. `src/plan/routeExposure.js` gives `useRouteExposure(route.path)`, the words (`exposureText`) and the provenance entry `map.exposure` (DERIVED). On the real routes:
 
@@ -58,7 +58,7 @@ The readout is `skyViewAlongPath(sky, path)` in `src/sim/skyView.js`: the mean, 
 | First sortie, airlock to S1 | 55 m | 0.955 | 0.946 |
 | Full EVA, airlock to Bright Angel and Cheyava Falls | 934 m | 0.911 | 0.868, at Bright Angel |
 
-So an SEP during the full EVA would give the crew at most about 91 % of the open-ground dose.
+So an SEP during the full EVA would give the crew at least about 91 % of the open-ground dose, the isotropic upper bound on the saving. At the ratio RAD measured the saving is under 2 %, so about 98 %.
 
 ### How sky view is computed
 
@@ -93,7 +93,7 @@ Every change reuses the existing layer buttons, legend (`.table-map-legend`), ma
 | Table legend | One short "decides" line per layer; Terrain's caution row names the risk; Radio has an "In sight of the mast" row; Outcrop and Exposure list their markers; Exposure's range comes from the loaded grid | Each layer must say what it decides, and what it leaves unpainted |
 | Terrain on the map and the ground | 5 m contours over the slope bands | Merged from Elevation |
 | Candidate stop markers (Outcrop) | Grey dot with the stop's tag and why it is not on the route | Shows where else the crew could stop and why the plan left it out |
-| Shelter markers (Exposure) | Small square, as the habitat's marker, with "SP1 · −16 % dose" | Shows where shelter is |
+| Shelter markers (Exposure) | Small square, as the habitat's marker, with "SP1 · 15 % sky hidden"; the tooltip gives the dose cut as a SIM upper bound beside RAD's measurement (#296) | Shows where shelter is |
 | Map framing | Fits the route down to a 150 m span; the candidate stops and shelters no longer widen it | A 55 m sortie was a stub on a 500 m map; framing on the shelters pushed the route off the map |
 | Tags near the map edge | Open to the other side of their symbol | The edge cut "habitat airlock" and the rover pin |
 | Crew position and event route | The HUD's position marker; the event route in the caution colour with SHELTER at its end | #265: each event shows its re-plan on the table |

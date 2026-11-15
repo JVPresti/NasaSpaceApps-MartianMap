@@ -117,7 +117,7 @@ export function acrossLabel(size) {
  * The places a layer marks on the table map (LayerPlaces.jsx), beside the route's own stop markers:
  * - Outcrop: the candidate stops of stops.json the route does not visit, with why: dropped by the plan (route.dropped,
  *   with its limit) or part of another objective. The stops it visits already have their numbered markers.
- * - Exposure: the natural shelters of shelters.json with their dose cut. The habitat is the route's first marker.
+ * - Exposure: the natural shelters of shelters.json with the sky they hide. The habitat is the route's first marker.
  * @param {number} layer
  * @param {{ candidates?: Array<{ id: string, name: string, waypoint: string, x: number, z: number }>,
  *   stops?: Array<{ id: string }>, dropped?: Array<{ id: string, limit: string }>, waypoints?: Array<{ name: string }>,
