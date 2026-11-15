@@ -16,7 +16,8 @@
  * Writes `crew[0]` and, only when the separation level changes, `alerts.partner-separation`.
  * Plain JavaScript: the store is any object with getState / setState. No React, no three.js.
  */
-import { createSuitState, pathHome, stepSuit, suitReadout, walkCost } from './suitModel.js';
+import { pathHome, stepSuit, suitReadout, walkCost } from './suitModel.js';
+import { startSuitState } from './suitRunner.js';
 import { DEFAULT_HABITAT } from './replan.js';
 import { radioLinkState } from './radio.js';
 import { rangeBearing, SEPARATION_ALERT_ID, SEPARATION_RULE, separationAlert, separationLevel } from './partnerStatus.js';
@@ -49,10 +50,10 @@ const finite = (v) => typeof v === 'number' && Number.isFinite(v);
  * @returns {{ tick: () => void, stop: () => void }}
  */
 export function startPartnerRunner({
-  store, readPartner, heightAt, constants: c, habitat = DEFAULT_HABITAT, rule = SEPARATION_RULE, lineOfSight = null,
+  store, readPartner, heightAt, constants: c, habitat = DEFAULT_HABITAT, rule = SEPARATION_RULE, lineOfSight = null, start,
   now = () => Date.now(), setInterval: si = setInterval, clearInterval: ci = clearInterval,
 }) {
-  let suit = createSuitState(c);
+  let suit = startSuitState(c, start);   // the crew's starting O2 and battery from the mission table, as the player's suit
   let last = null;                    // { t, x, z } at the previous tick
   let speed = 0, gradient = 0;        // smoothed over about a second, as in the suit runner
   let walkback = { timeSec: 0, o2G: 0, distanceM: 0 }, walkbackKey = '';

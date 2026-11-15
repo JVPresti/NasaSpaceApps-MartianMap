@@ -20,13 +20,26 @@ const shelterOf = (route) => {
 };
 
 /**
+ * The suit state at the airlock: full tank and battery, or the O2 (g) and battery (Wh) the crew set at the mission
+ * table (needs.o2Pct and needs.batteryPct through legCosts.startConsumables), so the walk matches the plan.
+ * @param {object} c suit constants
+ * @param {{ o2G?: number, batteryWh?: number }} [start]
+ */
+export function startSuitState(c, start = {}) {
+  const suit = createSuitState(c);
+  const within = (value, max) => (Number.isFinite(value) ? Math.max(0, Math.min(max, value)) : max);
+  return { ...suit, o2G: within(start?.o2G, suit.o2G), batteryWh: within(start?.batteryWh, suit.batteryWh) };
+}
+
+/**
  * @param {{ store: { getState: Function, setState: Function }, heightAt: (x: number, z: number) => number,
- *   constants: object, habitat?: { x: number, z: number }, now?: () => number,
- *   setInterval?: Function, clearInterval?: Function }} options
+ *   constants: object, habitat?: { x: number, z: number }, start?: { o2G?: number, batteryWh?: number },
+ *   now?: () => number, setInterval?: Function, clearInterval?: Function }} options
+ *   start: the consumables at the airlock (startSuitState); full when left out
  * @returns {{ tick: () => void, stop: () => void }}
  */
-export function startSuitRunner({ store, heightAt, constants: c, habitat = DEFAULT_HABITAT, now = () => Date.now(), setInterval: si = setInterval, clearInterval: ci = clearInterval }) {
-  let suit = createSuitState(c);
+export function startSuitRunner({ store, heightAt, constants: c, habitat = DEFAULT_HABITAT, start, now = () => Date.now(), setInterval: si = setInterval, clearInterval: ci = clearInterval }) {
+  let suit = startSuitState(c, start);
   let last = null;                    // { t, x, z } at the previous tick
   let speed = 0, gradient = 0;        // smoothed over about a second: positions arrive at 5 Hz and ticks at 4 Hz
   let walkback = { timeSec: 0, o2G: 0, distanceM: 0 }, walkbackKey = '', walkbackTo = 'habitat';

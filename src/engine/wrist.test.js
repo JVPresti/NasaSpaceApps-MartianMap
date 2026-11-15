@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { LAYER_NAMES } from './arms.js';
 import {
-  FINGER_HOVER_M, FINGER_TAP_M, canOpenWrist, clampWristPointer, fingerHover, layerRowPointer, wristIsOpen, wristPixelToLocal, wristRestoreState,
+  FINGER_HOVER_M, FINGER_TAP_M, LAYER_ROWS, canOpenWrist, clampWristPointer, fingerHover, layerRowPointer, wristIsOpen, wristPixelToLocal, wristRestoreState,
 } from './wrist.js';
 
 // The bench's arms.tapTarget() (docs/marswalk-assets/testbench-reference/main.js lines 548-557) is the ground truth
@@ -22,11 +23,13 @@ describe('wrist screen: pixel to glass mapping', () => {
   });
 
   it('reproduces the bench tap target for every layer row', () => {
-    for (let row = 0; row < 5; row++) {
+    expect(LAYER_ROWS).toBe(LAYER_NAMES.length);
+    for (let row = 0; row < LAYER_ROWS; row++) {
       const pointer = layerRowPointer(row), local = wristPixelToLocal(pointer.x, pointer.y), bench = benchLocal(row);
       expect(local.x).toBeCloseTo(bench.x, 9);
       expect(local.z).toBeCloseTo(bench.z, 9);
     }
+    expect(layerRowPointer(5)).toEqual(layerRowPointer(LAYER_ROWS - 1));   // a table-only layer: the last row
   });
 
   it('maps a pointer that is not the layer column, and clamps pixels outside the canvas', () => {

@@ -1,8 +1,10 @@
 /* EVA debrief (#43). It reuses the start/pause dialog shell in menu.css and the app tokens in index.css.
    The mission log is the one visual focus: a quiet metric grid above, then one chronological rail. */
 
-.debrief-dialog {
-  width: min(760px, calc(100% - 32px));
+/* 860 px since the route review (#274): the map and the deviation rows sit side by side. Two classes, so it wins over
+   the 520 px of .modal in menu.css whatever order the bundle puts the two sheets in. */
+.modal.debrief-dialog {
+  width: min(860px, calc(100% - 32px));
 }
 
 .debrief-metrics {
@@ -182,3 +184,200 @@
 
 /* Keep the opening focus at the heading so long summaries start at the metrics. */
 #debrief-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+/* ------------------------------------------------------------------ route review (#274)
+   The mission table's map (src/plan/MissionMap.jsx, styled in table.css) with the walked track over the approved plan,
+   the debrief's log rows for the deviations, and a margin strip. New here: the track, the verdict colours, the small
+   re-plan / find / sample marks and the strip. The verdict colours are the app's alert tokens: green for worth it,
+   white (neutral, not a mistake) for forced, red for risky, amber for costly. */
+
+.review-worth { --verdict: var(--ok); }
+.review-forced { --verdict: var(--ink); }
+.review-risky { --verdict: var(--danger); }
+.review-costly { --verdict: var(--caution); }
+
+.debrief-review {
+  /* The map tokens the mission table defines on .table-screen, which the debrief is not inside. */
+  --panel-line: rgba(255, 255, 255, 0.16);
+  --text-2: #c9d0d8;
+}
+
+.debrief-review-summary {
+  margin: 6px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.debrief-review-body {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  margin-top: 12px;
+}
+
+.debrief-review-map {
+  display: flex;
+  height: 320px;
+}
+
+/* table.css lets the map follow the height of the mission table; here the box above decides. */
+.debrief-review-map .table-map {
+  width: auto;
+  height: 100%;
+}
+
+/* On this small map the caption keeps only its scale line, at the bottom left, clear of the route's far end at the top
+   and of Fit route; the title stays the map's accessible name, and the key under the map names the lines. */
+.debrief-review-map .table-map-caption { top: auto; bottom: 8px; left: 10px; font-size: 0; }
+.debrief-review-map .table-map-caption span { font-size: 11px; }
+.debrief-review-map .table-map-fit { top: 8px; right: 8px; min-height: 28px; padding: 0 10px; font-size: 12px; }
+
+/* The walked track: the app's orange, wider and under the cyan plan, so a walk on the plan shows an orange line with
+   a cyan core; each deviation over both in its verdict colour. */
+.map-track,
+.map-track-shadow,
+.map-stretch {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.map-track { stroke: var(--accent); stroke-width: 6px; }
+.map-track-shadow { stroke: #0a0d11; stroke-width: 8px; opacity: 0.5; }
+.map-stretch { stroke: var(--verdict, var(--accent)); stroke-width: 6px; }
+/* the track's own shadow does that job here; the route's would darken the orange around the cyan core */
+.debrief-review-map .map-route-shadow { display: none; }
+
+.map-marks { z-index: 1; }
+.map-mark {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  pointer-events: auto;   /* for the tooltip; a drag on a mark still moves the map */
+}
+/* the deviation number: the stop marker's number chip, in the verdict colour */
+.map-marker-num.review-worth,
+.map-marker-num.review-forced,
+.map-marker-num.review-risky,
+.map-marker-num.review-costly { color: #0a0d11; background: var(--verdict); border-color: #0a0d11; }
+.map-mark.map-mark-num { width: 20px; height: 20px; font-size: 11px; }
+/* a re-plan: a small ring in the plan's colour */
+.map-mark-replan { width: 10px; height: 10px; background: #0a0d11; border: 2px solid #8fd3ee; border-radius: 50%; }
+/* a find: the minimap's diamond and label (src/hud/minimapFinds.js colours: accepted, or marked only) */
+.map-mark-find { display: flex; align-items: center; gap: 4px; transform: translate(-5px, -50%); font: 700 10px var(--font-mono); color: #ffc56b; text-shadow: 0 1px 2px #000; }
+.map-mark-find::before { content: ''; width: 9px; height: 9px; background: currentColor; border: 1px solid rgba(20, 10, 6, 0.75); transform: rotate(45deg); }
+.map-mark-find.accepted { color: #9fd8ee; }
+/* a sample: a small dot in the go colour */
+.map-mark-sample { width: 8px; height: 8px; background: var(--ok); border: 1.5px solid #0a0d11; border-radius: 50%; }
+
+/* The map key, under the map in the debrief's note style; the shapes are the marks above. */
+.debrief-review-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 12px;
+  margin: 7px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--dim);
+}
+.debrief-review-legend li { display: flex; align-items: center; gap: 5px; }
+.debrief-review-legend i { display: inline-block; flex: none; }
+.debrief-review-legend .review-key-plan { width: 14px; border-top: 2px solid #8fd3ee; }
+.debrief-review-legend .review-key-track { width: 14px; border-top: 4px solid var(--accent); }
+.debrief-review-legend .review-key-replan { width: 9px; height: 9px; border: 2px solid #8fd3ee; border-radius: 50%; }
+.debrief-review-legend .review-key-find { width: 7px; height: 7px; margin: 0 1px; background: #9fd8ee; transform: rotate(45deg); }
+.debrief-review-legend .review-key-sample { width: 8px; height: 8px; background: var(--ok); border-radius: 50%; }
+
+/* Deviation rows: the mission log's rows as buttons; a click frames the stretch on the map. */
+.debrief-review-list {
+  max-height: 360px;   /* the map and its key */
+  overflow-y: auto;
+}
+
+.debrief-review-row {
+  width: 100%;
+  margin: 0;
+  padding-right: 6px;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.debrief-review-row:hover,
+.debrief-review-row[aria-pressed='true'] { background: var(--surface-hover); }
+.debrief-review-row[aria-pressed='true'] { box-shadow: inset 2px 0 0 var(--cyan); }
+.debrief-review-row:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.debrief-review-row .debrief-time { padding-left: 6px; }
+.debrief-review-row .debrief-entry-body { display: block; min-width: 0; }
+.debrief-review-row .debrief-entry-title { display: flex; align-items: center; gap: 8px; }
+.debrief-review-row .debrief-tag { margin-left: 0; }
+.debrief-review-row .debrief-review-num { flex: none; width: 20px; height: 20px; font-size: 11px; }
+.debrief-review-reason { color: var(--ink); }
+
+/* The margin strip: suit margin over the EVA, the reserve line and the deviations shaded. */
+.debrief-review-strip { margin: 14px 0 0; }
+
+.debrief-review-strip-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  font-size: 11.5px;
+  color: var(--dim);
+}
+.debrief-review-strip-head .debrief-tag { margin-left: 0; }
+.debrief-review-strip-low { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--ink); }
+.debrief-review-strip-scale { font-variant-numeric: tabular-nums; }
+
+.debrief-review-strip-plot {
+  position: relative;
+  height: 76px;
+  margin-top: 6px;
+  background: var(--surface-sunk);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.debrief-review-strip-plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.debrief-review-shade { fill: var(--verdict); opacity: 0.22; }
+.debrief-review-reserve { stroke: var(--danger); stroke-width: 1px; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+.debrief-review-grid { stroke: var(--line-strong); stroke-width: 1px; stroke-dasharray: 2 3; vector-effect: non-scaling-stroke; }
+.debrief-review-margin { fill: none; stroke: var(--ink); stroke-width: 1.5px; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.debrief-review-shade-num {
+  position: absolute;
+  top: 3px;
+  padding-left: 3px;
+  font: 700 10px var(--font-ui);
+  color: var(--verdict);
+}
+/* at the left end, where the margin is still high, so the falling margin line does not run through it */
+.debrief-review-reserve-label {
+  position: absolute;
+  left: 4px;
+  transform: translateY(-115%);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.debrief-review-strip-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--dim);
+}
+
+@media (max-width: 720px) {
+  .debrief-review-body { grid-template-columns: minmax(0, 1fr); }
+  .debrief-review-map { height: auto; }
+  .debrief-review-map .table-map { width: 100%; height: auto; }
+  .debrief-review-list { max-height: none; }
+}

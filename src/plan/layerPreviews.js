@@ -1,10 +1,11 @@
 /**
- * Preview images of the Plan-mode data layers (#51).
+ * Preview images of the map layers (#51), shown beside the mission table's layer buttons.
  *
- * One WebP per layer of `layers.js`, rendered by the engine itself with
- * `npm run previews` (scripts/build-layer-previews.mjs): the same top-down
- * Plan-mode framing, a clear-day sky, no route and no dust. Re-run the script
- * whenever a layer's look changes.
+ * One WebP per layer of `layers.js`, painted by the table map's own painter
+ * (mapLayers.js paintMap) with `npm run previews` (scripts/build-layer-previews.mjs):
+ * the same view of the full EVA route for every layer, no route, standard risk.
+ * The table-only layers (radio shadow, exposure) have no 3D look to render, so
+ * the table's look is the one shown. Re-run the script whenever a layer's look changes.
  */
 
 export const PREVIEW_DIR = 'marswalk/previews';

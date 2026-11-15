@@ -14,7 +14,8 @@ const COLUMNS = [
         [['menu.mouse'], 'menu.help.look'],
         [['ui.esc'], 'menu.help.release.pause'],
         [['H'], 'menu.help.this.help'],
-        [['X'], 'menu.help.end.eva'],
+        // src/state/tableActions.js: in the habitat's cabin, E opens the plan and X finishes the EVA (#244)
+        [['E', '/', 'X'], 'tableprompt.help'],
       ],
     },
     {

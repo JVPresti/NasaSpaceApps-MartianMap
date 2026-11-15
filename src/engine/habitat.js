@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import * as SH from './shaders.js';
 import { HAB_ZONES, HAB_SOLIDS, habZone, habCanStand, habSlideWorld } from './collide.js';
 import { createHabitatScreens } from './habitatScreens.js';
-import { createHabitatPrompt } from './habitatPrompt.js';
+import { createHabitatPrompt, isCabinZone } from './habitatPrompt.js';
 
 export function createHabitat(ctx) {
   const { scene, camera, U, assets, sys, view, T } = ctx;
@@ -24,10 +24,12 @@ export function createHabitat(ctx) {
     ground(x, z) { const q = this.zone(x, z); return q ? Math.max(meshH(x, z), this.pos.y + q.floor(this._l.x)) : meshH(x, z); },   // floor or terrain under a walker
     duck(x, z) { if (!this.root) return 0; const l = this.local(x, z, this._l); if (Math.abs(l.v) > 0.9) return 0;   // hatches are 1.43 m tall: stoop BEFORE the frame. Full stoop within 0.55 m of a hatch, starting 1.4 m away.
       const d = Math.min(Math.abs(l.x - 7.05), Math.abs(l.x - 2.45)), t = Math.min(1, Math.max(0, (d - 0.55) / 0.85)); return 0.42 * (1 - t * t * (3 - 2 * t)); },
+    // the player walks in the cabin (habitatPrompt.js CABIN_ZONES): where the table's prompt shows and its keys act (#244)
+    inCabin() { const z = view.mode === 'eye' && this.zone(view.eye.x, view.eye.z); return !!z && isCabinZone(z.n); },
     update(dt) {
       if (this.lights) { const on = U.uLamp.value.x > 0; for (const l of this.lights) l.visible = on; U.uHabGlow.value.set(1.0, 0.84, 0.62).multiplyScalar(on ? 0.16 : 0); }
       this.screens.update(dt || 0.016, camera.position.distanceToSquared(this.pos) < 200);   // the wall screens refresh 4 times a second, only when someone is near (habitatScreens.js)
-      const z = view.mode === 'eye' && this.zone(view.eye.x, view.eye.z); this.prompt.update(dt, !!z && (z.n === 'main' || z.n === 'inner'));   // end-of-EVA prompt over the table, in the cabin only (#244)
+      this.prompt.update(dt, this.inCabin());   // the table's prompt, in the cabin only (#244)
       if (!this.hatch) return; const l = this.local(view.eye.x, view.eye.z, this._l), pl = sys.partner.root ? this.local(sys.partner.root.position.x, sys.partner.root.position.z, { x: 0, v: 0 }) : null, near = (view.mode === 'eye' && l.x > 3.0 && l.x < 11.5 && Math.abs(l.v) < 3.0) || (pl && sys.partner.root.visible && pl.x > 3.0 && pl.x < 11.6 && Math.abs(pl.v) < 2.0);   // reference: the hatch opens when a walker is near
       this.open += ((near ? 1 : 0) - this.open) * Math.min(1, (dt || 0.016) * 3); this.hatch.rotation.y = 1.65 * this.open;
     },
@@ -75,7 +77,7 @@ export function createHabitat(ctx) {
       this.hatch = gltf.scene.getObjectByName('HabitatHatch');
       // planning table top: the EVA map, drawn from the store's route by habitatScreens.js (#47); route.json's waypoints until data arrives
       const disc = this.screens.table.mesh; disc.position.set(0, 1.10 + 0.966, 0); gltf.scene.add(disc); this.screens.table.drawPlaceholder();
-      gltf.scene.add(this.prompt.sprite);   // floats over the table (habitatPrompt.js, #244)
+      gltf.scene.add(this.prompt.sprite);   // the table's actions float over it (habitatPrompt.js, #244)
       // night lights (reference): a warm work light over the outer hatch and a red beacon on the comms mast
       const gc = document.createElement('canvas'); gc.width = gc.height = 64; const g2 = gc.getContext('2d'), gr = g2.createRadialGradient(32, 32, 0, 32, 32, 32);
       gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,.5)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g2.fillStyle = gr; g2.fillRect(0, 0, 64, 64);

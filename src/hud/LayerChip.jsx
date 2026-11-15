@@ -1,14 +1,14 @@
 import { t } from '../i18n/index.js';
 // Active data layer chip (#201). A layer picked in Plan, or with L, Shift+L or 0, stays on in Walk and paints the
 // terrain; this chip names it and repeats its legend from src/plan/layers.js, so the colours read as data. Hidden
-// while no layer is on (index 0).
+// while no layer is on (index 0), and for a table-only layer (radio shadow, exposure), which leaves the ground plain.
 import { useMissionStore } from '../state/store.js';
-import { layerMeta } from '../plan/layers.js';
-import { legendText } from './layerLegend.js';
+import { layerMeta, walkLayerIndex } from '../plan/layers.js';
+import { legendText, walkSwatches } from './layerLegend.js';
 import './layerChip.css';
 
 export default function LayerChip() {
-  const layer = useMissionStore((s) => s.view.layer);
+  const layer = useMissionStore((s) => walkLayerIndex(s.view.layer));
   if (!layer) return null;
   const meta = layerMeta(layer);
   if (meta.index === 0) return null;
@@ -31,7 +31,7 @@ export default function LayerChip() {
             <small>{meta.maxLabel}</small>
           </span>
         )}
-        {meta.swatches?.map((s) => (
+        {walkSwatches(meta).map((s) => (
           <span key={s.label} className="hud-layer-swatch">
             <i style={{ background: s.color }} />{s.label}{s.detail && <small>{s.detail}</small>}
           </span>

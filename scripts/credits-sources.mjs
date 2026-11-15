@@ -128,7 +128,7 @@ export const CURATED = [
     used_in: [
       'public/marswalk/assets/terrain.json (751 x 751 heights)',
       'public/marswalk/assets/normal_ao.jpg',
-      'Slope, elevation and route layers, cost grid and route planner',
+      'Terrain, radio shadow and sky exposure layers, cost grid and route planner',
     ],
     match: ['https://www.uahirise.org/dtm/'],
   },
@@ -147,7 +147,8 @@ export const CURATED = [
     url: 'https://doi.org/10.5066/P9QJDP48',
     used_in: [
       'public/marswalk/assets/ortho_hi.jpg, ortho_lo.jpg',
-      'public/marswalk/assets/outcrop_mask.jpg and the rock density map in terrain.json',
+      'public/marswalk/assets/outcrop_mask.jpg, the Outcrop layer: a brightness mask of light-toned ground, so bright dust or sand reads the same as outcrop',
+      'the rock density map in terrain.json, the Rocks layer (DERIVED, an estimate of rock cover)',
     ],
   },
   {

@@ -1,6 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { setLanguage, translateText } from '../i18n/index.js';
 import DebriefScreen from './DebriefScreen.jsx';
+
+afterEach(() => setLanguage('en'));
 
 const summary = {
   startedAtSec: 600,
@@ -65,6 +68,57 @@ describe('DebriefScreen', () => {
     expect(html).toContain('412 m → 388 m');
     expect(html).toContain('T+0:11:40');
     expect(html).toContain('T+0:20:00');
+  });
+
+  it('names the planned stop a sample was taken at in the Samples note (D10)', () => {
+    const plan = {
+      path: [[535.1, 574.1], [493, 539], [0, 0]],
+      waypoints: [
+        { name: 'HAB', label: null, x: 535.1, z: 574.1 },
+        { name: 'S1 · light-toned patch', label: 'Light-toned patch', x: 493, z: 539 },
+        { name: 'Cheyava Falls', label: 'Cheyava Falls', x: 0, z: 0 },
+      ],
+      legs: [],
+    };
+    const samples = [
+      { id: 1, kind: 'ground', site: null, x: 494.5, z: 540.2, atSec: 100 },
+      { id: 2, kind: 'rock', site: 'Cheyava Falls', x: 1, z: 1, atSec: 900 },   // the site already names the stop
+      { id: 3, kind: 'rock', site: null, x: 300, z: 300, atSec: 600 },           // away from any stop
+    ];
+    const body = text(render({ summary: { ...summary, plan, samples, sampleCount: 3 } }));
+    expect(body).toContain('soil · at Light-toned patch; rock · Cheyava Falls; rock');
+    setLanguage('es');
+    // The stop name goes through the catalog, as on the map (it reads "Zona de tono claro" in Spanish).
+    expect(text(render({ summary: { ...summary, plan, samples, sampleCount: 3 } }))).toContain(`suelo · en ${translateText('Light-toned patch')}; roca · Cheyava Falls; roca`);
+  });
+
+  it('speaks Spanish: labels, log wording, route kinds, samples, notes and buttons, with known reasons translated', () => {
+    setLanguage('es');
+    const spanish = {
+      ...summary,
+      doseUgy: 4.7,
+      events: [...summary.events, { type: 'start', eventId: 'dust-storm', label: 'Dust storm', atSec: 1600 }],
+      routeChanges: [
+        ...summary.routeChanges,
+        // An event re-route as src/state/events.js writes it: the alert text, then the event id.
+        { atSec: 1650, kind: 'event', reason: 'Dust storm: opacity rising. Return to the habitat. (dust-storm)', before: { distanceM: 388 }, after: { distanceM: 1240 } },
+        { atSec: 1700, kind: 'offroute', reason: 'Off route: new route from your position', before: null, after: null },
+      ],
+    };
+    const body = text(render({ summary: spanish, reserveSec: 1800, notice: 'menu.restarting' }));
+    for (const label of [
+      'Informe de la EVA', 'De vuelta en el hábitat · reloj de misión detenido', 'Tiempo fuera', 'Distancia caminada', 'horizontal, a pie',
+      'Muestras', '2 muestras', 'roca · Cheyava Falls', 'suelo', 'Dosis', '4,70 µGy', '1,24 km', 'Margen de oxígeno mínimo',
+      'negativo significa por debajo de la reserva', 'Batería mínima', 'Registro de la misión', 'Evento iniciado', 'Evento terminado',
+      'Alerta de radiación', 'Tormenta de polvo', 'Ruta planificada', 'Ruta inicial', 'Desvío por pendiente', 'Nueva ruta por peligro',
+      'Vuelve al hábitat. (dust-storm)', 'Fuera de ruta: nueva ruta desde tu posición', 'Vuelta tras salir de la ruta', 'Cómo leer estas cifras',
+      'La dosis sigue el escenario', 'Continuar la EVA', 'Reiniciar la EVA', 'Fuentes', 'Reiniciando…', 'Esc no hace ninguna de las dos cosas.',
+    ]) expect(body, label).toContain(label);
+    for (const english of ['EVA debrief', 'Time outside', 'Mission log', 'Event started', 'Initial route', 'How to read', 'Continue EVA', 'Planned route', 'Return to the habitat']) {
+      expect(body, english).not.toContain(english);
+    }
+    // The slope detour reason was written in English by the HUD: the catalog cannot match its filled-in number.
+    expect(body).toContain('Detour: steeper than 25° ahead');
   });
 
 });

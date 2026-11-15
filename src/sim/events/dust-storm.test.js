@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import hazards from '../../../public/data/hazards.json';
 import { validateEvent } from '../eventEngine.js';
 import dustStorm from './dust-storm.json';
+import { eventStartSec, missionEventDefinitions } from '../missions.js';
 
 describe('dust storm event data', () => {
   it('is a valid event definition', () => {
@@ -54,5 +55,14 @@ describe('dust storm event data', () => {
     expect(peak).toMatch(/gale_global_storm_2018/);
     expect(peak).not.toMatch(/^Target value of the storm ramp/);
     expect(before).toMatch(/before #126/);
+  });
+
+  it('leaves its start time to the mission: T+480 s and the 90 s ramp in the full EVA (#265)', () => {
+    expect(dustStorm.trigger).toEqual({ type: 'manual' });
+    expect(eventStartSec('cheyava', 'dust-storm')).toBe(480);
+    const [full] = missionEventDefinitions('cheyava', [dustStorm]);
+    expect(full.timeline).toEqual(dustStorm.timeline);
+    const [first] = missionEventDefinitions('sortie', [dustStorm]);
+    expect(first.timeline.at(-1).atSec).toBe(hazards.values['dust.event.ramp_duration'].value / 3);
   });
 });

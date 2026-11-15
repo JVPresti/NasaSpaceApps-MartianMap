@@ -31,7 +31,7 @@ it('renders the existing modes, legends, sampling, navigation and active alerts 
   expect(ui()).toContain('Map layers');
   setLanguage('es');
   const spanish = ui();
-  for (const label of ['Modo Plan', 'Modo Caminar', 'Capas del mapa', 'Peligro por pendiente', 'MUESTREO', 'Vuelve al hábitat']) expect(spanish).toContain(label);
+  for (const label of ['Modo Plan', 'Modo Caminar', 'Capas del mapa', 'Terreno', 'MUESTREO', 'Vuelve al hábitat']) expect(spanish).toContain(label);
   expect(spanish).not.toContain('Map layers');
   expect(formatNavLine({ errorM: 0.4, fixMode: 'terrain fix', lastFixSec: 0 }, 180)).toBe('NAV · fijación con el terreno · ±0,4 m · hace 3 min');
   setLanguage('en');

@@ -197,6 +197,24 @@ describe('gamepad poller', () => {
     expect(poller.poll().actions).toEqual([]);
   });
 
+  it('reports A and X once per press as the habitat table actions, on buttons no other action uses', () => {
+    expect(PAD_BUTTONS.openPlan).toBe(0);
+    expect(PAD_BUTTONS.endEva).toBe(2);
+    const indices = Object.values(PAD_BUTTONS);
+    expect(new Set(indices).size).toBe(indices.length);
+
+    let pads = [makePad({ pressed: [PAD_BUTTONS.openPlan, PAD_BUTTONS.endEva] })];
+    const poller = createGamepadPoller({ getPads: () => pads });
+    const first = poller.poll();
+    expect(first.actions).toEqual(['open-plan', 'end-eva']);
+    expect(first.firstUse).toBe(true);
+    expect(poller.poll().actions).toEqual([]);   // held
+    pads = [makePad()];
+    poller.poll();
+    pads = [makePad({ pressed: [PAD_BUTTONS.endEva] })];
+    expect(poller.poll().actions).toEqual(['end-eva']);
+  });
+
   it('raises used once, stays used while connected and in use, and never repeats firstUse', () => {
     let pads = [makePad()];
     const poller = createGamepadPoller({ getPads: () => pads });

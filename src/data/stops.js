@@ -49,6 +49,23 @@ function checkTagged(entry, where) {
   }
 }
 
+/** Work time at a stop (#247): optional; when present a value of zero or more seconds with its tag and provenance. */
+function checkWorkTime(work, where) {
+  if (work === undefined) return;
+  if (!Number.isFinite(work?.value) || work.value < 0 || work.unit !== 's') throw new Error(`${where}: work_time_s must be zero or more seconds`);
+  checkTagged(work, `${where} work_time_s`);
+  checkProvenance(work.provenance, `${where} work_time_s`);
+}
+
+/**
+ * Seconds of work at a stop for a pair of astronauts (#247), 0 when the stop has none.
+ * @param {{ work_time_s?: { value: number } } | null | undefined} stop
+ */
+export function workTimeSec(stop) {
+  const value = stop?.work_time_s?.value;
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
 /**
  * Check the parsed file and return its stops.
  * @param {object} data parsed `stops.json`
@@ -70,6 +87,7 @@ export function parseStops(data) {
     const radius = stop.arrival_radius;
     if (!(radius?.value > 0) || radius.unit !== 'm') throw new Error(`${where}: arrival_radius must be a positive value in m`);
     checkProvenance(radius.provenance, `${where} arrival_radius`);
+    checkWorkTime(stop.work_time_s, where);
 
     if (!Array.isArray(stop.text) || stop.text.length < 2 || stop.text.length > 4) throw new Error(`${where}: text needs 2 to 4 sentences`);
     stop.text.forEach((s, i) => {
@@ -94,6 +112,88 @@ export function parseStops(data) {
     if (steps.join() !== CHECKLIST.join()) throw new Error(`${where}: checklist must be ${CHECKLIST.join(', ')}`);
   }
   return data.stops;
+}
+
+/**
+ * Check `route_stops`: stops the route generator can choose that have no science card yet (the first sortie stop,
+ * #265). Each needs an id unique across both lists, a name, a waypoint name, a position with its provenance and a work
+ * time.
+ * @param {object} data parsed `stops.json`
+ * @returns {Array<object>} the entries, or an empty list when the file has none
+ */
+export function parseRouteStops(data) {
+  const list = data?.route_stops ?? [];
+  if (!Array.isArray(list)) throw new Error('stops.json route_stops must be an array');
+  const ids = new Set((data?.stops ?? []).map((s) => s?.id));
+  for (const stop of list) {
+    const where = `route stop ${String(stop?.id)}`;
+    if (typeof stop?.id !== 'string' || !stop.id || ids.has(stop.id)) throw new Error(`${where}: id must be a unique string`);
+    ids.add(stop.id);
+    if (typeof stop.name !== 'string' || typeof stop.waypoint !== 'string') throw new Error(`${where}: needs name and waypoint`);
+    if (!Number.isFinite(stop.x) || !Number.isFinite(stop.z)) throw new Error(`${where}: needs finite x and z`);
+    checkTagged(stop.position, `${where} position`);
+    checkProvenance(stop.position.provenance, `${where} position`);
+    const radius = stop.arrival_radius;
+    if (!(radius?.value > 0) || radius.unit !== 'm') throw new Error(`${where}: arrival_radius must be a positive value in m`);
+    checkTagged(radius, `${where} arrival_radius`);
+    checkProvenance(radius.provenance, `${where} arrival_radius`);
+    if (stop.work_time_s === undefined) throw new Error(`${where}: needs work_time_s`);
+    checkWorkTime(stop.work_time_s, where);
+    checkReason(stop.reason, where);
+  }
+  return list;
+}
+
+/**
+ * The one line that says why a route stop without a card is worth the walk (round 2, D10): English and Spanish in the
+ * data, as the stop has no i18n key, with its tag and provenance. Optional.
+ */
+function checkReason(reason, where) {
+  if (reason === undefined) return;
+  for (const language of ['en', 'es']) {
+    if (typeof reason?.[language] !== 'string' || !reason[language].trim()) throw new Error(`${where}: reason needs ${language} text`);
+  }
+  checkTagged(reason, `${where} reason`);
+  checkProvenance(reason.provenance, `${where} reason`);
+}
+
+/**
+ * A stop's reason line in a language, or null: route stops carry one (stops.json route_stops[].reason), science stops
+ * have their card instead.
+ * @param {{ reason?: { en: string, es: string } | null } | null} stop a stop, a candidate or a route.stops entry
+ * @param {string} [language] 'en' or 'es'
+ */
+export function stopReason(stop, language = 'en') {
+  const reason = stop?.reason;
+  if (!reason) return null;
+  return reason[language] ?? reason.en ?? null;
+}
+
+/**
+ * Every stop of stops.json in one list: the science stops, then the route stops with an empty card (no text, images
+ * or checklist, so stopHasContent is false and no card opens), so the waypoint runner takes each route stop's arrival
+ * radius and the arrival tracker sees it like any other stop.
+ * @param {object} data parsed `stops.json`
+ * @returns {Array<object>}
+ */
+export function allStops(data) {
+  return [...parseStops(data), ...parseRouteStops(data).map((stop) => ({ text: [], images: [], checklist: [], ...stop }))];
+}
+
+/**
+ * Every stop the route generator can choose (src/sim/missionNeeds.js), as plain data for the planner worker: the
+ * science stops with a card, then the route stops without one.
+ * @param {object} data parsed `stops.json`
+ * @returns {Array<{ id: string, name: string, waypoint: string, x: number, z: number, workSec: number, card: boolean,
+ *   reason: { en: string, es: string, tag: string } | null }>} workSec: the work time for a pair of astronauts (#247);
+ *   reason: why a stop without a card is worth the walk
+ */
+export function routeStopCandidates(data) {
+  const reason = (r) => (r ? { en: r.en, es: r.es, tag: r.tag } : null);
+  const plain = (stop, card) => ({
+    id: stop.id, name: stop.name, waypoint: stop.waypoint, x: stop.x, z: stop.z, workSec: workTimeSec(stop), card, reason: reason(stop.reason),
+  });
+  return [...parseStops(data).map((s) => plain(s, true)), ...parseRouteStops(data).map((s) => plain(s, false))];
 }
 
 /** @returns {object|null} */
@@ -150,14 +250,15 @@ export function imageUrl(image, base = import.meta.env?.BASE_URL ?? '/') {
 }
 
 /**
- * Fetch and check `stops.json`. Without `fetch` the file comes from the shared loader (src/data/dataFiles.js).
+ * Fetch and check `stops.json`: every stop, science and route stops (allStops). Without `fetch` the file comes from
+ * the shared loader (src/data/dataFiles.js).
  * @param {{fetch?: typeof fetch, base?: string, signal?: AbortSignal}} [options]
  * @returns {Promise<Array<object>>}
  */
 export async function loadStops({ fetch: fetchImpl, base = import.meta.env?.BASE_URL ?? '/', signal } = {}) {
-  if (!fetchImpl && !signal) return parseStops(await loadDataFile(STOPS_PATH, base));
+  if (!fetchImpl && !signal) return allStops(await loadDataFile(STOPS_PATH, base));
   fetchImpl ??= globalThis.fetch;
   const response = await fetchImpl(base + STOPS_PATH, signal ? { signal } : undefined);
   if (!response.ok) throw new Error(`stops.json ${response.status}`);
-  return parseStops(await response.json());
+  return allStops(await response.json());
 }

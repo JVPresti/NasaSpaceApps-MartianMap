@@ -135,6 +135,7 @@ export default function SlopeAhead({ engine }) {
         applyPlannedRoute(useMissionStore, result, {
           reason: t('ui.detour.steeper.than.p0.ahead', { p0: SLOPE_NO_GO_DEG }),
           etaSec: result.distance / ETA_SPEED_MS,
+          kind: 'slope',   // the EVA history and the route review read this, not the translated reason (B2)
         });
         setDetour(extra);
       })

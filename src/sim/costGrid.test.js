@@ -12,9 +12,12 @@ import {
   heightAt,
   isBlockedAt,
   nearestCell,
+  onTraverse,
   resetZones,
   rockAbundanceAt,
   slopeAt,
+  TRAVERSE_RADIUS_M,
+  traverseMask,
   worldToGrid,
 } from './costGrid.js';
 
@@ -169,5 +172,36 @@ describe('run-time zones', () => {
     const value = rockAbundanceAt(grid, 0, 0);
     expect(value).toBeGreaterThanOrEqual(COST_CONSTANTS.ROCK_DENSITY_MIN);
     expect(value).toBeLessThanOrEqual(COST_CONSTANTS.ROCK_DENSITY_MAX);
+  });
+});
+
+describe('ground Perseverance drove', () => {
+  // 101 nodes, 2 m apart: x and z from -100 to 100 m.
+  const grid = { n: 101, width: 200, depth: 200 };
+
+  it('marks the nodes within the band of a drive and no others', () => {
+    const mask = traverseMask(grid, [[[-50, 0], [50, 0]]]);
+    expect(onTraverse(mask, 0, 0)).toBe(true);
+    expect(onTraverse(mask, 49, 2)).toBe(true);
+    expect(onTraverse(mask, 0, TRAVERSE_RADIUS_M + 2)).toBe(false);
+    expect(onTraverse(mask, 60, 0)).toBe(false);
+    // a 100 m line, 3 nodes wide (z = -2, 0, 2), 53 nodes long with the round ends (x = -52 to 52)
+    expect(mask.count).toBe(3 * 53);
+  });
+
+  it('reads the drives of traverse.json and skips a drive without points', () => {
+    const mask = traverseMask(grid, [{ sol: 1, points: [[0, -40], [0, 40]] }, { sol: 2 }, null]);
+    expect(onTraverse(mask, 0, 39)).toBe(true);
+    expect(onTraverse(mask, 10, 0)).toBe(false);
+  });
+
+  it('covers the real traverse near Cheyava Falls', () => {
+    const traverse = JSON.parse(readFileSync(fileURLToPath(new URL('../../public/data/traverse.json', import.meta.url)), 'utf8'));
+    const real = buildCostGrid(terrainJson);
+    const mask = traverseMask(real, traverse.traverse.drives);
+    const [x, z] = traverse.traverse.drives[0].points[0];
+    expect(onTraverse(mask, x, z)).toBe(true);
+    expect(mask.count).toBeGreaterThan(1000);
+    expect(onTraverse(mask, 535.1, 574.1)).toBe(false);   // the airlock is 124 m from the nearest drive
   });
 });

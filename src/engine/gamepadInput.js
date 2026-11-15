@@ -3,7 +3,10 @@
  * reads `navigator.getGamepads` only when it polls, and every value is injected for tests.
  *
  * Axes are the standard mapping: 0/1 is the left stick (move) and 2/3 the right stick (look). The
- * buttons used are 4/5 (LB/RB, previous/next layer), 9 (Start/Menu, Plan/Walk) and 10 (L3, jog).
+ * buttons used are 4/5 (LB/RB, previous/next layer), 9 (Start/Menu, Plan/Walk), 10 (L3, jog), and
+ * the habitat table's two actions (src/state/tableActions.js): 0 (A / Cross, open the plan) and
+ * 2 (X / Square, finish the EVA). X mirrors the X key; the EVA's end is kept off A, the button
+ * pressed most. Both are reported everywhere; the table acts on them only in the cabin.
  *
  * Conventions match the rest of the engine: moveX right, moveY forward, lookX right and lookY down,
  * so a caller can feed lookX/lookY straight into `look(dx, dy)`. Pads that report another mapping
@@ -14,7 +17,7 @@
 export const PAD_DEAD_ZONE = 0.12;
 
 /** Standard-mapping button indices, named after the action they trigger. */
-export const PAD_BUTTONS = Object.freeze({ layerPrev: 4, layerNext: 5, mode: 9, jog: 10 });
+export const PAD_BUTTONS = Object.freeze({ openPlan: 0, endEva: 2, layerPrev: 4, layerNext: 5, mode: 9, jog: 10 });
 
 /**
  * Signed dead-zone remap: values inside the dead zone become 0 and the remaining travel is stretched
@@ -80,8 +83,8 @@ function readStick(axes, xIndex, yIndex, deadZone) {
  * @returns {{
  *   connected: false, id: null, mapping: '',
  *   moveX: 0, moveY: 0, lookX: 0, lookY: 0, jog: false,
- *   modePressed: false, layerPrevPressed: false, layerNextPressed: false,
- *   modeDown: false, layerPrevDown: false, layerNextDown: false,
+ *   modePressed: false, layerPrevPressed: false, layerNextPressed: false, openPlanPressed: false, endEvaPressed: false,
+ *   modeDown: false, layerPrevDown: false, layerNextDown: false, openPlanDown: false, endEvaDown: false,
  * }} a neutral reading for a missing pad
  */
 function emptyReading() {
@@ -97,9 +100,13 @@ function emptyReading() {
     modePressed: false,
     layerPrevPressed: false,
     layerNextPressed: false,
+    openPlanPressed: false,
+    endEvaPressed: false,
     modeDown: false,
     layerPrevDown: false,
     layerNextDown: false,
+    openPlanDown: false,
+    endEvaDown: false,
   };
 }
 
@@ -118,6 +125,8 @@ function readPadState(pad, previous, deadZone) {
   const modeDown = buttonDown(buttons, PAD_BUTTONS.mode);
   const layerPrevDown = buttonDown(buttons, PAD_BUTTONS.layerPrev);
   const layerNextDown = buttonDown(buttons, PAD_BUTTONS.layerNext);
+  const openPlanDown = buttonDown(buttons, PAD_BUTTONS.openPlan);
+  const endEvaDown = buttonDown(buttons, PAD_BUTTONS.endEva);
   const was = previous && typeof previous === 'object' ? previous : null;
 
   return {
@@ -135,9 +144,13 @@ function readPadState(pad, previous, deadZone) {
     modePressed: modeDown && !was?.modeDown,
     layerPrevPressed: layerPrevDown && !was?.layerPrevDown,
     layerNextPressed: layerNextDown && !was?.layerNextDown,
+    openPlanPressed: openPlanDown && !was?.openPlanDown,
+    endEvaPressed: endEvaDown && !was?.endEvaDown,
     modeDown,
     layerPrevDown,
     layerNextDown,
+    openPlanDown,
+    endEvaDown,
   };
 }
 
@@ -157,9 +170,13 @@ function readPadState(pad, previous, deadZone) {
  *   modePressed: boolean,
  *   layerPrevPressed: boolean,
  *   layerNextPressed: boolean,
+ *   openPlanPressed: boolean,
+ *   endEvaPressed: boolean,
  *   modeDown: boolean,
  *   layerPrevDown: boolean,
  *   layerNextDown: boolean,
+ *   openPlanDown: boolean,
+ *   endEvaDown: boolean,
  * }}
  */
 export function readPad(pad, previous = null) {
@@ -238,9 +255,12 @@ export function createGamepadPoller({
       modeDown: reading.modeDown,
       layerPrevDown: reading.layerPrevDown,
       layerNextDown: reading.layerNextDown,
+      openPlanDown: reading.openPlanDown,
+      endEvaDown: reading.endEvaDown,
     };
 
     const active = reading.modeDown || reading.layerPrevDown || reading.layerNextDown || reading.jog
+      || reading.openPlanDown || reading.endEvaDown
       || reading.moveX !== 0 || reading.moveY !== 0 || reading.lookX !== 0 || reading.lookY !== 0;
     const firstUse = active && !used;
     if (active) used = true;
@@ -249,6 +269,8 @@ export function createGamepadPoller({
     if (reading.modePressed) actions.push('mode');
     if (reading.layerPrevPressed) actions.push('layer-prev');
     if (reading.layerNextPressed) actions.push('layer-next');
+    if (reading.openPlanPressed) actions.push('open-plan');
+    if (reading.endEvaPressed) actions.push('end-eva');
 
     return {
       connected: reading.connected,

@@ -8,7 +8,9 @@ import lowOxygenCaution from '../sim/events/low-oxygen-caution.json';
 import lowOxygenWarning from '../sim/events/low-oxygen-warning.json';
 import radiation from '../sim/events/radiation.json';
 import { createEventEngine } from '../sim/eventEngine.js';
+import { missionEventDefinitions, missionForObjective } from '../sim/missions.js';
 import { HAZARDS_PATH } from '../data/provenance.js';
+import '../mission/sources.js';   // the SIM notes of the missions' event times (#265)
 import { loadCostGrid, loadDataFile } from '../data/dataFiles.js';
 import { SHELTERS_PATH } from '../sim/shelters.js';
 import { heightAt } from '../sim/costGrid.js';
@@ -16,7 +18,10 @@ import { createRoutePlannerClient } from '../sim/routePlannerClient.js';
 import { suitConstantsFromHazards, walkCost } from '../sim/suitModel.js';
 import { createStoreAdapter, useMissionStore } from './store.js';
 import { truePosition } from '../sim/navigation.js';
+import { arrivalRadiusM } from '../sim/waypointRunner.js';
 
+// What each event is. When the storm and the radiation alert start, and how fast their timelines run, comes from the
+// mission the crew's objective defines (src/sim/missions.js, #265).
 const EVENT_DEFINITIONS = [dustStorm, radiation, lowOxygenCaution, lowOxygenWarning];
 
 const ROUTE_SOURCES = {
@@ -47,6 +52,21 @@ export const EVENT_ENVIRONMENT_SOURCES = Object.freeze({
  * @param {typeof useMissionStore} store
  * @param {Record<string, object>} [sourcesByPath]
  */
+/**
+ * The environment sources for one mission. The first mission runs the same values on a shorter clock, and says so.
+ * @param {'first' | 'full'} missionId
+ */
+export function eventEnvironmentSources(missionId) {
+  if (missionId !== 'first') return EVENT_ENVIRONMENT_SOURCES;
+  const dust = EVENT_ENVIRONMENT_SOURCES['environment.dustOpacity'];
+  const dose = EVENT_ENVIRONMENT_SOURCES['environment.doseRateUgyH'];
+  return Object.freeze({
+    // The shortened ramp makes the storm's opacity SIM in the first mission (P19); the values stay hazards.json's.
+    'environment.dustOpacity': Object.freeze({ ...dust, tag: 'SIM', label: 'Dust storm model · first mission', source: dust.source + '; first mission: ramp compressed from 90 s to 30 s (SIM)' }),
+    'environment.doseRateUgyH': Object.freeze({ ...dose, source: dose.source + '; first mission: the profile compressed to 1 minute (SIM)' }),
+  });
+}
+
 export function createEventStoreAdapter(store, sourcesByPath = EVENT_ENVIRONMENT_SOURCES) {
   const adapter = createStoreAdapter(store);
   return {
@@ -62,6 +82,28 @@ export function createEventStoreAdapter(store, sourcesByPath = EVENT_ENVIRONMENT
 }
 
 let current = null;
+
+/**
+ * Where each planned stop is, by stops.json id (`stopId` on the planner's waypoints), and how close counts as reaching
+ * it: the waypoint runner's arrival radius for that waypoint (stops.json `arrival_radius`, 5 m without the file). The
+ * event runner reads it from the route locked at Begin EVA, so the first mission's storm waits for the sortie stop
+ * itself, not for whatever waypoint comes next (R5).
+ * @param {{ waypoints?: Array<{ name?: string, stopId?: string, x: number, z: number }> }} route
+ * @param {Array<object> | null} [stops] the parsed stops.json list (src/data/stops.js loadStops)
+ * @returns {Record<string, { x: number, z: number, radius: number }>}
+ */
+export function plannedStops(route, stops = null) {
+  const places = {};
+  for (const waypoint of route?.waypoints ?? []) {
+    if (waypoint?.stopId && Number.isFinite(waypoint.x) && Number.isFinite(waypoint.z) && !places[waypoint.stopId]) {
+      places[waypoint.stopId] = { x: waypoint.x, z: waypoint.z, radius: arrivalRadiusM(stops, waypoint) };
+    }
+  }
+  return places;
+}
+
+/** The habitat entry of shelters.json, the shelter of every event that re-plans to the habitat. */
+const isHabitat = (shelter) => shelter?.id === 'HAB';
 
 function loadPlanner() {
   return Promise.all([
@@ -84,7 +126,7 @@ function loadPlanner() {
 
 // `shelter` is the shelters.json entry the planner chose. The waypoint runner, the HUD and the engine highlight all
 // target it while it is set; the event's end clears it (endEventRoute below).
-function writeRoute(store, result, reason, shelter = null) {
+export function writeRoute(store, result, reason, shelter = null) {
   store.setState((state) => {
     if (!result.ok) {
       return {
@@ -92,8 +134,11 @@ function writeRoute(store, result, reason, shelter = null) {
       };
     }
     const targetName = result.target?.name;
+    // The stops the shelter route leaves out: not the target, not the habitat, and not a stop already reached (#265: the
+    // first mission's storm starts after the crew has been at its only stop, which is visited, not skipped).
+    const visited = new Set(Array.isArray(state.route.visited) ? state.route.visited : []);
     const skipped = state.route.waypoints
-      .filter((waypoint) => waypoint.name !== targetName && waypoint.name !== 'HAB')
+      .filter((waypoint) => waypoint.name !== targetName && waypoint.name !== 'HAB' && !visited.has(waypoint.name))
       .map((waypoint) => waypoint.name);
     return {
       route: {
@@ -123,11 +168,20 @@ function writeRoute(store, result, reason, shelter = null) {
  * `onEventLog` receives the event engine's start/end entries with their label, for the EVA history (#43). The
  * runner still calls endEventRoute first, so the route cleanup after an event is unchanged.
  *
- * @param {{ store?: object, setInterval?: Function, clearInterval?: Function,
+ * The mission comes from `objective` (the crew's objective, locked at Begin EVA: src/state/simulation.js passes it),
+ * else from the store's `needs.objective`. It is read once, here: a later change of the needs changes nothing.
+ *
+ * `stops` is the parsed stops.json list when it has loaded: each planned stop's arrival radius (plannedStops).
+ *
+ * @param {{ store?: object, objective?: string, stops?: Array<object> | null, setInterval?: Function, clearInterval?: Function,
  *   onEventLog?: (entry: { type: 'start' | 'end', eventId: string, label: string, missionTimeSec: number }) => void }} [options]
- * @returns {{ tick: () => void, stop: () => void, fire: (id: string) => boolean, listEvents: () => Array<object> }}
+ * @returns {{ mission: 'first' | 'full', tick: () => void, stop: () => void, fire: (id: string) => boolean,
+ *   listEvents: () => Array<object> }}
  */
-export function startEventRunner({ store = useMissionStore, setInterval: si = setInterval, clearInterval: ci = clearInterval, onEventLog } = {}) {
+export function startEventRunner({ store = useMissionStore, objective, stops = null, setInterval: si = setInterval, clearInterval: ci = clearInterval, onEventLog } = {}) {
+  const lockedObjective = objective ?? store.getState().needs?.objective;
+  const mission = missionForObjective(lockedObjective);
+  const definitions = missionEventDefinitions(lockedObjective, EVENT_DEFINITIONS, { stops: plannedStops(store.getState().route, stops) });
   let stopped = false;
   let planner = null;
   let plannerPromise = null;
@@ -179,17 +233,34 @@ export function startEventRunner({ store = useMissionStore, setInterval: si = se
 
   const stillActive = (eventId) => !stopped && store.getState().eva?.phase !== 'ended' && engine.getActive().some((active) => active.id === eventId);
 
-  // Once no event with a planner block is active, the event route is over. The shelter and the skipped list clear,
-  // and the runner resumes the planned waypoints from route.nextIndex.
+  const sheltered = () => engine.getActive().some((active) => definitions.find((event) => event.id === active.id)?.planner);
+
+  // Once no event with a planner block is active, the event route is over.
+  // - A route home to the habitat stays the target until the crew is inside the habitat (eva.atHabitat), and the stops
+  //   it left out stay skipped: the events end 25 m out, and resuming the plan there sent the guidance back to the stop
+  //   while the path led home (P5). The tick below lets the habitat go once the crew is in.
+  // - A route to another shelter ends there: the shelter and the skipped list clear, and the planned waypoints resume
+  //   from route.nextIndex.
   const endEventRoute = ({ type }) => {
-    if (type !== 'end') return;
-    const sheltered = engine.getActive().some((active) => EVENT_DEFINITIONS.find((event) => event.id === active.id)?.planner);
-    const route = store.getState().route;
-    if (sheltered || (!route.shelter && !route.skipped?.length)) return;
-    store.setState((state) => ({ route: { ...state.route, shelter: null, skipped: [] } }));
+    if (type !== 'end' || sheltered()) return;
+    const state = store.getState();
+    const route = state.route;
+    if (!route.shelter && !route.skipped?.length) return;
+    if (isHabitat(route.shelter)) {
+      if (state.eva?.atHabitat === true) store.setState((s) => ({ route: { ...s.route, shelter: null } }));
+      return;
+    }
+    store.setState((s) => ({ route: { ...s.route, shelter: null, skipped: [] } }));
   };
 
-  const labels = new Map(EVENT_DEFINITIONS.map((definition) => [definition.id, definition.label]));
+  // Home: the habitat stops being the target once the crew is inside it, after the events that sent them there ended.
+  const releaseHome = (state) => {
+    if (isHabitat(state.route?.shelter) && state.eva?.atHabitat === true && !sheltered()) {
+      store.setState((s) => ({ route: { ...s.route, shelter: null } }));
+    }
+  };
+
+  const labels = new Map(definitions.map((definition) => [definition.id, definition.label]));
   const log = (entry) => {
     endEventRoute(entry);
     if (typeof onEventLog === 'function') {
@@ -200,8 +271,8 @@ export function startEventRunner({ store = useMissionStore, setInterval: si = se
   // Events switched off at the mission table (#11) are left out of this EVA.
   const off = store.getState().hazards?.off ?? [];
   const engine = createEventEngine({
-    events: EVENT_DEFINITIONS.filter((event) => !off.includes(event.id)),
-    store: createEventStoreAdapter(store),
+    events: definitions.filter((event) => !off.includes(event.id)),
+    store: createEventStoreAdapter(store, eventEnvironmentSources(mission.id)),
     getMissionTime: missionTime,
     requestReplan,
     log,
@@ -213,12 +284,14 @@ export function startEventRunner({ store = useMissionStore, setInterval: si = se
     const truth = truePosition(state.navigation);
     const position = Number.isFinite(truth.x) && Number.isFinite(truth.z) ? truth : undefined;
     engine.update(missionTime(), position);
+    releaseHome(store.getState());
   };
 
   const timer = si(tick, 1000);
   tick();
 
   const runner = {
+    mission: mission.id,
     tick,
     fire: (id) => engine.fire(id),
     listEvents: () => engine.listEvents(),
@@ -240,7 +313,9 @@ export function fireEvent(id) {
   return current ? current.fire(id) : false;
 }
 
-/** Events available to the debug control. */
+/** Events available to the debug control, with the triggers of the running mission (or of the objective chosen now). */
 export function listEvents() {
-  return current ? current.listEvents() : EVENT_DEFINITIONS.map((event) => ({ id: event.id, label: event.label, trigger: event.trigger }));
+  if (current) return current.listEvents();
+  return missionEventDefinitions(useMissionStore.getState().needs?.objective, EVENT_DEFINITIONS)
+    .map((event) => ({ id: event.id, label: event.label, trigger: event.trigger }));
 }

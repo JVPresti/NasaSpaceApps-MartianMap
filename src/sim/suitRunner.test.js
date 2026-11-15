@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import hazards from '../../public/data/hazards.json';
 import { suitConstantsFromHazards } from './suitModel.js';
-import { startSuitRunner } from './suitRunner.js';
+import { startConsumables } from './legCosts.js';
+import { startSuitRunner, startSuitState } from './suitRunner.js';
 
 const constants = suitConstantsFromHazards(hazards);
 
@@ -59,5 +60,35 @@ describe('suit runner walkback target', () => {
     // DEFAULT_HABITAT is (520, 600), so the walkback is not zero from the origin.
     expect(store.getState().suit.walkbackSec).toBeGreaterThan(0);
     runner.stop();
+  });
+});
+
+describe('suit runner start consumables', () => {
+  it('starts full without start values', () => {
+    const store = memoryStore();
+    const runner = start(store, { id: 'HAB', x: 0, z: 0 });
+    runner.tick();
+    expect(store.getState().suit.oxygenPct).toBeCloseTo(100, 6);
+    expect(store.getState().suit.batteryPct).toBeCloseTo(100, 6);
+    runner.stop();
+  });
+
+  it('starts from the O2 and battery the crew set at the mission table, as the plan does', () => {
+    const { o2StartG, batteryStartWh } = startConsumables({ o2Pct: 60, batteryPct: 45 }, constants);
+    const store = memoryStore();
+    const runner = startSuitRunner({
+      store, heightAt: () => 0, constants, habitat: { id: 'HAB', x: 0, z: 0 },
+      start: { o2G: o2StartG, batteryWh: batteryStartWh },
+      now: () => 0, setInterval: () => 1, clearInterval: () => {},
+    });
+    runner.tick();
+    expect(store.getState().suit.oxygenPct).toBeCloseTo(60, 6);
+    expect(store.getState().suit.batteryPct).toBeCloseTo(45, 6);
+    runner.stop();
+  });
+
+  it('keeps start values within an empty and a full tank', () => {
+    expect(startSuitState(constants, { o2G: -5, batteryWh: 1e9 })).toMatchObject({ o2G: 0, batteryWh: constants.batteryWh });
+    expect(startSuitState(constants, { o2G: Number.NaN })).toMatchObject({ o2G: constants.o2UsableG });
   });
 });
