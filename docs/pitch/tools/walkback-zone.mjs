@@ -69,21 +69,40 @@ const H = new Float32Array(N * N), B = new Uint8Array(N * N);
 for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
   const gi = Math.min(grid.n - 1, i * S), gj = Math.min(grid.n - 1, j * S);
   H[j * N + i] = grid.heights[gj * grid.n + gi];
-  // blocked when any fine node in the block is over the limit: the coarse grid never walks across a cliff
-  let b = 0;
-  for (let dj = 0; dj < S && !b; dj++) for (let di = 0; di < S && !b; di++) {
-    const fi = Math.min(grid.n - 1, gi + di), fj = Math.min(grid.n - 1, gj + dj);
-    b = grid.blocked[fj * grid.n + fi];
+  // blocked when most fine nodes in the block are over the limit
+  let b = 0, tot = 0;
+  for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+    const fi = Math.max(0, Math.min(grid.n - 1, gi + di)), fj = Math.max(0, Math.min(grid.n - 1, gj + dj));
+    b += grid.blocked[fj * grid.n + fi]; tot++;
   }
+  b = b * 2 > tot ? 1 : 0;
   B[j * N + i] = b;
 }
-const toCell = (x, z) => [Math.round((x / grid.width + 0.5) * (N - 1)), Math.round((z / grid.depth + 0.5) * (N - 1))];
+const toCell = (x, z) => {
+  const ci = Math.round((x / grid.width + 0.5) * (N - 1)), cj = Math.round((z / grid.depth + 0.5) * (N - 1));
+  let best = [ci, cj], bd = Infinity;
+  for (let r = 0; r <= 4 && bd === Infinity; r++) for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) {
+    const i = ci + di, j = cj + dj; if (i < 0 || j < 0 || i >= N || j >= N || B[j * N + i]) continue;
+    const d = di * di + dj * dj; if (d < bd) { bd = d; best = [i, j]; }
+  }
+  return best;
+};
 const NB = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
 const edgeO2 = new Map();
 function o2Step(ha, hb, run, pad) {
   const i = (hb - ha) / run, v = constantEffortSpeed(i, c);
   return o2RateGs(metabolicPowerW(v, i, c) * (1 + pad), c) * run / v;
 }
+// O2 for each of the 8 edges out of every cell, both pads, computed once: the suit model's speed bisection is slow.
+const EDGE = { 0: new Float32Array(N * N * 8), [c.walkbackPad]: new Float32Array(N * N * 8) };
+for (const pad of [0, c.walkbackPad]) for (let x = 0; x < N * N; x++) {
+  const i = x % N, j = (x / N) | 0;
+  NB.forEach(([di, dj], k) => {
+    const ni = i + di, nj = j + dj;
+    EDGE[pad][x * 8 + k] = (ni < 0 || nj < 0 || ni >= N || nj >= N) ? Infinity : o2Step(H[x], H[nj * N + ni], cell * Math.hypot(di, dj), pad);
+  });
+}
+const OPP = NB.map(([di, dj]) => NB.findIndex(([a, b]) => a === -di && b === -dj));
 function dijkstra(si, sj, reverse, pad) {
   const dist = new Float32Array(N * N).fill(Infinity);
   const heap = [];   // binary heap of [d, idx]
@@ -94,14 +113,14 @@ function dijkstra(si, sj, reverse, pad) {
     const [d, x] = pop();
     if (d > dist[x]) continue;
     const i = x % N, j = (x / N) | 0;
-    for (const [di, dj] of NB) {
+    for (let k0 = 0; k0 < 8; k0++) { const [di, dj] = NB[k0];
       const ni = i + di, nj = j + dj;
       if (ni < 0 || nj < 0 || ni >= N || nj >= N) continue;
       const y = nj * N + ni;
       if (B[y]) continue;
-      const run = cell * Math.hypot(di, dj);
       // reverse: the cost of walking from y to x (the walk home runs the other way)
-      const w = reverse ? o2Step(H[y], H[x], run, pad) : o2Step(H[x], H[y], run, pad);
+      const k = k0;
+      const w = reverse ? EDGE[pad][y * 8 + OPP[k]] : EDGE[pad][x * 8 + k];
       if (d + w < dist[y]) { dist[y] = d + w; push(d + w, y); }
     }
   }
