@@ -65,6 +65,10 @@ const prefixed = (prefix, fields) => Object.fromEntries(Object.entries(fields).m
 
 const MEDA = { tag: 'DATA', label: 'MEDA · Perseverance', short: 'MEDA · Perseverance' };
 const RAD = { tag: 'DATA', label: 'RAD · Curiosity (Gale)', short: 'RAD · Curiosity', site: 'Gale crater, not Jezero' };
+// RAD reports dose with two detectors (#295). The HUD's background is the E detector and the radiation event's rates are
+// the B detector, so the rate steps up when the event starts before any particle arrives. The note says why.
+const RAD_DETECTORS = 'Two RAD detectors: outside the radiation event the rate is the E detector, tissue-like (Hassler et al. 2014, 8.75 µGy/h); the event\'s rates are the B detector, dose in water (Zeitlin et al. 2018, 10 µGy/h before the event). The step between 8.75 and 10 µGy/h when the event starts or ends is a change of detector, not a change in radiation';
+const EVENT_DOSE_NOTE = 'Not the dose of the 2017 event: the EVA plays its 57 h in 12 min, or 1 min in the first mission. The real event added 544 µGy in water over about 57 h (Zeitlin et al. 2018, B detector, hazards.json radiation.sep_2017.event_dose)';
 
 /**
  * Declared entries for every path a writer puts in the store's `sources` map (docs/STATE_AND_ENGINE.md).
@@ -206,8 +210,13 @@ export const STORE_PATHS = Object.freeze({
   'environment.windMs': { ...MEDA, source: 'MEDA wind speed, replayed sol', from: { meda: 'wind_speed' } },
   'environment.windDirDeg': { ...MEDA, source: 'MEDA wind direction, replayed sol', from: { meda: 'wind_direction' } },
   'environment.rhPct': { ...MEDA, source: 'MEDA relative humidity, replayed sol', from: { meda: 'relative_humidity' } },
-  'environment.doseRateUgyH': { ...RAD, source: 'RAD surface dose rate', from: { rad: 'background' } },
-  'environment.doseUgy': { ...RAD, tag: 'DERIVED', source: 'dose this EVA: the RAD dose rate summed over mission time', from: { rad: 'background' } },
+  'environment.doseRateUgyH': { ...RAD, source: 'RAD surface dose rate', note: RAD_DETECTORS, from: { rad: 'background' } },
+  'environment.doseUgy': {
+    ...RAD, tag: 'DERIVED',
+    source: 'dose this EVA: the dose rate summed over mission time, the RAD background and, during the radiation event, its rates over the minutes the event plays in this EVA',
+    note: EVENT_DOSE_NOTE,
+    from: { rad: 'background' },
+  },
   // The dust storm event (src/sim/events/dust-storm.json) ramps tau from the Jezero clear season (0.45, Perseverance)
   // to the 2018 global storm Curiosity measured in Gale crater (8.0). The ramp shape and timing are ours, so the
   // values in between are DERIVED. The event banner prints `caption` next to this tag (#196).
@@ -218,12 +227,25 @@ export const STORE_PATHS = Object.freeze({
     from: { hazards: ['dust.tau.gale_global_storm_2018', 'dust.tau.clear_season', 'dust.event.ramp_duration'] },
   },
   // The radiation event (src/sim/events/radiation.json) plays the September 2017 solar particle event from
-  // hazards.json models.sep_2017_profile, not the background rate above. The event banner shows this entry (#196).
+  // hazards.json models.sep_2017_profile, not the background rate above. The event banner shows this entry (#196) for
+  // the two rates RAD measured, and the SIM entry below for the steps the event file tags SIM (#295).
   'events.radiation.doseRateUgyH': {
     tag: 'DATA', label: 'RAD · Curiosity (Gale)', short: 'RAD · Curiosity',
-    source: 'radiation event: RAD B dose rate of the September 2017 solar particle event, hazards.json models.sep_2017_profile; the 12 min timeline is SIM',
+    source: 'radiation event: a dose rate RAD measured in the September 2017 solar particle event, 10 µGy/h before it and 29.92 µGy/h at its peak (240 and 718 µGy/day, B detector, dose in water), hazards.json models.sep_2017_profile; the steps between them and the timeline that plays them are SIM',
     caption: 'September 2017 solar particle event · RAD · Curiosity · Gale crater, not Jezero',
+    note: RAD_DETECTORS,
     from: { hazards: ['model:sep_2017_profile'] },
+  },
+  'events.radiation.doseRateUgyH.step': {
+    tag: 'SIM', label: 'Radiation event step', short: 'Radiation event step',
+    source: 'radiation event: a step between the two rates RAD measured, 10 and 29.92 µGy/h (Zeitlin et al. 2018); 20 µGy/h on the way up and 12 µGy/h on the way down are our choice, as are the times of the steps and the shape of the ramp',
+    caption: 'our step between RAD\'s September 2017 rates · Gale crater, not Jezero',
+  },
+  // What the real event delivered, for the debrief's reading notes beside the dose this EVA (#295).
+  'events.radiation.eventDoseUgy': {
+    tag: 'DATA', label: 'RAD · Curiosity (Gale)', short: 'RAD · Curiosity',
+    source: 'dose the September 2017 solar particle event added at Gale crater: 544 µGy in water (B detector) from its onset to the shock about 57 h later, hazards.json radiation.sep_2017.event_dose',
+    from: { hazards: ['radiation.sep_2017.event_dose'] },
   },
 });
 

@@ -112,6 +112,9 @@ Entries are applied in order, relative to the event start:
 - On start, every entry with `atSec <= 0` is applied immediately.
 - On each `update()`, entries whose `atSec` is reached are applied once.
 - Entries must be ordered by `atSec` (equal values are allowed).
+- An entry may carry a `tag` (`DATA`, `DERIVED` or `SIM`) for the values it sets. The engine ignores it. The
+  radiation event tags its steps between the two rates RAD measured `SIM`, and the event runner writes the
+  matching source next to the value (#295).
 
 `set` is an object of store paths to values. Nothing is reverted automatically
 unless the definition has an `endSet`.

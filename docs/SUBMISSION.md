@@ -77,7 +77,7 @@ Paste everything inside the box. The form takes rich text, so the headings survi
 > Three events break the plan:
 >
 > - A dust storm raises the optical depth from 0.45 to 8.0, the value Curiosity saw in Gale crater during the 2018 global storm. The real onset took up to a sol. Ours takes 90 seconds.
-> - A radiation alert plays the September 2017 solar particle event. An X8.2 flare peaked at 16:06 UTC. 224 minutes later Curiosity's RAD saw the dose rate start to climb at Mars, and it peaked at three times background. We squeeze the 57-hour event into 12 minutes and keep the measured rates.
+> - A radiation alert plays the September 2017 solar particle event. An X8.2 flare peaked at 16:06 UTC. 224 minutes later Curiosity's RAD saw the dose rate start to climb at Mars, and it peaked at three times background. We squeeze the 57-hour event into 12 minutes and keep the measured background and peak rates, with our own steps between them.
 > - A low-oxygen warning fires when the oxygen left no longer covers the walk home plus the reserve.
 >
 > Each event raises an alert and re-plans the route to the habitat, the one shelter the planner trusts for every event. Back inside, a debrief shows distance, time outside, dose and samples.
