@@ -1,0 +1,82 @@
+{
+ "round": "r01",
+ "before": "scripts/quality/out/base",
+ "after": "scripts/quality/out/c01",
+ "states": [
+  "walk",
+  "walk-stop",
+  "walk-storm"
+ ],
+ "judges": {
+  "j1": {
+   "walk": {
+    "new": "A"
+   },
+   "walk-stop": {
+    "new": "B"
+   },
+   "walk-storm": {
+    "new": "B"
+   }
+  },
+  "j2": {
+   "walk": {
+    "new": "A"
+   },
+   "walk-stop": {
+    "new": "A"
+   },
+   "walk-storm": {
+    "new": "B"
+   }
+  },
+  "j3": {
+   "walk": {
+    "new": "A"
+   },
+   "walk-stop": {
+    "new": "A"
+   },
+   "walk-storm": {
+    "new": "B"
+   }
+  }
+ },
+ "change": "c01 HUD on #232 tokens: Barlow/Barlow Condensed, --surface panels, --line-strong borders, square corners, ink cardinal labels",
+ "issue": 283,
+ "personas": {
+  "j1": "opus b HUD designer",
+  "j2": "opus c first-time player",
+  "j3": "fable a Space Apps judge"
+ },
+ "verdicts": {
+  "j1": {
+   "walk": "new",
+   "walk-stop": "new",
+   "walk-storm": "new",
+   "why": "dark sans panels give O2, margin and range higher contrast and match the card and banner as one system; noted the opaque nav panel hides the in-world marker"
+  },
+  "j2": {
+   "walk": "new",
+   "walk-stop": "new",
+   "walk-storm": "new",
+   "why": "same information, better legibility on the dark fill, and the HUD now matches the stop card and warning banner"
+  },
+  "j3": {
+   "walk": "new",
+   "walk-stop": "new",
+   "walk-storm": "new",
+   "why": "one instrument set instead of three type systems, numbers hold contrast under the storm vignette"
+  }
+ },
+ "decision": "keep",
+ "reason": "9 of 9 pair votes prefer the new version, reasons are about the changed fill, type and corners; no required information lost",
+ "next_asks": [
+  "make the margin the largest figure, battery and pressure secondary",
+  "hide sampling and weather while walking between waypoints",
+  "move the storm banner below the compass and cut it to one line",
+  "tint margin during the storm",
+  "make the science card 40% larger",
+  "keep the in-world marker clear of the nav panel"
+ ]
+}

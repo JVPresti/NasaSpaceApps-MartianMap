@@ -289,7 +289,7 @@ async function walkToward(page, target, { stopAt = 3, timeScale = 30 } = {}) {
 
 async function walkTo(page, index) {
   const wp = await page.evaluate((i) => window.__missionStore.getState().route.waypoints[i], index);
-  await walkToward(page, wp, { stopAt: 1 });
+  await walkToward(page, wp, { stopAt: 1, timeScale: 10 });   // the scripted storm comes at 8 min: reach the stop first
   await waitFor(page, (i) => window.__missionStore.getState().route.visited.length >= i, index, 20000).catch(() => {});
   await sleep(700);
 }
