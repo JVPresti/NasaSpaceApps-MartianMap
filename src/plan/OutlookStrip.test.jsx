@@ -67,6 +67,14 @@ describe('conditions outlook strip (#248)', () => {
     expect(text(render({ space: spaceWeather({ leadMin: lead, atSec: 95, off: true }) }))).toContain('switched off for this run');
   });
 
+  it('gives the route\'s sky exposure, tagged DERIVED, when the route has one', () => {
+    const exposure = { label: 'Sky exposure on the route', value: '0.93 mean · 0.88 at its most sheltered', note: 'Dose scales with it.' };
+    const html = render({ exposure, space: spaceWeather({ leadMin: lead }) });
+    expect(text(html)).toContain('Sky exposure on the route : 0.93 mean · 0.88 at its most sheltered');
+    expect(html.match(/src-tag-derived/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(render()).not.toContain('outlook-exposure');
+  });
+
   it('waits for a route before it has a window', () => {
     const t = text(render({ window: null }));
     expect(t).toContain('once the route is planned');

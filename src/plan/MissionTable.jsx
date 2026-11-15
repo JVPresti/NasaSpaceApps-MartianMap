@@ -369,7 +369,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
 
   const map = (props) => (
     <div className="table-centre">
-      <MissionMap path={route.path} waypoints={waypoints} science={science} legs={route.legs ?? []} onScience={toggleWaypoint} traverse={traverse} {...props} />
+      <MissionMap path={route.path} waypoints={waypoints} science={science} legs={route.legs ?? []} onScience={toggleWaypoint} traverse={traverse} mast={planner.mast ?? null} {...props} />
       <div className="table-overlay">
         <EventBanner />
         <PlanStopCard />

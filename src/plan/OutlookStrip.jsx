@@ -6,6 +6,7 @@ import { formatNumber, t } from '../i18n/index.js';
 import { eventStartSec, missionForObjective, missionSourcePath } from '../sim/missions.js';
 import { useMissionStore } from '../state/store.js';
 import { medaOverWindow, plannedWalkSec, spaceWeather, walkStartLmstSec } from './outlook.js';
+import { exposureText, useRouteExposure } from './routeExposure.js';
 import SourceTag from './SourceTag.jsx';
 import { shortDuration } from './tableFormat.js';
 import { useDataFile } from './useConditions.js';
@@ -52,9 +53,10 @@ function Cell({ label, tag, value, unit, tone, note }) {
 /**
  * The strip itself, from computed values: tested without the data files.
  * @param {{ window: ReturnType<typeof medaOverWindow> | null, dust: object | null, dustSource?: object | null,
- *   space: ReturnType<typeof spaceWeather>, missionId: string }} props
+ *   space: ReturnType<typeof spaceWeather>, missionId: string, exposure?: { label: string, value: string, note: string } | null }} props
+ *   exposure: the sky exposure along the route (routeExposure.exposureText), the route's own radiation figure
  */
-export function OutlookView({ window, dust, dustSource = null, space, missionId }) {
+export function OutlookView({ window, dust, dustSource = null, space, missionId, exposure = null }) {
   const weather = (key, path, label, unit) => {
     const c = window?.channels[key] ?? null;
     return (
@@ -100,6 +102,12 @@ export function OutlookView({ window, dust, dustSource = null, space, missionId 
         {space.state === 'scheduled' && <SourceTag path={missionSourcePath(missionId, 'radiation')} requireSource={false} />}
         {' '}{t('outlook.replay')}
       </p>
+      {/* The route's own radiation figure (Exposure layer): how open the sky is along it, so it moves with the route. */}
+      {exposure && (
+        <p className="table-note outlook-exposure">
+          <b>{exposure.label}</b>: {exposure.value}<SourceTag path="map.exposure" requireSource={false} /> {exposure.note}
+        </p>
+      )}
     </div>
   );
 }
@@ -116,11 +124,12 @@ export default function OutlookStrip({ dust, planCurrent = true }) {
     try { return medaJson ? parseMedaSol(medaJson) : null; } catch { return null; }
   }, [medaJson]);
   const s = useMissionStore(useShallow((state) => ({
-    budget: state.route.budget, totals: state.route.totals, initialLmst: state.mission.initialLmst, sky: state.view.sky,
+    budget: state.route.budget, totals: state.route.totals, path: state.route.path, initialLmst: state.mission.initialLmst, sky: state.view.sky,
     objective: state.needs.objective, off: state.hazards.off, radiationActive: state.alerts?.radiation?.active === true,
     dustSource: state.sources['environment.dustOpacity'],
   })));
 
+  const exposure = exposureText(useRouteExposure(s.path));
   const durationSec = plannedWalkSec({ budget: planCurrent ? s.budget : null, totals: s.totals });
   const start = walkStartLmstSec({ initialLmst: s.initialLmst }, s.sky);
   const window = meda && durationSec !== null ? medaOverWindow(meda, start, durationSec) : null;
@@ -130,5 +139,5 @@ export default function OutlookStrip({ dust, planCurrent = true }) {
     off: (s.off ?? []).includes('radiation'),
     active: s.radiationActive,
   });
-  return <OutlookView window={window} dust={dust} dustSource={s.dustSource ?? null} space={space} missionId={missionForObjective(s.objective).id} />;
+  return <OutlookView window={window} dust={dust} dustSource={s.dustSource ?? null} space={space} missionId={missionForObjective(s.objective).id} exposure={exposure} />;
 }
