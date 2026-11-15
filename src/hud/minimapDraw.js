@@ -24,7 +24,7 @@ const COLORS = {
   hazard: '#ff5a3c',
   shelter: '#8fe9b8',
   habitat: '#9ff5c4',
-  traverse: '#cfa8ff',
+  traverse: '#f4f1ea',
 };
 
 const font = (px, weight = 600) => `${weight} ${px}px ui-monospace, Consolas, monospace`;
@@ -144,7 +144,7 @@ function strokeRoute(g, points, fromM, toM, { color, width, dash }) {
   g.setLineDash([]);
 }
 
-/** Perseverance's drives (public/data/traverse.json): a thin violet line with a dark edge, under everything else. */
+/** Perseverance's drives (public/data/traverse.json): a thin warm-white line with a dark edge, under everything else. */
 export function drawTraverse(g, drives, project, radius) {
   if (!Array.isArray(drives) || drives.length === 0) return;
   g.save();

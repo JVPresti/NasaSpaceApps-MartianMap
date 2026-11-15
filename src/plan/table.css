@@ -469,11 +469,11 @@ button.table-stop-name {
 .map-route { stroke: #8fd3ee; stroke-width: 2px; vector-effect: non-scaling-stroke; }
 .map-route-shadow { stroke: #0a0d11; stroke-width: 4px; opacity: 0.45; vector-effect: non-scaling-stroke; }
 
-/* Perseverance's drives (#249): violet under the cyan route, thinner, so the two never read as one line */
+/* Perseverance's drives (#249): warm white under the route, thinner, so it never reads as the route or a route profile (#245 draws those in cyan, lavender and lime) */
 .table-map-traverse { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .map-traverse,
 .map-traverse-shadow { fill: none; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-.map-traverse { stroke: #cfa8ff; stroke-width: 1.6px; }
+.map-traverse { stroke: #f4f1ea; stroke-width: 1.6px; }
 .map-traverse-shadow { stroke: #0a0d11; stroke-width: 3.4px; opacity: 0.5; }
 
 /* The pin of the stop images: a dot where the rover stood and a tag to its left, clear of the stop markers, whose
@@ -486,7 +486,7 @@ button.table-stop-name {
   top: -5px;
   width: 10px;
   height: 10px;
-  background: #cfa8ff;
+  background: #f4f1ea;
   border: 2px solid #0a0d11;
   border-radius: 50%;
 }
@@ -503,13 +503,13 @@ button.table-stop-name {
   white-space: nowrap;
   color: #f2f4f6;
   background: rgba(10, 8, 7, 0.88);
-  border: 1px solid #cfa8ff;
+  border: 1px solid #f4f1ea;
   cursor: pointer;
   pointer-events: auto;
 }
 .map-pin-hit:hover, .map-pin-hit[aria-expanded='true'] { background: #221a33; }
 .map-pin-hit:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.map-pin-icon { width: 14px; height: 14px; fill: none; stroke: #cfa8ff; stroke-width: 1.4; }
+.map-pin-icon { width: 14px; height: 14px; fill: none; stroke: #f4f1ea; stroke-width: 1.4; }
 
 .map-pop-images { width: 300px; pointer-events: auto; }
 .map-pop-head span .src-tag { margin-left: 4px; }
@@ -520,7 +520,7 @@ button.table-stop-name {
 .map-pop-figure figcaption span { font-size: 11px; color: var(--dim); overflow-wrap: anywhere; }
 .map-pop-switch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
 .map-pop-switch button { height: 44px; padding: 0; overflow: hidden; background: #000; border: 1px solid rgba(255, 255, 255, 0.2); cursor: pointer; }
-.map-pop-switch button[aria-pressed='true'] { border-color: #cfa8ff; box-shadow: inset 0 0 0 1px #cfa8ff; }
+.map-pop-switch button[aria-pressed='true'] { border-color: #f4f1ea; box-shadow: inset 0 0 0 1px #f4f1ea; }
 .map-pop-switch img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .map-pop-link { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--cyan); }
 
@@ -538,7 +538,7 @@ button.table-stop-name {
   color: #e3e7eb;
   background: rgba(10, 13, 17, 0.8);
 }
-.table-map-traverse-key i { width: 18px; height: 0; border-top: 2px solid #cfa8ff; }
+.table-map-traverse-key i { width: 18px; height: 0; border-top: 2px solid #f4f1ea; }
 
 .map-markers { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; pointer-events: none; }
 .map-marker-hit { display: flex; align-items: center; gap: 4px; padding: 0; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; pointer-events: auto; }
@@ -677,7 +677,7 @@ button.table-stop-name {
   border-color: #f2f4f6;
 }
 
-/* Perseverance's drives on or off (#249): the sixth cell of the layer grid, set apart by its violet line */
+/* Perseverance's drives on or off (#249): the sixth cell of the layer grid, set apart by its white line */
 .table-layers .table-overlay-toggle {
   display: flex;
   align-items: center;
@@ -692,8 +692,8 @@ button.table-stop-name {
   cursor: pointer;
 }
 .table-overlay-toggle i { flex: none; width: 14px; height: 0; border-top: 2px solid currentColor; }
-.table-layers .table-overlay-toggle.on { color: var(--ink); background: rgba(10, 13, 17, 0.6); border-color: #cfa8ff; }
-.table-overlay-toggle.on i { border-color: #cfa8ff; }
+.table-layers .table-overlay-toggle.on { color: var(--ink); background: rgba(10, 13, 17, 0.6); border-color: #f4f1ea; }
+.table-overlay-toggle.on i { border-color: #f4f1ea; }
 .table-layers .table-overlay-toggle:hover { background: rgba(255, 255, 255, 0.08); }
 
 /* the suit check: big numbers in a column, the suit model in the middle */

@@ -24,10 +24,10 @@ const drives = [{ sol: 1185, points: [[0, 0], [10, 0], [10, 10]] }, { sol: 1210,
 const identity = (x, z) => ({ x, y: z });
 
 describe('Perseverance on the minimap (#249)', () => {
-  it('strokes every drive point, an edge and then the violet line', () => {
+  it('strokes every drive point, an edge and then the warm-white line', () => {
     const { g, strokes } = recorder();
     drawTraverse(g, drives, identity, 100);
-    expect(strokes.map((s) => s.color)).toEqual(['rgba(10, 13, 17, 0.55)', '#cfa8ff']);
+    expect(strokes.map((s) => s.color)).toEqual(['rgba(10, 13, 17, 0.55)', '#f4f1ea']);
     expect(strokes.every((s) => s.points === 5)).toBe(true);
   });
 
@@ -41,6 +41,6 @@ describe('Perseverance on the minimap (#249)', () => {
   it('is part of the minimap when the drives are given', () => {
     const { g, strokes } = recorder();
     drawMinimap(g, { size: 200, dpr: 1, centre: { x: 0, z: 0 }, headingDeg: 0, traverse: drives });
-    expect(strokes.some((s) => s.color === '#cfa8ff')).toBe(true);
+    expect(strokes.some((s) => s.color === '#f4f1ea')).toBe(true);
   });
 });
