@@ -316,7 +316,6 @@
   "tasktable.snapped": "Moved {m} m to walkable ground under {limit}°.",
   "tasktable.rock.low": "Little rock cover here: {mean} on the Rocks layer, under {low}. A loose rock within reach is unlikely.",
   "tasktable.rock.caveat": "The layer is a brightness proxy, not a count of rocks.",
-  "tasktable.empty": "No tasks yet: add one to plan a route.",
   "tasktable.legend": "Task place",
   "tasktable.legend.detail": "what the crew collects there",
   "tasktable.way.or.task": "{way}, or move task 1 nearer.",

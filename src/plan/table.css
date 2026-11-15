@@ -431,6 +431,9 @@ button.table-stop-name {
 
 .table-map { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .table-map:active { cursor: grabbing; }
+/* placing a sampling task (#352): a click sets the point, a drag still moves the map */
+.table-map.picking,
+.table-map.picking:active { cursor: crosshair; }
 
 .table-map-fit {
   position: absolute;
@@ -1157,6 +1160,11 @@ button.table-overlay-toggle i { border-top-style: dashed; }   /* the Rover toggl
 .table-stops li.reached .table-stop-dist { color: var(--dim); }
 /* The plan's reasons under the route numbers, at the size of the profile note below them */
 .table-note.route-why { font-size: 12px; line-height: 1.4; }
+
+/* "Collect samples" (#352, TaskList.jsx): a task is a stop row of the same grid. What and how many on the first line,
+   where and Remove under them, then the stop line, the pick hint, a refusal or the rock warning under the code. */
+.table-stops .task-where { grid-column: 2; }
+.table-stops > li > .table-note { grid-column: 2 / -1; margin: 0; }
 
 /* ------------------------------------------------------------------ conditions outlook (#248) */
 

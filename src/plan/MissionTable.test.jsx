@@ -1,8 +1,17 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { resetStore, useMissionStore } from '../state/store.js';
 import MissionTable from './MissionTable.jsx';
 
-// Server rendering with the store's initial state: no route yet, the planner still loading.
+// Server rendering with the store's state: the initial one (no route yet, the planner still loading) unless a test sets
+// another. Zustand's server render otherwise always uses the creation-time state.
+vi.mock('../state/store.js', async (importOriginal) => {
+  const original = await importOriginal();
+  return { ...original, useMissionStore: Object.assign((selector) => selector(original.useMissionStore.getState()), original.useMissionStore) };
+});
+
+afterEach(() => resetStore());
+
 const planner = { status: 'loading', error: null, replan: () => {} };
 const waypoints = [{ name: 'HAB', x: 0, z: 0 }, { name: 'Sortie', x: 40, z: 30 }];
 const render = (props = {}) => renderToStaticMarkup(<MissionTable planner={planner} waypoints={waypoints} {...props} />);
@@ -45,5 +54,42 @@ describe('mission table', () => {
     expect(text).toContain('Now, outside');
     expect(text).toContain('EVA under way');
     expect(text).not.toContain('No-go');
+  });
+
+  describe('Collect samples (#352)', () => {
+    const tasks = [{ id: 't1', what: 'rock', count: 1, place: { type: 'stop', stopId: 'bright-angel' } }];
+    const path = [[0, 0], [-11, -50]];
+    const planned = [{ name: 'HAB', x: 0, z: 0 }, { name: 'WP3 · Bright Angel outcrop', label: 'Bright Angel', x: -11, z: -50, workSec: 480, stopId: 'bright-angel', place: 'bright-angel', tasks: ['t1'], required: true }];
+    const samples = () => useMissionStore.setState((s) => ({
+      needs: { ...s.needs, objective: 'samples', tasks },
+      route: {
+        ...s.route, path, waypoints: planned, profiles: { fastest: { ok: true, path } }, legs: [{ distanceM: 51, workSec: 480 }],
+        stops: [{ id: 'bright-angel', name: 'Bright Angel', waypoint: planned[1].name, place: 'bright-angel', tasks: ['t1'], required: true }],
+        tasks: [{ id: 't1', what: 'rock', count: 1, kept: true, drop: null, workSec: 480 }],
+      },
+    }));
+
+    it('puts the task list in the place of the stop list until the EVA begins', () => {
+      samples();
+      const html = render({ initialTab: 'route', waypoints: planned });
+      expect(html).toContain('data-task-add=""');
+      expect(html).toContain('data-task-where="t1"');
+      expect(html).not.toMatch(/<p class="table-label">Stops<\/p>/);
+    });
+
+    it('shows the stop list again once the EVA has begun, each task place saying what it is for', () => {
+      samples();
+      const html = render({ initialTab: 'route', waypoints: planned, evaBegun: true });
+      expect(html).not.toContain('data-task-add');
+      expect(html).toMatch(/<p class="table-label">Stops<\/p>/);
+      expect(html).toContain('For 1 rock sample · 8 min work');
+    });
+
+    it('keeps the stop list, and no task control, for the other goals', () => {
+      const html = render({ initialTab: 'route' });
+      expect(html).toMatch(/<p class="table-label">Stops<\/p>/);
+      expect(html).not.toContain('data-task-add');
+      expect(html).not.toContain('class="table-map picking"');
+    });
   });
 });

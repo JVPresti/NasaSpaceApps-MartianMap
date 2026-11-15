@@ -31,7 +31,9 @@ import { eventRouteOf, shelterLabel } from './eventRoute.js';
 import { distanceLeft, planLegTo, remainingPlan } from './planProgress.js';
 import NeedsPanel from './NeedsPanel.jsx';
 import OutlookStrip from './OutlookStrip.jsx';
-import { droppedWhy, planReasonLines, stopLine } from './routeWhy.js';
+import { droppedWhy, planReasonLines, stopLine, taskRole } from './routeWhy.js';
+import TaskList from './TaskList.jsx';
+import { useTaskCandidates, useTaskPick } from './useTaskPlace.js';
 import { eventTimingText, shortDuration } from './tableFormat.js';
 import { useDataFile, useDustAgainstLimit } from './useConditions.js';
 import RouteProfiles from './RouteProfiles.jsx';
@@ -157,11 +159,13 @@ function Big({ value, unit, label, tone, title }) {
 /**
  * The stops in walking order, each with the distance of the leg that reaches it. While the route on the table is the
  * planned one, each stop also says the work planned there (#247) and why its leg runs where it does (#246), and the
- * stops the objective allows but the plan left out follow, with the reason.
- * @param {{ waypoints: Array<object>, legs: Array<object>, explain?: Array<object>, dropped?: Array<object> }} props
- *   explain and dropped: route.explain and route.dropped, empty when an event re-plan replaced the planned route
+ * stops the objective allows but the plan left out follow, with the reason. A sampling task's place (#352) says the
+ * tasks it serves in place of "goal".
+ * @param {{ waypoints: Array<object>, legs: Array<object>, explain?: Array<object>, dropped?: Array<object>,
+ *   planTasks?: Array<object> }} props explain, dropped and planTasks: route.explain, route.dropped and route.tasks,
+ *   empty when an event re-plan replaced the planned route
  */
-function Stops({ waypoints, legs, explain = [], dropped = [], planStops = [], planLegs = null, done = null }) {
+function Stops({ waypoints, legs, explain = [], dropped = [], planStops = [], planLegs = null, done = null, planTasks = [] }) {
   const stops = useStops();
   const language = getLanguage();
   return (
@@ -178,8 +182,9 @@ function Stops({ waypoints, legs, explain = [], dropped = [], planStops = [], pl
           : state === 'reached' ? t('table.stop.reached') : state === 'skipped' ? t('table.event.skipped')
             : Number.isFinite(leg?.distanceM) ? `${Math.round(leg.distanceM)} m` : '';
         // the goal of the walk, or a stop kept because it fits the crew's time (D13: route.stops[].required)
-        const planned = k > 0 ? planStops.find((entry) => entry.id === waypoint.stopId) : null;
-        const role = planned ? t(planned.required ? 'table.stop.goal' : 'table.stop.fits') : null;
+        const planned = k > 0 ? planStops.find((entry) => entry.id === (waypoint.stopId ?? waypoint.place)) : null;
+        const tasksHere = Array.isArray(planned?.tasks) ? planTasks.filter((task) => planned.tasks.includes(task.id)) : [];
+        const role = tasksHere.length ? taskRole(tasksHere) : planned ? t(planned.required ? 'table.stop.goal' : 'table.stop.fits') : null;
         const line = k > 0 && !state ? stopLine({ workSec: leg?.workSec ?? waypoint.workSec, explain: explain[k - 1], role }) : null;
         // why the stop is worth the walk, when stops.json says (D10: the sortie's light-toned patch), tagged SIM
         const reason = k > 0 && !state ? stopReason(planned, language) : null;
@@ -499,6 +504,11 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
       ? { distance: formatNumber(leftM / 1000, 2), time: upMin((route.etaSec ?? 0) * (leftM / route.distanceM)), climb: metrics.climb.value, steepest: metrics.steepest.value }
       : { distance: metrics.distance.value, time: metrics.time.value, climb: metrics.climb.value, steepest: metrics.steepest.value };
   const objective = useMissionStore((s) => s.needs.objective);
+  // "Collect samples" (#352): until the EVA begins the crew's sampling tasks take the stop list's place, and a task's
+  // place can be clicked on the map (useTaskPlace.js); the airlock is the start every place is checked from.
+  const samplesTable = objective === 'samples' && !evaBegun;
+  const taskCandidates = useTaskCandidates();
+  const taskPick = useTaskPick({ start: waypoints[0] ?? null, candidates: taskCandidates });
   const needs = useMissionStore(useShallow((s) => ({ crew: s.needs.crew, o2Pct: s.needs.o2Pct, batteryPct: s.needs.batteryPct })));
   const dust = useDustAgainstLimit();
   // One decision from the three limits of the plan, time, oxygen and battery, each as minutes of slack (P1).
@@ -600,17 +610,21 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           <p className="table-text">{t(`needs.objective.${objective}.text`)}</p>
           {/* The crew's needs take the place of the compact hazard switches, which the Hazards step has in full. */}
           <NeedsPanel locked={evaBegun} />
-          <div className="table-panel table-fill">
-            <div className="table-panel-head">
-              <p className="table-label">{event ? t('table.event.stops') : t('table.stops')}</p>
-              {/* the work at each stop (SIM) and why each leg bends (DERIVED) */}
-              {!event && <span><SourceTag path="route.legs.workSec" requireSource={false} /><SourceTag path="route.explain" requireSource={false} /></span>}
+          {samplesTable && !event ? (
+            <TaskList waypoints={waypoints} legs={route.legs ?? []} explain={planCurrent ? route.explain ?? [] : []} planTasks={planCurrent ? route.tasks ?? [] : []} candidates={taskCandidates} />
+          ) : (
+            <div className="table-panel table-fill">
+              <div className="table-panel-head">
+                <p className="table-label">{event ? t('table.event.stops') : t('table.stops')}</p>
+                {/* the work at each stop (SIM) and why each leg bends (DERIVED) */}
+                {!event && <span><SourceTag path="route.legs.workSec" requireSource={false} /><SourceTag path="route.explain" requireSource={false} /></span>}
+              </div>
+              {event ? <EventStops event={event} waypoints={waypoints} leftM={leftM} /> : (
+                <Stops waypoints={waypoints} legs={route.legs ?? []} explain={planCurrent ? route.explain ?? [] : []} dropped={planCurrent ? route.dropped ?? [] : []}
+                  planStops={planCurrent ? route.stops ?? [] : []} planLegs={evaBegun ? evaProgress.planLegs : null} done={done} planTasks={planCurrent ? route.tasks ?? [] : []} />
+              )}
             </div>
-            {event ? <EventStops event={event} waypoints={waypoints} leftM={leftM} /> : (
-              <Stops waypoints={waypoints} legs={route.legs ?? []} explain={planCurrent ? route.explain ?? [] : []} dropped={planCurrent ? route.dropped ?? [] : []}
-                planStops={planCurrent ? route.stops ?? [] : []} planLegs={evaBegun ? evaProgress.planLegs : null} done={done} />
-            )}
-          </div>
+          )}
           <div className="table-panel">
             {/* Perseverance's drives on or off (#249): an overlay, so it sits by the heading, apart from the layer grid
                 (layers.js now has six layers, which fill two rows). How to zoom and pan is the heading's tooltip. */}
@@ -638,7 +652,10 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
             </div>
           </div>
         </section>
-        {map({ layer: current.index, title: layerMapTitle(current), legend: <LayerLegend layer={current} />, alternatives, routeClass: inUse ? 'profile-' + inUse : '' })}
+        {map({
+          layer: current.index, title: layerMapTitle(current), legend: <LayerLegend layer={current} />, alternatives, routeClass: inUse ? 'profile-' + inUse : '',
+          picking: samplesTable && Boolean(taskPick.picking), onPick: taskPick.onPick,
+        })}
         <section className="table-right">
           <div className="table-panel">
             <div className="table-panel-head">

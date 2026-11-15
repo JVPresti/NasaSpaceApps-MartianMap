@@ -316,7 +316,6 @@
   "tasktable.snapped": "Movida {m} m a suelo transitable de menos de {limit}°.",
   "tasktable.rock.low": "Poca cobertura de rocas aquí: {mean} en la capa Rocas, menos de {low}. Es difícil encontrar una roca suelta al alcance.",
   "tasktable.rock.caveat": "La capa es una aproximación por el brillo, no un recuento de rocas.",
-  "tasktable.empty": "Aún no hay tareas: añade una para planear una ruta.",
   "tasktable.legend": "Lugar de tarea",
   "tasktable.legend.detail": "lo que el equipo recoge ahí",
   "tasktable.way.or.task": "{way}, o acerca la tarea 1.",
