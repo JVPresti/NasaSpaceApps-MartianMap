@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createEventEngine } from '../sim/eventEngine.js';
 import exampleEvent from '../sim/events/example-event.json';
 import { LOOK_DEFAULTS, LOOK_STORAGE_KEY } from '../engine/lookSettings.js';
-import { chooseRouteProfile, createInitialState, resetStore, setLookSettings, setMode, setRouteDecision, storeAdapter, useMissionStore, withRouteProfile } from './store.js';
+import { chooseRouteProfile, createInitialState, resetStore, setLookSettings, setMode, setNeeds, setRouteDecision, storeAdapter, useMissionStore, withRouteProfile } from './store.js';
 import { createMockState } from './mock.js';
 
 beforeEach(() => resetStore());
@@ -193,5 +193,52 @@ describe('route profiles (#245)', () => {
     const before = useMissionStore.getState();
     chooseRouteProfile('fastest');
     expect(useMissionStore.getState()).toBe(before);
+  });
+});
+
+describe('the needs of the crew (#265)', () => {
+  it('starts on the full EVA to Cheyava Falls for a pair, unlocked', () => {
+    expect(createInitialState().needs).toEqual({ objective: 'cheyava', crew: 2, timeMin: 120, o2Pct: 100, batteryPct: 100, risk: 'standard', locked: false });
+    expect(createInitialState().route).toMatchObject({ stops: [], dropped: [], planReasons: [], budget: null, weights: null, explain: [] });
+  });
+
+  it('applies a partial update, clamps numbers and refuses unknown values', () => {
+    expect(setNeeds({ crew: 1, timeMin: 30, risk: 'cautious' })).toBe(true);
+    expect(useMissionStore.getState().needs).toMatchObject({ objective: 'cheyava', crew: 1, timeMin: 30, risk: 'cautious' });
+    expect(setNeeds({ o2Pct: 50 })).toBe(true);
+    expect(setNeeds({ o2Pct: 250 })).toBe(true);
+    expect(useMissionStore.getState().needs.o2Pct).toBe(100);
+    expect(() => setNeeds({ crew: 4 })).toThrow(/crew/);
+    expect(() => setNeeds({ profile: 'radio' })).toThrow(/unknown need/);
+  });
+
+  it('keeps the same object when nothing changes, so the route does not re-plan', () => {
+    const before = useMissionStore.getState().needs;
+    expect(setNeeds({ objective: 'cheyava', crew: 2 })).toBe(false);
+    expect(useMissionStore.getState().needs).toBe(before);
+  });
+
+  it('locks the needs when the EVA begins, at the first switch to Walk, until a restart', () => {
+    setNeeds({ objective: 'sortie' });
+    setMode('walk');
+    setMode('plan');
+    expect(useMissionStore.getState().needs.locked).toBe(true);
+    expect(setNeeds({ objective: 'bright-angel', timeMin: 60 })).toBe(false);
+    expect(useMissionStore.getState().needs).toMatchObject({ objective: 'sortie', timeMin: 120 });
+    resetStore();
+    expect(useMissionStore.getState().needs.locked).toBe(false);
+  });
+
+  it('holds a solo crew to the radio-contact route while it has one', () => {
+    const route = (id) => ({ id, ok: true, path: [[0, 0], [id.length, 0]], distanceM: 1, climbM: 0, steepestSlopeDeg: 1, timeSec: 1, explain: [{ to: 'B', clear: true, block: null }] });
+    const profiles = { fastest: route('fastest'), gentlest: route('gentlest'), radio: route('radio') };
+    useMissionStore.setState((s) => ({ route: { ...withRouteProfile({ ...s.route, profiles }, 'radio') } }));
+    setNeeds({ crew: 1 });
+    chooseRouteProfile('fastest');
+    expect(useMissionStore.getState().route.path).toBe(profiles.radio.path);
+    setNeeds({ crew: 2 });
+    chooseRouteProfile('fastest');
+    expect(useMissionStore.getState().route.path).toBe(profiles.fastest.path);
+    expect(useMissionStore.getState().route.explain).toBe(profiles.fastest.explain);
   });
 });

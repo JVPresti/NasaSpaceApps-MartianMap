@@ -4,6 +4,7 @@
 import { create } from 'zustand';
 import { createInitialEvaState } from './eva.js';
 import { LOOK_DEFAULTS, clampLookSettings, readLookSettings, writeLookSettings } from '../engine/lookSettings.js';
+import { checkNeeds, DEFAULT_NEEDS } from '../sim/missionNeeds.js';
 
 /** Plain data only. Units are in the field names. Coordinates: x east, z south, metres from Cheyava Falls. */
 export function createInitialState() {
@@ -17,7 +18,14 @@ export function createInitialState() {
     },
     suit: { oxygenG: null, oxygenSec: null, oxygenPct: null, batteryPct: null, pressurePsi: null, metabolicW: null, effort: null, walkbackSec: null, walkbackO2G: null, marginSec: null, status: null },
     navigation: { x: null, z: null, trueX: null, trueZ: null, headingDeg: null, slopeDeg: null, waypointRangeM: null, waypointBearingDeg: null, errorM: null, fixMode: null, lastFixSec: null },   // x/z: the estimate the HUD shows (#42); trueX/trueZ: the true position, engine bridge only
-    route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [], profiles: null, profile: 'fastest' },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js; profiles and profile: the routes the table compares and the one chosen (#245, src/sim/routeProfiles.js)
+    // stops, dropped, planReasons, budget, weights: the plan from the crew's needs (src/sim/missionNeeds.js, written by
+    // src/plan/useRoutePlanner.js): stops chosen in walking order, stops dropped and why, the plan's reason codes, the
+    // budget and the risk weights; explain: why each leg bends (#246, src/sim/routeExplain.js), one entry per route.legs
+    // entry. Codes and numbers only: the table writes the sentences.
+    route: { waypoints: [], path: null, nextIndex: 0, visited: [], distanceM: null, climbM: null, steepestSlopeDeg: null, etaSec: null, reason: null, shelter: null, legs: [], totals: null, decision: 'pending', skipped: [], profiles: null, profile: 'fastest', stops: [], dropped: [], planReasons: [], budget: null, weights: null, explain: [] },   // shelter: the entry of shelters.json the re-planner chose, while an event is active; legs and totals: src/sim/legCosts.js; profiles and profile: the routes the table compares and the one chosen (#245, src/sim/routeProfiles.js)
+    // The crew's needs at the mission table (#265, goal 2). setNeeds changes them until the EVA begins (locked: the first
+    // switch to Walk, the moment src/state/simulation.js starts the EVA); the route re-plans from them in Plan mode.
+    needs: { ...DEFAULT_NEEDS, locked: false },
     environment: { dustOpacity: 0, tempC: null, windMs: null, pressurePa: null, doseRateUgyH: null, doseUgy: null },
     // Active hazard areas for the minimap (#60): [{ id, x, z, radiusM, active }], metres. Empty means
     // "no zone known", not "safe". No writer yet; the event work (#24-#26) fills it. The minimap draws
@@ -94,7 +102,30 @@ export function createStoreAdapter(store = useMissionStore) {
 export const storeAdapter = createStoreAdapter();
 
 // Small actions for the interface.
-export const setMode = (mode) => { if (mode !== 'walk' && mode !== 'plan') throw new Error('mode must be walk or plan'); useMissionStore.setState({ mode }); };
+// The first switch to Walk begins the EVA (src/state/simulation.js starts it then), so it also locks the crew's needs.
+export const setMode = (mode) => {
+  if (mode !== 'walk' && mode !== 'plan') throw new Error('mode must be walk or plan');
+  useMissionStore.setState((s) => (mode === 'walk' && !s.needs.locked ? { mode, needs: { ...s.needs, locked: true } } : { mode }));
+};
+
+/**
+ * Change the crew's needs at the mission table (src/sim/missionNeeds.js): objective ('sortie' | 'cheyava' |
+ * 'bright-angel'), crew (1 | 2), timeMin, o2Pct, batteryPct and risk ('cautious' | 'standard' | 'bold'). Numbers are
+ * clamped to their range; an unknown key or value throws. Once the EVA has begun the needs are locked and nothing
+ * changes. The terrain preference is the route profile (chooseRouteProfile), not a need.
+ * @param {object} partial
+ * @returns {boolean} true when the needs changed
+ */
+export const setNeeds = (partial) => {
+  const update = checkNeeds(partial);
+  let changed = false;
+  useMissionStore.setState((s) => {
+    if (s.needs.locked || Object.entries(update).every(([k, v]) => s.needs[k] === v)) return s;
+    changed = true;
+    return { needs: { ...s.needs, ...update } };
+  });
+  return changed;
+};
 export const setLayer = (layer) => storeAdapter.set('view.layer', layer);
 export const setSky = (sky) => storeAdapter.set('view.sky', sky);
 export const setRoutePath = (path) => storeAdapter.set('route.path', path);
@@ -121,14 +152,19 @@ export function withRouteProfile(route, id) {
     climbM: profile.climbM,
     steepestSlopeDeg: profile.steepestSlopeDeg,
     etaSec: profile.timeSec,
+    explain: Array.isArray(profile.explain) ? profile.explain : [],
     reason: 'Planned route',
     nextIndex: 0,
     visited: [],
   };
 }
-/** Choose a route profile at the mission table (#245). Does nothing when that profile has no route. */
+/**
+ * Choose a route profile at the mission table (#245). Does nothing when that profile has no route, or when a solo crew
+ * would leave radio contact (src/sim/missionNeeds.js holds a solo crew to the radio-contact profile while it has a route).
+ */
 export const chooseRouteProfile = (id) => {
   useMissionStore.setState((state) => {
+    if (state.needs?.crew === 1 && id !== 'radio' && state.route.profiles?.radio?.ok) return state;
     if (state.route.profile === id && state.route.path === state.route.profiles?.[id]?.path) return state;
     const route = withRouteProfile(state.route, id);
     return route ? { route } : state;
