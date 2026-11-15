@@ -100,7 +100,7 @@ export const BEATS = [
       { at: 'hab', show: [0], text: { en: 'Habitat', es: 'Hábitat' }, tag: 'DATA', home: true },
       { at: 'astronaut', show: [3.5], big: '{zone.area:1} ha', text: { en: 'you can reach and still get home', es: 'puedes alcanzar y aún volver' },
         liveText: { en: 'reach and still get home, T+{clock}', es: 'alcanzas y aún vuelves, T+{clock}' }, tag: 'SIM', live: 'area' },
-      { at: 'astronaut', show: [1.2], ring: true, big: '29.9 µGy/h', text: { en: 'peak dose rate, Sept. 2017, 3× the 10 µGy/h background', es: 'tasa de dosis máxima, sept. 2017, 3× el fondo de 10 µGy/h' }, tag: 'DATA', danger: true, offset: 1 },
+      { at: 'astronaut', show: [1.2], ring: true, big: '29.9 µGy/h', text: { en: 'peak dose rate, Sept. 2017. At the alert: 10 µGy/h', es: 'tasa de dosis pico, sept. 2017. Al iniciar la alerta: 10 µGy/h' }, tag: 'DATA', danger: true, offset: 1 },
     ],
     source: { en: 'RAD on Curiosity, Gale crater, not Jezero: 718 and 240 µGy/day. Timing: NASA DONKI', es: 'RAD en Curiosity, cráter Gale, no Jezero: 718 y 240 µGy/día. Tiempos: NASA DONKI', tag: 'DATA' },
   },

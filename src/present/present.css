@@ -91,7 +91,7 @@ body.mw-recording, body.mw-recording * { cursor: none !important; }
 
 /* the closing sources beat: one line per source, readable at 1366 x 768 from the back of a room */
 .pr-list {
-  max-width: min(1180px, 100%);
+  max-width: 100%;
   margin: 0 0 clamp(14px, 2.4vh, 32px);
   padding: clamp(14px, 1.4vw, 26px) clamp(16px, 1.6vw, 30px);
   background: rgba(10, 13, 17, 0.82);
