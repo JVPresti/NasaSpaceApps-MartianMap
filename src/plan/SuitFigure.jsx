@@ -3,6 +3,7 @@ import { t } from '../i18n/index.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { acquireFigure, cachedFigure, dropFigure } from './suitFigureCache.js';
+import { dropFlatNormalMaps } from './suitMaterial.js';
 
 // The suit in the suit check (#11): the same Z-2 model the partner wears outside (NASA 3D Resources), standing in its
 // idle loop and turning slowly; drag to turn it by hand. The browser already has the model cached from the scene load,
@@ -78,6 +79,7 @@ function createFigure() {
     MODEL,
     (gltf) => {
       if (value.disposed) return;
+      dropFlatNormalMaps(gltf.scene);   // no flecks on the fabric (#342)
       turntable.add(gltf.scene);
       value.mixer = new THREE.AnimationMixer(gltf.scene);
       const idle = gltf.animations.find((clip) => clip.name === 'idle');
