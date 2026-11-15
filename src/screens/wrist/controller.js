@@ -98,10 +98,11 @@ export function connectWrist(engine, store = useMissionStore) {
     }).catch(() => {});
   scheduler.request('init');
   return () => {
-    disposed = true; off(); offLanguage(); offZone(); scheduler.dispose();
+    disposed = true; off(); offLanguage(); scheduler.dispose();
     setWristKeyOwner(false);
     window.removeEventListener('keydown', onKey);
     window.removeEventListener('keyup', onKeyUp);
+    offZone();
     window.removeEventListener('blur', onBlur);
     if (import.meta.env.DEV && window.__marswalkWrist === diagnostics) delete window.__marswalkWrist;
     engine.setWristOpen(false); engine.setWristScreen(null);
