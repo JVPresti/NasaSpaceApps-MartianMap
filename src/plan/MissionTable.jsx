@@ -17,7 +17,7 @@ import { clearWaypoint, toggleWaypoint, useStopSelection } from '../stops/select
 import { useStops } from '../stops/useStops.js';
 import { PROFILE_IDS } from '../sim/routeProfiles.js';
 import { waypointNumber } from '../sim/waypointNumber.js';
-import { eventTiming, missionEventDefinitions } from '../sim/missions.js';
+import { eventTiming, missionEventDefinitions, missionForObjective, missionSourcePath } from '../sim/missions.js';
 import { PlanBeat } from '../mission/MissionBeat.jsx';
 import { LAYERS, SLOPE_LIMITS } from './layers.js';
 import LayerLegend from './LayerLegend.jsx';
@@ -80,6 +80,7 @@ const HAZARDS = [
     get name() { return translateText(dustStorm.label); },
     level: 'warning',
     get levelLabel() { return t('table.hazard.level.warning'); },
+    timed: true,
     when: (objective) => when(dustStorm, objective),
     happens: (objective) => t('table.hazard.dust.happens', {
       opacity: num(peak(dustStorm, 'environment.dustOpacity')), sec: Math.round(scheduled(dustStorm, objective).timeline.at(-1).atSec),
@@ -96,6 +97,7 @@ const HAZARDS = [
     get name() { return translateText(radiation.label); },
     level: 'warning',
     get levelLabel() { return t('table.hazard.level.warning'); },
+    timed: true,
     when: (objective) => when(radiation, objective),
     happens: () => t('table.hazard.radiation.happens', { rate: num(peak(radiation, 'environment.doseRateUgyH'), 1), background: num(radiation.timeline[0]?.set?.['environment.doseRateUgyH'], 1) }),
     get alert() { return translateText(radiation.alert.text); },
@@ -666,7 +668,11 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
                 <span><i />{hazard.levelLabel}</span>
               </div>
               <dl>
-                <div><dt>{t('table.hazard.when')}</dt><dd>{hazard.when(objective)}</dd></div>
+                <div>
+                  <dt>{t('table.hazard.when')}</dt>
+                  {/* the mission's timing is SIM: its tag gives the whole rule (missions.MISSION_SOURCES) */}
+                  <dd>{hazard.when(objective)}{hazard.timed && <SourceTag path={missionSourcePath(missionForObjective(objective).id, hazard.id)} requireSource={false} />}</dd>
+                </div>
                 <div><dt>{t('table.hazard.what.happens')}</dt><dd>{hazard.happens(objective)}</dd></div>
                 <div><dt>{t('table.hazard.the.alert')}</dt><dd>{hazard.alert}</dd></div>
                 <div><dt>{t('table.hazard.what.to.do')}</dt><dd>{hazard.act}</dd></div>
