@@ -26,8 +26,8 @@ with the walk home; the work time is a planning figure, not played in real time.
 | back within 25 m of the airlock | Both alerts end, each after playing at least 20 s | the habitat stays the target until the crew is at the habitat; a stop left out stays skipped |
 | in the cabin | `[E] Open plan`, `[X] Finish EVA` | the habitat table (#244) |
 
-The full EVA (goals "Sample Cheyava Falls" and "Survey Bright Angel") keeps the storm at T+480 s and the radiation alert
-at T+720 s, as before. A crew of one walks without the partner (no EV2 chip, no separation alert, no hand-over); the
+The full EVA (goals "Sample Cheyava Falls", "Survey Bright Angel" and "Collect samples") keeps the storm at T+480 s and
+the radiation alert at T+720 s, as before. A crew of one walks without the partner (no EV2 chip, no separation alert, no hand-over); the
 demo is walked as a pair. Restart and End the EVA keep the crew's needs; a page load opens the first sortie.
 
 In the full EVA a crew that shelters from the storm resumes its remaining stops by choosing **Re-plan** at the table
