@@ -184,17 +184,23 @@ export default function App() {
     setBusyState(true);
     setNotice(null);
     setQualityError(null);
-    const result = await resumeEva({ engine: instance, mode: resumeMode, isCurrent });
-    setBusyState(false);
-    // A superseded attempt stays paused and silent: the action that ended it owns the menu and its message.
-    if (result.stale) return;
-    if (!result.ok) {
-      setNotice(result.message);
-      return;
+    try {
+      const result = await resumeEva({ engine: instance, mode: resumeMode, isCurrent });
+      // A superseded attempt stays paused and silent: the action that ended it owns the menu and its message.
+      if (result.stale) return;
+      if (!result.ok) {
+        setNotice(result.message);
+        return;
+      }
+      setOverlay(null);
+      setPhase(EVA_PHASE.PLAYING);
+      setNotice(null);
+    } catch (cause) {
+      // Resume must never stay disabled: the menu is the only way back into the EVA.
+      setNotice((cause && cause.message) || 'The EVA could not be resumed.');
+    } finally {
+      setBusyState(false);
     }
-    setOverlay(null);
-    setPhase(EVA_PHASE.PLAYING);
-    setNotice(null);
   }, [setBusyState, setOverlay, setPhase]);
 
   const handleModeChange = useCallback(async (next) => {
