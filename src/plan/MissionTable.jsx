@@ -313,7 +313,9 @@ function BudgetPanel({ totals, metrics, limits, budget }) {
       <p className="table-label">{t('table.budget.title')}</p>
 
       <div className="budget-row">
-        <div className="budget-head"><span>{t('table.time')}</span><b>{tot ? outMin(tot.timeSec) : metrics.time.value}<small>{t('table.budget.min.out')}</small></b></div>
+        <div className="budget-head"><span>{t('table.time')}</span>{tot
+          ? <b>{evaMinutes(tot).total}<small>{t('table.budget.min.eva')}</small></b>   /* the Route step's EVA total (#341) */
+          : <b>{metrics.time.value}<small>{t('table.budget.min.out')}</small></b>}</div>
         {tot && (
           <Stack
             parts={parts}
