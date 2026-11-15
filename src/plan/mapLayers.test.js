@@ -7,7 +7,7 @@ import { radioShadowMask } from '../sim/radio.js';
 import { LAYERS } from './layers.js';
 import {
   LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, contourLine, drawMapPosition, fromMap, layerColour, layerPlaces, mapCrop, marsColour, paintMap, sampleRed, slopeGrid, tagFlips,
-  toMap, zoomCrop,
+  toMap, waypointTaskTag, zoomCrop,
 } from './mapLayers.js';
 import { exposureText } from './routeExposure.js';
 
@@ -232,21 +232,26 @@ describe('mission table map', () => {
     expect(layerPlaces(LAYER.OUTCROP, { candidates }).find((p) => p.id === 'sortie')).toMatchObject({ label: 'Zona de tono claro', detail: 'otro objetivo' });
   });
 
-  it('marks the sampling task places on Rocks and Outcrop, what each collects, and why a place was left out (#352)', () => {
+  it('marks the sampling task places off the route on Rocks and Outcrop, and why each was left out (#352)', () => {
     const candidates = routeStopCandidates(readJson('public/data/stops.json'));
     const tasks = [
       { id: 't1', what: 'rock', count: 1, place: { type: 'stop', stopId: 'bright-angel' } },
-      { id: 't2', what: 'photo', count: 2, place: { type: 'stop', stopId: 'bright-angel' } },
+      { id: 't2', what: 'photo', count: 2, place: { type: 'stop', stopId: 'cheyava-falls' } },
       { id: 't3', what: 'soil', count: 3, place: { type: 'point', id: 'P1', x: 560, z: 574 } },
     ];
-    const planTasks = [{ id: 't1', kept: true }, { id: 't2', kept: true }, { id: 't3', kept: false, drop: { limit: 'o2' } }];
-    const rocks = layerPlaces(LAYER.ROCK, { candidates, tasks, planTasks });
-    expect(rocks).toEqual([
-      { id: 'task-bright-angel', kind: 'task', x: -11, z: -50, label: 'Rock ×1 · Photo ×2', detail: '', title: 'Bright Angel: Rock ×1 · Photo ×2', opens: 'left' },
-      { id: 'task-P1', kind: 'task', x: 560, z: 574, label: 'Soil ×3', detail: 'dropped: O2 margin', title: 'P1: Soil ×3: dropped: O2 margin', opens: 'left' },
+    const waypoints = [{ name: 'HAB' }, { name: 'WP3 · Bright Angel outcrop', place: 'bright-angel', tasks: ['t1'] }];
+    const planTasks = [{ id: 't1', what: 'rock', count: 1, kept: true }, { id: 't2', what: 'photo', count: 2, kept: false, drop: { limit: 'o2' } }, { id: 't3', what: 'soil', count: 3, kept: false, drop: null }];
+    // Bright Angel is on the route: its stop marker names the task, so it gets no second mark
+    expect(layerPlaces(LAYER.ROCK, { candidates, tasks, planTasks, waypoints })).toEqual([
+      { id: 'task-cheyava-falls', kind: 'task', x: 0, z: 0, label: 'Photo ×2', detail: 'dropped: O2 margin', title: 'Cheyava Falls: Photo ×2: dropped: O2 margin', opens: 'left' },
+      { id: 'task-P1', kind: 'task', x: 560, z: 574, label: 'Soil ×3', detail: '', title: 'P1: Soil ×3', opens: 'left' },
     ]);
-    // on Outcrop a task place takes the place of its stop's candidate mark; the other candidates stay
-    expect(layerPlaces(LAYER.OUTCROP, { candidates, tasks, planTasks }).map((p) => p.id)).toEqual(['cheyava-falls', 'sortie', 'task-bright-angel', 'task-P1']);
+    expect(waypointTaskTag(LAYER.ROCK, waypoints[1], planTasks)).toBe('Rock ×1');
+    expect(waypointTaskTag(LAYER.OUTCROP, { tasks: ['t1', 't2'] }, [{ ...planTasks[0] }, { ...planTasks[1], kept: true }])).toBe('Rock ×1 · Photo ×2');
+    expect(waypointTaskTag(LAYER.TERRAIN, waypoints[1], planTasks)).toBeNull();
+    expect(waypointTaskTag(LAYER.ROCK, waypoints[0], planTasks)).toBeNull();
+    // on Outcrop a task place off the route takes the place of its stop's candidate mark; the other candidates stay
+    expect(layerPlaces(LAYER.OUTCROP, { candidates, tasks, planTasks, waypoints }).map((p) => p.id)).toEqual(['sortie', 'task-cheyava-falls', 'task-P1']);
     // no tasks (any goal but Collect samples): the layers mark what they did before
     expect(layerPlaces(LAYER.ROCK, { candidates })).toEqual([]);
     expect(layerPlaces(LAYER.OUTCROP, { candidates }).map((p) => p.id)).toEqual(['bright-angel', 'cheyava-falls', 'sortie']);

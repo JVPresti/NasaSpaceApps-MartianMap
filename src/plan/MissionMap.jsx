@@ -6,7 +6,7 @@ import { radioShadowMask } from '../sim/radio.js';
 import { mastKey } from '../sim/routeProfiles.js';
 import { waypointNumber } from '../sim/waypointNumber.js';
 import { useMissionStore } from '../state/store.js';
-import { LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, fromMap, mapCrop, paintMap, slopeGrid, tagFlips, toMap, zoomCrop } from './mapLayers.js';
+import { LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, fromMap, mapCrop, paintMap, slopeGrid, tagFlips, toMap, waypointTaskTag, zoomCrop } from './mapLayers.js';
 import { SLOPE_LIMITS, cautionDeg } from './layers.js';
 import LayerPlaces from './LayerPlaces.jsx';
 import MapPosition from './MapPosition.jsx';
@@ -138,6 +138,8 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const caution = useMissionStore((s) => cautionDeg(s.needs?.risk));
+  // the plan's sampling tasks, while the goal is "Collect samples" (#352): named on their stop markers on Rocks and Outcrop
+  const planTasks = useMissionStore((s) => (s.needs?.objective === 'samples' ? s.route?.tasks ?? NO_ALTERNATIVES : NO_ALTERNATIVES));
   const sky = useSkyView(layer === LAYER.EXPOSURE);
   const radio = useRadioShadow(layer === LAYER.RADIO ? data?.terrain : null, mast);
 
@@ -275,6 +277,8 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
           if (u < -5 || u > 105 || v < -5 || v > 105) return null;
           if (!route && k !== 0 && k !== last) return null;
           const name = route ? markerName(w, k) : k === 0 ? t('table.habitat') : translateText(w.label ?? w.name);
+          // on Rocks and Outcrop a sampling task's place says what it collects (#352), as other places on those layers do
+          const taskLine = route ? waypointTaskTag(layer, w, planTasks) : null;
           const target = science.has(w.name) || k === last;
           return (
             <li key={k} className={'map-marker' + (target ? ' target' : '') + (flipTags && tagFlips(u) ? ' flip' : '')} style={{ left: `${u}%`, top: `${v}%` }}>
@@ -287,7 +291,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
                 onClick={() => (picking && onPick ? onPick({ x: w.x, z: w.z }) : setOpen(open === k ? null : k))}
               >
                 {route ? <span className="map-marker-num">{waypointNumber(k)}</span> : <span className={k === 0 ? 'map-marker-home' : 'map-marker-num'} />}
-                <span className="map-marker-tag"><b>{name}</b>{k === shelterAt && <small className="map-tag-shelter">{t('ui.shelter.89')}</small>}</span>
+                <span className="map-marker-tag"><b>{name}</b>{k === shelterAt && <small className="map-tag-shelter">{t('ui.shelter.89')}</small>}{taskLine && <small>{taskLine}</small>}</span>
               </button>
             </li>
           );

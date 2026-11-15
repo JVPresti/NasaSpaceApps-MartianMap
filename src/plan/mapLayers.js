@@ -132,25 +132,42 @@ export function taskTag(task) {
 }
 
 /**
- * One mark per task place (several tasks at one place share it): what is collected there, the tasks the plan kept, or
- * every task with why the plan left them out when it kept none.
+ * One mark per task place the route does not reach (several tasks at one place share it): a task the plan left out,
+ * with why, or a place the plan has not reached yet. A place on the route has its numbered stop marker, whose tag names
+ * the tasks there instead (waypointTaskTag), so no second mark sits on it.
  */
-function taskPlaceMarks(tasks, planTasks, candidates) {
+function taskPlaceMarks(tasks, planTasks, candidates, waypoints) {
+  const routed = new Set(waypoints.map((w) => w?.place).filter(Boolean));
   const marks = new Map();
   for (const task of Array.isArray(tasks) ? tasks : []) {
     const place = resolvePlace(task?.place, candidates);
-    if (!place || !TASK_KINDS.includes(task.what)) continue;
+    if (!place || !TASK_KINDS.includes(task.what) || routed.has(place.key)) continue;
     const planned = (Array.isArray(planTasks) ? planTasks : []).find((entry) => entry?.id === task.id);
-    const mark = marks.get(place.key) ?? { place, kept: [], dropped: [] };
-    (planned?.kept === false ? mark.dropped : mark.kept).push({ task, limit: planned?.drop?.limit ?? null });
+    const mark = marks.get(place.key) ?? { place, tasks: [], limit: null };
+    mark.tasks.push(task);
+    if (planned?.kept === false && planned.drop) mark.limit ??= planned.drop.limit;
     marks.set(place.key, mark);
   }
-  return [...marks.values()].map(({ place, kept, dropped }) => {
-    const label = (kept.length ? kept : dropped).map(({ task }) => taskTag(task)).join(' · ');
-    const detail = kept.length ? '' : droppedDetail(dropped[0].limit);
+  return [...marks.values()].map(({ place, tasks: here, limit }) => {
+    const label = here.map(taskTag).join(' · ');
+    const detail = limit ? droppedDetail(limit) : '';
     const name = place.type === 'stop' ? translateText(place.label) : place.label;
     return { id: 'task-' + place.key, kind: 'task', x: place.x, z: place.z, label, detail, title: [name, label, detail].filter(Boolean).join(': '), opens: 'left' };
   });
+}
+
+/**
+ * What a stop of the route collects, for the second line of its marker's tag on Rocks and Outcrop (#352): "Rock ×1 ·
+ * Photo ×2", the tasks the plan kept at that place. Null on the other layers and for a stop with no task.
+ * @param {number} layer
+ * @param {{ tasks?: string[] }} waypoint a route waypoint; a task place lists the ids of its tasks
+ * @param {Array<{ id: string, what: string, count: number, kept: boolean }>} planTasks route.tasks
+ * @returns {string | null}
+ */
+export function waypointTaskTag(layer, waypoint, planTasks) {
+  if ((layer !== LAYER.ROCK && layer !== LAYER.OUTCROP) || !Array.isArray(waypoint?.tasks) || !Array.isArray(planTasks)) return null;
+  const here = planTasks.filter((task) => task?.kept && waypoint.tasks.includes(task.id) && TASK_KINDS.includes(task.what));
+  return here.length ? here.map(taskTag).join(' · ') : null;
 }
 
 /**
@@ -158,8 +175,9 @@ function taskPlaceMarks(tasks, planTasks, candidates) {
  * - Outcrop: the candidate stops of stops.json the route does not visit, with why: dropped by the plan (route.dropped,
  *   with its limit) or part of another objective. The stops it visits already have their numbered markers.
  * - Exposure: the natural shelters of shelters.json with their dose cut. The habitat is the route's first marker.
- * - Rocks and Outcrop, for "Collect samples" (#352): the places of the crew's sampling tasks, what is collected there
- *   ("Rock ×1"), and why the plan left them out. On Outcrop a task place takes the place of its stop's candidate mark.
+ * - Rocks and Outcrop, for "Collect samples" (#352): the places of the crew's sampling tasks the route does not reach,
+ *   what is collected there ("Rock ×1") and why the plan left them out (a place on the route says its tasks on its stop
+ *   marker, waypointTaskTag). On Outcrop such a place takes the place of its stop's candidate mark.
  * @param {number} layer
  * @param {{ candidates?: Array<{ id: string, name: string, waypoint: string, x: number, z: number }>,
  *   stops?: Array<{ id: string }>, dropped?: Array<{ id: string, limit: string }>, waypoints?: Array<{ name: string }>,
@@ -169,16 +187,16 @@ function taskPlaceMarks(tasks, planTasks, candidates) {
  * @returns {Array<{ id: string, kind: 'candidate' | 'shelter' | 'task', x: number, z: number, label: string, detail: string,
  *   title: string, opens: 'right' | 'left' }>} opens: the side the tag opens to: a candidate's to the right, as a stop's; a
  *   shelter's to the left, because shelters sit off the route and a stop's tag beside them takes the row to the right; a
- *   task place's to the left, as its stop's own numbered marker sits on the same point with its tag to the right
+ *   task place's to the left, as the shelters', clear of the stop tags beside the route
  */
 export function layerPlaces(layer, { candidates = [], stops = [], dropped = [], waypoints = [], shelters = [], tasks = [], planTasks = [] } = {}) {
-  const taskPlaces = layer === LAYER.ROCK || layer === LAYER.OUTCROP ? taskPlaceMarks(tasks, planTasks, candidates) : [];
+  const taskPlaces = layer === LAYER.ROCK || layer === LAYER.OUTCROP ? taskPlaceMarks(tasks, planTasks, candidates, waypoints) : [];
   if (layer === LAYER.ROCK) return taskPlaces;
   if (layer === LAYER.OUTCROP) {
     const visited = new Set(stops.map((s) => s.id));
     const names = new Set(waypoints.map((w) => w.name));
     const why = new Map(dropped.map((d) => [d.id, d.limit]));
-    const tasked = new Set(taskPlaces.length ? tasks.filter((task) => task?.place?.type === 'stop').map((task) => task.place.stopId) : []);
+    const tasked = new Set(tasks.filter((task) => task?.place?.type === 'stop').map((task) => task.place.stopId));
     return [...candidates
       .filter((c) => Number.isFinite(c.x) && Number.isFinite(c.z) && !visited.has(c.id) && !names.has(c.waypoint) && !tasked.has(c.id))
       .map((c) => {
