@@ -90,7 +90,7 @@ describe('the task banner (#352)', () => {
     expect(html).toContain('data-task-place="P2"');
     expect(html).toContain('Take 1 photo here · 0 of 1');
     expect(html).not.toContain('soil');
-    expect(renderToStaticMarkup(<SamplingChecklist />)).toContain('Task · 1 photo · 0 of 1; 1 soil sample · 0 of 1');
+    expect(renderToStaticMarkup(<SamplingChecklist />)).toContain('data-tasks="t2">Task · 1 photo · 0 of 1</div>');
   });
 
   it('shows nothing for a goal without tasks', () => {
@@ -102,9 +102,12 @@ describe('the task banner (#352)', () => {
     at(-12, -48, ['HAB']);   // the line does not wait for the arrival: it counts while the crew works near the place
     secure([{ id: 1, kind: 'rock', site: 'Bright Angel', x: -11.5, z: -49, into: 'pouch', atSec: 300 }]);
     const html = renderToStaticMarkup(<SamplingChecklist />);
-    expect(html).toContain('<div class="hud-caption" data-tasks="t1 t2">Task · 1 rock sample · 1 of 1; 2 photos · 0 of 2</div>');
+    // in the "Last" line's slot and style, so the panel keeps its height
+    expect(html).toContain('<div class="hud-caption hud-sampling-last" data-tasks="t1 t2">Task · 1 rock sample · 1 of 1; 2 photos · 0 of 2</div>');
+    expect(html).not.toContain('LAST');
     at(200, 200);
     expect(renderToStaticMarkup(<SamplingChecklist />)).not.toContain('Task ·');
+    expect(renderToStaticMarkup(<SamplingChecklist />)).toContain('LAST · Bright Angel chips');
     at(470, 560);   // the left-out task's place
     expect(renderToStaticMarkup(<SamplingChecklist />)).not.toContain('Task ·');
   });
