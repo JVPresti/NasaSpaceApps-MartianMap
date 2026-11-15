@@ -83,6 +83,13 @@ describe('tracks and fades', () => {
     expect(showValue([1, 5], 5, 6)).toBe(0);
     expect(showValue([1], 6, 6)).toBe(1);
   });
+
+  it('keeps a label with no end on screen while the beat is held past its length', () => {
+    // the last beat under autoplay, or any beat after a manual takeover: the team and the QR code must not fade away
+    expect(showValue([1], 7.5)).toBe(1);
+    expect(showValue([18.8], 600)).toBe(1);
+    expect(showValue([1, 5], 600)).toBe(0);   // an explicit end still ends
+  });
 });
 
 describe('camera geometry', () => {
@@ -112,5 +119,32 @@ describe('camera geometry', () => {
     const s = blendShot({ lat: 0, lon: 170, dist: 1, yaw: 350, pitch: 0, fov: 30 }, { lat: 0, lon: -170, dist: 1, yaw: 10, pitch: 0, fov: 30 }, 0.5);
     expect(Math.abs(((s.lon + 540) % 360) - 180)).toBeCloseTo(180, 6);
     expect(((s.yaw % 360) + 360) % 360).toBeCloseTo(0, 6);
+  });
+});
+
+describe('the talk on autoplay, and a pause', () => {
+  it('runs every beat in order, then holds on the last', async () => {
+    const { sequence } = await import('./beats.js');
+    const beats = sequence('full');
+    const tl = createTimeline(beats, { autoplay: true });
+    const seen = [tl.beat.id];
+    for (let k = 0; k < 400 * 60; k++) if (tl.advance(1 / 60)) seen.push(tl.beat.id);
+    expect(seen).toEqual(beats.map((b) => b.id));
+    expect(tl.done).toBe(true);
+  });
+
+  it('stops advancing after a takeover, and the beat it was on keeps running (a video plays on)', async () => {
+    const { sequence } = await import('./beats.js');
+    const beats = sequence('full');
+    const demo = beats.findIndex((b) => b.id === 'demo');
+    const tl = createTimeline(beats, { autoplay: true, start: demo });
+    for (let k = 0; k < 10 * 60; k++) tl.advance(1 / 60);   // 10 s into the video
+    tl.setAutoplay(false);                                   // the presenter's first key
+    expect(tl.index).toBe(demo);
+    for (let k = 0; k < (beats[demo].duration + 5) * 60; k++) tl.advance(1 / 60);
+    expect(tl.index).toBe(demo);                             // no auto advance after the takeover
+    expect(tl.beatTime).toBeGreaterThan(beats[demo].duration);   // the beat clock, and the video on it, ran on
+    tl.next();
+    expect(tl.beat.id).toBe('sources');
   });
 });

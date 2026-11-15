@@ -123,4 +123,22 @@ describe('createCinematic', () => {
     cine.apply(1 / 60);
     expect(late.layers.isEnabled(0)).toBe(false);
   });
+
+  it('never renders the first-person arms, and gives back their exact layers on release', () => {
+    const ctx = fakeCtx();
+    ctx.scene.add(ctx.camera);
+    const arm = new THREE.Group(), mesh = new THREE.Mesh();
+    mesh.layers.enable(1);   // the shadow layer cast.js marks skinned meshes with
+    arm.add(mesh); ctx.camera.add(arm);
+    const cine = createCinematic(ctx, { render() {}, loop() {}, release() {} });
+    expect(arm.layers.isEnabled(0)).toBe(false);
+    expect(mesh.layers.isEnabled(0)).toBe(false);
+    expect(ctx.camera.layers.isEnabled(0)).toBe(true);   // the camera itself still sees layer 0
+    arm.visible = true;   // the engine turns the arms on every frame in Walk
+    cine.apply(1 / 60);
+    expect(mesh.layers.isEnabled(0)).toBe(false);
+    cine.release();
+    expect(mesh.layers.isEnabled(0)).toBe(true);
+    expect(mesh.layers.isEnabled(1)).toBe(true);
+  });
 });
