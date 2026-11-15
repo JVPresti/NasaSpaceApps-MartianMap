@@ -1,7 +1,7 @@
 import { t, translateText } from './i18n/index.js';
+import PresentGate from './present/PresentGate.jsx';   // ?present=1, the pitch inside the app (#291)
 import { useLanguage } from './i18n/useLanguage.js';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import PresentGate from './present/PresentGate.jsx';   // ?present=1, the pitch inside the app (#291)
 import EngineView from './components/EngineView.jsx';
 import GamepadHint from './components/GamepadHint.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
