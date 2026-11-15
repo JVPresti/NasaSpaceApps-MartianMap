@@ -1,5 +1,7 @@
 // Pure formatting for the EVA debrief (#43). No React, no three.js and no store import: the screen formats the
 // frozen `eva.summary` only. Every helper returns a dash for a value that was not known when the EVA ended.
+// Words come from src/i18n (debrief.*) and decimals follow the interface language; SI unit symbols stay as they are.
+import { formatNumber, t, translateText } from '../i18n/index.js';
 
 const DASH = '—';
 
@@ -10,7 +12,7 @@ const pad2 = (value) => String(value).padStart(2, '0');
 export function formatDistance(m) {
   if (!isNumber(m) || m < 0) return DASH;
   const rounded = Math.round(m);
-  return rounded < 1000 ? rounded + ' m' : (m / 1000).toFixed(2) + ' km';
+  return rounded < 1000 ? rounded + ' m' : formatNumber(m / 1000, 2) + ' km';
 }
 
 /** Mission elapsed seconds in the log: 'T+1:02:05'. */
@@ -53,14 +55,14 @@ export function formatPercent(pct) {
 export function formatDose(ugy) {
   if (!isNumber(ugy)) return DASH;
   const abs = Math.abs(ugy);
-  if (abs > 0 && abs < 0.01) return '<0.01 µGy';
-  return (abs < 10 ? ugy.toFixed(2) : ugy.toFixed(1)) + ' µGy';
+  if (abs > 0 && abs < 0.01) return '<' + formatNumber(0.01, 2) + ' µGy';
+  return formatNumber(ugy, abs < 10 ? 2 : 1) + ' µGy';
 }
 
 /** '1 sample' or '4 samples'. */
 export function formatSamples(count) {
   if (!Number.isInteger(count) || count < 0) return DASH;
-  return count + (count === 1 ? ' sample' : ' samples');
+  return t(count === 1 ? 'debrief.samples.one' : 'debrief.samples.many', { n: count });
 }
 
 /** A margin in whole minutes, no sign for a positive value: '12 min', '-3 min'. Route review reasons (#274). */
@@ -98,17 +100,22 @@ export function waypointCode(name, index) {
   return name.split(' · ')[0];
 }
 
-const ROUTE_KINDS = Object.freeze({
-  initial: 'Initial route',
-  replan: 'Route re-planned',
-  offroute: 'Off-route recovery',
-  slope: 'Slope detour',
-  event: 'Hazard re-route',
-});
+const ROUTE_KINDS = Object.freeze(['initial', 'replan', 'offroute', 'slope', 'event']);
 
 /** A readable name for the route change kind the EVA runner classified. */
 export function routeKindLabel(kind) {
-  return ROUTE_KINDS[kind] ?? 'Route updated';
+  return t(ROUTE_KINDS.includes(kind) ? 'debrief.kind.' + kind : 'debrief.kind.other');
+}
+
+/**
+ * The reason of a route change in the interface language, where the catalog knows it. An event re-route reads
+ * "<alert text> (<event id>)" (src/state/events.js): the alert text is translated and the event id kept. Reasons the
+ * catalog does not know (a slope detour, a find, a planner error) stay as their writer wrote them.
+ */
+export function routeReasonText(reason) {
+  if (typeof reason !== 'string' || reason === '') return null;
+  const tagged = reason.match(/^(.*) \(([\w-]+)\)$/);
+  return tagged ? translateText(tagged[1]) + ' (' + tagged[2] + ')' : translateText(reason);
 }
 
 /** '412 m → 388 m' from the before/after snapshots, or null when neither distance is known. */

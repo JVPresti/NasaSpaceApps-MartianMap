@@ -1,6 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { setLanguage } from '../i18n/index.js';
 import DebriefScreen from './DebriefScreen.jsx';
+
+afterEach(() => setLanguage('en'));
 
 const summary = {
   startedAtSec: 600,
@@ -65,6 +68,35 @@ describe('DebriefScreen', () => {
     expect(html).toContain('412 m → 388 m');
     expect(html).toContain('T+0:11:40');
     expect(html).toContain('T+0:20:00');
+  });
+
+  it('speaks Spanish: labels, log wording, route kinds, samples, notes and buttons, with known reasons translated', () => {
+    setLanguage('es');
+    const spanish = {
+      ...summary,
+      doseUgy: 4.7,
+      events: [...summary.events, { type: 'start', eventId: 'dust-storm', label: 'Dust storm', atSec: 1600 }],
+      routeChanges: [
+        ...summary.routeChanges,
+        // An event re-route as src/state/events.js writes it: the alert text, then the event id.
+        { atSec: 1650, kind: 'event', reason: 'Dust storm: opacity rising. Return to the habitat. (dust-storm)', before: { distanceM: 388 }, after: { distanceM: 1240 } },
+        { atSec: 1700, kind: 'offroute', reason: 'Off route: new route from your position', before: null, after: null },
+      ],
+    };
+    const body = text(render({ summary: spanish, reserveSec: 1800, notice: 'menu.restarting' }));
+    for (const label of [
+      'Informe de la EVA', 'De vuelta en el hábitat · reloj de misión detenido', 'Tiempo fuera', 'Distancia caminada', 'horizontal, a pie',
+      'Muestras', '2 muestras', 'roca · Cheyava Falls', 'suelo', 'Dosis', '4,70 µGy', '1,24 km', 'Margen de oxígeno mínimo',
+      'negativo significa por debajo de la reserva', 'Batería mínima', 'Registro de la misión', 'Evento iniciado', 'Evento terminado',
+      'Alerta de radiación', 'Tormenta de polvo', 'Ruta planificada', 'Ruta inicial', 'Desvío por pendiente', 'Nueva ruta por peligro',
+      'Vuelve al hábitat. (dust-storm)', 'Fuera de ruta: nueva ruta desde tu posición', 'Vuelta tras salir de la ruta', 'Cómo leer estas cifras',
+      'La dosis sigue el escenario', 'Continuar la EVA', 'Reiniciar la EVA', 'Fuentes', 'Reiniciando…', 'Esc no hace ninguna de las dos cosas.',
+    ]) expect(body, label).toContain(label);
+    for (const english of ['EVA debrief', 'Time outside', 'Mission log', 'Event started', 'Initial route', 'How to read', 'Continue EVA', 'Planned route', 'Return to the habitat']) {
+      expect(body, english).not.toContain(english);
+    }
+    // The slope detour reason was written in English by the HUD: the catalog cannot match its filled-in number.
+    expect(body).toContain('Detour: steeper than 25° ahead');
   });
 
 });

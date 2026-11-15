@@ -1,5 +1,6 @@
 import SourceTag from '../components/SourceTag.jsx';
 import Modal from '../components/Modal.jsx';
+import { t, translateText } from '../i18n/index.js';
 import {
   buildMissionLog,
   formatDistance,
@@ -11,6 +12,7 @@ import {
   formatSignedMinutes,
   routeDistanceChange,
   routeKindLabel,
+  routeReasonText,
 } from './format.js';
 import RouteReview, { ReviewNotes } from './RouteReview.jsx';
 import { useReserveSec } from './useReserveSec.js';
@@ -22,7 +24,7 @@ const TAG_CLASS = () => 'source-tag-chip debrief-tag';
 function sampleDetail(samples) {
   if (!Array.isArray(samples) || samples.length === 0) return null;
   return samples
-    .map((sample) => [sample?.kind === 'ground' ? 'soil' : 'rock', sample?.site].filter(Boolean).join(' · '))
+    .map((sample) => [t(sample?.kind === 'ground' ? 'debrief.sample.soil' : 'debrief.sample.rock'), sample?.site ? translateText(sample.site) : null].filter(Boolean).join(' · '))
     .join('; ');
 }
 
@@ -30,7 +32,8 @@ function MissionLogEntry({ entry }) {
   const { type, atSec } = entry;
   if (type === 'event') {
     const event = entry.event;
-    const label = event.label || event.eventId || 'Event';
+    // Event labels come from the event files in English; the catalog translates the ones it knows.
+    const label = (event.label ? translateText(event.label) : null) || event.eventId || t('debrief.log.event');
     const showId = event.eventId && event.label && event.label !== event.eventId;
     return (
       <li className="debrief-entry debrief-entry-event">
@@ -38,7 +41,7 @@ function MissionLogEntry({ entry }) {
         <div className="debrief-entry-body">
           <p className="debrief-entry-title">{label}</p>
           <p className="debrief-entry-meta">
-            <span>{event.type === 'end' ? 'Event ended' : 'Event started'}</span>
+            <span>{t(event.type === 'end' ? 'debrief.log.event.ended' : 'debrief.log.event.started')}</span>
             {showId ? <span className="debrief-entry-id">{event.eventId}</span> : null}
           </p>
         </div>
@@ -48,7 +51,7 @@ function MissionLogEntry({ entry }) {
 
   const change = entry.change;
   const kindLabel = routeKindLabel(change.kind);
-  const reason = change.reason || null;
+  const reason = routeReasonText(change.reason);
   const distance = routeDistanceChange(change);
   const meta = [reason ? kindLabel : null, distance].filter(Boolean);
   return (
@@ -71,6 +74,7 @@ function MissionLogEntry({ entry }) {
  * The end-of-EVA debrief (#43). It reads one frozen `eva.summary` snapshot and shows the metrics, the route review
  * (#274: the walked track against the approved plan, with a verdict per deviation, RouteReview.jsx), then the whole
  * mission log in mission time: every event start and end, and every route change with its reason and distance.
+ * Every string is in src/i18n under debrief.* and review.*.
  *
  * The screen is a native modal, like the start screen and the pause menu. Esc is deliberately inert: the EVA has
  * already ended, so there is no pause menu or start screen behind this one. Continue goes back to the EVA (#244);
@@ -96,13 +100,13 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
   return (
     <Modal labelledBy="debrief-title" className="debrief-dialog" onCancel={() => {}}>
       <div className="dialog-body debrief">
-        <p className="dialog-kicker">Marswalk</p>
-        <h2 id="debrief-title" className="dialog-title" tabIndex={-1} data-autofocus="true">EVA debrief</h2>
-        <p className="dialog-site">Back in the habitat · mission clock stopped</p>
+        <p className="dialog-kicker">{t('app.brand')}</p>
+        <h2 id="debrief-title" className="dialog-title" tabIndex={-1} data-autofocus="true">{t('debrief.title')}</h2>
+        <p className="dialog-site">{t('debrief.site')}</p>
 
         <dl className="debrief-metrics">
           <div className="debrief-metric">
-            <dt>Time outside</dt>
+            <dt>{t('debrief.metric.time')}</dt>
             <dd>
               <span className="debrief-value">{formatDuration(summary.elapsedOutsideSec)}</span>
               <SourceTag path="eva.elapsedOutsideSec" variant="tag" interactive={false} className={TAG_CLASS} />
@@ -114,15 +118,15 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
             </dd>
           </div>
           <div className="debrief-metric">
-            <dt>Distance walked</dt>
+            <dt>{t('debrief.metric.distance')}</dt>
             <dd>
               <span className="debrief-value">{formatDistance(summary.distanceM)}</span>
               <SourceTag path="eva.distanceM" variant="tag" interactive={false} className={TAG_CLASS} />
-              <span className="debrief-metric-note">horizontal, on foot</span>
+              <span className="debrief-metric-note">{t('debrief.metric.distance.note')}</span>
             </dd>
           </div>
           <div className="debrief-metric">
-            <dt>Samples</dt>
+            <dt>{t('debrief.metric.samples')}</dt>
             <dd>
               <span className="debrief-value">{formatSamples(summary.sampleCount)}</span>
               <SourceTag path="eva.sampleCount" variant="tag" interactive={false} className={TAG_CLASS} />
@@ -130,22 +134,22 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
             </dd>
           </div>
           <div className="debrief-metric">
-            <dt>Dose</dt>
+            <dt>{t('debrief.metric.dose')}</dt>
             <dd>
               <span className="debrief-value">{formatDose(summary.doseUgy)}</span>
               <SourceTag path="environment.doseUgy" variant="tag" interactive={false} className={TAG_CLASS} />
             </dd>
           </div>
           <div className="debrief-metric">
-            <dt>Lowest oxygen margin</dt>
+            <dt>{t('debrief.metric.margin')}</dt>
             <dd>
               <span className="debrief-value">{formatSignedMinutes(summary.minOxygenMarginSec)}</span>
               <SourceTag path="suit.marginSec" variant="tag" interactive={false} className={TAG_CLASS} />
-              <span className="debrief-metric-note">negative means below the reserve</span>
+              <span className="debrief-metric-note">{t('debrief.metric.margin.note')}</span>
             </dd>
           </div>
           <div className="debrief-metric">
-            <dt>Lowest battery</dt>
+            <dt>{t('debrief.metric.battery')}</dt>
             <dd>
               <span className="debrief-value">{formatPercent(summary.minBatteryPct)}</span>
               <SourceTag path="suit.batteryPct" variant="tag" interactive={false} className={TAG_CLASS} />
@@ -156,7 +160,7 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
         <RouteReview summary={summary} />
 
         <section className="debrief-log-section" aria-labelledby="debrief-log-title">
-          <h3 id="debrief-log-title" className="debrief-section-title">Mission log</h3>
+          <h3 id="debrief-log-title" className="debrief-section-title">{t('debrief.log.title')}</h3>
           {log.length > 0 ? (
             <ol className="debrief-log">
               {log.map((entry) => (
@@ -164,38 +168,31 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
               ))}
             </ol>
           ) : (
-            <p className="debrief-empty">No events or route changes were recorded outside the habitat.</p>
+            <p className="debrief-empty">{t('debrief.log.empty')}</p>
           )}
         </section>
 
         <section className="debrief-notes" aria-labelledby="debrief-notes-title">
-          <h3 id="debrief-notes-title" className="debrief-section-title">How to read these numbers</h3>
-          <p>
-            Dose follows the scripted radiation scenario and is recorded when you return to the habitat.
-          </p>
-          <p>
-            Battery shows the lowest remaining charge predicted by the suit model. A dash means no reading was available.
-          </p>
+          <h3 id="debrief-notes-title" className="debrief-section-title">{t('debrief.notes.title')}</h3>
+          <p>{t('debrief.notes.dose')}</p>
+          <p>{t('debrief.notes.battery')}</p>
           <ReviewNotes reserveSec={reserveSec} />
         </section>
 
-        {notice && <p className="dialog-notice" role="alert">{notice}</p>}
+        {notice && <p className="dialog-notice" role="alert">{translateText(notice)}</p>}
 
         <div className="dialog-actions debrief-actions">
           <button type="button" className="ui-button primary" onClick={onContinue} disabled={busy}>
-            Continue EVA
+            {t('debrief.continue')}
           </button>
           <button type="button" className="ui-button ghost" onClick={onRestart} disabled={busy}>
-            {busy ? 'Restarting…' : 'Restart EVA'}
+            {busy ? t('debrief.restarting') : t('debrief.restart')}
           </button>
           <button type="button" className="ui-button ghost" onClick={onSources} disabled={busy}>
-            Sources
+            {t('debrief.sources')}
           </button>
         </div>
-        <p className="dialog-footnote">
-          Continue goes back to the EVA: the clock runs again and these numbers keep counting. Restart clears this log
-          and opens the mission table for a new EVA. Esc does neither.
-        </p>
+        <p className="dialog-footnote">{t('debrief.footnote')}</p>
       </div>
     </Modal>
   );
