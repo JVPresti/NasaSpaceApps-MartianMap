@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Marswalk, global deck</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  /* slide 1 */
+  .s-title .names { display: grid; grid-template-columns: repeat(3, auto); gap: 6px 48px; font-size: 30px; margin-top: 18px; }
+  .s-title .team { font-family: var(--font-display); font-size: 44px; font-weight: 600; margin-top: 56px; }
+  .s-title .tagline { font-size: 46px; line-height: 1.25; max-width: 980px; margin-top: 30px; }
+  /* slide 2 */
+  .s-problem .facts { display: grid; grid-template-columns: 1fr; gap: 34px; width: 820px; margin-top: 56px; }
+  .s-problem .fact b { font-family: var(--font-display); font-size: 64px; font-weight: 600; display: block; line-height: 1; }
+  .s-problem .fact span { font-size: 30px; color: var(--dim); }
+  .s-problem .map { position: absolute; right: 120px; top: 96px; width: 820px; height: 820px; }
+  /* slide 3 */
+  .bar { display: flex; height: 120px; margin-top: 64px; border: 1px solid var(--line-strong); border-radius: 3px; overflow: hidden; }
+  .bar > div { display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 600; font-size: 34px; color: #0a0d11; text-align: center; line-height: 1.05; padding: 0 12px; }
+  .bar .used { background: #5b6672; color: var(--ink); }
+  .bar .home { background: var(--cyan); }
+  .bar .reserve { background: var(--caution); }
+  .bar .margin { background: var(--ok); }
+  .bar-notes { display: grid; grid-template-columns: 30% 30% 15% 25%; font-size: 24px; color: var(--dim); margin-top: 14px; line-height: 1.3; }
+  .bar-notes div { padding-right: 18px; }
+  .shrink { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 70px; }
+  .shrink .panel { padding: 26px 28px; }
+  .shrink b { font-family: var(--font-display); font-size: 40px; display: block; }
+  .shrink span { font-size: 26px; color: var(--dim); }
+  /* slide 4 */
+  .ux { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px 36px; margin-top: 40px; }
+  .ux .frame { height: 330px; }
+  .ux .step { font-family: var(--font-display); font-size: 34px; font-weight: 600; margin-top: 10px; }
+  .ux .step em { font-style: normal; color: var(--accent); margin-right: 10px; }
+  .ux .step span { font-family: var(--font-ui); font-weight: 400; font-size: 24px; color: var(--dim); margin-left: 8px; }
+  /* slide 5 */
+  .data { width: 100%; border-collapse: collapse; margin-top: 40px; }
+  .data td { font-size: 28px; padding: 16px 18px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.25; }
+  .data td:first-child { font-family: var(--font-display); font-weight: 600; font-size: 32px; width: 640px; }
+  .data td:first-child small { display: block; font-family: var(--font-ui); font-weight: 400; font-size: 22px; color: var(--dim); }
+  .data td.arrow { color: var(--accent); width: 60px; font-size: 32px; }
+  /* slide 6 */
+  .tags { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 56px; }
+  .tags .panel p { font-size: 28px; margin-top: 16px; }
+  .tags .panel .ex { font-size: 24px; color: var(--dim); margin-top: 14px; }
+  .proof { display: flex; gap: 48px; margin-top: 56px; align-items: center; }
+  /* slide 7 */
+  .next { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px; margin-top: 50px; width: 1180px; }
+  .next .panel b { font-family: var(--font-display); font-size: 40px; display: block; }
+  .next .panel span { font-size: 26px; color: var(--dim); }
+  .qr { position: absolute; right: 120px; top: 200px; width: 420px; text-align: center; }
+  .qr img { width: 360px; height: 360px; background: #fff; padding: 14px; border-radius: 3px; }
+  .qr p { font-size: 24px; margin-top: 14px; }
+</style>
+</head>
+<body>
+
+<!-- 1. Title and team -->
+<section class="slide s-title">
+  <img class="bleed" src="../img/app-walk.jpg" alt="">
+  <div class="shade-left"></div>
+  <div class="over">
+    <p class="kicker">NASA Space Apps 2026 · Martian Map</p>
+    <h1 style="margin-top:28px">Marswalk</h1>
+    <p class="tagline">Plan a walk on real Mars terrain, then walk it in a suit, always knowing you can still get home.</p>
+    <p class="team">Los Frijolitos Espaciales Refritos Nueva Generación</p>
+    <div class="names dim">
+      <span>Fernando Haro</span><span>Jorge Vázquez</span><span>Brayan Iván Pérez</span>
+      <span>Antonio Ramos González</span><span>Andrea Rivas Gómez</span><span>Teresa Rivas</span>
+    </div>
+    <p class="dim" style="font-size:26px;margin-top:22px">Ensenada, Mexico · Challenge: Interplanetary Survival Guide: Martian Map</p>
+  </div>
+  <p class="credit">App screenshot. Terrain: HiRISE, NASA/JPL-Caltech/University of Arizona</p>
+</section>
+
+<!-- 2. Problem -->
+<section class="slide s-problem">
+  <p class="kicker">The problem</p>
+  <h2 style="margin-top:24px;width:860px">On Mars, nobody can come and get you.</h2>
+  <div class="facts">
+    <div class="fact"><b>Walk</b><span>The first crews will explore on foot, kilometres from the habitat.</span></div>
+    <div class="fact"><b>8 h · 30 min</b><span>A suit's longest EVA, and the oxygen reserve NASA keeps untouched.</span></div>
+    <div class="fact"><b>No GPS</b><span>No satellites, no useful compass. Position comes from the terrain.</span></div>
+  </div>
+  <div class="frame map"><img src="../img/nasa-hirise-ortho-tile.jpg" alt="HiRISE image of the site"></div>
+  <p class="credit" style="left:auto;right:120px;bottom:120px">Our site: 1.4 × 1.5 km of Jezero crater, HiRISE 25 cm image. NASA/JPL-Caltech/UArizona</p>
+</section>
+
+<!-- 3. The idea: walkback margin -->
+<section class="slide s-idea">
+  <p class="kicker">The idea</p>
+  <h2 style="margin-top:24px">Always show how much walk is left before home.</h2>
+  <p class="dim" style="margin-top:20px;width:1500px">We call it the walkback margin: the oxygen left after walking back to the habitat and keeping the 30 minute reserve.</p>
+  <div class="bar">
+    <div class="used" style="width:30%">Used so far</div>
+    <div class="home" style="width:30%">Walk home</div>
+    <div class="reserve" style="width:15%">Reserve</div>
+    <div class="margin" style="width:25%">Margin</div>
+  </div>
+  <div class="bar-notes">
+    <div>Measured as you walk</div>
+    <div>Priced on the real slope, +20 % pad from Apollo 15 rules</div>
+    <div>30 min, Apollo 17 rule</div>
+    <div>What you can still spend</div>
+  </div>
+  <div class="shrink">
+    <div class="panel"><b>Uphill</b><span>costs more oxygen per metre</span></div>
+    <div class="panel"><b>Rocks</b><span>slow the walk</span></div>
+    <div class="panel"><b>A detour</b><span>is priced before you take it</span></div>
+    <div class="panel"><b>A storm</b><span>re-plans the route home</span></div>
+  </div>
+</section>
+
+<!-- 4. User experience -->
+<section class="slide s-ux">
+  <p class="kicker">The experience</p>
+  <h2 style="margin-top:20px">Plan at the table. Walk it in the helmet.</h2>
+  <div class="ux">
+    <div><div class="frame"><img src="../img/app-table.jpg" alt=""></div><p class="step"><em>1</em>Plan<span>the crew's needs draw the route on HiRISE</span></p></div>
+    <div><div class="frame"><img src="../img/app-walk-hud.jpg" alt=""></div><p class="step"><em>2</em>Walk<span>margin, route and position on the visor</span></p></div>
+    <div><div class="frame"><img src="../img/app-storm.jpg" alt=""></div><p class="step"><em>3</em>React<span>dust storm and radiation re-plan the way home</span></p></div>
+    <div><div class="frame"><img src="../img/app-cheyava.jpg" alt=""></div><p class="step"><em>4</em>Do science<span>Perseverance's images at the real rock</span></p></div>
+  </div>
+</section>
+
+<!-- 5. NASA data -->
+<section class="slide s-data">
+  <p class="kicker">NASA data makes it possible</p>
+  <h2 style="margin-top:20px">Every decision on the map comes from a mission.</h2>
+  <table class="data">
+    <tr><td>MRO HiRISE terrain model, 1 m<small>and its 25 cm image</small></td><td class="arrow">→</td><td>Slope, where the route bends, walking cost, radio shadow, position fixes</td></tr>
+    <tr><td>Perseverance traverse and Mastcam-Z images<small>Mars 2020, sols 1140 to 1266</small></td><td class="arrow">→</td><td>The science stops, the rover's drives, the photos at Cheyava Falls</td></tr>
+    <tr><td>Perseverance MEDA weather, sol 1187</td><td class="arrow">→</td><td>Temperature, wind and dust in the conditions outlook</td></tr>
+    <tr><td>Curiosity RAD, September 2017 event<small>and NASA DONKI space weather records</small></td><td class="arrow">→</td><td>The radiation alert and the dose on the visor</td></tr>
+    <tr><td>NASA suit and walkback tests<small>Apollo, Shuttle, xEVA, NASA/TP-2009-214796</small></td><td class="arrow">→</td><td>Oxygen per metre, the 30 min reserve, the 20° slope limit</td></tr>
+  </table>
+</section>
+
+<!-- 6. Measured vs simulated -->
+<section class="slide s-honest">
+  <p class="kicker">Measured or simulated</p>
+  <h2 style="margin-top:20px">Every number on screen says where it comes from.</h2>
+  <div class="tags">
+    <div class="panel"><span class="tag data">DATA</span><p>Measured by a mission or set in a NASA document.</p><p class="ex">Terrain height, RAD dose rates, 20° slope limit</p></div>
+    <div class="panel"><span class="tag derived">DERIVED</span><p>Calculated by us from DATA.</p><p class="ex">Slope, route cost, oxygen per metre</p></div>
+    <div class="panel"><span class="tag sim">SIM</span><p>Our assumption, and we say why.</p><p class="ex">Walking speed 1 m/s, when the storm arrives</p></div>
+  </div>
+  <div class="proof">
+    <div class="big ok">0.14<span class="unit">m</span></div>
+    <p style="width:1150px">Our terrain against NASA Mars Trek's HiRISE model, RMS over the whole tile. Radiation was measured in Gale crater, not Jezero, and the app says so on screen.</p>
+  </div>
+</section>
+
+<!-- 7. Next -->
+<section class="slide s-next">
+  <p class="kicker">What comes next</p>
+  <h2 style="margin-top:20px;width:1200px">From one rock in Jezero to any walk on Mars.</h2>
+  <div class="next">
+    <div class="panel"><b>Your heart rate</b><span>a real sensor sets oxygen use, with NASA's heart rate model</span></div>
+    <div class="panel"><b>Crews online</b><span>two to six players walk the same EVA</span></div>
+    <div class="panel"><b>Any HiRISE site</b><span>the same pipeline runs on other landing sites</span></div>
+    <div class="panel"><b>Analog field tests</b><span>a planning aid for Earth EVA rehearsals</span></div>
+  </div>
+  <div class="qr"><img src="../img/qr-demo.svg" alt="QR code to the demo"><p>Try it in the browser<br><span class="dim">martian-map.fernando-haro-c.workers.dev</span></p></div>
+</section>
+
+</body>
+</html>
