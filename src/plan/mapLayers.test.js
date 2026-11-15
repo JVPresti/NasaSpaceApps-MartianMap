@@ -6,7 +6,7 @@ import { setLanguage } from '../i18n/index.js';
 import { radioShadowMask } from '../sim/radio.js';
 import { LAYERS } from './layers.js';
 import {
-  LAYER, acrossLabel, clampCrop, contourLine, layerColour, layerPlaces, mapCrop, marsColour, paintMap, slopeGrid, toMap, zoomCrop,
+  LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, contourLine, layerColour, layerPlaces, mapCrop, marsColour, paintMap, slopeGrid, toMap, zoomCrop,
 } from './mapLayers.js';
 import { exposureText } from './routeExposure.js';
 
@@ -41,6 +41,22 @@ describe('mission table map', () => {
     expect(crop.x0).toBeGreaterThanOrEqual(-tile.width / 2);
     expect(crop.z0 + crop.size).toBeLessThanOrEqual(tile.depth / 2);
     expect(acrossLabel(crop.size)).toMatch(/^\d+ m across$/);
+  });
+
+  it('frames a short sortie at the minimum span and the full EVA at its own size', () => {
+    const sortie = [{ x: 535.1, z: 574.1 }, { x: 493, z: 539 }];
+    const small = mapCrop(sortie, tile, { min: MAP_MIN_SPAN_M });
+    expect(small.size).toBe(MAP_MIN_SPAN_M);
+    for (const p of sortie) {
+      const [u, v] = toMap(p.x, p.z, small);
+      expect(u).toBeGreaterThan(10); expect(u).toBeLessThan(90);
+      expect(v).toBeGreaterThan(10); expect(v).toBeLessThan(90);
+    }
+    // 55 m between the airlock and the stop is now about a third of the map, not a tenth of a 500 m one
+    expect(Math.hypot(sortie[0].x - sortie[1].x, sortie[0].z - sortie[1].z) / small.size).toBeGreaterThan(0.3);
+    const full = mapCrop(route, tile, { min: MAP_MIN_SPAN_M });
+    expect(full.size).toBeGreaterThan(700);
+    expect(full.size).toBeLessThanOrEqual(tile.width);
   });
 
   it('puts north up and east right', () => {

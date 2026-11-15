@@ -19,3 +19,13 @@
 
 /* Perseverance's drives: the key's second line says what the drives decide (TraverseLayer.jsx) */
 .table-map-traverse-key small { display: block; font-size: 11px; font-weight: 400; color: var(--text-2); }
+
+/* During an event (MissionMap eventRoute): the route to the shelter in the alert's caution colour, the approved plan
+   thin under it in the plan colour, and SHELTER on the destination as on the HUD's waypoint panel */
+.table-map .map-route.map-route-event { stroke: var(--caution); stroke-width: 2.5px; }
+.table-map .map-route.map-route-plan { stroke-width: 1.5px; opacity: 0.75; }
+.map-marker-tag .map-tag-shelter { font-weight: 600; letter-spacing: 0.04em; color: var(--caution); }
+.map-place-event .map-marker-tag { border-color: var(--caution); }
+
+/* The crew's position (MapPosition.jsx): the HUD's marker on a canvas over the map, above the stops */
+.table-map-position { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }

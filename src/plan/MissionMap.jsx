@@ -6,9 +6,10 @@ import { radioShadowMask } from '../sim/radio.js';
 import { mastKey } from '../sim/routeProfiles.js';
 import { waypointNumber } from '../sim/waypointNumber.js';
 import { useMissionStore } from '../state/store.js';
-import { LAYER, acrossLabel, clampCrop, mapCrop, paintMap, slopeGrid, toMap, zoomCrop } from './mapLayers.js';
+import { LAYER, MAP_MIN_SPAN_M, acrossLabel, clampCrop, mapCrop, paintMap, slopeGrid, toMap, zoomCrop } from './mapLayers.js';
 import { SLOPE_LIMITS, cautionDeg } from './layers.js';
 import LayerPlaces from './LayerPlaces.jsx';
+import MapPosition from './MapPosition.jsx';
 import { useLayerPlaces } from './useLayerPlaces.js';
 import { useSkyView } from './routeExposure.js';
 import TraverseLayer from './TraverseLayer.jsx';
@@ -24,6 +25,8 @@ import './mapLayers.css';
 const BASE = import.meta.env.BASE_URL + 'marswalk/assets/';
 const PIXELS = 768;
 const NO_ALTERNATIVES = [];
+/** A stop this close to the end of an event's route is its shelter (the habitat's stop is its airlock). Metres. */
+const SHELTER_SNAP_M = 8;
 
 let dataRequest = null;
 const radioMasks = new Map();   // by mast position: one mask for every map on the page, as the planner keeps one
@@ -109,9 +112,16 @@ function markerLabel(name, index) {
  *   The classes of track, stretches and marks are styled by the screen that passes them (src/debrief/debrief.css).
  *   mast: the habitat mast ({ x, y, z }, engine.getHabitatMast()), for the Radio shadow layer; without it that layer
  *   leaves the image clear, as the planner has no radio-contact route without it
+ *   minSpanM: the smallest side of the default framing, metres (MAP_MIN_SPAN_M by default): the fit frames the route,
+ *   its stops, the alternatives, the track and the position with a margin, never tighter than this
+ *   position: the crew's position during the EVA ({ x, z } and, when known, errorM, headingDeg, fixMode: the store's
+ *   `navigation` estimate), drawn with the HUD's position marker and its uncertainty ring; null draws none
+ *   eventRoute: the route is an event's route to a shelter (store `route.shelter` set): drawn in the caution colour, its
+ *   end tagged SHELTER as on the HUD; pass the shelter entry ({ name }) instead of true to name a shelter that is not a
+ *   stop. planPath: [[x, z], ...] the approved plan, drawn thin in the plan colour under an event route
  * Clicking a stop opens a small window with its height, slope and the leg that reaches it.
  */
-export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, alternatives = NO_ALTERNATIVES, routeClass = '', traverse = false, track = null, stretches = NO_ALTERNATIVES, marks = NO_ALTERNATIVES, focus = null, mast = null }) {
+export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, alternatives = NO_ALTERNATIVES, routeClass = '', traverse = false, track = null, stretches = NO_ALTERNATIVES, marks = NO_ALTERNATIVES, focus = null, mast = null, minSpanM = MAP_MIN_SPAN_M, position = null, eventRoute = false, planPath = null }) {
   const canvasRef = useRef(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -129,9 +139,14 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const pathPoints = useMemo(() => (path ?? []).map(([x, z]) => ({ x, z })), [path]);
   const altPoints = useMemo(() => alternatives.flatMap((a) => a.path.map(([x, z]) => ({ x, z }))), [alternatives]);
   const trackPoints = useMemo(() => (track ?? []).map(([x, z]) => ({ x, z })), [track]);
-  // the candidate stops (Outcrop) and shelters (Exposure) are the options the layer shows, so the fit frames them too
+  const planPoints = useMemo(() => (eventRoute && planPath ? planPath.map(([x, z]) => ({ x, z })) : []), [eventRoute, planPath]);
+  // candidate stops (Outcrop) and shelters (Exposure) are drawn where the view is; they never move the framing
   const places = useLayerPlaces(route ? layer : LAYER.IMAGE);
-  const fit = useMemo(() => mapCrop([...waypoints, ...pathPoints, ...altPoints, ...trackPoints, ...places], tile), [waypoints, pathPoints, altPoints, trackPoints, places, tile.width, tile.depth]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const here = position && Number.isFinite(position.x) && Number.isFinite(position.z) ? position : null;
+  const fit = useMemo(
+    () => mapCrop([...waypoints, ...pathPoints, ...altPoints, ...trackPoints, ...planPoints, ...(here ? [here] : [])], tile, { min: minSpanM }),
+    [waypoints, pathPoints, altPoints, trackPoints, planPoints, here?.x, here?.z, minSpanM, tile.width, tile.depth],   // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const cropOn = (points) => (points?.length ? mapCrop(points, tile, { pad: 0.35, min: 200 }) : null);
   const [view, setView] = useState(() => cropOn(focus));   // null: framed on the route
   // A new focus frames its points (a deviation in the debrief, #274); set while rendering, as React suggests for
@@ -167,11 +182,11 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
       event.preventDefault();
       const rect = box.getBoundingClientRect();
       const fx = (event.clientX - rect.left) / rect.width, fz = (event.clientY - rect.top) / rect.height;
-      setView((current) => zoomCrop(current ?? fit, event.deltaY > 0 ? 1.18 : 1 / 1.18, fx, fz, tile));
+      setView((current) => zoomCrop(current ?? fit, event.deltaY > 0 ? 1.18 : 1 / 1.18, fx, fz, tile, Math.min(120, minSpanM)));
     };
     box.addEventListener('wheel', onWheel, { passive: false });
     return () => box.removeEventListener('wheel', onWheel);
-  }, [fit, tile.width, tile.depth]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fit, minSpanM, tile.width, tile.depth]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const onPointerDown = (event) => {
     if (event.button !== 0 && event.button !== 2) return;
@@ -196,6 +211,10 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const toLine = (points) => points.map((p) => toMap(p.x, p.z, crop).map((v) => v.toFixed(2)).join(',')).join(' ');
   const line = toLine(pathPoints.length > 1 ? pathPoints : waypoints);
   const last = waypoints.length - 1;
+  // An event's route ends at its shelter: the stop marker there, or a shelter marker of its own, says SHELTER as the HUD does.
+  const destination = eventRoute && pathPoints.length > 1 ? pathPoints[pathPoints.length - 1] : null;
+  const shelterAt = destination ? waypoints.findIndex((w) => Math.hypot(w.x - destination.x, w.z - destination.z) <= SHELTER_SNAP_M) : -1;
+  const lineClass = eventRoute ? 'map-route map-route-event' : routeClass ? 'map-route ' + routeClass : 'map-route';
 
   return (
     <div
@@ -217,8 +236,10 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
         {/* the track under the route, wider, so a walk on the plan still shows both lines */}
         {trackPoints.length > 1 && <polyline points={toLine(trackPoints)} className="map-track-shadow" />}
         {trackPoints.length > 1 && <polyline points={toLine(trackPoints)} className="map-track" />}
+        {/* during an event, the approved plan stays visible, thin, under the route to the shelter */}
+        {route && planPoints.length > 1 && <polyline points={toLine(planPoints)} className="map-route map-route-plan" />}
         {route && line && <polyline points={line} className="map-route-shadow" />}
-        {route && line && <polyline points={line} className={routeClass ? 'map-route ' + routeClass : 'map-route'} />}
+        {route && line && <polyline points={line} className={lineClass} />}
         {stretches.map((s) => (
           <polyline key={s.id} points={toLine(s.path.map(([x, z]) => ({ x, z })))} className={s.className ? 'map-stretch ' + s.className : 'map-stretch'} />
         ))}
@@ -245,12 +266,22 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
                 onClick={() => setOpen(open === k ? null : k)}
               >
                 {route ? <span className="map-marker-num">{waypointNumber(k)}</span> : <span className={k === 0 ? 'map-marker-home' : 'map-marker-num'} />}
-                <span className="map-marker-tag"><b>{code}</b>{name && <small>{name}</small>}</span>
+                <span className="map-marker-tag"><b>{code}</b>{name && <small>{name}</small>}{k === shelterAt && <small className="map-tag-shelter">{t('ui.shelter.89')}</small>}</span>
               </button>
             </li>
           );
         })}
+        {destination && shelterAt < 0 && route && (() => {
+          const [u, v] = toMap(destination.x, destination.z, crop);
+          return (
+            <li className="map-place map-place-shelter map-place-event" style={{ left: `${u}%`, top: `${v}%` }}>
+              <i aria-hidden="true" />
+              <span className="map-marker-tag">{typeof eventRoute === 'object' && eventRoute?.name && <b>{eventRoute.name}</b>}<small className="map-tag-shelter">{t('ui.shelter.89')}</small></span>
+            </li>
+          );
+        })()}
       </ol>
+      {here && <MapPosition position={here} crop={crop} />}
       {marks.length > 0 && (
         <ul className="map-markers map-marks" aria-hidden="true">
           {marks.map((m) => {

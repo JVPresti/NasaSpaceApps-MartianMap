@@ -16,6 +16,12 @@ import { sampleSkyView } from '../sim/skyView.js';
 export const LAYER = Object.freeze({ IMAGE: 0, TERRAIN: 1, ROCK: 2, OUTCROP: 3, RADIO: 4, EXPOSURE: 5 });
 /** Spacing of the Terrain layer's contour lines, as in the terrain shader. Metres. */
 export const CONTOUR_STEP_M = 5;
+/**
+ * The smallest side of the table map's default framing. Metres. A 55 m first sortie then fills a third of the map
+ * instead of a tenth, so the layers and the route profiles change something the eye can see; the full EVA (about
+ * 780 m from the habitat to Cheyava Falls) frames at its own size.
+ */
+export const MAP_MIN_SPAN_M = 150;
 
 /**
  * The square of ground the map shows: every point (route and stops) with a margin, clamped inside the tile.
