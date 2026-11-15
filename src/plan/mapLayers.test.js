@@ -1,9 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { afterEach, describe, expect, it } from 'vitest';
+import { routeStopCandidates } from '../data/stops.js';
+import { setLanguage } from '../i18n/index.js';
 import { radioShadowMask } from '../sim/radio.js';
 import { LAYERS } from './layers.js';
 import {
-  LAYER, acrossLabel, clampCrop, contourLine, layerColour, mapCrop, marsColour, paintMap, slopeGrid, toMap, zoomCrop,
+  LAYER, acrossLabel, clampCrop, contourLine, layerColour, layerPlaces, mapCrop, marsColour, paintMap, slopeGrid, toMap, zoomCrop,
 } from './mapLayers.js';
+import { exposureText } from './routeExposure.js';
+
+const readJson = (path) => JSON.parse(readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), 'utf8'));
+
+afterEach(() => setLanguage('en'));
 
 const tile = { width: 1422.5, depth: 1500 };
 const route = [{ x: 535, z: 574 }, { x: 330, z: 300 }, { x: 150, z: 120 }, { x: -40, z: -60 }, { x: 0, z: 0 }];
@@ -148,5 +157,48 @@ describe('mission table map', () => {
     const brighter = (px) => pixel(out, size, px, 20)[0] - pixel(plain, size, px, 20)[0];
     expect(brighter(4)).toBeGreaterThan(20);   // beside the 5 m contour
     expect(brighter(7)).toBe(0);               // halfway between contours, walkable ground: clear
+  });
+
+  it('marks the candidate stops the route does not visit on Outcrop, with why', () => {
+    const candidates = routeStopCandidates(readJson('public/data/stops.json'));
+    expect(candidates.map((c) => c.id).sort()).toEqual(['bright-angel', 'cheyava-falls', 'sortie']);
+    // the Cheyava Falls objective kept Cheyava Falls and dropped Bright Angel for time; the sortie belongs to another goal
+    const places = layerPlaces(LAYER.OUTCROP, {
+      candidates,
+      stops: [{ id: 'cheyava-falls' }],
+      dropped: [{ id: 'bright-angel', limit: 'time' }],
+      waypoints: [{ name: 'HAB' }, { name: 'Cheyava Falls' }],
+    });
+    expect(places.map((p) => [p.id, p.kind, p.detail])).toEqual([
+      ['bright-angel', 'candidate', 'dropped: over your time'],
+      ['sortie', 'candidate', 'another objective'],
+    ]);
+    expect(places[0].label).toBe('Bright Angel outcrop');
+    expect(places[0].title).toBe('Bright Angel: dropped: over your time');
+    // a stop the route visits under its waypoint name (route.json anchors, no plan yet) is not marked twice
+    expect(layerPlaces(LAYER.OUTCROP, { candidates, waypoints: [{ name: 'WP3 · Bright Angel outcrop' }] }).map((p) => p.id)).not.toContain('bright-angel');
+    expect(layerPlaces(LAYER.OUTCROP, { candidates, dropped: [{ id: 'sortie', limit: 'odd' }] }).find((p) => p.id === 'sortie').detail).toBe('dropped: no route');
+    setLanguage('es');
+    expect(layerPlaces(LAYER.OUTCROP, { candidates }).find((p) => p.id === 'sortie').detail).toBe('otro objetivo');
+  });
+
+  it('marks the natural shelters on Exposure with their dose cut, and nothing on the other layers', () => {
+    const { shelters } = readJson('public/data/shelters.json');
+    const places = layerPlaces(LAYER.EXPOSURE, { shelters });
+    expect(places.map((p) => p.id)).toEqual(['SP1', 'SP2', 'SP3', 'SP4']);   // the habitat is the route's first marker
+    expect(places[0].label).toMatch(/^SP1 · −1[56] % dose$/);
+    expect(places[0].title).toMatch(/sky view 0\.8\d, up to 1[56] % less dose/);
+    for (const layer of [LAYER.IMAGE, LAYER.TERRAIN, LAYER.ROCK, LAYER.RADIO]) expect(layerPlaces(layer, { shelters })).toEqual([]);
+  });
+
+  it('words the exposure readout, with the dose share it implies', () => {
+    expect(exposureText(null)).toBeNull();
+    expect(exposureText({ mean: 0.934, min: 0.881 })).toEqual({
+      label: 'Sky exposure on the route',
+      value: '0.93 mean · 0.88 at its most sheltered',
+      note: 'In a solar particle event the dose scales with sky view: about 93 % of the open-ground dose on this route, an upper bound on the saving.',
+    });
+    setLanguage('es');
+    expect(exposureText({ mean: 0.934, min: 0.881 }).value).toBe('0,93 de media · 0,88 en su punto más resguardado');
   });
 });

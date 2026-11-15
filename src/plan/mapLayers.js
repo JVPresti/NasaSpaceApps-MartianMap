@@ -3,10 +3,11 @@
 //
 // World frame (docs/STATE_AND_ENGINE.md): x east, z south, metres from Cheyava Falls at the centre of the tile.
 // Image frame: column = (x / width + 0.5) * w, row = (z / depth + 0.5) * h, as the terrain shader samples the ortho.
-// The colours repeat the terrain shader (src/engine/shaders.js, TERRAIN_FRAG) so a layer looks the same in both.
+// The colours repeat the terrain shader (src/engine/shaders.js, TERRAIN_FRAG) so a layer looks the same in both; radio
+// shadow and exposure are drawn here only (table-only layers, src/plan/layers.js).
 
 import { EXPOSURE_RANGE, SLOPE_LIMITS } from './layers.js';
-import { t } from '../i18n/index.js';
+import { formatNumber, t } from '../i18n/index.js';
 import { rockAbundanceAt, sampleHeights } from '../sim/costGrid.js';
 import { inRadioShadow } from '../sim/radio.js';
 import { sampleSkyView } from '../sim/skyView.js';
@@ -69,6 +70,44 @@ export function toMap(x, z, crop) {
 export function acrossLabel(size) {
   const step = size >= 1000 ? 50 : 10;
   return t('map.across', { m: Math.round(size / step) * step });
+}
+
+/**
+ * The places a layer marks on the table map (LayerPlaces.jsx), beside the route's own stop markers:
+ * - Outcrop: the candidate stops of stops.json the route does not visit, with why: dropped by the plan (route.dropped,
+ *   with its limit) or part of another objective. The stops it visits already have their numbered markers.
+ * - Exposure: the natural shelters of shelters.json with their dose cut. The habitat is the route's first marker.
+ * @param {number} layer
+ * @param {{ candidates?: Array<{ id: string, name: string, waypoint: string, x: number, z: number }>,
+ *   stops?: Array<{ id: string }>, dropped?: Array<{ id: string, limit: string }>, waypoints?: Array<{ name: string }>,
+ *   shelters?: Array<object> }} data candidates: stops.routeStopCandidates; stops, dropped, waypoints: the store's route
+ * @returns {Array<{ id: string, kind: 'candidate' | 'shelter', x: number, z: number, label: string, detail: string, title: string }>}
+ */
+export function layerPlaces(layer, { candidates = [], stops = [], dropped = [], waypoints = [], shelters = [] } = {}) {
+  if (layer === LAYER.OUTCROP) {
+    const visited = new Set(stops.map((s) => s.id));
+    const names = new Set(waypoints.map((w) => w.name));
+    const why = new Map(dropped.map((d) => [d.id, d.limit]));
+    return candidates
+      .filter((c) => Number.isFinite(c.x) && Number.isFinite(c.z) && !visited.has(c.id) && !names.has(c.waypoint))
+      .map((c) => {
+        const label = c.waypoint?.includes(' · ') ? c.waypoint.split(' · ')[1] : c.name;
+        const limit = why.get(c.id);
+        const detail = limit ? t('layers.stop.dropped.' + (['time', 'o2', 'battery'].includes(limit) ? limit : 'unreachable')) : t('layers.stop.other');
+        return { id: c.id, kind: 'candidate', x: c.x, z: c.z, label, detail, title: `${c.name}: ${detail}` };
+      });
+  }
+  if (layer === LAYER.EXPOSURE) {
+    return shelters
+      .filter((s) => s.type === 'natural' && Number.isFinite(s.x) && Number.isFinite(s.z) && Number.isFinite(s.values?.sky_view_factor?.value))
+      .map((s) => {
+        const sky = s.values.sky_view_factor.value;
+        const pct = Math.round((s.values.dose_reduction?.value ?? 1 - sky) * 100);
+        const label = t('layers.shelter.tag', { id: s.id, pct });
+        return { id: s.id, kind: 'shelter', x: s.x, z: s.z, label, detail: '', title: t('layers.shelter.title', { name: s.name, sky: formatNumber(sky, 2), pct }) };
+      });
+  }
+  return [];
 }
 
 // Mars colour ramp of the terrain shader (linear RGB). HiRISE is grayscale; the colour is artistic (credits statement).

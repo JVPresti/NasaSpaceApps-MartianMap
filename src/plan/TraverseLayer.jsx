@@ -117,9 +117,13 @@ export default function TraverseLayer({ crop }) {
           );
         })()}
       </div>
+      {/* The key says what the drives decide: a cautious crew's route prefers ground the rover crossed (missionNeeds.js) */}
       <p className="table-map-traverse-key">
         <i aria-hidden="true" />
-        {t('map.traverse.key', { from: data.sols[0], to: data.sols[1] })}
+        <span>
+          {t('map.traverse.key', { from: data.sols[0], to: data.sols[1] })}
+          <small>{t('layers.traverse.prefer')}</small>
+        </span>
         <SourceTag path="map.traverse" requireSource={false} source={null} />
       </p>
     </>

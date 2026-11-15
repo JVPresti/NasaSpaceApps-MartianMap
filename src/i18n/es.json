@@ -271,6 +271,7 @@
   "layers.radio.source": "DERIVED · DTM HiRISE · línea de visión al mástil del hábitat",
   "layers.radio.shadow": "Sombra de radio",
   "layers.radio.shadow.detail": "sin línea de visión al mástil",
+  "layers.radio.waiting": "sombra de radio aún sin calcular",
   "layers.exposure": "Exposición al cielo",
   "layers.exposure.unit": "vista del cielo 0–1",
   "layers.exposure.summary": "Cuánto cielo ve un astronauta agachado, de la cuadrícula de alturas HiRISE. En un evento de partículas solares la dosis es proporcional. El rango en esta área es estrecho, de {min} a {max} aproximadamente.",

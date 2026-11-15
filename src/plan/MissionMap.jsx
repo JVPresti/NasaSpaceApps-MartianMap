@@ -2,21 +2,53 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { loadDataFile, TERRAIN_PATH } from '../data/dataFiles.js';
 import { t } from '../i18n/index.js';
 import { decodeTerrain } from '../sim/costGrid.js';
+import { radioShadowMask } from '../sim/radio.js';
+import { mastKey } from '../sim/routeProfiles.js';
 import { waypointNumber } from '../sim/waypointNumber.js';
-import { acrossLabel, clampCrop, mapCrop, paintMap, slopeGrid, toMap, zoomCrop } from './mapLayers.js';
-import { SLOPE_LIMITS } from './layers.js';
+import { useMissionStore } from '../state/store.js';
+import { LAYER, acrossLabel, clampCrop, mapCrop, paintMap, slopeGrid, toMap, zoomCrop } from './mapLayers.js';
+import { SLOPE_LIMITS, cautionDeg } from './layers.js';
+import LayerPlaces from './LayerPlaces.jsx';
+import { useLayerPlaces } from './useLayerPlaces.js';
+import { useSkyView } from './routeExposure.js';
 import TraverseLayer from './TraverseLayer.jsx';
+import './mapLayers.css';
 
 // Flat map of the mission table (#11). The picture is painted once per layer from the HiRISE image, the outcrop mask
 // and the height grid the 3D terrain uses (terrain.json comes through the shared loader, #217, so it is the copy the
 // engine and the planner already have); the route and stops are an SVG on top.
 // Scroll zooms about the pointer, dragging moves the map, and Fit (or a double click) frames the whole route again.
+// The layers are those of src/plan/layers.js: Terrain's caution band follows the crew's risk setting, Rocks reads the
+// planner's density grid, Radio shadow the habitat mast's line of sight and Exposure the precomputed sky view grid.
 
 const BASE = import.meta.env.BASE_URL + 'marswalk/assets/';
 const PIXELS = 768;
 const NO_ALTERNATIVES = [];
 
 let dataRequest = null;
+const radioMasks = new Map();   // by mast position: one mask for every map on the page, as the planner keeps one
+
+/**
+ * Where the habitat mast cannot be seen, on the planner's 10 m mask (radio.radioShadowMask), computed once per mast
+ * (about 70 ms) after the layer button has painted, and only while the Radio shadow layer is shown.
+ * @param {object | null} terrain the decoded height grid
+ * @param {{ x: number, y?: number, z: number } | null} mast
+ */
+function useRadioShadow(terrain, mast) {
+  const key = terrain ? mastKey(mast) : '';
+  const [computed, setComputed] = useState(null);   // { key, mask }
+  useEffect(() => {
+    if (!key || radioMasks.has(key)) return undefined;
+    const timer = setTimeout(() => {
+      const mask = radioShadowMask(terrain, mast);
+      radioMasks.set(key, mask);
+      setComputed({ key, mask });
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [key]);   // eslint-disable-line react-hooks/exhaustive-deps
+  if (!key) return null;
+  return radioMasks.get(key) ?? (computed?.key === key ? computed.mask : null);
+}
 
 function loadPixels(url) {
   return new Promise((resolve, reject) => {
@@ -75,12 +107,17 @@ function markerLabel(name, index) {
  *   marks: [{ id, x, z, className, text?, label? }] small markers above the stops (.map-mark), label as their tooltip
  *   focus: [{ x, z }, ...] frames these points; a new array frames again, null goes back to the fit
  *   The classes of track, stretches and marks are styled by the screen that passes them (src/debrief/debrief.css).
+ *   mast: the habitat mast ({ x, y, z }, engine.getHabitatMast()), for the Radio shadow layer; without it that layer
+ *   leaves the image clear, as the planner has no radio-contact route without it
  * Clicking a stop opens a small window with its height, slope and the leg that reaches it.
  */
-export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, alternatives = NO_ALTERNATIVES, routeClass = '', traverse = false, track = null, stretches = NO_ALTERNATIVES, marks = NO_ALTERNATIVES, focus = null }) {
+export default function MissionMap({ layer, path, waypoints, science = new Set(), title, legend = null, route = true, legs = [], onScience = null, alternatives = NO_ALTERNATIVES, routeClass = '', traverse = false, track = null, stretches = NO_ALTERNATIVES, marks = NO_ALTERNATIVES, focus = null, mast = null }) {
   const canvasRef = useRef(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const caution = useMissionStore((s) => cautionDeg(s.needs?.risk));
+  const sky = useSkyView(layer === LAYER.EXPOSURE);
+  const radio = useRadioShadow(layer === LAYER.RADIO ? data?.terrain : null, mast);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,7 +129,9 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
   const pathPoints = useMemo(() => (path ?? []).map(([x, z]) => ({ x, z })), [path]);
   const altPoints = useMemo(() => alternatives.flatMap((a) => a.path.map(([x, z]) => ({ x, z }))), [alternatives]);
   const trackPoints = useMemo(() => (track ?? []).map(([x, z]) => ({ x, z })), [track]);
-  const fit = useMemo(() => mapCrop([...waypoints, ...pathPoints, ...altPoints, ...trackPoints], tile), [waypoints, pathPoints, altPoints, trackPoints, tile.width, tile.depth]);   // eslint-disable-line react-hooks/exhaustive-deps
+  // the candidate stops (Outcrop) and shelters (Exposure) are the options the layer shows, so the fit frames them too
+  const places = useLayerPlaces(route ? layer : LAYER.IMAGE);
+  const fit = useMemo(() => mapCrop([...waypoints, ...pathPoints, ...altPoints, ...trackPoints, ...places], tile), [waypoints, pathPoints, altPoints, trackPoints, places, tile.width, tile.depth]);   // eslint-disable-line react-hooks/exhaustive-deps
   const cropOn = (points) => (points?.length ? mapCrop(points, tile, { pad: 0.35, min: 200 }) : null);
   const [view, setView] = useState(() => cropOn(focus));   // null: framed on the route
   // A new focus frames its points (a deviation in the debrief, #274); set while rendering, as React suggests for
@@ -114,11 +153,11 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
     const frame = requestAnimationFrame(() => {
       const context = canvas.getContext('2d');
       const image = context.createImageData(PIXELS, PIXELS);
-      paintMap(image.data, PIXELS, crop, layer, data);
+      paintMap(image.data, PIXELS, crop, layer, { ...data, radio, sky }, { cautionDeg: caution });
       context.putImageData(image, 0, 0);
     });
     return () => cancelAnimationFrame(frame);
-  }, [data, crop, layer]);
+  }, [data, crop, layer, radio, sky, caution]);
 
   // Wheel zoom needs a non-passive listener to keep the page from scrolling.
   useEffect(() => {
@@ -184,6 +223,8 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
           <polyline key={s.id} points={toLine(s.path.map(([x, z]) => ({ x, z })))} className={s.className ? 'map-stretch ' + s.className : 'map-stretch'} />
         ))}
       </svg>
+      {/* candidate stops on Outcrop and shelters on Exposure, under the route's own stop markers */}
+      <LayerPlaces places={places} crop={crop} />
       {/* Stops as numbered markers with a label, as on the 3D plan map: HTML, so the text stays sharp at any zoom. The
           numbers are the app's one numbering (#220, src/sim/waypointNumber.js): HAB is 0 and WP1 is 1. */}
       <ol className="map-markers">
@@ -249,7 +290,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
       })()}
       <p className="table-map-caption">
         {title}
-        <span>{t('map.north.up')} · {acrossLabel(crop.size)}</span>
+        <span>{t('map.north.up')} · {acrossLabel(crop.size)}{layer === LAYER.RADIO && !radio ? ` · ${t('layers.radio.waiting')}` : ''}</span>
       </p>
       {legend}
       {view && (

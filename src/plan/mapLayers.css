@@ -1,0 +1,21 @@
+/* The mission table map's layer additions (src/plan/layers.js). The rest of the map is styled in table.css. */
+
+/* Places some layers mark (LayerPlaces.jsx): candidate stops on Outcrop, shelters on Exposure. The tag is the stop
+   markers' own (.map-marker-tag); the symbol is smaller than a stop's numbered circle, so a place never reads as a stop
+   of the route. Colours: MARKER_COLOURS in layers.js, which the legend swatches use. */
+.map-place {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-7px, -50%);
+  white-space: nowrap;
+  pointer-events: auto;
+}
+.map-place > i { flex: none; width: 14px; height: 14px; }
+.map-place .map-marker-tag { min-width: 0; }
+.map-place-candidate > i { background: #c9d0d8; border: 2px solid #0a0d11; border-radius: 50%; }
+.map-place-shelter > i { background: #0a0d11; border: 2px solid #f2f4f6; }
+
+/* Perseverance's drives: the key's second line says what the drives decide (TraverseLayer.jsx) */
+.table-map-traverse-key small { display: block; font-size: 11px; font-weight: 400; color: var(--text-2); }

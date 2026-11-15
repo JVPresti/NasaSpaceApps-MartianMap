@@ -271,6 +271,7 @@
   "layers.radio.source": "DERIVED · HiRISE DTM · line of sight to the habitat mast",
   "layers.radio.shadow": "Radio shadow",
   "layers.radio.shadow.detail": "no line of sight to the mast",
+  "layers.radio.waiting": "radio shadow not computed yet",
   "layers.exposure": "Sky exposure",
   "layers.exposure.unit": "sky view 0–1",
   "layers.exposure.summary": "How much of the sky a crouching astronaut sees, from the HiRISE height grid. In a solar particle event the dose scales with it. The range on this tile is narrow, about {min} to {max}.",
