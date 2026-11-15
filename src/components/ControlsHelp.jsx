@@ -18,7 +18,7 @@ const COLUMNS = [
     {
       title: 'ui.plan',
       rows: [
-        ['menu.help.key.right.drag', 'menu.pan.the.map'],
+        ['menu.help.key.right.drag', 'menu.help.pan'],
         ['menu.scroll', 'menu.zoom.in.and.out'],
         ['ui.esc', 'menu.help.pause'],
       ],

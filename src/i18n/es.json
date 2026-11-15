@@ -501,7 +501,7 @@
   "menu.esc.to.pause.drag.to.look": "Esc para pausar · Arrastra para mirar · WASD para caminar · Mayús para trotar · H para controles",
   "menu.help.partner.detail": "Detalle de EV2",
   "menu.help.key.g": "G",
-  "menu.help.slope.grid": "Cuadrícula de pendiente",
+  "menu.help.slope.grid": "Pendientes",
   "menu.help.sampling": "Muestreo",
   "menu.help.collect": "Recoger con anillo verde",
   "menu.help.key.p": "P",
@@ -509,12 +509,12 @@
   "menu.help.key.e": "E",
   "menu.help.stow": "Guardar en la bolsa",
   "menu.help.key.f": "F",
-  "menu.help.case": "Pedir, llenar o devolver el maletín",
+  "menu.help.case": "Maletín de EV2",
   "menu.help.both.views": "Ambas vistas",
   "menu.help.key.m": "M",
   "menu.help.switch.view": "Caminar o Plan",
   "menu.help.key.l": "L / Mayús+L",
-  "menu.help.layer.cycle": "Capa siguiente o anterior",
+  "menu.help.layer.cycle": "Cambiar de capa",
   "menu.help.key.0": "0",
   "menu.help.layer.none": "Sin capa de datos",
   "menu.help.key.c": "C",
@@ -526,6 +526,7 @@
   "menu.help.pause": "Pausar",
   "menu.help.this.help": "Abrir esta ayuda",
   "menu.help.finds.panels": "Hallazgos y paneles",
-  "menu.help.mark.find": "Marcar un hallazgo",
-  "menu.help.add.or.dismiss": "Añadirlo o descartarlo"
+  "menu.help.mark.find": "Marcar hallazgo",
+  "menu.help.add.or.dismiss": "Añadir o descartar",
+  "menu.help.pan": "Mover el mapa"
 }
