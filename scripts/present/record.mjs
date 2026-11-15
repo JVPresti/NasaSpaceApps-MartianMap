@@ -7,8 +7,8 @@
 //   QA_GPU=1 node scripts/present/record.mjs --filmstrip 30 --beat zone   # every 30th frame as a contact sheet
 //
 // The page runs with ?present=1&record=1: every step advances exactly 1/60 s, and this script saves one frame per step,
-// so the video is smooth whatever the capture speed. Frames go straight into ffmpeg (system ffmpeg, or the one
-// Playwright ships in ~/.cache/ms-playwright/ffmpeg-*), never to disk, unless --frames <dir> asks for them.
+// so the video is smooth whatever the capture speed. Frames go straight into an ffmpeg with libx264 (FFMPEG, the system
+// ffmpeg, or ~/.cache/marswalk-ffmpeg from the imageio-ffmpeg wheel), never to disk, unless --frames <dir> asks for them.
 //
 // GPU: headless Chrome in WSL2 falls back to SwiftShader (minutes per frame). QA_GPU=1 starts a headed Chrome off screen on
 // the WSLg X server, which renders on the real GPU (Mesa d3d12). Without it the script uses headless Chrome and warns.
@@ -44,12 +44,15 @@ function chromePath() {
   throw new Error('No Chromium found: set CHROME=/path/to/chrome');
 }
 
+/** An ffmpeg with libx264: FFMPEG, the system ffmpeg, or the static build in the imageio-ffmpeg wheel. Playwright's own copy only has VP8. */
 function ffmpegPath() {
-  if (spawnSync('ffmpeg', ['-version']).status === 0) return 'ffmpeg';
-  const cache = join(homedir(), '.cache/ms-playwright');
-  const dir = existsSync(cache) ? readdirSync(cache).filter((d) => d.startsWith('ffmpeg-')).sort().reverse()[0] : null;
-  if (dir) for (const name of ['ffmpeg-linux', 'ffmpeg']) { const p = join(cache, dir, name); if (existsSync(p)) return p; }
-  throw new Error('No ffmpeg found: install ffmpeg or Playwright\'s copy');
+  const hasX264 = (bin) => { const r = spawnSync(bin, ['-hide_banner', '-encoders'], { encoding: 'utf8' }); return r.status === 0 && /libx264/.test(r.stdout); };
+  const candidates = [process.env.FFMPEG, 'ffmpeg'];
+  for (const dir of [join(homedir(), '.cache/marswalk-ffmpeg/imageio_ffmpeg/binaries')]) {
+    if (existsSync(dir)) for (const f of readdirSync(dir)) if (f.startsWith('ffmpeg-')) candidates.push(join(dir, f));
+  }
+  for (const bin of candidates.filter(Boolean)) if (hasX264(bin)) return bin;
+  throw new Error('No ffmpeg with libx264. Set FFMPEG, install ffmpeg, or run: uv pip install --target ~/.cache/marswalk-ffmpeg imageio-ffmpeg');
 }
 
 async function launch() {
@@ -87,7 +90,7 @@ try {
   await page.waitForFunction(() => window.__present && window.__present.ready, { timeout: 240000, polling: 250 });
   await page.evaluate(() => document.fonts.ready);
   const total = await page.evaluate(() => window.__present.total);
-  const limit = MAX_FRAMES || total + 2;
+  const limit = MAX_FRAMES || total;
   console.log(`recording ${SEQ}, ${total} frames (${(total / 60).toFixed(1)} s) at ${W}x${H}`);
 
   const cdp = await page.createCDPSession();
@@ -97,7 +100,7 @@ try {
   if (!FILMSTRIP) {
     mkdirSync(dirname(OUT), { recursive: true });
     ff = spawn(ffmpegPath(), ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', '60', '-c:v', 'mjpeg', '-i', '-',
-      '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', OUT], { stdio: ['pipe', 'inherit', 'inherit'] });
+      '-vf', 'scale=in_range=pc:out_range=tv,format=yuv420p', '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-color_range', 'tv', '-movflags', '+faststart', OUT], { stdio: ['pipe', 'inherit', 'inherit'] });
   }
   const stripDir = FILMSTRIP ? resolve(opt('strip-dir', 'present-filmstrip')) : null;
   if (stripDir) mkdirSync(stripDir, { recursive: true });

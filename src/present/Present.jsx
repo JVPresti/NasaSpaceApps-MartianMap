@@ -74,7 +74,7 @@ async function loadAssets(low) {
 /** The shot a beat ends on, as a geo shot with the target's ground height. */
 function beatShot(beat, plan, groundAt, reduced) {
   const s = beat.shot;
-  const zoneStart = beat.tracks?.zone ? trackNumber(beat.tracks.zone[0], plan) : 0;
+  const zt = beat.tracks?.zone; const zoneStart = zt ? trackNumber(Array.isArray(zt[0]) ? zt[0][0] : zt[0], plan) : 0;
   const place = typeof s.target === 'string' ? resolvePlace(s.target, plan, zoneStart) : s.target;
   const geo = place.lat !== undefined ? place : localToGeo(place.x, place.z);
   const local = place.x !== undefined ? place : geoToLocal(place.lat, place.lon);
@@ -162,6 +162,7 @@ export default function Present({ engine, onExit }) {
       cine.setRoute(plan.path, { width: low ? 5 : 4 });
       cine.setRouteReveal(0, 0);
       cine.setZone({ ...plan.zone, last: plan.zone.lastBytes });
+      cine.setZoneFocus(plan.hab.x, plan.hab.z, 1100);   // the sortie's zone sits around the habitat
       // the beat's shot may have used height 0 before the terrain existed
       startBeat(timeline.index, true);
     }
@@ -284,7 +285,8 @@ export default function Present({ engine, onExit }) {
       const pose = engineCamera(current);
       projector.set(pose, dims.w / dims.h);
       if (globeAlpha > 0) {
-        globe.render(current, { region: 1, ctx: 1, stars: 1 });
+        // the Jezero images fade in as the camera comes down, so no tinted square pops up over the globe from orbit
+        globe.render(current, { region: 1 - ramp(h, 450_000, 1_400_000), ctx: 1 - ramp(h, 90_000, 220_000), stars: 1 });
       }
       canvas.style.opacity = globeAlpha.toFixed(3);
       if (cine && globeAlpha < 1) {

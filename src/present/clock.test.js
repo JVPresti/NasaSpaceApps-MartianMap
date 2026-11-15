@@ -70,6 +70,13 @@ describe('tracks and fades', () => {
     expect(trackValue(tr, 9)).toBe(100);
   });
 
+  it('plays track segments in turn', () => {
+    const tr = [[0, 29, 1, 6], [29, 31, 6.5, 7]];
+    expect(trackValue(tr, 0)).toBe(0);
+    expect(trackValue(tr, 6.2)).toBe(29);
+    expect(trackValue(tr, 8)).toBe(31);
+  });
+
   it('fades a label in after its start and out before its end', () => {
     expect(showValue([1, 5], 0.5, 6)).toBe(0);
     expect(showValue([1, 5], 3, 6)).toBe(1);

@@ -78,6 +78,12 @@ export const easeOut = (u) => 1 - Math.pow(1 - u, 3);
  * @param {[number, number, number, number]} track
  */
 export function trackValue(track, t) {
+  if (Array.isArray(track[0])) {
+    // segments in time order: the latest one that has started decides, the first one before any has
+    let seg = track[0];
+    for (const s of track) if (t >= s[2]) seg = s;
+    return trackValue(seg, t);
+  }
   const [from, to, t0, t1] = track;
   return from + (to - from) * easeInOut(ramp(t, t0, t1));
 }

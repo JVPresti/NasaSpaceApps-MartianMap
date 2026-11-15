@@ -71,12 +71,15 @@ describe('presentation beats', () => {
       });
 
       it('keeps tracks inside the beat and resolves their numbers', () => {
-        for (const b of beats) for (const [k, tr] of Object.entries(b.tracks || {})) {
-          expect(tr, `${b.id}.${k}`).toHaveLength(4);
-          expect(Number.isFinite(trackNumber(tr[0], plan)) && Number.isFinite(trackNumber(tr[1], plan)), `${b.id}.${k}`).toBe(true);
-          expect(tr[2]).toBeLessThanOrEqual(tr[3]);
-          expect(tr[3], `${b.id}.${k} ends after the beat`).toBeLessThanOrEqual(b.duration);
-          if (k === 'zone') expect(Math.max(tr[0], tr[1])).toBeLessThan(plan.zone.frames.length);
+        for (const b of beats) for (const [k, track] of Object.entries(b.tracks || {})) {
+          const segs = Array.isArray(track[0]) ? track : [track];
+          for (const tr of segs) {
+            expect(tr, `${b.id}.${k}`).toHaveLength(4);
+            expect(Number.isFinite(trackNumber(tr[0], plan)) && Number.isFinite(trackNumber(tr[1], plan)), `${b.id}.${k}`).toBe(true);
+            expect(tr[2]).toBeLessThanOrEqual(tr[3]);
+            expect(tr[3], `${b.id}.${k} ends after the beat`).toBeLessThanOrEqual(b.duration);
+            if (k === 'zone') expect(Math.max(tr[0], tr[1])).toBeLessThan(plan.zone.frames.length);
+          }
         }
       });
     });
@@ -84,8 +87,8 @@ describe('presentation beats', () => {
 
   it('fits the global video in 30 s', () => {
     const total = sequence('global30').reduce((a, b) => a + b.duration, 0);
-    expect(total).toBeLessThanOrEqual(30);
-    expect(GLOBAL_30.every((c) => BEATS.some((b) => b.id === c.id))).toBe(true);
+    expect(total).toBeLessThanOrEqual(29.5);   // the submission's hard limit is 30 s; keep half a second of room
+    expect(GLOBAL_30.every((c) => BEATS.some((b) => b.id === (c.from || c.id)))).toBe(true);
   });
 
   it('ends the full presentation on the live hand-off', () => {

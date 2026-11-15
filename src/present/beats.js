@@ -20,7 +20,7 @@
 //                 tag: DATA, DERIVED or SIM (CONTEXT.md, realism rules)
 //   source      the line at the bottom: where the picture comes from, { en, es, tag }
 //   scene       what the engine shows: sky, dust (0-1), layer (0 none, 1 slope), route, zone, images
-//   tracks      values that move during the beat: { name: [from, to, startSec, endSec] }
+//   tracks      values that move during the beat: { name: [from, to, startSec, endSec] }, or a list of those in time order
 //                 route: metres of route drawn; zone: frame of the walkback zone clip; dust: storm level
 //   cta         the handoff button's label
 
@@ -69,7 +69,7 @@ export const BEATS = [
   {
     id: 'danger',
     duration: 9,
-    shot: { target: 'hab', dist: 210, yaw: -40, pitch: -16, fov: 46 },
+    shot: { target: 'hab', dist: 75, yaw: -40, pitch: -11, fov: 46 },
     move: { dur: 5, ease: 'inOut' },
     caption: { en: 'On Mars, nobody can come and get you.', es: 'En Marte, nadie puede ir por ti.' },
     chips: [
@@ -96,7 +96,7 @@ export const BEATS = [
   {
     id: 'zone',
     duration: 18,
-    shot: { target: { x: 470, z: 520 }, dist: 1500, yaw: -20, pitch: -56, fov: 44 },
+    shot: { target: { x: 440, z: 480 }, dist: 1150, yaw: -30, pitch: -54, fov: 44 },
     move: { dur: 5, ease: 'inOut' },
     drift: { yaw: -1.0 },
     caption: [
@@ -169,17 +169,32 @@ export const BEATS = [
 export const GLOBAL_30 = [
   { id: 'mars', duration: 3.5, title: 'Marswalk', caption: { en: 'Plan a walk on Mars. Get home.' } },
   { id: 'jezero', duration: 5, caption: { en: 'Jezero crater, on NASA orbital data.' }, move: { dur: 4.5, ease: 'zoom' } },
-  { id: 'cheyava', duration: 6, caption: { en: 'Down to 1 m HiRISE ground.' }, move: { dur: 5.5, ease: 'zoom' }, chips: [] },
-  { id: 'zone', duration: 9, caption: [{ at: 0, en: 'Orange: where you can still get home.' }], move: { dur: 2.5, ease: 'inOut' }, tracks: { zone: [0, 31, 2, 8.5], zoneOpacity: [0, 1, 1, 2] } },
-  { id: 'sources', duration: 3.5, caption: { en: 'Every number tagged: measured or modelled.' }, chips: [] },
-  { id: 'live', duration: 3, caption: { en: 'Next: any HiRISE site on Mars.' }, cta: null },
+  { id: 'cheyava', duration: 5, caption: { en: 'Down to 1 m HiRISE ground.' }, move: { dur: 4.6, ease: 'zoom' }, chips: [] },
+  {
+    id: 'zone', duration: 10, move: { dur: 2.2, ease: 'inOut' },
+    shot: { target: { x: 440, z: 480 }, dist: 1000, yaw: -30, pitch: -54, fov: 44 },
+    caption: [{ at: 0, en: 'Orange: where you can still get home.' }, { at: 6.2, en: 'Radiation alert. The zone collapses.' }],
+    tracks: { zone: [[0, 29, 1.2, 6], [29, 31, 6.3, 7]], zoneOpacity: [0, 1, 0.3, 1.2] },
+    chips: [
+      { at: 'astronaut', show: [2.5], big: '{zone.margin} min', text: { en: 'walkback margin' }, liveText: { en: 'walkback margin at T+{clock}' }, tag: 'DERIVED', live: 'margin' },
+    ],
+  },
+  {
+    id: 'sources', duration: 3.5, move: { dur: 2, ease: 'inOut' }, caption: { en: 'Every number tagged: measured or modelled.' },
+    chips: [
+      { at: 'cheyava', show: [0.4], text: { en: 'Terrain: HiRISE DTM, MRO' }, tag: 'DATA' },
+      { at: 'leg:1', show: [0.9], text: { en: 'Slope, route, O2 per metre' }, tag: 'DERIVED' },
+      { at: 'hab', show: [1.4], text: { en: 'Walking speed, storm timing' }, tag: 'SIM' },
+    ],
+  },
+  { id: 'end', from: 'mars', duration: 2.5, move: { dur: 0 }, title: 'Marswalk', caption: { en: 'Next: any HiRISE site on Mars.' } },
 ];
 
 /** The beat list for a sequence name ('full' or 'global30'), with borrowed fields filled in. */
 export function sequence(name = 'full') {
   if (name !== 'global30') return BEATS;
   return GLOBAL_30.map((cut) => {
-    const base = BEATS.find((b) => b.id === cut.id);
+    const base = BEATS.find((b) => b.id === (cut.from || cut.id));
     if (!base) throw new Error('GLOBAL_30 names an unknown beat: ' + cut.id);
     const tracks = cut.tracks || scaleTracks(base.tracks, cut.duration / base.duration);
     return { ...base, ...cut, tracks, chips: cut.chips ?? base.chips };
@@ -189,7 +204,8 @@ export function sequence(name = 'full') {
 function scaleTracks(tracks, k) {
   if (!tracks) return tracks;
   const out = {};
-  for (const [name, [from, to, t0, t1]] of Object.entries(tracks)) out[name] = [from, to, t0 * k, t1 * k];
+  const scale = ([from, to, t0, t1]) => [from, to, t0 * k, t1 * k];
+  for (const [name, tr] of Object.entries(tracks)) out[name] = Array.isArray(tr[0]) ? tr.map(scale) : scale(tr);
   return out;
 }
 

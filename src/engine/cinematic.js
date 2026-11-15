@@ -16,22 +16,26 @@ import * as THREE from 'three';
 const HIDDEN_LAYER = 7;
 
 const ZONE_VERT = /* glsl */ `
-varying vec2 vUv;
-void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+varying vec2 vUv; varying vec2 vXZ;
+void main() { vUv = uv; vXZ = position.xz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 
 // The texture holds `last` (frame index, 1-based, divided by 255). Linear filtering makes last = f + 0.5 a smooth
 // boundary, so the zone shrinks without blocks. Inside: thin orange fill and a bright edge; outside: dimmed ground.
 const ZONE_FRAG = /* glsl */ `
-uniform sampler2D tLast; uniform float uFrame, uOpacity, uDim; uniform vec3 uColor;
-varying vec2 vUv;
+uniform sampler2D tLast; uniform float uFrame, uOpacity, uDim; uniform vec3 uColor; uniform vec3 uFocus; uniform vec2 uTile;
+varying vec2 vUv; varying vec2 vXZ;
 void main() {
   float v = texture2D(tLast, vUv).r * 255.0 - (uFrame + 0.5);
   float w = fwidth(v) * 1.4 + 1e-4;
   float inside = smoothstep(-w, w, v);
   float edge = 1.0 - smoothstep(0.0, w * 1.6, abs(v));
   vec3 c = mix(vec3(0.0), uColor, max(inside * 0.9, edge));
-  float a = mix(uDim, 0.26, inside);
+  // the ground outside is dimmed only around the zone (uFocus: x, z, radius), so the tile's edge never shows as a slab
+  float dim = uDim * (1.0 - smoothstep(uFocus.z * 0.55, uFocus.z, length(vXZ - uFocus.xy)));
+  float a = mix(dim, 0.26, inside);
   a = max(a, edge * 0.95);
+  // the tile ends 176 m from the habitat; fade there instead of cutting the zone with a straight line
+  a *= smoothstep(0.0, 60.0, min(uTile.x - abs(vXZ.x), uTile.y - abs(vXZ.y)));
   gl_FragColor = vec4(c, a * uOpacity);
 }`;
 
@@ -130,7 +134,7 @@ export function createCinematic(ctx, hooks) {
   }
 
   // ---------------------------------------------------------------- the walkback zone
-  const zoneUniforms = { tLast: { value: null }, uFrame: { value: 0 }, uOpacity: { value: 0 }, uDim: { value: 0.32 }, uColor: { value: new THREE.Color('#ff6a2b') } };
+  const zoneUniforms = { tLast: { value: null }, uFrame: { value: 0 }, uOpacity: { value: 0 }, uDim: { value: 0.32 }, uFocus: { value: new THREE.Vector3(0, 0, 1e6) }, uTile: { value: new THREE.Vector2(1e6, 1e6) }, uColor: { value: new THREE.Color('#ff6a2b') } };
   const zoneMat = new THREE.ShaderMaterial({
     uniforms: zoneUniforms, vertexShader: ZONE_VERT, fragmentShader: ZONE_FRAG, transparent: true, depthWrite: false,
     polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -8,
@@ -147,6 +151,7 @@ export function createCinematic(ctx, hooks) {
     const tex = new THREE.DataTexture(last, cols, rows, THREE.RedFormat, THREE.UnsignedByteType);
     tex.minFilter = tex.magFilter = THREE.LinearFilter; tex.unpackAlignment = 1; tex.needsUpdate = true;   // rows of cols bytes
     zoneUniforms.tLast.value = tex;
+    zoneUniforms.uTile.value.set(ctx.T.W / 2, ctx.T.H / 2);
     const T = ctx.T, seg = ctx.tier === 'low' ? 200 : 400;
     const g = new THREE.PlaneGeometry(T.W, T.H, seg, seg);
     g.rotateX(-Math.PI / 2);
@@ -195,6 +200,8 @@ export function createCinematic(ctx, hooks) {
     setRoute,
     setRouteReveal(m, opacity = 1) { routeMat.uniforms.uReveal.value = m; routeMat.uniforms.uOpacity.value = opacity; },
     setZone,
+    /** Dim the ground outside the zone only within radius metres of (x, z). */
+    setZoneFocus(x, z, radius) { zoneUniforms.uFocus.value.set(x, z, radius); },
     setZoneFrame(f, opacity = 1, dim = 0.32) {
       zoneUniforms.uFrame.value = f; zoneUniforms.uOpacity.value = opacity; zoneUniforms.uDim.value = dim;
       zoneMesh.visible = opacity > 0.001 && !!zoneUniforms.tLast.value;

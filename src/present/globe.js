@@ -80,8 +80,8 @@ export function createGlobe(canvas, { globe, region, ctx, boxes, low = false }) 
     scene.add(m);
     return m;
   }
-  const regionMesh = patch(region, boxes.region, 0.002, 0.08, 48);
-  const ctxMesh = patch(ctx, boxes.ctx, 0.003, 0.05, 24);
+  const regionMesh = patch(region, boxes.region, 0.002, 0.3, 48);
+  const ctxMesh = patch(ctx, boxes.ctx, 0.003, 0.18, 24);
   ctxMesh.renderOrder = 2;
 
   const rim = new THREE.Mesh(new THREE.SphereGeometry(GLOBE_R * 1.012, 96, 48), new THREE.ShaderMaterial({

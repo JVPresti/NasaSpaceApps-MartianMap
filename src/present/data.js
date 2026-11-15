@@ -18,7 +18,7 @@ export function fill(text, data, lang = 'en') {
 }
 
 export function formatNumber(v, lang = 'en') {
-  const digits = Number.isInteger(v) ? 0 : Math.abs(v) < 10 ? 1 : 0;
+  const digits = Number.isInteger(v) ? 0 : Math.abs(v) < 1 ? 2 : Math.abs(v) < 10 ? 1 : 0;
   return v.toLocaleString(lang === 'es' ? 'es-MX' : 'en-US', { maximumFractionDigits: digits, minimumFractionDigits: digits });
 }
 
