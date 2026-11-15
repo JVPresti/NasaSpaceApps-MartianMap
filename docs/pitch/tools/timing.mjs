@@ -1,12 +1,12 @@
 // Timing check for the pitch scripts. Not part of the app build.
 //
-//   node docs/pitch/tools/timing.mjs [--wpm 140] [script.md ...]   (default: every docs/pitch/script-*.md)
+//   node docs/pitch/tools/timing.mjs [--wpm 140] [--out council/timing.md] [script.md ...]   (default: every docs/pitch/script-*.md)
 //
 // Reads every markdown table whose first or second column is a time (m:ss) and whose last column is the spoken
 // text. Each row's slot runs to the next row's time; the last row of a table ends at the time in its own row.
 // Spoken time = words / wpm. Text in parentheses is a stage direction and is not counted. A row whose spoken time
-// is longer than its slot is over time. Writes docs/pitch/council/timing.md and exits 1 if anything is over.
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+// is longer than its slot is over time. Writes docs/pitch/council/timing.md (or --out) and exits 1 if anything is over.
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,7 +14,9 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const wpmAt = args.indexOf('--wpm');
 const WPM = wpmAt >= 0 ? Number(args.splice(wpmAt, 2)[1]) : 140;
-const files = args.length ? args : readdirSync(ROOT).filter((f) => /^script-.*\.md$/.test(f)).map((f) => join(ROOT, f));
+const outAt = args.indexOf('--out');
+const OUT = outAt >= 0 ? resolve(ROOT, args.splice(outAt, 2)[1]) : join(ROOT, 'council', 'timing.md');
+const files = args.length ? args.map((f) => (existsSync(f) ? f : join(ROOT, f))) : readdirSync(ROOT).filter((f) => /^script-.*\.md$/.test(f)).map((f) => join(ROOT, f));
 
 const secs = (t) => { const m = t.match(/^(\d+):(\d\d)$/); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
 const words = (s) => s.replace(/\([^)]*\)/g, ' ').replace(/[*_`|]/g, ' ').split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
@@ -54,6 +56,6 @@ for (const file of files) {
   }
 }
 report.push(over ? `**${over} row(s) over time.**` : 'No row is over time.');
-writeFileSync(join(ROOT, 'council', 'timing.md'), report.join('\n') + '\n');
+writeFileSync(OUT, report.join('\n') + '\n');
 console.log(report.join('\n'));
 process.exit(over ? 1 : 0);

@@ -1,6 +1,6 @@
 # Guion de 3 minutos (gemelo en español)
 
-> **Formato, de los organizadores de Ensenada** (citado en `docs/SUBMISSION.md`, PR #316): exponer en inglés, máximo 3 minutos, a las 2:30 pm del 15 de noviembre. El guion principal es `script-3min-en.md`. Este es su gemelo en español, para ensayar y para contestar preguntas en español. **Confirmar con los organizadores** si los 3 minutos incluyen la demo y si hay preguntas después.
+> **Formato, de los organizadores de Ensenada** (citado en `docs/SUBMISSION.md`, PR #316): exponer en inglés, máximo 3 minutos, a las 2:30 pm del 15 de noviembre. El equipo planea 5 minutos (`script-5min-es.md`, gemelo de `script-5min-en.md`); este guion es el respaldo si los organizadores mantienen los 3, y se entra en 0:46, después de la tesis. Su versión principal es `script-3min-en.md`. Este es su gemelo en español, para ensayar y para contestar preguntas en español. **Confirmar con los organizadores** si los 3 minutos incluyen la demo y si hay preguntas después.
 
 Mismos beats (`beats.md`, tabla de 3 minutos) y la demo corta (`demo-run-sheet.md`, corte B). El modo de presentación (`?present=1`) viene de #330. Si no está fusionado a las 2:00 pm o falla en la laptop, usa `out/deck-global.pdf`: la diapositiva 2 para el beat 1a, la 1 para el 1b, la 3 para los beats 3 y 5, la 7 para el beat 7, y cambia a la app para la demo. La alerta de radiación se dispara a mano desde la franja de eventos, y se dice en voz alta.
 

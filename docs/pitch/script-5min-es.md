@@ -1,46 +1,47 @@
-# Guion del pitch local, 5 minutos
+# Guion del pitch local, 5 minutos (gemelo en español)
 
-> **Confirmar con los organizadores de Ensenada:** duración del pitch (suponemos 5 minutos más preguntas), si las preguntas van aparte, y si podemos conectar nuestra laptop. Si el formato es de 8 minutos, usar `script-8min-es.md`. Si es de 3, `script-3min-es.md`.
+> **Formato.** El equipo planea una charla de 5 minutos con la demo en vivo adentro, y luego preguntas. La página de los organizadores citada en `docs/SUBMISSION.md` (PR #316) todavía dice "prepárate para exponer en idioma inglés durante un tiempo máximo de 3 minutos". **Confirmar con los organizadores** antes de las 2:00 pm. Si mantienen los 3 minutos, usar el punto de corte marcado abajo, que pasa a `script-3min-es.md`.
+
+El guion principal es `script-5min-en.md`, en inglés. Este es su gemelo en español, para ensayar y para contestar preguntas en español: mismos beats (`beats.md`, tabla de 5 minutos), misma demo (`demo-run-sheet.md`, corte A), mismos números. Presentan tres personas: **P1** (apertura), **P2** (demo, en la laptop), **P3** (datos y cierre). Los nombres los decide el equipo.
 
 **Tesis:** en Marte, la pregunta no es a dónde puedes ir. Es a dónde puedes ir y todavía volver. Se dice una vez, al principio. Todo lo demás la demuestra.
 
-El pitch corre dentro del sitio, en el modo de presentación (`?present=1`), y pasa a la demo en vivo en el beat 4. Los beats están en `beats.md`. La demo sigue `demo-run-sheet.md`, corte A. Presentan tres personas: **P1** (apertura), **P2** (demo, en la laptop), **P3** (datos y cierre). Los nombres los decide el equipo. Versión en inglés: `script-5min-en.md`.
-
-Ritmo: 140 palabras por minuto. Los números salen de la app y de sus fuentes (ver "De dónde sale cada número" abajo).
+Ritmo: escrito para 125 palabras por minuto, y ninguna fila pasa de 140 (`node tools/timing.mjs`). La charla termina en 4:45, con la demo incluida.
 
 | Tiempo | Beat | Quién | Texto |
 |---|---|---|---|
-| 0:00 | 1 · Jezero | P1 | Cráter Jezero, Marte. Una astronauta está en Cheyava Falls, la roca donde Perseverance encontró una posible biofirma, a 913 metros del hábitat por la ruta. Es el final de su EVA: le quedan 160 gramos de oxígeno. Volver cuesta 53. Treinta minutos de reserva no se tocan. Y llega una alerta de radiación. |
-| 0:24 | 1 · Tesis | P1 | En Marte, la pregunta no es a dónde puedes ir. Es a dónde puedes ir y todavía volver. Somos Los Frijolitos Espaciales Refritos Nueva Generación, de Ensenada. Esto es Marswalk. |
-| 0:38 | 2 · Los límites | P1 | Tres límites de los trajes lunares de la NASA: ocho horas de caminata, treinta minutos de reserva, nada de más de veinte grados de pendiente. Y sin GPS: el camino a casa hay que leerlo en el terreno. |
-| 0:55 | 3 · La zona de regreso | P1 | Lo azul es todo lo que ella alcanza y todavía regresa con su reserva, calculado con el planificador y el modelo de traje de la app. Cada subida lo encoge. Con la alerta, se cierra al camino de vuelta. En la app, eso es un número en el visor: el margen. |
-| 1:19 | 4 · Demo | P2 | (Demo, corte A, 2:25. Líneas abajo.) |
-| 3:44 | 5 · La respuesta y los datos | P3 | ¿Y la astronauta de Cheyava Falls? Con la alerta, le sobran catorce minutos de margen. Marswalk la manda de vuelta ya, por la ruta que rodea las pendientes. Esa pendiente es el modelo HiRISE. La roca es la que fotografió Perseverance. La tormenta llega a la opacidad que midió Curiosity en 2018, y la radiación repite tasas de dosis reales de 2017. |
-| 4:11 | 6 · Medido o simulado | P3 | Cada lectura dice si es medida, calculada o supuesta: caminar a un metro por segundo es supuesto. La tormenta y la radiación las midió Curiosity en Gale, no en Jezero, y la alerta lo dice. El clima de Jezero es la estación MEDA de Perseverance. |
-| 4:30 | 7 · Quién y un dato | P3 | Podría servir a quien planea una caminata, para comparar tres rutas antes de aprobar una, y a una clase en Ensenada, en el navegador. Un último dato: procesamos el mismo modelo HiRISE que sirve NASA Mars Trek, y la diferencia típica es de catorce centímetros. |
-| 4:51 | | | (Fin. 9 segundos de margen.) |
+| 0:00 | 1 · Jezero | P1 | Cráter Jezero, Marte. Una astronauta está en Cheyava Falls, donde Perseverance encontró una posible señal de vida, a 913 metros del hábitat por la ruta planeada. Es el final de su caminata afuera, su EVA. Le quedan 160 gramos de oxígeno. Volver cuesta 53. Su reserva, treinta minutos de aire, son otros 72. Y llega una alerta de radiación. |
+| 0:28 | 1 · Tesis | P1 | En Marte, la pregunta no es a dónde puedes ir. Es a dónde puedes ir y todavía volver. Somos Los Frijolitos Espaciales Refritos Nueva Generación, de Ensenada. Marswalk cuenta esos minutos sobre terreno real de la NASA. |
+| 0:46 | 2 · Los límites | P1 | (**Punto de corte a 3 minutos.** Si los organizadores mantienen los 3 minutos, P1 salta esta fila y dice el beat 3 de `script-3min-es.md`, también en 0:46, y P2 corre el corte B. Los beats 1a y 1b de arriba son idénticos a los del guion de 3 minutos.) Tres límites de los trajes lunares de la NASA: ocho horas afuera, media hora de reserva, nada de más de veinte grados. Sin GPS, el camino se lee en el terreno. |
+| 1:01 | 3 · La zona de regreso | P1 | Lo azul es todo lo que alcanza y todavía regresa con su reserva, dibujado con el planificador de la app. Cada subida lo encoge. La alerta lo cierra al camino de vuelta. En la app es un número en el visor, el margen. |
+| 1:23 | 4 · Demo | P2 | (Demo, corte A, 2:14. Líneas abajo.) |
+| 3:37 | 5 · La respuesta y los datos | P3 | De vuelta en Cheyava Falls. La alerta le deja catorce minutos de margen, así que Marswalk la manda a casa ya. La pendiente sale del modelo HiRISE y la roca de las fotos de Perseverance. La tormenta llega a la opacidad que midió Curiosity en 2018, y la alerta repite sus dosis de 2017. |
+| 4:03 | 6 · Medido o simulado | P3 | Cada lectura dice si es medida, calculada o supuesta. Caminar a un metro por segundo es supuesto. El pico de la tormenta y la radiación son de Curiosity, en Gale, no en Jezero. El clima es de MEDA, de Perseverance. |
+| 4:23 | 7 · Quién y un dato | P3 | Podría servir a quien planea una caminata, para comparar tres rutas antes de aprobar una, y a una clase en Ensenada, en el navegador. Un último dato: procesamos el mismo modelo HiRISE que sirve NASA Mars Trek, y la diferencia típica es de catorce centímetros. |
+| 4:45 | | | (Fin. 15 segundos de margen.) |
 
 ## Líneas de la demo (P2, corte A)
 
+Los tiempos corren desde la entrega en 1:23. Teclas, clics y el respaldo de cada beat están en `demo-run-sheet.md`, corte A.
+
 | Beat | Tiempo de la demo | Texto |
 |---|---|---|
-| D1 | 0:00 | La mesa de misión: Jezero, con el terreno de HiRISE. |
-| D2 | 0:06 | Capa Terreno: la pendiente. La ruta rodea lo amarillo. El planificador trata lo rojo, más de veinte grados, como bloqueado. |
-| D3 | 0:25 | Si la tripulación pide Cheyava Falls, la ruta crece y el plan recalcula tiempo y oxígeno. En vivo caminamos la primera parada: 55 metros. |
-| D4 | 0:45 | Simulo el final de una EVA: salgo con 20 % de oxígeno. El plan dice que sí. Empezamos. |
-| D5 | 0:55 | A la izquierda, el margen: minutos que me quedan después de volver caminando y guardar la reserva. Se lee a mi paso: al caminar baja, al subir baja más. Abajo, la posición: sin GPS, el error crece al caminar y se corrige al detenerme con horizonte despejado. Ese modelo es nuestro, y dice SIM. |
+| D1 | 0:00 | La mesa de misión, sobre el terreno HiRISE de Jezero. |
+| D2 | 0:05 | Capa Terreno, la pendiente. La ruta rodea lo amarillo, y el planificador bloquea lo rojo, más de veinte grados. |
+| D3 | 0:25 | Si la tripulación pide Cheyava Falls, la ruta crece y el plan recalcula tiempo y oxígeno. En vivo caminamos la primera parada, 55 metros. |
+| D4 | 0:45 | Simulo el final de una EVA y salgo con 20 % de oxígeno. El plan dice que sí. |
+| D5 | 0:55 | A la izquierda está el margen, los minutos que me quedan después de volver caminando y guardar la reserva. Se calcula a mi paso. Abajo está la posición. Sin GPS, el error crece al caminar y se corrige al detenerme con horizonte despejado. Ese modelo es nuestro, y dice SIM. |
 | D6 | 1:48 | Llegamos. Foto, muestra, guardar. |
-| D7 | 2:03 | Tormenta de polvo. No te tira: te quita el horizonte, y sin horizonte no hay posición. La ruta se recalcula al hábitat. |
-| fin | 2:14 | Quince segundos después llega la alerta de radiación, con dosis reales de Curiosity. |
-| | 2:25 | (Vuelta al modo de presentación.) |
+| D7 | 2:03 | Tormenta de polvo. Te quita el horizonte, y sin horizonte no hay posición. La ruta se recalcula al hábitat. |
+| | 2:14 | (Vuelta al modo de presentación. La alerta de radiación llega en la app unos 15 s después de la tormenta; P3 la cuenta en el beat 5.) |
 
 ## Apertura opcional, 20 segundos
 
-Solo si el equipo la elige en el ensayo. Va antes del beat 1 y usa los 20 segundos de margen. Cuesta 20 segundos, y el premio del año pasado no califica el proyecto de este año. En la ronda 1 del consejo (`council/`), el revisor de IA con el papel de jurado local advirtió que puede hacer que el pitch se pase de tiempo.
+Solo si el equipo la elige en el ensayo. Va antes del beat 1 y necesita 20 segundos que la charla no tiene: terminaría en 5:05. Usarla solo si los organizadores confirman más de 5 minutos.
 
 | Tiempo | Quién | Texto |
 |---|---|---|
-| 0:00 | P1 | El año pasado, cinco de nosotros ganamos Ensenada con NASA Explorer: primer lugar de diecisiete, y nominados globales. Este año se sumó Andrea. Refritos, nueva generación. |
+| 0:00 | P1 | El año pasado, cinco de nosotros ganamos Ensenada con NASA Explorer, primer lugar de diecisiete, y nominados globales. Este año se sumó Andrea. Refritos, nueva generación. |
 | 0:12 | P1 | (Pausa. Cambia a Jezero.) |
 | 0:20 | | |
 
@@ -62,4 +63,4 @@ Solo si el equipo la elige en el ensayo. Va antes del beat 1 y usa los 20 segund
 
 ## Conteo
 
-`node tools/timing.mjs` revisa cada fila contra su tiempo a 140 palabras por minuto y escribe `council/timing.md`.
+`node tools/timing.mjs` revisa cada fila contra su tiempo a 140 palabras por minuto y escribe `council/timing.md`. `node tools/timing.mjs --wpm 125 --out council/timing-5min-125.md script-5min-en.md script-5min-es.md` revisa el guion de 5 minutos al ritmo para el que se escribió.

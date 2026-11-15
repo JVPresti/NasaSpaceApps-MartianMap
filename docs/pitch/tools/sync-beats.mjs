@@ -1,4 +1,4 @@
-// Copies the presenter lines and times from script-5min-es.md into the 5-minute table of beats.md, so the
+// Copies the presenter lines and times from script-5min-en.md (the primary local pitch) into the 5-minute table of beats.md, so the
 // presentation thread never reads a stale line. Not part of the app build.
 //
 //   node docs/pitch/tools/sync-beats.mjs
@@ -7,16 +7,16 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const MAP = { '1a': '1 · Jezero', '1b': '1 · Tesis', 2: '2 · Los límites', 3: '3 · La zona de regreso', 4: '4 · Demo',
-  5: '5 · La respuesta y los datos', 6: '6 · Medido o simulado', 7: '7 · Quién y un dato' };
+const MAP = { '1a': '1 · Jezero', '1b': '1 · Thesis', 2: '2 · The limits', 3: '3 · The walkback zone', 4: '4 · Demo',
+  5: '5 · The answer and the data', 6: '6 · Measured or simulated', 7: '7 · Who, and one fact' };
 
 const cells = (line) => line.split('|').slice(1, -1).map((c) => c.trim());
-const script = readFileSync(join(ROOT, 'script-5min-es.md'), 'utf8').split('\n');
-const start = script.findIndex((l) => l.startsWith('| Tiempo | Beat |'));
+const script = readFileSync(join(ROOT, 'script-5min-en.md'), 'utf8').split('\n');
+const start = script.findIndex((l) => l.startsWith('| Time | Beat |'));
 const rows = [];
 for (let i = start + 2; i < script.length && script[i].startsWith('|'); i++) {
   const [time, beat, , text] = cells(script[i]);
-  rows.push({ time, beat, text });
+  rows.push({ time, beat, text: text.replace(/\([^)]*\)\s*/g, '').trim() });
 }
 const byBeat = Object.fromEntries(rows.map((r, i) => [r.beat, { ...r, end: rows[i + 1]?.time }]));
 
@@ -39,4 +39,4 @@ const out = beats.join('\n').replace(/^\d+ seconds of slack after beat 7 \([^)]*
   return `${300 - (m * 60 + s)} seconds of slack after beat 7 (${slack} to 5:00).`;
 });
 writeFileSync(join(ROOT, 'beats.md'), out);
-console.log(`synced ${changed} beats from script-5min-es.md`);
+console.log(`synced ${changed} beats from script-5min-en.md`);

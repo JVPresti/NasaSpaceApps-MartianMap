@@ -54,31 +54,30 @@ Table ends at 1:15. Spoken words take 0:39 of it.
 
 | Row | Slot | Words | Spoken | Status |
 |---|---|---|---|---|
-| 0:00 · 1 · Jezero | 0:24 | 55 | 0:24 | ok |
-| 0:24 · 1 · Thesis | 0:14 | 31 | 0:13 | ok |
-| 0:38 · 2 · The limits | 0:17 | 32 | 0:14 | ok |
-| 0:55 · 3 · The walkback zone | 0:24 | 48 | 0:21 | ok |
-| 1:19 · 4 · Demo | 2:25 | 0 | 0:00 | ok |
-| 3:44 · 5 · The answer and the data | 0:27 | 57 | 0:24 | ok |
-| 4:11 · 6 · Measured or simulated | 0:19 | 41 | 0:18 | ok |
-| 4:30 · 7 · Who, and one fact | 0:21 | 41 | 0:18 | ok |
-| 4:51 ·  | end | 0 | 0:00 | ok |
+| 0:00 · 1 · Jezero | 0:28 | 58 | 0:25 | ok |
+| 0:28 · 1 · Thesis | 0:18 | 36 | 0:15 | ok |
+| 0:46 · 2 · The limits | 0:15 | 30 | 0:13 | ok |
+| 1:01 · 3 · The walkback zone | 0:22 | 45 | 0:19 | ok |
+| 1:23 · 4 · Demo | 2:14 | 0 | 0:00 | ok |
+| 3:37 · 5 · The answer and the data | 0:26 | 50 | 0:21 | ok |
+| 4:03 · 6 · Measured or simulated | 0:20 | 41 | 0:18 | ok |
+| 4:23 · 7 · Who, and one fact | 0:22 | 41 | 0:18 | ok |
+| 4:45 ·  | end | 0 | 0:00 | ok |
 
-Table ends at 4:51. Spoken words take 2:11 of it.
+Table ends at 4:45. Spoken words take 2:09 of it.
 
 | Row | Slot | Words | Spoken | Status |
 |---|---|---|---|---|
-| D1 · 0:00 | 0:06 | 8 | 0:03 | ok |
-| D2 · 0:06 | 0:19 | 18 | 0:08 | ok |
+| D1 · 0:00 | 0:05 | 8 | 0:03 | ok |
+| D2 · 0:05 | 0:20 | 17 | 0:07 | ok |
 | D3 · 0:25 | 0:20 | 25 | 0:11 | ok |
-| D4 · 0:45 | 0:10 | 18 | 0:08 | ok |
-| D5 · 0:55 | 0:53 | 56 | 0:24 | ok |
+| D4 · 0:45 | 0:10 | 16 | 0:07 | ok |
+| D5 · 0:55 | 0:53 | 53 | 0:23 | ok |
 | D6 · 1:48 | 0:15 | 5 | 0:02 | ok |
-| D7 · 2:03 | 0:11 | 26 | 0:11 | ok |
-| end · 2:14 | 0:11 | 11 | 0:05 | ok |
-|  · 2:25 | end | 0 | 0:00 | ok |
+| D7 · 2:03 | 0:11 | 21 | 0:09 | ok |
+|  · 2:14 | end | 0 | 0:00 | ok |
 
-Table ends at 2:25. Spoken words take 1:12 of it.
+Table ends at 2:14. Spoken words take 1:02 of it.
 
 | Row | Slot | Words | Spoken | Status |
 |---|---|---|---|---|
@@ -92,31 +91,30 @@ Table ends at 0:20. Spoken words take 0:10 of it.
 
 | Row | Slot | Words | Spoken | Status |
 |---|---|---|---|---|
-| 0:00 · 1 · Jezero | 0:24 | 53 | 0:23 | ok |
-| 0:24 · 1 · Tesis | 0:14 | 30 | 0:13 | ok |
-| 0:38 · 2 · Los límites | 0:17 | 38 | 0:16 | ok |
-| 0:55 · 3 · La zona de regreso | 0:24 | 51 | 0:22 | ok |
-| 1:19 · 4 · Demo | 2:25 | 0 | 0:00 | ok |
-| 3:44 · 5 · La respuesta y los datos | 0:27 | 62 | 0:27 | ok |
-| 4:11 · 6 · Medido o simulado | 0:19 | 45 | 0:19 | ok |
-| 4:30 · 7 · Quién y un dato | 0:21 | 45 | 0:19 | ok |
-| 4:51 ·  | end | 0 | 0:00 | ok |
+| 0:00 · 1 · Jezero | 0:28 | 59 | 0:25 | ok |
+| 0:28 · 1 · Tesis | 0:18 | 37 | 0:16 | ok |
+| 0:46 · 2 · Los límites | 0:15 | 31 | 0:13 | ok |
+| 1:01 · 3 · La zona de regreso | 0:22 | 43 | 0:18 | ok |
+| 1:23 · 4 · Demo | 2:14 | 0 | 0:00 | ok |
+| 3:37 · 5 · La respuesta y los datos | 0:26 | 54 | 0:23 | ok |
+| 4:03 · 6 · Medido o simulado | 0:20 | 40 | 0:17 | ok |
+| 4:23 · 7 · Quién y un dato | 0:22 | 45 | 0:19 | ok |
+| 4:45 ·  | end | 0 | 0:00 | ok |
 
-Table ends at 4:51. Spoken words take 2:19 of it.
+Table ends at 4:45. Spoken words take 2:12 of it.
 
 | Row | Slot | Words | Spoken | Status |
 |---|---|---|---|---|
-| D1 · 0:00 | 0:06 | 10 | 0:04 | ok |
-| D2 · 0:06 | 0:19 | 20 | 0:09 | ok |
+| D1 · 0:00 | 0:05 | 10 | 0:04 | ok |
+| D2 · 0:05 | 0:20 | 19 | 0:08 | ok |
 | D3 · 0:25 | 0:20 | 24 | 0:10 | ok |
 | D4 · 0:45 | 0:10 | 17 | 0:07 | ok |
-| D5 · 0:55 | 0:53 | 54 | 0:23 | ok |
+| D5 · 0:55 | 0:53 | 50 | 0:21 | ok |
 | D6 · 1:48 | 0:15 | 4 | 0:02 | ok |
-| D7 · 2:03 | 0:11 | 22 | 0:09 | ok |
-| fin · 2:14 | 0:11 | 13 | 0:06 | ok |
-|  · 2:25 | end | 0 | 0:00 | ok |
+| D7 · 2:03 | 0:11 | 19 | 0:08 | ok |
+|  · 2:14 | end | 0 | 0:00 | ok |
 
-Table ends at 2:25. Spoken words take 1:10 of it.
+Table ends at 2:14. Spoken words take 1:01 of it.
 
 | Row | Slot | Words | Spoken | Status |
 |---|---|---|---|---|

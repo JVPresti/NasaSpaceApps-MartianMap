@@ -3,19 +3,21 @@
 Everything the team needs to present Marswalk at NASA Space Apps 2026 (challenge "Interplanetary Survival Guide:
 Martian Map", Ensenada local event). Built on the first mission of PR #282 and its `docs/DEMO.md`.
 
-> **Format.** The Ensenada organisers asked for a presentation in English, 3 minutes at most, at 2:30 pm on 15 November,
-> with the file sent to them by 2:00 pm (`docs/SUBMISSION.md`, PR #316). The 3-minute English script is the primary.
-> **Confirm with the organisers** whether the live demo fits inside the 3 minutes.
+> **Format.** The talk is at 2:30 pm on 15 November, in English, and the file goes to the organisers by 2:00 pm. The
+> organisers' page quoted in `docs/SUBMISSION.md` (PR #316) says "prepárate para exponer en idioma inglés durante un
+> tiempo máximo de 3 minutos". The team plans 5 minutes, live demo included, and will confirm with the organisers.
+> `script-5min-en.md` is the primary. `script-3min-en.md` is the fallback if they hold to 3 minutes: the speaker
+> switches at 0:46, after the thesis, where the 5-minute script marks the cut point.
 
 **Thesis.** On Mars, the question isn't where you can go. It's where you can go and still get home.
 
 | File | What it is |
 |---|---|
 | `beats.md` | The beats of the presentation mode (`?present=1`, branch `feat/present-mode`): camera idea, on-screen words in English and Spanish, presenter line, time. The presentation thread reads it from this branch |
-| `script-5min-es.md`, `script-5min-en.md` | The 5-minute version, if the slot is longer |
+| `script-5min-en.md`, `script-5min-es.md` | **The primary local pitch**: 5 minutes in English, ending at 4:45 with demo cut A; Spanish twin for rehearsal and questions |
 | `script-8min-es.md`, `script-8min-en.md` | The 8-minute version: DEMO.md's full demo with the story around it |
-| `script-3min-en.md`, `script-3min-es.md` | **The primary local pitch**: 3 minutes in English, Spanish twin for rehearsal and questions |
-| `demo-run-sheet.md` | The live demo: URL, clicks, keys, lines and a fallback for every beat, verified against the #282 code; re-check list for the branches still to merge |
+| `script-3min-en.md`, `script-3min-es.md` | The fallback, if the organisers hold to 3 minutes: English, with a Spanish twin |
+| `demo-run-sheet.md` | The live demo: URL, clicks, keys, lines and a fallback for every beat, verified against #282 at 8ec6f72. Cut A (2:14) for the 5-minute pitch, cut B (1:15) for the 3-minute fallback; re-check list for the branches still to merge |
 | `qa.md` | The 14 hardest questions, plus three quick ones, with short, honest answers |
 | `video-30s.md` | The 30-second video script and frame-accurate shot list |
 | `deck-global.html`, `out/deck-global.pdf`, `out/deck-global/*.png` | The 7-slide global deck: one self-contained HTML file (fonts and images inlined), its PDF and one PNG per slide |
@@ -47,7 +49,8 @@ The HUD and the Suit tab disagree because the HUD takes the smaller of the oxyge
 ```
 node docs/pitch/tools/render.mjs           # src/*.html -> self-contained HTML, PNG per slide, PDF
 node docs/pitch/tools/timing.mjs           # every script row against its slot at 140 wpm, the ceiling; the scripts are written for 125
-node docs/pitch/tools/sync-beats.mjs       # copy the 5-minute script's lines and times into beats.md
+node docs/pitch/tools/timing.mjs --wpm 125 --out council/timing-5min-125.md script-5min-en.md script-5min-es.md
+node docs/pitch/tools/sync-beats.mjs       # copy script-5min-en.md's lines and times into beats.md
 node docs/pitch/tools/walkback-zone.mjs    # walkback zone and leg numbers from src/sim (for beats 1 and 3)
 ```
 
@@ -57,7 +60,7 @@ change to that block.
 
 ## Assumptions the team must confirm
 
-- Whether the live demo counts inside the 3 minutes, whether Q&A follows, and whether we can plug in our own laptop.
+- That the slot is 5 minutes and not the 3 the organisers' page says, whether the live demo counts inside it, whether Q&A follows, and whether we can plug in our own laptop.
 - Presenters P1, P2, P3 and who drives the laptop.
 - Who records the 30-second video and on which machine.
 - The AI-use and "built before the event" answers in `qa.md` (questions 10 and 11).
