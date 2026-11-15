@@ -7,8 +7,8 @@ Martian Map", Ensenada local event). Built on the presentation mode on `main` (#
 > (Fernando). The organisers' page quoted in `docs/SUBMISSION.md` (PR #316) says "prepárate para exponer en idioma
 > inglés durante un tiempo máximo de 3 minutos". The team takes 4 and confirms with them. The talk is
 > `script-4min-en.md`, with `script-4min-es.md` as the same talk in Spanish, spoken over the presentation mode
-> (https://martian-map.fernando-haro-c.workers.dev/?present=1), one Right per beat. A recorded app video, the `demo`
-> beat of draft PR #356, replaces the live demo. With an 85 s video the talk ends at 3:35.
+> (https://martian-map.fernando-haro-c.workers.dev/?present=1), one Right per beat. A 73.8 s recording of the app, the `demo`
+> beat (#356), replaces the live demo. The talk follows the seven beats on `main` and ends at 3:18.
 >
 > **The file for the organisers is `docs/pitch/out/deck-global.pdf`**, the 7-slide deck, due by 2:00 pm. It is also
 > the backup on the day: if WebGL fails on the laptop, the presenter switches to the same PDF (slide per beat in
@@ -44,7 +44,7 @@ the others.
 | +457 and +245 min | `main`, Fastest profile to Cheyava Falls: HUD at the airlock and the Suit tab (#328) | Not in the pitch |
 
 The HUD and the Suit tab disagree because the HUD takes the smaller of the oxygen margin and the 8-hour EVA clock
-(#323). The peak dose rate differs too: the presentation shows 26 µGy/h (`public/data/rad.json`, RAD detector B) and #338 cites 29.9 µGy/h (the published abstract). The talk speaks neither.
+(#323). The peak dose rate now matches: the presentation (#356) and #338 both show 29.9 µGy/h, 10 µGy/h at the alert. The talk speaks neither.
 
 ## Rebuild
 
@@ -64,7 +64,6 @@ change to that block.
 ## Assumptions the team must confirm
 
 - That the slot is 4 minutes and not the 3 the organisers' page says, whether Q&A follows, and whether we can plug in our own laptop.
-- The `demo` beat's final length, scene order and event, from #356. Then rerun `sync-present.mjs` and fix the script times.
 - Whether the talk is in English or Spanish.
 - Presenters P1, P2, P3 and who drives the laptop.
 - Who records the 30-second video and on which machine.
