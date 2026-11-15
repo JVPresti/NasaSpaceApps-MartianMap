@@ -297,11 +297,12 @@ function Actions({ children }) {
   return <div className="table-actions">{children}</div>;
 }
 
-function BeginButton({ decision, evaBegun, onBeginEva }) {
+function BeginButton({ decision, planning = false, evaBegun, onBeginEva }) {
   const path = useMissionStore((s) => s.route.path);
   // Go / No-go gates the start only. Once the EVA is under way the astronaut is already outside and the clock runs,
   // so a route that now reads No-go (oxygen spent, a failed re-plan, the storm's dust) must not keep them at the table.
-  const blocked = evaBegun ? false : !path || !decision.go;
+  // While a change of the needs is being planned, the route on the map is the last one: wait for the new one.
+  const blocked = evaBegun ? false : !path || !decision.go || planning;
   return (
     <button
       type="button"
@@ -487,7 +488,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
             <RouteProfiles locked={evaBegun} />
           </div>
           <Actions>
-            <BeginButton decision={decision} evaBegun={evaBegun} onBeginEva={onBeginEva} />
+            <BeginButton decision={decision} planning={planner.status === 'planning'} evaBegun={evaBegun} onBeginEva={onBeginEva} />
             <div className="table-pair">
               <button type="button" className="table-secondary" onClick={onControls}>{t('menu.controls')}</button>
               <button type="button" className="table-secondary" onClick={openSources}>{t('ui.sources.188')}</button>
@@ -558,7 +559,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           </div>
           <ReturnPanel totals={totals} />
           <Actions>
-            <BeginButton decision={decision} evaBegun={evaBegun} onBeginEva={onBeginEva} />
+            <BeginButton decision={decision} planning={planner.status === 'planning'} evaBegun={evaBegun} onBeginEva={onBeginEva} />
             <div className="table-pair">
               <button type="button" className="table-secondary" onClick={() => setTab('route')}>{t('table.back.to.route')}</button>
               <button type="button" className="table-secondary" onClick={onControls}>{t('menu.controls')}</button>
