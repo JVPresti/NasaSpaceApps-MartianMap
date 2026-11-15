@@ -235,6 +235,35 @@ export function stepSuit(state, { dtSec, speedMs, gradient }, c) {
 }
 
 /**
+ * O2 margin in seconds: the O2 left as time at an O2 rate, minus the padded walkback O2 as time at that rate, minus the
+ * 30 min reserve (suit.reserve.time). suitReadout and the return zone (returnZone.js) both use this one formula.
+ * @param {number} o2G O2 left, grams
+ * @param {number} walkbackO2G O2 of the walk home with the walkback pad, grams
+ * @param {number} rateGs O2 rate that turns grams into time, g/s
+ */
+export function o2Margin(o2G, walkbackO2G, rateGs, c) {
+  return o2G / rateGs - walkbackO2G / rateGs - c.reserveSec;
+}
+
+/**
+ * EVA margin in seconds: the EVA time limit minus the EVA time so far minus the walkback time. The limit is
+ * suit.eva_duration_max unless a caller passes a shorter one (the return zone passes the crew's planned time).
+ */
+export function evaMargin(elapsedSec, walkbackSec, c, limitSec = c.evaMaxSec) {
+  return limitSec - elapsedSec - walkbackSec;
+}
+
+/** 'warning' at or under the warning margin (0 min), 'caution' under the caution margin (15 min), else 'nominal'. */
+export function marginStatus(marginSec, c) {
+  return marginSec <= c.warningSec ? 'warning' : marginSec < c.cautionSec ? 'caution' : 'nominal';
+}
+
+/** O2 rate of walking on the flat at mobility.speed.flat, g/s: the rate route.totals turns O2 into time with (legCosts.js). */
+export function walkingO2RateGs(c) {
+  return o2RateGs(metabolicPowerW(c.speedFlat, 0, c), c);
+}
+
+/**
  * Values for the store's suit section.
  * O2 margin = O2 time left - (walkback O2 with the pad, as time at the current rate) - 30 min reserve
  * (suit.alert.caution_margin note). EVA margin = suit.eva_duration_max - EVA time so far - walkback time.
@@ -244,11 +273,11 @@ export function stepSuit(state, { dtSec, speedMs, gradient }, c) {
 export function suitReadout(state, walkback, c, { elapsedSec = 0 } = {}) {
   const rate = Math.max(state.o2RateSmoothGs, o2RateGs(c.pBaseW, c));
   const oxygenSec = state.o2G / rate;
-  const o2MarginSec = oxygenSec - walkback.o2G / rate - c.reserveSec;
+  const o2MarginSec = o2Margin(state.o2G, walkback.o2G, rate, c);
   const elapsed = Number.isFinite(elapsedSec) ? Math.max(0, elapsedSec) : 0;
-  const evaMarginSec = c.evaMaxSec - elapsed - walkback.timeSec;
+  const evaMarginSec = evaMargin(elapsed, walkback.timeSec, c);
   const marginSec = Math.min(o2MarginSec, evaMarginSec);
-  const status = marginSec <= c.warningSec ? 'warning' : marginSec < c.cautionSec ? 'caution' : 'nominal';
+  const status = marginStatus(marginSec, c);
   return {
     oxygenG: state.o2G,
     oxygenSec,
