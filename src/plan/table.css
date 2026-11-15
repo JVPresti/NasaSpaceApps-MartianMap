@@ -925,3 +925,68 @@ button.table-stop-name {
 }
 .table-hazard-cards > li:nth-child(3) .table-hazard-art { object-position: center 45%; }
 .table-hazard-cards > li:nth-child(-n+2) .table-hazard-art { object-position: center 80%; }   /* the astronauts stand low in these two */
+
+/* Route profiles (#245): one colour per profile, on the map and in the comparison. Cyan is the route colour as
+   before; none of the three is an alert colour. */
+.profile-fastest { --profile-colour: #8fd3ee; }
+.profile-gentlest { --profile-colour: #c7a4ff; }
+.profile-radio { --profile-colour: #d9f27e; }
+
+.map-route.profile-fastest,
+.map-route.profile-gentlest,
+.map-route.profile-radio { stroke: var(--profile-colour); stroke-width: 2.5px; }
+.map-route-alt {
+  fill: none;
+  stroke: var(--profile-colour);
+  stroke-width: 1.5px;
+  stroke-dasharray: 5 4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.85;
+  vector-effect: non-scaling-stroke;
+}
+
+.profile-swatch { display: inline-block; flex: none; width: 12px; height: 3px; margin-right: 6px; vertical-align: middle; background: var(--profile-colour); border-radius: 1px; }
+
+/* Profiles as columns, metrics as rows: three columns fit the side panel at 1366 px. */
+.profiles-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+/* read by screen readers only (plan.css, which had .visually-hidden, is no longer loaded) */
+.profiles-table caption { position: absolute; width: 1px; height: 1px; overflow: hidden; white-space: nowrap; clip-path: inset(50%); }
+.profiles-table thead td { width: 37%; }
+.profiles-table th,
+.profiles-table td { padding: 2px; font-weight: 400; text-align: center; white-space: nowrap; }
+.profiles-table thead th { padding: 0; vertical-align: bottom; }
+.profiles-table tbody th { overflow: hidden; text-align: left; text-overflow: ellipsis; color: var(--text-2); }
+.profiles-table .unit { margin-left: 3px; font-size: 11px; color: var(--unit); }
+.profiles-table td.on,
+.profiles-table thead th.on { background: rgba(255, 255, 255, 0.07); }
+.profiles-table td.on { color: var(--ink); font-weight: 600; }
+.profiles-table .profiles-group th { padding: 5px 0 1px; font-size: 12px; color: var(--dim); text-align: left; }
+.profiles-table .profiles-none { font-size: 11px; line-height: 1.2; color: var(--dim); white-space: normal; }
+
+/* Each profile's name over a bar in its map colour: the legend of the map lines. */
+.profiles-pick {
+  display: block;
+  width: 100%;
+  padding: 6px 0 4px;
+  overflow: hidden;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: none;
+  border: 0;
+  border-bottom: 3px solid var(--profile-colour);
+  cursor: pointer;
+}
+.profiles-pick:hover:not(:disabled) { color: var(--ink); }
+.profiles-pick[aria-pressed='true'] { color: var(--ink); font-weight: 600; }
+.profiles-pick:disabled { cursor: default; }
+.profiles-pick:disabled:not([aria-pressed='true']) { opacity: 0.5; }
+.profiles-pick:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.profiles-panel .table-note { font-size: 12px; line-height: 1.4; }
+.profiles-panel .profiles-what { margin-top: 8px; }
+
+/* The actions stay in view at the foot of a side column that has to scroll (a short window, a long table). */
+.table-right .table-actions { position: sticky; bottom: 0; padding-top: 10px; background: linear-gradient(transparent, rgba(10, 13, 17, 0.9) 10px); }

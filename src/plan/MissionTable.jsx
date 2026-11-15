@@ -16,9 +16,11 @@ import { PlanStopCard } from '../stops/ScienceStops.jsx';
 import { cardImage, stopHasContent } from '../stops/content.js';
 import { toggleWaypoint } from '../stops/selection.js';
 import { useStops } from '../stops/useStops.js';
+import { PROFILE_IDS } from '../sim/routeProfiles.js';
 import { LAYERS, SLOPE_LIMITS } from './layers.js';
 import LayerPreview from './LayerPreview.jsx';
 import MissionMap from './MissionMap.jsx';
+import RouteProfiles from './RouteProfiles.jsx';
 import SourceTag from './SourceTag.jsx';
 import SuitFigure from './SuitFigure.jsx';
 import dustArt from '../assets/ui/hazard_dust.webp';
@@ -337,6 +339,13 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
   const totals = route.totals;
   const metrics = Object.fromEntries(routeMetrics(route).map((m) => [m.key, m]));
   const steepTone = route.steepestSlopeDeg > SLOPE_LIMITS.noGo ? 'warning' : route.steepestSlopeDeg > SLOPE_LIMITS.caution ? 'caution' : null;
+  // Route profiles (#245): the one in use is drawn as the route in its colour, the others dashed, until the EVA begins.
+  const profiles = route.profiles;
+  const inUse = PROFILE_IDS.find((id) => profiles?.[id]?.ok && profiles[id].path === route.path) ?? null;
+  const alternatives = useMemo(
+    () => (inUse && !evaBegun ? PROFILE_IDS.filter((id) => id !== inUse && profiles[id]?.ok).map((id) => ({ id, path: profiles[id].path })) : []),
+    [profiles, inUse, evaBegun],
+  );
 
   const onTabKey = (event) => {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
@@ -439,9 +448,9 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
             </div>
           </div>
         </section>
-        {map({ layer, title: t(current.title), legend: layer === 1 ? slopeLegend : null })}
+        {map({ layer, title: t(current.title), legend: layer === 1 ? slopeLegend : null, alternatives, routeClass: inUse ? 'profile-' + inUse : '' })}
         <section className="table-right">
-          <div className="table-panel table-fill">
+          <div className="table-panel">
             <div className="table-panel-head">
               <p className="table-label">{t('table.tab.route')}</p>
               <button type="button" className="table-link" onClick={planner.replan} disabled={planner.status === 'planning'}>
@@ -456,9 +465,9 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
             </div>
             {route.skipped?.length > 0 && <p className="table-note tone-caution">{t('table.replanned.skipped', { stops: route.skipped.join(' · ') })}</p>}
           </div>
-          <div className="table-panel table-fill">
-            <div className="table-panel-head"><p className="table-label">{t('table.tab.suit')}</p><p className="table-label tone-ok">{t('table.nominal')}</p></div>
-            <SuitNow />
+          {/* The comparison takes the place of the suit readout, which the Suit step shows in full (#245). */}
+          <div className="table-panel table-fill profiles-panel">
+            <RouteProfiles locked={evaBegun} />
           </div>
           <Actions>
             <BeginButton planner={planner} totals={totals} evaBegun={evaBegun} onBeginEva={onBeginEva} />

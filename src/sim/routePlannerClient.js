@@ -18,6 +18,7 @@
  *   plan: (waypoints: Array<object>, options?: object) => Promise<object>,
  *   replan: (request: {from: object, shelters?: Array<object>, options?: object}) => Promise<object>,
  *   detour: (request: object) => Promise<object>,
+ *   profiles: (waypoints: Array<object>, options?: object) => Promise<object>,
  *   terminate: () => void
  * }}
  */
@@ -109,6 +110,23 @@ export function createRoutePlannerClient(options = {}) {
       return new Promise((resolve, reject) => {
         pending.set(id, { resolve, reject });
         worker.postMessage({ type: 'detour', id, request });
+      });
+    },
+
+    /**
+     * One route per route profile (routeProfiles.js, #245).
+     * @param {Array<object>} waypoints the start first
+     * @param {{ mast?: { x: number, y?: number, z: number } | null, only?: string[] }} [profileOptions]
+     */
+    profiles(waypoints, profileOptions = {}) {
+      if (!gridReady) {
+        return Promise.reject(new Error('route planner has no grid yet'));
+      }
+      const id = nextId;
+      nextId += 1;
+      return new Promise((resolve, reject) => {
+        pending.set(id, { resolve, reject });
+        worker.postMessage({ type: 'profiles', id, waypoints, options: profileOptions });
       });
     },
 
