@@ -18,8 +18,10 @@ import { toggleWaypoint } from '../stops/selection.js';
 import { useStops } from '../stops/useStops.js';
 import { PROFILE_IDS } from '../sim/routeProfiles.js';
 import { LAYERS, SLOPE_LIMITS } from './layers.js';
+import LayerLegend from './LayerLegend.jsx';
 import LayerPreview from './LayerPreview.jsx';
 import MissionMap from './MissionMap.jsx';
+import { layerButtonText, layerMapTitle } from './tableLayers.js';
 import RouteProfiles from './RouteProfiles.jsx';
 import SourceTag from './SourceTag.jsx';
 import SuitFigure from './SuitFigure.jsx';
@@ -38,14 +40,6 @@ const TABS = [
   { id: 'route', label: 'table.tab.route' },
   { id: 'hazards', label: 'table.tab.hazards' },
   { id: 'suit', label: 'table.tab.suit' },
-];
-
-const LAYER_BUTTONS = [
-  { index: 0, label: 'table.layer.image', title: 'table.layer.image.title' },
-  { index: 1, label: 'table.layer.slope', title: 'table.layer.slope.title' },
-  { index: 2, label: 'table.layer.elevation', title: 'table.layer.elevation.title' },
-  { index: 3, label: 'table.layer.rocks', title: 'table.layer.rocks.title' },
-  { index: 4, label: 'table.layer.outcrop', title: 'table.layer.outcrop.title' },
 ];
 
 const minutes = (sec) => Math.round(sec / 60);
@@ -367,17 +361,6 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
     </div>
   );
 
-  const slopeLegend = (
-    <div className="table-map-legend">
-      <p>{t('table.slope.legend')}</p>
-      <ul>
-        <li><i className="sw-clear" />{t('table.slope.walkable', { max: SLOPE_LIMITS.caution })}</li>
-        <li><i className="sw-caution" />{t('table.slope.caution', { min: SLOPE_LIMITS.caution, max: SLOPE_LIMITS.noGo })}</li>
-        <li><i className="sw-nogo" />{t('table.slope.no.go', { min: SLOPE_LIMITS.noGo })}</li>
-      </ul>
-    </div>
-  );
-
   let body;
   if (tab === 'site') {
     const target = stopForWaypoint(stops, waypoints.at(-1)?.name ?? 'Cheyava Falls');
@@ -416,7 +399,8 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
       </>
     );
   } else if (tab === 'route') {
-    const current = LAYER_BUTTONS.find((item) => item.index === layer) ?? LAYER_BUTTONS[0];
+    // The buttons and the legend come from layers.js (the list I2b's layer work changes), worded by tableLayers.js.
+    const current = LAYERS.find((item) => item.index === layer) ?? LAYERS[0];
     body = (
       <>
         <section className="table-left">
@@ -433,17 +417,17 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           <div className="table-panel">
             <p className="table-label" title={t('table.map.help')}>{t('table.map.layer.hint')}</p>
             <div className="table-layers" role="group" aria-label={t('table.map.layer')}>
-            {LAYER_BUTTONS.map((item) => (
+            {LAYERS.map((item) => (
               <button
-                key={item.index}
+                key={item.id}
                 type="button"
                 className={layer === item.index ? 'on' : undefined}
                 aria-pressed={layer === item.index}
-                title={t('table.layer.button.title', { title: t(item.title) })}
+                title={t('table.layer.button.title', { title: layerMapTitle(item) })}
                 onClick={() => setLayer(item.index)}
               >
-                {t(item.label)}
-                {LAYERS.some((entry) => entry.index === item.index) && <LayerPreview layer={LAYERS.find((entry) => entry.index === item.index)} />}
+                {layerButtonText(item)}
+                <LayerPreview layer={item} />
               </button>
             ))}
             {/* Perseverance's drives on or off (#249): an overlay, in the grid's free sixth cell so the panel keeps its height */}
@@ -454,7 +438,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
             </div>
           </div>
         </section>
-        {map({ layer, title: t(current.title), legend: layer === 1 ? slopeLegend : null, alternatives, routeClass: inUse ? 'profile-' + inUse : '' })}
+        {map({ layer: current.index, title: layerMapTitle(current), legend: <LayerLegend layer={current} />, alternatives, routeClass: inUse ? 'profile-' + inUse : '' })}
         <section className="table-right">
           <div className="table-panel">
             <div className="table-panel-head">
