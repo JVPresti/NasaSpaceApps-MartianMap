@@ -43,6 +43,9 @@ export function createInitialState() {
     // a reset; sensitivity multiplies the base look rate (0.5-2, step 0.1) and invertY flips only the pitch.
     settings: { look: { ...LOOK_DEFAULTS } },
     sources: {},                                    // { 'environment.tempC': { tag: 'DATA' | 'DERIVED' | 'SIM', source } }
+    // #52, written only by src/net/index.js when the link has ?room=. These defaults mean offline. status: 'off' |
+    // 'connecting' | 'open' | 'offline' | 'closed'; me and crew entries: { id, name, color, role, joinedAt }.
+    online: { code: null, status: 'off', me: null, crew: [], offsetMs: 0, rttMs: null, startedAtMs: null, seed: null, closeCode: null },
   };
 }
 

@@ -1,6 +1,6 @@
 # Deploy
 
-The app runs on Cloudflare Workers as a static site. There is no Worker code. Cloudflare serves the `dist/` folder that `npm run build` produces, configured in [`wrangler.jsonc`](../wrangler.jsonc).
+The app runs on Cloudflare Workers, configured in [`wrangler.jsonc`](../wrangler.jsonc). Cloudflare serves the `dist/` folder that `npm run build` produces as static files. The Worker code in [`worker/`](../worker) runs only for `/api/*` (`run_worker_first`), which today is one route: the WebSocket of an online room (see [Rooms](#rooms)). Every other path is a static file and never runs Worker code.
 
 Production: https://martian-map.fernando-haro-c.workers.dev
 
@@ -18,12 +18,59 @@ Unknown paths return `index.html` with status 200 (`not_found_handling: "single-
 
 ## Limits that matter here
 
-These are the Workers Free plan limits as of November 2026.
+The account is on the Workers Paid plan ($5 a month, already paid for hosting). Figures as of November 2026. Included amounts are per account, shared with anything else on it. Online play and its costs: [IMPLEMENTATION_PLAN.md section 9.10](IMPLEMENTATION_PLAN.md#910-capacity-and-cost).
 
-- 25 MiB per file. Our largest served file is 2.4 MB.
-- 20,000 files per deploy. We serve about 50.
-- 3,000 build minutes per month, 1 build at a time, 20 minutes per build. A build takes under a minute.
-- Requests for static files are free and unlimited.
+- 25 MiB per static file. Our largest served file is 2.4 MB.
+- 100,000 files per deploy. We serve about 50.
+- 6,000 build minutes per month, 6 builds at a time, 20 minutes per build. A build takes under a minute.
+- Requests for static files are free and unlimited. They never run the Worker.
+- Worker requests: 10 million a month included, then $0.30 per million. Each room connection is one.
+- Durable Object requests: 1 million a month included, then $0.15 per million. Each connection is one, and every 20 incoming WebSocket messages are one. Outgoing messages and pings answered by the auto-response are free.
+- Durable Object duration: 400,000 GB-s a month included, then $12.50 per million GB-s. A room is billed only while it is awake (128 MB, 450 GB-s per hour). An idle room hibernates.
+- SQLite in Durable Objects: 50 million rows written, 25 billion rows read and 5 GB-month stored included.
+- A Durable Object has a soft limit of 1,000 requests per second. A full room at the room's cap is 6 x 15 = 90.
+- A socket attachment holds up to 16 KB. A crew entry is under 200 bytes.
+
+## Rooms
+
+Online play (#52 to #55) gives each room one Durable Object of the `Room` class. The room code is the object's name, so `ABCD` always reaches the same instance. The design is in [IMPLEMENTATION_PLAN.md section 9](IMPLEMENTATION_PLAN.md#9-stretch-players-online).
+
+- [`worker/index.js`](../worker/index.js) accepts only `GET /api/room/:code` with `Upgrade: websocket`. The code is four letters A to Z without I and O, in any case; the Worker turns it to upper case. It checks the `Origin` header: the request's own host (production, every preview, `wrangler dev`) or, when the Worker itself runs on localhost, `localhost` and `127.0.0.1` on any port. A page on someone's localhost cannot open production or preview rooms. Then it calls `ctx.exports.Room.getByName(code)`. There is no `durable_objects.bindings` entry, so each PR preview gets its own Durable Object namespace with no `previews` block.
+- [`worker/room.js`](../worker/room.js) is the `Room`. It uses the WebSocket Hibernation API and keeps nothing in memory it cannot rebuild: the crew is each socket's attachment, and the mission start time and seed are rows in its SQLite `meta` table. Pings are answered by `setWebSocketAutoResponse` and do not wake it.
+- [`src/net/protocol.js`](../src/net/protocol.js) holds the messages, limits and close codes for both sides.
+
+| Response or close code | Meaning |
+| --- | --- |
+| 404 | Not `/api/room/:code` |
+| 400 | Bad room code |
+| 405 | Not a GET |
+| 426 | No `Upgrade: websocket` header |
+| 403 | Missing or foreign `Origin` |
+| 1001 `stale` | No ping for 30 s. The client reconnects. |
+| 1008 `rate limit` | Above 45 messages per second for 5 s. The room drops anything above 15 per second (bursts of 30) before that. |
+| 1009 `message too big` | A message over 4,096 bytes |
+| 4001 `room full` | Already 4 surface or 2 habitat players, or 12 sockets at once. The client does not retry. |
+| 4002 `replaced` | The same player connected again (a reload or a stuck socket). The client does not retry. |
+| 4003 `hello first` | The first message was not a valid `hello` |
+
+### Run a room locally
+
+Two processes, so two browsers on one laptop can share a room:
+
+1. `npm run build` once, because `wrangler dev` serves `dist/` and stops if it is missing.
+2. `npm run dev:room` runs the Worker and the rooms in a local `workerd` on port 8787.
+3. `npm run dev` runs Vite. `vite.config.js` proxies `/api` to port 8787 with `ws: true` and leaves the browser's `Origin` (`http://localhost:5173`) as it is, which the Worker accepts as localhost.
+4. Open `http://localhost:5173/?room=TEST` in two windows. Use one normal and one private window, or two tabs: the player ID lives in `sessionStorage`, so every tab is its own player and a reload keeps the same one.
+
+Phones or a second laptop on the same Wi-Fi: `npm run dev -- --host`, then open the laptop's address with `?room=TEST`.
+
+Local rooms keep their storage in `.wrangler/state` (ignored by git). Delete that folder to reset every local room. `node scripts/room-smoke.mjs` runs the room checks of [docs/qa/online-m1.md](qa/online-m1.md) against a running `dev:room`.
+
+### Previews and production
+
+A PR preview has its own rooms. Room `ABCD` on a preview is not room `ABCD` in production, and preview storage is deleted with the preview. Testers must open the same URL, not only the same code. Cloudflare does not create version URLs for a Worker with a Durable Object; the `wrangler preview` comment on each pull request is a separate feature and keeps working.
+
+The `v1` migration in `wrangler.jsonc` created the `Room` class. Never edit it. Renaming or removing the class takes a new migration entry (`renamed_classes`, `deleted_classes`).
 
 ## Git LFS
 

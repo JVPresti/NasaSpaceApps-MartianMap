@@ -103,6 +103,10 @@ setMode('plan');
 | `view.slopeGrid` | `true` shows the slope grid on the ground in Walk mode; the G key toggles it (`src/state/slopeGrid.js`) | interface | #50 |
 | `settings.look` | `{ sensitivity, invertY }`: mouse-look speed as a multiple of the base rate (0.5-2, step 0.1, default 1; it multiplies both pointer-locked and drag look) and inverted vertical look (default off, flips only pitch). A player preference saved in `localStorage` under `marswalk.look`, not mission state: `resetStore()` keeps it and a new page load re-reads it (a blocked or corrupt entry leaves the defaults). Written by the pause menu through `setLookSettings()` | interface | #102 |
 | `sources['<path>']` | `{ tag: 'DATA' \| 'DERIVED' \| 'SIM', source, label? }` for any value above. Every path also needs an entry in `src/data/provenance.js`, which adds the mission, instrument, site, sol or date and link | whoever writes the value | #62 |
+| `online.code`, `status`, `closeCode` | room code (`'ABCD'`) or `null`; `'off'` (no `?room=`, the default), `'connecting'`, `'open'` (seated), `'offline'` (3 failed reconnects, still retrying) or `'closed'` (stopped). `closeCode` is the last close code, for example 4001 room full or 4002 replaced, or `null` | online (`src/net/index.js`) | #52 |
+| `online.me`, `crew` | crew entries `{ id, name, color, role, joinedAt }`: this player and everyone seated in the room, this player included. `color` is 0 to 3 for `'surface'` and `null` for `'habitat'`; `joinedAt` is server ms | online | #52 |
+| `online.startedAtMs`, `seed` | the room's mission start (server ms) and event seed (uint32), `null` before the first `start` | online | #52 |
+| `online.offsetMs`, `rttMs` | server clock minus local clock in ms (0 offline) and the round trip of the sample it came from (`null` until measured). Server time is `Date.now() + offsetMs` | online | #52 |
 
 `null` means "not known yet". The interface should show a dash, not 0.
 
@@ -346,3 +350,10 @@ Plan section 3.4, scenario 3. In Walk, holding Q for 2 s while the centre of the
 - **Price:** `priceDetour(grid, request)` in `src/sim/findDetour.js`, run in the planner worker (`{ type: 'detour' }`, `client.detour(request)`). It plans the find into each of the two cheapest insertion points of the remaining route, keeps the cheaper one and returns the extra time, O2 and distance, the walkback margin before and after, and `verdict` `go`, `no-go` or `unknown`. No-go means the find is on ground over 20°, no path reaches it, or the margin after reaches the 0 min warning line.
 - **Accept:** the find becomes an ordinary waypoint (`{ name: 'M01 · find', x, z, find: 'M01' }`) inserted at the priced index, and the planner re-plans the whole route from the habitat through `applyPlannedRoute`. `nextIndex` and `visited` stay as they were. `finds.routeKey` tells the Plan planner that these waypoints already have a route, so opening Plan does not start the walk over.
 - **Engine:** `engine.setFinds(list)` draws the markers in Walk and Plan, `engine.aimGround(maxM)` returns where the view meets the terrain, and `engine.setPointing(on)` raises or lowers the arm. All three live in `src/engine/finds.js`.
+
+## Online play (#52)
+
+`src/net/` holds the online client. The app loads it only through the dynamic `import()` in `src/onlineLink.js`, and only when the link has a valid `?room=` code, so the offline build never contains it and the offline store keeps its defaults, with `online.status` at `'off'`. `src/offlinePath.test.js` fails if any other file under `src/` imports `src/net/`.
+
+`startOnline({ code, store })` in `src/net/index.js` writes only the `online` slice. It does not touch `mission.*` or `crew` yet. The mission clock adopts `online.startedAtMs` and `offsetMs` when the join screen lands (section 9.5 of the plan), and M2 (#53) feeds remote players into `crew`. Server and protocol: [deploy.md, Rooms](deploy.md#rooms).
+
