@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createInitialState } from '../state/store.js';
 import { dustLevelFromTau } from '../state/dustLevel.js';
-import { ENGINE_TIMEOUT_MS, createHoldTimer, presentHrefFor, presentKey, queryWithoutPresent, restoreEngine } from './control.js';
+import { ENGINE_TIMEOUT_MS, createHoldTimer, fallbackStep, presentHrefFor, presentKey, queryWithoutPresent, restoreEngine } from './control.js';
 
 const key = (k, mods = {}) => ({ key: k, altKey: false, ctrlKey: false, metaKey: false, ...mods });
 
@@ -94,5 +94,15 @@ describe('URLs', () => {
   it('keeps ?tier and ?lang on the way in', () => {
     expect(presentHrefFor('')).toBe('?present=1');
     expect(presentHrefFor('?tier=low&lang=es')).toBe('?tier=low&lang=es&present=1');
+  });
+});
+
+describe('fallbackStep', () => {
+  it('steps the caption fallback and stops at both ends', () => {
+    expect(fallbackStep(0, 'back', 10)).toBe(0);
+    expect(fallbackStep(3, 'back', 10)).toBe(2);
+    expect(fallbackStep(3, 'next', 10)).toBe(4);
+    expect(fallbackStep(9, 'next', 10)).toBe(9);   // no hand-off into an app without an engine
+    expect(fallbackStep(4, 'lang', 10)).toBe(4);
   });
 });

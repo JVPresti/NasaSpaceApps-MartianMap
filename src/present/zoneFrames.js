@@ -2,7 +2,8 @@
 // src/sim/returnZone.js (#335), so the presentation and the mission table draw the same zone.
 //
 // Only scripts/present/build-plan.mjs imports this file, offline; the browser reads the result from plan.json. The
-// module lands with #335, so until then run the script in a checkout that has merged feat/return-zone.
+// script loads src/sim/returnZone.js (#335) itself and passes it in as `zoneModule`, so this file imports nothing
+// that may be missing: without #335 the script stops with a message naming it, and the committed plan.json stays.
 //
 // The scenario is the first mission (#282): the first sortie plans 30 min, and 25.5 min is usable after the standard
 // 15 % reserve (route.budget.usableSec). That planned time, not the 8 h suit limit, bounds the zone. The crew walks
@@ -16,8 +17,6 @@
 // last > f with one texture.
 //
 // Plain JavaScript, no three.js and no DOM: scripts/present/build-plan.mjs runs it in Node.
-import { computeReturnZone, zoneMarginAt, ZONE_STATE } from '../sim/returnZone.js';
-
 export const ZONE_SOURCE = 'returnZone';
 
 /** The first sortie (#282): planned minutes, the standard reserve share and its stop (stops.json route_stops "sortie"). */
@@ -28,8 +27,10 @@ export const SORTIE = Object.freeze({ timeMin: 30, reserveShare: 0.15, stop: Obj
  *   scenario: { framesOut: number, framesHome: number, speFrame: number, arriveFrame: number, alertAtSec: number,
  *     o2G: number, windowSec: number | null } }} input
  *   windowSec: the radiation event's shelter window, shelterWindowSec(src/sim/events/radiation.json)
+ *   zoneModule: src/sim/returnZone.js, or a stand-in with computeReturnZone, zoneMarginAt and ZONE_STATE
  */
-export function buildZoneFrames({ grid, hab, constants: c, scenario: s, compute = computeReturnZone }) {
+export function buildZoneFrames({ grid, hab, constants: c, scenario: s, zoneModule }) {
+  const { computeReturnZone: compute, zoneMarginAt, ZONE_STATE } = zoneModule;
   const usableSec = SORTIE.timeMin * 60 * (1 - SORTIE.reserveShare);
   const stop = SORTIE.stop;
   const total = s.framesOut + s.framesHome;

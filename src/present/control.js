@@ -76,3 +76,13 @@ export function presentHrefFor(search) {
   q.set('present', '1');
   return '?' + q.toString();
 }
+
+/**
+ * The caption fallback's next beat for a 'next' or 'back' key. It stops on the last beat: the hand-off to the live app
+ * needs the engine, which the fallback does not have.
+ */
+export function fallbackStep(index, action, count) {
+  if (action === 'back') return Math.max(0, index - 1);
+  if (action === 'next') return Math.min(count - 1, index + 1);
+  return index;
+}

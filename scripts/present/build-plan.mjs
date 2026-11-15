@@ -20,7 +20,15 @@ import { planRoute } from '../../src/sim/routePlanner.js';
 import { splitAtWaypoints } from '../../src/sim/legCosts.js';
 import { suitConstantsFromHazards, metabolicPowerW, o2RateGs, walkCost } from '../../src/sim/suitModel.js';
 import { buildZoneFrames } from '../../src/present/zoneFrames.js';
-import { shelterWindowSec } from '../../src/sim/returnZone.js';   // lands with #335
+
+// src/sim/returnZone.js comes with #335. Load it here, so a checkout without it fails with this message, not a stack.
+const zoneModule = await import('../../src/sim/returnZone.js').catch((err) => {
+  if (err?.code !== 'ERR_MODULE_NOT_FOUND') throw err;
+  console.error('build-plan: src/sim/returnZone.js is missing. It lands with #335 (feat/return-zone); merge that first. ' +
+    'public/present/plan.json is committed, so the presentation runs without this step.');
+  process.exit(1);
+});
+const { shelterWindowSec } = zoneModule;
 
 const root = (p) => fileURLToPath(new URL(`../../${p}`, import.meta.url));
 const readJson = (p) => JSON.parse(readFileSync(root(p), 'utf8'));
@@ -95,7 +103,7 @@ for (let k = 2; k < path.length - 2; k++) {
 // ---------------------------------------------------------------- walkback zone (src/sim/returnZone.js)
 // The zone comes from the app's own module through src/present/zoneFrames.js, so the presentation and the app draw the
 // same zone.
-const zone = buildZoneFrames({ grid, hab, constants: c, scenario: SCENARIO });
+const zone = buildZoneFrames({ grid, hab, constants: c, scenario: SCENARIO, zoneModule });
 for (const f of zone.frames) console.log(`T+${(f.elapsedSec / 60).toFixed(1)} min, margin ${f.marginMin} min, reach ${f.reachM} m, zone ${f.areaHa} ha${f.spe ? ' (alert)' : ''}`);
 
 const result = {
