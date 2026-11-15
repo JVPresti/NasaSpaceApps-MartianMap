@@ -29,7 +29,13 @@ export default function LayerPreview({ layer }) {
     button.addEventListener('pointerleave', hide);
     button.addEventListener('focus', onFocus);
     button.addEventListener('blur', hide);
+    // Picking the layer, by pointer or with Enter or Space, closes the card: the map shows the layer now, and the card
+    // would cover the panel above the buttons. pointerdown closes it before the click lands, click covers the keyboard.
+    button.addEventListener('pointerdown', hide);
+    button.addEventListener('click', hide);
     return () => {
+      button.removeEventListener('pointerdown', hide);
+      button.removeEventListener('click', hide);
       button.removeEventListener('pointerenter', show);
       button.removeEventListener('pointerleave', hide);
       button.removeEventListener('focus', onFocus);
