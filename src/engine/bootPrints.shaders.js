@@ -24,7 +24,7 @@ void main(){
 `;
 export const PRINT_FRAG = /* glsl */`
 ${FOG_K}
-uniform float uFadeFar;   // uFogK and uDust come from FOG_K
+uniform float uFadeFar, uStormSun;   // uFogK and uDust come from FOG_K
 varying vec2 vP; varying vec2 vSun; varying float vSeed; varying vec3 vW;
 // signed distance to the sole outline (negative inside): one rounded sole, narrow at the heel, wider at the toe
 float sole(vec2 p){
@@ -48,7 +48,7 @@ void main(){
   float wall = 1.0 - smoothstep(0.0, 0.12, abs(d));                   // the narrow band around the outline
   float rim = smoothstep(0.02, 0.2, d) * (1.0 - smoothstep(0.2, 0.35, d));   // pushed-up soil just outside
   float k = mix(1.0, floorShade, inside);
-  float sunLeft = 1.0 - 0.85 * uDust;                                 // the storm dims the sun (stormLight.js): weaker light and shadow
+  float sunLeft = uStormSun;                                          // direct sun the storm leaves (stormLight.js, #203): weaker light and shadow
   k *= 1.0 + 0.18 * sunLeft * wall * facing;                          // lit wall brighter, shaded wall darker
   k *= 1.0 - 0.18 * sunLeft * inside * smoothstep(-0.25, 0.0, d) * max(-facing, 0.0);   // shadow inside, along the sun-side wall
   k *= 1.0 + 0.06 * rim;
