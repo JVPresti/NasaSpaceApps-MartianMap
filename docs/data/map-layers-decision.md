@@ -2,7 +2,7 @@
 
 Decision for issue #242 (track review, weakness 1: the layers inform nothing) and section B of the 8-minute plan. Done 2026-11-15.
 
-**Every layer now drives one decision, or it is gone.** Elevation is merged into Slope as **Terrain**. **Radio shadow** and **Exposure** (sky view) are new layers, drawn on the mission table only. **Rocks** now draws the grid the route planner prices. **Outcrop** shows the candidate stops the plan kept or dropped. **Image** stays as the base map. The Perseverance drives overlay says what it decides in its key. Each layer states its decision in one line under the table legend (`decides` in `src/plan/layers.js`, English and Spanish).
+**Every layer now drives one decision, or it is gone.** Elevation is merged into Slope as **Terrain**. **Radio shadow** and **Exposure** (sky view) are new layers, drawn on the mission table only. **Rocks** now draws the grid the route planner prices. **Outcrop** shows the candidate stops the plan kept or dropped. **Image** stays as the base map. The Perseverance drives overlay says what it decides in its key. Each layer states its decision in one short line under the table legend (`decides` in `src/plan/layers.js`, English and Spanish, at most 40 characters), and its legend carries its source tag (`layerProvenancePath`, `map.layer.<id>` in the provenance registry).
 
 ## The layers
 
@@ -22,11 +22,11 @@ Decision for issue #242 (track review, weakness 1: the layers inform nothing) an
 
 **Terrain.** The planner's slope cost is `(slope / k)²`, with `k` set by the risk setting (`RISK_SETTINGS` in `src/sim/missionNeeds.js`: 7° cautious, 9° standard, 12° bold). The table's caution band starts where the planner charges what it charges the suit's 15° caution limit at standard risk: `15 × k / 9`, so 12° cautious, 15° standard and 20° bold, where the band disappears because bold prices everything up to the 20° no-go limit as walkable. The no-go band never moves (#242 measured that 17° leaves no route). The legend names the risk the band is drawn for. The 3D ground in Walk keeps the suit's own 15° and 20° limits, and the Walk layer chip says so.
 
-**Rocks.** Rock cover adds `w × rock` to the cost of a cell, with `w` 1 cautious, 0.6 standard, 0.3 bold. The layer now reads the same 256 × 256 density grid, so what is yellow on the map is what the planner pays for. On this tile rock cover changes the route much less than slope (the track review found a mean of 0.46 to 0.47 on every route variant), and the legend line says the cost matters most at cautious risk.
+**Rocks.** Rock cover adds `w × rock` to the cost of a cell, with `w` 1 cautious, 0.6 standard, 0.3 bold. The layer now reads the same 256 × 256 density grid, so what is yellow on the map is what the planner pays for. Bare ground is left almost clear and rocky ground is tinted strongly (on the table and on the ground), so the image still reads under the layer; the ramp's ends say "bare" and "rocky". The grid keeps its 5.6 m cells, which are what the planner prices. On this tile rock cover changes the route much less than slope (the track review found a mean of 0.46 to 0.47 on every route variant), and the legend line says the cost matters most at cautious risk.
 
 **Outcrop.** No resource or ice data exists in the repository, and the thermal and geology layers were dropped with written decisions (`thermal-view-decision.md`, `geology-layer-decision.md`). We did not invent any. The science value of a stop is the light-toned rock the outcrop mask shows, so "resources change where the crew stops" is delivered here: the candidate stops sit on that rock, and the map says which ones the plan kept and why it dropped the others.
 
-**Radio shadow.** A solo crew must keep radio contact, so `missionNeeds.js` forces the radio-contact profile, which prices shadow cells three times. The layer draws the same mask the planner prices, from the habitat mast the engine places. Until the map is given the mast, the caption says the radio shadow is not computed yet (see Follow-ups).
+**Radio shadow.** A solo crew must keep radio contact, so `missionNeeds.js` forces the radio-contact profile, which prices shadow cells three times. The layer draws the same mask the planner prices, from the habitat mast the engine places (the planner hook returns it and the table passes it to the map). Until the mask exists, the caption says the radio shadow is not computed yet. The legend has a clear row, "In sight of the mast", so the image left unpainted there is not read as the shadow; the shadow is painted in the swatch's colour, strong enough to read blue over the orange image.
 
 **Exposure.** See the caveat below.
 
@@ -47,7 +47,7 @@ It is the base map under every layer: the HiRISE photo is what the crew will see
 
 The sky view factor is the share of the upper hemisphere a crouching astronaut sees (`src/sim/skyView.js`, method and limits in `docs/route/shelters.md`). During a solar particle event the dose scales with it if the flux is isotropic above the horizon.
 
-- **The range on this tile is narrow, about 0.81 to 1.0.** The terrain never hides more than about 19 % of the sky (0.807 at the lowest node of the full grid, `shelters.json`), and the tile median is 0.927. The legend states this range, and the colour ramp spans it, so the colours exaggerate small differences on purpose.
+- **The range on this tile is narrow.** On the 6 m grid the app reads (`sky_view.json`) it runs from 0.82 to 1.00; the full 2 m grid reaches 0.807 at its lowest node (`shelters.json`), so the terrain never hides more than about 19 % of the sky, and the tile median is 0.927. The legend reads the range from the loaded grid and the colour ramp spans it, so the colours exaggerate small differences on purpose.
 - **It informs a risk readout and the shelter choice, not the path.** A 5 % difference in sky view along a route is too small to justify a longer walk, so no route profile prices it. What the layer shows is where the natural shelters are (SP1 to SP4, 15 to 16 % less dose) and how exposed the planned route is.
 - **The saving is an upper bound.** Particles from low in the sky cross more atmosphere, so hiding the low sky saves less than the isotropic estimate.
 
@@ -76,6 +76,13 @@ The layer index is shared, so Walk had to stay right when the list changed:
 
 A table-only layer chosen at the table stays chosen in the store and is back when the crew returns to the table.
 
+## Framing and markers on the table map
+
+- The default framing fits the planned route (its stops, the alternatives, a walked track and the crew's position) with a margin, never tighter than 150 m (`minSpanM`, `MAP_MIN_SPAN_M`). The 55 m first sortie fills about a third of the map instead of a tenth of a 500 m one, so a layer or a profile changes something the eye can see. The candidate stops and the shelters never move the framing: they draw where the view is, and scrolling out shows the others.
+- Zoomed in that far, the photo, the outcrop mask and the slope are read bilinearly, so the map stays smooth; the rock grid and the radio mask keep their cells.
+- A marker's tag opens to the left near the right edge of the map, and the rover pin's tag to the right near the left edge, so the edge never cuts a tag. The place markers sit above the rover pin, so the pin no longer hides a shelter. Each stop on the map shows its number (its place in the planned waypoints, the habitat airlock 0) and its one name, the planned waypoint's label, in the interface language as the Stops list words it; the waypoint code ("WP3 · …", "S1 · …") is only a link key and is never shown.
+- During an event the table passes `position` (the store's navigation estimate, drawn with the HUD's position marker) and `eventRoute`: the route to the shelter is drawn in the caution colour and its end says SHELTER, as the HUD's waypoint panel does; `planPath` can keep the approved plan thin under it.
+
 ## Interface changes
 
 Every change reuses the existing layer buttons, legend (`.table-map-legend`), marker tags (`.map-marker-tag`), colour ramps and source tags.
@@ -83,18 +90,20 @@ Every change reuses the existing layer buttons, legend (`.table-map-legend`), ma
 | Element | Change | Why |
 |---|---|---|
 | Layer buttons | Elevation gone; Terrain replaces Slope; Radio and Exposure added | The approved layer table |
-| Table legend | One "decides" line per layer; Terrain's caution row names the risk; Outcrop and Exposure list their markers | Each layer must say what it decides |
+| Table legend | One short "decides" line per layer; Terrain's caution row names the risk; Radio has an "In sight of the mast" row; Outcrop and Exposure list their markers; Exposure's range comes from the loaded grid | Each layer must say what it decides, and what it leaves unpainted |
 | Terrain on the map and the ground | 5 m contours over the slope bands | Merged from Elevation |
 | Candidate stop markers (Outcrop) | Grey dot with the stop's tag and why it is not on the route | Shows where else the crew could stop and why the plan left it out |
 | Shelter markers (Exposure) | Small square, as the habitat's marker, with "SP1 · −16 % dose" | Shows where shelter is |
-| Map framing on Outcrop and Exposure | The fit also frames the candidate stops or the shelters | A marked place the map does not show informs nothing |
+| Map framing | Fits the route down to a 150 m span; the candidate stops and shelters no longer widen it | A 55 m sortie was a stub on a 500 m map; framing on the shelters pushed the route off the map |
+| Tags near the map edge | Open to the other side of their symbol | The edge cut "habitat airlock" and the rover pin |
+| Crew position and event route | The HUD's position marker; the event route in the caution colour with SHELTER at its end | #265: each event shows its re-plan on the table |
+| Layer preview | Opens above the hovered button instead of beside it | Beside it, it covered the map's legend |
 | Rover key | Second line: "A cautious route prefers this ground" | What the drives decide |
 | Map caption on Radio shadow | "radio shadow not computed yet" until the mask exists | No silent empty layer |
 | Layer previews | Re-rendered with the table's map painter, two added, Elevation's removed | The previews sit beside the table buttons; the two new layers have no 3D look |
 
 ## Follow-ups
 
-- **The habitat mast for the Radio shadow layer.** `MissionMap` takes a `mast` prop; the engine gives it (`engine.getHabitatMast()`) and `useRoutePlanner` already polls it for the radio-contact profile. The table has to pass it down (the planner hook returning `mast`, and the table's map passing `mast={planner.mast}`). Until then the layer draws nothing and says so.
-- The Exposure readout is ready to place on the table (`useRouteExposure`, `exposureText`, `SourceTag path="map.exposure"`).
+- Done since the first round: the planner hook returns the habitat mast and the table passes it to the map, so the Radio shadow layer draws; the Exposure readout sits on the Suit step beside go / no-go.
 - The ground in Walk keeps the suit's 15° caution band. Making it follow the risk the EVA started with needs the store-to-engine bridge to pass a caution angle to the shader.
 - Place markers near the map edge can sit under the legend or the rover key, like the route's own markers.
