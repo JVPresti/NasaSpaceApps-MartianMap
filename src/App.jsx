@@ -5,6 +5,8 @@ import EngineView from './components/EngineView.jsx';
 import GamepadHint from './components/GamepadHint.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
 import PauseMenu from './components/PauseMenu.jsx';
+import RoomBadge from './online/RoomBadge.jsx';
+import { isHabitatSeat } from './onlineLink.js';
 import StartScreen from './components/StartScreen.jsx';
 import TouchStick from './components/TouchStick.jsx';
 import { cycleLayer } from './components/shortcuts.js';
@@ -238,6 +240,7 @@ export default function App() {
   const handleModeChange = useCallback(async (next, { capture = true } = {}) => {
     if (busyRef.current) return;
     if (next === useMissionStore.getState().mode) return;
+    if (next === 'walk' && isHabitatSeat()) return;   // online (#55): the habitat seat stays at the table
     // Any mode change ends a pending resume; setMode also makes the engine cancel a pending Walk lock.
     resumeSeqRef.current += 1;
     const attempt = ++walkLockSeqRef.current;
@@ -477,6 +480,7 @@ export default function App() {
         <header className="topbar" inert={showTopbar ? undefined : true}>
           <h1>{t('app.brandSpaced')}<span>{t('ui.cheyava.falls.neretva.vallis.jezero.crater')}</span>
           </h1>
+          <RoomBadge />
         </header>
       )}
 

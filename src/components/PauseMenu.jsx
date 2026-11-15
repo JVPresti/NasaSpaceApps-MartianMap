@@ -55,6 +55,8 @@ export default function PauseMenu({
 }) {
   const language = useLanguage();
   const look = useMissionStore((s) => s.settings.look);
+  // Online (9.5) the room owns the mission clock: this menu does not stop it or the events.
+  const sharedClock = useMissionStore((s) => typeof s.mission.sharedStartMs === 'number');
   const resumeRef = useRef(null);
   const backRef = useRef(null);
   const cancelRef = useRef(null);
@@ -83,10 +85,11 @@ export default function PauseMenu({
     >
       {view === 'menu' && (
         <div className="dialog-body">
-          <p className="dialog-kicker">{t('menu.mission.clock.paused.kicker')}</p>
+          <p className="dialog-kicker">{sharedClock ? t('online.pause.kicker') : t('menu.mission.clock.paused.kicker')}</p>
           <h2 id="pause-menu-title" className="dialog-title">
-            {evaBegun || mode === 'walk' ? t('menu.eva.paused') : t('menu.planning.paused')}
+            {sharedClock ? t('online.pause.title') : evaBegun || mode === 'walk' ? t('menu.eva.paused') : t('menu.planning.paused')}
           </h2>
+          {sharedClock && <p className="dialog-mission">{t('online.pause.note')}</p>}
 
           <div className="menu-actions">
             <button

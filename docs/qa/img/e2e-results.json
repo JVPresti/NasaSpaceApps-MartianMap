@@ -1,0 +1,107 @@
+{
+  "date": "2026-11-15T13:13:27.745Z",
+  "room": "GPUR",
+  "base": "http://localhost:8787",
+  "gpu": true,
+  "seconds": 101,
+  "passed": 19,
+  "total": 19,
+  "error": null,
+  "results": [
+    {
+      "name": "bad code shows a message",
+      "ok": true,
+      "detail": "\"MarswalkCheyava FallsNeretva Vallis, Jezero crater, Mars. Plan a walk across real Mars terrain to the rock where Perseve\""
+    },
+    {
+      "name": "bad code opens no /api/ request",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "renderer",
+      "ok": true,
+      "detail": "ANGLE (Microsoft Corporation, D3D12 (NVIDIA GeForce RTX 3070), OpenGL 4.6)"
+    },
+    {
+      "name": "no connection before Join",
+      "ok": true,
+      "detail": "off"
+    },
+    {
+      "name": "A joined and reached the mission table",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "each sees the other within 2 s",
+      "ok": true,
+      "detail": "A sees B 331 ms after B pressed Join, B sees A 422 ms"
+    },
+    {
+      "name": "crew tab lists both with you",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "mission clocks match within 0.1 s",
+      "ok": true,
+      "detail": "max difference 0.5 ms over 5 reads"
+    },
+    {
+      "name": "published elapsed within 1 tick",
+      "ok": true,
+      "detail": "[3.995,4.2665]"
+    },
+    {
+      "name": "closing B removes it within 2 s",
+      "ok": true,
+      "detail": "739 ms"
+    },
+    {
+      "name": "Spanish join panel",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "habitat sees no Begin EVA",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "habitat stays at the table after M",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "habitat sees Ana",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "habitat is in the crew list without a colour",
+      "ok": true,
+      "detail": "[[\"Ana\",\"surface\",0],[\"Hab\",\"habitat\",null]]"
+    },
+    {
+      "name": "5th surface player sees room full",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "room full: joins as the other seat",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "replaced tab sees the message",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "join as a new player works, both tabs seated",
+      "ok": true,
+      "detail": "[\"Ana\",\"Ana\"]"
+    }
+  ]
+}

@@ -42,6 +42,13 @@ export function getPlayerId() {
   return id;
 }
 
+/** A new player id for this tab, for "Join as a new player" after another tab took the seat (4002). */
+export function newPlayerId() {
+  const id = randomId();
+  write('sessionStorage', PLAYER_ID_KEY, id);
+  return id;
+}
+
 export function getPlayerName() {
   let name = cleanName(read('localStorage', PLAYER_NAME_KEY) || '');
   if (!name) { name = 'Crew ' + String(1000 + Math.floor(Math.random() * 9000)); write('localStorage', PLAYER_NAME_KEY, name); }

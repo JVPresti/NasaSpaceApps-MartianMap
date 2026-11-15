@@ -15,7 +15,7 @@ import { getCurrentEngine } from '../state/currentEngine.js';
 import { createSharedState } from './sharedState.js';
 import { installSharedHooks } from '../state/sharedHooks.js';
 
-export { getPlayerName, setPlayerName } from './identity.js';
+export { getPlayerName, newPlayerId, setPlayerName } from './identity.js';
 
 /** The store slice that means "offline". Keep in sync with createInitialState() in src/state/store.js. */
 export const OFFLINE_STATE = Object.freeze({

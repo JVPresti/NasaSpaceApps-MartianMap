@@ -3,11 +3,12 @@
 // their arrival in tab B, claims samples from both tabs, moves the case, and reloads tab B.
 //
 //   CHROME=/path/to/chrome node scripts/room-e2e-browser.mjs
+//   QA_GPU=1 CHROME=/path/to/chromium node scripts/room-e2e-browser.mjs   (GPU through WSLg, see scripts/qaBrowser.mjs)
 //
 // ROOM (default TEST), TAB_RACES (20), RACE_GAP ms between races (keep it above 200: the client sends at most 5
 // actions per second and queues the rest), SLOW_RAF ms per frame for machines with software WebGL. Results:
 // docs/qa/online-m3.md.
-import puppeteer from 'puppeteer-core';
+import { checkRenderer, launchBrowser } from './qaBrowser.mjs';
 const ROOM = process.env.ROOM || 'TEST';
 const URL = `http://localhost:5173/?room=${ROOM}`;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -21,23 +22,21 @@ async function until(page, fn, arg, ms = 15000) {
     await sleep(20);
   }
 }
-const browser = await puppeteer.launch({
-  executablePath: process.env.CHROME,
-  headless: true,
-  protocolTimeout: 600000,
-  args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', '--window-size=1280,800'],
-  defaultViewport: { width: 1280, height: 800 },
-});
+const browser = await launchBrowser({ viewport: { width: 1280, height: 800 } });
 const open = async () => {
   const p = await browser.newPage();
   p.on('pageerror', (e) => console.log('pageerror', e.message));
   // Software WebGL in this VM takes the main thread for seconds per frame; at 1 frame per second the page keeps up.
   if (process.env.SLOW_RAF) await p.evaluateOnNewDocument((ms) => { window.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), ms); }, Number(process.env.SLOW_RAF));
   await p.goto(URL, { waitUntil: 'domcontentloaded' });
+  // ?room= opens the join panel; the socket opens on "Join the room" (#52)
+  await p.waitForSelector('.online-join button.start-primary:not([disabled])', { timeout: 300000 });
+  await p.click('.online-join button.start-primary');
   await until(p, () => window.__missionStore?.getState().online.status === 'open' && !!window.__online, null, 120000);
   return p;
 };
 const a = await open(), b = await open();
+console.log('renderer', await checkRenderer(a));
 const ids = await Promise.all([a, b].map((p) => p.evaluate(() => window.__missionStore.getState().online.me.id)));
 console.log('A', ids[0], 'B', ids[1]);
 const before = await b.evaluate(() => window.__missionStore.getState().shared.markers.length);
