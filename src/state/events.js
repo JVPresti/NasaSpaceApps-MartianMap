@@ -8,7 +8,8 @@ import lowOxygenCaution from '../sim/events/low-oxygen-caution.json';
 import lowOxygenWarning from '../sim/events/low-oxygen-warning.json';
 import radiation from '../sim/events/radiation.json';
 import { createEventEngine } from '../sim/eventEngine.js';
-import { HAZARDS_PATH } from '../data/provenance.js';
+import { MISSION_SOURCES, missionEventDefinitions, missionForObjective } from '../sim/missions.js';
+import { HAZARDS_PATH, provenance } from '../data/provenance.js';
 import { loadCostGrid, loadDataFile } from '../data/dataFiles.js';
 import { SHELTERS_PATH } from '../sim/shelters.js';
 import { heightAt } from '../sim/costGrid.js';
@@ -17,7 +18,12 @@ import { suitConstantsFromHazards, walkCost } from '../sim/suitModel.js';
 import { createStoreAdapter, useMissionStore } from './store.js';
 import { truePosition } from '../sim/navigation.js';
 
+// What each event is. When the storm and the radiation alert start, and how fast their timelines run, comes from the
+// mission the crew's objective defines (src/sim/missions.js, #265).
 const EVENT_DEFINITIONS = [dustStorm, radiation, lowOxygenCaution, lowOxygenWarning];
+
+// The event times of each mission are SIM (#265): their notes are in the registry, next to the event values.
+provenance.define(MISSION_SOURCES);
 
 const ROUTE_SOURCES = {
   'route.path': { tag: 'DERIVED', source: 'A* planner · HiRISE DTM' },
@@ -47,6 +53,20 @@ export const EVENT_ENVIRONMENT_SOURCES = Object.freeze({
  * @param {typeof useMissionStore} store
  * @param {Record<string, object>} [sourcesByPath]
  */
+/**
+ * The environment sources for one mission. The first mission runs the same values on a shorter clock, and says so.
+ * @param {'first' | 'full'} missionId
+ */
+export function eventEnvironmentSources(missionId) {
+  if (missionId !== 'first') return EVENT_ENVIRONMENT_SOURCES;
+  const dust = EVENT_ENVIRONMENT_SOURCES['environment.dustOpacity'];
+  const dose = EVENT_ENVIRONMENT_SOURCES['environment.doseRateUgyH'];
+  return Object.freeze({
+    'environment.dustOpacity': Object.freeze({ ...dust, source: dust.source + '; first mission: ramp compressed from 90 s to 30 s (SIM)' }),
+    'environment.doseRateUgyH': Object.freeze({ ...dose, source: dose.source + '; first mission: the profile compressed to 1 minute (SIM)' }),
+  });
+}
+
 export function createEventStoreAdapter(store, sourcesByPath = EVENT_ENVIRONMENT_SOURCES) {
   const adapter = createStoreAdapter(store);
   return {
@@ -123,11 +143,18 @@ function writeRoute(store, result, reason, shelter = null) {
  * `onEventLog` receives the event engine's start/end entries with their label, for the EVA history (#43). The
  * runner still calls endEventRoute first, so the route cleanup after an event is unchanged.
  *
- * @param {{ store?: object, setInterval?: Function, clearInterval?: Function,
+ * The mission comes from `objective` (the crew's objective, locked at Begin EVA: src/state/simulation.js passes it),
+ * else from the store's `needs.objective`. It is read once, here: a later change of the needs changes nothing.
+ *
+ * @param {{ store?: object, objective?: string, setInterval?: Function, clearInterval?: Function,
  *   onEventLog?: (entry: { type: 'start' | 'end', eventId: string, label: string, missionTimeSec: number }) => void }} [options]
- * @returns {{ tick: () => void, stop: () => void, fire: (id: string) => boolean, listEvents: () => Array<object> }}
+ * @returns {{ mission: 'first' | 'full', tick: () => void, stop: () => void, fire: (id: string) => boolean,
+ *   listEvents: () => Array<object> }}
  */
-export function startEventRunner({ store = useMissionStore, setInterval: si = setInterval, clearInterval: ci = clearInterval, onEventLog } = {}) {
+export function startEventRunner({ store = useMissionStore, objective, setInterval: si = setInterval, clearInterval: ci = clearInterval, onEventLog } = {}) {
+  const lockedObjective = objective ?? store.getState().needs?.objective;
+  const mission = missionForObjective(lockedObjective);
+  const definitions = missionEventDefinitions(lockedObjective, EVENT_DEFINITIONS);
   let stopped = false;
   let planner = null;
   let plannerPromise = null;
@@ -183,13 +210,13 @@ export function startEventRunner({ store = useMissionStore, setInterval: si = se
   // and the runner resumes the planned waypoints from route.nextIndex.
   const endEventRoute = ({ type }) => {
     if (type !== 'end') return;
-    const sheltered = engine.getActive().some((active) => EVENT_DEFINITIONS.find((event) => event.id === active.id)?.planner);
+    const sheltered = engine.getActive().some((active) => definitions.find((event) => event.id === active.id)?.planner);
     const route = store.getState().route;
     if (sheltered || (!route.shelter && !route.skipped?.length)) return;
     store.setState((state) => ({ route: { ...state.route, shelter: null, skipped: [] } }));
   };
 
-  const labels = new Map(EVENT_DEFINITIONS.map((definition) => [definition.id, definition.label]));
+  const labels = new Map(definitions.map((definition) => [definition.id, definition.label]));
   const log = (entry) => {
     endEventRoute(entry);
     if (typeof onEventLog === 'function') {
@@ -200,8 +227,8 @@ export function startEventRunner({ store = useMissionStore, setInterval: si = se
   // Events switched off at the mission table (#11) are left out of this EVA.
   const off = store.getState().hazards?.off ?? [];
   const engine = createEventEngine({
-    events: EVENT_DEFINITIONS.filter((event) => !off.includes(event.id)),
-    store: createEventStoreAdapter(store),
+    events: definitions.filter((event) => !off.includes(event.id)),
+    store: createEventStoreAdapter(store, eventEnvironmentSources(mission.id)),
     getMissionTime: missionTime,
     requestReplan,
     log,
@@ -219,6 +246,7 @@ export function startEventRunner({ store = useMissionStore, setInterval: si = se
   tick();
 
   const runner = {
+    mission: mission.id,
     tick,
     fire: (id) => engine.fire(id),
     listEvents: () => engine.listEvents(),
@@ -240,7 +268,9 @@ export function fireEvent(id) {
   return current ? current.fire(id) : false;
 }
 
-/** Events available to the debug control. */
+/** Events available to the debug control, with the triggers of the running mission (or of the objective chosen now). */
 export function listEvents() {
-  return current ? current.listEvents() : EVENT_DEFINITIONS.map((event) => ({ id: event.id, label: event.label, trigger: event.trigger }));
+  if (current) return current.listEvents();
+  return missionEventDefinitions(useMissionStore.getState().needs?.objective, EVENT_DEFINITIONS)
+    .map((event) => ({ id: event.id, label: event.label, trigger: event.trigger }));
 }

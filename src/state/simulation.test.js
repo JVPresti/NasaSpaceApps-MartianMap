@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 import hazardsJson from '../../public/data/hazards.json';
 import sheltersJson from '../../public/data/shelters.json';
 import stopsJson from '../../public/data/stops.json';
-import { createInitialState, pauseMission, resetStore, resumeMission, setMode, useMissionStore } from './store.js';
+import { createInitialState, pauseMission, resetStore, resumeMission, setMode, setNeeds, useMissionStore } from './store.js';
+import { listEvents } from './events.js';
 import { departRoute, startSimulation } from './simulation.js';
 import { requestEvaEnd } from './eva.js';
 import { startAtAirlock } from '../plan/routeStart.js';
@@ -202,6 +203,26 @@ describe('EVA start at the first switch to Walk (#166)', () => {
     s = useMissionStore.getState();
     expect(s.mission.startedAtMs).toBe(evaStart);   // later switches keep the EVA going
     expect(s.mission.elapsedSec).toBeCloseTo(4, 6);
+    stop();
+  });
+
+  it('starts the suit from the O2 and battery the crew set at the table, and the events of its objective (#265)', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', vi.fn(respond));
+    planned();
+    setNeeds({ objective: 'cheyava', o2Pct: 60, batteryPct: 45 });
+    const stop = startSimulation(ENGINE);
+    await flush();
+    setMode('walk');   // Begin EVA locks the needs and starts the EVA from them
+    await flush();
+    vi.advanceTimersByTime(1000);
+    const s = useMissionStore.getState();
+    expect(s.needs.locked).toBe(true);
+    expect(s.suit.oxygenPct).toBeCloseTo(60, 0);
+    expect(s.suit.batteryPct).toBeCloseTo(45, 0);
+    // the full EVA's times, read from the locked objective; a change now is refused and changes nothing
+    expect(setNeeds({ objective: 'sortie' })).toBe(false);
+    expect(listEvents().find((event) => event.id === 'dust-storm').trigger).toEqual({ type: 'missionTime', atSec: 480 });
     stop();
   });
 

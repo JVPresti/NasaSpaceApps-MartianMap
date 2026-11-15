@@ -19,6 +19,7 @@ import { parseShelters, SHELTERS_PATH } from '../sim/shelters.js';
 import { HAZARDS_PATH } from '../data/provenance.js';
 import { loadDataFile } from '../data/dataFiles.js';
 import { suitConstantsFromHazards } from '../sim/suitModel.js';
+import { startConsumables } from '../sim/legCosts.js';
 import { startSuitRunner } from '../sim/suitRunner.js';
 import { startPartnerRunner } from '../sim/partnerRunner.js';
 import { legCostSources, startLegCostRunner } from '../sim/legCosts.js';
@@ -118,10 +119,13 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
       getMast: () => (typeof engine.getHabitatMast === 'function' ? engine.getHabitatMast() : null),
     });
     store.setState((s) => ({ route: departRoute(s.route) }));
+    // The crew's needs as they were locked at Begin EVA: the mission and the consumables the walk starts with.
+    const needs = store.getState().needs ?? {};
     const waypoints = startWaypointRunner({ store });
     stopsReady.then((stops) => { if (stops) waypoints.setStops(stops); });
     eva = {
-      events: startEventRunner({ store, onEventLog: (entry) => recordEvaEvent(store, entry) }),
+      // The mission (#265) is the one the crew's objective defines, locked by this same switch to Walk (setMode).
+      events: startEventRunner({ store, objective: needs.objective, onEventLog: (entry) => recordEvaEvent(store, entry) }),
       offRoute: startOffRoute({ store }),
       waypoints,
       stats: null,
@@ -145,9 +149,12 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     });
     suitData.then(({ constants, habitat }) => {
       if (stopped) return;
-      suit = startSuitRunner({ store, heightAt: engine.heightAt, constants, habitat });   // full O2 and battery
+      // O2 and battery as the crew set them at the mission table, the same start the plan and route.totals use
+      const { o2StartG, batteryStartWh } = startConsumables(needs, constants);
+      const start = { o2G: o2StartG, batteryWh: batteryStartWh };
+      suit = startSuitRunner({ store, heightAt: engine.heightAt, constants, habitat, start });
       // the partner's suit and the separation limit (#70), read only through the partner source
-      if (engine.getPartner) partner = startPartnerRunner({ store, readPartner: engine.getPartner, heightAt: engine.heightAt, lineOfSight: engine.lineOfSight, constants, habitat });
+      if (engine.getPartner) partner = startPartnerRunner({ store, readPartner: engine.getPartner, heightAt: engine.heightAt, lineOfSight: engine.lineOfSight, constants, habitat, start });
     }, () => {});
   }
 

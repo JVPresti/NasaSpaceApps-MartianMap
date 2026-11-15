@@ -382,6 +382,25 @@ describe('trigger conditions for the first mission (#265)', () => {
     expect(engine.update(181, OUT).started).toEqual(['test-event'])
   })
 
+  it('keeps an event requirement after latestSec, so two late events still come in order', () => {
+    const storm = makeEvent({ id: 'storm', trigger: { type: 'missionTime', atSec: 75, latestSec: 180, holdInsideEnd: true }, end: homeEnd })
+    const radiation = makeEvent({
+      id: 'radiation',
+      trigger: { type: 'missionTime', atSec: 95, requires: [{ event: 'storm', afterSec: 15 }], latestSec: 210, holdInsideEnd: true },
+      end: homeEnd,
+    })
+    const { engine } = setup([storm, radiation])
+    expect(engine.update(300, HOME).started).toEqual([])
+    expect(engine.update(301, OUT).started).toEqual(['storm'])
+    expect(engine.update(315, OUT).started).toEqual([])
+    expect(engine.update(316, OUT).started).toEqual(['radiation'])
+  })
+
+  it('never starts a manual event from latestSec', () => {
+    const { engine } = setup([makeEvent({ trigger: { type: 'manual', latestSec: 10 } })])
+    expect(engine.update(20).started).toEqual([])
+  })
+
   it('validates the new trigger fields', () => {
     expect(validateEvent(makeEvent({ trigger: { type: 'missionTime', atSec: 75, holdInsideEnd: true } })).errors)
       .toContain('trigger.holdInsideEnd needs an end of type "area"')

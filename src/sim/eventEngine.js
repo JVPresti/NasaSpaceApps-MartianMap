@@ -455,10 +455,12 @@ export function createEventEngine(options) {
   }
 
   // An event requirement on an event this engine does not run (switched off at the mission table) counts as met.
-  function requirementsMet(definition, state, missionTimeSec) {
+  // `kind` 'event' checks only the event requirements, 'threshold' only the store thresholds.
+  function requirementsMet(definition, state, missionTimeSec, kind) {
     const requires = definition.trigger.requires
     if (!requires) return true
     return requires.every((requirement, index) => {
+      if ((requirement.event !== undefined) !== (kind === 'event')) return true
       if (requirement.event !== undefined) {
         const other = states.get(requirement.event)
         if (!other) return true
@@ -470,16 +472,18 @@ export function createEventEngine(options) {
   }
 
   /**
-   * Whether an idle event starts now. The basic trigger and every `requires` entry must pass; `latestSec` starts it
-   * anyway from that mission time; `holdInsideEnd` keeps it waiting while the position is inside its own end area,
-   * where it would end at once and never play (#265).
+   * Whether an idle event starts now. The basic trigger and every `requires` entry must pass. From `latestSec` the
+   * basic trigger and the store thresholds no longer count, but an event requirement still does, so two events keep
+   * their order. `holdInsideEnd` keeps it waiting while the position is inside its own end area, where it would end
+   * at once and never play (#265).
    */
   function triggerPasses(definition, state, missionTimeSec, position) {
     const trigger = definition.trigger
-    let passes = basicTriggerPasses(trigger, missionTimeSec, position, store) && requirementsMet(definition, state, missionTimeSec)
-    if (!passes && isFiniteNumber(trigger.latestSec) && trigger.type !== 'manual') passes = missionTimeSec >= trigger.latestSec
-    if (passes && trigger.holdInsideEnd === true && isInsideArea(definition.end, position)) passes = false
-    return passes
+    if (trigger.type === 'manual') return false
+    const late = isFiniteNumber(trigger.latestSec) && missionTimeSec >= trigger.latestSec
+    const due = late || (basicTriggerPasses(trigger, missionTimeSec, position, store) && requirementsMet(definition, state, missionTimeSec, 'threshold'))
+    if (!due || !requirementsMet(definition, state, missionTimeSec, 'event')) return false
+    return !(trigger.holdInsideEnd === true && isInsideArea(definition.end, position))
   }
 
   let lastMissionTimeSec = 0
