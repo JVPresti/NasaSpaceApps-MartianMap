@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { t, translateText } from '../i18n/index.js';
 import { useShallow } from 'zustand/react/shallow';
 import { loadDataFile } from '../data/dataFiles.js';
 import { HAZARDS_PATH } from '../data/provenance.js';
@@ -31,18 +32,18 @@ import './table.css';
 // planning controls. Every number comes from the store, the planner or the data files, as in the old Plan panels.
 
 const TABS = [
-  { id: 'site', label: 'Site' },
-  { id: 'route', label: 'Route' },
-  { id: 'hazards', label: 'Hazards' },
-  { id: 'suit', label: 'Suit' },
+  { id: 'site', label: 'table.tab.site' },
+  { id: 'route', label: 'table.tab.route' },
+  { id: 'hazards', label: 'table.tab.hazards' },
+  { id: 'suit', label: 'table.tab.suit' },
 ];
 
 const LAYER_BUTTONS = [
-  { index: 0, label: 'Image', title: 'Route on the HiRISE image, source 25 cm per pixel, shown at about 0.5 m' },
-  { index: 1, label: 'Slope', title: 'Route over the slope layer' },
-  { index: 2, label: 'Elevation', title: 'Route over the elevation layer' },
-  { index: 3, label: 'Rocks', title: 'Route over the rock abundance estimate' },
-  { index: 4, label: 'Outcrop', title: 'Route over the light-toned outcrop' },
+  { index: 0, label: 'table.layer.image', title: 'table.layer.image.title' },
+  { index: 1, label: 'table.layer.slope', title: 'table.layer.slope.title' },
+  { index: 2, label: 'table.layer.elevation', title: 'table.layer.elevation.title' },
+  { index: 3, label: 'table.layer.rocks', title: 'table.layer.rocks.title' },
+  { index: 4, label: 'table.layer.outcrop', title: 'table.layer.outcrop.title' },
 ];
 
 const minutes = (sec) => Math.round(sec / 60);
@@ -54,44 +55,48 @@ const HAZARDS = [
   {
     id: 'dust-storm',
     art: dustArt,
-    artAlt: 'Illustration: an astronaut on Mars as a wall of dust rolls in.',
+    get artAlt() { return t('table.hazard.dust.art'); },
     events: [dustStorm.id],
-    name: dustStorm.label,
+    get name() { return translateText(dustStorm.label); },
     level: 'warning',
-    levelLabel: 'Warning',
-    when: `${minutes(dustStorm.trigger.atSec)} min into the EVA`,
-    happens: `Dust thickens over the site and the light drops: the opacity climbs to ${num(peak(dustStorm, 'environment.dustOpacity'))} in ${dustStorm.timeline.at(-1).atSec} s.`,
-    alert: dustStorm.alert.text,
-    act: 'Follow the new route back to the habitat. The storm ends when you reach it.',
-    basis: 'Peak opacity of the 2018 global storm, measured by Curiosity in Gale crater, not Jezero. How fast it rises is our assumption.',
+    get levelLabel() { return t('table.hazard.level.warning'); },
+    get when() { return t('table.hazard.when.min', { min: minutes(dustStorm.trigger.atSec) }); },
+    get happens() {
+      return t('table.hazard.dust.happens', { opacity: num(peak(dustStorm, 'environment.dustOpacity')), sec: dustStorm.timeline.at(-1).atSec });
+    },
+    get alert() { return translateText(dustStorm.alert.text); },
+    get act() { return t('table.hazard.dust.act'); },
+    get basis() { return t('table.hazard.dust.basis'); },
   },
   {
     id: 'radiation',
     art: radiationArt,
-    artAlt: 'Illustration: an astronaut hurries to the habitat as the Sun sends out a burst of particles.',
+    get artAlt() { return t('table.hazard.radiation.art'); },
     events: [radiation.id],
-    name: radiation.label,
+    get name() { return translateText(radiation.label); },
     level: 'warning',
-    levelLabel: 'Warning',
-    when: `${minutes(radiation.trigger.atSec)} min into the EVA`,
-    happens: `A solar particle event raises the dose rate to ${num(peak(radiation, 'environment.doseRateUgyH'), 1)} µGy/h, about three times the background.`,
-    alert: radiation.alert.text,
-    act: 'Shelter in the habitat early (ALARA), the only full shelter on the map. The stops left on the route are skipped.',
-    basis: 'Dose rates of the September 2017 event, measured by RAD on Curiosity in Gale crater, not Jezero. Its 12 min length is shortened for one EVA.',
+    get levelLabel() { return t('table.hazard.level.warning'); },
+    get when() { return t('table.hazard.when.min', { min: minutes(radiation.trigger.atSec) }); },
+    get happens() { return t('table.hazard.radiation.happens', { rate: num(peak(radiation, 'environment.doseRateUgyH'), 1) }); },
+    get alert() { return translateText(radiation.alert.text); },
+    get act() { return t('table.hazard.radiation.act'); },
+    get basis() { return t('table.hazard.radiation.basis'); },
   },
   {
     id: 'low-oxygen',
     art: oxygenArt,
-    artAlt: 'Illustration: a wrist display with a nearly empty gauge.',
+    get artAlt() { return t('table.hazard.oxygen.art'); },
     events: [lowOxygenCaution.id, lowOxygenWarning.id],
-    name: 'Low oxygen',
+    get name() { return t('table.hazard.oxygen.name'); },
     level: 'caution',
-    levelLabel: 'Caution, then warning',
-    when: `When the margin falls under ${minutes(lowOxygenCaution.trigger.value)} min, and again at zero`,
-    happens: 'The oxygen left, minus the walk home, minus the 30 min reserve, is running out.',
-    alert: `${lowOxygenCaution.alert.text} Then: ${lowOxygenWarning.alert.text}`,
-    act: 'Turn back at the caution. At the warning, head straight for the habitat.',
-    basis: 'Oxygen use, margin and reserve come from our suit model.',
+    get levelLabel() { return t('table.hazard.level.caution.then.warning'); },
+    get when() { return t('table.hazard.oxygen.when', { min: minutes(lowOxygenCaution.trigger.value) }); },
+    get happens() { return t('table.hazard.oxygen.happens'); },
+    get alert() {
+      return t('table.hazard.oxygen.alert', { caution: translateText(lowOxygenCaution.alert.text), warning: translateText(lowOxygenWarning.alert.text) });
+    },
+    get act() { return t('table.hazard.oxygen.act'); },
+    get basis() { return t('table.hazard.oxygen.basis'); },
   },
 ];
 
@@ -110,7 +115,7 @@ function useDataFile(path) {
 
 /** "WP1 · channel floor" → ["WP1", "Channel floor"]; the start is the habitat and the last stop is the end. */
 function stopLabel(name, index, count) {
-  if (index === 0) return ['HAB', 'Habitat'];
+  if (index === 0) return ['HAB', t('table.habitat')];
   const [code, rest] = name.includes(' · ') ? name.split(' · ') : [index === count - 1 ? 'END' : `WP${index}`, name];
   return [index === count - 1 ? 'END' : code, sentence(rest)];
 }
@@ -124,14 +129,16 @@ function Big({ value, unit, label, tone }) {
   );
 }
 
-function Hazards({ compact = false }) {
+// The event runner reads hazards.off once, when the EVA starts (src/state/events.js). After Begin EVA a switch would
+// change nothing, so the switches lock and show the choice the run started with.
+function Hazards({ compact = false, locked = false }) {
   const off = useMissionStore(useShallow((s) => s.hazards.off ?? []));
   return HAZARDS.map((hazard) => {
     const on = !hazard.events.some((id) => off.includes(id));
     return (
       <label key={hazard.id} className="table-check">
-        <input type="checkbox" checked={on} onChange={(event) => hazard.events.forEach((id) => setHazardEnabled(id, event.target.checked))} />
-        <span>{compact ? hazard.name : 'Can happen in this run'}</span>
+        <input type="checkbox" checked={on} disabled={locked} onChange={(event) => hazard.events.forEach((id) => setHazardEnabled(id, event.target.checked))} />
+        <span>{compact ? hazard.name : t('table.hazard.can.happen')}</span>
       </label>
     );
   });
@@ -145,12 +152,12 @@ function Stops({ waypoints, legs }) {
         const [code, label] = stopLabel(waypoint.name, k, waypoints.length);
         const stop = stopForWaypoint(stops, waypoint.name);
         const science = stopHasContent(stop);
-        const distance = k === 0 ? 'Start' : Number.isFinite(legs[k - 1]?.distanceM) ? `${Math.round(legs[k - 1].distanceM)} m` : '';
+        const distance = k === 0 ? t('table.stop.start') : Number.isFinite(legs[k - 1]?.distanceM) ? `${Math.round(legs[k - 1].distanceM)} m` : '';
         return (
           <li key={k} className={science ? 'science' : undefined}>
             <code>{code}</code>
             {science ? (
-              <button type="button" className="table-stop-name" title="Open the science card" onClick={() => toggleWaypoint(waypoint.name)}>{label}</button>
+              <button type="button" className="table-stop-name" title={t('table.open.science.card')} onClick={() => toggleWaypoint(waypoint.name)}>{label}</button>
             ) : (
               <span className="table-stop-name">{label}</span>
             )}
@@ -172,14 +179,14 @@ function SuitNow() {
   const bar = (pct) => <span className="table-bar"><span style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} /></span>;
   return (
     <dl className="table-suit-now">
-      <div><dt>Oxygen</dt><dd><b>{num(o2)}</b><span>%</span></dd>{bar(o2)}</div>
-      <div><dt>Battery</dt><dd><b>{num(battery)}</b><span>%</span></dd>{bar(battery)}</div>
-      <div><dt>Pressure</dt><dd><b>{Number.isFinite(pressure) ? num(pressure, 1) : '–'}</b><span>psi</span></dd></div>
+      <div><dt>{t('table.oxygen')}</dt><dd><b>{num(o2)}</b><span>%</span></dd>{bar(o2)}</div>
+      <div><dt>{t('table.battery')}</dt><dd><b>{num(battery)}</b><span>%</span></dd>{bar(battery)}</div>
+      <div><dt>{t('table.pressure')}</dt><dd><b>{Number.isFinite(pressure) ? num(pressure, 1) : '–'}</b><span>psi</span></dd></div>
     </dl>
   );
 }
 
-const pct1 = (value) => (Number.isFinite(value) ? value.toFixed(1) : '–');
+const pct1 = (value) => num(value, 1);
 
 /** One stacked bar: segments are [share 0-100, class, label]. */
 function Stack({ parts, label }) {
@@ -197,38 +204,51 @@ function Stack({ parts, label }) {
  * Every share comes from route.totals (src/sim/legCosts.js).
  */
 function BudgetPanel({ totals, metrics }) {
-  const t = totals;
+  const tot = totals;
   const minutes = (sec) => Math.round(sec / 60);
   const reserveSec = 30 * 60;
-  const time = t ? [[t.timeSec, 'out'], [t.roundTrip ? 0 : t.returnTimeSec, 'back'], [Math.max(0, t.marginSec), 'spare'], [reserveSec, 'reserve']] : [];
+  const time = tot ? [[tot.timeSec, 'out'], [tot.roundTrip ? 0 : tot.returnTimeSec, 'back'], [Math.max(0, tot.marginSec), 'spare'], [reserveSec, 'reserve']] : [];
   const tank = (outPct, leftPct) => [[outPct, 'out'], [Math.max(0, 100 - outPct - leftPct), 'back'], [leftPct, 'left']];
   return (
     <div className="table-panel budget-panel">
-      <p className="table-label">What the EVA spends</p>
+      <p className="table-label">{t('table.budget.title')}</p>
 
       <div className="budget-row">
-        <div className="budget-head"><span>Time</span><b>{t ? minutes(t.timeSec) : metrics.time.value}<small>min out</small></b></div>
-        {t && <Stack parts={time} label={`${minutes(t.timeSec)} min out, ${minutes(t.returnTimeSec)} min back, ${minutes(t.marginSec)} min spare, 30 min reserve`} />}
-        {t && (
+        <div className="budget-head"><span>{t('table.time')}</span><b>{tot ? minutes(tot.timeSec) : metrics.time.value}<small>{t('table.budget.min.out')}</small></b></div>
+        {tot && (
+          <Stack
+            parts={time}
+            label={t('table.budget.time.label', { out: minutes(tot.timeSec), back: minutes(tot.returnTimeSec), spare: minutes(tot.marginSec) })}
+          />
+        )}
+        {tot && (
           <p className="budget-key">
-            <i className="seg-out" />{minutes(t.timeSec)} out <i className="seg-back" />{t.roundTrip ? 'round trip' : `${minutes(t.returnTimeSec)} back`}{' '}
-            <i className="seg-spare" />{minutes(t.marginSec)} spare <i className="seg-reserve" />30 reserve
+            <i className="seg-out" />{t('table.budget.key.out', { min: minutes(tot.timeSec) })}{' '}
+            <i className="seg-back" />{tot.roundTrip ? t('table.budget.key.round.trip') : t('table.budget.key.back', { min: minutes(tot.returnTimeSec) })}{' '}
+            <i className="seg-spare" />{t('table.budget.key.spare', { min: minutes(tot.marginSec) })}{' '}
+            <i className="seg-reserve" />{t('table.budget.key.reserve')}
           </p>
         )}
       </div>
 
       <div className="budget-row">
-        <div className="budget-head"><span>Oxygen</span><b>{metrics.o2.value}<small>g out · {pct1(t?.o2Pct)} %</small></b></div>
-        {t && <Stack parts={tank(t.o2Pct, t.arrivalO2Pct)} label={`Oxygen: ${pct1(t.o2Pct)} % out, ${num(t.arrivalO2Pct)} % left at the habitat`} />}
+        <div className="budget-head"><span>{t('table.oxygen')}</span><b>{metrics.o2.value}<small>{t('table.budget.g.out', { pct: pct1(tot?.o2Pct) })}</small></b></div>
+        {tot && <Stack parts={tank(tot.o2Pct, tot.arrivalO2Pct)} label={t('table.budget.oxygen.label', { out: pct1(tot.o2Pct), left: num(tot.arrivalO2Pct) })} />}
       </div>
 
       <div className="budget-row">
-        <div className="budget-head"><span>Battery</span><b>{metrics.battery.value}<small>Wh out · {pct1(t?.batteryPct)} %</small></b></div>
-        {t && <Stack parts={tank(t.batteryPct, t.arrivalBatteryPct)} label={`Battery: ${pct1(t.batteryPct)} % out, ${num(t.arrivalBatteryPct)} % left at the habitat`} />}
-        {t && <p className="budget-key"><i className="seg-out" />way out <i className="seg-back" />way back <i className="seg-left" />left at the habitat</p>}
+        <div className="budget-head"><span>{t('table.battery')}</span><b>{metrics.battery.value}<small>{t('table.budget.wh.out', { pct: pct1(tot?.batteryPct) })}</small></b></div>
+        {tot && <Stack parts={tank(tot.batteryPct, tot.arrivalBatteryPct)} label={t('table.budget.battery.label', { out: pct1(tot.batteryPct), left: num(tot.arrivalBatteryPct) })} />}
+        {tot && (
+          <p className="budget-key">
+            <i className="seg-out" />{t('table.budget.key.way.out')}{' '}
+            <i className="seg-back" />{t('table.budget.key.way.back')}{' '}
+            <i className="seg-left" />{t('table.budget.key.left')}
+          </p>
+        )}
       </div>
 
-      <p className="table-note">Walking time and climb from the HiRISE elevation model; oxygen and battery from our suit model.</p>
+      <p className="table-note">{t('table.budget.note')}</p>
     </div>
   );
 }
@@ -250,31 +270,33 @@ function Ring({ value, label, tone = 'ok' }) {
 
 /** What is left when the walk ends back at the airlock, and the margin over the reserve. */
 function ReturnPanel({ totals }) {
-  const t = totals;
-  const marginMin = t ? Math.round(t.marginSec / 60) : null;
-  const tone = t ? (t.status === 'nominal' ? 'ok' : t.status) : null;
+  const tot = totals;
+  const marginMin = tot ? Math.round(tot.marginSec / 60) : null;
+  const tone = tot ? (tot.status === 'nominal' ? 'ok' : tot.status) : null;
   return (
     <div className="table-panel return-panel">
-      <p className="table-label">Back at the habitat</p>
+      <p className="table-label">{t('table.return.title')}</p>
       <div className="ring-pair">
-        <Ring value={t?.arrivalO2Pct} label="Oxygen left" />
-        <Ring value={t?.arrivalBatteryPct} label="Battery left" />
+        <Ring value={tot?.arrivalO2Pct} label={t('table.return.oxygen.left')} />
+        <Ring value={tot?.arrivalBatteryPct} label={t('table.return.battery.left')} />
       </div>
       <div className="return-margin">
-        <b className={tone ? 'tone-' + tone : undefined}>{t ? `${marginMin >= 0 ? '+' : ''}${marginMin}` : '–'}<small>min</small></b>
+        <b className={tone ? 'tone-' + tone : undefined}>{tot ? `${marginMin >= 0 ? '+' : ''}${marginMin}` : '–'}<small>min</small></b>
         {/* route.totals.marginSec is capped at the 8 h EVA limit (#208); the tag's details say so. */}
-        <span>margin at the end of the plan, over the 30 min reserve<SourceTag path="route.totals.marginSec" /></span>
+        <span>{t('table.return.margin')}<SourceTag path="route.totals.marginSec" /></span>
       </div>
     </div>
   );
 }
 
 function decisionFor(planner, totals) {
-  if (planner.status === 'error') return { tone: 'warning', title: 'No-go', text: planner.error ?? 'The planner could not find a route.', go: false };
-  if (!totals) return { tone: null, title: 'Planning', text: 'Waiting for the route and its cost.', go: false };
-  if (totals.status === 'warning') return { tone: 'warning', title: 'No-go', text: 'The route uses the oxygen reserve. Shorten it before you go out.', go: false };
-  if (totals.status === 'caution') return { tone: 'caution', title: 'Go with care', text: 'The margin over the reserve is small. Once you begin, the mission clock starts and this table closes.', go: true };
-  return { tone: 'ok', title: 'Go', text: 'The suit is nominal and the route leaves a wide margin. Once you begin, the mission clock starts and this table closes.', go: true };
+  if (planner.status === 'error') {
+    return { tone: 'warning', title: t('table.decision.no.go'), text: planner.error ? translateText(planner.error) : t('table.decision.no.route'), go: false };
+  }
+  if (!totals) return { tone: null, title: t('table.decision.planning'), text: t('table.decision.waiting'), go: false };
+  if (totals.status === 'warning') return { tone: 'warning', title: t('table.decision.no.go'), text: t('table.decision.reserve'), go: false };
+  if (totals.status === 'caution') return { tone: 'caution', title: t('table.decision.go.with.care'), text: t('table.decision.small.margin'), go: true };
+  return { tone: 'ok', title: t('table.decision.go'), text: t('table.decision.wide.margin'), go: true };
 }
 
 function Actions({ children }) {
@@ -284,14 +306,17 @@ function Actions({ children }) {
 function BeginButton({ planner, totals, evaBegun, onBeginEva }) {
   const route = useMissionStore((s) => s.route);
   const decision = decisionFor(planner, totals);
+  // Go / No-go gates the start only. Once the EVA is under way the astronaut is already outside and the clock runs,
+  // so a route that now reads No-go (oxygen spent, a failed re-plan) must not keep them at the table.
+  const blocked = evaBegun ? false : !route.path || !decision.go;
   return (
     <button
       type="button"
       className="table-primary"
-      disabled={!route.path || !decision.go || !onBeginEva}
-      onClick={() => { setRouteDecision('go'); onBeginEva?.(); }}
+      disabled={blocked || !onBeginEva}
+      onClick={() => { if (!evaBegun) setRouteDecision('go'); onBeginEva?.(); }}
     >
-      {evaBegun ? 'Continue the EVA' : 'Begin EVA'}
+      {evaBegun ? t('table.continue.eva') : t('table.begin.eva')}
     </button>
   );
 }
@@ -334,11 +359,11 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
 
   const slopeLegend = (
     <div className="table-map-legend">
-      <p>Slope, from the HiRISE elevation model</p>
+      <p>{t('table.slope.legend')}</p>
       <ul>
-        <li><i className="sw-clear" />0 to {SLOPE_LIMITS.caution}° · walkable</li>
-        <li><i className="sw-caution" />{SLOPE_LIMITS.caution} to {SLOPE_LIMITS.noGo}° · caution</li>
-        <li><i className="sw-nogo" />Over {SLOPE_LIMITS.noGo}° · no-go</li>
+        <li><i className="sw-clear" />{t('table.slope.walkable', { max: SLOPE_LIMITS.caution })}</li>
+        <li><i className="sw-caution" />{t('table.slope.caution', { min: SLOPE_LIMITS.caution, max: SLOPE_LIMITS.noGo })}</li>
+        <li><i className="sw-nogo" />{t('table.slope.no.go', { min: SLOPE_LIMITS.noGo })}</li>
       </ul>
     </div>
   );
@@ -351,34 +376,31 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
     body = (
       <>
         <section className="table-left">
-          <h2 className="table-h">Cheyava Falls</h2>
-          <p className="table-text">
-            A rock about one metre long in Neretva Vallis, the old river channel that fed the lake in Jezero crater.
-            Perseverance cored it on 21 July 2024, and in 2025 NASA called it a potential biosignature.
-          </p>
+          <h2 className="table-h">{t('ui.cheyava.falls')}</h2>
+          <p className="table-text">{t('table.site.text')}</p>
           {image && (
             <figure className="table-panel table-fill table-photo">
               <img src={imageUrl(image)} alt={image.alt} width={image.width_px} height={image.height_px} />
-              <figcaption><b>The leopard spots on Cheyava Falls, close up</b> · Image: {image.credit}</figcaption>
+              <figcaption><b>{t('table.site.photo')}</b> · {t('table.site.image.credit', { credit: image.credit })}</figcaption>
             </figure>
           )}
         </section>
-        {map({ layer: 0, route: false, title: 'HiRISE image, source 25 cm per pixel, shown at about 0.5 m' })}
+        {map({ layer: 0, route: false, title: t('table.layer.hirise') })}
         <section className="table-right">
           <div className="table-panel table-fill">
-            <p className="table-label">Where</p>
+            <p className="table-label">{t('table.site.where')}</p>
             <dl className="table-stats">
-              <div><dd><b>18.4975</b><span>° N</span></dd><dt>Latitude</dt></div>
-              <div><dd><b>77.3053</b><span>° E</span></dd><dt>Longitude</dt></div>
-              <div><dd><b>785</b><span>m</span></dd><dt>From the habitat, in a straight line</dt></div>
-              <div><dd><b>221</b><span>m</span></dd><dt>Relief, lowest to highest point</dt></div>
-              <div><dd><b>1422 × 1500</b><span>m</span></dd><dt>Area of the terrain</dt></div>
+              <div><dd><b>18.4975</b><span>° N</span></dd><dt>{t('table.site.latitude')}</dt></div>
+              <div><dd><b>77.3053</b><span>° E</span></dd><dt>{t('table.site.longitude')}</dt></div>
+              <div><dd><b>785</b><span>m</span></dd><dt>{t('table.site.from.habitat')}</dt></div>
+              <div><dd><b>221</b><span>m</span></dd><dt>{t('table.site.relief')}</dt></div>
+              <div><dd><b>1422 × 1500</b><span>m</span></dd><dt>{t('table.site.area')}</dt></div>
             </dl>
-            <p className="table-note">Origin of the map: Perseverance waypoint, sol 1210.</p>
+            <p className="table-note">{t('table.site.origin')}</p>
           </div>
           <Actions>
-            <button type="button" className="table-primary" onClick={() => setTab('route')}>Next: route</button>
-            <button type="button" className="table-secondary" onClick={openSources}>Sources</button>
+            <button type="button" className="table-primary" onClick={() => setTab('route')}>{t('table.next.route')}</button>
+            <button type="button" className="table-secondary" onClick={openSources}>{t('ui.sources.188')}</button>
           </Actions>
         </section>
       </>
@@ -388,64 +410,61 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
     body = (
       <>
         <section className="table-left">
-          <h2 className="table-h">Sample Cheyava Falls</h2>
-          <p className="table-text">
-            Walk from the habitat to the rock where Perseverance reported a potential biosignature, stop at the Bright
-            Angel outcrop, and be back before the oxygen reserve.
-          </p>
+          <h2 className="table-h">{t('table.route.title')}</h2>
+          <p className="table-text">{t('table.route.text')}</p>
           <div className="table-panel table-fill">
-            <p className="table-label">Stops</p>
+            <p className="table-label">{t('table.stops')}</p>
             <Stops waypoints={waypoints} legs={route.legs ?? []} />
           </div>
           <div className="table-panel table-fill">
-            <p className="table-label">Hazards in this run</p>
-            <div className="table-checks"><Hazards compact /></div>
+            <p className="table-label">{t('table.hazards.in.run')}</p>
+            <div className="table-checks"><Hazards compact locked={evaBegun} /></div>
           </div>
           <div className="table-panel">
-            <p className="table-label" title="On the map: scroll to zoom, drag to move, double-click to fit the route">Map layer · scroll to zoom, drag to move</p>
-            <div className="table-layers" role="group" aria-label="Map layer">
+            <p className="table-label" title={t('table.map.help')}>{t('table.map.layer.hint')}</p>
+            <div className="table-layers" role="group" aria-label={t('table.map.layer')}>
             {LAYER_BUTTONS.map((item) => (
               <button
                 key={item.index}
                 type="button"
                 className={layer === item.index ? 'on' : undefined}
                 aria-pressed={layer === item.index}
-                title={`${item.title} (L: next layer)`}
+                title={t('table.layer.button.title', { title: t(item.title) })}
                 onClick={() => setLayer(item.index)}
               >
-                {item.label}
+                {t(item.label)}
                 {LAYERS.some((entry) => entry.index === item.index) && <LayerPreview layer={LAYERS.find((entry) => entry.index === item.index)} />}
               </button>
             ))}
             </div>
           </div>
         </section>
-        {map({ layer, title: current.title, legend: layer === 1 ? slopeLegend : null })}
+        {map({ layer, title: t(current.title), legend: layer === 1 ? slopeLegend : null })}
         <section className="table-right">
           <div className="table-panel table-fill">
             <div className="table-panel-head">
-              <p className="table-label">Route</p>
+              <p className="table-label">{t('table.tab.route')}</p>
               <button type="button" className="table-link" onClick={planner.replan} disabled={planner.status === 'planning'}>
-                {planner.status === 'planning' ? 'Planning…' : 'Re-plan'}
+                {planner.status === 'planning' ? t('table.planning') : t('table.replan')}
               </button>
             </div>
             <div className="table-grid2">
-              <Big value={metrics.distance.value} unit="km" label="Distance" />
-              <Big value={metrics.time.value} unit="min" label="Walk out" />
-              <Big value={metrics.climb.value} unit="m" label="Climb" />
-              <Big value={metrics.steepest.value} unit="°" label="Steepest slope" tone={steepTone} />
+              <Big value={metrics.distance.value} unit="km" label={t('ui.distance')} />
+              <Big value={metrics.time.value} unit="min" label={t('ui.walk.out')} />
+              <Big value={metrics.climb.value} unit="m" label={t('ui.climb')} />
+              <Big value={metrics.steepest.value} unit="°" label={t('table.steepest.slope')} tone={steepTone} />
             </div>
-            {route.skipped?.length > 0 && <p className="table-note tone-caution">Re-planned for the event. Skipped: {route.skipped.join(' · ')}</p>}
+            {route.skipped?.length > 0 && <p className="table-note tone-caution">{t('table.replanned.skipped', { stops: route.skipped.join(' · ') })}</p>}
           </div>
           <div className="table-panel table-fill">
-            <div className="table-panel-head"><p className="table-label">Suit</p><p className="table-label tone-ok">Nominal</p></div>
+            <div className="table-panel-head"><p className="table-label">{t('table.tab.suit')}</p><p className="table-label tone-ok">{t('table.nominal')}</p></div>
             <SuitNow />
           </div>
           <Actions>
             <BeginButton planner={planner} totals={totals} evaBegun={evaBegun} onBeginEva={onBeginEva} />
             <div className="table-pair">
-              <button type="button" className="table-secondary" onClick={onControls}>Controls</button>
-              <button type="button" className="table-secondary" onClick={openSources}>Sources</button>
+              <button type="button" className="table-secondary" onClick={onControls}>{t('menu.controls')}</button>
+              <button type="button" className="table-secondary" onClick={openSources}>{t('ui.sources.188')}</button>
             </div>
           </Actions>
         </section>
@@ -456,12 +475,9 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
       <div className="table-hazards">
         <div className="table-hazards-head">
           <div>
-            <h2 className="table-h">What can go wrong outside</h2>
+            <h2 className="table-h">{t('table.hazards.title')}</h2>
           </div>
-          <p className="table-text">
-            Choose the events for this run here. During the EVA there are no switches: an alert tells you, and the route is
-            re-planned to the habitat.
-          </p>
+          <p className="table-text">{t('table.hazards.text')}</p>
         </div>
         <ul className="table-hazard-cards">
           {HAZARDS.map((hazard) => (
@@ -472,20 +488,20 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
                 <span><i />{hazard.levelLabel}</span>
               </div>
               <dl>
-                <div><dt>When</dt><dd>{hazard.when}</dd></div>
-                <div><dt>What happens</dt><dd>{hazard.happens}</dd></div>
-                <div><dt>The alert</dt><dd>{hazard.alert}</dd></div>
-                <div><dt>What to do</dt><dd>{hazard.act}</dd></div>
+                <div><dt>{t('table.hazard.when')}</dt><dd>{hazard.when}</dd></div>
+                <div><dt>{t('table.hazard.what.happens')}</dt><dd>{hazard.happens}</dd></div>
+                <div><dt>{t('table.hazard.the.alert')}</dt><dd>{hazard.alert}</dd></div>
+                <div><dt>{t('table.hazard.what.to.do')}</dt><dd>{hazard.act}</dd></div>
               </dl>
               <p className="table-note">{hazard.basis}</p>
-              <HazardSwitch hazard={hazard} />
+              <HazardSwitch hazard={hazard} locked={evaBegun} />
             </li>
           ))}
         </ul>
         <Actions>
           <div className="table-pair end">
-            <button type="button" className="table-secondary" onClick={() => setTab('route')}>Back to route</button>
-            <button type="button" className="table-primary" onClick={() => setTab('suit')}>Next: suit check</button>
+            <button type="button" className="table-secondary" onClick={() => setTab('route')}>{t('table.back.to.route')}</button>
+            <button type="button" className="table-primary" onClick={() => setTab('suit')}>{t('table.next.suit.check')}</button>
           </div>
         </Actions>
       </div>
@@ -495,9 +511,9 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
     body = (
       <>
         <section className="table-left">
-          <h2 className="table-h">Suit check</h2>
+          <h2 className="table-h">{t('table.suit.check')}</h2>
           <div className="table-panel">
-            <div className="table-panel-head"><p className="table-label">Now, in the habitat</p><p className="table-label tone-ok">Nominal</p></div>
+            <div className="table-panel-head"><p className="table-label">{t('table.suit.now')}</p><p className="table-label tone-ok">{t('table.nominal')}</p></div>
             <SuitNow />
           </div>
           <BudgetPanel totals={totals} metrics={metrics} />
@@ -507,7 +523,7 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
         </div>
         <section className="table-right">
           <div className="table-panel">
-            <p className="table-label">Decision</p>
+            <p className="table-label">{t('table.decision')}</p>
             <p className={'table-decision' + (decision.tone ? ' tone-' + decision.tone : '')}>{decision.title}</p>
             <p className="table-text small">{decision.text}</p>
           </div>
@@ -515,8 +531,8 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
           <Actions>
             <BeginButton planner={planner} totals={totals} evaBegun={evaBegun} onBeginEva={onBeginEva} />
             <div className="table-pair">
-              <button type="button" className="table-secondary" onClick={() => setTab('route')}>Back to route</button>
-              <button type="button" className="table-secondary" onClick={onControls}>Controls</button>
+              <button type="button" className="table-secondary" onClick={() => setTab('route')}>{t('table.back.to.route')}</button>
+              <button type="button" className="table-secondary" onClick={onControls}>{t('menu.controls')}</button>
             </div>
           </Actions>
         </section>
@@ -527,8 +543,8 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
   return (
     <div className="table-screen">
       <header className="table-top">
-        <p className="table-brand">Marswalk</p>
-        <div className="table-tabs" role="tablist" aria-label="Planning steps" onKeyDown={onTabKey}>
+        <p className="table-brand">{t('app.brand')}</p>
+        <div className="table-tabs" role="tablist" aria-label={t('table.steps')} onKeyDown={onTabKey}>
           {TABS.map((item) => (
             <button
               key={item.id}
@@ -541,13 +557,13 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
               className={tab === item.id ? 'on' : undefined}
               onClick={() => setTab(item.id)}
             >
-              {item.label}
+              {t(item.label)}
             </button>
           ))}
         </div>
         <p className="table-time">
           {evaBegun ? `EVA ${formatEva(clock.elapsedSec)} · ` : ''}
-          {clock.lmst ? `${clock.lmst} LMST · ` : ''}Habitat
+          {clock.lmst ? `${clock.lmst} LMST · ` : ''}{t('table.habitat')}
         </p>
       </header>
       <div id="table-body" className={'table-body table-body-' + tab} role="tabpanel" aria-labelledby={`table-tab-${tab}`}>
@@ -557,13 +573,13 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
   );
 }
 
-function HazardSwitch({ hazard }) {
+function HazardSwitch({ hazard, locked = false }) {
   const off = useMissionStore(useShallow((s) => s.hazards.off ?? []));
   const on = !hazard.events.some((id) => off.includes(id));
   return (
     <label className="table-check table-hazard-switch">
-      <input type="checkbox" checked={on} onChange={(event) => hazard.events.forEach((id) => setHazardEnabled(id, event.target.checked))} />
-      <span>Can happen in this run</span>
+      <input type="checkbox" checked={on} disabled={locked} onChange={(event) => hazard.events.forEach((id) => setHazardEnabled(id, event.target.checked))} />
+      <span>{t('table.hazard.can.happen')}</span>
     </label>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { loadDataFile, TERRAIN_PATH } from '../data/dataFiles.js';
+import { t } from '../i18n/index.js';
 import { decodeTerrain } from '../sim/costGrid.js';
 import { waypointNumber } from '../sim/waypointNumber.js';
 import { acrossLabel, clampCrop, mapCrop, paintMap, slopeGrid, toMap, zoomCrop } from './mapLayers.js';
@@ -54,7 +55,7 @@ function pointFacts({ terrain, slopes }, { x, z }) {
 
 /** "WP1 · channel floor" → ["WP1", "channel floor"]; the first stop is the habitat airlock. */
 function markerLabel(name, index) {
-  if (index === 0) return ['HAB', 'habitat airlock'];
+  if (index === 0) return ['HAB', t('map.habitat.airlock')];
   return name.includes(' · ') ? name.split(' · ') : [name, ''];
 }
 
@@ -159,7 +160,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
           const [u, v] = toMap(w.x, w.z, crop);
           if (u < -5 || u > 105 || v < -5 || v > 105) return null;
           if (!route && k !== 0 && k !== last) return null;
-          const [code, name] = route ? markerLabel(w.name, k) : [k === 0 ? 'Habitat' : w.name, ''];
+          const [code, name] = route ? markerLabel(w.name, k) : [k === 0 ? t('table.habitat') : w.name, ''];
           const target = science.has(w.name) || k === last;
           return (
             <li key={k} className={target ? 'map-marker target' : 'map-marker'} style={{ left: `${u}%`, top: `${v}%` }}>
@@ -167,7 +168,7 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
                 type="button"
                 className="map-marker-hit"
                 aria-expanded={open === k}
-                aria-label={`${code}${name ? ' ' + name : ''}: details`}
+                aria-label={t('map.marker.details', { name: `${code}${name ? ' ' + name : ''}` })}
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={() => setOpen(open === k ? null : k)}
               >
@@ -187,33 +188,33 @@ export default function MissionMap({ layer, path, waypoints, science = new Set()
         const walked = legs.slice(0, open).reduce((sum, l) => sum + (l?.distanceM ?? 0), 0);
         const style = { left: u > 60 ? undefined : `calc(${u}% + 18px)`, right: u > 60 ? `calc(${100 - u}% + 18px)` : undefined, top: `clamp(8px, calc(${v}% - 40px), calc(100% - 260px))` };
         return (
-          <div className="map-pop" style={style} role="dialog" aria-label={`${code} details`} onPointerDown={(event) => event.stopPropagation()}>
+          <div className="map-pop" style={style} role="dialog" aria-label={t('map.marker.details', { name: code })} onPointerDown={(event) => event.stopPropagation()}>
             <div className="map-pop-head">
               <div><b>{code}</b>{name && <span>{name}</span>}</div>
-              <button type="button" className="map-pop-close" aria-label="Close" onClick={() => setOpen(null)}>×</button>
+              <button type="button" className="map-pop-close" aria-label={t('menu.close')} onClick={() => setOpen(null)}>×</button>
             </div>
             <dl>
-              <div><dt>Stop</dt><dd>{waypointNumber(open)} of {waypointNumber(last)}</dd></div>
-              {fact && <div><dt>Height</dt><dd>{Math.round(fact.height)} m <small>above the lowest point</small></dd></div>}
-              {fact && <div><dt>Slope here</dt><dd className={fact.slope > SLOPE_LIMITS.noGo ? 'tone-warning' : fact.slope > SLOPE_LIMITS.caution ? 'tone-caution' : undefined}>{Math.round(fact.slope)}°</dd></div>}
-              {leg && <div><dt>From the last stop</dt><dd>{Math.round(leg.distanceM)} m · {Math.round(leg.timeSec / 60)} min · +{Math.round(leg.climbM)} m</dd></div>}
-              {open > 0 && <div><dt>From the habitat</dt><dd>{Math.round(walked)} m walked</dd></div>}
-              <div><dt>Position</dt><dd>x {Math.round(w.x)} · z {Math.round(w.z)} m</dd></div>
+              <div><dt>{t('map.pop.stop')}</dt><dd>{t('map.pop.n.of.m', { n: waypointNumber(open), m: waypointNumber(last) })}</dd></div>
+              {fact && <div><dt>{t('map.pop.height')}</dt><dd>{Math.round(fact.height)} m <small>{t('map.pop.above.lowest')}</small></dd></div>}
+              {fact && <div><dt>{t('map.pop.slope')}</dt><dd className={fact.slope > SLOPE_LIMITS.noGo ? 'tone-warning' : fact.slope > SLOPE_LIMITS.caution ? 'tone-caution' : undefined}>{Math.round(fact.slope)}°</dd></div>}
+              {leg && <div><dt>{t('map.pop.from.last')}</dt><dd>{Math.round(leg.distanceM)} m · {Math.round(leg.timeSec / 60)} min · +{Math.round(leg.climbM)} m</dd></div>}
+              {open > 0 && <div><dt>{t('map.pop.from.habitat')}</dt><dd>{t('map.pop.walked', { m: Math.round(walked) })}</dd></div>}
+              <div><dt>{t('map.pop.position')}</dt><dd>x {Math.round(w.x)} · z {Math.round(w.z)} m</dd></div>
             </dl>
             {onScience && science.has(w.name) && (
-              <button type="button" className="map-pop-science" onClick={() => { onScience(w.name); setOpen(null); }}>Open the science card</button>
+              <button type="button" className="map-pop-science" onClick={() => { onScience(w.name); setOpen(null); }}>{t('table.open.science.card')}</button>
             )}
           </div>
         );
       })()}
       <p className="table-map-caption">
         {title}
-        <span>North up · {acrossLabel(crop.size)}</span>
+        <span>{t('map.north.up')} · {acrossLabel(crop.size)}</span>
       </p>
       {legend}
       {view && (
         <button type="button" className="table-map-fit" onPointerDown={(event) => event.stopPropagation()} onClick={() => setView(null)}>
-          Fit route
+          {t('map.fit.route')}
         </button>
       )}
       {error && <p className="table-map-error" role="status">{error}</p>}
