@@ -1,15 +1,11 @@
 import { useEffect } from 'react';
 import { handleShortcut } from './shortcuts.js';
 
-/**
- * Disabled while loading or recovering from an engine failure, like the topbar.
- * `onMode` is the mode button's handler, so M takes the same path as a click (#174).
- */
-export function useShortcuts(enabled, onMode) {
+/** Data layer keys. App turns them on where a layer shows: on the surface and at the mission table. */
+export function useShortcuts(enabled) {
   useEffect(() => {
     if (!enabled) return undefined;
-    const onKey = (event) => handleShortcut(event, onMode ? { onMode } : undefined);
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [enabled, onMode]);
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, [enabled]);
 }

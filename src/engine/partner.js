@@ -62,7 +62,7 @@ export function createPartner(ctx) {
       if (!this.root) return;
       const st = this.source ? this.source.update(dt, refreshWorld()) : null;
       this.state = st;
-      if (!st || !st.visible) {
+      if (!st || !st.visible || this.parked) {   // parked: inside the habitat before the EVA, out of sight (habitat-first flow)
         this.root.visible = this.blob.visible = false; this.glow.visible = false;
         sys.cast.set(1, false); U.uLamp2Pos.value.set(0, 1e6, 0); return;
       }

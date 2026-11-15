@@ -256,29 +256,6 @@
   color: var(--dim);
 }
 
-.pause-view-switch {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 16px;
-  padding: 12px 0;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-}
-
-.pause-view-switch > span {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--dim);
-}
-
-.pause-view-switch .mode-switch button {
-  min-height: 44px;
-}
-
 .quality-block {
   margin-top: 18px;
   padding-top: 16px;

@@ -15,7 +15,8 @@ import { clearClockSession, defaultSessionStorage } from '../sim/missionClock.js
 import { pauseMission, resetStore, resumeMission, useMissionStore } from './store.js';
 
 export const EVA_PHASE = Object.freeze({ START: 'start', PLAYING: 'playing', PAUSED: 'paused' });
-export const PAUSE_VIEW = Object.freeze({ MENU: 'menu', CONTROLS: 'controls', RESTART: 'restart' });
+// END: confirm ending the EVA and going back to the mission table in the habitat (a restart that lands on the table).
+export const PAUSE_VIEW = Object.freeze({ MENU: 'menu', CONTROLS: 'controls', RESTART: 'restart', END: 'end' });
 
 // Honest for every refusal: a denial is not always a permission problem. Right after Escape, browsers can
 // need a short moment before they accept a new capture, and the next attempt must come from Resume.
@@ -48,10 +49,15 @@ export async function requestEvaLock(engine) {
  * grant that arrives after the interface paused, changed mode or restarted is abandoned instead of
  * resuming the mission behind a menu. A stale answer is silent: the newer action owns the message.
  *
- * @param {{ engine?: object, mode?: 'walk' | 'plan', isCurrent?: (() => boolean) | null, capture?: boolean }} [options]
+ * `holdClock` enables the scene input without resuming the mission clock. The app passes it while the astronaut is
+ * still inside the habitat before the EVA (src/state/flow.js): walking around and planning cost no mission time, so
+ * the clock waits for the end of the airlock cycle.
+ *
+ * @param {{ engine?: object, mode?: 'walk' | 'plan', isCurrent?: (() => boolean) | null, capture?: boolean,
+ *   holdClock?: boolean }} [options]
  * @returns {Promise<{ ok: boolean, message: string | null, stale?: boolean, lockFailed?: boolean }>}
  */
-export async function resumeEva({ engine, mode = 'walk', isCurrent = null, capture = true } = {}) {
+export async function resumeEva({ engine, mode = 'walk', isCurrent = null, capture = true, holdClock = false } = {}) {
   if (mode === 'walk' && capture === false) {
     // Drag-to-look needs a free pointer. Cancel any request still in flight so a late grant cannot land.
     try { engine?.releasePointerLock?.(); } catch { /* nothing was held */ }
@@ -68,7 +74,7 @@ export async function resumeEva({ engine, mode = 'walk', isCurrent = null, captu
   } catch (cause) {
     return { ok: false, message: (cause && cause.message) || 'The scene input could not be enabled.' };
   }
-  resumeMission();
+  if (!holdClock) resumeMission();
   return { ok: true, message: null };
 }
 
@@ -83,7 +89,8 @@ export function pauseEva({ engine } = {}) {
 }
 
 /**
- * Reset the whole EVA and leave the new mission paused on the start screen.
+ * Reset the whole EVA and leave the new mission paused, with the astronaut back inside the habitat. The caller
+ * chooses what comes next: the start screen, the mission table or walking in the habitat.
  *
  * Order matters: stop the old runners, remove the persisted session, reset the store, return the engine to
  * the spawn, start one new simulation, then pause it. Clearing before the new clock starts is what stops an

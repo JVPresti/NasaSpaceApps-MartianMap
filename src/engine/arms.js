@@ -32,6 +32,7 @@ export function createArms(ctx) {
       const mat = new THREE.ShaderMaterial({ uniforms: { ...U, uPlayer: this.uPlayer }, vertexShader: SH.ARM_VERT, fragmentShader: SH.ARM_FRAG, vertexColors: true, side: THREE.DoubleSide });
       const screenMat = new THREE.MeshBasicMaterial({ map: this.tex, toneMapped: false });
       this.screenMat = screenMat; this.applyScreenCanvas();   // the app may have handed in its canvas before init
+      if (this.screenOff) this.setScreenOff(true);
       const mk = (mirror) => {
         const inner = mirror ? cloneSkinned(gltf.scene) : gltf.scene, g = new THREE.Group(), flip = new THREE.Group();
         flip.rotation.y = Math.PI; if (mirror) flip.scale.x = -1; flip.add(inner); g.add(flip);
@@ -96,6 +97,8 @@ export function createArms(ctx) {
         if (this.tex) this.tex.needsUpdate = true;   // the fallback may have changed while the app owned the screen
       }
     },
+    /** Dims the wrist screen to an unlit panel (inside the habitat, before the EVA) or lights it again. */
+    setScreenOff(off) { this.screenOff = !!off; if (this.screenMat) this.screenMat.color.setScalar(off ? 0.04 : 1); },
     /** The app repainted its canvas: upload the new frame. The engine never uploads an external screen on its own. */
     invalidateScreen() { const tex = this.screenMat && this.screenMat.map; if (tex) tex.needsUpdate = true; },
     /**

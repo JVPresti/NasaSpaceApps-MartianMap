@@ -7,7 +7,14 @@ import { createInitialEvaState } from './eva.js';
 /** Plain data only. Units are in the field names. Coordinates: x east, z south, metres from Cheyava Falls. */
 export function createInitialState() {
   return {
-    mode: 'plan',                                   // 'walk' | 'plan'; the app opens at the planning table (#166)
+    // 'walk' (first person) or 'plan' (the mission table is open). The astronaut starts inside the habitat on foot.
+    mode: 'walk',
+    // Where the astronaut is in the flow: 'habitat' | 'egress' | 'eva' | 'ingress' | 'debrief' (src/state/flow.js).
+    stage: 'habitat',
+    // Inside the habitat, written by the engine bridge 5 times per second while the stage is 'habitat':
+    // nearTable is true when the astronaut stands at the mission table and faces it (E or a click opens it);
+    // zone is the walk zone they stand in ('main', 'airlock', ...), or null outside.
+    habitat: { nearTable: false, zone: null },
     // Clock fields: docs/STATE_AND_ENGINE.md. anchorMs is the wall timestamp elapsedSec is measured from;
     // startedAtMs is the first start. The mission clock fills anchorMs and the fields after it when it starts.
     mission: {

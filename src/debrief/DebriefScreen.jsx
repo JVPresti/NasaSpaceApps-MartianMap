@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import SourceTag from '../components/SourceTag.jsx';
 import Modal from '../components/Modal.jsx';
 import {
@@ -70,18 +71,21 @@ function MissionLogEntry({ entry }) {
  * mission log in mission time: every event start and end, and every route change with its reason and distance.
  *
  * The screen is a native modal, like the start screen and the pause menu. Esc is deliberately inert: the EVA has
- * already ended, so there is no pause menu or start screen behind this one. Restart is the app's real
- * `handleRestartConfirm`; Sources opens the existing screen above this dialog and returns focus here.
+ * already ended, so there is no pause menu or start screen behind this one. Both ways out restart the EVA
+ * through the app's real `restartEva` and stay in the habitat: "Plan the next EVA" opens the mission table and
+ * "Back to the habitat" walks again by the table. Sources opens the existing screen above this dialog and returns
+ * focus here.
  *
  * @param {{
  *   summary: object,
  *   busy?: boolean,
  *   notice?: string | null,
- *   onRestart: () => void,
+ *   onPlanNext: () => void,
+ *   onBackToHabitat: () => void,
  *   onSources: () => void,
  * }} props
  */
-export default function DebriefScreen({ summary, busy = false, notice = null, onRestart, onSources }) {
+export default function DebriefScreen({ summary, busy = false, notice = null, onPlanNext, onBackToHabitat, onSources }) {
   const log = buildMissionLog(summary);
   const samples = sampleDetail(summary.samples);
   const hasWindow = Number.isFinite(summary.startedAtSec) && Number.isFinite(summary.endedAtSec);
@@ -172,17 +176,17 @@ export default function DebriefScreen({ summary, busy = false, notice = null, on
         {notice && <p className="dialog-notice" role="alert">{notice}</p>}
 
         <div className="dialog-actions debrief-actions">
-          <button type="button" className="ui-button primary" onClick={onRestart} disabled={busy}>
-            {busy ? 'Restarting…' : 'Restart EVA'}
+          <button type="button" className="ui-button primary" onClick={onPlanNext} disabled={busy}>
+            {busy ? t('menu.restarting') : t('debrief.planNext')}
+          </button>
+          <button type="button" className="ui-button ghost" onClick={onBackToHabitat} disabled={busy}>
+            {t('debrief.backToHabitat')}
           </button>
           <button type="button" className="ui-button ghost" onClick={onSources} disabled={busy}>
-            Sources
+            {t('ui.sources.188')}
           </button>
         </div>
-        <p className="dialog-footnote">
-          Restart clears this log and returns to the start screen. This screen stays open until then; Esc does not
-          resume the EVA.
-        </p>
+        <p className="dialog-footnote">{t('debrief.footnote')}</p>
       </div>
     </Modal>
   );

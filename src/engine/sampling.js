@@ -38,7 +38,7 @@ export function createSampling(ctx, canvas, signal) {
   let landing = null, sealing = null, caseRequested = false;   // hand-over: sample falling into the case, case to close, case asked for
 
   const emit = (type, extra) => { const e = { type, ...extra }; for (const fn of listeners) { try { fn(e); } catch (err) { console.error(err); } } };
-  const walk = () => view.mode === 'eye';
+  const walk = () => view.mode === 'eye' && ctx.onSurface !== false;   // no scoop or helmet photos inside the habitat
   // #67: while the wrist app is up it owns the input (the interface reads its own keys and clicks). Sampling ignores
   // act() and reports every action as unavailable, but its phase is left exactly as it was, clips included.
   const wristUp = () => wristIsOpen(sys.arms && sys.arms.state);

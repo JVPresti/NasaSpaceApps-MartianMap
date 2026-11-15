@@ -1,7 +1,8 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { setLanguage } from './index.js';
-import ModeSwitch from '../components/ModeSwitch.jsx';
+import HabitatHud from '../habitat/HabitatHud.jsx';
+import AirlockCycle from '../habitat/AirlockCycle.jsx';
 import LoadingScreen from '../components/LoadingScreen.jsx';
 import LayerPanel from '../plan/LayerPanel.jsx';
 import EventBanner from '../events/EventBanner.jsx';
@@ -21,17 +22,22 @@ vi.mock('../state/store.js', async (importOriginal) => {
 afterEach(() => { setLanguage('en'); resetStore(); vi.restoreAllMocks(); });
 
 it('renders the existing modes, legends, sampling, navigation and active alerts in either language', () => {
-  useMissionStore.setState({ alerts: { storm: { active: true, eventId: 'dust-storm', level: 'warning', text: 'Dust storm: opacity rising. Return to the habitat.' } } });
+  useMissionStore.setState({
+    alerts: { storm: { active: true, eventId: 'dust-storm', level: 'warning', text: 'Dust storm: opacity rising. Return to the habitat.' } },
+    habitat: { nearTable: true, zone: 'main' },
+  });
   const ui = () => renderToStaticMarkup(<>
-    <ModeSwitch mode="walk" onChange={() => {}} />
+    <HabitatHud />
+    <AirlockCycle direction="out" running />
     <LayerPanel layer={1} onLayer={() => {}} radioShadow={false} onRadioShadow={() => {}} />
     <SamplingPanel />
     <EventBanner />
   </>);
   expect(ui()).toContain('Map layers');
+  expect(ui()).toContain('Open the mission table');
   setLanguage('es');
   const spanish = ui();
-  for (const label of ['Modo Plan', 'Modo Caminar', 'Capas del mapa', 'Peligro por pendiente', 'MUESTREO', 'Vuelve al hábitat']) expect(spanish).toContain(label);
+  for (const label of ['Abrir la mesa de misión', 'Despresurizando', 'Hábitat', 'Capas del mapa', 'Peligro por pendiente', 'MUESTREO', 'Vuelve al hábitat']) expect(spanish).toContain(label);
   expect(spanish).not.toContain('Map layers');
   expect(formatNavLine({ errorM: 0.4, fixMode: 'terrain fix', lastFixSec: 0 }, 180)).toBe('NAV · fijación con el terreno · ±0,4 m · hace 3 min');
   setLanguage('en');

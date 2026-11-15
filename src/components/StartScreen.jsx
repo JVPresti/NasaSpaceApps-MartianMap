@@ -3,7 +3,7 @@ import ControlsHelp from './ControlsHelp.jsx';
 import Modal from './Modal.jsx';
 
 /**
- * The post-loading start screen. It is a modal dialog, so the scene and top bar behind it are inert.
+ * The post-loading start screen. Start puts the astronaut inside the habitat, next to the mission table. It is a modal dialog, so the scene and top bar behind it are inert.
  * Start captures the mouse in the click itself; the app resumes the mission only after the lock is real.
  * After a refused capture in Walk it also offers drag-to-look (#197); once chosen, Start skips the capture.
  */
@@ -17,7 +17,7 @@ export default function StartScreen({ mode = 'walk', busy, notice, freeLook = fa
         <p className="dialog-site">{t('ui.neretva.vallis.jezero.crater.mars')}</p>
 
         <p className="dialog-mission">{t('menu.walk.to.cheyava.falls.and.sample.the.science')}</p>
-        <p className="dialog-source">{t('menu.start.position.sim.the.foot.of.the.habitat')}</p>
+        <p className="dialog-source">{t('menu.start.in.habitat')}</p>
 
         <ControlsHelp />
 
@@ -25,7 +25,7 @@ export default function StartScreen({ mode = 'walk', busy, notice, freeLook = fa
 
         <div className="dialog-actions">
           <button type="button" className="ui-button primary" onClick={onStart} disabled={busy} data-autofocus="true">
-            {busy ? (capture ? t('menu.capturing.the.mouse') : t('menu.opening')) : mode === 'plan' ? t('menu.start.in.plan.view') : t('menu.start.eva')}
+            {busy ? (capture ? t('menu.capturing.the.mouse') : t('menu.opening')) : mode === 'plan' ? t('menu.start.in.plan.view') : t('menu.enter.habitat')}
           </button>
           {capture && lockFailed && (
             <button type="button" className="ui-button ghost" onClick={onStartWithoutCapture} disabled={busy}>

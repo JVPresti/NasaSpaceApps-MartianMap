@@ -28,12 +28,21 @@ const summary = {
 };
 
 const render = (props = {}) => renderToStaticMarkup(
-  <DebriefScreen summary={summary} onRestart={() => {}} onSources={() => {}} {...props} />,
+  <DebriefScreen summary={summary} onPlanNext={() => {}} onBackToHabitat={() => {}} onSources={() => {}} {...props} />,
 );
 
 const text = (html) => html.replace(/<[^>]*>/g, ' ').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 
 describe('DebriefScreen', () => {
+  it('offers the next EVA from the habitat: the mission table first, then walking, then Sources', () => {
+    const body = text(render());
+    const plan = body.indexOf('Plan the next EVA'), walk = body.indexOf('Back to the habitat'), sources = body.lastIndexOf('Sources');
+    expect(plan).toBeGreaterThan(-1);
+    expect(walk).toBeGreaterThan(plan);
+    expect(sources).toBeGreaterThan(walk);
+    expect(body).not.toContain('Restart EVA');
+  });
+
   it('shows the frozen summary metrics with the closing dose read as unknown', () => {
     const html = render();
     const body = text(html);

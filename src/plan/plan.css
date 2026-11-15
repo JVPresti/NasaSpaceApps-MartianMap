@@ -905,3 +905,10 @@
     transition: none;
   }
 }
+
+/* Begin EVA and Back to the habitat (habitat-first flow). */
+.plan-actions {
+  display: grid;
+  gap: 8px;
+  pointer-events: auto;
+}

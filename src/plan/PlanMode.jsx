@@ -1,7 +1,7 @@
 import { t } from '../i18n/index.js';
 import { useEffect, useState } from 'react';
 import EventBanner from '../events/EventBanner.jsx';
-import { useMissionStore, setLayer } from '../state/store.js';
+import { useMissionStore, setLayer, setRouteDecision } from '../state/store.js';
 import { radioShadowCells } from '../sim/radio.js';
 import LayerPanel from './LayerPanel.jsx';
 import PlanChrome from './PlanChrome.jsx';
@@ -21,11 +21,14 @@ import './plan.css';
  * top-down camera. The engine draws the terrain, the data layer and the
  * numbered waypoint markers; this component is only interface.
  *
- * @param {{ engine: object | null, active: boolean }} props
+ * @param {{ engine: object | null, active: boolean, onBeginEva?: () => void, onClose?: () => void }} props
+ *   onBeginEva: Begin EVA, out through the airlock; onClose: back to walking in the habitat (habitat-first flow).
  */
-export default function PlanMode({ engine, active }) {
+export default function PlanMode({ engine, active, onBeginEva, onClose }) {
   const layer = useMissionStore((s) => s.view.layer);
   const waypoints = useMissionStore((s) => s.route.waypoints);
+  const routePath = useMissionStore((s) => s.route.path);
+  const decision = useMissionStore((s) => s.route.decision);
   const [routeStatus, setRouteStatus] = useState('loading');
   const [metresPerPixel, setMetresPerPixel] = useState(0);
   const [radioShadow, setRadioShadow] = useState(false);
@@ -120,6 +123,12 @@ export default function PlanMode({ engine, active }) {
         <div className="plan-region plan-left">
           <LayerPanel layer={layer} onLayer={setLayer} radioShadow={radioShadow} onRadioShadow={setRadioShadow} />
           <SourcesButton />
+          <div className="plan-actions">
+            <button type="button" className="ui-button primary" onClick={() => { setRouteDecision('go'); onBeginEva?.(); }} disabled={!routePath || decision === 'no-go' || !onBeginEva}>
+              {t('table.beginEva')}
+            </button>
+            <button type="button" className="ui-button ghost" onClick={onClose} disabled={!onClose}>{t('table.backToHabitat')}</button>
+          </div>
         </div>
 
         <div className="plan-region plan-alerts">

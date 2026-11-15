@@ -1,6 +1,7 @@
 // Connects the mission store and the engine. Store -> engine: mode, layer, sky, route path, shelter, dust, when they change,
 // and clearing the boot prints when a new EVA starts.
-// Engine -> store: the player's position and heading, 5 times per second (never per frame).
+// Engine -> store: the player's position and heading, 5 times per second (never per frame), and inside the habitat
+// whether they stand at the mission table (habitat.nearTable) and which walk zone they are in (habitat.zone).
 // For now the position written is the true one; the estimate with its error ring comes with #21 and #42.
 import { useMissionStore } from './store.js';
 import { dustLevelFromTau } from './dustLevel.js';
@@ -28,7 +29,15 @@ export function connectEngine(engine, store = useMissionStore) {
   apply(store.getState(), null);
   const unsubscribe = store.subscribe(apply);
 
+  const pollHabitat = () => {
+    const state = store.getState();
+    const inside = state.stage === 'habitat' && typeof engine.getHabitat === 'function' ? engine.getHabitat() : null;
+    const nearTable = !!inside?.nearTable, zone = inside?.zone ?? null;
+    if (nearTable !== state.habitat?.nearTable || zone !== state.habitat?.zone) store.setState({ habitat: { nearTable, zone } });
+  };
+
   const timer = setInterval(() => {
+    pollHabitat();
     const p = engine.getPlayer(), nav = store.getState().navigation;
     const x = Math.round(p.x * 100) / 100, z = Math.round(p.z * 100) / 100, headingDeg = Math.round(p.headingDeg * 10) / 10;
     if (x === nav.x && z === nav.z && headingDeg === nav.headingDeg && nav.slopeDeg !== null) return;   // standing still: no store update, no re-render

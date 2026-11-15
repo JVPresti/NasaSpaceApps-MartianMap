@@ -2,11 +2,12 @@
 // Today: the mission clock (#59), the suit model (#19), the per-leg route costs (#41), events and the EVA statistics
 // (#43), the partner (#70) and the environment: MEDA weather replay and RAD dose (#189). Navigation joins here as it lands.
 //
-// Two phases (#166). The app opens in Plan mode, at the habitat's planning table: only the clock (for the Plan top bar)
-// and the per-leg costs run. The EVA starts on the first switch to Walk, with the astronaut at the airlock (the engine
-// places them there, src/engine/spawn.js): a fresh clock, full consumables, a fresh terrain fix, WP1 as the next target,
-// and the walkback, partner, off-route, waypoint, event, environment and EVA statistics runners. Later switches between Plan and Walk
-// change nothing here.
+// Two phases (habitat-first flow, src/state/flow.js). The app opens with the astronaut inside the habitat: only the
+// clock (held, for the local time) and the per-leg costs run while they walk around and plan at the mission table.
+// The EVA starts when the stage becomes 'eva', at the end of the airlock cycle, with the astronaut already outside
+// (the engine moved them there while the screen was dark, src/engine/spawn.js): a fresh clock, full consumables, a
+// fresh terrain fix, WP1 as the next target, and the walkback, partner, off-route, waypoint, event, environment and EVA
+// statistics runners. Nothing in the habitat can start them, so no event fires and no oxygen is used before the EVA.
 import { useMissionStore } from './store.js';
 import { DEMO_MISSION_CLOCK, SKY_PRESETS, startMissionClock } from '../sim/missionClock.js';
 import { startEventRunner } from './events.js';
@@ -141,9 +142,9 @@ export function startSimulation(engine, { mock = false, store = useMissionStore 
     }, () => {});
   }
 
-  const onMode = (s) => { if (s.mode === 'walk' && !eva && !stopped) { unsubscribe(); startEva(); } };
-  const unsubscribe = store.subscribe(onMode);
-  onMode(store.getState());
+  const onStage = (s) => { if (s.stage === 'eva' && !eva && !stopped) { unsubscribe(); startEva(); } };
+  const unsubscribe = store.subscribe(onStage);
+  onStage(store.getState());
 
   return () => {
     stopped = true;

@@ -48,43 +48,6 @@
   color: var(--dim);
 }
 
-.mode-switch {
-  display: flex;
-  padding: 4px;
-  gap: 4px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  backdrop-filter: blur(8px);
-  pointer-events: auto;
-}
-
-.mode-switch button {
-  font: inherit;
-  font-weight: 600;
-  min-width: 76px;
-  padding: 6px 16px;
-  color: var(--ink);
-  background: transparent;
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.mode-switch button:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.mode-switch button.on {
-  color: var(--bg);
-  background: var(--ink);
-}
-
-.mode-switch button:focus-visible {
-  outline: 2px solid var(--cyan);
-  outline-offset: 2px;
-}
-
 .loading-screen {
   overflow-y: auto;
   position: absolute;

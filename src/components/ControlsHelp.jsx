@@ -16,18 +16,18 @@ const COLUMNS = [
       ],
     },
     {
-      title: 'ui.plan',
+      // src/App.jsx: E or a click while facing the mission table opens it; Begin EVA on the table goes out.
+      title: 'menu.help.habitat',
       rows: [
-        ['menu.help.key.right.drag', 'menu.help.pan'],
-        ['menu.scroll', 'menu.zoom.in.and.out'],
-        ['ui.esc', 'menu.help.pause'],
+        ['menu.help.key.e', 'menu.help.open.table'],
+        ['click', 'menu.help.open.table'],
       ],
     },
   ],
   [
     {
-      // src/engine/sampling.js: click, KeyP, KeyE, KeyF. The HUD prompt names the action that applies now.
-      title: 'menu.help.sampling',
+      // src/engine/sampling.js: click, KeyP, KeyE, KeyF, on the surface only. The HUD prompt names the action that applies now.
+      title: 'menu.help.sampling.outside',
       rows: [
         ['click', 'menu.help.collect'],
         ['menu.help.key.p', 'menu.help.photo'],
@@ -36,10 +36,9 @@ const COLUMNS = [
       ],
     },
     {
-      // src/components/shortcuts.js (M, L, Shift+L, 0) and src/sources/sourcesStore.js (C).
-      title: 'menu.help.both.views',
+      // src/components/shortcuts.js (L, Shift+L, 0: outside and at the mission table) and src/sources/sourcesStore.js (C).
+      title: 'menu.help.layers.sources',
       rows: [
-        ['menu.help.key.m', 'menu.help.switch.view'],
         ['menu.help.key.l', 'menu.help.layer.cycle'],
         ['menu.help.key.0', 'menu.help.layer.none'],
         ['menu.help.key.c', 'ui.sources.188'],

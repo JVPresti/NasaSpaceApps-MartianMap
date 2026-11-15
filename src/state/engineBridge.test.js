@@ -46,3 +46,24 @@ describe('engine bridge boot prints', () => {
     disconnect();
   });
 });
+
+describe('engine bridge habitat prompts', () => {
+  it('writes the table prompt state inside the habitat and clears it on the surface', () => {
+    vi.useFakeTimers();
+    const engine = { ...fakeEngine(), slopeAt: () => 0, habitat: { inside: true, zone: 'main', nearTable: true } };
+    engine.getHabitat = () => engine.habitat;
+    const disconnect = connectEngine(engine);
+    vi.advanceTimersByTime(200);
+    expect(useMissionStore.getState().habitat).toEqual({ nearTable: true, zone: 'main' });
+
+    const before = useMissionStore.getState().habitat;
+    vi.advanceTimersByTime(400);
+    expect(useMissionStore.getState().habitat).toBe(before);   // no change, no write
+
+    useMissionStore.setState({ stage: 'eva' });
+    vi.advanceTimersByTime(200);
+    expect(useMissionStore.getState().habitat).toEqual({ nearTable: false, zone: null });
+    disconnect();
+    vi.useRealTimers();
+  });
+});
