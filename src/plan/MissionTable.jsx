@@ -378,7 +378,9 @@ export default function MissionTable({ planner, waypoints, evaBegun = false, onB
 
   let body;
   if (tab === 'site') {
-    const target = stopForWaypoint(stops, waypoints.at(-1)?.name ?? 'Cheyava Falls');
+    // The Site step is about Cheyava Falls, whatever the goal: the first sortie's stop has no science card, and the
+    // last stop of a Bright Angel survey is not the rock the title and the numbers describe.
+    const target = stopForWaypoint(stops, 'Cheyava Falls');
     // The close-up of the leopard spots (PIA26368) fills a tall panel better than the wide overhead mosaic.
     const image = target ? (target.images?.find((i) => i?.file && i?.credit && !i.reference_match) ?? cardImage(target)) : null;
     body = (
