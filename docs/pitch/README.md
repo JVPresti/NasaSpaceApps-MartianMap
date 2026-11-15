@@ -1,31 +1,30 @@
 # Marswalk pitch
 
 Everything the team needs to present Marswalk at NASA Space Apps 2026 (challenge "Interplanetary Survival Guide:
-Martian Map", Ensenada local event). Built on the first mission of PR #282 and its `docs/DEMO.md`.
+Martian Map", Ensenada local event). Built on the presentation mode on `main` (#330) and the first mission of #282.
 
-> **Format.** The talk is at 2:30 pm on 15 November, in English, and the file goes to the organisers by 2:00 pm. The
-> organisers' page quoted in `docs/SUBMISSION.md` (PR #316) says "prepárate para exponer en idioma inglés durante un
-> tiempo máximo de 3 minutos". The team plans 5 minutes, live demo included, and will confirm with the organisers.
-> `script-5min-en.md` is the primary. `script-3min-en.md` is the fallback if they hold to 3 minutes: the speaker
-> switches at 0:46, after the thesis, where the 5-minute script marks the cut point.
+> **Format.** The talk is at 2:30 pm on 15 November, in English. It runs at most 4 minutes, video included: target
+> 3:40, hard cap 4:00 (Fernando, 9:25 am). The organisers' page quoted in `docs/SUBMISSION.md` (PR #316) says
+> "prepárate para exponer en idioma inglés durante un tiempo máximo de 3 minutos"; the team takes 4 and confirms with
+> them. There is one script, `script-4min-en.md`, spoken over the presentation mode on `main`
+> (https://martian-map.fernando-haro-c.workers.dev/?present=1), one Right per beat. An edited app video, a beat inside
+> the presentation, replaces the live demo. With an 88 s video the talk ends at 3:37.
 >
-> **The file for the organisers is `docs/pitch/out/deck-global.pdf`**, the 7-slide deck. It is also the backup on the
-> day: the talk runs from the presentation mode on `main` (https://martian-map.fernando-haro-c.workers.dev/?present=1&debug=1), and if WebGL fails
-> on the laptop, the presenter switches to the same PDF (slide mapping in `script-5min-en.md`).
+> **The file for the organisers is `docs/pitch/out/deck-global.pdf`**, the 7-slide deck, due by 2:00 pm. It is also
+> the backup on the day: if WebGL fails on the laptop, the presenter switches to the same PDF (slide per beat in
+> `demo-run-sheet.md`).
 
 **Thesis.** On Mars, the question isn't where you can go. It's where you can go and still get home.
 
 | File | What it is |
 |---|---|
-| `beats.md` | The beats of the presentation mode on `main` (https://martian-map.fernando-haro-c.workers.dev/?present=1), copied from `src/present/beats.js` by `tools/sync-present.mjs`, then the speaker's plan over them: camera idea, on-screen words in English and Spanish, presenter line, time. The presentation's source is `src/present/beats.js` on `main`; this file follows it |
-| `script-5min-en.md`, `script-5min-es.md` | **The primary local pitch**: 5 minutes in English, ending at 4:45 with demo cut A; Spanish twin for rehearsal and questions |
-| `script-8min-es.md`, `script-8min-en.md` | The 8-minute version: DEMO.md's full demo with the story around it |
-| `script-3min-en.md`, `script-3min-es.md` | The fallback, if the organisers hold to 3 minutes: English, with a Spanish twin |
-| `demo-run-sheet.md` | The live demo: URL, clicks, keys, lines and a fallback for every beat, verified against #282 at 8ec6f72. Cut A (2:14) for the 5-minute pitch, cut B (1:15) for the 3-minute fallback; re-check list for the branches still to merge |
+| `beats.md` | The presentation's beats on `main` (captions, chips, source lines, numbers) with the line the presenter says over each, generated from `src/present/beats.js` and `script-4min-en.md` by `tools/sync-present.mjs`. `src/present/beats.js` on `main` is the source; this file follows it |
+| `script-4min-en.md`, `script-4min-es.md` | **The talk**: 4 minutes at most in English, one row per presentation beat, and where each number comes from; Spanish twin for rehearsal and questions |
+| `demo-run-sheet.md` | How to run the talk: setup, the keys, one Right per beat with its cue, what to do if the video or the whole presentation fails, the PDF slide per beat |
 | `qa.md` | The 14 hardest questions, plus three quick ones, with short, honest answers |
 | `video-30s.md` | The 30-second video script and frame-accurate shot list |
 | `deck-global.html`, `out/deck-global.pdf`, `out/deck-global/*.png` | The 7-slide global deck: one self-contained HTML file (fonts and images inlined), its PDF and one PNG per slide |
-| `fallback/stills/` | Real screenshots of the #282 demo, one per beat, for when the live demo fails |
+| `fallback/stills/` | Real screenshots of the app from #282, for when the video beat fails |
 | `council/` | The council of AI reviewers playing judges, not people: rubric, every round's raw JSON, `log.tsv`, timing checks |
 | `src/`, `img/`, `fonts/`, `tools/` | Deck sources and the scripts that build it |
 
@@ -53,9 +52,9 @@ The HUD and the Suit tab disagree because the HUD takes the smaller of the oxyge
 ```
 node docs/pitch/tools/render.mjs           # src/*.html -> self-contained HTML, PNG per slide, PDF
 node docs/pitch/tools/timing.mjs           # every script row against its slot at 140 wpm, the ceiling; the scripts are written for 125
-node docs/pitch/tools/timing.mjs --wpm 125 --out council/timing-5min-125.md script-5min-en.md script-5min-es.md
-node docs/pitch/tools/sync-beats.mjs       # copy script-5min-en.md's lines and times into beats.md
-node docs/pitch/tools/sync-present.mjs     # copy main's src/present/beats.js captions and numbers into beats.md
+node docs/pitch/tools/timing.mjs --wpm 125 --out council/timing-4min-125.md script-4min-en.md script-4min-es.md
+node docs/pitch/tools/sync-present.mjs     # main's src/present/beats.js + script-4min-en.md -> beats.md
+node docs/pitch/tools/sync-present.mjs --beats /tmp/beats.js   # the same from an open PR's beats.js (git show origin/<branch>:src/present/beats.js)
 node docs/pitch/tools/walkback-zone.mjs    # walkback zone and leg numbers from src/sim (for beats 1 and 3)
 ```
 
@@ -65,7 +64,8 @@ change to that block.
 
 ## Assumptions the team must confirm
 
-- That the slot is 5 minutes and not the 3 the organisers' page says, whether the live demo counts inside it, whether Q&A follows, and whether we can plug in our own laptop.
+- That the slot is 4 minutes and not the 3 the organisers' page says, whether Q&A follows, and whether we can plug in our own laptop.
+- The video beat's final length and scene order, from the presentation thread's PR; then rerun `sync-present.mjs` and fix the script times.
 - Presenters P1, P2, P3 and who drives the laptop.
 - Who records the 30-second video and on which machine.
 - The AI-use and "built before the event" answers in `qa.md` (questions 10 and 11).

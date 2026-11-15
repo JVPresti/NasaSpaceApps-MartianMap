@@ -66,9 +66,9 @@ Short, honest answers. Say the number, name the source, stop. If you don't know,
 
 (Raised by an AI reviewer playing a NASA judge in our council, `council/`, not by a person. Answer it before a real judge asks. The zone carries a caption on screen.)
 
-**ES.** En la app, el mismo cálculo es un número: el margen en el visor y en la mesa. La zona naranja del modo de presentación la dibujamos con el mismo código de la app (planificador, malla de costos y modelo del traje) y dos pasadas de Dijkstra; el escenario de 205 g de oxígeno es nuestro y está marcado SIM. Mostrarla en la mesa de misión es el siguiente paso.
+**ES.** En la app, el mismo cálculo es un número: el margen en el visor y en la mesa. La zona naranja del modo de presentación la dibujamos con el mismo código de la app (planificador, malla de costos y modelo del traje) y dos pasadas de Dijkstra, sobre nuestro escenario de la primera salida, marcado SIM. La pantalla lo dice: aún no está en el HUD de la caminata. Dibujarla en la mesa de misión es #335, todavía sin fusionar. (Actualizar si el video de la app la muestra en la mesa.)
 
-**EN.** In the app, the same calculation is one number, the margin on the visor and at the table. The presentation's zone is drawn with the app's own code (planner, cost grid and suit model) and two Dijkstra passes; the 205 g scenario is ours and tagged SIM. Showing it at the mission table is the next step.
+**EN.** In the app, the same calculation is one number, the margin on the visor and at the table. The presentation's zone is drawn with the app's own code (planner, cost grid and suit model) and two Dijkstra passes, on our first-sortie scenario, tagged SIM. The screen says so: it is not in the walk HUD yet. Drawing it at the mission table is #335, not merged yet. (Update this if the app video shows it at the table.)
 
 ## 10. How did you use AI?
 
