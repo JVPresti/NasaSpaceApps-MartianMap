@@ -7,8 +7,11 @@
  * `src/hud/ElevationProfile.jsx`.
  */
 
-export const SLOPE_CAUTION_DEG = 15;
-export const SLOPE_NO_GO_DEG = 25;
+import { COST_CONSTANTS } from '../sim/costGrid.js';
+
+/** One source with the planner, the slope layer and the slope-ahead warning: red over 20 degrees, amber over 15 (#293). */
+export const SLOPE_CAUTION_DEG = COST_CONSTANTS.SLOPE_CAUTION_DEG;
+export const SLOPE_NO_GO_DEG = COST_CONSTANTS.SLOPE_LIMIT_DEG;
 export const PROFILE_STEP_M = 10;
 
 /** @param {number} slopeDeg */
