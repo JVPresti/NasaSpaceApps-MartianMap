@@ -16,9 +16,10 @@
   border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 0.3em;
 }
 .hud-layer-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3em 0.9em; font-size: max(11px, 0.85em); }
-.hud-layer-legend small { margin-left: 0.3em; color: var(--dim); font-size: 1em; }
+/* .hud small (hud.css) loads later with the same specificity, so these two need the extra class to win */
+.hud-layer .hud-layer-legend small { margin-left: 0.3em; color: var(--dim); font-size: 1em; }
 .hud-layer-range { display: inline-flex; align-items: center; gap: 0.4em; }
-.hud-layer-range small { margin-left: 0; }
+.hud-layer .hud-layer-range small { margin-left: 0; }
 .hud-layer-gradient { display: block; width: 6em; height: 0.55em; border-radius: 0.2em; border: 1px solid rgba(255, 255, 255, 0.35); }
 .hud-layer-swatch { display: inline-flex; align-items: center; white-space: nowrap; }
 .hud-layer-swatch i { width: 0.8em; height: 0.8em; margin-right: 0.35em; border-radius: 0.15em; border: 1px solid rgba(0, 0, 0, 0.35); }

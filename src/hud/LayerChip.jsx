@@ -4,15 +4,8 @@ import { t } from '../i18n/index.js';
 // while no layer is on (index 0).
 import { useMissionStore } from '../state/store.js';
 import { layerMeta } from '../plan/layers.js';
+import { legendText } from './layerLegend.js';
 import './layerChip.css';
-
-/** Plain-text legend for the screen reader label, for example "0–15° walkable, 15–25° caution". */
-export function legendText(meta) {
-  const parts = [];
-  if (meta.gradient) parts.push(`${meta.minLabel}–${meta.maxLabel}`);   // the labels carry their unit, for example '0 m'
-  for (const s of meta.swatches ?? []) parts.push(s.detail ? `${s.label} ${s.detail}` : s.label);
-  return parts.join(', ');
-}
 
 export default function LayerChip() {
   const layer = useMissionStore((s) => s.view.layer);

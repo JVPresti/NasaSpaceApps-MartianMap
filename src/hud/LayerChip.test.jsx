@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { setLanguage } from '../i18n/index.js';
-import { LAYERS, layerMeta } from '../plan/layers.js';
+import { setLanguage, t } from '../i18n/index.js';
+import { LAYERS, SLOPE_LIMITS, layerMeta } from '../plan/layers.js';
 import { resetStore, setLayer, useMissionStore } from '../state/store.js';
-import LayerChip, { legendText } from './LayerChip.jsx';
+import LayerChip from './LayerChip.jsx';
+import { legendText } from './layerLegend.js';
 
 vi.mock('./layerChip.css', () => ({}));
 // Render the current store snapshot in SSR (Zustand normally uses the creation-time state).
@@ -35,14 +36,19 @@ describe('LayerChip', () => {
     }
   });
 
-  it('reads the slope legend aloud with its limits', () => {
-    expect(legendText(layerMeta(1))).toBe('0–15° walkable, 15–25° caution, >25° no-go');
+  it('reads the slope legend aloud with its limits from layers.js', () => {
+    const { caution, noGo } = SLOPE_LIMITS;
+    const legend = `0–${caution}° ${t('ui.walkable')}, ${caution}–${noGo}° ${t('caution')}, >${noGo}° ${t('walkableNoGo')}`;
+    expect(legendText(layerMeta(1))).toBe(legend);
     setLayer(1);
-    expect(render()).toContain('aria-label="Data layer Slope hazard, legend: 0–15° walkable, 15–25° caution, &gt;25° no-go. Press 0 to turn it off."');
+    const label = t('ui.layer.chip.label', { name: layerMeta(1).name, legend });
+    expect(render()).toContain(`aria-label="${label.replaceAll('>', '&gt;')}"`);
   });
 
   it('reads a gradient legend once, with the unit from its labels', () => {
-    expect(legendText(layerMeta(2))).toBe('0 m–221 m, Contours every 5 m');
+    const meta = layerMeta(2);
+    expect(legendText(meta)).toBe(`${meta.minLabel}–${meta.maxLabel}, ${meta.swatches[0].label} ${meta.swatches[0].detail}`);
+    expect(legendText(meta)).not.toMatch(/m m\b/);
   });
 
   it('follows the interface language', () => {
