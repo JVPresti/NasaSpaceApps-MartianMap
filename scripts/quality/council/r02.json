@@ -1,0 +1,81 @@
+{
+ "round": "r02",
+ "before": "scripts/quality/out/c01",
+ "after": "scripts/quality/out/c02",
+ "states": [
+  "walk",
+  "walk-stop",
+  "walk-storm"
+ ],
+ "judges": {
+  "j1": {
+   "walk": {
+    "new": "A"
+   },
+   "walk-stop": {
+    "new": "A"
+   },
+   "walk-storm": {
+    "new": "A"
+   }
+  },
+  "j2": {
+   "walk": {
+    "new": "A"
+   },
+   "walk-stop": {
+    "new": "B"
+   },
+   "walk-storm": {
+    "new": "B"
+   }
+  },
+  "j3": {
+   "walk": {
+    "new": "A"
+   },
+   "walk-stop": {
+    "new": "A"
+   },
+   "walk-storm": {
+    "new": "B"
+   }
+  }
+ },
+ "change": "c02 default visor: source tags, environment strip, NAV and radio lines (unless warning), LMST and sampling checklist hidden; I shows all; H/I key hint under the EVA clock",
+ "issue": 283,
+ "personas": {
+  "j1": "opus c first-time player",
+  "j2": "opus a Space Apps judge",
+  "j3": "fable b HUD designer"
+ },
+ "verdicts": {
+  "j1": {
+   "walk": "new",
+   "walk-stop": "new",
+   "walk-storm": "new",
+   "why": "margin and WP1 read at a glance without tags, lower right and route ribbon clear; misses the sampling checklist at the stop"
+  },
+  "j2": {
+   "walk": "new",
+   "walk-stop": "new",
+   "walk-storm": "new",
+   "why": "science card and storm return target get clear priority; misses LMST and the checklist at the stop"
+  },
+  "j3": {
+   "walk": "new",
+   "walk-stop": "new",
+   "walk-storm": "new",
+   "why": "nothing a walker needs is missing, badges were competing with values; wants LMST back and the checklist at the stop"
+  }
+ },
+ "decision": "keep",
+ "reason": "9 of 9 prefer the new version for the reduced clutter; the lost checklist at a stop is a real gap, fixed in the next change; LMST stays behind I",
+ "next_asks": [
+  "show a compact sampling checklist while a science card is open",
+  "hide world labels behind HUD panels",
+  "banner: tint and cut to one line with distance and ETA",
+  "square corners and dark fill on the science card",
+  "raise key hint contrast"
+ ]
+}
