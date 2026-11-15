@@ -14,6 +14,7 @@ import puppeteer from 'puppeteer-core';
 const args = process.argv.slice(2);
 const arg = (name, fallback) => { const i = args.indexOf('--' + name); return i >= 0 ? args[i + 1] : fallback; };
 const SHOTS = arg('shots', 'qa/return-zone');
+const BASELINE = args.includes('--baseline');   // ?zone=off: the same run without the zone, for the frame-rate baseline
 const GPU = process.env.QA_GPU === '1';
 const [VW, VH] = arg('viewport', '1366x768').split('x').map(Number);
 const browserPath = arg('browser') || process.env.CHROME_PATH
@@ -83,7 +84,7 @@ try {
   page.on('pageerror', (e) => console.log('  page error: ' + e.message));
   page.on('console', (m) => { if (/return zone/.test(m.text())) console.log('  console: ' + m.text()); });
   await page.evaluateOnNewDocument(() => { try { localStorage.setItem('marswalk.language', 'en'); } catch { /* fine */ } });
-  await page.goto(base, { waitUntil: 'load', timeout: 300000 });
+  await page.goto(base + (BASELINE ? '?zone=off' : ''), { waitUntil: 'load', timeout: 300000 });
   report.renderer = await S(() => { const gl = document.createElement('canvas').getContext('webgl2'); const e = gl.getExtension('WEBGL_debug_renderer_info'); return gl.getParameter(e.UNMASKED_RENDERER_WEBGL); });
   console.log('renderer: ' + report.renderer);
   if (GPU && /swiftshader/i.test(report.renderer)) throw new Error('QA_GPU=1 but the renderer is SwiftShader');
@@ -97,7 +98,7 @@ try {
   const layers = await S(() => [...document.querySelectorAll('.table-layers:not(.needs-choice) button')].map((b) => b.textContent.trim()));
   console.log('  layer buttons: ' + layers.join(' | '));
   await S(() => document.querySelectorAll('.table-layers:not(.needs-choice) button')[6]?.click());
-  await waitFor(() => window.__returnZone && window.__missionStore.getState().view.layer === 6, 30, 'the plan zone');
+  await waitFor(() => (window.__returnZone || location.search.includes('zone=off')) && window.__missionStore.getState().view.layer === 6, 30, 'the plan zone');
   await sleep(1.5);
   report.zone.plan = await zoneNow();
   console.log('  plan zone: ' + JSON.stringify(report.zone.plan));
@@ -112,7 +113,7 @@ try {
   await waitFor(() => document.querySelector('.eva-start-dialog .menu-resume'), 20, 'walk keys card');
   await click('.eva-start-dialog .menu-resume');
   if (!(await resume())) throw new Error('the EVA did not start');
-  await waitFor(() => window.__returnZone?.kind === 'live', 20, 'the live zone');
+  if (!BASELINE) await waitFor(() => window.__returnZone?.kind === 'live', 20, 'the live zone');
   await sleep(1);
   report.zone.start = await zoneNow();
   await shot('02-walk-start');
@@ -134,13 +135,14 @@ try {
   await S(() => { const c = window.__marswalkWrist?.canvas; return c?.toDataURL('image/png'); }).then((url) => url && writeFileSync(`${SHOTS}/04b-wrist-canvas.png`, Buffer.from(url.split(',')[1], 'base64')));
   await key('KeyR');
   await waitFor(() => window.__marswalkWrist?.snapshot().open === false, 5, 'wrist down');
+  await resume();
 
   // 4. Wait at the stop for the storm: the snap -----------------------------------------------------------------------
   const before = await zoneNow();
   const t0 = Date.now();
-  await waitFor(() => window.__missionStore.getState().alerts['dust-storm']?.active, 240, 'dust storm');
+  for (let k = 0; k < 60 && !(await S(() => window.__missionStore.getState().alerts['dust-storm']?.active)); k += 1) { await resume(); await sleep(4); }
   const stormAt = Date.now();
-  await waitFor(() => window.__returnZone?.events?.includes('dust-storm'), 10, 'the zone after the storm');
+  if (!BASELINE) await waitFor(() => window.__returnZone?.events?.includes('dust-storm'), 10, 'the zone after the storm');
   report.zone.snapMs = Date.now() - stormAt;
   report.zone.storm = await zoneNow();
   report.zone.beforeStorm = before;
@@ -149,11 +151,19 @@ try {
   await shot('05-storm-snap');
   await shotOf('.hud-map-wrap', '05b-minimap-storm-snap');
   await fps('walk in the storm');
+  // 5. The radiation alert: the shelter window ------------------------------------------------------------------------
+  for (let k = 0; k < 30 && !(await S(() => window.__missionStore.getState().alerts.radiation?.active)); k += 1) { await resume(); await sleep(2); }
+  if (!BASELINE) await waitFor(() => window.__returnZone?.events?.includes('radiation'), 10, 'the zone after the radiation alert');
+  await sleep(0.6);
+  report.zone.radiation = await zoneNow();
+  console.log('  radiation: ' + JSON.stringify(report.zone.radiation));
+  await shot('06-radiation-window');
+  await shotOf('.hud-map-wrap', '06b-minimap-radiation');
   await key('KeyM');
   await waitFor(() => window.__missionStore.getState().mode === 'plan', 5, 'table');
   await sleep(2);
-  await shot('06-table-storm');
-  await shotOf('.table-map', '06b-table-map-storm');
+  await shot('07-table-event');
+  await shotOf('.table-map', '07b-table-map-event');
 } finally {
   writeFileSync(`${SHOTS}/report.json`, JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));

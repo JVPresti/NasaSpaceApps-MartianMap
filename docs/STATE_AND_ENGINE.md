@@ -244,6 +244,14 @@ The stop counts as reached for good once the crew has been within its arrival ra
 
 The 8-minute demo built on the first mission, and how to measure it (`npm run measure:demo`), are in [DEMO.md](DEMO.md).
 
+### Return zone (#309)
+
+`src/sim/returnZone.js` maps every place the crew can walk to, do the planned work, and still walk home inside the plan's budget. It runs two Dijkstra passes over the HiRISE height grid in 3.8 m × 4 m cells, each step priced with the suit model's `walkCost`. One pass runs from home over reversed edges, with the walkback pad. The other runs from the astronaut over forward edges. A cell is inside when it passes the three checks of `missionNeeds.checkBudget` (#282). Time: the walk there, the work at a stop and the walk home fit `route.budget.usableSec`. O2: the suit model's margin (`suitModel.o2Margin`, 30 min reserve) stays over the risk floor. Battery: what is left stays over the risk reserve. A cell is on the edge when the tighter of the time and O2 margins is under 15 min.
+
+Events come from the event engine. The radiation alert keeps only ground from which the shelter is reachable within its warning window (`shelterWindowSec`: from the start to the peak dose rate of the mission's timeline, 210 s in the full EVA, 17.5 s in the first sortie, SIM). Both events carry a planner request. Neither changes walking speed or cost, so the zone also applies the re-plan's own rule: only ground no farther from home than the crew is now.
+
+`src/state/returnZone.js` runs it in `returnZone.worker.js` from the store (see its header for the inputs). It recomputes after 5 m of movement, 2 g of O2 or 10 s of EVA time, at most every 2 s, and at once when an event starts or ends. The mission table's Return zone layer (`src/zone/ReturnZoneLayer.jsx`, layer index 6, table only), the minimap and the wrist map page subscribe to it. Nothing is written to the store. A recompute takes 5 to 110 ms on the real grid.
+
 ### EVA statistics and debrief (#43)
 
 The EVA runner starts with the other EVA runners on the first Walk, once `public/data/shelters.json` has loaded, because its HAB entry is the **position at the foot of the airlock steps** (535.1, 574.1), not the `HAB` route waypoint at 520, 600. It uses the normal 5 m arrival radius. If the shelter file fails, the runner still starts with no HAB entry (`habitat: null`): only the habitat's walk zones count as being back, so the EVA can still be finished at the cabin table, and the suit model keeps its existing `DEFAULT_HABITAT` fallback. The simulation's stop callback stops the runner, and a late shelter response never starts one after `stop()`. "At the habitat" is that 5 m circle or any of the habitat's walk zones (`engine.habitatZoneAt`: the steps, porch, airlock and cabin), so the cabin, about 10 m from the foot of the steps, counts as the habitat (#244).

@@ -140,6 +140,8 @@ export function returnZoneService(store = useMissionStore) {
   function start() {
     if (started) return;
     started = true;
+    // development only: ?zone=off leaves the zone out, for a frame-rate baseline (scripts/qa-return-zone.mjs --baseline)
+    if (import.meta.env?.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).get('zone') === 'off') return;
     Promise.all([loadCostGrid(), loadDataFile(HAZARDS_PATH), loadDataFile(SHELTERS_PATH).catch(() => null)]).then(([grid, hazards, shelters]) => {
       const hab = shelters?.shelters?.find((s) => s.id === 'HAB');
       if (hab && finite(hab.x) && finite(hab.z)) habitat = { x: hab.x, z: hab.z };

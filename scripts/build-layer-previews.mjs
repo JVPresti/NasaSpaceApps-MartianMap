@@ -100,17 +100,21 @@ try {
       paintMap(out.data, width, crop, index, data);
       g.putImageData(out, 0, 0);
       if (id === 'zone') {
-        // the first mission's plan zone from the habitat airlock: a full tank and the sortie's time less the standard reserve
+        // the first mission's plan zone from the habitat airlock: the default needs' budget (planFromNeeds) and the sortie
+        // stop's work time
         const { buildCostGrid } = await import('/src/sim/costGrid.js');
         const { suitConstantsFromHazards } = await import('/src/sim/suitModel.js');
         const { computeReturnZone } = await import('/src/sim/returnZone.js');
-        const { OBJECTIVE_DEFAULTS, RISK_SETTINGS } = await import('/src/sim/missionNeeds.js');
+        const { DEFAULT_NEEDS, OBJECTIVE_DEFAULTS, RISK_SETTINGS } = await import('/src/sim/missionNeeds.js');
         const { drawZoneWorld } = await import('/src/zone/zonePaint.js');
         const constants = suitConstantsFromHazards(await (await fetch('/data/hazards.json')).json());
         const hab = (await (await fetch('/data/shelters.json')).json()).shelters.find((s) => s.id === 'HAB');
+        const sortie = (await (await fetch('/data/stops.json')).json()).route_stops.find((s) => s.id === 'sortie');
+        const risk = RISK_SETTINGS[DEFAULT_NEEDS.risk];
         const zone = computeReturnZone({
-          grid: buildCostGrid(data.terrain), home: hab, suit: { o2G: constants.o2UsableG }, constants,
-          evaLimitSec: OBJECTIVE_DEFAULTS.sortie.timeMin * 60 * (1 - RISK_SETTINGS.standard.reserveShare),
+          grid: buildCostGrid(data.terrain), home: hab, suit: { o2G: constants.o2UsableG, batteryWh: constants.batteryWh }, constants,
+          evaLimitSec: OBJECTIVE_DEFAULTS.sortie.timeMin * 60 * (1 - risk.reserveShare),
+          plan: { marginFloor: risk.marginFloor, batteryReserveWh: risk.reserveShare * constants.batteryWh, stops: [{ x: sortie.x, z: sortie.z, workSec: sortie.work_time_s.value }] },
         });
         const k = width / crop.size;
         g.setTransform(k, 0, 0, k, -crop.x0 * k, -crop.z0 * k);
