@@ -1,0 +1,139 @@
+{
+  "quotes": [
+    {
+      "file": "video-30s.md",
+      "where": "Script row 0:02-0:05, narration (also beats.md, 30-second video row 0:02-0:05)",
+      "quote": "On Mars, nobody comes to get you.",
+      "why_generic": "A movie-trailer slogan. Any Mars survival entry in this challenge could open with it, and it spends 3 of 30 seconds without a number or a place.",
+      "rewrite": "She is 913 metres from the habitat. Walking back costs 54 grams of oxygen."
+    },
+    {
+      "file": "video-30s.md",
+      "where": "Script row 0:20-0:30, narration, last sentence (also beats.md, same row)",
+      "quote": "Every number names its source.",
+      "why_generic": "The video closes on a slogan, which the rubric bans. Any team with a credits page can say it, and it shows no count.",
+      "rewrite": "We checked our terrain against NASA Mars Trek at 564,001 points. The typical difference is 14 centimetres."
+    },
+    {
+      "file": "video-30s.md",
+      "where": "Script row 0:20-0:30, narration (also beats.md, same row)",
+      "quote": "Next: EVA planners rehearse a walk before they fly it, and students plan one with the same NASA data.",
+      "why_generic": "Professionals plus students is the audience line of every Space Apps entry. No planner has used it, and nobody flies a walk.",
+      "rewrite": "Next: a heart rate sensor sets the oxygen use, and the same pipeline loads any site with a HiRISE terrain model."
+    },
+    {
+      "file": "video-30s.md",
+      "where": "Script row 0:20-0:30, on-screen text (also beats.md, same row)",
+      "quote": "For EVA planners and classrooms · free in the browser",
+      "why_generic": "Every web hackathon project is free in the browser and for classrooms. It names nothing this app does.",
+      "rewrite": "0.14 m RMS vs NASA Mars Trek · 564,001 points · martian-map.fernando-haro-c.workers.dev"
+    },
+    {
+      "file": "slides/05.png",
+      "where": "Slide 5, kicker",
+      "quote": "NASA DATA MAKES IT POSSIBLE",
+      "why_generic": "Fits unchanged on the data slide of every team in the hackathon. The headline under it already does the work.",
+      "rewrite": "5 NASA SOURCES, 5 LAYERS"
+    },
+    {
+      "file": "slides/04.png",
+      "where": "Slide 4, kicker",
+      "quote": "THE EXPERIENCE",
+      "why_generic": "Product-brochure label, one step from the banned 'immersive'. It says how it should feel, not what the four panels are.",
+      "rewrite": "ONE EVA: PLAN, WALK, REACT, REVIEW"
+    },
+    {
+      "file": "slides/07.png",
+      "where": "Slide 7, headline",
+      "quote": "Who uses it, and what we build next.",
+      "why_generic": "The stock last-slide headline of any pitch deck. It also makes the deck end on a roadmap, while the rubric asks for a hard fact.",
+      "rewrite": "0.14 m from NASA Mars Trek, at 564,001 points. (Move the Mars Trek check here as the headline, keep heart rate and any HiRISE site below it.)"
+    },
+    {
+      "file": "slides/07.png",
+      "where": "Slide 7, card 'Classrooms'",
+      "quote": "plan a Mars walk with open NASA data, in a browser",
+      "why_generic": "'Open NASA data, in a browser' describes every Space Apps web entry. No school, grade or lesson is named.",
+      "rewrite": "plan the 930 m route to Cheyava Falls and see whether the margin stays above the 30 min reserve (or cut the card)"
+    },
+    {
+      "file": "slides/07.png",
+      "where": "Slide 7, card 'EVA planners'",
+      "quote": "rehearse a walk on real terrain before they fly it",
+      "why_generic": "An untested user claim any simulator team makes. 'Real terrain' is an adjective where the deck has a number, and 'fly' is wrong for a walk.",
+      "rewrite": "compare three route profiles (fastest, gentlest, radio) on the 1 m HiRISE model before approving one"
+    },
+    {
+      "file": "slides/07.png",
+      "where": "Slide 7, caption under the QR code",
+      "quote": "Runs in the browser",
+      "why_generic": "True of most entries. It wastes the one line a judge reads before scanning.",
+      "rewrite": "Scan to walk the 55 m first sortie"
+    },
+    {
+      "file": "slides/02.png",
+      "where": "Slides 2 and 3, kickers",
+      "quote": "THE PROBLEM",
+      "why_generic": "Template section label, as is 'THE IDEA' on slide 3. Both come with the deck template of any team.",
+      "rewrite": "CHEYAVA FALLS, JEZERO CRATER (slide 2) and THE MARGIN (slide 3)"
+    },
+    {
+      "file": "script-5min-en.md",
+      "where": "Demo lines, D1 (script-5min-es.md D1: 'Todo es Jezero, con datos de la NASA.')",
+      "quote": "All of this is Jezero, from NASA data.",
+      "why_generic": "'From NASA data' with no instrument is the superficial-addition phrasing the Relevance criterion marks down. Beat 5 names the missions two minutes later.",
+      "rewrite": "The mission table. This is 1.5 km of Jezero from the HiRISE model, one metre per pixel."
+    },
+    {
+      "file": "script-5min-en.md",
+      "where": "Demo lines, D2 (script-5min-es.md D2: 'Cada capa dice qué decide.')",
+      "quote": "Each layer says what it decides.",
+      "why_generic": "Abstract and hard to parse by ear. A judge with no context cannot tell what a layer deciding means.",
+      "rewrite": "cut. Start at 'Terrain: the HiRISE slope. The route goes around yellow and never crosses red.'"
+    },
+    {
+      "file": "script-5min-en.md",
+      "where": "Optional opening, row 0:00 (script-5min-es.md: 'Volvimos. Refritos, nueva generación.'; beats.md beat 0 on screen: 'Refried. New generation.')",
+      "quote": "We're back. Refried, new generation.",
+      "why_generic": "'We're back' is a sequel tagline, and 'new generation' sits next to the banned 'next-generation'. It delays the cold open the rules ask for.",
+      "rewrite": "cut the tagline. Keep 'first of seventeen in Ensenada, Global Nominees' and go to Jezero."
+    },
+    {
+      "file": "qa.md",
+      "where": "Question 12, EN (ES: 'Tres cosas concretas.')",
+      "quote": "Three concrete steps.",
+      "why_generic": "An announcement that says nothing, and a forced group of three. The rubric says to give the number and the source and stop.",
+      "rewrite": "cut. Start with 'A real heart rate sensor driving oxygen use, through NASA's model (Hoffmann 2021).'"
+    },
+    {
+      "file": "qa.md",
+      "where": "Question 12, EN (ES: 'corre en el navegador, sin instalar nada')",
+      "quote": "Users: EVA planners rehearsing a walk, and classrooms, since it runs in a browser with nothing to install.",
+      "why_generic": "The standard who-would-use-it answer of any browser project. No planner or teacher has tried it, and a judge will ask.",
+      "rewrite": "Nobody outside the team has used it yet. The first test is a class in Ensenada planning the 930 m route to Cheyava Falls. (Team to confirm.)"
+    },
+    {
+      "file": "qa.md",
+      "where": "Question 8, EN, first two sentences (ES: 'El mapa es el producto. La simulación es la prueba')",
+      "quote": "The map is the product. The simulation is the test",
+      "why_generic": "Paired aphorism in the 'X is the Y' mould. It sounds rehearsed and puts the real answer one sentence later.",
+      "rewrite": "The same HiRISE map runs in three places: the mission table, the visor minimap and the wrist. Walking it with 771 g of oxygen is how we test that it reads in a glance."
+    },
+    {
+      "file": "qa.md",
+      "where": "Question 8, EN, last sentence (ES: 'Todo lo que no pone información en el mapa o actúa sobre ella lo dejamos fuera.')",
+      "quote": "Anything that doesn't put information on the map or act on it stayed out.",
+      "why_generic": "A design-principle claim a judge cannot check, and one any team can make. The app has an AI start video and a partner astronaut that test it.",
+      "rewrite": "cut, or name what was dropped."
+    },
+    {
+      "file": "script-5min-en.md",
+      "where": "Beat 2, The rules, first sentence (script-5min-es.md: 'Las reglas son de la NASA.'; slide 2: 'NASA rules')",
+      "quote": "NASA sets the rules.",
+      "why_generic": "Borderline. The sentence is a slogan on its own, and the three numbers after it carry the beat. It costs a second and names no document.",
+      "rewrite": "Three limits, from NASA's xEVA plan and Apollo 17."
+    }
+  ],
+  "banned_words_found": [],
+  "overall": "The local 5-minute script and slides 1, 3 and 6 are clean and specific, with no banned word anywhere, and the slop sits in the 30-second video (a slogan at each end and a generic audience line), slide 7, the template kickers and the who-uses-it answers."
+}

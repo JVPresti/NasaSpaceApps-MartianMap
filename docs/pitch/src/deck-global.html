@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="theme.css">
 <style>
   /* slide 1 */
-  .s-title .names { display: grid; grid-template-columns: repeat(3, auto); gap: 6px 48px; font-size: 30px; margin-top: 18px; }
+  .s-title .names { display: grid; grid-template-columns: repeat(2, auto); justify-content: start; gap: 6px 48px; font-size: 30px; margin-top: 18px; }
   .s-title .team { font-family: var(--font-display); font-size: 44px; font-weight: 600; margin-top: 56px; }
   .s-title .tagline { font-size: 46px; line-height: 1.25; max-width: 980px; margin-top: 30px; }
   /* slide 2 */
@@ -57,11 +57,12 @@
 
 <!-- 1. Title, thesis and team -->
 <section class="slide s-title">
-  <img class="bleed" src="../img/app-walk-hud.jpg" alt="Marswalk helmet view in Jezero crater">
+  <img class="bleed" src="../img/app-surface-ev2.jpg" alt="Marswalk: the partner astronaut on HiRISE terrain in Jezero crater">
   <div class="shade-left"></div>
   <div class="over">
-    <p class="kicker">NASA Space Apps 2026 · Interplanetary Survival Guide: Martian Map</p>
-    <h1 style="margin-top:28px">Marswalk</h1>
+    <p class="kicker">NASA Space Apps 2026</p>
+    <p class="dim" style="font-size:28px;margin-top:10px">Challenge: Interplanetary Survival Guide: Martian Map</p>
+    <h1 style="margin-top:36px">Marswalk</h1>
     <p class="tagline">On Mars, the question isn't where you can go. It's where you can go <span class="cyan">and still get home.</span></p>
     <p class="team">Los Frijolitos Espaciales Refritos Nueva Generación</p>
     <div class="names dim">
@@ -70,26 +71,27 @@
     </div>
     <p class="dim" style="font-size:26px;margin-top:22px">Ensenada, Mexico</p>
   </div>
-  <p class="credit">Screenshot of the app. Terrain: HiRISE, NASA/JPL-Caltech/University of Arizona</p>
+  <p class="credit">Screenshot of the app in Jezero crater. Terrain: HiRISE, NASA/JPL-Caltech/University of Arizona</p>
 </section>
 
 <!-- 2. Problem -->
 <section class="slide s-problem">
-  <p class="kicker">The problem</p>
-  <h2 style="margin-top:24px;width:860px">913 m from the habitat, a dust storm coming. Can she get back?</h2>
+  <p class="kicker">Cheyava Falls, Jezero crater</p>
+  <h2 style="margin-top:24px;width:860px">An astronaut 913 m from the habitat. A radiation alert. Can she get back?</h2>
   <div class="facts">
-    <div class="fact"><b>18 min · 54 g O<sub>2</sub></b><span>to walk home from Cheyava Falls, on the real slopes</span></div>
-    <div class="fact"><b>8 h · 30 min · 20°</b><span>NASA rules: longest EVA, untouched O<sub>2</sub> reserve, steepest slope</span></div>
-    <div class="fact"><b>No GPS</b><span>Position has to come from matching the terrain</span></div>
+    <div class="fact"><b>160 g of O<sub>2</sub> left</b><span>Walking home costs 54 g and 18 min on this route (the app's suit model)</span></div>
+    <div class="fact"><b>30 min reserve</b><span>Never touched: 72 g at walking pace (Apollo 17 rule)</span></div>
+    <div class="fact"><b>8 h, 20°, no GPS</b><span>Longest EVA and steepest slope (NASA xEVA); position from the terrain</span></div>
   </div>
   <div class="frame map"><img src="../img/app-map-cheyava-terrain.jpg" alt="Planned route on HiRISE with slope bands"></div>
-  <p class="credit" style="left:auto;right:120px;bottom:120px">The app's route to Cheyava Falls on HiRISE slope: amber 15-20°, red over 20° (no-go)</p>
+  <p class="credit" style="left:auto;right:120px;bottom:120px">The app's route to Cheyava Falls on HiRISE slope: amber 15-20°, red over 20°, never crossed</p>
+  <p class="credit">160 g is our scenario (SIM): she left with 205 g and spent 45 g walking out</p>
 </section>
 
-<!-- 3. The idea: walkback margin -->
+<!-- 3. The margin -->
 <section class="slide s-idea">
-  <p class="kicker">The idea</p>
-  <h2 style="margin-top:24px;width:1100px">One number on the visor: how much you can still spend.</h2>
+  <p class="kicker">The margin</p>
+  <h2 style="margin-top:24px;width:1150px">One number on the visor: minutes left after the walk home.</h2>
   <div class="row" style="margin-top:56px;gap:64px;align-items:flex-start">
     <div style="flex:1">
       <div class="bar" style="margin-top:0">
@@ -100,67 +102,73 @@
       </div>
       <div class="bar-notes" style="grid-template-columns:28% 30% 17% 25%">
         <div>O<sub>2</sub> burned so far</div>
-        <div>Priced on the route home, +20 % (Apollo 15 rule)</div>
+        <div>Priced along the route, +20 % (Apollo 15 rule)</div>
         <div>30 min (Apollo 17)</div>
-        <div>What's left to explore with</div>
+        <div>Minutes left to explore</div>
       </div>
-      <p style="margin-top:56px">Recomputed every metre from the HiRISE slope and NASA suit tests. Uphill, a detour or a storm re-plan shrinks it.</p>
+      <p style="margin-top:50px">Oxygen or the 8 h suit clock, whichever runs out first. Recomputed every metre at the current pace, so a climb, a detour or a re-plan home changes it at once.</p>
     </div>
-    <div class="frame" style="width:560px;height:420px;flex:none"><img src="../img/app-hud-margin.jpg" alt="HUD suit panel with the margin"></div>
+    <div style="width:560px;flex:none">
+      <div class="frame" style="height:420px"><img src="../img/app-hud-margin.jpg" alt="HUD suit panel with the margin, +399 min"></div>
+      <p class="caption">During the radiation alert: +399 min, shelter in 1 min. Tagged SIM because its weakest input, walking speed, is our assumption.</p>
+    </div>
   </div>
 </section>
 
 <!-- 4. User experience -->
 <section class="slide s-ux">
-  <p class="kicker">The experience</p>
+  <p class="kicker">One EVA: plan, walk, react, review</p>
   <h2 style="margin-top:20px">Plan at the table. Walk it in the helmet.</h2>
   <div class="ux">
-    <div><div class="frame"><img src="../img/app-table-cheyava-terrain.jpg" alt=""></div><p class="step"><em>1</em>Plan<span>the crew's needs draw the route around no-go slopes</span></p></div>
-    <div><div class="frame"><img src="../img/app-walk-hud.jpg" alt=""></div><p class="step"><em>2</em>Walk<span>margin, route and position on the visor</span></p></div>
-    <div><div class="frame"><img src="../img/app-radiation-walk.jpg" alt=""></div><p class="step"><em>3</em>React<span>dust storm and radiation re-plan the route home</span></p></div>
-    <div><div class="frame"><img src="../img/app-debrief-review.jpg" alt="" style="object-position:top"></div><p class="step"><em>4</em>Review<span>walked track against the plan, every value tagged</span></p></div>
+    <div><div class="frame"><img src="../img/app-table-cheyava-terrain.jpg" alt=""></div><p class="step"><em>1</em>Plan<span>the crew's goal draws the route around no-go slopes</span></p></div>
+    <div><div class="frame"><img src="../img/app-walk-hud.jpg" alt=""></div><p class="step"><em>2</em>Walk<span>margin, route and position error on the visor</span></p></div>
+    <div><div class="frame"><img src="../img/app-radiation-walk.jpg" alt=""></div><p class="step"><em>3</em>React<span>dust storm and radiation alert re-plan the route home</span></p></div>
+    <div><div class="frame"><img src="../img/app-debrief-review.jpg" alt="" style="object-position:top"></div><p class="step"><em>4</em>Review<span>margin over the reserve, minute by minute</span></p></div>
   </div>
 </section>
 
 <!-- 5. NASA data -->
 <section class="slide s-data">
-  <p class="kicker">NASA data makes it possible</p>
-  <h2 style="margin-top:20px">Each layer comes from a mission.</h2>
+  <p class="kicker">Five NASA sources, what each decides</p>
+  <h2 style="margin-top:20px">The route, the oxygen and the alerts come from mission data.</h2>
   <table class="data">
-    <tr><td>MRO HiRISE terrain model, 1 m<small>JEZ_hirise_soc_006, and its 25 cm image</small></td><td class="arrow">→</td><td>Slope, route, walking cost, radio shadow, position fixes</td></tr>
-    <tr><td>Perseverance Mastcam-Z images and traverse<small>Mars 2020, sols 1140 to 1266</small></td><td class="arrow">→</td><td>Science stops, photos of Cheyava Falls, the rover's drives</td></tr>
-    <tr><td>Perseverance MEDA, sol 1187</td><td class="arrow">→</td><td>Temperature, wind and dust in the conditions outlook</td></tr>
-    <tr><td>Curiosity RAD, September 2017 event<small>event date from NASA DONKI</small></td><td class="arrow">→</td><td>Radiation alert and dose on the visor</td></tr>
-    <tr><td>NASA suit and walkback tests<small>NASA/TP-2009-214796, Apollo 15 and 17 rules, xEVA ConOps</small></td><td class="arrow">→</td><td>O<sub>2</sub> per metre, 30 min reserve, 20° limit, 8 h EVA</td></tr>
+    <tr><td>MRO HiRISE terrain model, 1 m<small>JEZ_hirise_soc_006 on a 2 m grid, and its 25 cm image</small></td><td class="arrow">→</td><td>Slope, the route, walking cost per leg, radio shadow, the ground you see</td></tr>
+    <tr><td>Perseverance Mastcam-Z and traverse<small>Mars 2020, sols 1140 to 1266</small></td><td class="arrow">→</td><td>Science stops, photos of Cheyava Falls, the rover's drives; clear-sky dust opacity 0.45</td></tr>
+    <tr><td>Perseverance MEDA<small>sol 1187 temperature and pressure; sol 312 wind</small></td><td class="arrow">→</td><td>The conditions outlook before go / no-go</td></tr>
+    <tr><td>Curiosity RAD and Mastcam<small>September 2017 solar event; 2018 global dust storm, Gale crater</small></td><td class="arrow">→</td><td>Radiation alert dose rates; the storm's peak opacity, 8.0</td></tr>
+    <tr><td>NASA suit documents<small>xEMU tank, 202 kg suited mass, Apollo 15 and 17 rules, xEVA ConOps</small></td><td class="arrow">→</td><td>771 g of O<sub>2</sub>, 30 min reserve, +20 % walkback, 20° limit, 8 h; O<sub>2</sub> per metre from Minetti's walking model scaled to Mars</td></tr>
   </table>
 </section>
 
 <!-- 6. Measured vs simulated -->
 <section class="slide s-honest">
   <p class="kicker">Measured or simulated</p>
-  <h2 style="margin-top:20px">Every number on screen says where it comes from.</h2>
+  <h2 style="margin-top:20px">Every suit and environment reading carries its source tag.</h2>
   <div class="tags">
     <div class="panel"><span class="tag data">DATA</span><p>Measured by a mission or set in a NASA document.</p><p class="ex">Terrain height, RAD dose rates, the 20° limit</p></div>
     <div class="panel"><span class="tag derived">DERIVED</span><p>We calculate it from DATA.</p><p class="ex">Slope, O<sub>2</sub> left, distance walked</p></div>
-    <div class="panel"><span class="tag sim">SIM</span><p>Our assumption, with the reason.</p><p class="ex">Walking speed 1 m/s, when the storm arrives</p></div>
+    <div class="panel"><span class="tag sim">SIM</span><p>Our assumption, with the reason.</p><p class="ex">Walking speed 1 m/s, when the storm arrives, the position error</p></div>
   </div>
-  <div class="proof">
-    <div class="big ok">0.14<span class="unit">m</span></div>
-    <p style="width:1150px">RMS difference between our terrain and NASA Mars Trek's HiRISE model, over 564,001 points. Radiation was measured in Gale crater, not Jezero, and the screen says so.</p>
+  <div class="row" style="margin-top:40px;gap:56px;align-items:center">
+    <div class="frame" style="width:440px;height:330px;flex:none"><img src="../img/app-hud-margin.jpg" alt="The visor's suit panel with DERIVED, DATA and SIM tags"></div>
+    <p style="width:1080px">On the visor: oxygen and battery are DERIVED, suit pressure is DATA, the margin is SIM. Radiation was measured in Gale crater, not Jezero, and the alert says so on screen. The storm's rise to its peak in 30 s is ours, tagged SIM.</p>
   </div>
 </section>
 
-<!-- 7. Next -->
+<!-- 7. One hard fact, users, next -->
 <section class="slide s-next">
-  <p class="kicker">Next</p>
-  <h2 style="margin-top:20px;width:1200px">Who uses it, and what we build next.</h2>
-  <div class="next">
-    <div class="panel"><b>EVA planners</b><span>rehearse a walk on real terrain before they fly it</span></div>
-    <div class="panel"><b>Classrooms</b><span>plan a Mars walk with open NASA data, in a browser</span></div>
-    <div class="panel"><b>Heart rate</b><span>a real sensor sets O<sub>2</sub> use, with NASA's heart rate model</span></div>
-    <div class="panel"><b>Any HiRISE site</b><span>nothing in the pipeline depends on Jezero</span></div>
+  <p class="kicker">Checked against NASA</p>
+  <div class="row" style="align-items:baseline;gap:36px;margin-top:20px">
+    <div class="big ok" style="font-size:180px">97.3 %</div>
+    <h3 style="width:760px">of our 564,001 grid points fall in the same slope class as NASA Mars Trek's HiRISE model. Height RMS 0.14 m.</h3>
   </div>
-  <div class="qr"><img src="../img/qr-demo.svg" alt="QR code to the demo"><p>Runs in the browser<br><span class="dim">martian-map.fernando-haro-c.workers.dev</span></p></div>
+  <div class="next" style="margin-top:44px">
+    <div class="panel"><b>EVA planners</b><span>compare the fastest, gentlest and radio-contact routes before approving one</span></div>
+    <div class="panel"><b>Classrooms in Ensenada</b><span>plan the walk to Cheyava Falls and watch the margin against the reserve</span></div>
+    <div class="panel"><b>Next: heart rate</b><span>a real sensor sets O<sub>2</sub> use, with NASA's heart rate model</span></div>
+    <div class="panel"><b>Next: other HiRISE sites</b><span>terrain, slope and route take any HiRISE model; stops are per site</span></div>
+  </div>
+  <div class="qr" style="top:420px"><img src="../img/qr-demo.svg" alt="QR code to the demo"><p>Scan to walk the 55 m first sortie<br><span class="dim">martian-map.fernando-haro-c.workers.dev</span></p></div>
 </section>
 
 </body>

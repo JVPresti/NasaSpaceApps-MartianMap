@@ -8,35 +8,35 @@ The English version of `script-5min-es.md`, line for line, for rehearsal with no
 
 | Time | Beat | Who | Text |
 |---|---|---|---|
-| 0:00 | 1 · Jezero | P1 | Jezero crater, Mars. An astronaut stands at Cheyava Falls, the rock where Perseverance found a potential biosignature. The habitat is 913 metres away. Getting back costs her 18 minutes and 54 grams of oxygen. And a dust storm is coming. |
-| 0:20 | 1 · Thesis | P1 | On Mars, the question isn't where you can go. It's where you can go and still get home. We are Los Frijolitos Espaciales Refritos Nueva Generación, from Ensenada. This is Marswalk. |
-| 0:35 | 2 · The rules | P1 | NASA sets the rules. Eight hours at most in the suit. Thirty minutes of oxygen nobody touches, the Apollo reserve. No slope over twenty degrees. And Mars has no GPS. |
-| 0:52 | 3 · The walkback zone | P1 | The blue area is everywhere she can reach and still get back with her reserve. It comes from the HiRISE terrain model and NASA suit tests. Every climb shrinks it. When the radiation alert hits, it closes to the way home. In the app, that is one number on the visor: the margin. |
-| 1:16 | 4 · Demo | P2 | (Demo, cut A, 2:25. Lines below.) |
-| 3:41 | 5 · NASA data | P3 | Every layer comes from a mission. The terrain is the HiRISE model from Mars Reconnaissance Orbiter, one metre per pixel: slope, route, radio shadow and position. The stops and photos are Mastcam-Z, on Perseverance. The weather is MEDA's sol 1187. The radiation is RAD's doses from September 2017, dated by NASA's DONKI record. |
-| 4:11 | 6 · Measured or simulated | P3 | Every number says where it comes from. DATA is measured. DERIVED we calculate. SIM is our assumption, like walking at one metre per second. The radiation was measured in Gale, not Jezero, and the screen says so. |
-| 4:30 | 7 · Close | P3 | Next: the walker's real heart rate, through NASA's model, and any site with a HiRISE terrain model. One last number: we checked our terrain against NASA Mars Trek at 564 thousand points. The typical difference is fourteen centimetres. The QR code opens the demo. |
-| 5:00 | | | (End.) |
+| 0:00 | 1 · Jezero | P1 | Jezero crater, Mars. An astronaut stands at Cheyava Falls, the rock where Perseverance found a potential biosignature, 913 metres from the habitat by the route. She has 160 grams of oxygen left. Getting back costs 54. Thirty minutes of reserve stay untouched. And a radiation alert comes in. |
+| 0:22 | 1 · Thesis | P1 | On Mars, the question isn't where you can go. It's where you can go and still get home. We are Los Frijolitos Espaciales Refritos Nueva Generación, from Ensenada. This is Marswalk. |
+| 0:36 | 2 · The limits | P1 | Three limits from NASA's lunar suits: eight hours of walking, thirty minutes of reserve, nothing steeper than twenty degrees. And no GPS: the way home has to be read from the ground. |
+| 0:52 | 3 · The walkback zone | P1 | The blue area is everywhere she can reach and still get back with her reserve, computed with the app's planner and suit model. Every climb shrinks it. With the alert, it closes to the way home. In the app, that is one number on the visor: the margin. |
+| 1:14 | 4 · Demo | P2 | (Demo, cut A, 2:25. Lines below.) |
+| 3:39 | 5 · The answer and the data | P3 | And the astronaut at Cheyava Falls? With the alert, she has thirteen minutes of margin. Marswalk sends her back now, on the route around the slopes. That slope is the one metre HiRISE model. The rock is the one Perseverance photographed. The storm reaches the opacity Curiosity measured in 2018, and the radiation replays real doses from 2017. |
+| 4:12 | 6 · Measured or simulated | P3 | Every suit reading says whether it is measured, calculated or assumed. Walking at one metre per second is assumed, and it says so. |
+| 4:22 | 7 · Who, and one fact | P3 | It is for whoever plans a walk, comparing three routes before approving one, and for a class in Ensenada, in a browser. One last number: our grid matches NASA Mars Trek on 97 of every 100 slope points. |
+| 4:40 | | | (End. 20 seconds of slack.) |
 
 ## Demo lines (P2, cut A)
 
 | Beat | Demo time | Text |
 |---|---|---|
-| D1 | 0:00 | The mission table. All of this is Jezero, from NASA data. |
-| D2 | 0:06 | Each layer says what it decides. Terrain: the HiRISE slope. The route goes around yellow and never crosses red. |
-| D3 | 0:25 | If the crew asks for Cheyava Falls, the route grows to 930 metres and the plan reprices time and oxygen. Today we fly the first sortie: 55 metres. |
-| D4 | 0:45 | The plan says go. We start. |
-| D5 | 0:55 | On the left, the margin: the oxygen I have left after walking home and keeping the 30 minute reserve. Every climb lowers it. Below, position: no GPS, so the suit matches the terrain to the HiRISE map. (Silence, walk.) |
+| D1 | 0:00 | The mission table: Jezero, on the HiRISE terrain. |
+| D2 | 0:06 | Terrain layer: the slope. The route goes around yellow and never crosses red, over twenty degrees. |
+| D3 | 0:25 | If the crew asks for Cheyava Falls, the route grows and the plan reprices time and oxygen. Today we fly the first sortie: 55 metres. |
+| D4 | 0:45 | I leave with 20 % oxygen, so the margin matters. The plan says go. We start. |
+| D5 | 0:55 | On the left, the margin: minutes I have left after walking home and keeping the reserve. It reads at my pace: walking lowers it, climbing lowers it more. Below, position: no GPS, so the error grows as I walk and resets when I stop with a clear horizon. That model is ours, and it says SIM. |
 | D6 | 1:48 | We're here. Photo, sample, stow. |
-| D7 | 2:03 | Dust storm, with the opacity Curiosity measured in 2018. The route re-plans to the habitat and the margin adjusts. |
-| end | 2:14 | Fifteen seconds later the radiation alert arrives. Back inside, the debrief compares the walked route with the approved one. |
+| D7 | 2:03 | Dust storm. It won't knock you over: it takes the horizon, and without a horizon there is no position fix. The route re-plans to the habitat. |
+| end | 2:14 | Fifteen seconds later the radiation alert arrives, with real Curiosity doses. |
 | | 2:25 | (Back to the presentation mode.) |
 
 ## Optional opening, 20 seconds
 
 | Time | Who | Text |
 |---|---|---|
-| 0:00 | P1 | Last year, Los Frijolitos Espaciales won Ensenada, first of seventeen, with NASA Explorer, and became Global Nominees. We're back. Refried, new generation. |
+| 0:00 | P1 | Last year this team won Ensenada with NASA Explorer: first of seventeen, and Global Nominees. |
 | 0:12 | P1 | (Pause. Cut to Jezero.) |
 | 0:20 | | |
 

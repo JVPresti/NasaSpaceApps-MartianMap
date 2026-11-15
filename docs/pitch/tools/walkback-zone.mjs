@@ -134,11 +134,11 @@ const back = dijkstra(hi, hj, true, c.walkbackPad);
 
 // ---------------------------------------------------------------- the clip
 // The astronaut walks the planned route out from the habitat. O2 left starts at O2_START (SIM scenario: late in a
-// long EVA) and drains by the suit model's O2 for each metre walked. At SPE_AT of the way out, the radiation alert
+// long EVA) and drains by the suit model's O2 for each metre walked. At Cheyava Falls (SPE_FRAME) the radiation alert
 // comes: the app re-plans to the habitat, and the zone collapses to the ground on the way home (the walk home plus
 // a 10 % allowance, SIM).
 const O2_START = 205;   // g, SIM
-const FRAMES_OUT = 40, FRAMES_HOME = 14, SPE_FRAME = 30;
+const FRAMES_OUT = 40, FRAMES_HOME = 14, SPE_FRAME = 40;   // the alert comes as she reaches Cheyava Falls
 const totalOut = legs[legs.length - 1].cumO2G;
 // cumulative O2 along the path vertices
 const cum = [0];
@@ -153,7 +153,7 @@ const alive = new Uint8Array(N * N).fill(1);
 let spent = 0, pos = [hab.x, hab.z, 0];
 for (let f = 0; f < FRAMES_OUT + FRAMES_HOME; f++) {
   const spe = f >= SPE_FRAME;
-  if (f < SPE_FRAME) { spent = totalOut * 0.62 * f / (SPE_FRAME - 1); pos = atO2(spent); }
+  if (f < SPE_FRAME) { spent = totalOut * f / (SPE_FRAME - 1); pos = atO2(spent); }
   else if (f > SPE_FRAME) { // walk home along the path, back toward the habitat
     const o = Math.max(0, cum[pos[2]] - (cum[pos[2]] / (FRAMES_OUT + FRAMES_HOME - SPE_FRAME)) * 1.0);
     const np = atO2(o); spent += walkCost([[pos[0], pos[1]], [np[0], np[1]]], hAt, c, { pad: c.walkbackPad }).o2G; pos = np;

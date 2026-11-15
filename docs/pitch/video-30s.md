@@ -14,14 +14,14 @@ Rules from the submission guide that apply here:
 | Time | Official beat | Narration (EN) | Subtitle if narrated in Spanish | On-screen text |
 |---|---|---|---|---|
 | 0:00-0:02 | Intro | (suit breathing, no words) | | Los Frijolitos Espaciales Refritos Nueva Generación · Ensenada, Mexico |
-| 0:02-0:05 | The challenge | "On Mars, nobody comes to get you." | On Mars, nobody comes to get you. | NASA Space Apps 2026 · Martian Map |
-| 0:05-0:10 | Name and tagline | "Marswalk shows where you can go, and still get home." | Marswalk shows where you can go, and still get home. | Marswalk · where you can go and still get home |
-| 0:10-0:20 | How it works with NASA data | "HiRISE terrain sets the route. NASA suit tests set the oxygen per metre. When a dust storm hits, the way home re-plans." | (same) | HiRISE DTM · Mastcam-Z · MEDA · Curiosity RAD |
-| 0:20-0:30 | The future | "Next: EVA planners rehearse a walk before they fly it, and students plan one with the same NASA data. Every number names its source." | (same) | For EVA planners and classrooms · free in the browser · martian-map.fernando-haro-c.workers.dev |
+| 0:02-0:05 | The challenge | "An astronaut, 913 metres from the habitat. Walking back costs 54 grams of oxygen." | (same) | NASA Space Apps 2026 · Martian Map |
+| 0:05-0:10 | Name and tagline | "Marswalk tells her how far she can go and still get home." | (same) | Marswalk · where you can go and still get home |
+| 0:10-0:20 | How it works with NASA data | "HiRISE terrain sets the route around slopes over twenty degrees. When a dust storm takes the horizon, the way home re-plans." | (same) | HiRISE DTM · Mastcam-Z · MEDA · Curiosity RAD |
+| 0:20-0:30 | The future | "Next, a heart rate sensor sets her oxygen use. Our terrain already matches NASA Mars Trek on 97 percent of slope points." | (same) | Next: heart rate, other HiRISE sites · 97.3 % slope match with NASA Mars Trek · martian-map.fernando-haro-c.workers.dev |
 
-Narration is 63 words in 28 s of speaking slots, about 135 words per minute. Read it once against a stopwatch before recording; if it runs long, cut "before they fly it".
+Narration: 58 words in about 27 s of speaking slots, about 130 words per minute. Read it once against a stopwatch before recording.
 
-Spanish narration, if chosen (same timing): "En Marte, nadie va por ti." / "Marswalk muestra a dónde puedes ir y todavía volver." / "El terreno de HiRISE marca la ruta. Las pruebas de trajes de la NASA marcan el oxígeno por metro. Si llega una tormenta, la ruta de regreso se recalcula." / "Siguiente: planeadores de EVA que ensayan una caminata, y estudiantes que planean una con los mismos datos de la NASA. Cada número dice su fuente."
+Spanish narration, if chosen (same timing, English subtitles above): "Una astronauta, a 913 metros del hábitat. Volver caminando cuesta 54 gramos de oxígeno." / "Marswalk le dice hasta dónde puede ir y todavía volver." / "El terreno de HiRISE traza la ruta alrededor de pendientes de más de veinte grados. Si una tormenta de polvo le quita el horizonte, la ruta de regreso se recalcula." / "Lo siguiente: un sensor de ritmo cardiaco marca su consumo de oxígeno. Nuestro terreno ya coincide con NASA Mars Trek en 97 % de los puntos de pendiente."
 
 ## Shot list (30 fps, 1920 × 1080)
 
@@ -30,13 +30,13 @@ Base URL: the #282 build. Preview until it merges: `https://feat-short-mission-d
 | Shot | Frames | Time | URL state and action | What must be in frame |
 |---|---|---|---|---|
 | 1 | 0-59 | 0:00-0:02 | `?present=1`, globe beat. Fallback without the presentation mode: the mission table's Site step, slow zoom out from Cheyava Falls with the mouse wheel | Mars or the HiRISE tile; title card with the team name |
-| 2 | 60-149 | 0:02-0:05 | `?present=1`, cold open beat (astronaut 913 m from the habitat). Fallback: the Site step map, Habitat and Cheyava Falls labels visible | The habitat and Cheyava Falls in one frame |
-| 3 | 150-299 | 0:05-0:10 | `?present=1`, walkback zone beat, the zone shrinking. Fallback: the Route step with goal **Sample Cheyava Falls**, the route drawn | The cyan zone or route on HiRISE; title "Marswalk" |
+| 2 | 60-149 | 0:02-0:05 | `?present=1`, cold open beat (astronaut 913 m from the habitat). Fallback: Route step with goal **Sample Cheyava Falls**, the route from HAB to Cheyava Falls drawn | The habitat, Cheyava Falls and the route in one frame |
+| 3 | 150-299 | 0:05-0:10 | Walk, first sortie, 10 s after **Start walking**; zoom or crop on the suit panel so "MARGIN NOW" and its number fill the frame. Do not use the presentation's walkback zone here: it is not an app feature | The margin pill, readable; title "Marswalk" |
 | 4 | 300-419 | 0:10-0:14 | Route step, click **Terrain**: the route bends around the red no-go slopes | Red slope bands, the route avoiding them, the legend line "Where the route bends" |
 | 5 | 420-509 | 0:14-0:17 | Walk, first sortie, 5 s after **Start walking**, walking toward S1 | Helmet view, the margin readout "MARGIN NOW" on the left, the minimap |
 | 6 | 510-599 | 0:17-0:20 | Walk, the dust storm banner at about T+99 s (20 s after reaching S1), sky darkening; press **M** at frame 570: the table shows the route home | The banner text "global storm worst case · up to Curiosity's Gale 2018 storm, not Jezero" readable for 1 s |
-| 7 | 600-749 | 0:20-0:25 | Mission table, Route step, the **Goal** list open showing First sortie, Sample Cheyava Falls, Survey Bright Angel | The crew's needs panel and the goal list |
-| 8 | 750-899 | 0:25-0:30 | The debrief's route review: "Approved plan and walked track" with the detour judged "Worth it"; end card with the URL and QR over it from frame 840 | The verdict and the URL |
+| 7 | 600-749 | 0:20-0:25 | Mission table, Route step, goal **Sample Cheyava Falls**, the route profiles **Fastest**, **Gentlest**, **Radio** compared | The three profile columns |
+| 8 | 750-899 | 0:25-0:30 | End card over the Terrain layer: "97.3 % slope match with NASA Mars Trek", the URL and the QR | The number and the URL |
 
 ## Recording notes
 

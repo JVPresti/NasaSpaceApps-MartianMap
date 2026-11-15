@@ -4,9 +4,9 @@ Short, honest answers. Say the number, name the source, stop. If you don't know,
 
 ## 1. What is measured and what is simulated?
 
-**ES.** El terreno es medido: el modelo HiRISE de 1 m y su imagen de 25 cm. Las dosis de radiación son medidas por RAD en Curiosity, en Gale, no en Jezero. El clima es un sol real de MEDA, el 1187. Las reglas del traje (8 h, 30 min de reserva, 20°) son documentos de la NASA. Simulado: la velocidad al caminar (1 m/s), cuándo llegan los eventos, las rocas individuales (un modelo estadístico) y el compañero EV2. En `hazards.json` hay 75 valores: 57 DATA, 7 DERIVED y 11 SIM, y la pantalla muestra la etiqueta junto a cada número.
+**ES.** El terreno es medido: el modelo HiRISE de 1 m y su imagen de 25 cm. Las dosis de radiación son medidas por RAD en Curiosity, en Gale, no en Jezero. El clima es MEDA: temperatura y presión del sol 1187, viento del sol 312. Las reglas del traje (8 h, 30 min de reserva, 20°) son documentos de la NASA. Simulado: la velocidad al caminar (1 m/s), cuándo llegan los eventos, las rocas individuales (un modelo estadístico) y el compañero EV2. En `hazards.json` hay 75 valores: 57 DATA, 7 DERIVED y 11 SIM, y la pantalla muestra la etiqueta junto a cada número.
 
-**EN.** Measured: the terrain (HiRISE 1 m DTM and 25 cm image), the radiation doses (RAD on Curiosity, in Gale crater, not Jezero), one real MEDA weather sol (1187), and the suit rules (8 h, 30 min reserve, 20°) from NASA documents. Simulated: walking speed (1 m/s), when the events arrive, individual rock positions (a statistical model) and the partner EV2. `hazards.json` has 75 values: 57 DATA, 7 DERIVED, 11 SIM, and the tag shows next to each number on screen.
+**EN.** Measured: the terrain (HiRISE 1 m DTM and 25 cm image), the radiation doses (RAD on Curiosity, in Gale crater, not Jezero), MEDA temperature and pressure from sol 1187 and wind from sol 312, and the suit rules (8 h, 30 min reserve, 20°) from NASA documents. Simulated: walking speed (1 m/s), when the events arrive, individual rock positions (a statistical model) and the partner EV2. `hazards.json` has 75 values: 57 DATA, 7 DERIVED, 11 SIM, and the tag shows next to each number on screen.
 
 ## 2. Why walkback? Why not just show the oxygen left?
 
@@ -16,9 +16,9 @@ Short, honest answers. Say the number, name the source, stop. If you don't know,
 
 ## 3. How does the terrain model become a route and a cost?
 
-**ES.** Del DTM de HiRISE sacamos una malla de unos 2 m (751 × 751). Cada celda tiene pendiente, y más de 20° está prohibido. El planificador es A*: el costo por celda es la distancia por 1 + (pendiente/9)² + 0.6 × rocas. El oxígeno de cada tramo sale de un modelo metabólico: la curva de Minetti para caminar en pendiente, escalada a gravedad de Marte y a la masa del traje de las pruebas de la NASA (202 kg). El ritmo es de esfuerzo constante: en subida caminas más lento.
+**ES.** Del DTM de HiRISE (1 m) sacamos una malla de unos 2 m (751 × 751). Cada celda tiene pendiente, y más de 20° está prohibido. El planificador es A*: el costo por celda es la distancia por 1 + (pendiente/9)² + 0.6 × rocas. El oxígeno de cada tramo sale de un modelo metabólico publicado: la curva de Minetti (2002) para caminar en pendiente, que escalamos a la gravedad de Marte y a la masa con traje de las pruebas de la NASA (202 kg). La escala es nuestra (DERIVED) y no la hemos validado contra la prueba de 2009, que fue en gravedad lunar simulada; la rigidez del traje no está en el modelo. El ritmo es de esfuerzo constante: en subida caminas más lento.
 
-**EN.** We resample the HiRISE DTM to a 751 × 751 grid, about 2 m. Each cell has a slope; over 20° is no-go. The planner is A*, with a cell cost of distance × (1 + (slope/9)² + 0.6 × rock). Each leg's oxygen comes from a metabolic model: Minetti's cost of walking on a gradient, scaled to Mars gravity and to the suited mass from NASA's tests (202 kg). The pace is constant effort, so you slow down uphill.
+**EN.** We resample the HiRISE DTM to a 751 × 751 grid, about 2 m. Each cell has a slope; over 20° is no-go. The planner is A*, with a cell cost of distance × (1 + (slope/9)² + 0.6 × rock). Each leg's oxygen comes from a published metabolic model: Minetti's (2002) cost of walking on a gradient, which we scale to Mars gravity and to the suited mass from NASA's tests (202 kg). The scaling is ours (DERIVED) and not yet validated against the 2009 walkback test, which ran at simulated lunar gravity; suit stiffness is not in the model. The pace is constant effort, so you slow down uphill.
 
 ## 4. How do you know the terrain is right?
 
@@ -40,17 +40,19 @@ Short, honest answers. Say the number, name the source, stop. If you don't know,
 
 ## 7. How do you navigate without GPS?
 
-**ES.** La app separa la posición real de la estimada. Al caminar, el error crece 2 % de la distancia. Si te detienes 5 segundos con horizonte despejado, el traje compara el terreno con HiRISE y el error baja a 0.4 m, como hace Perseverance al comparar sus fotos con el mapa orbital. Con línea de vista a la antena del hábitat, el radio limita el error a 2 m. Todo esto está marcado SIM: es nuestro modelo, no una medición.
+**ES.** La app separa la posición real de la estimada. Al caminar, el error crece 2 % de la distancia. Si te detienes 5 segundos con horizonte despejado, el modelo supone una fijación con el terreno y el error baja a 0.4 m. No calculamos la comparación de imágenes; modelamos su resultado, la idea de cómo Perseverance se ubica sobre el mapa orbital. El 2 % y los 0.4 m son valores nuestros, sin fuente todavía. Con línea de vista a la antena del hábitat, el radio limita el error a 2 m. Todo esto está marcado SIM: es nuestro modelo, no una medición.
 
-**EN.** The app keeps the true position apart from the estimate. Walking adds 2 % of the distance as error. Stand still 5 s with a clear horizon and the suit matches the terrain to HiRISE, cutting the error to 0.4 m, the way Perseverance matches its images to orbital maps. In line of sight of the habitat mast, radio ranging caps the error at 2 m. All tagged SIM: our model, not a measurement.
+**EN.** The app keeps the true position apart from the estimate. Walking adds 2 % of the distance as error. Stand still 5 s with a clear horizon and the model assumes a terrain fix, cutting the error to 0.4 m. We don't compute the image matching; we model its result, after the way Perseverance localizes on orbital maps. The 2 % and 0.4 m are our values, not yet sourced. In line of sight of the habitat mast, radio ranging caps the error at 2 m. All tagged SIM: our model, not a measurement.
 
 ## 8. Why a game? The challenge asks for a map.
 
-**ES.** El mapa es el producto. La simulación es la prueba: un mapa para astronautas solo se puede juzgar usándolo, con el traje, con oxígeno limitado y mirando de reojo. Por eso hay un modo de planear en la mesa y un modo de caminar con el mismo mapa en el visor y en la muñeca. Todo lo que no pone información en el mapa o actúa sobre ella lo dejamos fuera.
+**ES.** El mismo mapa de HiRISE corre en tres lugares: la mesa de misión, el minimapa del visor y la pantalla de la muñeca. Caminarlo con oxígeno limitado es como probamos que se lee de un vistazo: el reto pide un mapa que ayude a planear y a ejecutar una caminata, y la segunda parte solo se prueba caminando.
 
-**EN.** The map is the product. The simulation is the test: a map for astronauts can only be judged in use, in a suit, with limited oxygen, read in short glances. So the same map runs in a planning mode at the table and a walking mode on the visor and the wrist. Anything that doesn't put information on the map or act on it stayed out.
+**EN.** The same HiRISE map runs in three places: the mission table, the visor minimap and the wrist screen. Walking it with limited oxygen is how we test that it reads in a glance: the challenge asks for a map that helps plan and carry out a walk, and the second half can only be tested by walking.
 
 ## 9. The blue walkback zone in the presentation. Is that in the app?
+
+(Asked by a NASA-background judge in the council: answer it before they ask, the zone carries a caption on screen.)
 
 **ES.** En la app, el mismo cálculo es un número: el margen en el visor y en la mesa. La zona azul del modo de presentación la dibujamos con el mismo código de la app (planificador, malla de costos y modelo del traje) y dos pasadas de Dijkstra; el escenario de 205 g de oxígeno es nuestro y está marcado SIM. Mostrarla en la mesa de misión es el siguiente paso.
 
@@ -70,9 +72,9 @@ Short, honest answers. Say the number, name the source, stop. If you don't know,
 
 ## 12. What's next, and who would use it?
 
-**ES.** Tres cosas concretas. Un sensor de ritmo cardiaco real que mueva el consumo de oxígeno, con el modelo de la NASA que estima el gasto metabólico desde el pulso (Hoffmann 2021). Tripulaciones en línea, de dos a seis personas. Y cualquier sitio con modelo HiRISE, porque el pipeline no depende de Jezero. Usuarios: planeadores de EVA que quieran ensayar una caminata, y salones de clase: corre en el navegador, sin instalar nada.
+**ES.** Un sensor de ritmo cardiaco real que mueva el consumo de oxígeno, con el modelo de la NASA que estima el gasto metabólico desde el pulso (Hoffmann 2021). Tripulaciones en línea, de dos a seis personas. Y cualquier sitio con modelo HiRISE, porque el pipeline no depende de Jezero. Nadie fuera del equipo lo ha usado todavía. Los primeros usuarios que buscamos: quien planea una EVA, para comparar las tres rutas en el modelo HiRISE antes de aprobar una, y una clase en Ensenada que planee la caminata a Cheyava Falls (por confirmar con el equipo).
 
-**EN.** Three concrete steps. A real heart rate sensor driving oxygen use, through NASA's model of metabolic rate from heart rate (Hoffmann 2021). Crews online, two to six people. Any site with a HiRISE terrain model, since nothing in the pipeline depends on Jezero. Users: EVA planners rehearsing a walk, and classrooms, since it runs in a browser with nothing to install.
+**EN.** A real heart rate sensor driving oxygen use, through NASA's model of metabolic rate from heart rate (Hoffmann 2021). Crews online, two to six people. Any site with a HiRISE terrain model, since nothing in the pipeline depends on Jezero. Nobody outside the team has used it yet. The first users we want: an EVA planner comparing the three routes on the HiRISE model before approving one, and a class in Ensenada planning the walk to Cheyava Falls (team to confirm).
 
 ## Local context, if asked "why Ensenada?"
 
