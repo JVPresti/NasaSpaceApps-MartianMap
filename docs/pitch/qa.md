@@ -62,11 +62,11 @@ Short, honest answers. Say the number, name the source, stop. If you don't know,
 
 **EN.** The same HiRISE map runs in three places: the mission table, the visor minimap and the wrist screen. Walking it with limited oxygen is how we test that it reads in a glance: the challenge asks for a map that helps plan and carry out a walk, and the second half can only be tested by walking.
 
-## 9. The blue walkback zone in the presentation. Is that in the app?
+## 9. The orange walkback zone in the presentation. Is that in the app?
 
 (Raised by an AI reviewer playing a NASA judge in our council, `council/`, not by a person. Answer it before a real judge asks. The zone carries a caption on screen.)
 
-**ES.** En la app, el mismo cálculo es un número: el margen en el visor y en la mesa. La zona azul del modo de presentación la dibujamos con el mismo código de la app (planificador, malla de costos y modelo del traje) y dos pasadas de Dijkstra; el escenario de 205 g de oxígeno es nuestro y está marcado SIM. Mostrarla en la mesa de misión es el siguiente paso.
+**ES.** En la app, el mismo cálculo es un número: el margen en el visor y en la mesa. La zona naranja del modo de presentación la dibujamos con el mismo código de la app (planificador, malla de costos y modelo del traje) y dos pasadas de Dijkstra; el escenario de 205 g de oxígeno es nuestro y está marcado SIM. Mostrarla en la mesa de misión es el siguiente paso.
 
 **EN.** In the app, the same calculation is one number, the margin on the visor and at the table. The presentation's zone is drawn with the app's own code (planner, cost grid and suit model) and two Dijkstra passes; the 205 g scenario is ours and tagged SIM. Showing it at the mission table is the next step.
 

@@ -25,7 +25,7 @@ Spanish narration, if chosen (same timing; burn in the English lines above as su
 
 ## Shot list (30 fps, 1920 × 1080)
 
-Base URL: the #282 build. Preview until it merges: `https://feat-short-mission-dynamic-routes-martian-map.fernando-haro-c.workers.dev/`; after: `https://martian-map.fernando-haro-c.workers.dev/`. Language English (Esc, Settings, Language). Quality: the GPU laptop's default high tier, or add `?tier=high`. Hide the visor frame only if it covers the subject (**V** in Walk).
+Base URL: `https://martian-map.fernando-haro-c.workers.dev/` (`main`, with #282 and the presentation mode merged). Language English (Esc, Settings, Language). Quality: the GPU laptop's default high tier, or add `?tier=high`. Hide the visor frame only if it covers the subject (**V** in Walk).
 
 | Shot | Frames | Time | URL state and action | What must be in frame |
 |---|---|---|---|---|

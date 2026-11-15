@@ -17,7 +17,7 @@ Martian Map", Ensenada local event). Built on the first mission of PR #282 and i
 
 | File | What it is |
 |---|---|
-| `beats.md` | The beats of the presentation mode on `main` (https://martian-map.fernando-haro-c.workers.dev/?present=1), copied from `src/present/beats.js` by `tools/sync-present.mjs`, then the speaker's plan over them: camera idea, on-screen words in English and Spanish, presenter line, time. The presentation thread reads it from this branch |
+| `beats.md` | The beats of the presentation mode on `main` (https://martian-map.fernando-haro-c.workers.dev/?present=1), copied from `src/present/beats.js` by `tools/sync-present.mjs`, then the speaker's plan over them: camera idea, on-screen words in English and Spanish, presenter line, time. The presentation's source is `src/present/beats.js` on `main`; this file follows it |
 | `script-5min-en.md`, `script-5min-es.md` | **The primary local pitch**: 5 minutes in English, ending at 4:45 with demo cut A; Spanish twin for rehearsal and questions |
 | `script-8min-es.md`, `script-8min-en.md` | The 8-minute version: DEMO.md's full demo with the story around it |
 | `script-3min-en.md`, `script-3min-es.md` | The fallback, if the organisers hold to 3 minutes: English, with a Spanish twin |

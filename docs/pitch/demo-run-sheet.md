@@ -35,11 +35,11 @@ P1 talks from `script-5min-en.md`, beats 1a to 3, over `?present=1` in tab 1. P2
 
 | Talk time | Script line | Press | On screen (beat id) | If it fails |
 |---|---|---|---|---|
-| 0:00 | 1a Jezero | (already on beat 1) then **Right** at "Jezero crater" and at "Cheyava Falls" | `mars`, `jezero`, `cheyava` | WebGL fails or the page shows "3D view unavailable. Captions only": go to tab 3, the deck PDF, slide 2, and run the talk from the PDF (mapping below) |
+| 0:00 | 1a Jezero | The talk starts on beat 1, `mars`, with the Marswalk title; P1 lets it sit about 2 s before the first word. **Right** at "An astronaut stands" (the fall to Jezero), **Right** again at "913 metres" (the dive to Cheyava Falls) | `mars`, `jezero`, `cheyava` | WebGL fails or the page shows "3D view unavailable. Captions only": go to tab 3, the deck PDF, slide 2, and run the talk from the PDF (mapping below) |
 | 0:28 | 1b Thesis | **Right** | `danger`: "On Mars, nobody can come and get you", 8 h and 30 min | |
 | 0:46 | 2 The limits (cut point to 3 minutes) | **Right** | `plan`: the route drawn, metres and grams per leg, the 20° no-go chip | |
 | 1:01 | 3 The walkback zone | **Right**, then **Right** at "The alert closes it" | `zone`, then `radiation` | The zone does not draw: talk over it; the HUD margin in the demo carries the same number |
-| 1:23 | Handover | **Right** three times, about a second apart (`storm`, `sources` and `live` go by; storm and sources come back after the demo), then **Right** again or click **Start the first sortie** | The app presses the start screen's main button and opens the first sortie's mission table, with no reload. This replaces D1's click | No mission table after 3 s: press **Esc**, then click **Open the mission table** on the start screen |
+| 1:23 | Handover | **Right** four times, about a second apart. Presses 1 to 3 step through `storm`, `sources` and `live` (storm and sources come back after the demo). Press 4, on `live`, is the hand-over; clicking **Start the first sortie** on `live` does the same | The app presses the start screen's main button and opens the first sortie's mission table, with no reload. This replaces D1's click | No mission table after 3 s: press **Esc**, then click **Open the mission table** on the start screen |
 
 After the demo, at 3:37, P2 switches to tab 2 (**Ctrl+Tab**), already on the `storm` beat, for beat 5. **Right** at 4:03 shows `sources` ("Measured, derived or simulated. Every number says which.", with the 0.14 m chip) for beats 6 and 7. Stop there: one more **Right** would hand over again. If tab 2 was closed, show PDF slides 5, 6 and 7.
 
