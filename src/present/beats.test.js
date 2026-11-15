@@ -136,6 +136,7 @@ describe('the presentation story', () => {
 
   it('fits the 4:00 limit: about 3:15 on autoplay, at most 3:30, so a manual takeover still ends under 4:00', () => {
     const total = sequence('full').reduce((a, b) => a + b.duration, 0);
+    expect(total).toBeGreaterThanOrEqual(165);   // 185 once the new demo cut lands
     expect(total).toBeLessThanOrEqual(210);
     expect(sequence('full')).toHaveLength(6);   // one beat per slide
   });
@@ -154,17 +155,28 @@ describe('the presentation story', () => {
     expect(texts.join(' ')).not.toMatch(/\{rad\.peak\}|\b26 µGy/);
   });
 
-  it('lists every source the presentation shows, each line tagged', () => {
-    const list = BEATS.find((b) => b.id === 'close').list;
-    const text = list.lines.map((l) => l.en).join('\n');
-    for (const name of ['Viking MDIM 2.1', 'THEMIS day IR', 'CTX', 'JEZ_hirise_soc_006', 'Mars Trek', 'RAD', 'DONKI', 'τ 8', '3 km', 'MEDA', 'suited walking tests', 'xEVA', 'Apollo 17']) expect(text).toContain(name);
-    for (const l of list.lines) { expect(TAGS.has(l.tag), l.en).toBe(true); expect(l.es, l.en).toBeTruthy(); }
+  it('lists the references in APA 7, alphabetical by author, with a DOI or URL each', () => {
+    const { entries, pages, perPage } = BEATS.find((b) => b.id === 'close').references;
+    const text = entries.join('\n');
+    for (const name of ['HiRISE DTM', 'context camera', 'MEDA', 'RAD', 'DONKI', 'Smith', 'Norcross', 'Hurowitz', 'Mars Trek', 'THEMIS', 'Viking', 'Apollo 17', 'EVA-EXP-0042']) expect(text).toContain(name);
+    // docs/pitch/sources-apa.md carries the same entries, in the same order
+    const doc = readFileSync(new URL('../../docs/pitch/sources-apa.md', import.meta.url), 'utf8');
+    const docEntries = doc.split('\n').filter((l) => /\((\d{4}[a-z]?|n\.d\.(-[a-z])?)(, [A-Z][a-z]+ \d+)?\)\. /.test(l));
+    expect(docEntries).toEqual(entries);
+    for (const e of entries) expect(e, e).toMatch(/\((\d{4}[a-z]?|n\.d\.)(, [A-Z][a-z]+ \d+)?\)\. .+ https:\/\/\S+$/);
+    // APA order: by the author names alone ('NASA' before 'NASA Community', 'Norcross, J.' before 'Norcross, J. R.')
+    const author = (e) => e.slice(0, e.indexOf(' (')).replace(/,? et al\.?$/, '').replace(/\.$/, '').toLowerCase();
+    const keys = entries.map(author);
+    expect([...keys].sort((x, y) => x.localeCompare(y))).toEqual(keys);
+    expect(pages.length * perPage).toBeGreaterThanOrEqual(entries.length);
   });
 
-  it('names the six team members and no email', () => {
-    const note = BEATS.find((b) => b.id === 'close').list.note;
-    expect(note.split(' · ')).toEqual(['Teresa Rivas Gómez', 'Andrea Rivas Gómez', 'Fernando Haro Calvo', 'Jorge Antonio Vazquez Guzmán', 'Antonio Ramos Gonzalez', 'Brayan Iván Pérez Ventura']);
-    expect(note).not.toMatch(/@/);
+  it('closes on the team, the app\'s address and a QR code to it, with no email', () => {
+    const { team } = BEATS.find((b) => b.id === 'close');
+    expect(team.people.split(' · ')).toEqual(['Teresa Rivas Gómez', 'Andrea Rivas Gómez', 'Fernando Haro Calvo', 'Jorge Antonio Vazquez Guzmán', 'Antonio Ramos Gonzalez', 'Brayan Iván Pérez Ventura']);
+    expect(team.people).not.toMatch(/@/);
+    expect(team.url).toBe('https://martian-map.fernando-haro-c.workers.dev');
+    expect(readFileSync(new URL(`../../public/present/${team.qr}`, import.meta.url), 'utf8')).toMatch(/^<svg/);
   });
 
   it('says the zone comes from the planner', () => {
@@ -174,13 +186,28 @@ describe('the presentation story', () => {
   });
 });
 
+// The length of an mp4, in seconds, from its movie header (mvhd): timescale and duration.
+function mp4Seconds(buf) {
+  const at = buf.indexOf('mvhd');
+  const version = buf[at + 4];
+  return version === 1
+    ? Number(buf.readBigUInt64BE(at + 4 + 4 + 16 + 4)) / buf.readUInt32BE(at + 4 + 4 + 16)
+    : buf.readUInt32BE(at + 4 + 4 + 8 + 4) / buf.readUInt32BE(at + 4 + 4 + 8);
+}
+
 describe('the demo video files', () => {
   const demo = BEATS.find((b) => b.id === 'demo');
   const file = (name) => new URL(`../../public/present/${name}`, import.meta.url);
   it('exist, under the 20 MB budget (Cloudflare caps a static file at 25 MiB)', async () => {
     const { statSync } = await import('node:fs');
-    for (const name of [demo.video.src, demo.video.srcEs, demo.video.poster]) {
+    for (const name of [demo.video.src, demo.video.poster]) {
       expect(statSync(file(name)).size, name).toBeLessThan(20 * 1024 * 1024);
     }
+  });
+
+  it('give the demo beat the video\'s real length, within 0.5 s, so the beat never runs past the file', () => {
+    const seconds = mp4Seconds(readFileSync(file(demo.video.src)));
+    expect(Math.abs(demo.duration - seconds)).toBeLessThanOrEqual(0.5);
+    expect(seconds).toBeLessThanOrEqual(100);
   });
 });

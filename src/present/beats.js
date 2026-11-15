@@ -2,7 +2,7 @@
 //
 // Each beat answers one question a judge would ask, in this order: where are we, why there, what is the danger,
 // what Marswalk does about it, how we know the numbers are real, can I see it work. Words come from the pitch script
-// (docs/pitch/ on docs/pitch-hill-climb), cut to at most 8 words a caption.
+// (docs/pitch/), cut to at most 8 words a caption.
 //
 // Fields
 //   id          unique name, used in the URL (?beat=zone) and by the recorder
@@ -23,8 +23,8 @@
 //   scene       what the engine shows: sky, dust (0-1), layer (0 none, 1 slope), route, zone, images
 //   tracks      values that move during the beat: { name: [from, to, startSec, endSec] }, or a list of those in time order
 //                 route: metres of route drawn; zone: frame of the walkback zone clip; dust: storm level
-//   list        the closing panel: { show: [from, to], title, lines: [{ en, es, tag }], team, teamAt, note }:
-//               the sources from `show`, then the team name and the six names from `teamAt`
+//   references  APA 7 references shown in pages: { title, pages: [[from, to], ...], perPage, entries: ['...*italic*...'] }
+//   team        the team, the app's URL and its QR code: { at, name, people, url, qr, open }
 //   cta         the handoff button's label
 
 export const PLACES = {
@@ -45,11 +45,11 @@ export const BEATS = [
     move: { dur: 12.5, ease: 'zoom' },
     title: 'Marswalk',
     caption: [
-      { at: 0, en: 'The first crew could land at Jezero.', es: 'El primer equipo podría aterrizar en Jezero.' },
-      { at: 7, en: 'Their goal is Cheyava Falls.', es: 'Su meta es Cheyava Falls.' },
+      { at: 0, en: 'Jezero crater, explored by Perseverance since 2021.', es: 'Cráter Jezero, explorado por Perseverance desde 2021.' },
+      { at: 7, en: 'A crew would walk to Cheyava Falls.', es: 'Una tripulación caminaría hasta Cheyava Falls.' },
     ],
     chips: [
-      { at: 'cheyava', show: [13], text: { en: 'Cheyava Falls, a potential biosignature', es: 'Cheyava Falls, una posible biofirma' }, tag: 'DATA' },
+      { at: 'cheyava', show: [13], text: { en: 'Cheyava Falls: a potential biosignature, NASA 2025', es: 'Cheyava Falls: una posible biofirma, NASA 2025' }, tag: 'DATA' },
     ],
     source: { en: 'Viking MDIM 2.1, THEMIS 100 m, CTX 6 m, then HiRISE 1 m terrain. Colour: our tint', es: 'Viking MDIM 2.1, THEMIS 100 m, CTX 6 m, luego terreno HiRISE 1 m. Color: nuestro tinte', tag: 'DATA' },
   },
@@ -65,7 +65,7 @@ export const BEATS = [
     ],
     chips: [
       { at: 'hab', show: [1.5], big: '{constants.evaMaxH} h', text: { en: 'longest EVA a suit allows', es: 'la EVA más larga que permite el traje' }, tag: 'DATA' },
-      { at: 'hab', show: [2.8], big: '{constants.reserveMin} min', text: { en: 'oxygen reserve, kept untouched', es: 'reserva de oxígeno, intocable' }, tag: 'DATA', offset: 1 },
+      { at: 'hab', show: [2.8], big: '{constants.reserveMin} min', text: { en: 'oxygen reserve the suit never touches', es: 'reserva de oxígeno que el traje no toca' }, tag: 'DATA', offset: 1 },
     ],
     source: { en: 'Suit limits: NASA xEVA concept of operations. Reserve: Apollo 17 procedures', es: 'Límites del traje: operaciones xEVA de la NASA. Reserva: procedimientos Apollo 17', tag: 'DATA' },
   },
@@ -86,7 +86,7 @@ export const BEATS = [
         liveText: { en: 'reach and still get home, T+{clock}', es: 'alcanzas y aún vuelves, T+{clock}' }, tag: 'SIM', live: 'area' },
       { at: 'hab', show: [4], text: { en: 'Habitat', es: 'Hábitat' }, tag: 'DATA', home: true },
     ],
-    source: { en: 'Zone: computed by our planner from the HiRISE cost grid and suit model, 30 min first sortie. Clock sped up', es: 'Zona: la calcula nuestro planificador con el costo HiRISE y el modelo de traje, salida de 30 min. Reloj acelerado', tag: 'SIM' },
+    source: { en: 'Zone: our planner on the HiRISE cost grid and suit model, a 30 min planned sortie. Clock sped up', es: 'Zona: nuestro planificador con el costo HiRISE y el modelo de traje, salida planeada de 30 min. Reloj acelerado', tag: 'SIM' },
   },
   {
     // The moment to remember: the alert, then the zone closing in on the astronaut, held at the end
@@ -96,7 +96,7 @@ export const BEATS = [
     move: { dur: 2, ease: 'inOut' },
     caption: { en: 'Radiation alert. Only ground toward home stays.', es: 'Alerta de radiación. Solo queda volver a casa.' },
     scene: { zone: true },
-    tracks: { zone: [[29, 31, 1.0, 2.0], [31, 40, 2.5, 9.5]], zoneOpacity: [1, 1, 0, 1] },
+    tracks: { zone: [[29, 31, 1.0, 2.0], [31, 40, 2.5, 9]], zoneOpacity: [1, 1, 0, 1] },   // held from 9 s to the end
     chips: [
       { at: 'hab', show: [0], text: { en: 'Habitat', es: 'Hábitat' }, tag: 'DATA', home: true },
       { at: 'astronaut', show: [2.5], big: '{zone.area:1} ha', text: { en: 'you can reach and still get home', es: 'puedes alcanzar y aún volver' },
@@ -107,12 +107,12 @@ export const BEATS = [
   },
   {
     id: 'demo',
-    duration: 85,   // the video's length (public/present/demo.mp4)
+    duration: 74,   // the video's length (public/present/demo.mp4)
     shot: { target: 'hab', dist: 95, yaw: -40, pitch: -14, fov: 48 },
     move: { dur: 0 },
-    // The real app, recorded on main with #290 and #335 (PR #356 names the commits). Its captions are in the video,
-    // in English (demo.mp4) and Spanish (demo-es.mp4); these show only if the file fails to load.
-    video: { src: 'demo.mp4', srcEs: 'demo-es.mp4', poster: 'demo-poster.jpg' },
+    // The real app, recorded on main (PR #373 names the commit). Its captions are in the video, in English; these show
+    // only if the file fails to load. beats.test.js checks `duration` against the file's real length.
+    video: { src: 'demo.mp4', poster: 'demo-poster.jpg' },
     caption: [
       { at: 0, en: 'In orange, where the crew still gets home.', es: 'En naranja, desde dónde aún vuelven a casa.' },
       { at: 5.2, en: 'With 30 min, the zone tightens.', es: 'Con 30 min, la zona se estrecha.' },
@@ -129,7 +129,7 @@ export const BEATS = [
     move: { dur: 3, ease: 'inOut' },
     drift: { yaw: -0.6 },
     caption: [
-      { at: 0, en: 'Measured, derived or simulated. Every number says which.', es: 'Medido, derivado o simulado. Cada número lo dice.' },
+      { at: 0, en: 'Every dataset is listed by name.', es: 'Cada conjunto de datos, por su nombre.' },
       { at: 22.5, en: 'Where can you go and still get home?', es: '¿A dónde puedes ir y aún volver?' },
     ],
     chips: [
@@ -140,26 +140,41 @@ export const BEATS = [
     scene: { route: true },
     tracks: { route: ['totals.distanceM', 'totals.distanceM', 0, 1] },
     // Names as docs/credits.md and scripts/credits-sources.mjs give them
-    // the sources until 22 s, then the team
-    list: {
-      show: [0.5, 22],
-      title: { en: 'Sources', es: 'Fuentes' },
-      lines: [
-        { en: 'Globe: Viking MDIM 2.1 colorized global mosaic, 232 m. NASA/JPL/USGS', es: 'Globo: mosaico global Viking MDIM 2.1 a color, 232 m. NASA/JPL/USGS', tag: 'DATA' },
-        { en: 'Jezero: Mars Odyssey THEMIS day IR controlled global mosaic, 100 m. NASA/JPL-Caltech/ASU', es: 'Jezero: mosaico global THEMIS IR diurno, Mars Odyssey, 100 m. NASA/JPL-Caltech/ASU', tag: 'DATA' },
-        { en: 'CTX image mosaic for Mars 2020 TRN, 6 m (JEZ_ctx_B_soc_008). NASA/JPL/MSSS', es: 'Mosaico CTX para Mars 2020 TRN, 6 m (JEZ_ctx_B_soc_008). NASA/JPL/MSSS', tag: 'DATA' },
-        { en: 'HiRISE terrain model, 1 m, and image mosaic, 25 cm, for Mars 2020 TRN (JEZ_hirise_soc_006). NASA/JPL/UArizona', es: 'Modelo de terreno HiRISE, 1 m, y mosaico de imagen, 25 cm, para Mars 2020 TRN (JEZ_hirise_soc_006). NASA/JPL/UArizona', tag: 'DATA' },
-        { en: 'Terrain check: NASA Mars Trek HiRISE Jezero DEM, 0.14 m RMS', es: 'Revisión del terreno: DEM HiRISE de Jezero en NASA Mars Trek, 0.14 m RMS', tag: 'DERIVED' },
-        { en: 'Radiation: MSL Curiosity RAD, Gale crater, September 2017 event (Zeitlin et al. 2018). Timing: NASA DONKI', es: 'Radiación: RAD de MSL Curiosity, cráter Gale, evento de septiembre 2017 (Zeitlin et al. 2018). Tiempos: NASA DONKI', tag: 'DATA' },
-        { en: 'Dust: 2018 global storm at Gale, τ 8 (NASA/JPL, 20 June 2018), visibility under 3 km (Smith et al. 2019)', es: 'Polvo: tormenta global de 2018 en Gale, τ 8 (NASA/JPL, 20 de junio de 2018), visibilidad menor a 3 km (Smith et al. 2019)', tag: 'DATA' },
-        { en: 'Weather: Perseverance MEDA, Jezero, sol 1187 (NASA PDS)', es: 'Clima: MEDA de Perseverance, Jezero, sol 1187 (NASA PDS)', tag: 'DATA' },
-        { en: 'Suit: 8 h limit, NASA xEVA Concept of Operations EVA-EXP-0042. 30 min reserve, Apollo 17 procedures', es: 'Traje: límite de 8 h, NASA xEVA Concept of Operations EVA-EXP-0042. Reserva de 30 min, procedimientos Apollo 17', tag: 'DATA' },
-        { en: 'Route, slope and oxygen: our planner and suit model, calibrated to NASA suited walking tests', es: 'Ruta, pendiente y oxígeno: nuestro planificador y modelo de traje, calibrado con pruebas de la NASA con traje', tag: 'DERIVED' },
-        { en: 'The first sortie, its clock and the return zone scenario: ours', es: 'La primera salida, su reloj y el escenario de la zona de regreso: nuestros', tag: 'SIM' },
+    // APA 7 references, alphabetical, four pages of five; docs/pitch/sources-apa.md has the same list (a test checks).
+    // *text* is italic. Then the team, the QR code to the app and its URL from 22.5 s.
+    references: {
+      title: { en: 'References', es: 'Referencias' },
+      pages: [[0.5, 5.8], [6, 11.3], [11.5, 16.8], [17, 22.2]],
+      perPage: 5,
+      entries: [
+        'de la Torre Juárez, M., & Rodriguez-Manfredi, J. A. (2021). *Mars 2020 MEDA bundle* (urn:nasa:pds:mars2020_meda) [Data set]. NASA Planetary Data System, Atmospheres Node. https://doi.org/10.17189/1522849',
+        'Fergason, R. L., Galuszka, D. M., Hare, T. M., Mayer, D. P., & Redding, B. L. (2020a). *Mars 2020 Terrain Relative Navigation context camera orthorectified image mosaic, 6 m (JEZ_ctx_B_soc_008)* [Data set]. U.S. Geological Survey. https://doi.org/10.5066/P9GV1ND3',
+        'Fergason, R. L., Galuszka, D. M., Hare, T. M., Mayer, D. P., & Redding, B. L. (2020b). *Mars 2020 Terrain Relative Navigation HiRISE DTM mosaic, 1 m (JEZ_hirise_soc_006)* [Data set]. U.S. Geological Survey. https://doi.org/10.5066/P9REJ9JN',
+        'Fergason, R. L., Galuszka, D. M., Hare, T. M., Mayer, D. P., & Redding, B. L. (2020c). *Mars 2020 Terrain Relative Navigation HiRISE orthorectified image mosaic, 25 cm (JEZ_hirise_soc_006)* [Data set]. U.S. Geological Survey. https://doi.org/10.5066/P9QJDP48',
+        'Hassler, D. M., et al. (2014). Mars\' surface radiation environment measured with the Mars Science Laboratory\'s Curiosity rover. *Science, 343*, 1244797. https://doi.org/10.1126/science.1244797',
+        'Hurowitz, J. A., et al. (2025). Redox-driven mineral and organic associations in Jezero Crater, Mars. *Nature, 645*, 332–340. https://doi.org/10.1038/s41586-025-09413-0',
+        'Minetti, A. E., Moia, C., Roi, G. S., Susta, D., & Ferretti, G. (2002). Energy cost of walking and running at extreme uphill and downhill slopes. *Journal of Applied Physiology, 93*, 1039–1046. https://doi.org/10.1152/japplphysiol.01177.2001',
+        'NASA. (2020). *Exploration EVA system concept of operations* (EVA-EXP-0042 Rev B). https://www.nasa.gov/wp-content/uploads/2017/02/eva-exp-0042_xeva_system_con_ops_rev_b_final_dtd_10192020_ref_doc.pdf',
+        'NASA Community Coordinated Modeling Center. (n.d.). *DONKI: Flare 2017-09-10T15:35:00-FLR-001* [Data set]. https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13098/-1',
+        'NASA Jet Propulsion Laboratory. (2018, June 20). *Martian dust storm grows global; Curiosity captures photos of thickening haze*. https://www.jpl.nasa.gov/news/martian-dust-storm-grows-global-curiosity-captures-photos-of-thickening-haze/',
+        'NASA Manned Spacecraft Center. (n.d.). *Apollo 17 final lunar surface procedures, volume 2: Contingency*. NASA Planetary Data System Geosciences Node. https://pds-geosciences.wustl.edu/Lunar/urn-nasa-pds-apollodoc/document_a17/mission/a17_final_lunar_surface_procedures_vol2_contingency.pdf',
+        'NASA Solar System Treks. (n.d.). *Mars Trek: HiRISE Jezero DEM* [Data set]. https://trek.nasa.gov/mars/',
+        'NASA/JPL-Caltech/Arizona State University. (n.d.). *Mars Odyssey THEMIS day IR controlled global mosaic, 100 m* [Data set]. NASA Mars Trek. https://trek.nasa.gov/mars/',
+        'NASA/JPL/USGS. (n.d.). *Mars Viking MDIM 2.1 colorized global mosaic, 232 m* [Data set]. U.S. Geological Survey Astrogeology Science Center. https://astrogeology.usgs.gov/search/map/mars_viking_mdim21_colorized_global_mosaic_232m',
+        'Norcross, J., et al. (2008). *Feasibility of suited 10 km walkback on the Moon* [Conference presentation]. Aerospace Medical Association. https://ntrs.nasa.gov/citations/20080014853',
+        'Norcross, J., et al. (2009). *Feasibility of performing a suited 10-km ambulation on the Moon* (NASA/TP-2009-214796). NASA. https://www.lpi.usra.edu/lunar/artemis/NorcrossEtAl_NASA-TP-2009-214796_EVA%20Walkback%20Test.pdf',
+        'Norcross, J. R., et al. (2010). *Metabolic costs and biomechanics of inclined ambulation and exploration tasks in a planetary suit* (NASA/TP-2010-216125). NASA. https://ntrs.nasa.gov/citations/20110003409',
+        'Smith, C. L., et al. (2019). Visibility and line-of-sight extinction estimates in Gale crater during the 2018/MY34 global dust storm. *Geophysical Research Letters, 46*, 9414–9421. https://doi.org/10.1029/2019GL083788',
+        'Zeitlin, C., et al. (2018). Analysis of the radiation hazard observed by RAD on the surface of Mars during the September 2017 solar particle event. *Geophysical Research Letters, 45*, 5845–5851. https://doi.org/10.1029/2018GL077760',
       ],
-      team: 'Los Frijolitos Espaciales Refritos Nueva Generación',
-      teamAt: 22.5,
-      note: 'Teresa Rivas Gómez · Andrea Rivas Gómez · Fernando Haro Calvo · Jorge Antonio Vazquez Guzmán · Antonio Ramos Gonzalez · Brayan Iván Pérez Ventura',
+    },
+    team: {
+      at: 22.5,
+      name: 'Los Frijolitos Espaciales Refritos Nueva Generación',
+      people: 'Teresa Rivas Gómez · Andrea Rivas Gómez · Fernando Haro Calvo · Jorge Antonio Vazquez Guzmán · Antonio Ramos Gonzalez · Brayan Iván Pérez Ventura',
+      url: 'https://martian-map.fernando-haro-c.workers.dev',
+      qr: 'qr.svg',
+      open: { en: 'Open it in a desktop browser', es: 'Ábrelo en un navegador de escritorio' },
     },
   },
   {
@@ -257,7 +272,7 @@ export const GLOBAL_30 = [
 
 /**
  * The beat list for a sequence name ('full' or 'global30'), with borrowed fields filled in. The full presentation ends
- * on the sources; { live: true } (?live=1) adds the hand-over to the live app after them.
+ * on the close (references, then the team); { live: true } (?live=1) adds the hand-over to the live app after it.
  */
 export function sequence(name = 'full', { live = false } = {}) {
   if (name !== 'global30') return live ? BEATS : BEATS.filter((b) => b.id !== 'live');

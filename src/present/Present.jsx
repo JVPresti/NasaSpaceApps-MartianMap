@@ -18,7 +18,7 @@ import { createGlobe } from './globe.js';
 import { createProjector } from './project.js';
 import { layoutCards } from './layout.js';
 import { decodeLast, fill, marginAt, clockAt, areaAt, resolvePlace, trackNumber, astronautAt } from './data.js';
-import { createHoldTimer, createPilot, pointerStep, fallbackStep, presentKey, queryWithoutPresent, restoreEngine as restoreFromStore } from './control.js';
+import { createHoldTimer, createPilot, pilotLabel, pointerStep, videoFrame, fallbackStep, presentKey, queryWithoutPresent, restoreEngine as restoreFromStore } from './control.js';
 import './present.css';
 
 const BASE = (import.meta.env.BASE_URL || '/') + 'present/';
@@ -107,9 +107,8 @@ export default function Present({ engine, onExit }) {
   const still = !!failed || stalled;   // the caption fallback is up
   const indexRef = useRef(index);
   // Auto until the presenter's first step, then manual for the rest of the session (control.js createPilot)
-  const pilotRef = useRef(null);
-  if (!pilotRef.current) pilotRef.current = createPilot(opts.autoplay && !opts.record);
-  const [pilotMode, setPilotMode] = useState(() => pilotRef.current.mode);
+  const [pilot] = useState(() => createPilot(opts.autoplay && !opts.record));
+  const [pilotMode, setPilotMode] = useState(() => pilot.mode);
   // The recorded app demo (a beat with `video`): its element, and whether the file failed to load
   const videoRef = useRef(null);
   const [videoFailed, setVideoFailed] = useState(false);
@@ -322,14 +321,17 @@ export default function Present({ engine, onExit }) {
       const v = videoRef.current;
       if (!v) return 0;
       const on = !!beat.video && !videoFailedRef.current;
-      const a = on ? showValue([0], t, beat.duration) : 0;
-      v.style.opacity = a.toFixed(3);
-      if (!on) { if (!v.paused) v.pause(); return 0; }
-      if (opts.record) { if (!v.paused) v.pause(); if (Math.abs(v.currentTime - t) > 1e-3) v.currentTime = Math.min(t, v.duration || t); return a; }
-      if (t >= beat.duration - 0.05) { if (!v.paused) v.pause(); return a; }
-      if (Math.abs(v.currentTime - t) > 0.5) v.currentTime = t;   // entering the beat, or after a stall
+      if (!on) { v.style.opacity = '0'; if (!v.paused) v.pause(); return 0; }
+      const f = videoFrame(t, beat.duration, v.duration);   // control.js: plays, then holds the last frame, then fades
+      v.style.opacity = f.opacity.toFixed(3);
+      if (opts.record || !f.playing) {
+        if (!v.paused) v.pause();
+        if (Math.abs(v.currentTime - f.time) > (opts.record ? 1e-3 : 0.1) && !v.seeking) v.currentTime = f.time;
+        return f.opacity;
+      }
+      if (Math.abs(v.currentTime - f.time) > 0.5) v.currentTime = f.time;   // entering the beat, or after a stall
       if (v.paused) v.play().catch(() => {});
-      return a;
+      return f.opacity;
     }
 
     function frame(dt) {
@@ -465,7 +467,7 @@ export default function Present({ engine, onExit }) {
     // One step from a key, a clicker, a tap or a swipe. The first one in auto only takes over: the beat (and a video in
     // it) carries on, and the presenter steps from there.
     const step = (action) => {
-      const next = pilotRef.current.input(action);
+      const next = pilot.input(action);
       if (next === null) { exitRef.current?.takeover?.(); setPilotMode('manual'); return; }
       if (still) { setIndex((i) => fallbackStep(i, next, beats.length)); return; }   // no clock, no camera, no hand-off
       const nav = exitRef.current?.nav;
@@ -474,7 +476,8 @@ export default function Present({ engine, onExit }) {
     };
     const dialog = dialogRef.current;
     let down = null;
-    const onDown = (e) => { down = e.target.closest?.('button, a') ? null : { x: e.clientX, y: e.clientY }; };
+    // the primary button or a touch only: a right or middle click never steps
+    const onDown = (e) => { down = e.button !== 0 || e.target.closest?.('button, a') ? null : { x: e.clientX, y: e.clientY }; };
     const onUp = (e) => {
       if (!down) return;
       const action = pointerStep(down, { x: e.clientX, y: e.clientY }, window.innerWidth);
@@ -489,7 +492,7 @@ export default function Present({ engine, onExit }) {
       window.removeEventListener('keydown', onKey, true); window.removeEventListener('keyup', onKey, true);
       dialog?.removeEventListener('pointerdown', onDown); dialog?.removeEventListener('pointerup', onUp);
     };
-  }, [beats, begin, exit, still]);
+  }, [beats, begin, exit, pilot, still]);
 
   // ?autoplay keeps running in the caption fallback, on the same beat lengths
   useEffect(() => {
@@ -513,7 +516,7 @@ export default function Present({ engine, onExit }) {
         // Lazy: the file starts loading after the first beat, so the opening never waits on it
         <video
           ref={videoRef} className="pr-video" aria-hidden="true" muted playsInline disablePictureInPicture
-          src={index >= 1 || opts.record ? BASE + (lang === 'es' && videoBeat.video.srcEs ? videoBeat.video.srcEs : videoBeat.video.src) : undefined}
+          src={index >= 1 || opts.record ? BASE + videoBeat.video.src : undefined}
           poster={BASE + videoBeat.video.poster} preload={index >= 1 || opts.record ? 'auto' : 'none'} style={{ opacity: 0 }}
           onError={() => { videoFailedRef.current = true; setVideoFailed(true); }}
         />
@@ -534,22 +537,28 @@ export default function Present({ engine, onExit }) {
         ))}
       </div>
       <div className={`pr-copy${still ? ' still' : ''}`} key={`copy-${beat.id}-${lang}`}>
-        {beat.list && (
-          <div className="pr-list" data-fade={(beat.list.show || [0.5]).join(',')} style={hidden}>
-            <h2 className="pr-list-title">{tx(beat.list.title)}</h2>
+        {beat.references && (still ? [beat.references.pages[0]] : beat.references.pages).map((page, k) => (
+          // APA 7, one page at a time; the fallback shows the first page only, so nothing overlaps
+          <div key={k} className="pr-list pr-refs" data-fade={page.join(',')} style={hidden}>
+            <h2 className="pr-list-title">{tx(beat.references.title)} <span className="pr-refs-page">{k + 1}/{beat.references.pages.length}</span></h2>
             <ul>
-              {beat.list.lines.map((line, k) => (
-                <li key={k}><span className={`pr-tag ${TAG_CLASS[line.tag]}`}>{line.tag}</span>{tx(line)}</li>
+              {beat.references.entries.slice(k * beat.references.perPage, (k + 1) * beat.references.perPage).map((entry) => (
+                <li key={entry}>{entry.split('*').map((part, j) => (j % 2 ? <i key={j}>{part}</i> : part))}</li>
               ))}
             </ul>
-            {!beat.list.team && beat.list.note && <p className="pr-list-note">{beat.list.note}</p>}
           </div>
-        )}
-        {beat.list?.team && (
-          // the team, after the sources: the panel takes the sources' place
-          <div className="pr-team" data-fade={String(beat.list.teamAt ?? 0)} style={hidden}>
-            <h2 className="pr-team-name">{beat.list.team}</h2>
-            <p className="pr-team-people">{beat.list.note}</p>
+        ))}
+        {beat.team && !still && (
+          // the team, the app's address and its QR code, in the references' place
+          <div className="pr-team" data-fade={String(beat.team.at)} style={hidden}>
+            <div className="pr-team-text">
+              <h2 className="pr-team-name">{beat.team.name}</h2>
+              <p className="pr-team-people">{beat.team.people}</p>
+            </div>
+            <figure className="pr-qr">
+              <img src={BASE + beat.team.qr} alt="" width="200" height="200" />
+              <figcaption>{beat.team.url.replace('https://', '')}<br /><span>{tx(beat.team.open)}</span></figcaption>
+            </figure>
           </div>
         )}
         {beat.title && <h1 className="pr-title" data-fade="0.2" style={hidden}>{beat.title}</h1>}
@@ -574,7 +583,7 @@ export default function Present({ engine, onExit }) {
       {!opts.record && (
         <div className="pr-progress" aria-hidden="true">
           {beats.map((b, i) => <span key={b.id} className={i === index ? 'on' : i < index ? 'past' : ''} />)}
-          <span className="pr-mode" data-mode={pilotMode}>{pilotMode === 'auto' ? 'Auto' : 'Manual'}</span>
+          <span className="pr-mode" data-mode={pilotMode}>{pilotLabel(pilotMode, lang)}</span>
           <span className="pr-lang">{lang.toUpperCase()}</span>
         </div>
       )}

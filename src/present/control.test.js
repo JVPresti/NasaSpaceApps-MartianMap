@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createInitialState } from '../state/store.js';
 import { dustLevelFromTau } from '../state/dustLevel.js';
-import { ENGINE_TIMEOUT_MS, createHoldTimer, createPilot, pointerStep, fallbackStep, presentHrefFor, presentKey, queryWithoutPresent, restoreEngine } from './control.js';
+import { ENGINE_TIMEOUT_MS, createHoldTimer, createPilot, pilotLabel, pointerStep, videoFrame, fallbackStep, presentHrefFor, presentKey, queryWithoutPresent, restoreEngine } from './control.js';
 
 const key = (k, mods = {}) => ({ key: k, altKey: false, ctrlKey: false, metaKey: false, ...mods });
 
@@ -133,5 +133,36 @@ describe('pointerStep: taps and swipes', () => {
     expect(pointerStep({ x: 800, y: 300 }, { x: 802, y: 301 }, 1000)).toBe('next');
     expect(pointerStep({ x: 100, y: 300 }, { x: 101, y: 300 }, 1000)).toBe('back');
     expect(pointerStep({ x: 100, y: 300 }, { x: 130, y: 300 }, 1000)).toBeNull();   // a drag, not a step
+  });
+});
+
+describe('videoFrame: the demo plays, holds its last frame, then fades', () => {
+  it('plays from the beat start and fades in', () => {
+    expect(videoFrame(0, 90, 89.5)).toMatchObject({ time: 0, playing: true, opacity: 0 });
+    expect(videoFrame(10, 90, 89.5)).toMatchObject({ time: 10, playing: true, opacity: 1 });
+  });
+
+  it('holds a frame before the end once the file has played, never an ended or rewound video', () => {
+    const f = videoFrame(89.8, 90, 89.5);
+    expect(f.playing).toBe(false);
+    expect(f.time).toBeCloseTo(89.5 - 1 / 30);
+  });
+
+  it('fades out over the beat\'s last 0.6 s into the next beat', () => {
+    expect(videoFrame(89.7, 90, 89.5).opacity).toBeCloseTo(0.5);
+    expect(videoFrame(90, 90, 89.5).opacity).toBe(0);
+  });
+
+  it('falls back to the beat length while the file\'s length is unknown', () => {
+    expect(videoFrame(5, 90, NaN)).toMatchObject({ time: 5, playing: true });
+  });
+});
+
+describe('pilotLabel: the Auto / Manual indicator', () => {
+  it('reads Auto, then Manual after the takeover, in both languages', () => {
+    expect(pilotLabel('auto', 'en')).toBe('Auto');
+    expect(pilotLabel('auto', 'es')).toBe('Automático');
+    expect(pilotLabel('manual', 'en')).toBe('Manual');
+    expect(pilotLabel(createPilot(true).mode, 'en')).toBe('Auto');
   });
 });

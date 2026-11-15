@@ -111,3 +111,22 @@ export function pointerStep(down, up, width) {
   if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return up.x >= width / 2 ? 'next' : 'back';
   return null;
 }
+
+/**
+ * Where the demo video stands at beat time t: the frame to show, whether it plays, and its opacity. It plays from the
+ * beat's start, holds its last frame once the file ends (a beat a little longer than the file never shows an ended or
+ * rewound video), and fades out over the beat's last 0.6 s into the next beat.
+ * @param {number} t beat seconds  @param {number} beatSec the beat's length  @param {number} fileSec the file's length
+ */
+export function videoFrame(t, beatSec, fileSec) {
+  const end = Number.isFinite(fileSec) && fileSec > 0 ? fileSec : beatSec;
+  const last = Math.max(0, end - 1 / 30);   // a frame before the end: browsers show black or the poster at `ended`
+  const time = Math.max(0, Math.min(t, last));
+  const playing = t < last && t < beatSec - 0.05;
+  const fadeIn = Math.min(1, Math.max(0, t / 0.6));
+  const fadeOut = Math.min(1, Math.max(0, (beatSec - t) / 0.6));
+  return { time, playing, opacity: Math.min(fadeIn, fadeOut) };
+}
+
+/** The Auto / Manual indicator's words. */
+export const pilotLabel = (mode, lang) => (mode === 'auto' ? (lang === 'es' ? 'Automático' : 'Auto') : 'Manual');
