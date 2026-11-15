@@ -14,7 +14,7 @@ import { createClock, createTimeline, RECORD_STEP, easeInOut, easeOut, ramp, sho
 import { blendShot, boxToLocal, cameraHeight, engineCamera, geoToLocal, localToGeo } from './geo.js';
 import { createGlobe } from './globe.js';
 import { createProjector } from './project.js';
-import { decodeLast, fill, marginAt, resolvePlace, trackNumber, astronautAt } from './data.js';
+import { decodeLast, fill, marginAt, clockAt, resolvePlace, trackNumber, astronautAt } from './data.js';
 import './present.css';
 
 const BASE = (import.meta.env.BASE_URL || '/') + 'present/';
@@ -100,6 +100,8 @@ export default function Present({ engine, onExit }) {
   const low = useMemo(() => opts.tier === 'low' || (opts.tier !== 'high' && weakGpu()), [opts.tier]);
   const reduced = useMemo(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches && !opts.record, [opts.record]);
   useEffect(() => { engineRef.current = engine; }, [engine]);
+  const langRef = useRef(lang);
+  useEffect(() => { langRef.current = lang; }, [lang]);
 
   // ---------------------------------------------------------------- open: modal over the start screen
   useEffect(() => {
@@ -159,7 +161,7 @@ export default function Present({ engine, onExit }) {
       cine.addImage({ image: assets.ctx, box: ctxBox, y: -185 });
       cine.setRoute(plan.path, { width: low ? 5 : 4 });
       cine.setRouteReveal(0, 0);
-      cine.setZone({ n: plan.zone.n, last: plan.zone.lastBytes });
+      cine.setZone({ ...plan.zone, last: plan.zone.lastBytes });
       // the beat's shot may have used height 0 before the terrain existed
       startBeat(timeline.index, true);
     }
@@ -231,6 +233,8 @@ export default function Present({ engine, onExit }) {
         if (chip.live === 'margin') {
           const big = el.querySelector('.pr-big');
           if (big) big.textContent = `${marginAt(plan, zoneFrame)} min`;
+          const text = el.querySelector('.pr-text');
+          if (text && chip.liveText) text.textContent = fill(chip.liveText[langRef.current] ?? chip.liveText.en, { clock: clockAt(plan, zoneFrame) }, langRef.current);
         }
         if (chip.ring) {
           for (const ring of el.querySelectorAll('.pr-ring')) {

@@ -9,7 +9,7 @@
 //   cine.setLoop(false); cine.step();         // stop the engine's own loop and render one frame on demand
 //   cine.addImage({ image, box, y });         // an orbital image as a flat plane under the terrain (box in metres)
 //   cine.setRoute(path); cine.setRouteReveal(m);   // the route drawn in up to m metres from its start
-//   cine.setZone({ n, last }); cine.setZoneFrame(f, opacity);   // the walkback zone clip (src/present/zoneFrames.js)
+//   cine.setZone({ cols, rows, x0, z0, dx, dz, last }); cine.setZoneFrame(f, opacity);   // the zone clip (src/present/zoneFrames.js)
 //   cine.release();
 import * as THREE from 'three';
 
@@ -138,12 +138,15 @@ export function createCinematic(ctx, hooks) {
   const zoneMesh = new THREE.Mesh(new THREE.BufferGeometry(), zoneMat);
   zoneMesh.renderOrder = 3; zoneMesh.frustumCulled = false; zoneMesh.visible = false;
   group.add(zoneMesh);
-  function setZone({ n, last }) {
+  /**
+   * The zone clip's grid, as src/sim/returnZone.js lays it out: cols x rows nodes from the north-west corner, node (q, r)
+   * at x0 + q * dx, z0 + r * dz. Drawn on a grid draped over the tile: 3.5 m between vertices on High, 7 m on Low.
+   */
+  function setZone({ cols, rows, x0, z0, dx, dz, last }) {
     if (zoneUniforms.tLast.value) zoneUniforms.tLast.value.dispose();
-    const tex = new THREE.DataTexture(last, n, n, THREE.RedFormat, THREE.UnsignedByteType);
-    tex.minFilter = tex.magFilter = THREE.LinearFilter; tex.unpackAlignment = 1; tex.needsUpdate = true;   // rows of n bytes
+    const tex = new THREE.DataTexture(last, cols, rows, THREE.RedFormat, THREE.UnsignedByteType);
+    tex.minFilter = tex.magFilter = THREE.LinearFilter; tex.unpackAlignment = 1; tex.needsUpdate = true;   // rows of cols bytes
     zoneUniforms.tLast.value = tex;
-    // a draped grid over the tile, 3.5 m between vertices on High, 7 m on Low
     const T = ctx.T, seg = ctx.tier === 'low' ? 200 : 400;
     const g = new THREE.PlaneGeometry(T.W, T.H, seg, seg);
     g.rotateX(-Math.PI / 2);
@@ -151,7 +154,8 @@ export function createCinematic(ctx, hooks) {
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i), z = p.getZ(i);
       p.setY(i, ctx.terrain.meshH(x, z) + 0.6);
-      uv.setXY(i, x / T.W + 0.5, z / T.H + 0.5);   // row 0 of `last` is the north edge
+      // texel centres sit on the nodes; row 0 is the north edge
+      uv.setXY(i, ((x - x0) / dx + 0.5) / cols, ((z - z0) / dz + 0.5) / rows);
     }
     g.computeBoundingSphere();
     zoneMesh.geometry.dispose(); zoneMesh.geometry = g;

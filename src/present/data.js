@@ -68,3 +68,11 @@ export function decodeLast(b64) {
   }
   return new Uint8Array(Buffer.from(b64, 'base64'));
 }
+
+/** The mission clock in the zone clip at a fractional frame, as 'm:ss'. */
+export function clockAt(plan, f) {
+  const frames = plan.zone.frames;
+  const i = Math.max(0, Math.min(frames.length - 1, Math.floor(f))), j = Math.min(frames.length - 1, i + 1), u = Math.max(0, Math.min(1, f - i));
+  const sec = Math.round(frames[i].elapsedSec + (frames[j].elapsedSec - frames[i].elapsedSec) * u);
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+}

@@ -1,70 +1,64 @@
-// The walkback zone clip for the presentation's hero beat (#291), built from the app's own zone module.
+// The walkback zone clip for the presentation's hero beat (#291), computed by the app's own module,
+// src/sim/returnZone.js (#309), so the presentation and the mission table draw the same zone.
 //
-// Each frame is one call to computeReturnZone with the astronaut's position along the planned route and the O2 left.
-// Frames 0 to speFrame - 1 walk out and drain O2; from speFrame the radiation alert holds the zone to the walk home.
-// The result is stored as one byte per cell, `last`: the last frame (1-based) the cell is still inside. A cell that
-// leaves the zone never comes back, so the browser draws frame f as last > f with one texture.
+// The scenario is the first mission (#282): the first sortie plans 30 min, and 25.5 min is usable after the standard
+// 15 % reserve (route.budget.usableSec). That planned time, not the 8 h suit limit, bounds the zone. The crew walks
+// 55 m to the sortie stop and works there while the clock runs; then the radiation alert sends them home
+// (modifiers.homeward, as the event's planner request does) and the zone keeps only ground no farther from home than
+// the astronaut. Frame times are our scenario (SIM): the clock is compressed so the zone visibly tightens.
+//
+// Each frame is one computeReturnZone call. The clip is stored as one byte per zone node, `last`: the last frame
+// (1-based) the node is inside or on the edge. A node that leaves never comes back, so the browser draws frame f as
+// last > f with one texture.
 //
 // Plain JavaScript, no three.js and no DOM: scripts/present/build-plan.mjs runs it in Node.
-import { metabolicPowerW, o2RateGs, walkCost } from '../sim/suitModel.js';
-import * as zoneModule from './returnZonePlaceholder.js';   // becomes '../sim/returnZone.js' when feat/return-zone lands
+import { computeReturnZone, zoneMarginAt, ZONE_STATE } from '../sim/returnZone.js';
 
-export const ZONE_SOURCE = zoneModule.SOURCE || 'returnZone';
+export const ZONE_SOURCE = 'returnZone';
 
-/**
- * Positions along a path where o grams of O2 have been spent walking it at the nominal rate.
- * @returns {(o: number) => [number, number]}
- */
-export function pointAtO2(path, heightAt, c) {
-  const cum = [0];
-  for (let k = 1; k < path.length; k++) cum.push(cum[k - 1] + walkCost([path[k - 1], path[k]], heightAt, c, { pad: 0 }).o2G);
-  const at = (o) => {
-    for (let k = 1; k < path.length; k++) if (cum[k] >= o) {
-      const u = (o - cum[k - 1]) / (cum[k] - cum[k - 1] || 1);
-      return [path[k - 1][0] + (path[k][0] - path[k - 1][0]) * u, path[k - 1][1] + (path[k][1] - path[k - 1][1]) * u];
-    }
-    return path[path.length - 1];
-  };
-  at.total = cum[cum.length - 1];
-  return at;
-}
+/** The first sortie (#282): planned minutes, the standard reserve share and its stop (stops.json route_stops "sortie"). */
+export const SORTIE = Object.freeze({ timeMin: 30, reserveShare: 0.15, stop: Object.freeze({ x: 493, z: 539, name: 'S1 · light-toned patch' }) });
 
 /**
- * @param {{ grid: object, path: Array<[number, number]>, hab: {x: number, z: number}, constants: object,
- *   heightAt: (x: number, z: number) => number,
- *   scenario: { o2StartG: number, framesOut: number, framesHome: number, speFrame: number, outShare: number } }} input
+ * @param {{ grid: object, hab: {x: number, z: number}, constants: object,
+ *   scenario: { framesOut: number, framesHome: number, speFrame: number, arriveFrame: number, alertAtSec: number,
+ *     o2G: number } }} input
  */
-export function buildZoneFrames({ grid, path, hab, constants: c, heightAt, scenario: s, compute = zoneModule.computeReturnZone }) {
-  const at = pointAtO2(path, heightAt, c);
-  const rate = o2RateGs(metabolicPowerW(c.speedFlat, 0, c), c);
+export function buildZoneFrames({ grid, hab, constants: c, scenario: s, compute = computeReturnZone }) {
+  const usableSec = SORTIE.timeMin * 60 * (1 - SORTIE.reserveShare);
+  const stop = SORTIE.stop;
   const total = s.framesOut + s.framesHome;
-  let spent = 0, along = 0, pos = [hab.x, hab.z];
-  let last = null, alive = null, meta = null;
+  const walkSec = Math.hypot(stop.x - hab.x, stop.z - hab.z) / c.speedFlat;
+  let last = null, alive = null, shape = null;
   const frames = [];
   for (let f = 0; f < total; f++) {
     const spe = f >= s.speFrame;
+    let elapsedSec, pos;
     if (!spe) {
-      along = at.total * s.outShare * f / (s.speFrame - 1);
-      spent = along; pos = at(along);
-    } else if (f > s.speFrame) {
-      const next = Math.max(0, along - along / (total - f)), np = at(next);
-      spent += walkCost([pos, np], heightAt, c).o2G; along = next; pos = np;
+      elapsedSec = s.alertAtSec * f / (s.speFrame - 1);
+      const u = Math.min(1, f / s.arriveFrame);
+      pos = { x: hab.x + (stop.x - hab.x) * u, z: hab.z + (stop.z - hab.z) * u };
+    } else {
+      const u = Math.min(1, (f - s.speFrame) / (s.framesHome - 1));
+      elapsedSec = s.alertAtSec + walkSec * u;
+      pos = { x: stop.x + (hab.x - stop.x) * u, z: stop.z + (hab.z - stop.z) * u };
     }
-    const o2Left = s.o2StartG - spent;
-    const z = compute(grid, { home: hab, player: { x: pos[0], z: pos[1] }, o2LeftG: o2Left, constants: c, alert: spe });
-    if (!last) { last = new Uint8Array(z.n * z.n); alive = new Uint8Array(z.n * z.n).fill(1); meta = z; }
+    const z = compute({ grid, home: hab, from: pos, suit: { o2G: s.o2G, elapsedSec }, constants: c, evaLimitSec: usableSec, modifiers: { homeward: spe } });
+    if (!last) { last = new Uint8Array(z.cols * z.rows); alive = new Uint8Array(z.cols * z.rows).fill(1); shape = z; }
     let count = 0;
     for (let x = 0; x < last.length; x++) {
-      if (z.inside[x] && alive[x]) { last[x] = f + 1; count++; } else alive[x] = 0;
+      if (z.state[x] !== ZONE_STATE.OUTSIDE && alive[x]) { last[x] = f + 1; count++; } else alive[x] = 0;
     }
+    const margin = zoneMarginAt(z, pos.x, pos.z);
     frames.push({
-      x: +pos[0].toFixed(1), z: +pos[1].toFixed(1), o2Left: Math.round(o2Left),
-      backG: +z.backG.toFixed(1), marginMin: Math.round(z.marginSec / 60),
-      areaHa: +(count * meta.cellX * meta.cellZ / 1e4).toFixed(1), spe,
+      x: +pos.x.toFixed(1), z: +pos.z.toFixed(1), elapsedSec: Math.round(elapsedSec),
+      marginMin: Number.isFinite(margin) ? Math.max(0, Math.round(margin / 60)) : 0,
+      areaHa: +(count * z.dx * z.dz / 1e4).toFixed(1), reachM: Math.round(z.stats.reachM), limit: z.stats.limit, spe,
     });
   }
   return {
-    source: ZONE_SOURCE, scenario: { ...s, tag: 'SIM' }, n: meta.n, cellX: +meta.cellX.toFixed(3), cellZ: +meta.cellZ.toFixed(3),
-    reserveG: +(rate * c.reserveSec).toFixed(1), frames, last,
+    source: ZONE_SOURCE, scenario: { ...s, plannedMin: SORTIE.timeMin, usableMin: +(usableSec / 60).toFixed(1), stop, tag: 'SIM' },
+    cols: shape.cols, rows: shape.rows, x0: shape.x0, z0: shape.z0, dx: +shape.dx.toFixed(4), dz: +shape.dz.toFixed(4),
+    frames, last,
   };
 }

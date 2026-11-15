@@ -10,13 +10,14 @@ level z has 2^(z+1) x 2^z tiles over 360 x 180 degrees, row 0 at the north pole)
   globe_4k.jpg, globe_2k.jpg   Viking MDIM 2.1 colour mosaic (Mars_Viking_MDIM21_ClrMosaic_global_232m), level 4
                                (8192 x 4096) resized to 4096 x 2048 and 2048 x 1024 (Low tier).
   jezero_region.jpg            THEMIS day IR 100 m (THEMIS_DayIR_ControlledMosaics_100m_v2_oct2018), level 9, over
-                               75.9 to 79.1 E, 16.8 to 20.0 N, coloured with the Viking mosaic (below).
+                               75.9 to 79.1 E, 16.8 to 20.0 N, tinted (below).
   jezero_ctx.jpg               MRO CTX Jezero mosaic, controlled, 6 m (JEZ_ctx_B_soc_008_orthoMosaic_6m_Eqc_latTs0_lon0),
                                level 12, over its own bounding box, tinted (below).
 
-THEMIS and CTX are grayscale. Their colour comes from the Viking mosaic: THEMIS takes blur(viking) * gray / blur(gray),
-so the large-scale colour and brightness are Viking's and the detail is THEMIS's; CTX takes one flat tint, the mean Viking
-colour of its box. Sources says so, and so does the presentation's tag on screen.
+THEMIS and CTX are grayscale. Both take one flat tint, ENGINE_TINT: the mean colour of the engine's tinted HiRISE tile,
+so the fall from orbit into the 3D terrain keeps one colour. The app already says the Mars colour is a tint
+(docs/marswalk-assets/README.md); Sources and the tag on screen say the same here. colourise() is kept for a
+Viking-coloured version.
 """
 import argparse
 import concurrent.futures as cf
@@ -101,12 +102,17 @@ def colourise(gray, colour, blur_px):
     return Image.merge('RGB', [b.convert('L') for b in bands])
 
 
+# The mean colour of the engine's tinted HiRISE tile seen from the hand-off height, measured from a recorded frame. The
+# THEMIS and CTX images take it, so the fall from orbit into the engine's terrain does not change colour.
+ENGINE_TINT = (118, 90, 68)
+
+
 def tint(gray, colour):
     """gray / mean(gray) * mean(colour): one flat Viking colour over the CTX detail. CTX is too sharp for the Viking
     mosaic's 232 m colour to follow, so a per-pixel ratio smears; a flat tint is honest and matches the app's own
     tinted HiRISE (docs/marswalk-assets/README.md: the Mars colour is a tint)."""
     g = gray.convert('L')
-    small = colour.resize((1, 1), Image.BOX).getpixel((0, 0))
+    small = colour if isinstance(colour, tuple) else colour.resize((1, 1), Image.BOX).getpixel((0, 0))
     mean = g.resize((1, 1), Image.BOX).getpixel((0, 0)) or 1
     return Image.merge('RGB', [g.point(lambda v, c=c: max(0, min(255, round(v / mean * c)))) for c in small])
 
@@ -132,14 +138,14 @@ def main():
 
     region_colour = mosaic(args.cache, VIKING, 7, REGION_BOX)
     region_gray = mosaic(args.cache, THEMIS, 9, REGION_BOX).resize((2048, 2048), Image.LANCZOS)
-    save(colourise(region_gray, region_colour, 24), 'jezero_region.jpg', 86)
+    save(tint(region_gray, ENGINE_TINT), 'jezero_region.jpg', 86)
 
     ctx_colour = mosaic(args.cache, VIKING, 7, CTX_BOX)
     ctx_gray = mosaic(args.cache, CTX, 12, CTX_BOX)
     w, h = ctx_gray.size
     k = 2048 / max(w, h)
     ctx_gray = ctx_gray.resize((round(w * k), round(h * k)), Image.LANCZOS)
-    save(tint(ctx_gray, ctx_colour), 'jezero_ctx.jpg', 86)
+    save(tint(ctx_gray, ENGINE_TINT), 'jezero_ctx.jpg', 86)
 
     meta = {
         'note': 'Written by scripts/present/build_assets.py from NASA Mars Trek tiles. Boxes are west, south, east, north in degrees.',
