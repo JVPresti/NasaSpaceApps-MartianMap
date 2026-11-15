@@ -21,9 +21,9 @@ This is the talk in English. `script-4min-es.md` is the same talk in Spanish for
 | 0:18 | cheyava | P1 | Her goal is Cheyava Falls, where Perseverance found a potential biosignature, unconfirmed. She walks there from the habitat. |
 | 0:30 | danger | P1 | If something goes wrong out here, the only rescue is her own walk home. |
 | 0:38 | plan | P1 | Marswalk plans that walk on NASA's HiRISE terrain. Slopes over twenty degrees are no-go, and every metre costs time and oxygen, priced from NASA's suited walking tests. |
-| 0:52 | zone | P1 | On Mars, the question isn't where you can go. It's where you can go and still get home. Her first sortie keeps a thirty minute reserve, so the orange area is everywhere she can reach and still get back in time. Then a radiation alert. Watch the zone. (Press Right on the word "zone".) |
+| 0:52 | zone | P1 | On Mars, the question isn't where you can go. It's where you can go and still get home. On a thirty minute sortie, the orange area is everywhere she can reach and still get back in time. Then a radiation alert. Watch the zone. (Press Right on the word "zone".) |
 | 1:15 | radiation | P1 | (Hold two seconds of silence while the zone closes.) Only the way home is left. She turns back now. |
-| 1:23 | storm | P1 | Then a dust storm, and she sees less. That is the idea. Now the real app, recorded. |
+| 1:23 | storm | P1 | Then a dust storm hides the horizon, and with it her position. Now the real app, recorded. |
 | 1:32 | demo | P2 | (The app video plays. Say each cue when its scene starts, then let the app speak.) The crew tells the mission table what it needs, and Marswalk builds the routes. The same orange zone, now in the app. Out through the airlock. An event hits, and her crewmate, EV2, reacts. Back inside, the review compares the route she walked with the plan. |
 | 2:57 | sources | P3 | Every number on screen says if it is measured, derived or simulated. The radiation and storm readings are real, from Gale crater, not Jezero. Their timing is simulated. Our terrain matches NASA's HiRISE model to fourteen centimetres. |
 | 3:15 | credits | P3 | The challenge asked for a survival guide to Mars. Ours starts with one question. On Mars, it is not where you can go. It is where you can still get home. We are Los Frijolitos Espaciales Refritos Nueva Generación. Thank you. (Do not press Right again.) |

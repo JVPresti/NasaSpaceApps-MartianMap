@@ -38,14 +38,13 @@ the others.
 |---|---|---|
 | 913 m, habitat to Cheyava Falls | Our planner export on `main` (`tools/walkback-zone.mjs`, `planRoute` through WP1, WP2 and WP3; legs 356 + 255 + 242 + 60 m in `data/walkback-zone.json`) | On screen in the `plan` beat, slide 2, the video |
 | 934 m | #282's mission table, goal **Sample Cheyava Falls**, Fastest profile, by Bright Angel (`docs/DEMO.md` on 8ec6f72) | What the screen shows in the demo; don't read it aloud |
-| 824 m, 53 g, 18 min | The re-planned walk home from Cheyava Falls in the same export (`coldOpen`) | Slide 2 |
-| 14 min margin | Our SIM scenario: 160 g left at Cheyava Falls, minus 53 g home and the 72.5 g reserve, at 2.42 g/min | Slide 3 only. The talk speaks no margin figure |
+| 62 g, 21 min home | The planned 913 m route walked back with the +20 % pad: `public/present/plan.json`, `totals.returnO2G` 61.8 g and `returnTimeMin` 21.3. The presentation and the technical report (#338) use the same figure | Slide 2, slide 3, the 30 s video |
+| 11 min margin | Our SIM scenario: 160 g left at Cheyava Falls, minus 62 g home and the 72.5 g reserve, at 2.42 g/min | Slide 3 only. The talk speaks no margin figure |
 | +399 min | The HUD on `main`, 40 m from home with a full tank (screenshot `img/app-hud-margin.jpg`) | Slide 3 caption, `qa.md` 5c |
 | +457 and +245 min | `main`, Fastest profile to Cheyava Falls: HUD at the airlock and the Suit tab (#328) | Not in the pitch |
-| +479, +285 and +224 min | #282's first sortie: HUD at the airlock, the Suit step, the debrief's lowest margin (#338) | Not in the pitch |
 
 The HUD and the Suit tab disagree because the HUD takes the smaller of the oxygen margin and the 8-hour EVA clock
-(#323). #338 calls 913 m the walk home. In this export 913 m is the way out and 824 m the way home.
+(#323). The peak dose rate differs too: the presentation shows 26 µGy/h (`public/data/rad.json`, RAD detector B) and #338 cites 29.9 µGy/h (the published abstract). The talk speaks neither.
 
 ## Rebuild
 
