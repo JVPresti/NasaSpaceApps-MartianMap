@@ -13,11 +13,11 @@ App: https://martian-map.fernando-haro-c.workers.dev
 | Name | Role | Email |
 |---|---|---|
 | Teresa Rivas Gómez | UI/UX and 3D art | [email] |
-| Andrea Rivas Gómez | Graphics, effects and audio [confirm] | [email] |
+| Andrea Rivas Gómez | Frontend developer and 3D modeller | [email] |
 | Fernando Haro Calvo | Full stack and data | [email] |
 | Jorge Antonio Vazquez Guzmán | Backend and analyst, route planner and events | [email] |
 | Antonio Ramos Gonzalez | Full stack | [email] |
-| Brayan Iván Pérez Ventura | App, 3D engine and suit model [confirm] | [email] |
+| Brayan Iván Pérez Ventura | Full stack developer and tester | [email] |
 
 ## Index
 
@@ -291,7 +291,7 @@ The Sources screen lists every dataset, paper, model and library with its credit
 
 **Teresa Rivas Gómez, UI/UX and 3D art.** Teresa built the 3D world in Blender, with the HiRISE terrain tile, the Z-2 astronaut, the habitat and the Bright Angel outcrop. She designed the HUD and the mission table and built the table, start, pause and sources screens.
 
-**Andrea Rivas Gómez, graphics, effects and audio [confirm role].** Andrea drew the route on the ground and built the dust storm, the Sun and sky that follow mission time, the boot prints, the slope grid and the habitat wall screens. She wrote all the suit audio in code.
+**Andrea Rivas Gómez, frontend developer and 3D modeller.** Andrea drew the route on the ground and built the dust storm, the Sun and sky that follow mission time, the boot prints, the slope grid and the habitat wall screens. She wrote all the suit audio in code.
 
 **Fernando Haro Calvo, full stack and data.** Fernando set up hosting and researched the suit, dust and radiation numbers. He wrote the weather and radiation pipelines, the shelters and the science stops, checked the terrain against Mars Trek, and built the source tags, the audit, EV2's behaviour and the presentation mode.
 
@@ -299,7 +299,7 @@ The Sources screen lists every dataset, paper, model and library with its credit
 
 **Antonio Ramos Gonzalez, full stack.** Antonio built the automatic checks, the mission clock in Mars time, the minimap, the menus, the English and Spanish interface, the debrief, the wrist screen, and touch and gamepad controls.
 
-**Brayan Iván Pérez Ventura, app, 3D engine and suit model [confirm role].** Brayan set up the app, its mission state and graphics tiers. He wrote the suit model and walkback margin, the first-person walk, the helmet HUD, sampling, the route profiles, the first sortie, planning from the crew's needs and the walked-route review.
+**Brayan Iván Pérez Ventura, full stack developer and tester.** Brayan set up the app, its mission state and graphics tiers. He wrote the suit model and walkback margin, the first-person walk, the helmet HUD, sampling, the route profiles, the first sortie, planning from the crew's needs and the walked-route review.
 
 ## References
 
