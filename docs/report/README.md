@@ -16,7 +16,6 @@ The report the team hands the local judges, in the same section order as our 202
 Search the PDF or the DOCX for `[email]` and `[confirm]`. Each one is a fact only the team can fill in:
 
 - `[email]`: each member's email, on the cover. Add them in Google Docs only. Keep emails out of the repository.
-- `[confirm]` after the roles of Andrea and Brayan: their roles are new or changed since last year's report.
 - `[confirm]` in Impact, Presentation: the talk runs at most 4 minutes, with an edited app video in place of a live demo, but the organisers' page still says 3 minutes. A second `[confirm]` there asks for the 4-minute script.
 - Appendix B: whether each SI-generated image now carries a visible watermark.
 - Appendix C: the prior-work statement, after the local lead answers.
